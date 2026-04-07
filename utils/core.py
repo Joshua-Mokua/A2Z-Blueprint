@@ -2915,6 +2915,10 @@ class UserManager:
     def _save(self, u=None):
         self.users_file.write_text(json.dumps(u or self.users, indent=2))
 
+    def save(self):
+        """Alias for save_users — keeps all call sites consistent."""
+        self.save_users()
+
     def save_users(self):
         self._save(self.users)
 
@@ -2941,6 +2945,30 @@ class UserManager:
         if codes: return [str(c).strip() for c in codes if c]
         sc = u.get('staff_code','')
         return [sc] if sc else []
+
+    def add_user(self, username, password, full_name, email="",
+                 role="Staff", unit="", staff_code="",
+                 can_view_all=False, can_execute=False, is_admin=False):
+        """Create a new user account."""
+        self.users[username] = {
+            "password":    self.hash_pw(password),
+            "full_name":   full_name,
+            "email":       email,
+            "role":        role,
+            "unit":        unit,
+            "department":  unit,
+            "staff_code":  str(staff_code),
+            "can_view_all":can_view_all,
+            "can_execute": can_execute,
+            "is_admin":    is_admin,
+            "active":      True,
+            "managed_roles": [],
+            "managed_units": [unit] if unit else [],
+            "managed_staff_codes": [str(staff_code)] if staff_code else [],
+            "must_change_password": False,
+        }
+        self.save_users()
+        return self.users[username]
 
     def filter_data(self, user_data, staff_df):
         role = str(user_data.get('role','')).strip().lower()

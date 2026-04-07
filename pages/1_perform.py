@@ -55,57 +55,48 @@ def render_bsc_scorecard(staff_df, df_kpi):
         return
 
     # ── Grouped searchable selector ───────────────────────────
+    # ── Search box ───────────────────────────────────────────────────
     search_sc = st.text_input(
         "🔍 Search by name or role",
-        placeholder="Type to filter staff...",
+        placeholder="e.g. Grace Kamau  or  Teller  or  Westlands",
         key="sc_search"
     ).strip().lower()
 
-    # Build full name list — filtered if search active, grouped if not
     has_role_col = "Role" in staff_df.columns
+    has_unit_col = "Unit" in staff_df.columns
+
+    # ── Build the name list to show in the selectbox ─────────────────
+    # Always a plain list of real staff names — no unit headers mixed in.
+    # Unit headers caused the "no selection" bug when Streamlit tried to
+    # match a header string back to a staff record.
+
     if search_sc:
+        # Filter by name, role, or unit
         mask = staff_df["Staff Name"].str.lower().str.contains(search_sc, na=False)
         if has_role_col:
             mask |= staff_df["Role"].str.lower().str.contains(search_sc, na=False)
-        candidates = staff_df[mask]
-        if candidates.empty:
-            st.caption(f"No staff match '{search_sc}' — clear search to browse all")
+        if has_unit_col:
+            mask |= staff_df["Unit"].str.lower().str.contains(search_sc, na=False)
+        filtered = staff_df[mask]
+        if filtered.empty:
+            st.warning(f"No staff match '{search_sc}'. Try a surname, role or branch name.")
             return None
-        name_options = sorted(candidates["Staff Name"].tolist())
-        sel = st.selectbox(
-            f"Select ({len(name_options)} match{'es' if len(name_options)!=1 else ''})",
-            name_options, key="sc_select")
-        return sel
-    elif "Unit" in staff_df.columns:
-        # Grouped by unit
-        groups = {}
-        for _, row in staff_df.sort_values(["Unit","Staff Name"]).iterrows():
-            unit = str(row.get("Unit","—"))
-            name = row["Staff Name"]
-            perf = row.get("Performance_Remark","")
-            icon = "🟢" if perf in ("Exceeded By Far","Exceeded") else ("🔴" if perf in ("Partially Met","Unmet") else "🟡")
-            groups.setdefault(unit, []).append((f"   {icon} {name}", name))
-
-        options = []
-        lookup  = {}
-        for unit in sorted(groups.keys()):
-            options.append(f"── {unit} ──")
-            for display, real in groups[unit]:
-                options.append(display)
-                lookup[display] = real
-
-        sel_disp = st.selectbox(
-            f"Select staff member ({len(staff_df)} staff)",
-            options, key="sc_select",
-            help="Grouped by unit · 🟢 Exceeded · 🟡 Met · 🔴 Below target")
-        if not sel_disp or sel_disp.startswith("──"):
-            return
-        sel = lookup.get(sel_disp, sel_disp.strip().lstrip("🟢🟡🔴⚪ "))
+        # Sort filtered results: show best matches first
+        name_list = sorted(filtered["Staff Name"].tolist())
+        label = f"Select from {len(name_list)} result{'s' if len(name_list)!=1 else ''}"
     else:
-        sel = st.selectbox(
-            f"Select staff member ({len(staff_df)} staff)",
-            sorted(staff_df["Staff Name"].tolist()),
-            key="sc_select")
+        # Browse mode — sort by unit then name for easy scanning
+        if has_unit_col:
+            sorted_df = staff_df.sort_values(["Unit","Staff Name"])
+        else:
+            sorted_df = staff_df.sort_values("Staff Name")
+        name_list = sorted_df["Staff Name"].tolist()
+        label = f"Select staff member ({len(name_list)} total)"
+
+    # ── Single selectbox — always same key, options change with search ──
+    if not name_list:
+        return None
+    sel = st.selectbox(label, name_list, key="sc_select")
     staff_row = staff_df[staff_df['Staff Name'] == sel]
     if len(staff_row) == 0:
         return
@@ -301,97 +292,44 @@ def render_bsc_scorecard(staff_df, df_kpi):
 # GROUPED STAFF SELECTOR — HELPER
 # ════════════════════════════════════════════════════════════════
 def build_staff_selector(df, key_prefix="main"):
-    """
-    Grouped, searchable staff selector.
-    Groups by Unit then shows staff within it.
-    Returns (selected_name, col_used) or (None, None).
-    """
-    if df.empty or "Staff Name" not in df.columns:
+    """Searchable + browsable staff selector. Always returns a real staff name or None."""
+    if df is None or (hasattr(df,'empty') and df.empty) or "Staff Name" not in df.columns:
         return None
 
-    # ── Search box ────────────────────────────────────────────
-    search_q = st.text_input(
-        "🔍 Search by name or role",
-        placeholder="Type a name or role to filter...",
-        key=f"{key_prefix}_search"
-    ).strip().lower()
-
-    # ── Build grouped options ──────────────────────────────────
     has_unit = "Unit" in df.columns
     has_role = "Role" in df.columns
 
-    # Build a SINGLE list of options regardless of search/browse mode.
-    # Using one consistent key avoids Streamlit's widget-reuse conflict
-    # which causes the empty dropdown when switching between modes.
+    search_q = st.text_input(
+        "🔍 Search by name, role or branch",
+        placeholder="e.g. Kamau  or  Teller  or  Westlands",
+        key=f"{key_prefix}_search"
+    ).strip().lower()
 
+    # Always build a PLAIN list of names — never mix in unit headers.
+    # Unit headers caused the selector to return None because Streamlit
+    # matched the header string instead of a staff name.
     if search_q:
         mask = df["Staff Name"].str.lower().str.contains(search_q, na=False)
         if has_role:
             mask |= df["Role"].str.lower().str.contains(search_q, na=False)
-        filtered_df = df[mask]
-        if filtered_df.empty:
-            st.caption(f"No match for '{search_q}' — clear search to browse all")
-            # Still show full selectbox so widget key stays alive
-            return st.selectbox(
-                "No results — clear search above",
-                ["— no match —"],
-                key=f"{key_prefix}_sel")
-        name_opts = sorted(filtered_df["Staff Name"].tolist())
-        return st.selectbox(
-            f"Select ({len(name_opts)} result{'s' if len(name_opts)!=1 else ''})",
-            name_opts,
-            key=f"{key_prefix}_sel")
-
-    # Browse mode — flat list grouped by unit via display labels
-    if has_unit:
-        groups = {}
-        for _, row in df.sort_values(["Unit","Staff Name"]).iterrows():
-            unit = str(row.get("Unit","—"))
-            name = str(row["Staff Name"])
-            perf = str(row.get("Performance_Remark",""))
-            icon = ("🟢" if perf in ("Exceeded By Far","Exceeded")
-                    else ("🟡" if perf == "Met"
-                    else ("🔴" if perf in ("Partially Met","Unmet") else "⚪")))
-            groups.setdefault(unit, []).append((name, f"{icon} {name}"))
-
-        # Build two parallel lists: display labels (with icons) and real names
-        # We store "── UNIT ──" in display but map it to "" in real names
-        # so the selectbox works and we can detect header rows
-        display_labels = []
-        real_names     = []
-        for unit in sorted(groups.keys()):
-            header = f"── {unit} ({len(groups[unit])}) ──"
-            display_labels.append(header)
-            real_names.append("")
-            for real, display in groups[unit]:
-                display_labels.append(f"    {display}")
-                real_names.append(real)
-
-        sel_disp = st.selectbox(
-            f"Select staff member ({len(df)} total)",
-            display_labels,
-            key=f"{key_prefix}_sel",
-            help="Grouped by unit · 🟢 Exceeded · 🟡 Met · 🔴 Below target")
-
-        if not sel_disp:
+        if has_unit:
+            mask |= df["Unit"].str.lower().str.contains(search_q, na=False)
+        results = df[mask]
+        if results.empty:
+            st.warning(f"No staff match '{search_q}'. Try a surname, role or branch name.")
             return None
-        # Find matching real name
-        try:
-            idx = display_labels.index(sel_disp)
-            real = real_names[idx]
-            if not real:  # header row
-                st.caption("↑ Select a staff member, not a unit header")
-                return None
-            return real
-        except ValueError:
-            return None
+        name_list = sorted(results["Staff Name"].tolist())
+        label = f"Select from {len(name_list)} result{'s' if len(name_list)!=1 else ''}"
     else:
-        names = sorted(df["Staff Name"].tolist())
-        return st.selectbox(
-            f"Select staff member ({len(names)})",
-            names,
-            key=f"{key_prefix}_sel")
+        if has_unit:
+            name_list = df.sort_values(["Unit","Staff Name"])["Staff Name"].tolist()
+        else:
+            name_list = df.sort_values("Staff Name")["Staff Name"].tolist()
+        label = f"Select staff member ({len(name_list)} total)"
 
+    if not name_list:
+        return None
+    return st.selectbox(label, name_list, key=f"{key_prefix}_sel")
 
 # ════════════════════════════════════════════════════════════════
 # PAGE HEADER
