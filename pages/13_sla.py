@@ -1,0 +1,593 @@
+"""pages/13_sla.py — SLA Tracker: scoring CX based on SLA adherence."""
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta, date
+from utils.core import *
+from pages._shared import load_shared_state
+
+um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
+registry     = st.session_state.get("staff_registry", pd.DataFrame())
+
+# ── SLA DEFINITIONS ──────────────────────────────────────────────────
+SLA_CATEGORIES = {
+    "Account Opening": {
+        "sla_hours": 24, "priority": "High",
+        "description": "New account fully opened and customer notified",
+        "owner_roles": ["Customer Service Officer","Branch Operations Manager","Branch Manager"],
+        "color": "#006B3F",
+    },
+    "Loan Processing": {
+        "sla_hours": 72, "priority": "Critical",
+        "description": "Loan application reviewed and decision communicated",
+        "owner_roles": ["Branch Credit Manager","Credit Analyst","Chief Credit Officer"],
+        "color": "#E24B4A",
+    },
+    "Credit Approval TAT": {
+        "sla_hours": 48, "priority": "Critical",
+        "description": "Credit approved or declined from submission",
+        "owner_roles": ["Credit Analyst","Branch Credit Manager","Chief Credit Officer"],
+        "color": "#C0392B",
+    },
+    "Cheque Clearance": {
+        "sla_hours": 48, "priority": "High",
+        "description": "Cheque cleared and funds available to customer",
+        "owner_roles": ["Teller","Branch Operations Manager"],
+        "color": "#185FA5",
+    },
+    "Card Issuance": {
+        "sla_hours": 72, "priority": "Medium",
+        "description": "Debit/credit card issued and activated",
+        "owner_roles": ["Customer Service Officer","Branch Operations Manager"],
+        "color": "#8E44AD",
+    },
+    "Complaint Resolution": {
+        "sla_hours": 24, "priority": "Critical",
+        "description": "Customer complaint acknowledged and resolution communicated",
+        "owner_roles": ["Customer Service Officer","Branch Manager","Branch Operations Manager"],
+        "color": "#E67E22",
+    },
+    "Statement Request": {
+        "sla_hours": 4, "priority": "Low",
+        "description": "Account statement generated and sent",
+        "owner_roles": ["Customer Service Officer","Teller"],
+        "color": "#27AE60",
+    },
+    "Fund Transfer": {
+        "sla_hours": 2, "priority": "High",
+        "description": "Internal/RTGS/EFT transfer executed",
+        "owner_roles": ["Teller","Branch Operations Manager"],
+        "color": "#2980B9",
+    },
+    "DFS Registration": {
+        "sla_hours": 1, "priority": "Medium",
+        "description": "Mobile money / DFS account registered and activated",
+        "owner_roles": ["Customer Service Officer","Direct Sales Officer","Teller"],
+        "color": "#16A085",
+    },
+    "Dormancy Reactivation": {
+        "sla_hours": 48, "priority": "Medium",
+        "description": "Dormant account reactivated and customer notified",
+        "owner_roles": ["Customer Service Officer","Relationship Officer Personal Banking"],
+        "color": "#F39C12",
+    },
+    "Audit Query Response": {
+        "sla_hours": 24, "priority": "Critical",
+        "description": "Audit query responded to with evidence",
+        "owner_roles": ["Branch Manager","Branch Operations Manager","All"],
+        "color": "#7F8C8D",
+    },
+    "IT Incident Resolution": {
+        "sla_hours": 4, "priority": "Critical",
+        "description": "System incident resolved or escalated with workaround",
+        "owner_roles": ["IT Support Officer","IT Manager"],
+        "color": "#C0392B",
+    },
+    "HR Request Processing": {
+        "sla_hours": 48, "priority": "Medium",
+        "description": "Leave, payroll, or HR query processed",
+        "owner_roles": ["HR Officer","HR Business Partner"],
+        "color": "#9B59B6",
+    },
+    "Procurement Request": {
+        "sla_hours": 72, "priority": "Medium",
+        "description": "Purchase request processed and supplier engaged",
+        "owner_roles": ["Procurement Officer","Procurement Manager"],
+        "color": "#D35400",
+    },
+}
+
+PRIORITY_COLORS = {"Critical":"#E24B4A","High":"#F5A623","Medium":"#185FA5","Low":"#7F8C8D"}
+
+# ── MANAGER ───────────────────────────────────────────────────────────
+class SLAManager:
+    def __init__(self):
+        self.file    = DATA_DIR / "sla_tickets.json"
+        self.tickets = self._load()
+
+    def _load(self):
+        if not self.file.exists(): self.file.write_text("[]")
+        try:
+            raw = self.file.read_text()
+            d = json.loads(raw) if raw.strip() else []
+            return d if isinstance(d, list) else []
+        except: return []
+
+    def _save(self):
+        self.file.write_text(json.dumps(self.tickets, indent=2, default=str))
+
+    def log_ticket(self, data: dict) -> dict:
+        ticket_id = f"SLA{len(self.tickets)+1:05d}"
+        opened_dt = datetime.now()
+        sla_cfg   = SLA_CATEGORIES.get(data.get("category",""), {})
+        sla_hrs   = sla_cfg.get("sla_hours", 24)
+        due_dt    = opened_dt + timedelta(hours=sla_hrs)
+        rec = {
+            "id":           ticket_id,
+            "category":     data.get("category",""),
+            "customer_name":data.get("customer_name",""),
+            "account_no":   data.get("account_no",""),
+            "unit":         data.get("unit",""),
+            "staff_code":   str(data.get("staff_code","")),
+            "staff_name":   data.get("staff_name",""),
+            "description":  data.get("description",""),
+            "priority":     sla_cfg.get("priority","Medium"),
+            "sla_hours":    sla_hrs,
+            "opened_at":    str(opened_dt),
+            "due_at":       str(due_dt),
+            "resolved_at":  None,
+            "status":       "Open",
+            "resolution":   "",
+            "breached":     False,
+            "logged_by":    data.get("logged_by",""),
+        }
+        self.tickets.append(rec)
+        self._save()
+        return rec
+
+    def resolve(self, ticket_id: str, resolution: str, resolved_by: str):
+        for t in self.tickets:
+            if t["id"] == ticket_id:
+                now = datetime.now()
+                t["resolved_at"] = str(now)
+                t["resolution"]  = resolution
+                t["status"]      = "Resolved"
+                try:
+                    due = datetime.fromisoformat(t["due_at"])
+                    t["breached"] = now > due
+                except: t["breached"] = False
+                t["resolved_by"] = resolved_by
+                self._save()
+                return t
+        return None
+
+    def get_open(self, unit=None):
+        now = datetime.now()
+        open_t = [t for t in self.tickets if t["status"]=="Open"]
+        for t in open_t:
+            try:
+                due = datetime.fromisoformat(t["due_at"])
+                t["_overdue"] = now > due
+                t["_hours_remaining"] = round((due-now).total_seconds()/3600, 1)
+            except:
+                t["_overdue"] = False
+                t["_hours_remaining"] = 0
+        if unit and unit != "All":
+            open_t = [t for t in open_t if t["unit"]==unit]
+        return open_t
+
+    def sla_score(self, unit=None, staff_code=None, days_back=30):
+        cutoff = datetime.now() - timedelta(days=days_back)
+        resolved = [t for t in self.tickets
+                    if t["status"]=="Resolved" and t.get("resolved_at")]
+        resolved = [t for t in resolved
+                    if datetime.fromisoformat(t["resolved_at"][:19]) >= cutoff]
+        if unit and unit!="All":
+            resolved = [t for t in resolved if t["unit"]==unit]
+        if staff_code:
+            resolved = [t for t in resolved if t["staff_code"]==str(staff_code)]
+        if not resolved:
+            return 1.0, 0, 0
+        total    = len(resolved)
+        breached = sum(1 for t in resolved if t.get("breached"))
+        score    = round((total-breached)/total, 4)
+        return score, total, breached
+
+    def analytics(self):
+        total     = len(self.tickets)
+        resolved  = [t for t in self.tickets if t["status"]=="Resolved"]
+        open_t    = [t for t in self.tickets if t["status"]=="Open"]
+        breached  = [t for t in resolved if t.get("breached")]
+        by_cat    = {}
+        for t in self.tickets:
+            c = t.get("category","Unknown")
+            if c not in by_cat:
+                by_cat[c] = {"total":0,"resolved":0,"breached":0}
+            by_cat[c]["total"] += 1
+            if t["status"]=="Resolved": by_cat[c]["resolved"] += 1
+            if t.get("breached"):       by_cat[c]["breached"] += 1
+        # Average resolution time
+        res_times = []
+        for t in resolved:
+            try:
+                o = datetime.fromisoformat(t["opened_at"][:19])
+                r = datetime.fromisoformat(t["resolved_at"][:19])
+                res_times.append((r-o).total_seconds()/3600)
+            except: pass
+        avg_res = round(sum(res_times)/len(res_times),1) if res_times else 0
+        return {
+            "total": total, "open": len(open_t),
+            "resolved": len(resolved), "breached": len(breached),
+            "sla_score": round((len(resolved)-len(breached))/max(len(resolved),1),4),
+            "avg_resolution_hours": avg_res,
+            "by_category": by_cat,
+        }
+
+# Initialise
+if "sla_manager" not in st.session_state:
+    st.session_state["sla_manager"] = SLAManager()
+slm = st.session_state["sla_manager"]
+
+# ── HEADER ───────────────────────────────────────────────────────────
+st.markdown(
+    "<div style='padding:14px 20px;background:#185FA5;border-radius:10px;margin-bottom:16px'>"
+    "<div style='color:white;font-size:16px;font-weight:500'>SLA Tracker</div>"
+    "<div style='color:#BDD7F5;font-size:11px;margin-top:2px'>"
+    "Service Level Agreement tracking · CX scoring · Breach alerts · Staff accountability"
+    "</div></div>", unsafe_allow_html=True)
+
+tabs = st.tabs([
+    "📊 Dashboard",
+    "🎫 Log ticket",
+    "✅ Resolve tickets",
+    "👤 Staff SLA scores",
+    "📈 Analytics",
+    "⚙️ SLA definitions",
+])
+
+# ════════════════════════════════════════════════════════════════
+# TAB 1 — DASHBOARD
+# ════════════════════════════════════════════════════════════════
+with tabs[0]:
+    anl = slm.analytics()
+    overall_score = anl["sla_score"]
+    score_clr = '#006B3F' if overall_score>=0.90 else ('#F5A623' if overall_score>=0.75 else '#E24B4A')
+
+    c1,c2,c3,c4,c5,c6 = st.columns(6)
+    c1.metric("Overall SLA score",  f"{overall_score:.1%}",
+              help="Tickets resolved within SLA / total resolved")
+    c2.metric("Total tickets",      anl["total"])
+    c3.metric("Open",               anl["open"],
+              delta=f"-{anl['open']}" if anl['open'] else "0", delta_color="inverse")
+    c4.metric("Resolved",           anl["resolved"])
+    c5.metric("Breached",           anl["breached"],
+              delta=f"-{anl['breached']}" if anl['breached'] else "0", delta_color="inverse")
+    c6.metric("Avg resolution",     f"{anl['avg_resolution_hours']}h")
+
+    # SLA score gauge
+    ga1, ga2 = st.columns(2)
+    with ga1:
+        fig_g = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=overall_score*100,
+            delta={"reference":90,"suffix":"%"},
+            title={"text":"SLA Adherence Score (%)"},
+            gauge={
+                "axis":{"range":[0,100]},
+                "bar":{"color":score_clr},
+                "steps":[
+                    {"range":[0,75],"color":"#FDEDEC"},
+                    {"range":[75,90],"color":"#FEF6E4"},
+                    {"range":[90,100],"color":"#E8F5EE"},
+                ],
+                "threshold":{"line":{"color":"#006B3F","width":3},"value":90},
+            }
+        ))
+        fig_g.update_layout(height=240,
+            paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=20,r=20,t=40,b=20))
+        st.plotly_chart(fig_g, use_container_width=True)
+
+    with ga2:
+        if anl["by_category"]:
+            cat_rows = [{"Category":c[:20], "Total":v["total"],
+                         "Breached":v["breached"],
+                         "Score":f"{(v['resolved']-v['breached'])/max(v['resolved'],1):.0%}"}
+                        for c,v in anl["by_category"].items()]
+            cat_df = pd.DataFrame(cat_rows).sort_values("Breached", ascending=False)
+            def hl_score(v):
+                try:
+                    p = float(str(v).replace('%',''))
+                    if p >= 90: return 'color:#006B3F;font-weight:500'
+                    if p >= 75: return 'color:#F5A623'
+                    return 'color:#E24B4A;font-weight:500'
+                except: return ''
+            st.markdown("**SLA by category**")
+            st.dataframe(cat_df.style.map(hl_score, subset=['Score']),
+                         use_container_width=True, hide_index=True, height=220)
+
+    # Open tickets — overdue highlighted
+    st.markdown("---")
+    st.markdown("#### Open tickets")
+    unit_filter = st.selectbox(
+        "Filter by unit", ["All"] + sorted(set(t["unit"] for t in slm.tickets if t["unit"])),
+        key="sla_unit_f")
+    open_tickets = slm.get_open(unit_filter)
+
+    if not open_tickets:
+        st.success("No open SLA tickets.")
+    else:
+        overdue = [t for t in open_tickets if t.get("_overdue")]
+        if overdue:
+            st.error(f"⚠️ {len(overdue)} ticket(s) OVERDUE — immediate action required")
+
+        for t in sorted(open_tickets, key=lambda x: x.get("_overdue",False), reverse=True)[:20]:
+            overdue_flag = t.get("_overdue", False)
+            hrs_rem      = t.get("_hours_remaining", 0)
+            pri_clr      = PRIORITY_COLORS.get(t["priority"],"#888")
+            border_clr   = "#E24B4A" if overdue_flag else pri_clr
+            status_txt   = f"🔴 OVERDUE by {abs(hrs_rem):.1f}h" if overdue_flag else f"⏱ {hrs_rem:.1f}h remaining"
+
+            st.markdown(
+                f"<div style='padding:8px 12px;background:var(--color-background-secondary);"
+                f"border-left:4px solid {border_clr};"
+                f"border-radius:0 6px 6px 0;margin:3px 0;font-size:12px'>"
+                f"<div style='display:flex;justify-content:space-between'>"
+                f"<span><b>{t['id']}</b> · {t['category']} "
+                f"<span style='background:{pri_clr};color:white;padding:1px 5px;"
+                f"border-radius:8px;font-size:10px'>{t['priority']}</span></span>"
+                f"<span style='color:{border_clr};font-weight:500'>{status_txt}</span></div>"
+                f"<div style='color:#666;margin-top:2px'>"
+                f"{t['customer_name']} · {t['unit']} · {t['staff_name']} · "
+                f"Opened: {t['opened_at'][:16]}</div>"
+                f"<div style='color:#888;font-size:11px'>{t['description'][:80]}</div>"
+                f"</div>", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 2 — LOG TICKET
+# ════════════════════════════════════════════════════════════════
+with tabs[1]:
+    st.subheader("Log new SLA ticket")
+
+    all_units = sorted(set(
+        staff_scores["Unit"].tolist() if len(staff_scores) else []
+    ) or ["Head Office"])
+
+    with st.form("sla_log_form"):
+        lc1, lc2 = st.columns(2)
+        sla_cat   = lc1.selectbox("Service category *", list(SLA_CATEGORIES.keys()))
+        sla_unit  = lc2.selectbox("Branch / unit *", all_units)
+
+        cfg = SLA_CATEGORIES[sla_cat]
+        st.markdown(
+            f"<div style='padding:6px 10px;background:#EBF0F7;"
+            f"border-left:3px solid #185FA5;font-size:11px'>"
+            f"SLA: <b>{cfg['sla_hours']} hours</b> · Priority: <b>{cfg['priority']}</b> · "
+            f"{cfg['description']}</div>", unsafe_allow_html=True)
+
+        lc3, lc4 = st.columns(2)
+        cust_name = lc3.text_input("Customer name")
+        acct_no   = lc4.text_input("Account number")
+
+        # Staff selector
+        unit_staff = staff_scores[staff_scores["Unit"]==sla_unit] if len(staff_scores) else pd.DataFrame()
+        staff_opts = {f"{r['Staff Name']} ({r['Role']})": str(r["Staff Code"])
+                      for _, r in unit_staff.iterrows()} if len(unit_staff) else {"Manual entry": ""}
+        sla_staff_lbl = st.selectbox("Assigned to *", list(staff_opts.keys()))
+        sla_staff_code= staff_opts[sla_staff_lbl]
+        sla_desc      = st.text_area("Description / details *", height=70)
+
+        if st.form_submit_button("Log ticket", type="primary"):
+            if sla_cat and sla_unit and sla_desc:
+                t = slm.log_ticket({
+                    "category":     sla_cat,
+                    "unit":         sla_unit,
+                    "staff_code":   sla_staff_code,
+                    "staff_name":   sla_staff_lbl.split('(')[0].strip(),
+                    "customer_name":cust_name,
+                    "account_no":   acct_no,
+                    "description":  sla_desc,
+                    "logged_by":    uname,
+                })
+                audit_log("SLA_TICKET_LOGGED", uname, f"{t['id']}:{sla_cat}:{sla_unit}")
+                due_str = datetime.fromisoformat(t["due_at"][:19]).strftime("%d %b %Y %H:%M")
+                st.success(f"✅ Ticket **{t['id']}** logged. Due by: **{due_str}**")
+                st.rerun()
+            else:
+                st.error("Category, unit and description are required.")
+
+# ════════════════════════════════════════════════════════════════
+# TAB 3 — RESOLVE
+# ════════════════════════════════════════════════════════════════
+with tabs[2]:
+    st.subheader("Resolve open tickets")
+    open_t = slm.get_open()
+
+    if not open_t:
+        st.success("No open tickets to resolve.")
+    else:
+        def _ticket_label(t):
+            rem = t.get('_hours_remaining', 0)
+            status = '🔴 OVERDUE' if t.get('_overdue') else f'{rem:.1f}h left'
+            return f"{t['id']} — {t['category']} | {t['unit']} | {status}"
+        ticket_opts = {_ticket_label(t): t['id'] for t in open_t}
+        sel_ticket_lbl = st.selectbox("Select ticket to resolve", list(ticket_opts.keys()))
+        sel_id         = ticket_opts[sel_ticket_lbl]
+        sel_t          = next((t for t in open_t if t["id"]==sel_id), None)
+
+        if sel_t:
+            st.markdown(
+                f"<div style='padding:10px 14px;background:var(--color-background-secondary);"
+                f"border-radius:6px;font-size:12px;margin:8px 0'>"
+                f"<b>{sel_t['id']}</b> · <b>{sel_t['category']}</b> · "
+                f"Priority: {sel_t['priority']}<br>"
+                f"Customer: {sel_t['customer_name']} · Account: {sel_t['account_no']}<br>"
+                f"Assigned: {sel_t['staff_name']} · Unit: {sel_t['unit']}<br>"
+                f"Opened: {sel_t['opened_at'][:16]} · "
+                f"Due: {sel_t['due_at'][:16]} · "
+                f"{'🔴 OVERDUE' if sel_t.get('_overdue') else '🟢 Within SLA'}"
+                f"</div>", unsafe_allow_html=True)
+
+            with st.form("resolve_form"):
+                resolution = st.text_area("Resolution notes *", height=80,
+                    placeholder="Describe how the issue was resolved and outcome for the customer.")
+                if st.form_submit_button("✅ Mark as resolved", type="primary"):
+                    if resolution:
+                        resolved_t = slm.resolve(sel_id, resolution, uname)
+                        breached_msg = "⚠️ SLA was breached" if resolved_t.get("breached") else "✅ Resolved within SLA"
+                        audit_log("SLA_RESOLVED", uname, f"{sel_id}:{breached_msg}")
+                        st.success(f"Ticket {sel_id} resolved. {breached_msg}")
+                        st.rerun()
+                    else:
+                        st.error("Resolution notes are required.")
+
+# ════════════════════════════════════════════════════════════════
+# TAB 4 — STAFF SLA SCORES
+# ════════════════════════════════════════════════════════════════
+with tabs[3]:
+    st.subheader("Staff SLA adherence scores")
+    st.caption("SLA score = tickets resolved within SLA ÷ total resolved tickets. "
+               "This feeds directly into the CX Score KPI in the BSC.")
+
+    days_back = st.slider("Period (days)", 7, 90, 30, key="sla_days")
+
+    if len(staff_scores):
+        score_rows = []
+        for _, sr in staff_scores.iterrows():
+            sc   = str(sr["Staff Code"])
+            score, total, breached = slm.sla_score(staff_code=sc, days_back=days_back)
+            if total > 0:
+                score_rows.append({
+                    "Staff":    sr["Staff Name"],
+                    "Unit":     sr["Unit"],
+                    "Role":     sr["Role"],
+                    "Tickets":  total,
+                    "Breached": breached,
+                    "SLA Score":score,
+                })
+
+        if score_rows:
+            sc_df = pd.DataFrame(score_rows).sort_values("SLA Score")
+            sc_df["Rating"] = sc_df["SLA Score"].apply(
+                lambda x: "🟢 Excellent" if x>=0.95 else
+                          ("🟡 Good" if x>=0.85 else
+                           ("🟠 At risk" if x>=0.70 else "🔴 Critical")))
+
+            # Chart
+            fig_s = px.bar(sc_df, x="Staff", y="SLA Score", color="SLA Score",
+                           color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                           title=f"Staff SLA scores — last {days_back} days",
+                           range_color=[0,1])
+            fig_s.add_hline(y=0.90, line_dash="dash", line_color="#006B3F",
+                             annotation_text="90% target")
+            fig_s.update_layout(height=320, xaxis_tickangle=-35,
+                yaxis_tickformat=".0%",
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_s, use_container_width=True)
+
+            def hl_sla(v):
+                try:
+                    if isinstance(v, float):
+                        if v>=0.95: return 'color:#006B3F;font-weight:500'
+                        if v>=0.85: return 'color:#F5A623'
+                        return 'color:#E24B4A;font-weight:500'
+                except: pass
+                return ''
+
+            sc_df["SLA Score"] = sc_df["SLA Score"].apply(lambda x: f"{x:.1%}")
+            st.dataframe(sc_df.style.map(hl_sla, subset=['SLA Score']),
+                         use_container_width=True, hide_index=True)
+        else:
+            st.info(f"No resolved tickets in the last {days_back} days.")
+    else:
+        st.info("Upload BSC data to see staff-level SLA scores.")
+
+# ════════════════════════════════════════════════════════════════
+# TAB 5 — ANALYTICS
+# ════════════════════════════════════════════════════════════════
+with tabs[4]:
+    st.subheader("SLA analytics")
+    anl = slm.analytics()
+
+    if anl["total"] == 0:
+        st.info("No tickets logged yet. Log tickets in the 'Log ticket' tab.")
+    else:
+        ac1, ac2 = st.columns(2)
+        with ac1:
+            # Breach rate by category
+            if anl["by_category"]:
+                cat_data = [{"Category": c[:22],
+                              "Breach rate": round(v["breached"]/max(v["total"],1)*100,1),
+                              "Total": v["total"]}
+                             for c,v in anl["by_category"].items() if v["total"]>0]
+                cat_df = pd.DataFrame(cat_data).sort_values("Breach rate", ascending=False)
+                fig_br = px.bar(cat_df, x="Breach rate", y="Category",
+                                orientation='h', color="Breach rate",
+                                color_continuous_scale=["#006B3F","#F5A623","#E24B4A"],
+                                title="Breach rate % by category",
+                                range_color=[0,50])
+                fig_br.update_layout(height=320,
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(l=0,r=0,t=40,b=0))
+                st.plotly_chart(fig_br, use_container_width=True)
+
+        with ac2:
+            # Priority distribution
+            prio_counts = {}
+            for t in slm.tickets:
+                p = t.get("priority","Medium")
+                prio_counts[p] = prio_counts.get(p,0)+1
+            prio_df = pd.DataFrame(list(prio_counts.items()), columns=["Priority","Count"])
+            fig_p = px.pie(prio_df, names="Priority", values="Count",
+                           title="Tickets by priority",
+                           color="Priority",
+                           color_discrete_map=PRIORITY_COLORS)
+            fig_p.update_layout(height=320, margin=dict(l=0,r=0,t=40,b=0))
+            st.plotly_chart(fig_p, use_container_width=True)
+
+        # Unit performance table
+        unit_scores = {}
+        for t in slm.tickets:
+            u = t.get("unit","Unknown")
+            if u not in unit_scores:
+                unit_scores[u] = {"total":0,"resolved":0,"breached":0}
+            unit_scores[u]["total"] += 1
+            if t["status"]=="Resolved":
+                unit_scores[u]["resolved"] += 1
+                if t.get("breached"): unit_scores[u]["breached"] += 1
+
+        if unit_scores:
+            unit_rows = [{"Unit": u,
+                           "Total": v["total"],
+                           "Resolved": v["resolved"],
+                           "Breached": v["breached"],
+                           "SLA Score": f"{(v['resolved']-v['breached'])/max(v['resolved'],1):.1%}"}
+                          for u,v in unit_scores.items()]
+            unit_df = pd.DataFrame(unit_rows).sort_values("SLA Score")
+            st.markdown("**SLA performance by unit**")
+            st.dataframe(unit_df, use_container_width=True, hide_index=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 6 — SLA DEFINITIONS
+# ════════════════════════════════════════════════════════════════
+with tabs[5]:
+    st.subheader("SLA definitions & standards")
+    st.caption("These are the service standards against which all tickets are measured.")
+
+    for cat, cfg in SLA_CATEGORIES.items():
+        clr = PRIORITY_COLORS.get(cfg["priority"], "#888")
+        st.markdown(
+            f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+            f"border-left:4px solid {clr};"
+            f"border-radius:0 6px 6px 0;margin:3px 0;font-size:12px'>"
+            f"<div style='display:flex;justify-content:space-between'>"
+            f"<b>{cat}</b>"
+            f"<span style='background:{clr};color:white;padding:1px 6px;"
+            f"border-radius:8px;font-size:10px'>{cfg['priority']} · {cfg['sla_hours']}h SLA</span>"
+            f"</div>"
+            f"<div style='color:#666;margin-top:2px'>{cfg['description']}</div>"
+            f"<div style='color:#888;font-size:11px;margin-top:2px'>"
+            f"Owner roles: {', '.join(cfg['owner_roles'][:3])}</div>"
+            f"</div>", unsafe_allow_html=True)
