@@ -89,7 +89,7 @@ TABLE_USE_DB = {
     "collateral":       False,
     "recoveries":       False,
     "compliance_cases": False,
-    "aml_alerts":       False,
+    "aml_alerts":       True,
     "rcsa_risks":       False,
     # Tier 4 — Procurement / HR / Projects
     "purchase_requests":False,
