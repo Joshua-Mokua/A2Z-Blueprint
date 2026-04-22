@@ -85,7 +85,7 @@ TABLE_USE_DB = {
     "loan_applications":True,
     # Tier 3 — Operational
     "watchlist":        False,
-    "ews_cases":        False,
+    "ews_cases":        True,
     "collateral":       False,
     "recoveries":       False,
     "compliance_cases": False,
