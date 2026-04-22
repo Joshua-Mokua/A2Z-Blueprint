@@ -1,0 +1,252 @@
+[
+  {
+    "id": "PIP0001",
+    "staff_code": "300003",
+    "staff_name": "Emmanuel Kuria",
+    "role": "Chief Commercial Officer",
+    "unit": "Head Office",
+    "bsc_score": 2.4,
+    "start_date": "2026-03-31",
+    "review_date": "2026-05-21",
+    "end_date": "2026-08-11",
+    "status": "Completed - Improved",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-30",
+      "2026-05-16",
+      "2026-06-13"
+    ],
+    "hr_manager": "Felix Ruto",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0002",
+    "staff_code": "300006",
+    "staff_name": "Mary Waweru",
+    "role": "Chief Risk Officer",
+    "unit": "Head Office",
+    "bsc_score": 2.21,
+    "start_date": "2026-03-30",
+    "review_date": "2026-06-07",
+    "end_date": "2026-06-20",
+    "status": "Active",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-05-02",
+      "2026-05-09",
+      "2026-06-13"
+    ],
+    "hr_manager": "Gladys Gitonga",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0003",
+    "staff_code": "300007",
+    "staff_name": "Festus Njenga",
+    "role": "Chief Information Officer",
+    "unit": "Head Office",
+    "bsc_score": 2.4,
+    "start_date": "2026-04-13",
+    "review_date": "2026-05-18",
+    "end_date": "2026-06-27",
+    "status": "Completed - Improved",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-27",
+      "2026-05-09",
+      "2026-06-16"
+    ],
+    "hr_manager": "Lilian Murithi",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0004",
+    "staff_code": "300008",
+    "staff_name": "Grace Makokha",
+    "role": "Chief Operating Officer",
+    "unit": "Head Office",
+    "bsc_score": 2.38,
+    "start_date": "2026-04-03",
+    "review_date": "2026-06-12",
+    "end_date": "2026-07-03",
+    "status": "Active",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-25",
+      "2026-05-11",
+      "2026-06-03"
+    ],
+    "hr_manager": "Felix Ruto",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0005",
+    "staff_code": "300009",
+    "staff_name": "Lilian Murithi",
+    "role": "Chief Human Resource Officer",
+    "unit": "Head Office",
+    "bsc_score": 2.4,
+    "start_date": "2026-04-17",
+    "review_date": "2026-05-31",
+    "end_date": "2026-08-15",
+    "status": "Active",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-27",
+      "2026-05-15",
+      "2026-06-12"
+    ],
+    "hr_manager": "Lilian Murithi",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0006",
+    "staff_code": "300024",
+    "staff_name": "Zachary Odongo",
+    "role": "Relationship Manager - Corporate Banking",
+    "unit": "Head Office",
+    "bsc_score": 1.83,
+    "start_date": "2026-03-25",
+    "review_date": "2026-06-08",
+    "end_date": "2026-07-23",
+    "status": "Completed - Improved",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-28",
+      "2026-05-10",
+      "2026-06-15"
+    ],
+    "hr_manager": "Gladys Gitonga",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0007",
+    "staff_code": "300035",
+    "staff_name": "Charles Asande",
+    "role": "Relationship Manager - SME",
+    "unit": "Head Office",
+    "bsc_score": 1.85,
+    "start_date": "2026-04-02",
+    "review_date": "2026-05-27",
+    "end_date": "2026-07-20",
+    "status": "Completed - Improved",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-26",
+      "2026-05-11",
+      "2026-06-08"
+    ],
+    "hr_manager": "Felix Ruto",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0008",
+    "staff_code": "300039",
+    "staff_name": "Florence Wetungu",
+    "role": "Relationship Manager - Agribusiness",
+    "unit": "Head Office",
+    "bsc_score": 2.49,
+    "start_date": "2026-03-19",
+    "review_date": "2026-06-13",
+    "end_date": "2026-06-25",
+    "status": "Extended",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-05-01",
+      "2026-05-14",
+      "2026-06-02"
+    ],
+    "hr_manager": "Gladys Gitonga",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0009",
+    "staff_code": "300040",
+    "staff_name": "Kevin Kirimi",
+    "role": "Relationship Manager- Trade Finance",
+    "unit": "Head Office",
+    "bsc_score": 2.49,
+    "start_date": "2026-03-23",
+    "review_date": "2026-05-29",
+    "end_date": "2026-07-11",
+    "status": "Extended",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-04-27",
+      "2026-05-11",
+      "2026-06-13"
+    ],
+    "hr_manager": "Gladys Gitonga",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  },
+  {
+    "id": "PIP0010",
+    "staff_code": "300041",
+    "staff_name": "Georgina Ntiba",
+    "role": "Relationship Manager- Trade Finance",
+    "unit": "Head Office",
+    "bsc_score": 2.49,
+    "start_date": "2026-04-02",
+    "review_date": "2026-05-23",
+    "end_date": "2026-06-24",
+    "status": "Active",
+    "improvement_targets": [
+      "Achieve BSC \u22653.0 within 90 days",
+      "Complete all mandatory training",
+      "Zero customer complaints"
+    ],
+    "check_in_dates": [
+      "2026-05-02",
+      "2026-05-11",
+      "2026-06-02"
+    ],
+    "hr_manager": "Felix Ruto",
+    "supervisor_name": "Supervisor",
+    "notes": ""
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "as_at": "2026-04-18",
+  "patch_compliance_pct": 84.2,
+  "target_patch_pct": 95.0,
+  "critical_unpatched": 3,
+  "high_unpatched": 12,
+  "phishing_test": {
+    "sent": 150,
+    "clicked": 22,
+    "reported": 118,
+    "click_rate_pct": 14.7
+  },
+  "active_threats": 3,
+  "incidents_30d": 8,
+  "siem_alerts_today": 32,
+  "privileged_accounts": {
+    "total": 28,
+    "reviewed_this_quarter": 22,
+    "overdue_review": 6
+  },
+  "vulnerabilities": [
+    {
+      "severity": "Critical",
+      "count": 3,
+      "oldest_days": 45
+    },
+    {
+      "severity": "High",
+      "count": 12,
+      "oldest_days": 22
+    },
+    {
+      "severity": "Medium",
+      "count": 38,
+      "oldest_days": 14
+    },
+    {
+      "severity": "Low",
+      "count": 95,
+      "oldest_days": 7
+    }
+  ],
+  "cbk_reportable_pending": 2
+}

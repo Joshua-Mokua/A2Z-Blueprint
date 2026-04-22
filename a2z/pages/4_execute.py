@@ -8,9 +8,17 @@ from datetime import datetime, timedelta, date
 from utils.core import *
 
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("execute")
+
 
 # Load session state
-um, ud, uname, em, ri_pm, prod_m, pm, vm_obj, lm, ssm = load_shared_state()
+um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#8E44AD;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Execute — Strategy Execution</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>G0–G5 gates · Milestones · Ideation · Escalations</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
+
 
 # Shared data
 uploaded_file = st.session_state.get("uploaded_file")
@@ -264,7 +272,7 @@ with ex_tabs[1]:
                         else:
                             for ms in init['milestones']:
                                 ms_type_color = {'Implementation':'#185FA5',
-                                                 'Health Check':'#0F6E56',
+                                                 'Health Check':'var(--brand-hover,#0F6E56)',
                                                  'Money Step':'#993C1D'}.get(ms['type'],'#888780')
                                 conf_icon = "✅" if ms['confirmed'] else "⏳"
                                 esc_level = ExecuteManager._escalation_level(ms)
@@ -661,6 +669,53 @@ with ex_tabs[6]:
         st.info("No milestones currently assigned to you. "
                 "When an Initiative Owner assigns you to a milestone, it will appear here.")
     else:
+        # ── BSC linkage — show how milestones affect Initiative Score ─
+        _casc_ms = st.session_state.get("cascade_manager")
+        _ud_ms   = st.session_state.get("user_data", {})
+        _sc_ms   = str(_ud_ms.get("staff_code", "") or uname)
+        _nm_ms   = _ud_ms.get("full_name", uname)
+        _role_ms = _ud_ms.get("role","")
+        _bsc_df  = st.session_state.get("staff_scores", pd.DataFrame())
+        _my_bsc_row = _bsc_df[_bsc_df["Staff Name"]==_nm_ms] if not _bsc_df.empty else pd.DataFrame()
+
+        _init_kpi_row = None
+        _dilig_kpi_row = None
+        if not _my_bsc_row.empty and "Final_BSC_Score" in _my_bsc_row.columns:
+            _bsc_val = float(_my_bsc_row.iloc[0]["Final_BSC_Score"] or 0)
+            _df_proc = st.session_state.get("df_processed", pd.DataFrame())
+            if not _df_proc.empty:
+                _init_rows = _df_proc[(_df_proc["Staff Name"]==_nm_ms) &
+                                      (_df_proc["KPI"]=="Initiative Score")]
+                _dilig_rows = _df_proc[(_df_proc["Staff Name"]==_nm_ms) &
+                                       (_df_proc["KPI"]=="Diligence Score")]
+                _init_kpi_row  = _init_rows.iloc[0] if len(_init_rows) else None
+                _dilig_kpi_row = _dilig_rows.iloc[0] if len(_dilig_rows) else None
+
+        if _init_kpi_row is not None or _dilig_kpi_row is not None:
+            _bsc_c1, _bsc_c2 = st.columns(2)
+            for _bsc_col, _kpi_row, _kpi_name, _icon in [
+                (_bsc_c1, _init_kpi_row,  "Initiative Score", "🎯"),
+                (_bsc_c2, _dilig_kpi_row, "Diligence Score",  "⏱️"),
+            ]:
+                if _kpi_row is not None:
+                    _tgt = float(_kpi_row.get("Annual Target",0) or 0)
+                    _act = float(_kpi_row.get("YTD_Actual",0) or 0)
+                    _pct = _act/_tgt*100 if _tgt else 0
+                    _sc  = float(_kpi_row.get("Score",0) or 0)
+                    _wt  = float(_kpi_row.get("Weight",0) or 0)
+                    _clr = "var(--brand-primary,#006B3F)" if _pct>=90 else "#F5A623" if _pct>=60 else "#E24B4A"
+                    _bsc_col.markdown(
+                        f"<div style='padding:10px 12px;background:var(--color-background-primary);"
+                        f"border:0.5px solid var(--color-border-tertiary);border-left:3px solid {_clr};"
+                        f"border-radius:6px;margin-bottom:10px'>"
+                        f"<div style='font-size:10px;color:var(--color-text-tertiary);font-weight:600'>"
+                        f"{_icon} {_kpi_name} (BSC weight {_wt*100:.0f}%)</div>"
+                        f"<div style='font-size:18px;font-weight:700;color:{_clr}'>"
+                        f"{_act:.1f} / {_tgt:.1f}</div>"
+                        f"<div style='font-size:10px;color:var(--color-text-secondary)'>"
+                        f"Achievement: {_pct:.0f}% · Score: {_sc:.2f}/5.0</div>"
+                        f"</div>", unsafe_allow_html=True)
+
         # Summary metrics
         total_ms   = len(my_mss)
         overdue    = sum(1 for m in my_mss if m['days_to_due'] < 0 and m['status'] != 'Complete')
@@ -694,7 +749,7 @@ with ex_tabs[6]:
                 esc_cfg   = ESC_CONFIG.get(esc_level, ESC_CONFIG[0])
                 days      = ms['days_to_due']
                 open_blk  = [b for b in ms.get('blockers',[]) if not b['resolved']]
-                ms_type_c = {'Implementation':'#185FA5','Health Check':'#0F6E56',
+                ms_type_c = {'Implementation':'#185FA5','Health Check':'var(--brand-hover,#0F6E56)',
                              'Money Step':'#993C1D'}.get(ms.get('type',''),'#888780')
 
                 # Card header colour by urgency

@@ -1,27 +1,26 @@
-# Data files — never commit sensitive data to GitHub
-data/
-*.json
+# Virtual environment
+.venv/
+venv/
+env/
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
 *.egg-info/
 
-# Virtual environment
-.venv/
-venv/
-env/
-
-# Streamlit
+# Streamlit secrets (never commit)
 .streamlit/secrets.toml
 
-# Excel uploads — sensitive bank data
-*.xlsx
+# CBS / bank data (sensitive raw data)
+cbs_data/
+data/actuals_*.xlsx
+data/actuals_*.csv
+data/A2Z*.xlsx
+
+# Excel uploads
 *.xls
-*.csv
 
 # Backup files
 *_backup.py
@@ -29,14 +28,10 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
-desktop.ini
 
 # IDE
 .vscode/
 .idea/
-*.suo
-*.user
 
 # Logs
 *.log
-audit.log

@@ -1,0 +1,165 @@
+{
+  "as_at": "2026-04-18",
+  "bank_average_products_per_customer": 2.4,
+  "target_products_per_customer": 3.5,
+  "by_segment": [
+    {
+      "segment": "Premium",
+      "avg_products": 3.8,
+      "customers": 320,
+      "nba_conversion_pct": 28.5
+    },
+    {
+      "segment": "Affluent",
+      "avg_products": 2.9,
+      "customers": 1820,
+      "nba_conversion_pct": 18.2
+    },
+    {
+      "segment": "Mass Affluent",
+      "avg_products": 2.3,
+      "customers": 8400,
+      "nba_conversion_pct": 12.1
+    },
+    {
+      "segment": "Mass",
+      "avg_products": 1.6,
+      "customers": 485000,
+      "nba_conversion_pct": 5.8
+    }
+  ],
+  "top_nba_products": [
+    {
+      "product": "Personal Loan",
+      "eligible_customers": 12400,
+      "propensity_avg": 0.28,
+      "converted_30d": 340
+    },
+    {
+      "product": "Fixed Deposit",
+      "eligible_customers": 8200,
+      "propensity_avg": 0.35,
+      "converted_30d": 280
+    },
+    {
+      "product": "Insurance",
+      "eligible_customers": 25000,
+      "propensity_avg": 0.22,
+      "converted_30d": 520
+    },
+    {
+      "product": "Business Loan",
+      "eligible_customers": 3100,
+      "propensity_avg": 0.31,
+      "converted_30d": 95
+    },
+    {
+      "product": "Mortgage",
+      "eligible_customers": 1800,
+      "propensity_avg": 0.19,
+      "converted_30d": 42
+    }
+  ],
+  "by_branch": [
+    {
+      "branch": "Banana",
+      "avg_products": 2.5,
+      "deepening_score": 42
+    },
+    {
+      "branch": "Bomet",
+      "avg_products": 1.6,
+      "deepening_score": 50
+    },
+    {
+      "branch": "Bungoma",
+      "avg_products": 1.7,
+      "deepening_score": 64
+    },
+    {
+      "branch": "Busia",
+      "avg_products": 3.1,
+      "deepening_score": 41
+    },
+    {
+      "branch": "Cargen House",
+      "avg_products": 3.1,
+      "deepening_score": 70
+    },
+    {
+      "branch": "Chuka",
+      "avg_products": 2.8,
+      "deepening_score": 62
+    },
+    {
+      "branch": "City Hall",
+      "avg_products": 2.8,
+      "deepening_score": 43
+    },
+    {
+      "branch": "Dagoretti",
+      "avg_products": 1.6,
+      "deepening_score": 78
+    },
+    {
+      "branch": "Digo",
+      "avg_products": 2.2,
+      "deepening_score": 39
+    },
+    {
+      "branch": "Donholm",
+      "avg_products": 2.2,
+      "deepening_score": 38
+    },
+    {
+      "branch": "Eastleigh",
+      "avg_products": 2.2,
+      "deepening_score": 57
+    },
+    {
+      "branch": "Eldoret",
+      "avg_products": 2.7,
+      "deepening_score": 38
+    },
+    {
+      "branch": "Eldoret West",
+      "avg_products": 2.1,
+      "deepening_score": 62
+    },
+    {
+      "branch": "Embu",
+      "avg_products": 2.6,
+      "deepening_score": 51
+    },
+    {
+      "branch": "FB Towers Corporate",
+      "avg_products": 2.7,
+      "deepening_score": 68
+    },
+    {
+      "branch": "FB Towers Retail",
+      "avg_products": 1.8,
+      "deepening_score": 41
+    },
+    {
+      "branch": "Gateway Mall",
+      "avg_products": 2.0,
+      "deepening_score": 45
+    },
+    {
+      "branch": "Gatundu",
+      "avg_products": 1.4,
+      "deepening_score": 44
+    },
+    {
+      "branch": "Gikomba",
+      "avg_products": 2.5,
+      "deepening_score": 54
+    },
+    {
+      "branch": "Gikomba Area 42",
+      "avg_products": 1.9,
+      "deepening_score": 62
+    }
+  ]
+}

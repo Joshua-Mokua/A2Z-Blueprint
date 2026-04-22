@@ -1,0 +1,5202 @@
+[
+  {
+    "id": "CIMS00001",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 2380",
+    "client_cif": "CIF695198",
+    "account_number": "ECO1572315428",
+    "branch": "Nyahururu",
+    "rm_code": "300867",
+    "rm_name": "Richard Odero",
+    "priority": "Normal",
+    "opened_date": "2026-04-03",
+    "sla_hours": 8,
+    "due_date": "2026-04-03",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Richard Odero",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00002",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 6591",
+    "client_cif": "CIF460246",
+    "account_number": "ECO6787092992",
+    "branch": "Head Office",
+    "rm_code": "300040",
+    "rm_name": "Kevin Kirimi",
+    "priority": "Critical",
+    "opened_date": "2026-04-05",
+    "sla_hours": 8,
+    "due_date": "2026-04-05",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kevin Kirimi",
+        "date": "2026-04-05"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00003",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 1601",
+    "client_cif": "CIF774860",
+    "account_number": "ECO3104554465",
+    "branch": "Kariobangi",
+    "rm_code": "300552",
+    "rm_name": "Ruth Kazungu",
+    "priority": "Normal",
+    "opened_date": "2026-03-16",
+    "sla_hours": 24,
+    "due_date": "2026-03-17",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Kazungu",
+        "date": "2026-03-16"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00004",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 8636",
+    "client_cif": "CIF308387",
+    "account_number": "ECO6873547005",
+    "branch": "Kagwe",
+    "rm_code": "301416",
+    "rm_name": "Brian Ouma",
+    "priority": "Critical",
+    "opened_date": "2026-03-24",
+    "sla_hours": 24,
+    "due_date": "2026-03-25",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Brian Ouma",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00005",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 7731",
+    "client_cif": "CIF167690",
+    "account_number": "ECO8980119160",
+    "branch": "Kiambu",
+    "rm_code": "300771",
+    "rm_name": "Ishmael Njenga",
+    "priority": "Urgent",
+    "opened_date": "2026-03-28",
+    "sla_hours": 8,
+    "due_date": "2026-03-28",
+    "status": "Completed",
+    "resolved_date": "2026-03-28",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Njenga",
+        "date": "2026-03-28"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00006",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 6564",
+    "client_cif": "CIF477570",
+    "account_number": "ECO1778079805",
+    "branch": "Karatina",
+    "rm_code": "300935",
+    "rm_name": "Leonard Ali",
+    "priority": "Critical",
+    "opened_date": "2026-03-14",
+    "sla_hours": 24,
+    "due_date": "2026-03-15",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Leonard Ali",
+        "date": "2026-03-14"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00007",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 4519",
+    "client_cif": "CIF130278",
+    "account_number": "ECO2992046345",
+    "branch": "Kisumu Express",
+    "rm_code": "301341",
+    "rm_name": "Helena Kuria",
+    "priority": "Normal",
+    "opened_date": "2026-03-31",
+    "sla_hours": 48,
+    "due_date": "2026-04-02",
+    "status": "Completed",
+    "resolved_date": "2026-04-03",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Helena Kuria",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00008",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 5434",
+    "client_cif": "CIF913469",
+    "account_number": "ECO3098450434",
+    "branch": "Kerugoya",
+    "rm_code": "300958",
+    "rm_name": "Julius Langat",
+    "priority": "Critical",
+    "opened_date": "2026-04-08",
+    "sla_hours": 8,
+    "due_date": "2026-04-08",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Julius Langat",
+        "date": "2026-04-08"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00009",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 9832",
+    "client_cif": "CIF298236",
+    "account_number": "ECO5207995890",
+    "branch": "Gikomba Area 42",
+    "rm_code": "300657",
+    "rm_name": "Miriam Wafula",
+    "priority": "Critical",
+    "opened_date": "2026-03-24",
+    "sla_hours": 48,
+    "due_date": "2026-03-26",
+    "status": "Completed",
+    "resolved_date": "2026-04-12",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Miriam Wafula",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00010",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 1565",
+    "client_cif": "CIF393986",
+    "account_number": "ECO8685892210",
+    "branch": "Migori",
+    "rm_code": "301403",
+    "rm_name": "Priscilla Njue",
+    "priority": "Normal",
+    "opened_date": "2026-02-23",
+    "sla_hours": 4,
+    "due_date": "2026-02-23",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Priscilla Njue",
+        "date": "2026-02-23"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00011",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 3757",
+    "client_cif": "CIF295634",
+    "account_number": "ECO3976330831",
+    "branch": "JKIA",
+    "rm_code": "300565",
+    "rm_name": "Hassan Waweru",
+    "priority": "Normal",
+    "opened_date": "2026-03-13",
+    "sla_hours": 24,
+    "due_date": "2026-03-14",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Hassan Waweru",
+        "date": "2026-03-13"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00012",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 5925",
+    "client_cif": "CIF331668",
+    "account_number": "ECO7505060630",
+    "branch": "Moi Avenue",
+    "rm_code": "300384",
+    "rm_name": "Florence Koech",
+    "priority": "Critical",
+    "opened_date": "2026-03-21",
+    "sla_hours": 48,
+    "due_date": "2026-03-23",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Florence Koech",
+        "date": "2026-03-21"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00013",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 6316",
+    "client_cif": "CIF252720",
+    "account_number": "ECO5467938517",
+    "branch": "Kapsabet",
+    "rm_code": "301209",
+    "rm_name": "Rachael Masinde",
+    "priority": "Normal",
+    "opened_date": "2026-02-28",
+    "sla_hours": 48,
+    "due_date": "2026-03-02",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rachael Masinde",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00014",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 1460",
+    "client_cif": "CIF271767",
+    "account_number": "ECO3161499727",
+    "branch": "FB Towers Corporate",
+    "rm_code": "300274",
+    "rm_name": "Ruth Maina",
+    "priority": "Normal",
+    "opened_date": "2026-03-25",
+    "sla_hours": 24,
+    "due_date": "2026-03-26",
+    "status": "Completed",
+    "resolved_date": "2026-04-03",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Maina",
+        "date": "2026-03-25"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00015",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 9102",
+    "client_cif": "CIF323046",
+    "account_number": "ECO2599229892",
+    "branch": "Muranga",
+    "rm_code": "300820",
+    "rm_name": "Caleb Nafula",
+    "priority": "Critical",
+    "opened_date": "2026-04-04",
+    "sla_hours": 8,
+    "due_date": "2026-04-04",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Caleb Nafula",
+        "date": "2026-04-04"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00016",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 4427",
+    "client_cif": "CIF423703",
+    "account_number": "ECO7900331946",
+    "branch": "Bomet",
+    "rm_code": "301280",
+    "rm_name": "Nicholas Murithi",
+    "priority": "Normal",
+    "opened_date": "2026-03-20",
+    "sla_hours": 48,
+    "due_date": "2026-03-22",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Nicholas Murithi",
+        "date": "2026-03-20"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00017",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 6798",
+    "client_cif": "CIF849528",
+    "account_number": "ECO3954554876",
+    "branch": "Kisii",
+    "rm_code": "301312",
+    "rm_name": "Philip Hassan",
+    "priority": "Normal",
+    "opened_date": "2026-04-04",
+    "sla_hours": 4,
+    "due_date": "2026-04-04",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Philip Hassan",
+        "date": "2026-04-04"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00018",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 8010",
+    "client_cif": "CIF131983",
+    "account_number": "ECO6449160103",
+    "branch": "Kitengela",
+    "rm_code": "300470",
+    "rm_name": "Rebecca Makokha",
+    "priority": "Critical",
+    "opened_date": "2026-03-06",
+    "sla_hours": 48,
+    "due_date": "2026-03-08",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rebecca Makokha",
+        "date": "2026-03-06"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00019",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 5474",
+    "client_cif": "CIF981295",
+    "account_number": "ECO6816171755",
+    "branch": "Kiambu",
+    "rm_code": "300770",
+    "rm_name": "Eric Mwaburi",
+    "priority": "Normal",
+    "opened_date": "2026-04-16",
+    "sla_hours": 48,
+    "due_date": "2026-04-18",
+    "status": "Completed",
+    "resolved_date": "2026-04-13",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Eric Mwaburi",
+        "date": "2026-04-16"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00020",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 1790",
+    "client_cif": "CIF832101",
+    "account_number": "ECO3929292945",
+    "branch": "Machakos",
+    "rm_code": "301008",
+    "rm_name": "Emmanuel Wanjiku",
+    "priority": "Urgent",
+    "opened_date": "2026-04-02",
+    "sla_hours": 24,
+    "due_date": "2026-04-03",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Emmanuel Wanjiku",
+        "date": "2026-04-02"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00021",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 5862",
+    "client_cif": "CIF139038",
+    "account_number": "ECO9935862122",
+    "branch": "Naivasha",
+    "rm_code": "300682",
+    "rm_name": "Victor Asande",
+    "priority": "Normal",
+    "opened_date": "2026-03-13",
+    "sla_hours": 4,
+    "due_date": "2026-03-13",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Victor Asande",
+        "date": "2026-03-13"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00022",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 7328",
+    "client_cif": "CIF937953",
+    "account_number": "ECO1094344765",
+    "branch": "Kerugoya",
+    "rm_code": "300959",
+    "rm_name": "Kelvin Namukhula",
+    "priority": "Urgent",
+    "opened_date": "2026-02-16",
+    "sla_hours": 48,
+    "due_date": "2026-02-18",
+    "status": "Completed",
+    "resolved_date": "2026-04-12",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kelvin Namukhula",
+        "date": "2026-02-16"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00023",
+    "instruction_type": "Address Change",
+    "client_name": "Client 5177",
+    "client_cif": "CIF119121",
+    "account_number": "ECO5174142654",
+    "branch": "River Road",
+    "rm_code": "300289",
+    "rm_name": "Gloria Gicheru",
+    "priority": "Critical",
+    "opened_date": "2026-03-22",
+    "sla_hours": 4,
+    "due_date": "2026-03-22",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Gloria Gicheru",
+        "date": "2026-03-22"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00024",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 6487",
+    "client_cif": "CIF852077",
+    "account_number": "ECO5953097549",
+    "branch": "Nyamira",
+    "rm_code": "301327",
+    "rm_name": "Bernadette Njenga",
+    "priority": "Urgent",
+    "opened_date": "2026-03-09",
+    "sla_hours": 4,
+    "due_date": "2026-03-09",
+    "status": "Completed",
+    "resolved_date": "2026-04-09",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Bernadette Njenga",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00025",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 7554",
+    "client_cif": "CIF350013",
+    "account_number": "ECO8938970554",
+    "branch": "Bomet",
+    "rm_code": "301278",
+    "rm_name": "Susan Masinde",
+    "priority": "Urgent",
+    "opened_date": "2026-02-18",
+    "sla_hours": 48,
+    "due_date": "2026-02-20",
+    "status": "Completed",
+    "resolved_date": "2026-04-15",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Susan Masinde",
+        "date": "2026-02-18"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00026",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 2863",
+    "client_cif": "CIF716954",
+    "account_number": "ECO6934008050",
+    "branch": "Kangemi",
+    "rm_code": "300542",
+    "rm_name": "Raymond Ndegwa",
+    "priority": "Critical",
+    "opened_date": "2026-03-09",
+    "sla_hours": 8,
+    "due_date": "2026-03-09",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Raymond Ndegwa",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00027",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 9675",
+    "client_cif": "CIF588029",
+    "account_number": "ECO4369840700",
+    "branch": "Chuka",
+    "rm_code": "300923",
+    "rm_name": "Agnes Baya",
+    "priority": "Urgent",
+    "opened_date": "2026-04-03",
+    "sla_hours": 48,
+    "due_date": "2026-04-05",
+    "status": "Completed",
+    "resolved_date": "2026-04-09",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Agnes Baya",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00028",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 1430",
+    "client_cif": "CIF470639",
+    "account_number": "ECO3233414843",
+    "branch": "KTDA Retail",
+    "rm_code": "300633",
+    "rm_name": "Lewis Ochieng",
+    "priority": "Critical",
+    "opened_date": "2026-03-30",
+    "sla_hours": 48,
+    "due_date": "2026-04-01",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lewis Ochieng",
+        "date": "2026-03-30"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00029",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 3786",
+    "client_cif": "CIF579500",
+    "account_number": "ECO9546727296",
+    "branch": "Kitui",
+    "rm_code": "301018",
+    "rm_name": "Usman Masinde",
+    "priority": "Urgent",
+    "opened_date": "2026-03-24",
+    "sla_hours": 8,
+    "due_date": "2026-03-24",
+    "status": "Completed",
+    "resolved_date": "2026-04-16",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Usman Masinde",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00030",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 3768",
+    "client_cif": "CIF650210",
+    "account_number": "ECO2607342382",
+    "branch": "Eastleigh",
+    "rm_code": "300456",
+    "rm_name": "Olivia Awuor",
+    "priority": "Urgent",
+    "opened_date": "2026-04-13",
+    "sla_hours": 24,
+    "due_date": "2026-04-14",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Olivia Awuor",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00031",
+    "instruction_type": "Address Change",
+    "client_name": "Client 1582",
+    "client_cif": "CIF472945",
+    "account_number": "ECO8275091848",
+    "branch": "Head Office",
+    "rm_code": "300036",
+    "rm_name": "Michael Baya",
+    "priority": "Critical",
+    "opened_date": "2026-04-03",
+    "sla_hours": 4,
+    "due_date": "2026-04-03",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Michael Baya",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00032",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 8888",
+    "client_cif": "CIF149298",
+    "account_number": "ECO2251188037",
+    "branch": "Head Office",
+    "rm_code": "300035",
+    "rm_name": "Charles Asande",
+    "priority": "Normal",
+    "opened_date": "2026-02-16",
+    "sla_hours": 8,
+    "due_date": "2026-02-16",
+    "status": "Completed",
+    "resolved_date": "2026-03-27",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charles Asande",
+        "date": "2026-02-16"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00033",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 1714",
+    "client_cif": "CIF594280",
+    "account_number": "ECO9266920224",
+    "branch": "Kikuyu",
+    "rm_code": "300585",
+    "rm_name": "Kelvin Lagat",
+    "priority": "Normal",
+    "opened_date": "2026-04-03",
+    "sla_hours": 4,
+    "due_date": "2026-04-03",
+    "status": "Completed",
+    "resolved_date": "2026-03-19",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kelvin Lagat",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00034",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 9465",
+    "client_cif": "CIF712064",
+    "account_number": "ECO3320211987",
+    "branch": "Litein",
+    "rm_code": "301290",
+    "rm_name": "Vivian Ali",
+    "priority": "Urgent",
+    "opened_date": "2026-03-13",
+    "sla_hours": 8,
+    "due_date": "2026-03-13",
+    "status": "Completed",
+    "resolved_date": "2026-03-21",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Vivian Ali",
+        "date": "2026-03-13"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00035",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 8602",
+    "client_cif": "CIF191709",
+    "account_number": "ECO2040615443",
+    "branch": "Maua",
+    "rm_code": "300980",
+    "rm_name": "Samuel Ali",
+    "priority": "Normal",
+    "opened_date": "2026-03-25",
+    "sla_hours": 8,
+    "due_date": "2026-03-25",
+    "status": "Completed",
+    "resolved_date": "2026-04-03",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Samuel Ali",
+        "date": "2026-03-25"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00036",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 3924",
+    "client_cif": "CIF279907",
+    "account_number": "ECO2017416752",
+    "branch": "Machakos",
+    "rm_code": "301006",
+    "rm_name": "Yasmin Mulama",
+    "priority": "Critical",
+    "opened_date": "2026-04-11",
+    "sla_hours": 48,
+    "due_date": "2026-04-13",
+    "status": "Completed",
+    "resolved_date": "2026-04-10",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Yasmin Mulama",
+        "date": "2026-04-11"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00037",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 3767",
+    "client_cif": "CIF590848",
+    "account_number": "ECO1396922326",
+    "branch": "Kisumu Express",
+    "rm_code": "301340",
+    "rm_name": "Tobias Katana",
+    "priority": "Urgent",
+    "opened_date": "2026-03-26",
+    "sla_hours": 48,
+    "due_date": "2026-03-28",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Tobias Katana",
+        "date": "2026-03-26"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00038",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 8771",
+    "client_cif": "CIF827122",
+    "account_number": "ECO8726209657",
+    "branch": "Nyamira",
+    "rm_code": "301327",
+    "rm_name": "Bernadette Njenga",
+    "priority": "Normal",
+    "opened_date": "2026-04-08",
+    "sla_hours": 8,
+    "due_date": "2026-04-08",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Bernadette Njenga",
+        "date": "2026-04-08"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00039",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 7218",
+    "client_cif": "CIF193941",
+    "account_number": "ECO7729162090",
+    "branch": "Embu",
+    "rm_code": "300993",
+    "rm_name": "Usman Khaemba",
+    "priority": "Critical",
+    "opened_date": "2026-04-09",
+    "sla_hours": 8,
+    "due_date": "2026-04-09",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Usman Khaemba",
+        "date": "2026-04-09"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00040",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 4899",
+    "client_cif": "CIF221195",
+    "account_number": "ECO3432808710",
+    "branch": "FB Towers Retail",
+    "rm_code": "300256",
+    "rm_name": "Lawrence Ngetich",
+    "priority": "Urgent",
+    "opened_date": "2026-02-28",
+    "sla_hours": 4,
+    "due_date": "2026-02-28",
+    "status": "Completed",
+    "resolved_date": "2026-03-24",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lawrence Ngetich",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00041",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 8506",
+    "client_cif": "CIF718563",
+    "account_number": "ECO1416979212",
+    "branch": "Head Office",
+    "rm_code": "300023",
+    "rm_name": "Lucy Aluoch",
+    "priority": "Critical",
+    "opened_date": "2026-04-15",
+    "sla_hours": 24,
+    "due_date": "2026-04-16",
+    "status": "Completed",
+    "resolved_date": "2026-04-01",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lucy Aluoch",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00042",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 3083",
+    "client_cif": "CIF104170",
+    "account_number": "ECO2336098318",
+    "branch": "Mombasa Nkrumah",
+    "rm_code": "301082",
+    "rm_name": "Wendy Waweru",
+    "priority": "Urgent",
+    "opened_date": "2026-03-15",
+    "sla_hours": 48,
+    "due_date": "2026-03-17",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Wendy Waweru",
+        "date": "2026-03-15"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00043",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 1082",
+    "client_cif": "CIF565650",
+    "account_number": "ECO3522269335",
+    "branch": "Head Office",
+    "rm_code": "300028",
+    "rm_name": "Lorna Okeyo",
+    "priority": "Normal",
+    "opened_date": "2026-03-19",
+    "sla_hours": 24,
+    "due_date": "2026-03-20",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lorna Okeyo",
+        "date": "2026-03-19"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00044",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 5484",
+    "client_cif": "CIF560092",
+    "account_number": "ECO8599192441",
+    "branch": "Gikomba Area 42",
+    "rm_code": "300657",
+    "rm_name": "Miriam Wafula",
+    "priority": "Critical",
+    "opened_date": "2026-03-19",
+    "sla_hours": 4,
+    "due_date": "2026-03-19",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Miriam Wafula",
+        "date": "2026-03-19"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00045",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 6130",
+    "client_cif": "CIF957811",
+    "account_number": "ECO1722207821",
+    "branch": "Kangemi",
+    "rm_code": "300543",
+    "rm_name": "Pauline Masinde",
+    "priority": "Critical",
+    "opened_date": "2026-03-19",
+    "sla_hours": 48,
+    "due_date": "2026-03-21",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Pauline Masinde",
+        "date": "2026-03-19"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00046",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 7608",
+    "client_cif": "CIF335770",
+    "account_number": "ECO8149795791",
+    "branch": "Head Office",
+    "rm_code": "300033",
+    "rm_name": "Mildred Muthoni",
+    "priority": "Normal",
+    "opened_date": "2026-04-03",
+    "sla_hours": 8,
+    "due_date": "2026-04-03",
+    "status": "Completed",
+    "resolved_date": "2026-03-22",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Mildred Muthoni",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00047",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 9789",
+    "client_cif": "CIF513774",
+    "account_number": "ECO7653241355",
+    "branch": "Mlolongo",
+    "rm_code": "300508",
+    "rm_name": "Lewis Murithi",
+    "priority": "Critical",
+    "opened_date": "2026-03-23",
+    "sla_hours": 8,
+    "due_date": "2026-03-23",
+    "status": "Completed",
+    "resolved_date": "2026-03-30",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lewis Murithi",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00048",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 8408",
+    "client_cif": "CIF354348",
+    "account_number": "ECO2297185914",
+    "branch": "Nakuru Finance",
+    "rm_code": "301238",
+    "rm_name": "Thomas Ntiba",
+    "priority": "Critical",
+    "opened_date": "2026-03-31",
+    "sla_hours": 24,
+    "due_date": "2026-04-01",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Thomas Ntiba",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00049",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 3048",
+    "client_cif": "CIF566436",
+    "account_number": "ECO9532964171",
+    "branch": "Eastleigh",
+    "rm_code": "300456",
+    "rm_name": "Olivia Awuor",
+    "priority": "Critical",
+    "opened_date": "2026-03-28",
+    "sla_hours": 8,
+    "due_date": "2026-03-28",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Olivia Awuor",
+        "date": "2026-03-28"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00050",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 9418",
+    "client_cif": "CIF453831",
+    "account_number": "ECO7707754419",
+    "branch": "Kapsabet",
+    "rm_code": "301209",
+    "rm_name": "Rachael Masinde",
+    "priority": "Urgent",
+    "opened_date": "2026-04-13",
+    "sla_hours": 24,
+    "due_date": "2026-04-14",
+    "status": "Completed",
+    "resolved_date": "2026-04-09",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rachael Masinde",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00051",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 9290",
+    "client_cif": "CIF467181",
+    "account_number": "ECO1947264380",
+    "branch": "Digo",
+    "rm_code": "301124",
+    "rm_name": "Quinn Gachau",
+    "priority": "Urgent",
+    "opened_date": "2026-02-19",
+    "sla_hours": 24,
+    "due_date": "2026-02-20",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Quinn Gachau",
+        "date": "2026-02-19"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00052",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 4997",
+    "client_cif": "CIF686377",
+    "account_number": "ECO7805818022",
+    "branch": "Muranga",
+    "rm_code": "300818",
+    "rm_name": "Obed Githu",
+    "priority": "Urgent",
+    "opened_date": "2026-03-23",
+    "sla_hours": 24,
+    "due_date": "2026-03-24",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Obed Githu",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00053",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 9036",
+    "client_cif": "CIF747782",
+    "account_number": "ECO6985455723",
+    "branch": "Head Office",
+    "rm_code": "300032",
+    "rm_name": "Lorna Hassan",
+    "priority": "Normal",
+    "opened_date": "2026-04-10",
+    "sla_hours": 8,
+    "due_date": "2026-04-10",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lorna Hassan",
+        "date": "2026-04-10"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00054",
+    "instruction_type": "Address Change",
+    "client_name": "Client 2385",
+    "client_cif": "CIF206428",
+    "account_number": "ECO1502184435",
+    "branch": "Karatina",
+    "rm_code": "300937",
+    "rm_name": "Anthony Ntiba",
+    "priority": "Urgent",
+    "opened_date": "2026-04-04",
+    "sla_hours": 24,
+    "due_date": "2026-04-05",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Anthony Ntiba",
+        "date": "2026-04-04"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00055",
+    "instruction_type": "Address Change",
+    "client_name": "Client 2613",
+    "client_cif": "CIF536588",
+    "account_number": "ECO6304311067",
+    "branch": "Othaya",
+    "rm_code": "300857",
+    "rm_name": "Jane Murithi",
+    "priority": "Urgent",
+    "opened_date": "2026-03-09",
+    "sla_hours": 24,
+    "due_date": "2026-03-10",
+    "status": "Completed",
+    "resolved_date": "2026-03-19",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Jane Murithi",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00056",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 3468",
+    "client_cif": "CIF583319",
+    "account_number": "ECO7989370628",
+    "branch": "FB Towers Corporate",
+    "rm_code": "300275",
+    "rm_name": "Caroline Odero",
+    "priority": "Normal",
+    "opened_date": "2026-02-19",
+    "sla_hours": 4,
+    "due_date": "2026-02-19",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Caroline Odero",
+        "date": "2026-02-19"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00057",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 8957",
+    "client_cif": "CIF457441",
+    "account_number": "ECO3553124715",
+    "branch": "River Road West",
+    "rm_code": "300300",
+    "rm_name": "Pius Kuria",
+    "priority": "Normal",
+    "opened_date": "2026-02-23",
+    "sla_hours": 8,
+    "due_date": "2026-02-23",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Pius Kuria",
+        "date": "2026-02-23"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00058",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 2631",
+    "client_cif": "CIF677502",
+    "account_number": "ECO5068352001",
+    "branch": "Naivasha",
+    "rm_code": "300682",
+    "rm_name": "Victor Asande",
+    "priority": "Normal",
+    "opened_date": "2026-04-01",
+    "sla_hours": 8,
+    "due_date": "2026-04-01",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Victor Asande",
+        "date": "2026-04-01"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00059",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 9157",
+    "client_cif": "CIF164321",
+    "account_number": "ECO7222635486",
+    "branch": "Kitale",
+    "rm_code": "301222",
+    "rm_name": "Isabella Mulama",
+    "priority": "Urgent",
+    "opened_date": "2026-03-18",
+    "sla_hours": 48,
+    "due_date": "2026-03-20",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isabella Mulama",
+        "date": "2026-03-18"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00060",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 2125",
+    "client_cif": "CIF368161",
+    "account_number": "ECO3250465216",
+    "branch": "River Road",
+    "rm_code": "300286",
+    "rm_name": "Olivia Issa",
+    "priority": "Urgent",
+    "opened_date": "2026-04-13",
+    "sla_hours": 48,
+    "due_date": "2026-04-15",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Olivia Issa",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00061",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 6038",
+    "client_cif": "CIF370665",
+    "account_number": "ECO6267478461",
+    "branch": "Kajiado",
+    "rm_code": "300691",
+    "rm_name": "Charity Gicheru",
+    "priority": "Normal",
+    "opened_date": "2026-04-06",
+    "sla_hours": 4,
+    "due_date": "2026-04-06",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charity Gicheru",
+        "date": "2026-04-06"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00062",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 6091",
+    "client_cif": "CIF345300",
+    "account_number": "ECO7094818232",
+    "branch": "Kongowea",
+    "rm_code": "301134",
+    "rm_name": "Patricia Mwanzia",
+    "priority": "Normal",
+    "opened_date": "2026-04-11",
+    "sla_hours": 24,
+    "due_date": "2026-04-12",
+    "status": "Completed",
+    "resolved_date": "2026-03-30",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Patricia Mwanzia",
+        "date": "2026-04-11"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00063",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 5269",
+    "client_cif": "CIF318032",
+    "account_number": "ECO7831438170",
+    "branch": "Kangemi",
+    "rm_code": "300543",
+    "rm_name": "Pauline Masinde",
+    "priority": "Normal",
+    "opened_date": "2026-03-14",
+    "sla_hours": 48,
+    "due_date": "2026-03-16",
+    "status": "Completed",
+    "resolved_date": "2026-04-05",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Pauline Masinde",
+        "date": "2026-03-14"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00064",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 5043",
+    "client_cif": "CIF102029",
+    "account_number": "ECO4941029896",
+    "branch": "KTDA Retail",
+    "rm_code": "300631",
+    "rm_name": "Cynthia Kariuki",
+    "priority": "Critical",
+    "opened_date": "2026-03-31",
+    "sla_hours": 24,
+    "due_date": "2026-04-01",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Cynthia Kariuki",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00065",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 3011",
+    "client_cif": "CIF793116",
+    "account_number": "ECO6739964489",
+    "branch": "Rongai",
+    "rm_code": "300670",
+    "rm_name": "Ketty Owino",
+    "priority": "Critical",
+    "opened_date": "2026-03-03",
+    "sla_hours": 24,
+    "due_date": "2026-03-04",
+    "status": "Completed",
+    "resolved_date": "2026-04-03",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ketty Owino",
+        "date": "2026-03-03"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00066",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 7105",
+    "client_cif": "CIF963710",
+    "account_number": "ECO9558575556",
+    "branch": "Nyahururu",
+    "rm_code": "300866",
+    "rm_name": "Zainab Mwenda",
+    "priority": "Critical",
+    "opened_date": "2026-03-09",
+    "sla_hours": 48,
+    "due_date": "2026-03-11",
+    "status": "Completed",
+    "resolved_date": "2026-04-02",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Zainab Mwenda",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00067",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 6836",
+    "client_cif": "CIF505112",
+    "account_number": "ECO8453863026",
+    "branch": "Gikomba Area 42",
+    "rm_code": "300657",
+    "rm_name": "Miriam Wafula",
+    "priority": "Urgent",
+    "opened_date": "2026-03-11",
+    "sla_hours": 48,
+    "due_date": "2026-03-13",
+    "status": "Completed",
+    "resolved_date": "2026-03-22",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Miriam Wafula",
+        "date": "2026-03-11"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00068",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 1379",
+    "client_cif": "CIF843464",
+    "account_number": "ECO4406874123",
+    "branch": "Head Office",
+    "rm_code": "300023",
+    "rm_name": "Lucy Aluoch",
+    "priority": "Normal",
+    "opened_date": "2026-03-24",
+    "sla_hours": 48,
+    "due_date": "2026-03-26",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lucy Aluoch",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00069",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 5216",
+    "client_cif": "CIF102339",
+    "account_number": "ECO1885792836",
+    "branch": "Muranga",
+    "rm_code": "300820",
+    "rm_name": "Caleb Nafula",
+    "priority": "Normal",
+    "opened_date": "2026-03-31",
+    "sla_hours": 48,
+    "due_date": "2026-04-02",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Caleb Nafula",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00070",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 9842",
+    "client_cif": "CIF578289",
+    "account_number": "ECO3651753580",
+    "branch": "Kasarani",
+    "rm_code": "300426",
+    "rm_name": "Florence Yego",
+    "priority": "Urgent",
+    "opened_date": "2026-04-13",
+    "sla_hours": 24,
+    "due_date": "2026-04-14",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Florence Yego",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00071",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 2094",
+    "client_cif": "CIF209992",
+    "account_number": "ECO2667073133",
+    "branch": "River Road West",
+    "rm_code": "300301",
+    "rm_name": "Clinton Wekesa",
+    "priority": "Normal",
+    "opened_date": "2026-02-20",
+    "sla_hours": 48,
+    "due_date": "2026-02-22",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Clinton Wekesa",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00072",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 5703",
+    "client_cif": "CIF528819",
+    "account_number": "ECO9256039783",
+    "branch": "Kitui",
+    "rm_code": "301017",
+    "rm_name": "Ishmael Wafula",
+    "priority": "Critical",
+    "opened_date": "2026-02-28",
+    "sla_hours": 4,
+    "due_date": "2026-02-28",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Wafula",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00073",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 6105",
+    "client_cif": "CIF256833",
+    "account_number": "ECO3302872560",
+    "branch": "Mumias",
+    "rm_code": "301394",
+    "rm_name": "Bernard Masinde",
+    "priority": "Critical",
+    "opened_date": "2026-03-19",
+    "sla_hours": 8,
+    "due_date": "2026-03-19",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Bernard Masinde",
+        "date": "2026-03-19"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00074",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 7759",
+    "client_cif": "CIF961226",
+    "account_number": "ECO7347916930",
+    "branch": "Bomet",
+    "rm_code": "301277",
+    "rm_name": "Jacqueline Murage",
+    "priority": "Critical",
+    "opened_date": "2026-04-13",
+    "sla_hours": 4,
+    "due_date": "2026-04-13",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Jacqueline Murage",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00075",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 2548",
+    "client_cif": "CIF934937",
+    "account_number": "ECO5848072846",
+    "branch": "Laptrust",
+    "rm_code": "300371",
+    "rm_name": "Margaret Matheka",
+    "priority": "Normal",
+    "opened_date": "2026-02-25",
+    "sla_hours": 4,
+    "due_date": "2026-02-25",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Margaret Matheka",
+        "date": "2026-02-25"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00076",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 3608",
+    "client_cif": "CIF900026",
+    "account_number": "ECO2267472211",
+    "branch": "Nyahururu",
+    "rm_code": "300866",
+    "rm_name": "Zainab Mwenda",
+    "priority": "Normal",
+    "opened_date": "2026-03-14",
+    "sla_hours": 8,
+    "due_date": "2026-03-14",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Zainab Mwenda",
+        "date": "2026-03-14"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00077",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 2223",
+    "client_cif": "CIF999112",
+    "account_number": "ECO5270814004",
+    "branch": "Nyahururu",
+    "rm_code": "300868",
+    "rm_name": "Charles Ruto",
+    "priority": "Urgent",
+    "opened_date": "2026-03-23",
+    "sla_hours": 4,
+    "due_date": "2026-03-23",
+    "status": "Completed",
+    "resolved_date": "2026-03-29",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charles Ruto",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00078",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 5196",
+    "client_cif": "CIF197342",
+    "account_number": "ECO3414895690",
+    "branch": "FB Towers Corporate",
+    "rm_code": "300273",
+    "rm_name": "Ruth Karithi",
+    "priority": "Critical",
+    "opened_date": "2026-03-30",
+    "sla_hours": 8,
+    "due_date": "2026-03-30",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Karithi",
+        "date": "2026-03-30"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00079",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 3255",
+    "client_cif": "CIF279101",
+    "account_number": "ECO1642823073",
+    "branch": "Nakuru Finance",
+    "rm_code": "301236",
+    "rm_name": "Philip Odongo",
+    "priority": "Critical",
+    "opened_date": "2026-04-02",
+    "sla_hours": 48,
+    "due_date": "2026-04-04",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Philip Odongo",
+        "date": "2026-04-02"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00080",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 8715",
+    "client_cif": "CIF480789",
+    "account_number": "ECO1820600521",
+    "branch": "City Hall",
+    "rm_code": "300317",
+    "rm_name": "Daisy Kamau",
+    "priority": "Normal",
+    "opened_date": "2026-03-23",
+    "sla_hours": 24,
+    "due_date": "2026-03-24",
+    "status": "Completed",
+    "resolved_date": "2026-04-05",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Daisy Kamau",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00081",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 9754",
+    "client_cif": "CIF151606",
+    "account_number": "ECO5017987234",
+    "branch": "Head Office",
+    "rm_code": "300205",
+    "rm_name": "Faith Chebet",
+    "priority": "Critical",
+    "opened_date": "2026-02-17",
+    "sla_hours": 8,
+    "due_date": "2026-02-17",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Faith Chebet",
+        "date": "2026-02-17"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00082",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 5394",
+    "client_cif": "CIF576350",
+    "account_number": "ECO1443888249",
+    "branch": "Kongowea",
+    "rm_code": "301135",
+    "rm_name": "Daisy Sheikh",
+    "priority": "Urgent",
+    "opened_date": "2026-02-17",
+    "sla_hours": 4,
+    "due_date": "2026-02-17",
+    "status": "Completed",
+    "resolved_date": "2026-04-13",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Daisy Sheikh",
+        "date": "2026-02-17"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00083",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 6180",
+    "client_cif": "CIF397741",
+    "account_number": "ECO2282657174",
+    "branch": "Kapsabet",
+    "rm_code": "301208",
+    "rm_name": "Solomon Kiprotich",
+    "priority": "Critical",
+    "opened_date": "2026-02-23",
+    "sla_hours": 48,
+    "due_date": "2026-02-25",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Solomon Kiprotich",
+        "date": "2026-02-23"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00084",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 4301",
+    "client_cif": "CIF785941",
+    "account_number": "ECO3320246721",
+    "branch": "Head Office",
+    "rm_code": "300206",
+    "rm_name": "Ibrahim Ouma",
+    "priority": "Normal",
+    "opened_date": "2026-03-29",
+    "sla_hours": 48,
+    "due_date": "2026-03-31",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ibrahim Ouma",
+        "date": "2026-03-29"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00085",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 9174",
+    "client_cif": "CIF646139",
+    "account_number": "ECO8895281248",
+    "branch": "Kitengela",
+    "rm_code": "300469",
+    "rm_name": "Brian Ali",
+    "priority": "Critical",
+    "opened_date": "2026-04-15",
+    "sla_hours": 24,
+    "due_date": "2026-04-16",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Brian Ali",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00086",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 9065",
+    "client_cif": "CIF818466",
+    "account_number": "ECO2842331344",
+    "branch": "Maua",
+    "rm_code": "300979",
+    "rm_name": "Isaac Amolo",
+    "priority": "Critical",
+    "opened_date": "2026-02-28",
+    "sla_hours": 8,
+    "due_date": "2026-02-28",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isaac Amolo",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00087",
+    "instruction_type": "Address Change",
+    "client_name": "Client 5161",
+    "client_cif": "CIF681789",
+    "account_number": "ECO9937368076",
+    "branch": "Naivasha",
+    "rm_code": "300680",
+    "rm_name": "Hassan Yego",
+    "priority": "Critical",
+    "opened_date": "2026-02-20",
+    "sla_hours": 24,
+    "due_date": "2026-02-21",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Hassan Yego",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00088",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 1647",
+    "client_cif": "CIF595360",
+    "account_number": "ECO8127577587",
+    "branch": "Muranga",
+    "rm_code": "300820",
+    "rm_name": "Caleb Nafula",
+    "priority": "Urgent",
+    "opened_date": "2026-03-18",
+    "sla_hours": 4,
+    "due_date": "2026-03-18",
+    "status": "Completed",
+    "resolved_date": "2026-04-13",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Caleb Nafula",
+        "date": "2026-03-18"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00089",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 2930",
+    "client_cif": "CIF354754",
+    "account_number": "ECO2815368111",
+    "branch": "Malindi",
+    "rm_code": "301149",
+    "rm_name": "Ida Lagat",
+    "priority": "Critical",
+    "opened_date": "2026-02-20",
+    "sla_hours": 24,
+    "due_date": "2026-02-21",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ida Lagat",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00090",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 2986",
+    "client_cif": "CIF140263",
+    "account_number": "ECO7560653695",
+    "branch": "Kikuyu",
+    "rm_code": "300585",
+    "rm_name": "Kelvin Lagat",
+    "priority": "Urgent",
+    "opened_date": "2026-04-03",
+    "sla_hours": 48,
+    "due_date": "2026-04-05",
+    "status": "Completed",
+    "resolved_date": "2026-04-11",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kelvin Lagat",
+        "date": "2026-04-03"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00091",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 5940",
+    "client_cif": "CIF288074",
+    "account_number": "ECO7145231843",
+    "branch": "Migori",
+    "rm_code": "301405",
+    "rm_name": "Brian Wafula",
+    "priority": "Urgent",
+    "opened_date": "2026-03-06",
+    "sla_hours": 8,
+    "due_date": "2026-03-06",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Brian Wafula",
+        "date": "2026-03-06"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00092",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 7158",
+    "client_cif": "CIF990600",
+    "account_number": "ECO9407663889",
+    "branch": "Machakos",
+    "rm_code": "301006",
+    "rm_name": "Yasmin Mulama",
+    "priority": "Urgent",
+    "opened_date": "2026-03-20",
+    "sla_hours": 8,
+    "due_date": "2026-03-20",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Yasmin Mulama",
+        "date": "2026-03-20"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00093",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 4187",
+    "client_cif": "CIF875615",
+    "account_number": "ECO2150994409",
+    "branch": "Kericho",
+    "rm_code": "301268",
+    "rm_name": "Sebastian Karisa",
+    "priority": "Normal",
+    "opened_date": "2026-04-01",
+    "sla_hours": 24,
+    "due_date": "2026-04-02",
+    "status": "Completed",
+    "resolved_date": "2026-04-02",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Sebastian Karisa",
+        "date": "2026-04-01"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00094",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 7656",
+    "client_cif": "CIF589170",
+    "account_number": "ECO8909966657",
+    "branch": "Kayole",
+    "rm_code": "300496",
+    "rm_name": "Lydia Issa",
+    "priority": "Normal",
+    "opened_date": "2026-03-01",
+    "sla_hours": 8,
+    "due_date": "2026-03-01",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lydia Issa",
+        "date": "2026-03-01"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00095",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 5520",
+    "client_cif": "CIF974086",
+    "account_number": "ECO7289493110",
+    "branch": "Banana",
+    "rm_code": "300598",
+    "rm_name": "Georgina Karisa",
+    "priority": "Critical",
+    "opened_date": "2026-03-03",
+    "sla_hours": 4,
+    "due_date": "2026-03-03",
+    "status": "Completed",
+    "resolved_date": "2026-03-22",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Georgina Karisa",
+        "date": "2026-03-03"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00096",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 7863",
+    "client_cif": "CIF195953",
+    "account_number": "ECO8240736771",
+    "branch": "Kisumu Express",
+    "rm_code": "301342",
+    "rm_name": "Rodgers Mugambi",
+    "priority": "Normal",
+    "opened_date": "2026-03-23",
+    "sla_hours": 48,
+    "due_date": "2026-03-25",
+    "status": "Completed",
+    "resolved_date": "2026-03-25",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rodgers Mugambi",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00097",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 6203",
+    "client_cif": "CIF336843",
+    "account_number": "ECO8187178914",
+    "branch": "Kerugoya",
+    "rm_code": "300956",
+    "rm_name": "Daniel Odongo",
+    "priority": "Normal",
+    "opened_date": "2026-02-20",
+    "sla_hours": 8,
+    "due_date": "2026-02-20",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Daniel Odongo",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00098",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 5485",
+    "client_cif": "CIF913925",
+    "account_number": "ECO7361131746",
+    "branch": "Kikuyu",
+    "rm_code": "300588",
+    "rm_name": "Stella Musyoka",
+    "priority": "Urgent",
+    "opened_date": "2026-02-17",
+    "sla_hours": 8,
+    "due_date": "2026-02-17",
+    "status": "Completed",
+    "resolved_date": "2026-03-31",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Stella Musyoka",
+        "date": "2026-02-17"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00099",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 5364",
+    "client_cif": "CIF516959",
+    "account_number": "ECO1033934528",
+    "branch": "Kisii",
+    "rm_code": "301313",
+    "rm_name": "Isaac Katana",
+    "priority": "Urgent",
+    "opened_date": "2026-04-12",
+    "sla_hours": 8,
+    "due_date": "2026-04-12",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isaac Katana",
+        "date": "2026-04-12"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00100",
+    "instruction_type": "Address Change",
+    "client_name": "Client 1007",
+    "client_cif": "CIF172888",
+    "account_number": "ECO4075755276",
+    "branch": "Makongeni",
+    "rm_code": "300715",
+    "rm_name": "Felicia Kinyanjui",
+    "priority": "Critical",
+    "opened_date": "2026-03-22",
+    "sla_hours": 4,
+    "due_date": "2026-03-22",
+    "status": "Completed",
+    "resolved_date": "2026-04-06",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Felicia Kinyanjui",
+        "date": "2026-03-22"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00101",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 1289",
+    "client_cif": "CIF722178",
+    "account_number": "ECO5053573614",
+    "branch": "Ngara",
+    "rm_code": "300343",
+    "rm_name": "Stella Farah",
+    "priority": "Urgent",
+    "opened_date": "2026-04-15",
+    "sla_hours": 4,
+    "due_date": "2026-04-15",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Stella Farah",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00102",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 4585",
+    "client_cif": "CIF140674",
+    "account_number": "ECO6898568656",
+    "branch": "Eastleigh",
+    "rm_code": "300457",
+    "rm_name": "Tina Otieno",
+    "priority": "Normal",
+    "opened_date": "2026-02-27",
+    "sla_hours": 8,
+    "due_date": "2026-02-27",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Tina Otieno",
+        "date": "2026-02-27"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00103",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 9668",
+    "client_cif": "CIF828150",
+    "account_number": "ECO4302241214",
+    "branch": "Head Office",
+    "rm_code": "300036",
+    "rm_name": "Michael Baya",
+    "priority": "Urgent",
+    "opened_date": "2026-03-28",
+    "sla_hours": 48,
+    "due_date": "2026-03-30",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Michael Baya",
+        "date": "2026-03-28"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00104",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 7565",
+    "client_cif": "CIF349870",
+    "account_number": "ECO2526752006",
+    "branch": "Kiambu",
+    "rm_code": "300771",
+    "rm_name": "Ishmael Njenga",
+    "priority": "Normal",
+    "opened_date": "2026-02-21",
+    "sla_hours": 4,
+    "due_date": "2026-02-21",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Njenga",
+        "date": "2026-02-21"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00105",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 1637",
+    "client_cif": "CIF152202",
+    "account_number": "ECO8944075613",
+    "branch": "Donholm",
+    "rm_code": "300441",
+    "rm_name": "Hassan Kimani",
+    "priority": "Normal",
+    "opened_date": "2026-04-15",
+    "sla_hours": 8,
+    "due_date": "2026-04-15",
+    "status": "Completed",
+    "resolved_date": "2026-03-27",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Hassan Kimani",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00106",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 4225",
+    "client_cif": "CIF891889",
+    "account_number": "ECO7145531089",
+    "branch": "Head Office",
+    "rm_code": "300016",
+    "rm_name": "Obed Lagat",
+    "priority": "Normal",
+    "opened_date": "2026-04-16",
+    "sla_hours": 24,
+    "due_date": "2026-04-17",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Obed Lagat",
+        "date": "2026-04-16"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00107",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 3265",
+    "client_cif": "CIF539013",
+    "account_number": "ECO2891487245",
+    "branch": "Kajiado",
+    "rm_code": "300691",
+    "rm_name": "Charity Gicheru",
+    "priority": "Critical",
+    "opened_date": "2026-04-05",
+    "sla_hours": 8,
+    "due_date": "2026-04-05",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charity Gicheru",
+        "date": "2026-04-05"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00108",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 8360",
+    "client_cif": "CIF597571",
+    "account_number": "ECO4102021985",
+    "branch": "FB Towers Corporate",
+    "rm_code": "300273",
+    "rm_name": "Ruth Karithi",
+    "priority": "Critical",
+    "opened_date": "2026-02-25",
+    "sla_hours": 8,
+    "due_date": "2026-02-25",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Karithi",
+        "date": "2026-02-25"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00109",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 9328",
+    "client_cif": "CIF170822",
+    "account_number": "ECO4851320974",
+    "branch": "Ukunda",
+    "rm_code": "301108",
+    "rm_name": "Calvin Mugambi",
+    "priority": "Normal",
+    "opened_date": "2026-04-06",
+    "sla_hours": 8,
+    "due_date": "2026-04-06",
+    "status": "Completed",
+    "resolved_date": "2026-04-01",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Calvin Mugambi",
+        "date": "2026-04-06"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00110",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 3015",
+    "client_cif": "CIF485673",
+    "account_number": "ECO1515166389",
+    "branch": "Cargen House",
+    "rm_code": "300331",
+    "rm_name": "George Okello",
+    "priority": "Critical",
+    "opened_date": "2026-03-16",
+    "sla_hours": 4,
+    "due_date": "2026-03-16",
+    "status": "Completed",
+    "resolved_date": "2026-03-20",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "George Okello",
+        "date": "2026-03-16"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00111",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 1379",
+    "client_cif": "CIF797506",
+    "account_number": "ECO7024166491",
+    "branch": "Mombasa Kenyatta Avenue",
+    "rm_code": "301068",
+    "rm_name": "Tabitha Njagi",
+    "priority": "Urgent",
+    "opened_date": "2026-04-10",
+    "sla_hours": 24,
+    "due_date": "2026-04-11",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Tabitha Njagi",
+        "date": "2026-04-10"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00112",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 7476",
+    "client_cif": "CIF340975",
+    "account_number": "ECO8798760668",
+    "branch": "Kariobangi",
+    "rm_code": "300555",
+    "rm_name": "Timothy Aluoch",
+    "priority": "Normal",
+    "opened_date": "2026-03-13",
+    "sla_hours": 24,
+    "due_date": "2026-03-14",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Timothy Aluoch",
+        "date": "2026-03-13"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00113",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 8599",
+    "client_cif": "CIF305467",
+    "account_number": "ECO4113276256",
+    "branch": "Chuka",
+    "rm_code": "300923",
+    "rm_name": "Agnes Baya",
+    "priority": "Normal",
+    "opened_date": "2026-03-21",
+    "sla_hours": 8,
+    "due_date": "2026-03-21",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Agnes Baya",
+        "date": "2026-03-21"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00114",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 4673",
+    "client_cif": "CIF953922",
+    "account_number": "ECO9576269054",
+    "branch": "City Hall",
+    "rm_code": "300316",
+    "rm_name": "Dorcas Nasambu",
+    "priority": "Urgent",
+    "opened_date": "2026-03-18",
+    "sla_hours": 8,
+    "due_date": "2026-03-18",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Dorcas Nasambu",
+        "date": "2026-03-18"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00115",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 3848",
+    "client_cif": "CIF115554",
+    "account_number": "ECO5025698507",
+    "branch": "Nanyuki",
+    "rm_code": "300946",
+    "rm_name": "Jane Langat",
+    "priority": "Critical",
+    "opened_date": "2026-02-24",
+    "sla_hours": 8,
+    "due_date": "2026-02-24",
+    "status": "Completed",
+    "resolved_date": "2026-03-24",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Jane Langat",
+        "date": "2026-02-24"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00116",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 5818",
+    "client_cif": "CIF242643",
+    "account_number": "ECO2732927501",
+    "branch": "Moi Avenue",
+    "rm_code": "300385",
+    "rm_name": "Alex Kazungu",
+    "priority": "Critical",
+    "opened_date": "2026-03-07",
+    "sla_hours": 8,
+    "due_date": "2026-03-07",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Alex Kazungu",
+        "date": "2026-03-07"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00117",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 6977",
+    "client_cif": "CIF146324",
+    "account_number": "ECO2641121999",
+    "branch": "Ol Kalau",
+    "rm_code": "300876",
+    "rm_name": "Raymond Kazungu",
+    "priority": "Critical",
+    "opened_date": "2026-03-03",
+    "sla_hours": 4,
+    "due_date": "2026-03-03",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Raymond Kazungu",
+        "date": "2026-03-03"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00118",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 3001",
+    "client_cif": "CIF428005",
+    "account_number": "ECO5812420940",
+    "branch": "Maua",
+    "rm_code": "300980",
+    "rm_name": "Samuel Ali",
+    "priority": "Critical",
+    "opened_date": "2026-03-14",
+    "sla_hours": 48,
+    "due_date": "2026-03-16",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Samuel Ali",
+        "date": "2026-03-14"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00119",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 3346",
+    "client_cif": "CIF459577",
+    "account_number": "ECO4719458222",
+    "branch": "River Road",
+    "rm_code": "300289",
+    "rm_name": "Gloria Gicheru",
+    "priority": "Urgent",
+    "opened_date": "2026-04-02",
+    "sla_hours": 8,
+    "due_date": "2026-04-02",
+    "status": "Completed",
+    "resolved_date": "2026-03-29",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Gloria Gicheru",
+        "date": "2026-04-02"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00120",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 9617",
+    "client_cif": "CIF964321",
+    "account_number": "ECO4453509497",
+    "branch": "Kisii",
+    "rm_code": "301315",
+    "rm_name": "Herbert Onyango",
+    "priority": "Urgent",
+    "opened_date": "2026-03-20",
+    "sla_hours": 8,
+    "due_date": "2026-03-20",
+    "status": "Completed",
+    "resolved_date": "2026-04-04",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Herbert Onyango",
+        "date": "2026-03-20"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00121",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 7599",
+    "client_cif": "CIF759231",
+    "account_number": "ECO1468995662",
+    "branch": "Head Office",
+    "rm_code": "300034",
+    "rm_name": "Oliver Mwenda",
+    "priority": "Normal",
+    "opened_date": "2026-03-06",
+    "sla_hours": 8,
+    "due_date": "2026-03-06",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Oliver Mwenda",
+        "date": "2026-03-06"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00122",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 1685",
+    "client_cif": "CIF120849",
+    "account_number": "ECO1714919720",
+    "branch": "Kerugoya",
+    "rm_code": "300959",
+    "rm_name": "Kelvin Namukhula",
+    "priority": "Normal",
+    "opened_date": "2026-03-25",
+    "sla_hours": 48,
+    "due_date": "2026-03-27",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kelvin Namukhula",
+        "date": "2026-03-25"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00123",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 6478",
+    "client_cif": "CIF314538",
+    "account_number": "ECO2117333649",
+    "branch": "Limuru",
+    "rm_code": "300784",
+    "rm_name": "Charles Katana",
+    "priority": "Normal",
+    "opened_date": "2026-02-27",
+    "sla_hours": 48,
+    "due_date": "2026-03-01",
+    "status": "Completed",
+    "resolved_date": "2026-04-01",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charles Katana",
+        "date": "2026-02-27"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00124",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 1557",
+    "client_cif": "CIF168920",
+    "account_number": "ECO2554416667",
+    "branch": "Bungoma",
+    "rm_code": "301370",
+    "rm_name": "Philip Chirchir",
+    "priority": "Normal",
+    "opened_date": "2026-03-22",
+    "sla_hours": 24,
+    "due_date": "2026-03-23",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Philip Chirchir",
+        "date": "2026-03-22"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00125",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 8938",
+    "client_cif": "CIF174494",
+    "account_number": "ECO8576487261",
+    "branch": "Nakuru Market",
+    "rm_code": "301253",
+    "rm_name": "Rebecca Yego",
+    "priority": "Normal",
+    "opened_date": "2026-02-24",
+    "sla_hours": 4,
+    "due_date": "2026-02-24",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rebecca Yego",
+        "date": "2026-02-24"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00126",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 6995",
+    "client_cif": "CIF176238",
+    "account_number": "ECO7089145944",
+    "branch": "Cargen House",
+    "rm_code": "300329",
+    "rm_name": "Francis Yego",
+    "priority": "Critical",
+    "opened_date": "2026-04-06",
+    "sla_hours": 24,
+    "due_date": "2026-04-07",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Francis Yego",
+        "date": "2026-04-06"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00127",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 2726",
+    "client_cif": "CIF440556",
+    "account_number": "ECO2089672125",
+    "branch": "Head Office",
+    "rm_code": "300036",
+    "rm_name": "Michael Baya",
+    "priority": "Normal",
+    "opened_date": "2026-03-09",
+    "sla_hours": 48,
+    "due_date": "2026-03-11",
+    "status": "Completed",
+    "resolved_date": "2026-04-04",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Michael Baya",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00128",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 6747",
+    "client_cif": "CIF101837",
+    "account_number": "ECO1672123539",
+    "branch": "Head Office",
+    "rm_code": "300039",
+    "rm_name": "Florence Wetungu",
+    "priority": "Urgent",
+    "opened_date": "2026-04-04",
+    "sla_hours": 4,
+    "due_date": "2026-04-04",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Florence Wetungu",
+        "date": "2026-04-04"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00129",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 9712",
+    "client_cif": "CIF243862",
+    "account_number": "ECO6202296204",
+    "branch": "Head Office",
+    "rm_code": "300015",
+    "rm_name": "Fatuma Wanjiku",
+    "priority": "Normal",
+    "opened_date": "2026-03-24",
+    "sla_hours": 4,
+    "due_date": "2026-03-24",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Fatuma Wanjiku",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00130",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 9341",
+    "client_cif": "CIF522259",
+    "account_number": "ECO6270353834",
+    "branch": "Head Office",
+    "rm_code": "300027",
+    "rm_name": "Kurt Chebet",
+    "priority": "Normal",
+    "opened_date": "2026-02-20",
+    "sla_hours": 8,
+    "due_date": "2026-02-20",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kurt Chebet",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00131",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 4540",
+    "client_cif": "CIF835950",
+    "account_number": "ECO2621417960",
+    "branch": "City Hall",
+    "rm_code": "300314",
+    "rm_name": "Ibrahim Kariuki",
+    "priority": "Urgent",
+    "opened_date": "2026-02-18",
+    "sla_hours": 8,
+    "due_date": "2026-02-18",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ibrahim Kariuki",
+        "date": "2026-02-18"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00132",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 1195",
+    "client_cif": "CIF477052",
+    "account_number": "ECO6031038691",
+    "branch": "Nyahururu",
+    "rm_code": "300867",
+    "rm_name": "Richard Odero",
+    "priority": "Urgent",
+    "opened_date": "2026-03-16",
+    "sla_hours": 48,
+    "due_date": "2026-03-18",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Richard Odero",
+        "date": "2026-03-16"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00133",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 5193",
+    "client_cif": "CIF247154",
+    "account_number": "ECO8543315259",
+    "branch": "Kitale",
+    "rm_code": "301223",
+    "rm_name": "Robert Awuor",
+    "priority": "Urgent",
+    "opened_date": "2026-03-27",
+    "sla_hours": 24,
+    "due_date": "2026-03-28",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Robert Awuor",
+        "date": "2026-03-27"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00134",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 9031",
+    "client_cif": "CIF425504",
+    "account_number": "ECO8012242563",
+    "branch": "Kongowea",
+    "rm_code": "301135",
+    "rm_name": "Daisy Sheikh",
+    "priority": "Urgent",
+    "opened_date": "2026-03-02",
+    "sla_hours": 8,
+    "due_date": "2026-03-02",
+    "status": "Completed",
+    "resolved_date": "2026-04-04",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Daisy Sheikh",
+        "date": "2026-03-02"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00135",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 4728",
+    "client_cif": "CIF510272",
+    "account_number": "ECO4110863424",
+    "branch": "Wangige",
+    "rm_code": "300577",
+    "rm_name": "Winnie Gitonga",
+    "priority": "Critical",
+    "opened_date": "2026-02-22",
+    "sla_hours": 48,
+    "due_date": "2026-02-24",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Winnie Gitonga",
+        "date": "2026-02-22"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00136",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 6972",
+    "client_cif": "CIF575394",
+    "account_number": "ECO9636086508",
+    "branch": "Naivasha",
+    "rm_code": "300679",
+    "rm_name": "Levi Kibet",
+    "priority": "Urgent",
+    "opened_date": "2026-04-15",
+    "sla_hours": 24,
+    "due_date": "2026-04-16",
+    "status": "Completed",
+    "resolved_date": "2026-04-15",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Levi Kibet",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00137",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 9336",
+    "client_cif": "CIF588226",
+    "account_number": "ECO3583870625",
+    "branch": "Kangema",
+    "rm_code": "300810",
+    "rm_name": "Miriam Gakunju",
+    "priority": "Urgent",
+    "opened_date": "2026-03-31",
+    "sla_hours": 8,
+    "due_date": "2026-03-31",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Miriam Gakunju",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00138",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 7574",
+    "client_cif": "CIF394994",
+    "account_number": "ECO6388552530",
+    "branch": "Meru",
+    "rm_code": "300900",
+    "rm_name": "Fatuma Kimani",
+    "priority": "Urgent",
+    "opened_date": "2026-03-18",
+    "sla_hours": 4,
+    "due_date": "2026-03-18",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Fatuma Kimani",
+        "date": "2026-03-18"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00139",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 3925",
+    "client_cif": "CIF127910",
+    "account_number": "ECO6640915016",
+    "branch": "Ruaka",
+    "rm_code": "300620",
+    "rm_name": "Isabella Munyao",
+    "priority": "Critical",
+    "opened_date": "2026-02-24",
+    "sla_hours": 4,
+    "due_date": "2026-02-24",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isabella Munyao",
+        "date": "2026-02-24"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00140",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 1067",
+    "client_cif": "CIF600600",
+    "account_number": "ECO6751085628",
+    "branch": "Cargen House",
+    "rm_code": "300331",
+    "rm_name": "George Okello",
+    "priority": "Critical",
+    "opened_date": "2026-02-23",
+    "sla_hours": 48,
+    "due_date": "2026-02-25",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "George Okello",
+        "date": "2026-02-23"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00141",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 5948",
+    "client_cif": "CIF672769",
+    "account_number": "ECO5544600500",
+    "branch": "Ruiru",
+    "rm_code": "300742",
+    "rm_name": "Lawrence Abdi",
+    "priority": "Critical",
+    "opened_date": "2026-03-25",
+    "sla_hours": 4,
+    "due_date": "2026-03-25",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lawrence Abdi",
+        "date": "2026-03-25"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00142",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 3800",
+    "client_cif": "CIF945102",
+    "account_number": "ECO1776073618",
+    "branch": "Westlands",
+    "rm_code": "300415",
+    "rm_name": "Victor Mwenda",
+    "priority": "Critical",
+    "opened_date": "2026-04-14",
+    "sla_hours": 8,
+    "due_date": "2026-04-14",
+    "status": "Completed",
+    "resolved_date": "2026-03-27",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Victor Mwenda",
+        "date": "2026-04-14"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00143",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 9155",
+    "client_cif": "CIF192733",
+    "account_number": "ECO1482741084",
+    "branch": "Kangari",
+    "rm_code": "300832",
+    "rm_name": "Paul Masinde",
+    "priority": "Normal",
+    "opened_date": "2026-03-21",
+    "sla_hours": 24,
+    "due_date": "2026-03-22",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Paul Masinde",
+        "date": "2026-03-21"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00144",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 1366",
+    "client_cif": "CIF130880",
+    "account_number": "ECO1548766192",
+    "branch": "Nanyuki",
+    "rm_code": "300947",
+    "rm_name": "Kemunto Nekesa",
+    "priority": "Normal",
+    "opened_date": "2026-03-09",
+    "sla_hours": 48,
+    "due_date": "2026-03-11",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Kemunto Nekesa",
+        "date": "2026-03-09"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00145",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 9541",
+    "client_cif": "CIF373827",
+    "account_number": "ECO2342121932",
+    "branch": "Head Office",
+    "rm_code": "300026",
+    "rm_name": "Jasper Mwenda",
+    "priority": "Urgent",
+    "opened_date": "2026-04-11",
+    "sla_hours": 48,
+    "due_date": "2026-04-13",
+    "status": "Completed",
+    "resolved_date": "2026-03-31",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Jasper Mwenda",
+        "date": "2026-04-11"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00146",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 3511",
+    "client_cif": "CIF389955",
+    "account_number": "ECO8966041284",
+    "branch": "Head Office",
+    "rm_code": "300044",
+    "rm_name": "Frank Farah",
+    "priority": "Normal",
+    "opened_date": "2026-03-03",
+    "sla_hours": 48,
+    "due_date": "2026-03-05",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Frank Farah",
+        "date": "2026-03-03"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00147",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 7306",
+    "client_cif": "CIF384580",
+    "account_number": "ECO1902077680",
+    "branch": "Bungoma",
+    "rm_code": "301370",
+    "rm_name": "Philip Chirchir",
+    "priority": "Critical",
+    "opened_date": "2026-03-19",
+    "sla_hours": 24,
+    "due_date": "2026-03-20",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Philip Chirchir",
+        "date": "2026-03-19"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00148",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 3593",
+    "client_cif": "CIF188794",
+    "account_number": "ECO2230615828",
+    "branch": "River Road West",
+    "rm_code": "300303",
+    "rm_name": "Rebecca Ngetich",
+    "priority": "Critical",
+    "opened_date": "2026-03-20",
+    "sla_hours": 48,
+    "due_date": "2026-03-22",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rebecca Ngetich",
+        "date": "2026-03-20"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00149",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 7457",
+    "client_cif": "CIF560550",
+    "account_number": "ECO1739890679",
+    "branch": "Kayole",
+    "rm_code": "300494",
+    "rm_name": "Tina Koech",
+    "priority": "Critical",
+    "opened_date": "2026-02-21",
+    "sla_hours": 24,
+    "due_date": "2026-02-22",
+    "status": "Completed",
+    "resolved_date": "2026-03-18",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Tina Koech",
+        "date": "2026-02-21"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00150",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 2192",
+    "client_cif": "CIF233420",
+    "account_number": "ECO8427352869",
+    "branch": "Wote",
+    "rm_code": "301031",
+    "rm_name": "Jacqueline Munyao",
+    "priority": "Critical",
+    "opened_date": "2026-04-14",
+    "sla_hours": 8,
+    "due_date": "2026-04-14",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Jacqueline Munyao",
+        "date": "2026-04-14"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00151",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 2468",
+    "client_cif": "CIF330719",
+    "account_number": "ECO3260253139",
+    "branch": "Karatina",
+    "rm_code": "300936",
+    "rm_name": "Felix Odongo",
+    "priority": "Normal",
+    "opened_date": "2026-03-21",
+    "sla_hours": 8,
+    "due_date": "2026-03-21",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Felix Odongo",
+        "date": "2026-03-21"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00152",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 1450",
+    "client_cif": "CIF802590",
+    "account_number": "ECO7957377071",
+    "branch": "Kitui",
+    "rm_code": "301019",
+    "rm_name": "Wendy Yego",
+    "priority": "Normal",
+    "opened_date": "2026-03-30",
+    "sla_hours": 48,
+    "due_date": "2026-04-01",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Wendy Yego",
+        "date": "2026-03-30"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00153",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 6509",
+    "client_cif": "CIF503994",
+    "account_number": "ECO9406039244",
+    "branch": "Kasarani",
+    "rm_code": "300428",
+    "rm_name": "Yvonne Omondi",
+    "priority": "Urgent",
+    "opened_date": "2026-04-13",
+    "sla_hours": 48,
+    "due_date": "2026-04-15",
+    "status": "Completed",
+    "resolved_date": "2026-03-29",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Yvonne Omondi",
+        "date": "2026-04-13"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00154",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 7622",
+    "client_cif": "CIF327709",
+    "account_number": "ECO6569390510",
+    "branch": "Donholm",
+    "rm_code": "300442",
+    "rm_name": "Norman Adhiambo",
+    "priority": "Normal",
+    "opened_date": "2026-03-17",
+    "sla_hours": 4,
+    "due_date": "2026-03-17",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Norman Adhiambo",
+        "date": "2026-03-17"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00155",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 6153",
+    "client_cif": "CIF104010",
+    "account_number": "ECO1303741939",
+    "branch": "Migori",
+    "rm_code": "301402",
+    "rm_name": "Gregory Bett",
+    "priority": "Urgent",
+    "opened_date": "2026-04-14",
+    "sla_hours": 48,
+    "due_date": "2026-04-16",
+    "status": "Completed",
+    "resolved_date": "2026-04-05",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Gregory Bett",
+        "date": "2026-04-14"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00156",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 8047",
+    "client_cif": "CIF478339",
+    "account_number": "ECO7584855680",
+    "branch": "Kisumu Express",
+    "rm_code": "301339",
+    "rm_name": "Judith Mwanake",
+    "priority": "Urgent",
+    "opened_date": "2026-03-29",
+    "sla_hours": 48,
+    "due_date": "2026-03-31",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Judith Mwanake",
+        "date": "2026-03-29"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00157",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 5397",
+    "client_cif": "CIF846874",
+    "account_number": "ECO7534672300",
+    "branch": "Kisumu Express",
+    "rm_code": "301343",
+    "rm_name": "Norman Akinyi",
+    "priority": "Normal",
+    "opened_date": "2026-02-17",
+    "sla_hours": 4,
+    "due_date": "2026-02-17",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Norman Akinyi",
+        "date": "2026-02-17"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00158",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 4901",
+    "client_cif": "CIF167088",
+    "account_number": "ECO6896457555",
+    "branch": "Maua",
+    "rm_code": "300981",
+    "rm_name": "Richard Abdullahi",
+    "priority": "Normal",
+    "opened_date": "2026-04-09",
+    "sla_hours": 4,
+    "due_date": "2026-04-09",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Richard Abdullahi",
+        "date": "2026-04-09"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00159",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 4247",
+    "client_cif": "CIF586817",
+    "account_number": "ECO4880517359",
+    "branch": "Kakamega",
+    "rm_code": "301354",
+    "rm_name": "Gloria Kuria",
+    "priority": "Critical",
+    "opened_date": "2026-03-04",
+    "sla_hours": 4,
+    "due_date": "2026-03-04",
+    "status": "Completed",
+    "resolved_date": "2026-04-06",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Gloria Kuria",
+        "date": "2026-03-04"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00160",
+    "instruction_type": "Trade Finance Instruction",
+    "client_name": "Client 1252",
+    "client_cif": "CIF173799",
+    "account_number": "ECO1267444947",
+    "branch": "Bungoma",
+    "rm_code": "301371",
+    "rm_name": "Charles Kirimi",
+    "priority": "Critical",
+    "opened_date": "2026-03-03",
+    "sla_hours": 48,
+    "due_date": "2026-03-05",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charles Kirimi",
+        "date": "2026-03-03"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00161",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 7207",
+    "client_cif": "CIF167723",
+    "account_number": "ECO2574375707",
+    "branch": "Rongai",
+    "rm_code": "300670",
+    "rm_name": "Ketty Owino",
+    "priority": "Urgent",
+    "opened_date": "2026-03-02",
+    "sla_hours": 24,
+    "due_date": "2026-03-03",
+    "status": "Completed",
+    "resolved_date": "2026-03-18",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ketty Owino",
+        "date": "2026-03-02"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00162",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 3194",
+    "client_cif": "CIF894209",
+    "account_number": "ECO1296702601",
+    "branch": "Kajiado",
+    "rm_code": "300690",
+    "rm_name": "John Matheka",
+    "priority": "Critical",
+    "opened_date": "2026-02-28",
+    "sla_hours": 8,
+    "due_date": "2026-02-28",
+    "status": "Completed",
+    "resolved_date": "2026-04-11",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "John Matheka",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00163",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 3691",
+    "client_cif": "CIF783395",
+    "account_number": "ECO4615642559",
+    "branch": "Banana",
+    "rm_code": "300598",
+    "rm_name": "Georgina Karisa",
+    "priority": "Critical",
+    "opened_date": "2026-03-11",
+    "sla_hours": 4,
+    "due_date": "2026-03-11",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Georgina Karisa",
+        "date": "2026-03-11"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00164",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 6425",
+    "client_cif": "CIF361736",
+    "account_number": "ECO4784415104",
+    "branch": "Chuka",
+    "rm_code": "300926",
+    "rm_name": "Eric Nderitu",
+    "priority": "Urgent",
+    "opened_date": "2026-03-08",
+    "sla_hours": 4,
+    "due_date": "2026-03-08",
+    "status": "Completed",
+    "resolved_date": "2026-04-11",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Eric Nderitu",
+        "date": "2026-03-08"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00165",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 7265",
+    "client_cif": "CIF777122",
+    "account_number": "ECO5271313237",
+    "branch": "Meru",
+    "rm_code": "300901",
+    "rm_name": "Charles Mwamba",
+    "priority": "Urgent",
+    "opened_date": "2026-03-07",
+    "sla_hours": 8,
+    "due_date": "2026-03-07",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Charles Mwamba",
+        "date": "2026-03-07"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00166",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 8561",
+    "client_cif": "CIF418225",
+    "account_number": "ECO5344630745",
+    "branch": "Gikomba Area 42",
+    "rm_code": "300658",
+    "rm_name": "Ishmael Maalim",
+    "priority": "Critical",
+    "opened_date": "2026-02-18",
+    "sla_hours": 24,
+    "due_date": "2026-02-19",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Maalim",
+        "date": "2026-02-18"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00167",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 7050",
+    "client_cif": "CIF483135",
+    "account_number": "ECO2408704586",
+    "branch": "Mombasa Nkrumah",
+    "rm_code": "301082",
+    "rm_name": "Wendy Waweru",
+    "priority": "Critical",
+    "opened_date": "2026-03-15",
+    "sla_hours": 4,
+    "due_date": "2026-03-15",
+    "status": "Completed",
+    "resolved_date": "2026-04-08",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Wendy Waweru",
+        "date": "2026-03-15"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00168",
+    "instruction_type": "Funds Transfer Instruction",
+    "client_name": "Client 7906",
+    "client_cif": "CIF839409",
+    "account_number": "ECO6215618319",
+    "branch": "Bungoma",
+    "rm_code": "301368",
+    "rm_name": "Ishmael Anyango",
+    "priority": "Normal",
+    "opened_date": "2026-03-20",
+    "sla_hours": 4,
+    "due_date": "2026-03-20",
+    "status": "Completed",
+    "resolved_date": "2026-03-27",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Anyango",
+        "date": "2026-03-20"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00169",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 6925",
+    "client_cif": "CIF124073",
+    "account_number": "ECO8304793249",
+    "branch": "Kiambu",
+    "rm_code": "300771",
+    "rm_name": "Ishmael Njenga",
+    "priority": "Normal",
+    "opened_date": "2026-04-11",
+    "sla_hours": 8,
+    "due_date": "2026-04-11",
+    "status": "Completed",
+    "resolved_date": "2026-04-03",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ishmael Njenga",
+        "date": "2026-04-11"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00170",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 4425",
+    "client_cif": "CIF358106",
+    "account_number": "ECO5614850377",
+    "branch": "Ruiru",
+    "rm_code": "300744",
+    "rm_name": "Paul Akinyi",
+    "priority": "Critical",
+    "opened_date": "2026-03-06",
+    "sla_hours": 4,
+    "due_date": "2026-03-06",
+    "status": "Completed",
+    "resolved_date": "2026-03-18",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Paul Akinyi",
+        "date": "2026-03-06"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00171",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 8540",
+    "client_cif": "CIF573039",
+    "account_number": "ECO7199852979",
+    "branch": "Wangige",
+    "rm_code": "300575",
+    "rm_name": "Pauline Oguda",
+    "priority": "Normal",
+    "opened_date": "2026-04-02",
+    "sla_hours": 4,
+    "due_date": "2026-04-02",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Pauline Oguda",
+        "date": "2026-04-02"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00172",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 2184",
+    "client_cif": "CIF663719",
+    "account_number": "ECO5342558976",
+    "branch": "Busia",
+    "rm_code": "301381",
+    "rm_name": "Rachael Matheka",
+    "priority": "Critical",
+    "opened_date": "2026-03-12",
+    "sla_hours": 48,
+    "due_date": "2026-03-14",
+    "status": "Completed",
+    "resolved_date": "2026-03-22",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rachael Matheka",
+        "date": "2026-03-12"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00173",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 4776",
+    "client_cif": "CIF782896",
+    "account_number": "ECO2086028777",
+    "branch": "Wangige",
+    "rm_code": "300575",
+    "rm_name": "Pauline Oguda",
+    "priority": "Urgent",
+    "opened_date": "2026-04-12",
+    "sla_hours": 48,
+    "due_date": "2026-04-14",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Pauline Oguda",
+        "date": "2026-04-12"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00174",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 5431",
+    "client_cif": "CIF297566",
+    "account_number": "ECO8821867570",
+    "branch": "Kongowea",
+    "rm_code": "301134",
+    "rm_name": "Patricia Mwanzia",
+    "priority": "Urgent",
+    "opened_date": "2026-03-27",
+    "sla_hours": 48,
+    "due_date": "2026-03-29",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Patricia Mwanzia",
+        "date": "2026-03-27"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00175",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 8314",
+    "client_cif": "CIF900151",
+    "account_number": "ECO6797809054",
+    "branch": "Kiambu",
+    "rm_code": "300773",
+    "rm_name": "Diana Ochieng",
+    "priority": "Urgent",
+    "opened_date": "2026-02-27",
+    "sla_hours": 4,
+    "due_date": "2026-02-27",
+    "status": "Completed",
+    "resolved_date": "2026-03-30",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Diana Ochieng",
+        "date": "2026-02-27"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00176",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 7546",
+    "client_cif": "CIF410448",
+    "account_number": "ECO1333696399",
+    "branch": "Nkubu",
+    "rm_code": "300914",
+    "rm_name": "Isabella Murage",
+    "priority": "Normal",
+    "opened_date": "2026-04-07",
+    "sla_hours": 24,
+    "due_date": "2026-04-08",
+    "status": "Completed",
+    "resolved_date": "2026-03-19",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isabella Murage",
+        "date": "2026-04-07"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00177",
+    "instruction_type": "Statement Request",
+    "client_name": "Client 3102",
+    "client_cif": "CIF801590",
+    "account_number": "ECO9522323157",
+    "branch": "Donholm",
+    "rm_code": "300440",
+    "rm_name": "Olive Wanjala",
+    "priority": "Critical",
+    "opened_date": "2026-03-15",
+    "sla_hours": 24,
+    "due_date": "2026-03-16",
+    "status": "Completed",
+    "resolved_date": "2026-04-16",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Olive Wanjala",
+        "date": "2026-03-15"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "CIMS00178",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 8274",
+    "client_cif": "CIF660586",
+    "account_number": "ECO7383696366",
+    "branch": "Kapsabet",
+    "rm_code": "301206",
+    "rm_name": "Nicholas Anyango",
+    "priority": "Critical",
+    "opened_date": "2026-03-24",
+    "sla_hours": 48,
+    "due_date": "2026-03-26",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Nicholas Anyango",
+        "date": "2026-03-24"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00179",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 7596",
+    "client_cif": "CIF910838",
+    "account_number": "ECO3863303415",
+    "branch": "Nkubu",
+    "rm_code": "300913",
+    "rm_name": "Ellen Langat",
+    "priority": "Urgent",
+    "opened_date": "2026-03-15",
+    "sla_hours": 24,
+    "due_date": "2026-03-16",
+    "status": "Completed",
+    "resolved_date": "2026-03-28",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ellen Langat",
+        "date": "2026-03-15"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00180",
+    "instruction_type": "Direct Debit Setup",
+    "client_name": "Client 6552",
+    "client_cif": "CIF531315",
+    "account_number": "ECO2842151104",
+    "branch": "Maua",
+    "rm_code": "300979",
+    "rm_name": "Isaac Amolo",
+    "priority": "Critical",
+    "opened_date": "2026-02-20",
+    "sla_hours": 24,
+    "due_date": "2026-02-21",
+    "status": "Completed",
+    "resolved_date": "2026-04-05",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Isaac Amolo",
+        "date": "2026-02-20"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00181",
+    "instruction_type": "Account Closure",
+    "client_name": "Client 7732",
+    "client_cif": "CIF612032",
+    "account_number": "ECO9842642261",
+    "branch": "Kisumu Express",
+    "rm_code": "301343",
+    "rm_name": "Norman Akinyi",
+    "priority": "Critical",
+    "opened_date": "2026-03-29",
+    "sla_hours": 8,
+    "due_date": "2026-03-29",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Norman Akinyi",
+        "date": "2026-03-29"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00182",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 7418",
+    "client_cif": "CIF296367",
+    "account_number": "ECO7522590886",
+    "branch": "Nkubu",
+    "rm_code": "300913",
+    "rm_name": "Ellen Langat",
+    "priority": "Normal",
+    "opened_date": "2026-03-15",
+    "sla_hours": 24,
+    "due_date": "2026-03-16",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ellen Langat",
+        "date": "2026-03-15"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00183",
+    "instruction_type": "Account Opening",
+    "client_name": "Client 5562",
+    "client_cif": "CIF144117",
+    "account_number": "ECO4525226374",
+    "branch": "Othaya",
+    "rm_code": "300854",
+    "rm_name": "Victor Namukhula",
+    "priority": "Normal",
+    "opened_date": "2026-03-31",
+    "sla_hours": 8,
+    "due_date": "2026-03-31",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Victor Namukhula",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00184",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 3257",
+    "client_cif": "CIF747046",
+    "account_number": "ECO1234653671",
+    "branch": "Kenyatta Avenue",
+    "rm_code": "300238",
+    "rm_name": "Hassan Gicheru",
+    "priority": "Urgent",
+    "opened_date": "2026-03-11",
+    "sla_hours": 4,
+    "due_date": "2026-03-11",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Hassan Gicheru",
+        "date": "2026-03-11"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00185",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 8786",
+    "client_cif": "CIF954741",
+    "account_number": "ECO7406568120",
+    "branch": "Naivasha",
+    "rm_code": "300679",
+    "rm_name": "Levi Kibet",
+    "priority": "Critical",
+    "opened_date": "2026-04-14",
+    "sla_hours": 24,
+    "due_date": "2026-04-15",
+    "status": "Completed",
+    "resolved_date": "2026-03-22",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Levi Kibet",
+        "date": "2026-04-14"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00186",
+    "instruction_type": "Signatory Change",
+    "client_name": "Client 2431",
+    "client_cif": "CIF130765",
+    "account_number": "ECO3625499551",
+    "branch": "Nakuru Finance",
+    "rm_code": "301238",
+    "rm_name": "Thomas Ntiba",
+    "priority": "Critical",
+    "opened_date": "2026-03-28",
+    "sla_hours": 24,
+    "due_date": "2026-03-29",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Thomas Ntiba",
+        "date": "2026-03-28"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00187",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 8897",
+    "client_cif": "CIF394159",
+    "account_number": "ECO8434640503",
+    "branch": "Kutus",
+    "rm_code": "300967",
+    "rm_name": "Obed Omondi",
+    "priority": "Normal",
+    "opened_date": "2026-04-04",
+    "sla_hours": 8,
+    "due_date": "2026-04-04",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Obed Omondi",
+        "date": "2026-04-04"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00188",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 9174",
+    "client_cif": "CIF765716",
+    "account_number": "ECO7504205311",
+    "branch": "City Hall",
+    "rm_code": "300317",
+    "rm_name": "Daisy Kamau",
+    "priority": "Normal",
+    "opened_date": "2026-04-09",
+    "sla_hours": 24,
+    "due_date": "2026-04-10",
+    "status": "Completed",
+    "resolved_date": "2026-04-04",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Daisy Kamau",
+        "date": "2026-04-09"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00189",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 6027",
+    "client_cif": "CIF590156",
+    "account_number": "ECO1839247646",
+    "branch": "Kiriaini",
+    "rm_code": "300890",
+    "rm_name": "Richard Njoroge",
+    "priority": "Normal",
+    "opened_date": "2026-02-26",
+    "sla_hours": 24,
+    "due_date": "2026-02-27",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Richard Njoroge",
+        "date": "2026-02-26"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00190",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 8995",
+    "client_cif": "CIF601946",
+    "account_number": "ECO1493672861",
+    "branch": "Kilimani",
+    "rm_code": "300400",
+    "rm_name": "Ruth Kabui",
+    "priority": "Normal",
+    "opened_date": "2026-02-27",
+    "sla_hours": 24,
+    "due_date": "2026-02-28",
+    "status": "Completed",
+    "resolved_date": "2026-03-24",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Kabui",
+        "date": "2026-02-27"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00191",
+    "instruction_type": "Cheque Book Request",
+    "client_name": "Client 1648",
+    "client_cif": "CIF699116",
+    "account_number": "ECO8642019058",
+    "branch": "Wangige",
+    "rm_code": "300574",
+    "rm_name": "Esther Bett",
+    "priority": "Urgent",
+    "opened_date": "2026-03-31",
+    "sla_hours": 4,
+    "due_date": "2026-03-31",
+    "status": "Completed",
+    "resolved_date": "2026-04-11",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Esther Bett",
+        "date": "2026-03-31"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00192",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 5912",
+    "client_cif": "CIF969939",
+    "account_number": "ECO1909163866",
+    "branch": "Moi Avenue",
+    "rm_code": "300387",
+    "rm_name": "Grace Munyao",
+    "priority": "Urgent",
+    "opened_date": "2026-03-28",
+    "sla_hours": 8,
+    "due_date": "2026-03-28",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Grace Munyao",
+        "date": "2026-03-28"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00193",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 5750",
+    "client_cif": "CIF829572",
+    "account_number": "ECO7333238501",
+    "branch": "FB Towers Corporate",
+    "rm_code": "300273",
+    "rm_name": "Ruth Karithi",
+    "priority": "Urgent",
+    "opened_date": "2026-02-19",
+    "sla_hours": 8,
+    "due_date": "2026-02-19",
+    "status": "Completed",
+    "resolved_date": "2026-04-14",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Ruth Karithi",
+        "date": "2026-02-19"
+      }
+    ],
+    "last_updated": "2026-04-15"
+  },
+  {
+    "id": "CIMS00194",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 8723",
+    "client_cif": "CIF178236",
+    "account_number": "ECO5197471156",
+    "branch": "Kutus",
+    "rm_code": "300970",
+    "rm_name": "Miriam Kamau",
+    "priority": "Urgent",
+    "opened_date": "2026-03-23",
+    "sla_hours": 48,
+    "due_date": "2026-03-25",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Miriam Kamau",
+        "date": "2026-03-23"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00195",
+    "instruction_type": "Standing Order Setup",
+    "client_name": "Client 7478",
+    "client_cif": "CIF486776",
+    "account_number": "ECO4820326482",
+    "branch": "Laptrust",
+    "rm_code": "300372",
+    "rm_name": "Harriet Weru",
+    "priority": "Normal",
+    "opened_date": "2026-04-15",
+    "sla_hours": 24,
+    "due_date": "2026-04-16",
+    "status": "Completed",
+    "resolved_date": "2026-03-21",
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Harriet Weru",
+        "date": "2026-04-15"
+      }
+    ],
+    "last_updated": "2026-04-12"
+  },
+  {
+    "id": "CIMS00196",
+    "instruction_type": "Stop Payment",
+    "client_name": "Client 6559",
+    "client_cif": "CIF667454",
+    "account_number": "ECO6305585035",
+    "branch": "Kapsabet",
+    "rm_code": "301209",
+    "rm_name": "Rachael Masinde",
+    "priority": "Critical",
+    "opened_date": "2026-02-25",
+    "sla_hours": 48,
+    "due_date": "2026-02-27",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Rachael Masinde",
+        "date": "2026-02-25"
+      }
+    ],
+    "last_updated": "2026-04-13"
+  },
+  {
+    "id": "CIMS00197",
+    "instruction_type": "Mandate Change",
+    "client_name": "Client 1794",
+    "client_cif": "CIF846509",
+    "account_number": "ECO2549912563",
+    "branch": "Head Office",
+    "rm_code": "300048",
+    "rm_name": "Usman Matheka",
+    "priority": "Critical",
+    "opened_date": "2026-04-05",
+    "sla_hours": 48,
+    "due_date": "2026-04-07",
+    "status": "Escalated",
+    "resolved_date": null,
+    "escalated_to": "Branch Manager",
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Usman Matheka",
+        "date": "2026-04-05"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00198",
+    "instruction_type": "Account Amendment",
+    "client_name": "Client 6299",
+    "client_cif": "CIF462580",
+    "account_number": "ECO3194599248",
+    "branch": "Kajiado",
+    "rm_code": "300693",
+    "rm_name": "Michael Mwanake",
+    "priority": "Normal",
+    "opened_date": "2026-02-28",
+    "sla_hours": 24,
+    "due_date": "2026-03-01",
+    "status": "Pending Customer",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Michael Mwanake",
+        "date": "2026-02-28"
+      }
+    ],
+    "last_updated": "2026-04-17"
+  },
+  {
+    "id": "CIMS00199",
+    "instruction_type": "Card Issue/Replacement",
+    "client_name": "Client 7306",
+    "client_cif": "CIF442565",
+    "account_number": "ECO9024248560",
+    "branch": "Digo",
+    "rm_code": "301123",
+    "rm_name": "Lydia Karisa",
+    "priority": "Urgent",
+    "opened_date": "2026-04-14",
+    "sla_hours": 48,
+    "due_date": "2026-04-16",
+    "status": "Open",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Lydia Karisa",
+        "date": "2026-04-14"
+      }
+    ],
+    "last_updated": "2026-04-14"
+  },
+  {
+    "id": "CIMS00200",
+    "instruction_type": "Foreign Exchange Request",
+    "client_name": "Client 5381",
+    "client_cif": "CIF646922",
+    "account_number": "ECO5022566391",
+    "branch": "Kakamega",
+    "rm_code": "301355",
+    "rm_name": "Mary Baya",
+    "priority": "Normal",
+    "opened_date": "2026-04-05",
+    "sla_hours": 8,
+    "due_date": "2026-04-05",
+    "status": "In Progress",
+    "resolved_date": null,
+    "escalated_to": null,
+    "notes": "",
+    "audit_trail": [
+      {
+        "action": "Created",
+        "by": "Mary Baya",
+        "date": "2026-04-05"
+      }
+    ],
+    "last_updated": "2026-04-16"
+  }
+]

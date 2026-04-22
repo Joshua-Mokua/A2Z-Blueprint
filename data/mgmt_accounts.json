@@ -1,0 +1,117 @@
+{
+  "as_at": "2026-04-21",
+  "period": "March 2026",
+  "income_statement": {
+    "interest_income": {
+      "budget_m": 1850,
+      "actual_m": 1920,
+      "prior_m": 1780
+    },
+    "interest_expense": {
+      "budget_m": 620,
+      "actual_m": 645,
+      "prior_m": 598
+    },
+    "net_interest_income": {
+      "budget_m": 1230,
+      "actual_m": 1275,
+      "prior_m": 1182
+    },
+    "fee_income": {
+      "budget_m": 380,
+      "actual_m": 342,
+      "prior_m": 361
+    },
+    "forex_income": {
+      "budget_m": 145,
+      "actual_m": 168,
+      "prior_m": 139
+    },
+    "total_income": {
+      "budget_m": 1755,
+      "actual_m": 1785,
+      "prior_m": 1682
+    },
+    "opex": {
+      "budget_m": 920,
+      "actual_m": 958,
+      "prior_m": 889
+    },
+    "provisions": {
+      "budget_m": 185,
+      "actual_m": 210,
+      "prior_m": 172
+    },
+    "pbt": {
+      "budget_m": 650,
+      "actual_m": 617,
+      "prior_m": 621
+    }
+  },
+  "balance_sheet": {
+    "loans_net_b": {
+      "actual": 88.4,
+      "prior": 85.2
+    },
+    "investments_b": {
+      "actual": 24.1,
+      "prior": 23.8
+    },
+    "cash_b": {
+      "actual": 8.9,
+      "prior": 9.1
+    },
+    "total_assets_b": {
+      "actual": 138.7,
+      "prior": 133.4
+    },
+    "customer_deposits_b": {
+      "actual": 110.2,
+      "prior": 106.8
+    },
+    "borrowings_b": {
+      "actual": 12.4,
+      "prior": 11.9
+    },
+    "equity_b": {
+      "actual": 14.8,
+      "prior": 14.2
+    }
+  },
+  "key_ratios": {
+    "nim_pct": 5.82,
+    "cir_pct": 53.7,
+    "roa_pct": 1.78,
+    "roe_pct": 16.8,
+    "car_pct": 18.4,
+    "npl_pct": 6.2,
+    "coverage_pct": 74.5,
+    "ldr_pct": 80.2
+  },
+  "monthly_trend": [
+    {
+      "month": "2026-01",
+      "nii_m": 1180,
+      "pbt_m": 620,
+      "cir": 54.015094531387504
+    },
+    {
+      "month": "2026-02",
+      "nii_m": 1281,
+      "pbt_m": 662,
+      "cir": 56.160003525895654
+    },
+    {
+      "month": "2026-03",
+      "nii_m": 1176,
+      "pbt_m": 608,
+      "cir": 56.36884280745822
+    },
+    {
+      "month": "2026-04",
+      "nii_m": 1309,
+      "pbt_m": 651,
+      "cir": 53.523689737172724
+    }
+  ]
+}

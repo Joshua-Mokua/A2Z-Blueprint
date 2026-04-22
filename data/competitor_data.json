@@ -1,0 +1,218 @@
+{
+  "as_at": "2026-04-17",
+  "cbk_rate": 13.0,
+  "banks": {
+    "KCB": {
+      "full_name": "Kenya Commercial Bank",
+      "tier": 1,
+      "assets_kes_b": 1450,
+      "loans_kes_b": 780,
+      "deposits_kes_b": 1100,
+      "npl_pct": 8.2,
+      "car_pct": 19.4,
+      "nim_pct": 8.1,
+      "roe_pct": 22,
+      "branches": 220,
+      "mobile_users_m": 4.2
+    },
+    "Equity": {
+      "full_name": "Equity Bank Kenya",
+      "tier": 1,
+      "assets_kes_b": 1280,
+      "loans_kes_b": 690,
+      "deposits_kes_b": 980,
+      "npl_pct": 7.8,
+      "car_pct": 18.7,
+      "nim_pct": 8.8,
+      "roe_pct": 24,
+      "branches": 196,
+      "mobile_users_m": 5.1
+    },
+    "Co-op": {
+      "full_name": "Co-operative Bank",
+      "tier": 1,
+      "assets_kes_b": 680,
+      "loans_kes_b": 390,
+      "deposits_kes_b": 520,
+      "npl_pct": 9.1,
+      "car_pct": 20.2,
+      "nim_pct": 7.6,
+      "roe_pct": 19,
+      "branches": 175,
+      "mobile_users_m": 2.8
+    },
+    "NCBA": {
+      "full_name": "NCBA Bank Kenya",
+      "tier": 1,
+      "assets_kes_b": 520,
+      "loans_kes_b": 270,
+      "deposits_kes_b": 410,
+      "npl_pct": 10.4,
+      "car_pct": 19.8,
+      "nim_pct": 7.2,
+      "roe_pct": 15,
+      "branches": 108,
+      "mobile_users_m": 3.4
+    },
+    "Stanbic": {
+      "full_name": "Stanbic Bank Kenya",
+      "tier": 1,
+      "assets_kes_b": 380,
+      "loans_kes_b": 210,
+      "deposits_kes_b": 290,
+      "npl_pct": 6.2,
+      "car_pct": 21.5,
+      "nim_pct": 6.8,
+      "roe_pct": 17,
+      "branches": 42,
+      "mobile_users_m": 0.9
+    },
+    "Absa": {
+      "full_name": "Absa Bank Kenya",
+      "tier": 1,
+      "assets_kes_b": 350,
+      "loans_kes_b": 185,
+      "deposits_kes_b": 270,
+      "npl_pct": 8.9,
+      "car_pct": 20.1,
+      "nim_pct": 7.5,
+      "roe_pct": 16,
+      "branches": 86,
+      "mobile_users_m": 1.2
+    },
+    "DTB": {
+      "full_name": "Diamond Trust Bank",
+      "tier": 2,
+      "assets_kes_b": 290,
+      "loans_kes_b": 165,
+      "deposits_kes_b": 225,
+      "npl_pct": 11.2,
+      "car_pct": 18.5,
+      "nim_pct": 7.0,
+      "roe_pct": 14,
+      "branches": 62,
+      "mobile_users_m": 0.6
+    },
+    "Family": {
+      "full_name": "Family Bank Kenya",
+      "tier": 2,
+      "assets_kes_b": 140,
+      "loans_kes_b": 88,
+      "deposits_kes_b": 112,
+      "npl_pct": 12.8,
+      "car_pct": 17.4,
+      "nim_pct": 8.4,
+      "roe_pct": 12,
+      "branches": 95,
+      "mobile_users_m": 0.8
+    },
+    "Ecobank": {
+      "full_name": "Ecobank Kenya",
+      "tier": 2,
+      "assets_kes_b": 145,
+      "loans_kes_b": 88,
+      "deposits_kes_b": 120,
+      "npl_pct": 11.0,
+      "car_pct": 18.2,
+      "nim_pct": 7.8,
+      "roe_pct": 13,
+      "branches": 35,
+      "mobile_users_m": 0.5
+    }
+  },
+  "deposit_rates": {
+    "Savings": {
+      "KCB": 3.5,
+      "Equity": 4.0,
+      "Co-op": 3.75,
+      "NCBA": 3.5,
+      "Ecobank": 4.0
+    },
+    "3M Fixed": {
+      "KCB": 9.5,
+      "Equity": 10.0,
+      "Co-op": 9.75,
+      "NCBA": 9.25,
+      "Ecobank": 10.5
+    },
+    "6M Fixed": {
+      "KCB": 10.5,
+      "Equity": 11.0,
+      "Co-op": 10.5,
+      "NCBA": 10.25,
+      "Ecobank": 11.5
+    },
+    "12M Fixed": {
+      "KCB": 12.0,
+      "Equity": 12.5,
+      "Co-op": 12.0,
+      "NCBA": 11.75,
+      "Ecobank": 13.0
+    }
+  },
+  "lending_rates": {
+    "Personal Loan": {
+      "KCB": 18.0,
+      "Equity": 17.5,
+      "Co-op": 18.5,
+      "NCBA": 19.0,
+      "Ecobank": 17.0
+    },
+    "Business Loan": {
+      "KCB": 16.5,
+      "Equity": 16.0,
+      "Co-op": 17.0,
+      "NCBA": 17.5,
+      "Ecobank": 16.0
+    },
+    "Mortgage": {
+      "KCB": 14.5,
+      "Equity": 14.0,
+      "Co-op": 15.0,
+      "NCBA": 15.5,
+      "Ecobank": 14.0
+    },
+    "Asset Finance": {
+      "KCB": 15.0,
+      "Equity": 14.5,
+      "Co-op": 15.5,
+      "NCBA": 16.0,
+      "Ecobank": 14.5
+    }
+  },
+  "market_share": {
+    "total_assets_pct": {
+      "KCB": 23.1,
+      "Equity": 20.4,
+      "Co-op": 10.8,
+      "NCBA": 8.3,
+      "Stanbic": 6.1,
+      "Absa": 5.6,
+      "DTB": 4.6,
+      "Family": 2.2,
+      "Ecobank": 2.3
+    },
+    "total_deposits_pct": {
+      "KCB": 22.8,
+      "Equity": 20.2,
+      "Co-op": 10.7,
+      "NCBA": 8.5,
+      "Stanbic": 6.0,
+      "Absa": 5.6,
+      "DTB": 4.7,
+      "Family": 2.3,
+      "Ecobank": 2.5
+    },
+    "digital_customers_pct": {
+      "KCB": 24.1,
+      "Equity": 29.3,
+      "Co-op": 16.1,
+      "NCBA": 19.5,
+      "Stanbic": 5.2,
+      "Absa": 6.9,
+      "DTB": 3.4,
+      "Family": 4.6,
+      "Ecobank": 2.9
+    }
+  }
+}

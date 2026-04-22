@@ -1,0 +1,256 @@
+{
+  "stages": [
+    {
+      "stage": "Prospecting",
+      "description": ""
+    },
+    {
+      "stage": "Needs Analysis",
+      "description": ""
+    },
+    {
+      "stage": "Proposal",
+      "description": ""
+    },
+    {
+      "stage": "Negotiation",
+      "description": ""
+    },
+    {
+      "stage": "Term Sheet",
+      "description": ""
+    },
+    {
+      "stage": "Due Diligence",
+      "description": ""
+    },
+    {
+      "stage": "Credit Review",
+      "description": ""
+    },
+    {
+      "stage": "Credit Committee",
+      "description": ""
+    },
+    {
+      "stage": "Bank Approval",
+      "description": ""
+    },
+    {
+      "stage": "Documentation",
+      "description": ""
+    },
+    {
+      "stage": "Vetting",
+      "description": ""
+    },
+    {
+      "stage": "Valuation",
+      "description": ""
+    },
+    {
+      "stage": "Disbursed",
+      "description": ""
+    },
+    {
+      "stage": "Closed Won",
+      "description": ""
+    },
+    {
+      "stage": "Closed Lost",
+      "description": ""
+    }
+  ],
+  "deal_types": [
+    "Working Capital",
+    "Asset Finance",
+    "Mortgage",
+    "Personal Loan",
+    "Business Loan",
+    "Trade Finance LC",
+    "Overdraft",
+    "Invoice Discounting",
+    "Structured Finance",
+    "Syndicated Loan"
+  ],
+  "sectors": [
+    "Manufacturing",
+    "Agriculture",
+    "Real Estate",
+    "Trade & Commerce",
+    "Education",
+    "Health",
+    "Tourism",
+    "Transport",
+    "Energy",
+    "Financial Services",
+    "Government & Parastatal",
+    "NGO & Non-Profit",
+    "Technology"
+  ],
+  "decision_levels": [
+    "Branch Manager",
+    "Credit Committee",
+    "MD/Board"
+  ],
+  "probability_map": {
+    "Prospecting": 10,
+    "Needs Analysis": 20,
+    "Proposal": 35,
+    "Negotiation": 50,
+    "Term Sheet": 65,
+    "Due Diligence": 70,
+    "Credit Review": 75,
+    "Credit Committee": 80,
+    "Bank Approval": 90,
+    "Documentation": 95,
+    "Vetting": 95,
+    "Valuation": 90,
+    "Disbursed": 100,
+    "Closed Won": 100,
+    "Closed Lost": 0
+  },
+  "currency": "KES",
+  "pipeline_target_b": 50.0,
+  "product_catalogue": {
+    "Assets": [
+      "Personal Loan",
+      "Business Loan",
+      "Mortgage",
+      "Asset Finance",
+      "Overdraft",
+      "Invoice Discounting",
+      "Trade Finance LC",
+      "Structured Finance"
+    ],
+    "Liabilities": [
+      "Current Account",
+      "Savings Account",
+      "Fixed Deposit",
+      "Call Deposit",
+      "Foreign Currency Account",
+      "Junior Savings"
+    ],
+    "Transactional": [
+      "Internet Banking",
+      "Mobile Banking",
+      "USSD Banking",
+      "Debit Card",
+      "Credit Card",
+      "Prepaid Card"
+    ],
+    "Insurance": [
+      "Credit Life",
+      "Home Owner",
+      "Motor Comprehensive",
+      "Medical Cover",
+      "Personal Accident",
+      "Business Interruption"
+    ],
+    "Investments": [
+      "Treasury Bills",
+      "Treasury Bonds",
+      "Unit Trusts",
+      "Offshore Investment",
+      "Structured Products"
+    ]
+  },
+  "deal_categories": [
+    {
+      "category": "New Facility",
+      "description": "First-time facility for this client or new product",
+      "stages": [
+        "Prospecting",
+        "Needs Analysis",
+        "Proposal",
+        "Negotiation",
+        "Term Sheet",
+        "Due Diligence",
+        "Credit Review",
+        "Credit Committee",
+        "Bank Approval",
+        "Documentation",
+        "Vetting",
+        "Valuation",
+        "Disbursed",
+        "Closed Won",
+        "Closed Lost"
+      ],
+      "avg_tap_days": 45,
+      "docs_required": "Full KYC, financials, security docs"
+    },
+    {
+      "category": "Top Up",
+      "description": "Increase to existing facility for a client with clean repayment",
+      "stages": [
+        "Top Up Request",
+        "Credit Review",
+        "Bank Approval",
+        "Documentation",
+        "Disbursed",
+        "Closed Won",
+        "Closed Lost"
+      ],
+      "avg_tap_days": 10,
+      "docs_required": "Latest 6-month statement, updated valuation if security-based",
+      "auto_qualifiers": {
+        "min_clean_months": 6,
+        "max_utilisation_pct": 90,
+        "repayment_status": "Clean",
+        "min_relationship_months": 12
+      }
+    },
+    {
+      "category": "Renewal",
+      "description": "Renewal of maturing facility on same or revised terms",
+      "stages": [
+        "Renewal Notice",
+        "Updated Financials",
+        "Credit Review",
+        "Bank Approval",
+        "Documentation",
+        "Disbursed",
+        "Closed Won"
+      ],
+      "avg_tap_days": 14,
+      "docs_required": "Latest financials, refreshed valuation, updated KYC",
+      "auto_qualifiers": {
+        "days_before_maturity": 90,
+        "repayment_status": "Clean or 1-2 late"
+      }
+    },
+    {
+      "category": "Restructure",
+      "description": "Revision of facility terms for client under stress",
+      "stages": [
+        "Request",
+        "Restructure Proposal",
+        "Credit Committee",
+        "Board Approval",
+        "Documentation",
+        "Disbursed"
+      ],
+      "avg_tap_days": 21,
+      "docs_required": "Full financial review, viability assessment, security review",
+      "requires_cco_approval": true
+    }
+  ],
+  "topup_probability_map": {
+    "Top Up Request": 60,
+    "Credit Review": 75,
+    "Bank Approval": 90,
+    "Documentation": 95,
+    "Disbursed": 100,
+    "Closed Won": 100,
+    "Closed Lost": 0
+  },
+  "renewal_probability_map": {
+    "Renewal Notice": 65,
+    "Updated Financials": 75,
+    "Credit Review": 85,
+    "Bank Approval": 92,
+    "Documentation": 97,
+    "Disbursed": 100,
+    "Closed Won": 100
+  }
+}

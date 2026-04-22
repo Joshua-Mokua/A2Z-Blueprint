@@ -1,0 +1,116 @@
+{
+  "as_at": "2026-04-18",
+  "mobile_app": {
+    "mau": 185420,
+    "dau": 42300,
+    "sessions_today": 89000,
+    "txn_count_today": 52000,
+    "txn_value_today_kes_b": 1.8,
+    "crash_rate_pct": 0.8,
+    "app_rating": 4.1,
+    "uptime_30d_pct": 99.2,
+    "avg_session_min": 4.2,
+    "features": {
+      "Transfers": 45,
+      "Balance Check": 28,
+      "Airtime": 12,
+      "Loans": 8,
+      "Other": 7
+    },
+    "errors_today": 142,
+    "force_closes": 38
+  },
+  "ussd": {
+    "mau": 420000,
+    "sessions_today": 185000,
+    "txn_count_today": 95000,
+    "txn_value_today_kes_b": 3.2,
+    "completion_rate_pct": 82.4,
+    "avg_steps": 5.1,
+    "uptime_30d_pct": 99.8,
+    "menu_drops": {
+      "*334*1#": 12,
+      "*334*2#": 8,
+      "*334*5#": 15
+    }
+  },
+  "internet_banking": {
+    "mau": 42000,
+    "sessions_today": 8500,
+    "txn_count_today": 12000,
+    "txn_value_today_kes_b": 8.4,
+    "uptime_30d_pct": 99.5,
+    "avg_session_min": 8.7
+  },
+  "agency_banking": {
+    "active_agents": 2840,
+    "agents_active_today": 1920,
+    "txn_count_today": 58000,
+    "txn_value_today_kes_b": 2.1,
+    "float_utilisation_pct": 71,
+    "avg_float_kes": 85000,
+    "downtime_agents_today": 87
+  },
+  "atm": {
+    "total_atms": 186,
+    "operational": 181,
+    "down": 5,
+    "uptime_pct": 97.3,
+    "txn_count_today": 32000,
+    "cash_dispensed_today_m": 95,
+    "avg_queue_sec": 42
+  },
+  "digital_migration_rate_pct": 68.5,
+  "cost_per_digital_txn_kes": 12,
+  "cost_per_branch_txn_kes": 285,
+  "monthly_trend": [
+    {
+      "month": "01",
+      "mau": 178937
+    },
+    {
+      "month": "02",
+      "mau": 176626
+    },
+    {
+      "month": "03",
+      "mau": 166971
+    },
+    {
+      "month": "04",
+      "mau": 165070
+    },
+    {
+      "month": "05",
+      "mau": 181519
+    },
+    {
+      "month": "06",
+      "mau": 175800
+    },
+    {
+      "month": "07",
+      "mau": 167348
+    },
+    {
+      "month": "08",
+      "mau": 187763
+    },
+    {
+      "month": "09",
+      "mau": 163546
+    },
+    {
+      "month": "10",
+      "mau": 171472
+    },
+    {
+      "month": "11",
+      "mau": 187701
+    },
+    {
+      "month": "12",
+      "mau": 178227
+    }
+  ]
+}

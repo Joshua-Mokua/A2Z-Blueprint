@@ -1,0 +1,191 @@
+{
+  "counterparty_limits": [
+    {
+      "counterparty": "KCB Bank",
+      "limit_kes": 214000000,
+      "utilised": 29000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Equity Bank",
+      "limit_kes": 53000000,
+      "utilised": 19000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Co-op Bank",
+      "limit_kes": 224000000,
+      "utilised": 38000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "NCBA Bank",
+      "limit_kes": 203000000,
+      "utilised": 10000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Stanbic Bank",
+      "limit_kes": 371000000,
+      "utilised": 23000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Standard Chartered",
+      "limit_kes": 93000000,
+      "utilised": 12000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Absa Kenya",
+      "limit_kes": 290000000,
+      "utilised": 36000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "DTB Bank",
+      "limit_kes": 56000000,
+      "utilised": 47000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Family Bank",
+      "limit_kes": 213000000,
+      "utilised": 35000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "CBK",
+      "limit_kes": 221000000,
+      "utilised": 68000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "NSSF",
+      "limit_kes": 346000000,
+      "utilised": 19000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "NHIF",
+      "limit_kes": 462000000,
+      "utilised": 1000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "KRA",
+      "limit_kes": 194000000,
+      "utilised": 21000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "Safaricom",
+      "limit_kes": 399000000,
+      "utilised": 5000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    },
+    {
+      "counterparty": "KenGen",
+      "limit_kes": 188000000,
+      "utilised": 53000000,
+      "currency": "KES",
+      "approved_by": "Board Risk Committee",
+      "review_date": "2026-10-14"
+    }
+  ],
+  "dealer_limits": [
+    {
+      "dealer": "Thomas Bett",
+      "intraday_limit": 156000000,
+      "overnight_limit": 36000000,
+      "stop_loss_daily": 5000000
+    },
+    {
+      "dealer": "Senior Dealer 2",
+      "intraday_limit": 181000000,
+      "overnight_limit": 5000000,
+      "stop_loss_daily": 1000000
+    },
+    {
+      "dealer": "Senior Dealer 3",
+      "intraday_limit": 51000000,
+      "overnight_limit": 13000000,
+      "stop_loss_daily": 3000000
+    },
+    {
+      "dealer": "Head of Treasury",
+      "intraday_limit": 47000000,
+      "overnight_limit": 48000000,
+      "stop_loss_daily": 3000000
+    }
+  ],
+  "currency_limits": [
+    {
+      "currency": "USD",
+      "net_open_position": 35000000,
+      "utilised": 27000000
+    },
+    {
+      "currency": "EUR",
+      "net_open_position": 39000000,
+      "utilised": 19000000
+    },
+    {
+      "currency": "GBP",
+      "net_open_position": 34000000,
+      "utilised": 20000000
+    },
+    {
+      "currency": "CHF",
+      "net_open_position": 48000000,
+      "utilised": 27000000
+    },
+    {
+      "currency": "JPY",
+      "net_open_position": 41000000,
+      "utilised": 21000000
+    }
+  ],
+  "product_limits": {
+    "fx_spot": {
+      "limit_kes": 2000000000
+    },
+    "fx_forward": {
+      "limit_kes": 1000000000
+    },
+    "mm_placement": {
+      "limit_kes": 5000000000
+    },
+    "gov_securities": {
+      "limit_kes": 20000000000
+    }
+  }
+}

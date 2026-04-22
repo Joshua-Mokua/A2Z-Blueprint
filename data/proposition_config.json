@@ -1,0 +1,894 @@
+{
+  "_meta": {
+    "description": "Proposition config",
+    "version": "2.0"
+  },
+  "propositions": {
+    "WB": {
+      "name": "Women Banking",
+      "tag": "WB",
+      "icon": "\ud83d\udc69",
+      "color": "#EC4899",
+      "active": true,
+      "description": "Banking proposition for women-owned businesses and women customers",
+      "head_role": "Head Of Women Banking",
+      "rm_roles": [
+        "Relationship",
+        "Business Banker",
+        "Personal Banker"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "WB_CUST_ACQ",
+          "name": "WB Customers Acquired",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 1500,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "WB_ACTIVE",
+          "name": "WB Active Customers",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 8000,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "WB_WALLET_SH",
+          "name": "WB Deposit Wallet Share",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 65.0,
+          "pillar": "Financial"
+        },
+        {
+          "id": "WB_LOAN_PEN",
+          "name": "WB Loan Penetration",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 35.0,
+          "pillar": "Financial"
+        },
+        {
+          "id": "WB_XSELL",
+          "name": "WB Cross-sell Score",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.1,
+          "target": 2.5,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "WB_EVENTS",
+          "name": "WB Events Held",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.05,
+          "target": 24,
+          "pillar": "People & Learning"
+        },
+        {
+          "id": "WB_NPS",
+          "name": "WB NPS Score",
+          "unit": "score",
+          "direction": "higher",
+          "weight": 0.1,
+          "target": 55.0,
+          "pillar": "Customer Focus"
+        }
+      ]
+    },
+    "DIA": {
+      "name": "Diaspora Banking",
+      "tag": "DIA",
+      "icon": "\u2708\ufe0f",
+      "color": "#0EA5E9",
+      "active": true,
+      "description": "Financial services for Kenyan diaspora and returnees",
+      "head_role": "Senior Manager Diaspora Banking",
+      "rm_roles": [
+        "Diaspora",
+        "Relationship"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "DIA_ACQ",
+          "name": "Diaspora Customers Acquired",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 500,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "DIA_REMIT",
+          "name": "Diaspora Remittances Volume",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.3,
+          "target": 2000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "DIA_LOANS",
+          "name": "Diaspora Loan Book",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 1500000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "DIA_ACTIV",
+          "name": "Diaspora Account Activation",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 70.0,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "DIA_DIGITAL",
+          "name": "Diaspora Digital Adoption",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 80.0,
+          "pillar": "Operational Excellence"
+        }
+      ]
+    },
+    "SME": {
+      "name": "SME Banking",
+      "tag": "SME",
+      "icon": "\ud83c\udfea",
+      "color": "#F59E0B",
+      "active": true,
+      "description": "Dedicated SME and MSME banking solutions",
+      "head_role": "Head of MSME",
+      "rm_roles": [
+        "SME",
+        "Business Banker",
+        "MSME"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "SME_ACQ",
+          "name": "SME Customers Acquired",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 800,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "SME_BOOK",
+          "name": "SME Loan Book",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.25,
+          "target": 5000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "SME_NPL",
+          "name": "SME NPL Ratio",
+          "unit": "%",
+          "direction": "lower",
+          "weight": 0.2,
+          "target": 4.0,
+          "pillar": "Financial"
+        },
+        {
+          "id": "SME_TRAINING",
+          "name": "SME Training Events",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.1,
+          "target": 36,
+          "pillar": "People & Learning"
+        },
+        {
+          "id": "SME_XSELL",
+          "name": "SME Cross-sell",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 3.0,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "SME_REPAY",
+          "name": "SME Repayment Rate",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.1,
+          "target": 92.0,
+          "pillar": "Operational Excellence"
+        }
+      ]
+    },
+    "AGR": {
+      "name": "Agribusiness",
+      "tag": "AGR",
+      "icon": "\ud83c\udf3e",
+      "color": "#10B981",
+      "active": true,
+      "description": "Agricultural finance and agri-business banking",
+      "head_role": "Head of MSME",
+      "rm_roles": [
+        "Agribusiness",
+        "Relationship"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "AGR_ACQ",
+          "name": "Agri Customers Acquired",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 600,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "AGR_BOOK",
+          "name": "Agri Loan Book",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.3,
+          "target": 3000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "AGR_NPL",
+          "name": "Agri NPL Ratio",
+          "unit": "%",
+          "direction": "lower",
+          "weight": 0.2,
+          "target": 5.0,
+          "pillar": "Financial"
+        },
+        {
+          "id": "AGR_SEASONAL",
+          "name": "Seasonal Loan Recovery",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.3,
+          "target": 88.0,
+          "pillar": "Operational Excellence"
+        }
+      ]
+    },
+    "TF": {
+      "name": "Trade Finance",
+      "tag": "TF",
+      "icon": "\ud83d\udea2",
+      "color": "#6366F1",
+      "active": true,
+      "description": "Import/export finance, letters of credit, guarantees",
+      "head_role": "Head Of Corporates & Trade Finance",
+      "rm_roles": [
+        "Trade Finance",
+        "Corporate"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "TF_VOLUME",
+          "name": "Trade Finance Volume",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.35,
+          "target": 8000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "TF_CLIENTS",
+          "name": "Active TF Clients",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 120,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "TF_TAT",
+          "name": "LC/LG Processing TAT",
+          "unit": "days",
+          "direction": "lower",
+          "weight": 0.25,
+          "target": 3.0,
+          "pillar": "Operational Excellence"
+        },
+        {
+          "id": "TF_INCOME",
+          "name": "TF Fee Income",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 500000000,
+          "pillar": "Financial"
+        }
+      ]
+    },
+    "GOV": {
+      "name": "Govt & Institutional",
+      "tag": "GOV",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "color": "#64748B",
+      "active": true,
+      "description": "Government parastatals, NGOs, SACCOs, faith-based",
+      "head_role": "Head of Government & Institutional Banking",
+      "rm_roles": [
+        "Public Sector",
+        "Institutional",
+        "Government"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "GOV_CLIENTS",
+          "name": "Govt/PSI Clients",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.25,
+          "target": 80,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "GOV_DEPOSITS",
+          "name": "Govt Deposits",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.35,
+          "target": 15000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "GOV_LOANS",
+          "name": "Govt Loan Book",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.25,
+          "target": 5000000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "GOV_TENDERS",
+          "name": "Tender Bonds Issued",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 200,
+          "pillar": "Operational Excellence"
+        }
+      ]
+    },
+    "BNC": {
+      "name": "Bancassurance",
+      "tag": "BNC",
+      "icon": "\ud83d\udee1\ufe0f",
+      "color": "#8B5CF6",
+      "active": true,
+      "description": "Embedded insurance products through banking channels",
+      "head_role": "General Manager - Bancassurance",
+      "rm_roles": [
+        "Bancassurance"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "BNC_POLICIES",
+          "name": "Policies Sold",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.3,
+          "target": 5000,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "BNC_PREMIUM",
+          "name": "Bancassurance Premium",
+          "unit": "KES",
+          "direction": "higher",
+          "weight": 0.3,
+          "target": 800000000,
+          "pillar": "Financial"
+        },
+        {
+          "id": "BNC_PENETR",
+          "name": "BNC Penetration Rate",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 18.0,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "BNC_CLAIMS",
+          "name": "Claims Ratio",
+          "unit": "%",
+          "direction": "lower",
+          "weight": 0.2,
+          "target": 55.0,
+          "pillar": "Financial"
+        }
+      ]
+    },
+    "DFS": {
+      "name": "Digital Finance",
+      "tag": "DFS",
+      "icon": "\ud83d\udcf1",
+      "color": "#06B6D4",
+      "active": true,
+      "description": "Mobile banking, agency network, digital lending",
+      "head_role": "Head of Digital Financial Services",
+      "rm_roles": [
+        "Digital",
+        "Agency"
+      ],
+      "period": "2026",
+      "kpis": [
+        {
+          "id": "DFS_MOBILE",
+          "name": "Mobile Banking Active Users",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.25,
+          "target": 150000,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "DFS_MIGRATION",
+          "name": "Digital Txn Migration",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.25,
+          "target": 60.0,
+          "pillar": "Operational Excellence"
+        },
+        {
+          "id": "DFS_AGENTS",
+          "name": "Active Agency Agents",
+          "unit": "count",
+          "direction": "higher",
+          "weight": 0.2,
+          "target": 800,
+          "pillar": "Operational Excellence"
+        },
+        {
+          "id": "DFS_MOBILE_L",
+          "name": "Mobile Loan Uptake",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 25.0,
+          "pillar": "Customer Focus"
+        },
+        {
+          "id": "DFS_UPTIME",
+          "name": "Platform Uptime",
+          "unit": "%",
+          "direction": "higher",
+          "weight": 0.15,
+          "target": 99.5,
+          "pillar": "Operational Excellence"
+        }
+      ]
+    }
+  },
+  "_hardcoded_logic": {
+    "scoring_thresholds": {
+      "130": "5.0",
+      "120": "4.5",
+      "110": "4.0",
+      "100": "3.5",
+      "91": "3.0",
+      "61": "2.5",
+      "51": "2.0",
+      "31": "1.5"
+    },
+    "note": "Scoring thresholds, achievement formula, and two-layer model cannot be changed via UI"
+  },
+  "ra_config": {
+    "description": "Reporting & Analytics module configuration",
+    "tab_access": {
+      "Executive Summary": "all_managers",
+      "BSC League Table": "all_managers",
+      "Pipeline Analytics": "all_managers",
+      "Credit Portfolio": "credit_and_above",
+      "Proposition vs Portfolio": "all_managers",
+      "Initiative Tracker": "exec_only",
+      "Campaigns & Commission": "all_managers",
+      "MD Drill-down": "exec_only"
+    },
+    "thresholds": {
+      "bsc_green": 3.5,
+      "bsc_amber": 2.5,
+      "bsc_red": 2.0,
+      "sla_green": 80,
+      "sla_amber": 60
+    },
+    "date_range_months": 12,
+    "show_staff_names": true,
+    "allow_export": true,
+    "_hardcoded_note": "Calculations, chart types, data sources, and scoring scale cannot be changed via UI"
+  },
+  "revenue_assurance_config": {
+    "_description": "Revenue Assurance module configuration \u2014 editable via Admin",
+    "fee_types": [
+      "Account Maintenance Fee",
+      "Ledger Fee",
+      "Loan Processing Fee",
+      "Card Maintenance Fee",
+      "Cheque Book Fee",
+      "Statement Fee",
+      "Wire Transfer Fee",
+      "RTGS Fee",
+      "EFT Fee",
+      "Bancassurance Commission",
+      "Foreign Exchange Commission",
+      "Trade Finance Fee",
+      "LC Commission",
+      "SMS Alert Fee",
+      "Internet Banking Fee",
+      "ATM Withdrawal Fee"
+    ],
+    "waiver_reasons": [
+      "Customer retention",
+      "VIP customer",
+      "Complaint resolution",
+      "System error",
+      "Promotional offer",
+      "Error posting",
+      "Manager discretion",
+      "Campaign waiver",
+      "Relationship banking"
+    ],
+    "leakage_types": [
+      "Unposted fee",
+      "Reversed income",
+      "Uncollected commission",
+      "System bypass",
+      "Manual override",
+      "Batch error",
+      "Rate variance"
+    ],
+    "approval_limits": {
+      "Relationship Manager": 50000,
+      "Branch Manager": 200000,
+      "Area Manager": 500000,
+      "Head of Branches": 2000000,
+      "Chief Retail Banking Officer": 10000000,
+      "Chief Financial Officer": -1
+    },
+    "escalation_threshold_days": 7,
+    "auto_reject_above_kes": 5000000,
+    "_hardcoded": "Audit trail, approval workflow sequence, recovery accounting entries"
+  },
+  "rms_config": {
+    "_description": "Reconciliation Management System config \u2014 editable via Admin",
+    "recon_types": [
+      "CBS to GL",
+      "Nostro Account",
+      "Suspense Account",
+      "Inter-branch",
+      "ATM Settlement",
+      "Card Settlement",
+      "Mobile Money",
+      "Agency Banking Float",
+      "Treasury Settlement",
+      "Payroll Clearing",
+      "Tax Clearing",
+      "Dividend Clearing"
+    ],
+    "breaker_types": [
+      "Timing",
+      "Error",
+      "Missing Entry",
+      "Duplicate",
+      "Rate Diff",
+      "System",
+      "Manual Override"
+    ],
+    "sla_days": {
+      "Matched": 0,
+      "Unreconciled": 3,
+      "Under Investigation": 7,
+      "Escalated": 1,
+      "Partially Matched": 5
+    },
+    "auto_match_threshold_kes": 1000,
+    "escalation_days": 30,
+    "cbk_reportable_threshold_kes": 10000000,
+    "accounts": [
+      {
+        "code": "1001",
+        "name": "Cash & Cash Equivalents",
+        "type": "Balance Sheet"
+      },
+      {
+        "code": "2001",
+        "name": "Customer Deposits",
+        "type": "Balance Sheet"
+      },
+      {
+        "code": "3001",
+        "name": "Loan Portfolio",
+        "type": "Balance Sheet"
+      },
+      {
+        "code": "4001",
+        "name": "Interest Income",
+        "type": "P&L"
+      },
+      {
+        "code": "4002",
+        "name": "Fee Income",
+        "type": "P&L"
+      },
+      {
+        "code": "6001",
+        "name": "Nostro USD",
+        "type": "Off Balance"
+      },
+      {
+        "code": "6002",
+        "name": "Nostro GBP",
+        "type": "Off Balance"
+      },
+      {
+        "code": "6003",
+        "name": "Nostro EUR",
+        "type": "Off Balance"
+      },
+      {
+        "code": "7001",
+        "name": "Suspense Debtors",
+        "type": "Suspense"
+      },
+      {
+        "code": "7002",
+        "name": "Suspense Creditors",
+        "type": "Suspense"
+      }
+    ],
+    "_hardcoded": "Matching algorithm, GL posting logic, regulatory reporting format"
+  },
+  "edms_config": {
+    "_description": "EDMS configuration \u2014 editable via Admin",
+    "categories": [
+      "KYC Documents",
+      "Loan File",
+      "Legal Documents",
+      "Board Papers",
+      "Policy Documents",
+      "Credit Files",
+      "Security Documents",
+      "Compliance Records",
+      "HR Documents",
+      "Audit Reports",
+      "Contract",
+      "Correspondence",
+      "Treasury Documents"
+    ],
+    "document_types_by_category": {
+      "KYC Documents": [
+        "National ID",
+        "Passport",
+        "PIN Certificate",
+        "Certificate of Incorporation",
+        "CR12"
+      ],
+      "Loan File": [
+        "Application Form",
+        "Credit Memo",
+        "Approval Letter",
+        "Facility Letter",
+        "Valuation Report"
+      ],
+      "Legal Documents": [
+        "Charge Document",
+        "Title Deed",
+        "Debenture",
+        "Guarantee",
+        "Power of Attorney"
+      ],
+      "Security Documents": [
+        "Title Deed",
+        "Logbook",
+        "Insurance Policy",
+        "Chattels Mortgage"
+      ]
+    },
+    "access_levels": {
+      "Public": "All staff",
+      "Internal": "All staff",
+      "Confidential": "Managers and above",
+      "Restricted": "Executives only",
+      "Top Secret": "MD + CFO only"
+    },
+    "retention_periods_years": {
+      "KYC Documents": 10,
+      "Loan File": 7,
+      "Legal Documents": 10,
+      "Board Papers": 20,
+      "HR Documents": 7,
+      "Compliance Records": 10,
+      "Audit Reports": 7
+    },
+    "expiry_alert_days": [
+      30,
+      60,
+      90
+    ],
+    "mandatory_kyc_docs": [
+      "National ID",
+      "PIN Certificate"
+    ],
+    "mandatory_loan_docs": [
+      "Application Form",
+      "CRB Report",
+      "Bank Statements"
+    ],
+    "_hardcoded": "Audit trail, versioning scheme, file storage structure, encryption"
+  },
+  "treasury_config": {
+    "_description": "Treasury module configuration \u2014 editable via Admin",
+    "fx_currencies": [
+      "USD",
+      "EUR",
+      "GBP",
+      "CHF",
+      "JPY",
+      "ZAR",
+      "UGX",
+      "TZS"
+    ],
+    "fx_reference_rates": {
+      "USD": 130.5,
+      "EUR": 141.2,
+      "GBP": 165.8,
+      "CHF": 148.3,
+      "JPY": 0.87
+    },
+    "cbk_rate": 13.0,
+    "overnight_rate": 12.5,
+    "money_market_products": [
+      "Placement",
+      "Call Money",
+      "Repo",
+      "Reverse Repo",
+      "Interbank Lending"
+    ],
+    "gov_security_types": [
+      "Treasury Bill 91D",
+      "Treasury Bill 182D",
+      "Treasury Bill 364D",
+      "Treasury Bond 2Y",
+      "Treasury Bond 5Y",
+      "Treasury Bond 10Y",
+      "Treasury Bond 15Y",
+      "Treasury Bond 20Y",
+      "Infrastructure Bond"
+    ],
+    "ifrs9_classifications": [
+      "HTM",
+      "AFS",
+      "FVTPL",
+      "FVOCI"
+    ],
+    "ifrs9_ecl_rates": {
+      "Stage 1": 0.01,
+      "Stage 2": 0.15,
+      "Stage 3": 0.5
+    },
+    "liquidity_ratios_minimum": {
+      "LCR": 100,
+      "NSFR": 100,
+      "Liquid Assets Ratio": 20,
+      "Loan to Deposit": 80
+    },
+    "dealer_products": [
+      "FX Spot",
+      "FX Forward",
+      "MM Placement",
+      "Gov Securities",
+      "Repo"
+    ],
+    "_hardcoded": "IFRS9 ECL calculation engine, LCR/NSFR Basel III formulas, CBK reporting templates"
+  },
+  "statement_analyzer_config": {
+    "_description": "Statement Analyzer AI engine configuration \u2014 editable via Admin",
+    "dsr_limit": 40,
+    "min_months": 3,
+    "living_expense_pct": 30,
+    "interest_rate_monthly": 1.5,
+    "risk_keywords": [
+      "bet",
+      "betika",
+      "sportpesa",
+      "mozzart",
+      "odibets",
+      "1xbet",
+      "casino",
+      "return item",
+      "refer to drawer",
+      "r/d",
+      "unpaid",
+      "dishonoured",
+      "bounce",
+      "bounced",
+      "unpaid cheque",
+      "fuliza",
+      "okoa",
+      "tala",
+      "branch loan",
+      "haraka",
+      "timiza",
+      "loop",
+      "kopa",
+      "zidisha",
+      "fadhili",
+      "okolea",
+      "mshwari",
+      "kcb mpesa"
+    ],
+    "products_requiring_3_months": [
+      "Personal Loan",
+      "Salary Advance",
+      "Staff Loan"
+    ],
+    "products_requiring_6_months": [
+      "Business Loan",
+      "SME Term Loan",
+      "Mortgage / Home Loan",
+      "Agri Loan"
+    ],
+    "products_requiring_12_months": [
+      "LPO Financing",
+      "Invoice Discounting"
+    ],
+    "auto_decline_triggers": [
+      "return_items_count > 3",
+      "months_negative_balance > 2",
+      "dsr_ratio > 65",
+      "income_consistency_score < 30"
+    ],
+    "auto_approve_triggers": [
+      "dsr_ratio < 20",
+      "income_consistency_score > 80",
+      "risk_score < 15",
+      "return_items_count == 0"
+    ],
+    "_hardcoded": "Claude API call, JSON schema, affordability formula, CBK DSR methodology, audit trail"
+  },
+  "competitor_config": {
+    "refresh_schedule": "Weekly",
+    "data_source": "CBK Supervision Data + Internal Intelligence",
+    "our_bank": "Ecobank",
+    "peer_group": [
+      "KCB",
+      "Equity",
+      "Co-op",
+      "NCBA",
+      "Stanbic",
+      "Absa"
+    ]
+  },
+  "opex_config": {
+    "target_cir": 55.0,
+    "target_roe": 18.0,
+    "target_roa": 2.5,
+    "income_per_staff_target": 400000
+  }
+}

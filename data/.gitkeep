@@ -1,0 +1,3 @@
+# This file keeps the data/ folder tracked in git.
+# All .json files and actual data are gitignored for security.
+# The data/ folder is created automatically when the app first runs.

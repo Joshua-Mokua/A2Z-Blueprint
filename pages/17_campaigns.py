@@ -7,6 +7,20 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+
+def _safe_date(s, fallback=None):
+    """Safe date parsing — returns fallback on invalid/None input."""
+    try:
+        from datetime import date as _d
+        return _d.fromisoformat(str(s)) if s else (fallback or _d.today())
+    except Exception:
+        from datetime import date as _d
+        return fallback or _d.today()
+
+
+require_access("campaigns")
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
@@ -80,7 +94,7 @@ class CampaignManager:
         for c in self.campaigns:
             if c["id"] == camp_id:
                 c["status"] = status
-                c["milestones"].append({
+                c.get('milestones', []).append({
                     "status": status, "note": note,
                     "by": by, "at": datetime.now().isoformat()})
                 self._save()
@@ -91,7 +105,7 @@ class CampaignManager:
                      note: str, logged_by: str):
         for c in self.campaigns:
             if c["id"] == camp_id:
-                c["progress_logs"].append({
+                c.get('progress_logs', []).append({
                     "unit": unit, "actual": actual,
                     "note": note, "logged_by": logged_by,
                     "logged_at": datetime.now().isoformat(),
@@ -120,12 +134,49 @@ if "campaign_manager" not in st.session_state:
     st.session_state["campaign_manager"] = CampaignManager()
 cpm = st.session_state["campaign_manager"]
 
+
+
 st.markdown(
-    "<div style='padding:14px 20px;background:#D35400;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Campaign Management</div>"
-    "<div style='color:#FAD7A0;font-size:11px;margin-top:2px'>"
-    "Design · Launch · Track · Measure · Close campaigns that drive KPI uplift"
-    "</div></div>", unsafe_allow_html=True)
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🚀 Campaigns</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Marketing drives · Conversion · ROI</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🚀 Campaigns</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Marketing · Conversion tracking</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🚀 Campaigns</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Marketing drives · Conversion · ROI</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🚀 Campaigns</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Marketing drives · Conversion tracking · ROI</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🚀 Campaigns</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Marketing drives · Conversion · ROI</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#D35400;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Campaign Management</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Design · Launch · Track · Measure · Close campaigns that drive KPI uplift</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "📊 Dashboard",
@@ -154,8 +205,8 @@ with tabs[0]:
         st.markdown("### 🟢 Active campaigns")
         for c in active:
             total, target, pct = cpm.campaign_progress(c["id"])
-            days_left = (date.fromisoformat(c["end_date"]) - date.today()).days
-            clr = '#006B3F' if pct>=80 else ('#F5A623' if pct>=50 else '#E24B4A')
+            days_left = (_safe_date(c["end_date"]) - date.today()).days
+            clr = 'var(--brand-primary,#006B3F)' if pct>=80 else ('#F5A623' if pct>=50 else '#E24B4A')
 
             st.markdown(
                 f"<div style='padding:12px 16px;background:var(--color-background-secondary);"
@@ -163,17 +214,17 @@ with tabs[0]:
                 f"border-radius:0 8px 8px 0;margin:6px 0'>"
                 f"<div style='display:flex;justify-content:space-between'>"
                 f"<div><b style='font-size:14px'>{c['name']}</b> "
-                f"<span style='background:#D35400;color:white;padding:1px 6px;"
+                f"<span style='background:#D35400;color:var(--color-background-primary);padding:1px 6px;"
                 f"border-radius:8px;font-size:10px'>{c['type']}</span></div>"
                 f"<span style='color:{clr};font-weight:600'>{pct:.0f}% of target</span></div>"
                 f"<div style='margin:6px 0 4px 0;height:6px;background:#EEE;border-radius:3px'>"
                 f"<div style='width:{min(pct,100):.0f}%;height:100%;background:{clr};border-radius:3px'></div></div>"
                 f"<div style='display:flex;gap:20px;font-size:11px;color:#666'>"
-                f"<span>KPI: <b>{c['kpi_linked']}</b></span>"
+                f"<span>KPI: <b>{c.get('kpi_linked', "")}</b></span>"
                 f"<span>Actual: <b>{fmt_num(total,True)}</b></span>"
                 f"<span>Target: <b>{fmt_num(target,True)}</b></span>"
                 f"<span>Days left: <b>{days_left}</b></span>"
-                f"<span>Audience: <b>{c['target_audience']}</b></span>"
+                f"<span>Audience: <b>{c.get('target_audience', "")}</b></span>"
                 f"</div></div>", unsafe_allow_html=True)
     else:
         st.info("No active campaigns. Create one in the 'Create campaign' tab.")
@@ -193,7 +244,7 @@ with tabs[0]:
         if outcome_rows:
             out_df = pd.DataFrame(outcome_rows)
             def hl_result(v):
-                if '✅' in str(v): return 'color:#006B3F;font-weight:500'
+                if '✅' in str(v): return 'color:var(--brand-primary,#006B3F);font-weight:500'
                 if '⚠️' in str(v): return 'color:#F5A623'
                 return 'color:#E24B4A'
             st.dataframe(out_df.style.map(hl_result, subset=['Result']),
@@ -260,6 +311,7 @@ with tabs[1]:
                 })
                 audit_log("CAMPAIGN_CREATED", uname, f"{c['id']}:{camp_name}")
                 st.success(f"✅ Campaign **{c['id']}** created: {camp_name}")
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.error("Name, type and valid date range are required.")
@@ -281,8 +333,8 @@ with tabs[2]:
 
         if camp:
             total, target, pct = cpm.campaign_progress(camp["id"])
-            days_rem = (date.fromisoformat(camp["end_date"]) - date.today()).days
-            clr = '#006B3F' if pct>=80 else ('#F5A623' if pct>=50 else '#E24B4A')
+            days_rem = (_safe_date(camp["end_date"]) - date.today()).days
+            clr = 'var(--brand-primary,#006B3F)' if pct>=80 else ('#F5A623' if pct>=50 else '#E24B4A')
 
             tc1,tc2,tc3,tc4 = st.columns(4)
             tc1.metric("Status",      camp["status"])
@@ -298,12 +350,15 @@ with tabs[2]:
             sc1, sc2, sc3 = st.columns(3)
             if camp["status"] == "Planning" and sc1.button("🟢 Launch", type="primary"):
                 cpm.update_status(camp["id"], "Active", "Campaign launched", uname)
+                st.cache_data.clear()
                 st.rerun()
             if camp["status"] == "Active" and sc2.button("⏸ Pause"):
                 cpm.update_status(camp["id"], "Paused", "Campaign paused", uname)
+                st.cache_data.clear()
                 st.rerun()
             if camp["status"] in ("Active","Paused") and sc3.button("✅ Complete"):
                 cpm.update_status(camp["id"], "Completed", "Campaign completed", uname)
+                st.cache_data.clear()
                 st.rerun()
 
             # Log progress
@@ -319,13 +374,14 @@ with tabs[2]:
                 if st.form_submit_button("Log progress", type="primary"):
                     cpm.log_progress(camp["id"], log_unit, log_actual, log_note, uname)
                     st.success("Progress logged.")
+                    st.cache_data.clear()
                     st.rerun()
 
             # Progress by branch
-            if camp["progress_logs"]:
+            if camp.get("progress_logs", []):
                 st.markdown("**Progress by branch:**")
                 by_unit = {}
-                for l in camp["progress_logs"]:
+                for l in camp.get("progress_logs", []):
                     u = l["unit"]
                     by_unit[u] = by_unit.get(u,0) + float(l.get("actual",0))
                 unit_prog = pd.DataFrame(
@@ -354,9 +410,9 @@ with tabs[3]:
         sel_active_id  = sel_active_lbl.split(" — ")[0]
         camp = next((c for c in active_c if c["id"]==sel_active_id), None)
 
-        if camp and camp["progress_logs"]:
+        if camp and camp.get("progress_logs", []):
             by_unit = {}
-            for l in camp["progress_logs"]:
+            for l in camp.get("progress_logs", []):
                 u = l["unit"]
                 by_unit[u] = by_unit.get(u,0) + float(l.get("actual",0))
 
@@ -416,7 +472,7 @@ with tabs[4]:
         if all_rows:
             all_df = pd.DataFrame(all_rows)
             def hl_status(v):
-                if v=="Active":    return 'color:#006B3F;font-weight:500'
+                if v=="Active":    return 'color:var(--brand-primary,#006B3F);font-weight:500'
                 if v=="Completed": return 'color:#185FA5'
                 if v=="Cancelled": return 'color:#E24B4A'
                 return ''

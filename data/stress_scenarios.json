@@ -1,0 +1,98 @@
+{
+  "base_case": {
+    "name": "Base Case",
+    "description": "Current economic conditions continue",
+    "assumptions": {
+      "cbk_rate_change": 0,
+      "gdp_growth": 5.5,
+      "inflation": 6.5,
+      "shilling_depreciation": 0
+    },
+    "impacts": {
+      "npl_change": 0,
+      "loan_book_growth": 8,
+      "interest_income_change": 0,
+      "ecl_change": 0
+    }
+  },
+  "rate_hike_200bps": {
+    "name": "+200bps CBK Rate Shock",
+    "description": "CBK raises rates by 200 basis points \u2014 mortgage stress",
+    "assumptions": {
+      "cbk_rate_change": 2,
+      "gdp_growth": 4.0,
+      "inflation": 9.0,
+      "shilling_depreciation": 5
+    },
+    "impacts": {
+      "npl_change": 2.5,
+      "loan_book_growth": 2,
+      "interest_income_change": 8,
+      "ecl_change": 15
+    }
+  },
+  "rate_cut_150bps": {
+    "name": "-150bps CBK Rate Cut",
+    "description": "CBK cuts rates \u2014 NIM compression risk",
+    "assumptions": {
+      "cbk_rate_change": -1.5,
+      "gdp_growth": 6.5,
+      "inflation": 4.0,
+      "shilling_depreciation": -2
+    },
+    "impacts": {
+      "npl_change": -1,
+      "loan_book_growth": 15,
+      "interest_income_change": -6,
+      "ecl_change": -8
+    }
+  },
+  "fx_stress": {
+    "name": "KES/USD +25% Depreciation",
+    "description": "Shilling depreciates sharply \u2014 importers stressed",
+    "assumptions": {
+      "cbk_rate_change": 1,
+      "gdp_growth": 3.5,
+      "inflation": 12,
+      "shilling_depreciation": 25
+    },
+    "impacts": {
+      "npl_change": 4.5,
+      "loan_book_growth": -3,
+      "interest_income_change": 5,
+      "ecl_change": 30
+    }
+  },
+  "credit_crunch": {
+    "name": "Credit Market Crunch",
+    "description": "Severe tightening \u2014 interbank rates spike, deposits flee",
+    "assumptions": {
+      "cbk_rate_change": 4,
+      "gdp_growth": 1.5,
+      "inflation": 14,
+      "shilling_depreciation": 18
+    },
+    "impacts": {
+      "npl_change": 9,
+      "loan_book_growth": -12,
+      "interest_income_change": 12,
+      "ecl_change": 65
+    }
+  },
+  "pandemic_recovery": {
+    "name": "Post-Shock Recovery",
+    "description": "Economy bounces back strongly after disruption",
+    "assumptions": {
+      "cbk_rate_change": -2,
+      "gdp_growth": 8.5,
+      "inflation": 5.0,
+      "shilling_depreciation": -5
+    },
+    "impacts": {
+      "npl_change": -3,
+      "loan_book_growth": 22,
+      "interest_income_change": -4,
+      "ecl_change": -20
+    }
+  }
+}

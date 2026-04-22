@@ -1,0 +1,128 @@
+{
+  "as_at": "2026-04-21",
+  "base_rate_pct": 13.0,
+  "ftp_rates": {
+    "0-3M": 12.8,
+    "3-6M": 13.2,
+    "6-12M": 13.6,
+    "1-3Y": 14.1,
+    "3-5Y": 14.8,
+    ">5Y": 15.4
+  },
+  "by_product": [
+    {
+      "product": "Personal Loan",
+      "volume_b": 8.4,
+      "avg_rate_pct": 16.2,
+      "ftp_pct": 13.8,
+      "nim_spread_pct": 2.4,
+      "duration_months": 36
+    },
+    {
+      "product": "Business Loan",
+      "volume_b": 22.1,
+      "avg_rate_pct": 14.8,
+      "ftp_pct": 13.6,
+      "nim_spread_pct": 1.2,
+      "duration_months": 48
+    },
+    {
+      "product": "Mortgage",
+      "volume_b": 18.6,
+      "avg_rate_pct": 13.5,
+      "ftp_pct": 15.1,
+      "nim_spread_pct": -1.6,
+      "duration_months": 240
+    },
+    {
+      "product": "Current Account",
+      "volume_b": 28.4,
+      "avg_rate_pct": 0.0,
+      "ftp_pct": 12.8,
+      "nim_spread_pct": 12.8,
+      "duration_months": 1
+    },
+    {
+      "product": "Fixed Deposit",
+      "volume_b": 32.6,
+      "avg_rate_pct": 11.8,
+      "ftp_pct": 13.4,
+      "nim_spread_pct": -1.6,
+      "duration_months": 12
+    },
+    {
+      "product": "Savings Account",
+      "volume_b": 18.2,
+      "avg_rate_pct": 3.5,
+      "ftp_pct": 12.8,
+      "nim_spread_pct": 9.3,
+      "duration_months": 1
+    },
+    {
+      "product": "Trade Finance LC",
+      "volume_b": 4.8,
+      "avg_rate_pct": 15.5,
+      "ftp_pct": 13.2,
+      "nim_spread_pct": 2.3,
+      "duration_months": 6
+    }
+  ],
+  "by_branch_sbu": [
+    {
+      "unit": "CBD Branch",
+      "assets_b": 3.9,
+      "liabilities_b": 4.7,
+      "ftp_income_m": 185.1,
+      "nim_contribution_m": 162.3
+    },
+    {
+      "unit": "Westlands",
+      "assets_b": 0.9,
+      "liabilities_b": 3.9,
+      "ftp_income_m": 44.6,
+      "nim_contribution_m": 97.3
+    },
+    {
+      "unit": "Karen",
+      "assets_b": 3.4,
+      "liabilities_b": 8.2,
+      "ftp_income_m": 181.8,
+      "nim_contribution_m": 115.1
+    },
+    {
+      "unit": "Mombasa",
+      "assets_b": 7.5,
+      "liabilities_b": 2.5,
+      "ftp_income_m": 57.8,
+      "nim_contribution_m": 112.9
+    },
+    {
+      "unit": "Kisumu",
+      "assets_b": 6.3,
+      "liabilities_b": 1.5,
+      "ftp_income_m": 134.0,
+      "nim_contribution_m": 133.2
+    },
+    {
+      "unit": "Nakuru",
+      "assets_b": 5.8,
+      "liabilities_b": 2.1,
+      "ftp_income_m": 22.3,
+      "nim_contribution_m": 40.1
+    },
+    {
+      "unit": "Corporate Banking",
+      "assets_b": 3.4,
+      "liabilities_b": 8.9,
+      "ftp_income_m": 94.2,
+      "nim_contribution_m": 173.4
+    },
+    {
+      "unit": "SME Banking",
+      "assets_b": 3.3,
+      "liabilities_b": 2.0,
+      "ftp_income_m": 118.1,
+      "nim_contribution_m": 59.6
+    }
+  ]
+}

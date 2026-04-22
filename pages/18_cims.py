@@ -6,7 +6,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
-from pages._shared import load_shared_state
+from pages._shared import load_shared_state, safe_html
+from pages._access import require_access, get_my_scope
+require_access("cims")
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
@@ -264,7 +267,7 @@ STATUS_COLORS   = {
     "Allocated":        "#F5A623",
     "In Progress":      "#185FA5",
     "Pending Customer": "#9B59B6",
-    "Resolved":         "#006B3F",
+    "Resolved":         "var(--brand-primary,#006B3F)",
     "Escalated":        "#C0392B",
     "Cancelled":        "#7F8C8D",
 }
@@ -272,12 +275,37 @@ STATUS_COLORS   = {
 # ════════════════════════════════════════════════════════════════
 # CIMS MANAGER
 # ════════════════════════════════════════════════════════════════
+CIMS_DOCS_DIR    = DATA_DIR / "cims_docs"
+CIMS_AUTO_CFG    = DATA_DIR / "cims_auto_assign.json"
+
 class CIMSManager:
     def __init__(self):
-        self.cfg_file  = CIMS_CONFIG_FILE
-        self.tick_file = CIMS_TICKETS_FILE
-        self.config    = self._load_config()
-        self.tickets   = self._load_tickets()
+        self.cfg_file    = CIMS_CONFIG_FILE
+        self.tick_file   = CIMS_TICKETS_FILE
+        self.auto_file   = CIMS_AUTO_CFG
+        self.config      = self._load_config()
+        self.tickets     = self._load_tickets()
+        self.auto_config = self._load_auto()
+        CIMS_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _load_auto(self):
+        """Load auto-assignment config: mode + unit->staff mapping."""
+        if not self.auto_file.exists():
+            default = {
+                "mode": "team_leader",      # "auto" or "team_leader"
+                "unit_map": {},              # unit_name -> [staff_code, ...]
+                "exclude_on_leave": True,    # skip staff on leave
+                "round_robin": {},           # unit -> last_index
+            }
+            self.auto_file.write_text(json.dumps(default, indent=2))
+            return default
+        try:
+            return json.loads(self.auto_file.read_text())
+        except:
+            return {"mode":"team_leader","unit_map":{},"exclude_on_leave":True,"round_robin":{}}
+
+    def save_auto_config(self):
+        self.auto_file.write_text(json.dumps(self.auto_config, indent=2))
 
     # ── Config (instruction types + SLAs) ────────────────────
     def _load_config(self):
@@ -369,7 +397,111 @@ class CIMSManager:
         }
         self.tickets.append(rec)
         self._save_tickets()
+
+        # Auto-assign if mode is "auto"
+        if self.auto_config.get("mode") == "auto":
+            self._auto_assign(rec)
+
         return rec
+
+    def _auto_assign(self, ticket: dict):
+        """Auto-assign ticket to available staff in owner unit (round-robin, skip leave)."""
+        unit = ticket.get("owner_unit","")
+        staff_pool = self.auto_config.get("unit_map",{}).get(unit, [])
+        if not staff_pool:
+            return  # no mapping configured, leave unassigned
+
+        # Get leave records to exclude staff on leave
+        on_leave = set()
+        if self.auto_config.get("exclude_on_leave", True):
+            try:
+                leave_file = DATA_DIR / "leave_records.json"
+                if leave_file.exists():
+                    records = json.loads(leave_file.read_text())
+                    today   = datetime.now().date().isoformat()
+                    on_leave = {r["staff_code"] for r in records
+                                if r.get("status") == "Active"
+                                and r.get("start_date","") <= today <= r.get("end_date","9999")}
+            except:
+                pass
+
+        available = [s for s in staff_pool if s.get("code","") not in on_leave]
+        if not available:
+            available = staff_pool  # everyone on leave — assign anyway
+
+        # Round-robin index
+        rr = self.auto_config.get("round_robin", {})
+        idx = rr.get(unit, 0) % len(available)
+        chosen = available[idx]
+        rr[unit] = (idx + 1) % len(available)
+        self.auto_config["round_robin"] = rr
+        self.save_auto_config()
+
+        # Assign
+        for t in self.tickets:
+            if t["id"] == ticket["id"]:
+                t["status"]            = "Allocated"
+                t["allocated_to_code"] = chosen.get("code","")
+                t["allocated_to_name"] = chosen.get("name","")
+                t["allocated_at"]      = datetime.now().isoformat()
+                t["allocation_note"]   = "Auto-assigned (round-robin, leave-aware)"
+                if not t.get("first_response_at"):
+                    t["first_response_at"] = t["allocated_at"]
+                t["audit_trail"].append({
+                    "action": "Auto-allocated",
+                    "by":     "SYSTEM",
+                    "at":     datetime.now().isoformat(),
+                    "note":   f"Auto-assigned to {chosen.get('name','')} (round-robin)",
+                })
+        self._save_tickets()
+
+    def reroute_ticket(self, ticket_id: str, new_staff_code: str,
+                       new_staff_name: str, reason: str, by: str):
+        """Staff member reroutes their ticket to someone else."""
+        for t in self.tickets:
+            if t["id"] == ticket_id:
+                old_name = t.get("allocated_to_name","")
+                t["allocated_to_code"] = new_staff_code
+                t["allocated_to_name"] = new_staff_name
+                t["status"]            = "Allocated"
+                t["audit_trail"].append({
+                    "action": f"Rerouted from {old_name}",
+                    "by":     by,
+                    "at":     datetime.now().isoformat(),
+                    "note":   reason,
+                })
+                self._save_tickets()
+                return t
+        return {}
+
+    def save_document(self, ticket_id: str, filename: str,
+                      file_bytes: bytes, uploaded_by: str) -> str:
+        """Save uploaded document for a ticket. Returns saved path."""
+        tick_dir = CIMS_DOCS_DIR / ticket_id
+        tick_dir.mkdir(parents=True, exist_ok=True)
+        safe_name = "".join(c for c in filename if c.isalnum() or c in "._- ")
+        save_path = tick_dir / safe_name
+        save_path.write_bytes(file_bytes)
+        # Record in ticket
+        for t in self.tickets:
+            if t["id"] == ticket_id:
+                if "documents" not in t:
+                    t["documents"] = []
+                t["documents"].append({
+                    "filename":    safe_name,
+                    "uploaded_by": uploaded_by,
+                    "uploaded_at": datetime.now().isoformat(),
+                    "size_kb":     round(len(file_bytes)/1024, 1),
+                })
+                self._save_tickets()
+                break
+        return str(save_path)
+
+    def get_documents(self, ticket_id: str) -> list:
+        for t in self.tickets:
+            if t["id"] == ticket_id:
+                return t.get("documents", [])
+        return []
 
     def allocate(self, ticket_id: str, staff_code: str, staff_name: str,
                  note: str, by: str) -> dict:
@@ -580,13 +712,41 @@ if len(staff_scores):
 # ════════════════════════════════════════════════════════════════
 # PAGE HEADER
 # ════════════════════════════════════════════════════════════════
+
+
 st.markdown(
-    "<div style='padding:14px 20px;background:#1A252F;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>"
-    "CIMS — Customer Instruction Management System</div>"
-    "<div style='color:#BDC3C7;font-size:11px;margin-top:2px'>"
-    "Raise · Allocate · Track · Resolve · Score TAT performance across all processing units"
-    "</div></div>", unsafe_allow_html=True)
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📨 CIMS</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer instructions · Processing · SLA</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📨 CIMS</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer instructions · Processing</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📨 CIMS</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer instructions · Processing · SLA</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📨 CIMS</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer instructions · SLA · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#1A252F;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>CIMS — Customer Instruction Management System</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Raise · Allocate · Track · Resolve · Score TAT performance across all processing units</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "📊 Command centre",
@@ -628,7 +788,7 @@ with tabs[0]:
     # TAT gauge
     ga1, ga2 = st.columns(2)
     with ga1:
-        score_clr = '#006B3F' if overall_score>=0.9 else ('#F5A623' if overall_score>=0.75 else '#E24B4A')
+        score_clr = 'var(--brand-primary,#006B3F)' if overall_score>=0.9 else ('#F5A623' if overall_score>=0.75 else '#E24B4A')
         fig_g = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=overall_score*100,
@@ -640,9 +800,9 @@ with tabs[0]:
                 "steps": [
                     {"range":[0,70],  "color":"#FDEDEC"},
                     {"range":[70,90], "color":"#FEF6E4"},
-                    {"range":[90,100],"color":"#E8F5EE"},
+                    {"range":[90,100],"color":"var(--brand-light,#E8F5EE)"},
                 ],
-                "threshold": {"line":{"color":"#006B3F","width":3},"value":90},
+                "threshold": {"line":{"color":"var(--brand-primary,#006B3F)","width":3},"value":90},
             }))
         fig_g.update_layout(height=240, paper_bgcolor='rgba(0,0,0,0)',
                             margin=dict(l=20,r=20,t=40,b=20))
@@ -654,7 +814,7 @@ with tabs[0]:
             def hl_tat(v):
                 try:
                     fv = float(v)
-                    if fv >= 0.95: return 'color:#006B3F;font-weight:600'
+                    if fv >= 0.95: return 'color:var(--brand-primary,#006B3F);font-weight:600'
                     if fv >= 0.85: return 'color:#F5A623'
                     return 'color:#E24B4A;font-weight:600'
                 except: return ''
@@ -664,6 +824,28 @@ with tabs[0]:
             st.dataframe(
                 unit_disp.style.map(hl_tat, subset=["TAT Score"]),
                 use_container_width=True, hide_index=True, height=220)
+
+    # Age buckets — how long have open tickets been waiting?
+    _age_buckets = {"< 1 day": 0, "1–2 days": 0, "2–5 days": 0, "5–14 days": 0, "> 14 days": 0}
+    for _t in open_all:
+        try:
+            _age_h = (datetime.now() - datetime.fromisoformat(_t["created_at"][:19])).total_seconds()/3600
+            if   _age_h < 24:   _age_buckets["< 1 day"]    += 1
+            elif _age_h < 48:   _age_buckets["1–2 days"]   += 1
+            elif _age_h < 120:  _age_buckets["2–5 days"]   += 1
+            elif _age_h < 336:  _age_buckets["5–14 days"]  += 1
+            else:               _age_buckets["> 14 days"]  += 1
+        except: pass
+    if any(_age_buckets.values()):
+        _ab_df = pd.DataFrame(list(_age_buckets.items()), columns=["Age","Count"])
+        _ab_fig = px.bar(_ab_df, x="Age", y="Count",
+                         title="Open instructions by age",
+                         color="Count",
+                         color_continuous_scale=["var(--brand-primary,#006B3F)","#F5A623","#E24B4A"])
+        _ab_fig.update_layout(height=200, showlegend=False,
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0,r=0,t=30,b=0), coloraxis_showscale=False)
+        st.plotly_chart(_ab_fig, use_container_width=True)
 
     # Overdue alerts
     if overdue_all:
@@ -677,7 +859,7 @@ with tabs[0]:
                 f"border-left:4px solid #E24B4A;border-radius:0 6px 6px 0;margin:3px 0;font-size:12px'>"
                 f"<div style='display:flex;justify-content:space-between'>"
                 f"<span><b>{t['id']}</b> · {t['instruction_type']} "
-                f"<span style='background:{pri_clr};color:white;padding:1px 5px;"
+                f"<span style='background:{pri_clr};color:var(--color-background-primary);padding:1px 5px;"
                 f"border-radius:8px;font-size:10px'>{t['priority']}</span></span>"
                 f"<span style='color:#E24B4A;font-weight:600'>🔴 {hrs:.1f}h overdue</span></div>"
                 f"<div style='color:#666;margin-top:2px'>"
@@ -741,6 +923,14 @@ with tabs[1]:
         desc = st.text_area("Instruction details / notes", height=70)
         docs_recd = st.checkbox("Required documents received from customer")
 
+        st.markdown("**Supporting documents** (optional — upload later too)")
+        uploaded_docs = st.file_uploader(
+            "Attach documents",
+            type=["pdf","docx","xlsx","jpg","jpeg","png","msg","eml"],
+            accept_multiple_files=True,
+            key="raise_docs",
+            help="Upload required documents: ID, forms, contracts, etc.")
+
         if st.form_submit_button("📤 Raise instruction", type="primary"):
             if inst_sel and cust_name and orig_branch:
                 my_row = (staff_scores[staff_scores["Staff Code"].astype(str)==my_sc]
@@ -759,11 +949,17 @@ with tabs[1]:
                 })
                 audit_log("CIMS_RAISED", uname,
                           f"{ticket['id']}:{inst_sel}:{cust_name}")
+                # Save uploaded documents
+                if uploaded_docs:
+                    for doc in uploaded_docs:
+                        cims.save_document(ticket['id'], doc.name,
+                                           doc.read(), uname)
                 cfg_sel = cims.config.get(inst_sel, {})
                 due_str = datetime.fromisoformat(ticket["due_at"][:19]).strftime("%d %b %Y %H:%M")
                 st.success(
                     f"✅ **{ticket['id']}** raised — {inst_sel} → {cfg_sel.get('owner_unit','Operations')} "
                     f"| Due by: **{due_str}**")
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.error("Instruction type, customer name and originating branch are required.")
@@ -855,6 +1051,7 @@ with tabs[2]:
                         audit_log("CIMS_ALLOCATED", uname,
                                   f"{t['id']} → {sel_staff_lbl}")
                         st.success(f"Allocated to {sel_staff_lbl.split('(')[0].strip()}")
+                        st.cache_data.clear()
                         st.rerun()
 
     # ── Allocated — update status ─────────────────────────────
@@ -891,6 +1088,7 @@ with tabs[2]:
                         audit_log("CIMS_STATUS", uname,
                                   f"{t['id']} → {new_stat}")
                         st.success(f"Status updated to {new_stat}")
+                        st.cache_data.clear()
                         st.rerun()
 
 # ════════════════════════════════════════════════════════════════
@@ -930,7 +1128,7 @@ with tabs[3]:
                 f"border-left:4px solid {border_clr};border-radius:0 6px 6px 0;margin:4px 0'>"
                 f"<div style='display:flex;justify-content:space-between'>"
                 f"<div><b>{t['id']}</b> · {t['instruction_type']} "
-                f"<span style='background:{pri_clr};color:white;padding:1px 5px;"
+                f"<span style='background:{pri_clr};color:var(--color-background-primary);padding:1px 5px;"
                 f"border-radius:8px;font-size:10px'>{t['priority']}</span></div>"
                 f"<span style='color:{border_clr};font-weight:600'>"
                 f"{'🔴 OVERDUE ' + str(abs(hrs_rem))[:4] + 'h' if overdue_flag else '⏱ ' + str(hrs_rem)[:4] + 'h left'}"
@@ -949,12 +1147,61 @@ with tabs[3]:
                     key=f"my_stat_{t['id']}")
                 res_note = mf2.text_input("Resolution / notes",
                                           key=f"my_note_{t['id']}")
-                if st.form_submit_button("Submit update", type="primary"):
+                sub_cols = st.columns(2)
+                if sub_cols[0].form_submit_button("Submit update", type="primary"):
                     cims.update_status(t["id"], new_s, res_note, uname)
-                    audit_log("CIMS_MY_UPDATE", uname,
-                              f"{t['id']} → {new_s}")
+                    audit_log("CIMS_MY_UPDATE", uname, f"{t['id']} → {new_s}")
                     st.success(f"Updated to {new_s}")
+                    st.cache_data.clear()
                     st.rerun()
+
+            # Document upload (outside form so it works independently)
+            docs = cims.get_documents(t["id"])
+            with st.expander(f"📎 Documents ({len(docs)})", expanded=False):
+                if docs:
+                    for d in docs:
+                        st.markdown(
+                            f"<div style='padding:4px 8px;background:var(--color-background-secondary);"
+                            f"border-radius:6px;font-size:11px;margin:2px 0'>"
+                            f"📄 <b>{d['filename']}</b> · {d['size_kb']} KB "
+                            f"· {d['uploaded_at'][:10]} by {d['uploaded_by']}"
+                            f"</div>", unsafe_allow_html=True)
+                up_file = st.file_uploader(
+                    "Upload document",
+                    type=["pdf","docx","xlsx","jpg","jpeg","png","msg","eml"],
+                    key=f"doc_up_{t['id']}")
+                if up_file:
+                    cims.save_document(t["id"], up_file.name, up_file.read(), uname)
+                    st.toast(f"✅ {up_file.name} uploaded", icon="📎")
+                    st.cache_data.clear()
+                    st.rerun()
+
+            # Reroute option
+            if t.get("status") not in ("Resolved","Cancelled"):
+                with st.expander("🔀 Reroute to someone else", expanded=False):
+                    unit_members_r = unit_staff_map.get(t.get("owner_unit",""), [])
+                    if unit_members_r:
+                        rr_opts = {f"{s['name']} ({s['role']})": s["code"]
+                                   for s in unit_members_r
+                                   if s["code"] != my_sc}
+                        if rr_opts:
+                            rr_sel  = st.selectbox("Reroute to", list(rr_opts.keys()),
+                                                    key=f"rr_{t['id']}")
+                            rr_note = st.text_input("Reason for rerouting",
+                                                     key=f"rr_note_{t['id']}")
+                            if st.button("🔀 Confirm reroute", key=f"rr_btn_{t['id']}",
+                                         type="secondary"):
+                                new_sc_r = rr_opts[rr_sel]
+                                cims.reroute_ticket(
+                                    t["id"], new_sc_r,
+                                    rr_sel.split("(")[0].strip(),
+                                    rr_note or "Rerouted by staff", uname)
+                                audit_log("CIMS_REROUTE", uname, f"{t['id']} → {rr_sel}")
+                                st.toast("✅ Ticket rerouted", icon="🔀")
+                                st.cache_data.clear()
+                                st.rerun()
+                        else:
+                            st.info("No other staff available in this unit.")
 
 # ════════════════════════════════════════════════════════════════
 # TAB 5 — TAT PERFORMANCE
@@ -978,11 +1225,11 @@ with tabs[4]:
                 staff_tat.sort_values("TAT Score"),
                 x="Staff Name", y="TAT Score",
                 color="TAT Score",
-                color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                 range_color=[0,1],
                 title=f"Staff TAT scores — last {days_back} days",
                 hover_data={"Tickets":True,"Breached":True,"Avg TAT (h)":True})
-            fig_tat.add_hline(y=0.90, line_dash="dash", line_color="#006B3F",
+            fig_tat.add_hline(y=0.90, line_dash="dash", line_color="var(--brand-primary,#006B3F)",
                                annotation_text="90% target")
             fig_tat.update_yaxes(tickformat=".0%")
             fig_tat.update_layout(height=340, xaxis_tickangle=-30,
@@ -995,7 +1242,7 @@ with tabs[4]:
             def hl_tat_col(v):
                 try:
                     fv = float(str(v).replace('%',''))/100
-                    if fv >= 0.95: return 'color:#006B3F;font-weight:600'
+                    if fv >= 0.95: return 'color:var(--brand-primary,#006B3F);font-weight:600'
                     if fv >= 0.85: return 'color:#F5A623'
                     return 'color:#E24B4A;font-weight:600'
                 except: return ''
@@ -1040,12 +1287,12 @@ with tabs[5]:
             x="TAT Score", y="Unit",
             orientation="h",
             color="TAT Score",
-            color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+            color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
             range_color=[0,1],
             title="Unit TAT scores — last 30 days",
             text=unit_df.sort_values("TAT Score")["TAT Score"].apply(lambda x: f"{x:.0%}"),
         )
-        fig_u.add_vline(x=0.90, line_dash="dash", line_color="#006B3F",
+        fig_u.add_vline(x=0.90, line_dash="dash", line_color="var(--brand-primary,#006B3F)",
                          annotation_text="Target 90%")
         fig_u.update_xaxes(tickformat=".0%")
         fig_u.update_layout(height=360,
@@ -1057,7 +1304,7 @@ with tabs[5]:
     def hl_unit_tat(v):
         try:
             fv = float(str(v).replace('%',''))/100
-            if fv >= 0.95: return 'color:#006B3F;font-weight:600'
+            if fv >= 0.95: return 'color:var(--brand-primary,#006B3F);font-weight:600'
             if fv >= 0.85: return 'color:#F5A623'
             return 'color:#E24B4A;font-weight:600'
         except: return ''
@@ -1103,6 +1350,7 @@ with tabs[6]:
         "➕ Add instruction type",
         "🗂️ Unit allocation matrix",
         "⚙️ Edit SLA",
+        "🤖 Auto-assignment",
     ])
 
     # ── A: View all instruction types ────────────────────────
@@ -1160,6 +1408,7 @@ with tabs[6]:
                     })
                     audit_log("CIMS_INST_TYPE_ADDED", uname, new_name.strip())
                     st.success(f"✅ '{new_name}' added to CIMS instruction types.")
+                    st.cache_data.clear()
                     st.rerun()
                 else:
                     st.error("Instruction type name is required.")
@@ -1201,6 +1450,7 @@ with tabs[6]:
                           f"{br_cat}: {br_old}→{br_new} ({count} types)")
                 st.success(f"✅ {count} instruction types in '{br_cat}' reassigned "
                            f"from {br_old} to {br_new}.")
+                st.cache_data.clear()
                 st.rerun()
 
     # ── D: Edit individual SLA ────────────────────────────────
@@ -1238,4 +1488,94 @@ with tabs[6]:
                     audit_log("CIMS_SLA_EDITED", uname,
                               f"{inst_to_edit}: {new_sla_hrs}h / {new_pri_ed} / {new_unit_ed}")
                     st.success(f"✅ SLA updated for '{inst_to_edit}'")
+                    st.cache_data.clear()
                     st.rerun()
+
+    # ── E: Auto-assignment configuration ─────────────────────────────
+    with admin_tabs[4]:
+        st.subheader("Auto-assignment configuration")
+        st.caption(
+            "Choose how new tickets are assigned: "
+            "**Auto** (system assigns immediately, round-robin, skipping staff on leave) or "
+            "**Team leader** (sits in unallocated queue for manager to assign).")
+
+        cur_mode = cims.auto_config.get("mode","team_leader")
+        new_mode = st.radio(
+            "Assignment mode",
+            ["auto", "team_leader"],
+            format_func=lambda x: (
+                "🤖 Auto-assign — system assigns immediately on ticket raise (round-robin, leave-aware)"
+                if x=="auto" else
+                "👤 Team leader — tickets queue for manager to manually allocate"),
+            index=0 if cur_mode=="auto" else 1,
+            key="auto_mode_sel")
+
+        excl_leave = st.checkbox(
+            "Skip staff currently on leave",
+            value=cims.auto_config.get("exclude_on_leave", True),
+            help="When auto-assigning, leave management records are checked. "
+                 "Staff on active leave are excluded from the round-robin pool.")
+
+        if st.button("💾 Save assignment mode", type="primary"):
+            cims.auto_config["mode"]           = new_mode
+            cims.auto_config["exclude_on_leave"]= excl_leave
+            cims.save_auto_config()
+            audit_log("CIMS_AUTO_CFG", uname, f"mode:{new_mode}|leave:{excl_leave}")
+            st.success(f"✅ Assignment mode set to: {new_mode}")
+            st.cache_data.clear()
+            st.rerun()
+
+        st.markdown("---")
+        st.subheader("Unit → staff mapping")
+        st.caption(
+            "Map each processing unit to its eligible staff pool. "
+            "Auto-assignment and workload-aware allocation use this mapping. "
+            "Staff can still reroute tickets to peers.")
+
+        cur_map = cims.auto_config.get("unit_map", {})
+
+        for unit in OWNER_UNITS:
+            current_staff = cur_map.get(unit, [])
+            current_codes = [s.get("code","") for s in current_staff]
+
+            with st.expander(f"{unit} ({len(current_staff)} staff mapped)", expanded=False):
+                # Show available staff
+                if len(staff_scores):
+                    unit_staff_avail = staff_scores[staff_scores["Unit"]==unit] if "Unit" in staff_scores.columns else pd.DataFrame()
+                    if unit_staff_avail.empty:
+                        # Try by category or all staff
+                        unit_staff_avail = staff_scores
+
+                    staff_opts = {}
+                    for _,sr in unit_staff_avail.iterrows():
+                        sc   = str(sr["Staff Code"])
+                        nm   = sr["Staff Name"]
+                        role = sr.get("Role","")
+                        staff_opts[f"{nm} ({role})"] = {"code":sc,"name":nm,"role":role}
+
+                    sel_staff = st.multiselect(
+                        f"Staff pool for {unit}",
+                        list(staff_opts.keys()),
+                        default=[f"{s['name']} ({s['role']})" for s in current_staff
+                                 if any(s["code"]==v["code"] for v in staff_opts.values())],
+                        key=f"unit_map_{unit}")
+
+                    if st.button(f"Save {unit} mapping", key=f"save_map_{unit}"):
+                        new_pool = [staff_opts[k] for k in sel_staff if k in staff_opts]
+                        cur_map[unit] = new_pool
+                        cims.auto_config["unit_map"] = cur_map
+                        cims.save_auto_config()
+                        st.toast(f"✅ {unit}: {len(new_pool)} staff mapped", icon="✅")
+                        st.cache_data.clear()
+                        st.rerun()
+                else:
+                    st.info("Upload BSC data to see staff for mapping.")
+
+                if current_staff:
+                    st.markdown("**Currently mapped:**")
+                    for s in current_staff:
+                        st.markdown(
+                            f"<div style='padding:3px 8px;background:#F0FDF4;"
+                            f"border-radius:4px;font-size:11px;margin:1px 0'>"
+                            f"✓ {s.get('name','')} ({s.get('role','')})</div>",
+                            unsafe_allow_html=True)

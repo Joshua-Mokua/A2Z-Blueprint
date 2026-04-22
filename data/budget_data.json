@@ -1,0 +1,164 @@
+{
+  "year": 2026,
+  "as_at": "2026-04-18",
+  "bank_totals": {
+    "income_budget_b": 14.5,
+    "income_actual_b": 13.3,
+    "opex_budget_b": 7.5,
+    "opex_actual_b": 7.9,
+    "pbt_budget_b": 7.0,
+    "pbt_actual_b": 5.4
+  },
+  "by_department": [
+    {
+      "department": "Retail Banking",
+      "income_budget_m": 439.7,
+      "income_actual_m": 651.4,
+      "opex_budget_m": 364.8,
+      "opex_actual_m": 110.7,
+      "headcount_budget": 171,
+      "headcount_actual": 68,
+      "variance_income_m": 211.7,
+      "variance_opex_m": -254.1,
+      "income_achv_pct": 148.1
+    },
+    {
+      "department": "Commercial & Corporate",
+      "income_budget_m": 84.4,
+      "income_actual_m": 715.0,
+      "opex_budget_m": 181.9,
+      "opex_actual_m": 273.1,
+      "headcount_budget": 113,
+      "headcount_actual": 62,
+      "variance_income_m": 630.6,
+      "variance_opex_m": 91.2,
+      "income_achv_pct": 847.2
+    },
+    {
+      "department": "Credit",
+      "income_budget_m": 128.5,
+      "income_actual_m": 240.2,
+      "opex_budget_m": 331.7,
+      "opex_actual_m": 293.7,
+      "headcount_budget": 97,
+      "headcount_actual": 74,
+      "variance_income_m": 111.7,
+      "variance_opex_m": -38.0,
+      "income_achv_pct": 186.9
+    },
+    {
+      "department": "Treasury",
+      "income_budget_m": 597.6,
+      "income_actual_m": 771.0,
+      "opex_budget_m": 62.1,
+      "opex_actual_m": 42.3,
+      "headcount_budget": 119,
+      "headcount_actual": 199,
+      "variance_income_m": 173.4,
+      "variance_opex_m": -19.8,
+      "income_achv_pct": 129.0
+    },
+    {
+      "department": "Finance",
+      "income_budget_m": 312.4,
+      "income_actual_m": 364.3,
+      "opex_budget_m": 62.9,
+      "opex_actual_m": 217.4,
+      "headcount_budget": 181,
+      "headcount_actual": 75,
+      "variance_income_m": 51.9,
+      "variance_opex_m": 154.5,
+      "income_achv_pct": 116.6
+    },
+    {
+      "department": "Risk & Compliance",
+      "income_budget_m": 573.0,
+      "income_actual_m": 335.7,
+      "opex_budget_m": 49.5,
+      "opex_actual_m": 366.4,
+      "headcount_budget": 8,
+      "headcount_actual": 51,
+      "variance_income_m": -237.3,
+      "variance_opex_m": 316.9,
+      "income_achv_pct": 58.6
+    },
+    {
+      "department": "Legal",
+      "income_budget_m": 425.0,
+      "income_actual_m": 238.6,
+      "opex_budget_m": 148.0,
+      "opex_actual_m": 287.0,
+      "headcount_budget": 90,
+      "headcount_actual": 214,
+      "variance_income_m": -186.4,
+      "variance_opex_m": 139.0,
+      "income_achv_pct": 56.1
+    },
+    {
+      "department": "Operations",
+      "income_budget_m": 464.8,
+      "income_actual_m": 638.4,
+      "opex_budget_m": 276.4,
+      "opex_actual_m": 376.1,
+      "headcount_budget": 124,
+      "headcount_actual": 199,
+      "variance_income_m": 173.6,
+      "variance_opex_m": 99.7,
+      "income_achv_pct": 137.3
+    },
+    {
+      "department": "People & HR",
+      "income_budget_m": 511.3,
+      "income_actual_m": 540.8,
+      "opex_budget_m": 223.2,
+      "opex_actual_m": 352.0,
+      "headcount_budget": 101,
+      "headcount_actual": 136,
+      "variance_income_m": 29.5,
+      "variance_opex_m": 128.8,
+      "income_achv_pct": 105.8
+    },
+    {
+      "department": "IT & Digital",
+      "income_budget_m": 434.8,
+      "income_actual_m": 418.6,
+      "opex_budget_m": 237.2,
+      "opex_actual_m": 254.0,
+      "headcount_budget": 108,
+      "headcount_actual": 201,
+      "variance_income_m": -16.2,
+      "variance_opex_m": 16.8,
+      "income_achv_pct": 96.3
+    }
+  ],
+  "monthly": [
+    {
+      "month": "01",
+      "income_budget_m": 1167.0,
+      "income_actual_m": 1046.0,
+      "opex_budget_m": 626.0,
+      "opex_actual_m": 699.0
+    },
+    {
+      "month": "02",
+      "income_budget_m": 1159.0,
+      "income_actual_m": 977.0,
+      "opex_budget_m": 614.0,
+      "opex_actual_m": 629.0
+    },
+    {
+      "month": "03",
+      "income_budget_m": 1199.0,
+      "income_actual_m": 994.0,
+      "opex_budget_m": 656.0,
+      "opex_actual_m": 663.0
+    },
+    {
+      "month": "04",
+      "income_budget_m": 976.0,
+      "income_actual_m": 1188.0,
+      "opex_budget_m": 669.0,
+      "opex_actual_m": 672.0
+    }
+  ]
+}

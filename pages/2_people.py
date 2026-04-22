@@ -7,12 +7,26 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+
+def _safe_date(s, fallback=None):
+    """Safe date parsing — returns fallback on invalid/None input."""
+    try:
+        from datetime import date as _d
+        return _d.fromisoformat(str(s)) if s else (fallback or _d.today())
+    except Exception:
+        from datetime import date as _d
+        return fallback or _d.today()
+
+
+require_access("people")
+
 
 # Fallbacks in case core.py hasn't been updated yet on this machine
 try:
     _ = LEAVE_TYPES
 except NameError:
-    LEAVE_TYPES = {"Annual Leave":{"days_entitled":21,"description":"21 days","paid":True,"affects_performance":False,"compensation":"pro_rata","color":"#006B3F"},"Sick Leave":{"days_entitled":14,"description":"14 days","paid":True,"affects_performance":True,"compensation":"exclude_month","color":"#E24B4A"}}
+    LEAVE_TYPES = {"Annual Leave":{"days_entitled":21,"description":"21 days","paid":True,"affects_performance":False,"compensation":"pro_rata","color":"var(--brand-primary,#006B3F)"},"Sick Leave":{"days_entitled":14,"description":"14 days","paid":True,"affects_performance":True,"compensation":"exclude_month","color":"#E24B4A"}}
     EXIT_REASONS = ["Resignation — Better opportunity","Resignation — Salary/compensation","Dismissal — Gross misconduct","Dismissal — Performance","Retirement — Mandatory","Contract end — Not renewed","Mutual separation"]
     TRANSFER_REASONS = ["Performance improvement","Branch need","Staff request","Rotational development","Promotion transfer"]
     DISCIPLINARY_CATEGORIES = ["Gross misconduct","Insubordination","Absenteeism","Fraud","Policy violation","Performance negligence"]
@@ -20,6 +34,14 @@ except NameError:
     PIP_DURATIONS = [30, 60, 90]
     PIP_OUTCOMES = ["In progress","Successfully completed","Extended","Terminated — dismissal","Converted to final warning"]
     PIP_REVIEW_FREQUENCIES = ["Weekly","Fortnightly","Monthly"]
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>👥 People</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "HR · Leave management · Performance · Succession planning</span></div>",
+    unsafe_allow_html=True)
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores  = st.session_state.get("staff_scores",  pd.DataFrame())
@@ -32,24 +54,23 @@ can_all = ud.get("can_view_all", False) or any(k in role_l for k in ("admin","di
 
 if len(staff_scores) == 0:
     st.markdown(
-        "<div style='padding:40px;text-align:center;background:#E8F5EE;"
-        "border-radius:12px;border:1px solid #006B3F33'>"
+        "<div style='padding:40px;text-align:center;background:var(--brand-light,#E8F5EE);"
+        "border-radius:12px;border:1px solid var(--brand-primary,#006B3F)33'>"
         "<div style='font-size:32px;margin-bottom:12px'>👥</div>"
-        "<div style='font-size:18px;font-weight:500;color:#006B3F'>Upload BSC data to activate People module</div>"
+        "<div style='font-size:18px;font-weight:500;color:var(--brand-primary,#006B3F)'>Upload BSC data to activate People module</div>"
         "</div>", unsafe_allow_html=True)
     st.stop()
 
 # Header
 st.markdown(
-    "<div style='padding:16px 20px;background:#006B3F;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:18px;font-weight:500'>People & HR Intelligence</div>"
-    "<div style='color:#9FE1CB;font-size:12px;margin-top:2px'>"
-    "Performance · Leave · Exits · Transfers · Disciplinary · PIP · Diligence</div>"
-    "</div>", unsafe_allow_html=True)
+    "<div style=\'padding:16px 22px;background:#2C3E50;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>People & HR Intelligence</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Leave · Exits · Disciplinary · PIP · Diligence scores</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "📊 HR overview",
+    "👤 Staff directory",
     "🏖️ Leave management",
+    "📅 Leave calendar",
     "🚪 Exits & attrition",
     "🔄 Transfers",
     "⚖️ Disciplinary",
@@ -89,8 +110,8 @@ with tabs[0]:
         # BSC distribution
         if len(staff_scores):
             bands = pd.DataFrame([
-                {'Band':'Exceeded (≥3.1)','Count':int((staff_scores['Final_BSC_Score']>=3.1).sum()),'Color':'#006B3F'},
-                {'Band':'Met (3.0–3.1)',  'Count':int(staff_scores['Final_BSC_Score'].between(3.0,3.1).sum()),'Color':'#1D9E75'},
+                {'Band':'Exceeded (≥3.1)','Count':int((staff_scores['Final_BSC_Score']>=3.1).sum()),'Color':'var(--brand-primary,#006B3F)'},
+                {'Band':'Met (3.0–3.1)',  'Count':int(staff_scores['Final_BSC_Score'].between(3.0,3.1).sum()),'Color':'var(--brand-mid,#1D9E75)'},
                 {'Band':'Below (2.5–3.0)','Count':int(staff_scores['Final_BSC_Score'].between(2.5,3.0).sum()),'Color':'#F5A623'},
                 {'Band':'At risk (<2.5)', 'Count':int((staff_scores['Final_BSC_Score']<2.5).sum()),'Color':'#E24B4A'},
             ])
@@ -192,56 +213,267 @@ with tabs[0]:
                 unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════
-# TAB 2 — LEAVE MANAGEMENT
+# ════════════════════════════════════════════════════════════════
+# TAB 2 — STAFF DIRECTORY
 # ════════════════════════════════════════════════════════════════
 with tabs[1]:
-    st.subheader("Leave management — Kenya Employment Act")
-    st.caption("Leave types per Employment Act 2007 and amendments.")
+    st.subheader("Staff directory")
 
-    lv1, lv2 = st.columns([2,3])
+    if len(staff_scores) == 0:
+        st.info("Upload BSC data to view staff directory.")
+    else:
+        _vis_dir = staff_scores.copy()
+        if not can_all:
+            from utils.core import get_visible_staff as _gvs2
+            _vis_dir = _gvs2(ud, staff_scores)
 
-    with lv1:
-        st.markdown("#### Record leave")
-        all_staff_names = sorted(staff_scores['Staff Name'].tolist()) if len(staff_scores) else []
+        # Search and filter
+        d1, d2, d3 = st.columns([2, 1, 1])
+        _dsearch = d1.text_input("🔍 Search name or unit", key="dir_search")
+        _drole   = d2.selectbox("Role", ["All roles"] + sorted(_vis_dir["Role"].unique().tolist()), key="dir_role")
+        _dunit   = d3.selectbox("Unit", ["All units"] + sorted(_vis_dir["Unit"].unique().tolist()), key="dir_unit")
 
-        with st.form("leave_form"):
-            leave_staff = st.selectbox("Staff member", [""] + all_staff_names)
-            leave_type  = st.selectbox("Leave type", list(LEAVE_TYPES.keys()))
-            lc1, lc2   = st.columns(2)
-            leave_start = lc1.date_input("Start date", value=date.today())
-            leave_end   = lc2.date_input("End date", value=date.today())
-            leave_reason= st.text_area("Reason / notes", height=60)
-            approved_by = st.text_input("Approved by", value=uname)
+        _dir_df = _vis_dir.copy()
+        if _dsearch:
+            _dir_df = _dir_df[_dir_df["Staff Name"].str.contains(_dsearch, case=False, na=False) |
+                               _dir_df["Unit"].str.contains(_dsearch, case=False, na=False)]
+        if _drole != "All roles":
+            _dir_df = _dir_df[_dir_df["Role"] == _drole]
+        if _dunit != "All units":
+            _dir_df = _dir_df[_dir_df["Unit"] == _dunit]
 
-            lt_info = LEAVE_TYPES[leave_type]
+        st.caption(f"Showing {len(_dir_df)} of {len(_vis_dir)} staff")
+
+        # Card grid — 3 per row
+        _dir_rows = [_dir_df.iloc[i:i+3] for i in range(0, len(_dir_df), 3)]
+        for _drow in _dir_rows:
+            _dcols = st.columns(3)
+            for _dci, (_, _dr) in enumerate(zip(_dcols, _drow.iterrows())):
+                _dc  = _dcols[_dci]
+                _, _dr = _dr
+                _name = _dr.get("Staff Name","")
+                _role = _dr.get("Role","")
+                _unit = _dr.get("Unit","")
+                _code = str(_dr.get("Staff Code",""))
+                _bsc  = float(_dr.get("Final_BSC_Score",0) or 0)
+                _rem  = _dr.get("Performance_Remark","—")
+                _clr_map = {"Exceeded By Far":"var(--brand-primary,#006B3F)","Exceeded":"var(--brand-mid,#1D9E75)",
+                            "Met":"#F5A623","Partially Met":"#E67E22","Unmet":"#E24B4A"}
+                _bclr = _clr_map.get(_rem,"#9CA3AF")
+                _init = "".join(p[0].upper() for p in _name.split()[:2]) if _name else "?"
+                # Check if on leave
+                _on_lv = ""
+                if lm:
+                    _lv_active = [l for l in lm.get_active_leave()
+                                  if l.get("staff_name","").lower() == _name.lower()]
+                    if _lv_active:
+                        _on_lv = f"<span style='background:#FEF3C7;color:#92400E;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px'>🏖️ On leave</span>"
+
+                _dc.markdown(
+                    f"<div style='padding:14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);"
+                    f"border-radius:10px;margin-bottom:8px;'>"
+                    f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:8px'>"
+                    f"<div style='width:38px;height:38px;border-radius:50%;background:{_bclr}20;"
+                    f"border:2px solid {_bclr};display:flex;align-items:center;justify-content:center;"
+                    f"font-size:13px;font-weight:700;color:{_bclr};flex-shrink:0'>{_init}</div>"
+                    f"<div><div style='font-weight:700;font-size:12px;color:var(--color-text-primary)'>{_name}{_on_lv}</div>"
+                    f"<div style='font-size:10px;color:var(--color-text-secondary)'>{_role}</div></div></div>"
+                    f"<div style='font-size:10px;color:var(--color-text-tertiary);margin-bottom:4px'>📍 {_unit}</div>"
+                    f"<div style='display:flex;justify-content:space-between;align-items:center'>"
+                    f"<span style='font-size:10px;font-weight:600;color:{_bclr}'>BSC {_bsc:.2f}</span>"
+                    f"<span style='font-size:9px;background:{_bclr}15;color:{_bclr};"
+                    f"padding:2px 7px;border-radius:8px;font-weight:600'>{_rem}</span>"
+                    f"</div></div>",
+                    unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 3 — LEAVE MANAGEMENT (was TAB 2)
+# ════════════════════════════════════════════════════════════════
+# TAB 2 — LEAVE MANAGEMENT
+# ════════════════════════════════════════════════════════════════
+with tabs[2]:
+    st.subheader("Leave management")
+
+    # ── Who can do what ───────────────────────────────────────────────
+    _lv_role     = str(ud.get("role","")).lower()
+    _lv_is_mgr   = (ud.get("is_admin") or
+                    any(k in _lv_role for k in ("manager","director","head of","regional","hr","admin")))
+    _lv_my_name  = ud.get("full_name","")
+    _lv_my_sc    = str(ud.get("staff_code","") or uname)
+    _lv_my_unit  = ud.get("unit","")
+    _lv_my_role  = ud.get("role","")
+
+    lv_tabs = st.tabs(["📝 Apply for leave",
+                       "✅ Manager approvals" if _lv_is_mgr else "📋 My leave",
+                       "📊 Team overview",
+                       "📜 All records (HR)"])
+
+    # ── TAB A: Staff applies for leave ────────────────────────────────
+    with lv_tabs[0]:
+        st.markdown("#### Apply for leave")
+        st.caption("Submit a leave application. Your line manager will receive it for approval.")
+
+        with st.form("leave_apply_form"):
+            la1, la2 = st.columns(2)
+            la_type   = la1.selectbox("Leave type", list(LEAVE_TYPES.keys()))
+            la_relief = la2.text_input("Relief staff (optional)",
+                placeholder="Who covers your duties?")
+            la_start  = la1.date_input("From", value=date.today())
+            la_end    = la2.date_input("To", value=date.today())
+            la_reason = st.text_area("Reason *", height=70,
+                placeholder="Please provide a brief reason for your leave request")
+
+            lt_info = LEAVE_TYPES.get(la_type, {})
+            _entitled = lt_info.get('days_entitled', 0) or 0
+            # Calculate days already taken this year
+            _yr_taken = sum(r.get("days",0) for r in lm.records
+                           if r.get("staff_code")==_lv_my_sc
+                           and r.get("leave_type")==la_type
+                           and str(r.get("start_date",""))[:4] == str(date.today().year)
+                           and r.get("approved") is not False)
+            _balance = max(0, _entitled - _yr_taken)
+            _req_days = (la_end - la_start).days + 1 if la_end >= la_start else 0
+
             st.markdown(
-                f"<div style='padding:6px 10px;background:#E8F5EE;"
-                f"border-left:3px solid #006B3F;font-size:11px'>"
-                f"<b>{leave_type}</b>: {lt_info['description']}<br>"
-                f"Paid: {'Yes' if lt_info['paid'] else 'No'} | "
-                f"Affects performance: {'Yes' if lt_info['affects_performance'] else 'No'}"
+                f"<div style='padding:8px 12px;background:var(--brand-light,#E8F5EE);"
+                f"border-left:3px solid var(--brand-primary,#006B3F);border-radius:0 6px 6px 0;"
+                f"font-size:11px;margin:4px 0'>"
+                f"<b>{la_type}</b> · {lt_info.get('description','')} · "
+                f"Paid: {'✅' if lt_info.get('paid') else '❌'} · "
+                f"Balance: <b>{_balance}/{_entitled} days</b> remaining · "
+                f"Requesting: <b>{_req_days} day(s)</b>"
+                f"{'<span style="color:#E24B4A"> ⚠️ Exceeds balance</span>' if _req_days > _balance and _entitled > 0 else ''}"
                 f"</div>", unsafe_allow_html=True)
 
-            if st.form_submit_button("Record leave", type="primary"):
-                if leave_staff and leave_start <= leave_end:
-                    sc_row = staff_scores[staff_scores['Staff Name']==leave_staff]
-                    sc = str(sc_row['Staff Code'].values[0]) if len(sc_row) and 'Staff Code' in sc_row.columns else leave_staff[:6]
-                    lm.add_leave(sc, leave_staff, leave_type,
-                                 leave_start, leave_end, leave_reason, approved_by)
-                    audit_log("LEAVE_RECORDED", uname, f"{leave_staff}:{leave_type}")
-                    st.success(f"Leave recorded for {leave_staff}")
-                    st.rerun()
+            if st.form_submit_button("📤 Submit leave application", type="primary",
+                                      use_container_width=True):
+                if not la_reason.strip():
+                    st.error("Please provide a reason.")
+                elif la_end < la_start:
+                    st.error("End date must be on or after start date.")
                 else:
-                    st.error("Select staff member and ensure end date ≥ start date.")
+                    lid = lm.apply_leave(
+                        _lv_my_sc, _lv_my_name, _lv_my_role, _lv_my_unit,
+                        la_type, la_start, la_end, la_reason, la_relief)
+                    audit_log("LEAVE_APPLIED", uname, f"{la_type}:{la_start}:{la_end}")
+                    st.success(f"✅ Leave application {lid} submitted. "
+                               "Your manager will review and approve it.")
+                    st.rerun()
 
-        st.markdown("#### Leave entitlements (Kenya)")
-        ent_data = [[lt, info['days_entitled'] if info['days_entitled'] else 'Discretionary',
-                     '✅' if info['paid'] else '❌']
+        # Show my own pending/approved leaves
+        st.markdown("#### My recent leave requests")
+        _my_leaves = lm.get_staff_leave(_lv_my_sc)
+        if _my_leaves:
+            for _lr in sorted(_my_leaves, key=lambda x: x.get("applied_at",""), reverse=True)[:8]:
+                _st  = _lr.get("status","")
+                _clr = {"Approved":"var(--brand-primary,#006B3F)","Rejected":"#E24B4A","Pending":"#F5A623"}.get(_st,"#9CA3AF")
+                _bg  = {"Approved":"#F0FDF4","Rejected":"#FEF2F2","Pending":"#FFFBEB"}.get(_st,"#F9FAFB")
+                st.markdown(
+                    f"<div style='padding:8px 12px;background:{_bg};"
+                    f"border-left:3px solid {_clr};border-radius:0 6px 6px 0;margin:4px 0;font-size:11px'>"
+                    f"<b>{_lr.get('leave_type','')}</b> · "
+                    f"{_lr.get('start_date','')} → {_lr.get('end_date','')} ({_lr.get('days',0)}d) · "
+                    f"<span style='color:{_clr};font-weight:700'>{_st}</span>"
+                    f"{'  ·  Reason: ' + _lr.get('rejection_reason','') if _st=='Rejected' else ''}"
+                    f"</div>", unsafe_allow_html=True)
+        else:
+            st.info("No leave records yet.")
+
+        st.markdown("#### Leave entitlements (Kenya Employment Act 2007)")
+        ent_data = [[lt, info.get('days_entitled','Discretionary') or 'Discretionary',
+                     '✅' if info.get('paid') else '❌',
+                     info.get('description','')]
                     for lt, info in LEAVE_TYPES.items() if lt != 'Public Holiday']
-        st.dataframe(pd.DataFrame(ent_data, columns=['Leave type','Days','Paid']),
+        st.dataframe(pd.DataFrame(ent_data, columns=['Leave type','Days','Paid','Notes']),
                      hide_index=True, use_container_width=True)
 
-    with lv2:
+    # ── TAB B: Manager approval queue ────────────────────────────────
+    with lv_tabs[1]:
+        if _lv_is_mgr:
+            st.markdown("#### Pending leave approvals")
+            _pending = lm.get_pending_approvals(manager_unit=_lv_my_unit if not can_all else None)
+            if not _pending:
+                st.success("✅ No pending leave requests.")
+            else:
+                st.info(f"**{len(_pending)} request(s) awaiting your approval.**")
+                for _pr in _pending:
+                    _pr_id = str(_pr.get("id",""))
+                    with st.expander(
+                            f"{'🕐'} {_pr.get('staff_name','')} — {_pr.get('leave_type','')} · "
+                            f"{_pr.get('start_date','')} to {_pr.get('end_date','')} ({_pr.get('days',0)}d)",
+                            expanded=True):
+                        pa1, pa2 = st.columns(2)
+                        pa1.markdown(
+                            "**Staff:** " + _pr.get("staff_name","") + "  \n"
+                            "**Role:** " + _pr.get("staff_role","") + "  \n"
+                            "**Unit:** " + _pr.get("staff_unit","") + "  \n"
+                            "**Applied:** " + str(_pr.get("applied_at",""))[:10])
+                        pa2.markdown(
+                            "**Leave type:** " + _pr.get("leave_type","") + "  \n"
+                            "**Period:** " + _pr.get("start_date","") + " to " + _pr.get("end_date","") + "  \n"
+                            "**Days:** " + str(_pr.get("days",0)) + "  \n"
+                            "**Relief:** " + (_pr.get("relief_staff","—") or "—"))
+                        st.markdown(f"**Reason:** {_pr.get('reason','')}")
+
+                        _rej_key = f"rej_reason_{_pr_id}"
+                        _rej_txt = st.text_input("Rejection reason (if rejecting)",
+                                                   key=_rej_key, placeholder="Optional")
+                        _ab1, _ab2 = st.columns(2)
+                        if _ab1.button("✅ Approve", key=f"appr_{_pr_id}",
+                                       type="primary", use_container_width=True):
+                            lm.approve_leave(_pr_id, uname, approve=True)
+                            audit_log("LEAVE_APPROVED", uname,
+                                      f"{_pr.get('staff_name','')}:{_pr.get('leave_type','')}")
+                            st.toast("✅ Leave approved", icon="✅")
+                            st.rerun()
+                        if _ab2.button("❌ Reject", key=f"rejt_{_pr_id}",
+                                       use_container_width=True):
+                            lm.approve_leave(_pr_id, uname, approve=False,
+                                            reason=st.session_state.get(_rej_key,""))
+                            audit_log("LEAVE_REJECTED", uname,
+                                      f"{_pr.get('staff_name','')}")
+                            st.toast("❌ Leave rejected", icon="❌")
+                            st.rerun()
+
+            # HR record: recently approved (auto-populates)
+            st.markdown("---")
+            st.markdown("#### Recently approved (HR auto-record)")
+            _recent_appr = [r for r in lm.records
+                            if r.get("approved") is True
+                            and r.get("hr_notified")]
+            if _recent_appr:
+                _hr_df = pd.DataFrame([{
+                    "ID": r.get("id",""), "Staff": r.get("staff_name",""),
+                    "Type": r.get("leave_type",""),
+                    "From": r.get("start_date",""), "To": r.get("end_date",""),
+                    "Days": r.get("days",0), "Approved by": r.get("approved_by",""),
+                } for r in sorted(_recent_appr,
+                                  key=lambda x: x.get("approved_at",""), reverse=True)[:20]])
+                st.dataframe(_hr_df, hide_index=True, use_container_width=True)
+            else:
+                st.info("No approved leaves yet.")
+        else:
+            # Non-manager: show their own leave history
+            st.markdown("#### My leave history")
+            _my_all = lm.get_staff_leave(_lv_my_sc)
+            if _my_all:
+                _mh_df = pd.DataFrame([{
+                    "Type": r.get("leave_type",""),
+                    "From": r.get("start_date",""), "To": r.get("end_date",""),
+                    "Days": r.get("days",0),
+                    "Status": r.get("status","Pending"),
+                    "Approved by": r.get("approved_by","—"),
+                } for r in _my_all])
+                def _hl_st(v):
+                    if v=="Approved": return "color:var(--brand-primary,#006B3F);font-weight:600"
+                    if v=="Rejected": return "color:#E24B4A"
+                    return "color:#F5A623"
+                st.dataframe(_mh_df.style.map(_hl_st, subset=["Status"]),
+                             hide_index=True, use_container_width=True)
+            else:
+                st.info("No leave history.")
+
+    with lv_tabs[2]:
         st.markdown("#### Leave register")
         all_leave = lm.records if lm else []
 
@@ -282,9 +514,83 @@ with tabs[1]:
                     f"</div>", unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════
+# TAB 4 — LEAVE CALENDAR
+# ════════════════════════════════════════════════════════════════
+with tabs[3]:
+    st.subheader("Leave calendar")
+    if not lm or not lm.records:
+        st.info("No leave records yet.")
+    else:
+        import calendar as _cal
+        _today_lc = date.today()
+        _lc1, _lc2 = st.columns([1, 3])
+        _sel_month = _lc1.selectbox("Month", list(range(1,13)),
+            index=_today_lc.month-1, format_func=lambda m: _cal.month_name[m], key="lc_month")
+        _sel_year  = _lc1.selectbox("Year", [2025, 2026, 2027],
+            index=1, key="lc_year")
+
+        # Get leave in this month
+        _mo_start = date(_sel_year, _sel_month, 1)
+        _mo_end   = date(_sel_year, _sel_month, _cal.monthrange(_sel_year, _sel_month)[1])
+
+        _mo_leaves = []
+        for _r in lm.records:
+            try:
+                _s = _safe_date(str(_r.get("start_date",""))[:10])
+                _e = _safe_date(str(_r.get("end_date",""))[:10])
+                if _s <= _mo_end and _e >= _mo_start:
+                    _mo_leaves.append(_r)
+            except: pass
+
+        # Build a simple calendar grid
+        _days_in_month = _cal.monthrange(_sel_year, _sel_month)[1]
+        # Show coloured leave bars per staff
+        if _mo_leaves:
+            _lc_staff = sorted(set(l.get("staff_name","") for l in _mo_leaves))
+            _lc2.caption(f"{len(_mo_leaves)} leave record(s) · {len(_lc_staff)} staff on leave this month")
+
+            # Simple table: rows = staff, columns = day numbers
+            _lcols_hdr = ["Staff","Role"] + [str(d) for d in range(1, _days_in_month+1)]
+            _lc_rows = []
+            for _snm in _lc_staff:
+                _snm_leaves = [l for l in _mo_leaves if l.get("staff_name","")==_snm]
+                _row = {"Staff":_snm,
+                        "Role":_snm_leaves[0].get("role","") if _snm_leaves else ""}
+                for _d in range(1, _days_in_month+1):
+                    _dt = date(_sel_year, _sel_month, _d)
+                    _on = any(_safe_date(str(l.get("start_date",""))[:10]) <= _dt <=
+                              _safe_date(str(l.get("end_date",""))[:10])
+                              for l in _snm_leaves)
+                    _row[str(_d)] = "●" if _on else ""
+                _lc_rows.append(_row)
+
+            if _lc_rows:
+                _lc_df = pd.DataFrame(_lc_rows)
+                def _lc_hl(v):
+                    return "color:var(--brand-primary,#006B3F);font-weight:700" if v=="●" else ""
+                day_cols = [str(d) for d in range(1,_days_in_month+1)]
+                _lc2.dataframe(
+                    _lc_df.style.map(_lc_hl, subset=day_cols),
+                    use_container_width=True, hide_index=True, height=350)
+        else:
+            _lc2.info(f"No leave records for {_cal.month_name[_sel_month]} {_sel_year}.")
+
+        # Summary stats
+        _lc_st1, _lc_st2, _lc_st3 = st.columns(3)
+        _lc_st1.metric("On leave this month", len(_mo_leaves))
+        _lc_st2.metric("Total leave days", sum(
+            (min(_mo_end, _safe_date(str(l.get("end_date",""))[:10])) -
+             max(_mo_start, _safe_date(str(l.get("start_date",""))[:10]))).days + 1
+            for l in _mo_leaves
+            if l.get("start_date") and l.get("end_date")))
+        _approved = sum(1 for l in _mo_leaves if l.get("approved"))
+        _lc_st3.metric("Approved", _approved)
+
+# TAB 3 — EXITS & ATTRITION (now TAB 5)
 # TAB 3 — EXITS & ATTRITION
 # ════════════════════════════════════════════════════════════════
-with tabs[2]:
+with tabs[4]:
     st.subheader("Staff exits & attrition analysis")
 
     ex1, ex2 = st.columns([2,3])
@@ -336,7 +642,7 @@ with tabs[2]:
                                     columns=['Reason','Count']).sort_values('Count', ascending=False)
                 fig = px.bar(by_r, x='Count', y='Reason', orientation='h',
                              title='Exits by reason', color='Count',
-                             color_continuous_scale=['#E8F5EE','#006B3F'])
+                             color_continuous_scale=['#E8F5EE','var(--brand-primary,#006B3F)'])
                 fig.update_layout(height=300, showlegend=False,
                     plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
                     margin=dict(l=0,r=0,t=40,b=0))
@@ -365,7 +671,7 @@ with tabs[2]:
 # ════════════════════════════════════════════════════════════════
 # TAB 4 — TRANSFERS
 # ════════════════════════════════════════════════════════════════
-with tabs[3]:
+with tabs[5]:
     st.subheader("Staff transfers")
     st.caption("Track transfers and analyse their impact on performance.")
 
@@ -450,7 +756,7 @@ with tabs[3]:
 # ════════════════════════════════════════════════════════════════
 # TAB 5 — DISCIPLINARY
 # ════════════════════════════════════════════════════════════════
-with tabs[4]:
+with tabs[6]:
     st.subheader("Disciplinary case management")
     st.caption("All cases are confidential. Access controlled by HR and administration roles.")
 
@@ -541,7 +847,7 @@ with tabs[4]:
 # ════════════════════════════════════════════════════════════════
 # TAB 6 — PIP MANAGEMENT
 # ════════════════════════════════════════════════════════════════
-with tabs[5]:
+with tabs[7]:
     st.subheader("Performance Improvement Plan (PIP) management")
     st.caption("Structured, time-bound improvement plans with milestone tracking and HR discussion support.")
 
@@ -594,7 +900,7 @@ with tabs[5]:
                             status_ico = '✅' if rv.get('score',0) >= float(pip.get('target_bsc',3)) else '⚠️'
                             st.markdown(
                                 f"<div style='padding:6px 10px;background:#F8F8F8;"
-                                f"border-left:3px solid #006B3F;font-size:12px;margin:2px 0'>"
+                                f"border-left:3px solid var(--brand-primary,#006B3F);font-size:12px;margin:2px 0'>"
                                 f"{status_ico} <b>{rv['date']}</b> — Score: {rv.get('score','—')} | "
                                 f"{rv.get('progress','')} (by {rv.get('by','')})</div>",
                                 unsafe_allow_html=True)
@@ -735,13 +1041,13 @@ with tabs[5]:
 # ════════════════════════════════════════════════════════════════
 # TAB 7 — DILIGENCE SCORES
 # ════════════════════════════════════════════════════════════════
-with tabs[6]:
+with tabs[8]:
     st.subheader("Staff diligence scores")
     st.caption("Composite score (0–100) measuring execution, accountability, conduct, and attendance.")
 
     st.markdown(
-        "<div style='padding:10px 14px;background:#E8F5EE;"
-        "border-left:3px solid #006B3F;font-size:12px;margin-bottom:12px'>"
+        "<div style='padding:10px 14px;background:var(--brand-light,#E8F5EE);"
+        "border-left:3px solid var(--brand-primary,#006B3F);font-size:12px;margin-bottom:12px'>"
         "<b>Diligence score components:</b> "
         "Milestone on-time rate (30%) · Action plan acceptance (20%) · "
         "Leave compliance (15%) · Disciplinary clean (20%) · Not on PIP (15%)"
@@ -773,7 +1079,7 @@ with tabs[6]:
 
         # Chart
         dil_df['Color'] = dil_df['Diligence'].apply(
-            lambda x: '#E24B4A' if x < 50 else ('#F5A623' if x < 75 else '#006B3F'))
+            lambda x: '#E24B4A' if x < 50 else ('#F5A623' if x < 75 else 'var(--brand-primary,#006B3F)'))
         fig = go.Figure()
         fig.add_bar(x=dil_df['Staff Name'], y=dil_df['Diligence'],
                     marker_color=dil_df['Color'],
@@ -794,7 +1100,7 @@ with tabs[6]:
 # ════════════════════════════════════════════════════════════════
 # TAB 8 — TEAM INSIGHTS (existing, preserved)
 # ════════════════════════════════════════════════════════════════
-with tabs[7]:
+with tabs[9]:
     st.subheader("Team performance insights")
     team_df = filtered.copy()
     all_names = sorted(team_df['Staff Name'].tolist()) if len(team_df) else []
@@ -869,3 +1175,40 @@ with tabs[7]:
                 zmin=1, zmax=5, title="Score per pillar per staff", aspect="auto", text_auto=".2f")
             fig_heat.update_layout(height=max(300, len(pivot)*28))
             st.plotly_chart(fig_heat, use_container_width=True)
+
+# ── Payroll Export (end-of-month) ─────────────────────────────────
+# This is in a new sub-tab of the BSC section — add to end of page
+_payroll_expander = st.expander("💰 Payroll Export — BSC scores + commission for payroll", expanded=False)
+with _payroll_expander:
+    st.markdown("**Month-end payroll export — download BSC score + commission tier for payroll processing:**")
+    try:
+        import io as _io_pr, pandas as _pd_pr
+        _scores_pr = json.loads((DATA/"feb_2026_staff_scores.json").read_text()) if (DATA/"feb_2026_staff_scores.json").exists() else {}
+        _comm_pr   = json.loads((DATA/"commission_records.json").read_text()) if (DATA/"commission_records.json").exists() else []
+        _comm_map  = {str(c.get("staff_code","")): c for c in _comm_pr}
+        _payroll_rows = []
+        for sc_v, s in _scores_pr.items():
+            c = _comm_map.get(str(sc_v), {})
+            _payroll_rows.append({
+                "Staff Code":    sc_v,
+                "Full Name":     s.get("name","")[:30],
+                "Role":          s.get("role","")[:30],
+                "Unit":          s.get("unit","")[:25],
+                "BSC Score":     s.get("final_score",0),
+                "Tier":          c.get("tier","—"),
+                "Commission (KES)": c.get("total_commission",0),
+                "Payment Status":   c.get("status","Pending"),
+            })
+        _df_pr = _pd_pr.DataFrame(_payroll_rows)
+        st.dataframe(_df_pr.head(20), use_container_width=True, hide_index=True)
+        st.caption(f"{len(_payroll_rows):,} staff in payroll export")
+        _buf_pr = _io_pr.BytesIO()
+        _df_pr.to_excel(_buf_pr, index=False, sheet_name="Payroll", engine="openpyxl")
+        _buf_pr.seek(0)
+        st.download_button("📥 Download Payroll File",
+                            data=_buf_pr.getvalue(),
+                            file_name=f"Payroll_BSC_{date.today().strftime('%Y%m')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key="payroll_dl")
+    except Exception as _e:
+        st.error(f"Payroll export error: {str(_e)[:80]}")

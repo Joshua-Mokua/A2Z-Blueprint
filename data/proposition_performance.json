@@ -1,0 +1,3521 @@
+{
+  "WB": {
+    "tag": "WB",
+    "name": "Women Banking",
+    "icon": "\ud83d\udc69",
+    "color": "#EC4899",
+    "description": "Banking proposition for women-owned businesses and women customers",
+    "head_staff_code": "300013",
+    "head_name": "Lorna Matheka",
+    "proposition_score": 2.75,
+    "kpis": [
+      {
+        "id": "WB_CUST_ACQ",
+        "name": "WB Customers Acquired",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 1500,
+        "actual_range": [
+          800,
+          1600
+        ],
+        "actual": 1421.0,
+        "achievement": 94.7,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 994.7
+          },
+          {
+            "month": "Jun-25",
+            "value": 1037.69
+          },
+          {
+            "month": "Jul-25",
+            "value": 1070.38
+          },
+          {
+            "month": "Aug-25",
+            "value": 1087.83
+          },
+          {
+            "month": "Sep-25",
+            "value": 1123.72
+          },
+          {
+            "month": "Oct-25",
+            "value": 1171.98
+          },
+          {
+            "month": "Nov-25",
+            "value": 1189.84
+          },
+          {
+            "month": "Dec-25",
+            "value": 1212.97
+          },
+          {
+            "month": "Jan-26",
+            "value": 1353.22
+          },
+          {
+            "month": "Feb-26",
+            "value": 1342.14
+          },
+          {
+            "month": "Mar-26",
+            "value": 1353.45
+          },
+          {
+            "month": "Apr-26",
+            "value": 1403.47
+          }
+        ]
+      },
+      {
+        "id": "WB_ACTIVE",
+        "name": "WB Active Customers",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 8000,
+        "actual_range": [
+          5000,
+          9000
+        ],
+        "actual": 6391.0,
+        "achievement": 79.9,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 4473.7
+          },
+          {
+            "month": "Jun-25",
+            "value": 4638.0
+          },
+          {
+            "month": "Jul-25",
+            "value": 4805.06
+          },
+          {
+            "month": "Aug-25",
+            "value": 5048.05
+          },
+          {
+            "month": "Sep-25",
+            "value": 5209.31
+          },
+          {
+            "month": "Oct-25",
+            "value": 5422.98
+          },
+          {
+            "month": "Nov-25",
+            "value": 5347.85
+          },
+          {
+            "month": "Dec-25",
+            "value": 5712.38
+          },
+          {
+            "month": "Jan-26",
+            "value": 5749.63
+          },
+          {
+            "month": "Feb-26",
+            "value": 5817.06
+          },
+          {
+            "month": "Mar-26",
+            "value": 6317.65
+          },
+          {
+            "month": "Apr-26",
+            "value": 6556.97
+          }
+        ]
+      },
+      {
+        "id": "WB_WALLET_SH",
+        "name": "WB Deposit Wallet Share",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 65.0,
+        "actual_range": [
+          50,
+          75
+        ],
+        "actual": 57.72,
+        "achievement": 88.8,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 40.4
+          },
+          {
+            "month": "Jun-25",
+            "value": 41.9
+          },
+          {
+            "month": "Jul-25",
+            "value": 43.5
+          },
+          {
+            "month": "Aug-25",
+            "value": 44.35
+          },
+          {
+            "month": "Sep-25",
+            "value": 47.69
+          },
+          {
+            "month": "Oct-25",
+            "value": 48.45
+          },
+          {
+            "month": "Nov-25",
+            "value": 51.24
+          },
+          {
+            "month": "Dec-25",
+            "value": 51.09
+          },
+          {
+            "month": "Jan-26",
+            "value": 54.52
+          },
+          {
+            "month": "Feb-26",
+            "value": 56.65
+          },
+          {
+            "month": "Mar-26",
+            "value": 58.51
+          },
+          {
+            "month": "Apr-26",
+            "value": 57.01
+          }
+        ]
+      },
+      {
+        "id": "WB_LOAN_PEN",
+        "name": "WB Loan Penetration",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 35.0,
+        "actual_range": [
+          20,
+          45
+        ],
+        "actual": 33.12,
+        "achievement": 94.6,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 23.18
+          },
+          {
+            "month": "Jun-25",
+            "value": 24.11
+          },
+          {
+            "month": "Jul-25",
+            "value": 25.34
+          },
+          {
+            "month": "Aug-25",
+            "value": 25.91
+          },
+          {
+            "month": "Sep-25",
+            "value": 27.24
+          },
+          {
+            "month": "Oct-25",
+            "value": 27.84
+          },
+          {
+            "month": "Nov-25",
+            "value": 29.18
+          },
+          {
+            "month": "Dec-25",
+            "value": 30.31
+          },
+          {
+            "month": "Jan-26",
+            "value": 31.75
+          },
+          {
+            "month": "Feb-26",
+            "value": 31.39
+          },
+          {
+            "month": "Mar-26",
+            "value": 32.83
+          },
+          {
+            "month": "Apr-26",
+            "value": 33.98
+          }
+        ]
+      },
+      {
+        "id": "WB_XSELL",
+        "name": "WB Cross-sell Score",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.1,
+        "target": 2.5,
+        "actual_range": [
+          1.8,
+          3.2
+        ],
+        "actual": 2.0,
+        "achievement": 80.0,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 1.4
+          },
+          {
+            "month": "Jun-25",
+            "value": 1.46
+          },
+          {
+            "month": "Jul-25",
+            "value": 1.52
+          },
+          {
+            "month": "Aug-25",
+            "value": 1.54
+          },
+          {
+            "month": "Sep-25",
+            "value": 1.64
+          },
+          {
+            "month": "Oct-25",
+            "value": 1.69
+          },
+          {
+            "month": "Nov-25",
+            "value": 1.76
+          },
+          {
+            "month": "Dec-25",
+            "value": 1.85
+          },
+          {
+            "month": "Jan-26",
+            "value": 1.92
+          },
+          {
+            "month": "Feb-26",
+            "value": 1.84
+          },
+          {
+            "month": "Mar-26",
+            "value": 1.92
+          },
+          {
+            "month": "Apr-26",
+            "value": 2.12
+          }
+        ]
+      },
+      {
+        "id": "WB_EVENTS",
+        "name": "WB Events Held",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.05,
+        "target": 24,
+        "actual_range": [
+          10,
+          30
+        ],
+        "actual": 21.0,
+        "achievement": 87.5,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 14.7
+          },
+          {
+            "month": "Jun-25",
+            "value": 15.32
+          },
+          {
+            "month": "Jul-25",
+            "value": 15.99
+          },
+          {
+            "month": "Aug-25",
+            "value": 16.35
+          },
+          {
+            "month": "Sep-25",
+            "value": 16.72
+          },
+          {
+            "month": "Oct-25",
+            "value": 17.94
+          },
+          {
+            "month": "Nov-25",
+            "value": 17.46
+          },
+          {
+            "month": "Dec-25",
+            "value": 18.15
+          },
+          {
+            "month": "Jan-26",
+            "value": 19.98
+          },
+          {
+            "month": "Feb-26",
+            "value": 20.8
+          },
+          {
+            "month": "Mar-26",
+            "value": 21.12
+          },
+          {
+            "month": "Apr-26",
+            "value": 22.08
+          }
+        ]
+      },
+      {
+        "id": "WB_NPS",
+        "name": "WB NPS Score",
+        "unit": "score",
+        "direction": "higher",
+        "weight": 0.1,
+        "target": 55.0,
+        "actual_range": [
+          40,
+          70
+        ],
+        "actual": 50.8,
+        "achievement": 92.4,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 35.56
+          },
+          {
+            "month": "Jun-25",
+            "value": 37.05
+          },
+          {
+            "month": "Jul-25",
+            "value": 38.29
+          },
+          {
+            "month": "Aug-25",
+            "value": 40.16
+          },
+          {
+            "month": "Sep-25",
+            "value": 41.1
+          },
+          {
+            "month": "Oct-25",
+            "value": 42.31
+          },
+          {
+            "month": "Nov-25",
+            "value": 44.42
+          },
+          {
+            "month": "Dec-25",
+            "value": 43.45
+          },
+          {
+            "month": "Jan-26",
+            "value": 45.71
+          },
+          {
+            "month": "Feb-26",
+            "value": 47.82
+          },
+          {
+            "month": "Mar-26",
+            "value": 51.14
+          },
+          {
+            "month": "Apr-26",
+            "value": 50.42
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Gikomba Area 42",
+        "tagged_customers": 432,
+        "proposition_score": 4.21,
+        "champion_rm": "300925"
+      },
+      {
+        "branch": "Nakuru Finance",
+        "tagged_customers": 280,
+        "proposition_score": 4.33,
+        "champion_rm": "300646"
+      },
+      {
+        "branch": "Thika",
+        "tagged_customers": 50,
+        "proposition_score": 3.4,
+        "champion_rm": "301110"
+      },
+      {
+        "branch": "Kutus",
+        "tagged_customers": 478,
+        "proposition_score": 2.67,
+        "champion_rm": "301030"
+      },
+      {
+        "branch": "Mumias",
+        "tagged_customers": 151,
+        "proposition_score": 3.0,
+        "champion_rm": "301006"
+      },
+      {
+        "branch": "Nyamira",
+        "tagged_customers": 72,
+        "proposition_score": 4.0,
+        "champion_rm": "301150"
+      },
+      {
+        "branch": "Bomet",
+        "tagged_customers": 392,
+        "proposition_score": 4.02,
+        "champion_rm": "300288"
+      },
+      {
+        "branch": "Kayole",
+        "tagged_customers": 129,
+        "proposition_score": 2.51,
+        "champion_rm": "300807"
+      },
+      {
+        "branch": "Maua",
+        "tagged_customers": 348,
+        "proposition_score": 3.65,
+        "champion_rm": "301299"
+      },
+      {
+        "branch": "Dagoretti",
+        "tagged_customers": 490,
+        "proposition_score": 3.48,
+        "champion_rm": "301382"
+      },
+      {
+        "branch": "Embu",
+        "tagged_customers": 119,
+        "proposition_score": 3.59,
+        "champion_rm": "301069"
+      },
+      {
+        "branch": "Kapsabet",
+        "tagged_customers": 351,
+        "proposition_score": 2.76,
+        "champion_rm": "301006"
+      },
+      {
+        "branch": "Ngara",
+        "tagged_customers": 498,
+        "proposition_score": 3.89,
+        "champion_rm": "301150"
+      },
+      {
+        "branch": "Isiolo",
+        "tagged_customers": 93,
+        "proposition_score": 3.34,
+        "champion_rm": "300925"
+      },
+      {
+        "branch": "Laptrust",
+        "tagged_customers": 119,
+        "proposition_score": 4.07,
+        "champion_rm": "301299"
+      }
+    ],
+    "contributing_rms": [
+      "300316",
+      "300646",
+      "300925",
+      "300937",
+      "301150",
+      "300288",
+      "300505",
+      "301069",
+      "301110",
+      "301006",
+      "300807",
+      "301382",
+      "301030",
+      "300992",
+      "301299"
+    ],
+    "total_tagged_customers": 68,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "DIA": {
+    "tag": "DIA",
+    "name": "Diaspora Banking",
+    "icon": "\u2708\ufe0f",
+    "color": "#0EA5E9",
+    "description": "Financial services for Kenyan diaspora and returnees",
+    "head_staff_code": "300014",
+    "head_name": "Zipporah Kibet",
+    "proposition_score": 2.62,
+    "kpis": [
+      {
+        "id": "DIA_ACQ",
+        "name": "Diaspora Customers Acquired",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 500,
+        "actual_range": [
+          200,
+          600
+        ],
+        "actual": 459.0,
+        "achievement": 91.8,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 321.3
+          },
+          {
+            "month": "Jun-25",
+            "value": 336.05
+          },
+          {
+            "month": "Jul-25",
+            "value": 341.59
+          },
+          {
+            "month": "Aug-25",
+            "value": 358.49
+          },
+          {
+            "month": "Sep-25",
+            "value": 375.03
+          },
+          {
+            "month": "Oct-25",
+            "value": 382.64
+          },
+          {
+            "month": "Nov-25",
+            "value": 408.85
+          },
+          {
+            "month": "Dec-25",
+            "value": 408.84
+          },
+          {
+            "month": "Jan-26",
+            "value": 420.11
+          },
+          {
+            "month": "Feb-26",
+            "value": 439.31
+          },
+          {
+            "month": "Mar-26",
+            "value": 429.99
+          },
+          {
+            "month": "Apr-26",
+            "value": 464.03
+          }
+        ]
+      },
+      {
+        "id": "DIA_REMIT",
+        "name": "Diaspora Remittances Volume",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.3,
+        "target": 2000000000.0,
+        "actual_range": [
+          1000000000.0,
+          3000000000.0
+        ],
+        "actual": 1413971296.0,
+        "achievement": 70.7,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 989779907.2
+          },
+          {
+            "month": "Jun-25",
+            "value": 1027707511.07
+          },
+          {
+            "month": "Jul-25",
+            "value": 1058678661.58
+          },
+          {
+            "month": "Aug-25",
+            "value": 1115227153.22
+          },
+          {
+            "month": "Sep-25",
+            "value": 1146953087.19
+          },
+          {
+            "month": "Oct-25",
+            "value": 1146665371.52
+          },
+          {
+            "month": "Nov-25",
+            "value": 1234783332.42
+          },
+          {
+            "month": "Dec-25",
+            "value": 1224451026.69
+          },
+          {
+            "month": "Jan-26",
+            "value": 1316574583.23
+          },
+          {
+            "month": "Feb-26",
+            "value": 1396673713.4
+          },
+          {
+            "month": "Mar-26",
+            "value": 1305715719.33
+          },
+          {
+            "month": "Apr-26",
+            "value": 1476428433.43
+          }
+        ]
+      },
+      {
+        "id": "DIA_LOANS",
+        "name": "Diaspora Loan Book",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 1500000000.0,
+        "actual_range": [
+          800000000.0,
+          2000000000.0
+        ],
+        "actual": 9500000.0,
+        "achievement": 0.6,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 1098316291.8
+          },
+          {
+            "month": "Jun-25",
+            "value": 1144165455.35
+          },
+          {
+            "month": "Jul-25",
+            "value": 1167483510.45
+          },
+          {
+            "month": "Aug-25",
+            "value": 1234170148.5
+          },
+          {
+            "month": "Sep-25",
+            "value": 1250224460.38
+          },
+          {
+            "month": "Oct-25",
+            "value": 1345023779.68
+          },
+          {
+            "month": "Nov-25",
+            "value": 1395592470.32
+          },
+          {
+            "month": "Dec-25",
+            "value": 1354450251.63
+          },
+          {
+            "month": "Jan-26",
+            "value": 1462725370.78
+          },
+          {
+            "month": "Feb-26",
+            "value": 1435069429.73
+          },
+          {
+            "month": "Mar-26",
+            "value": 1487343956.33
+          },
+          {
+            "month": "Apr-26",
+            "value": 1575238660.44
+          }
+        ]
+      },
+      {
+        "id": "DIA_ACTIV",
+        "name": "Diaspora Account Activation",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 70.0,
+        "actual_range": [
+          50,
+          85
+        ],
+        "actual": 80.38,
+        "achievement": 114.8,
+        "score": 4.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 56.27
+          },
+          {
+            "month": "Jun-25",
+            "value": 58.18
+          },
+          {
+            "month": "Jul-25",
+            "value": 60.08
+          },
+          {
+            "month": "Aug-25",
+            "value": 62.75
+          },
+          {
+            "month": "Sep-25",
+            "value": 66.79
+          },
+          {
+            "month": "Oct-25",
+            "value": 68.61
+          },
+          {
+            "month": "Nov-25",
+            "value": 68.3
+          },
+          {
+            "month": "Dec-25",
+            "value": 69.63
+          },
+          {
+            "month": "Jan-26",
+            "value": 73.94
+          },
+          {
+            "month": "Feb-26",
+            "value": 75.56
+          },
+          {
+            "month": "Mar-26",
+            "value": 78.43
+          },
+          {
+            "month": "Apr-26",
+            "value": 80.62
+          }
+        ]
+      },
+      {
+        "id": "DIA_DIGITAL",
+        "name": "Diaspora Digital Adoption",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 80.0,
+        "actual_range": [
+          60,
+          90
+        ],
+        "actual": 68.21,
+        "achievement": 85.3,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 47.75
+          },
+          {
+            "month": "Jun-25",
+            "value": 49.39
+          },
+          {
+            "month": "Jul-25",
+            "value": 50.73
+          },
+          {
+            "month": "Aug-25",
+            "value": 52.42
+          },
+          {
+            "month": "Sep-25",
+            "value": 55.05
+          },
+          {
+            "month": "Oct-25",
+            "value": 56.42
+          },
+          {
+            "month": "Nov-25",
+            "value": 59.11
+          },
+          {
+            "month": "Dec-25",
+            "value": 62.51
+          },
+          {
+            "month": "Jan-26",
+            "value": 64.69
+          },
+          {
+            "month": "Feb-26",
+            "value": 62.36
+          },
+          {
+            "month": "Mar-26",
+            "value": 62.83
+          },
+          {
+            "month": "Apr-26",
+            "value": 71.05
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "KTDA Retail",
+        "tagged_customers": 334,
+        "proposition_score": 2.77,
+        "champion_rm": "300238"
+      },
+      {
+        "branch": "Kenyatta Avenue",
+        "tagged_customers": 185,
+        "proposition_score": 2.69,
+        "champion_rm": "300371"
+      },
+      {
+        "branch": "Utawala",
+        "tagged_customers": 137,
+        "proposition_score": 2.71,
+        "champion_rm": "301050"
+      },
+      {
+        "branch": "Banana",
+        "tagged_customers": 438,
+        "proposition_score": 3.21,
+        "champion_rm": "300238"
+      },
+      {
+        "branch": "Kangema",
+        "tagged_customers": 144,
+        "proposition_score": 3.79,
+        "champion_rm": "300619"
+      },
+      {
+        "branch": "Kitengela",
+        "tagged_customers": 309,
+        "proposition_score": 3.13,
+        "champion_rm": "300728"
+      },
+      {
+        "branch": "Kitale",
+        "tagged_customers": 478,
+        "proposition_score": 2.63,
+        "champion_rm": "300681"
+      },
+      {
+        "branch": "Kasarani",
+        "tagged_customers": 211,
+        "proposition_score": 2.82,
+        "champion_rm": "300745"
+      },
+      {
+        "branch": "Gikomba Area 42",
+        "tagged_customers": 82,
+        "proposition_score": 2.53,
+        "champion_rm": "300043"
+      },
+      {
+        "branch": "Donholm",
+        "tagged_customers": 447,
+        "proposition_score": 3.01,
+        "champion_rm": "301050"
+      },
+      {
+        "branch": "Migori",
+        "tagged_customers": 79,
+        "proposition_score": 2.69,
+        "champion_rm": "301050"
+      },
+      {
+        "branch": "Bomet",
+        "tagged_customers": 208,
+        "proposition_score": 2.75,
+        "champion_rm": "300024"
+      },
+      {
+        "branch": "Kerugoya",
+        "tagged_customers": 337,
+        "proposition_score": 3.65,
+        "champion_rm": "300681"
+      },
+      {
+        "branch": "Embu",
+        "tagged_customers": 489,
+        "proposition_score": 3.2,
+        "champion_rm": "300238"
+      },
+      {
+        "branch": "Makongeni",
+        "tagged_customers": 283,
+        "proposition_score": 3.71,
+        "champion_rm": "300024"
+      }
+    ],
+    "contributing_rms": [
+      "301050",
+      "300619",
+      "300926",
+      "300786",
+      "300745",
+      "301414",
+      "300371",
+      "300947",
+      "300455",
+      "300728",
+      "300024",
+      "300289",
+      "300238",
+      "300043",
+      "300681"
+    ],
+    "total_tagged_customers": 7,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "SME": {
+    "tag": "SME",
+    "name": "SME Banking",
+    "icon": "\ud83c\udfea",
+    "color": "#F59E0B",
+    "description": "Dedicated SME and MSME banking solutions",
+    "head_staff_code": "300018",
+    "head_name": "Helena Wetungu",
+    "proposition_score": 3.73,
+    "kpis": [
+      {
+        "id": "SME_ACQ",
+        "name": "SME Customers Acquired",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 800,
+        "actual_range": [
+          400,
+          1000
+        ],
+        "actual": 3592.0,
+        "achievement": 449.0,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 566.3
+          },
+          {
+            "month": "Jun-25",
+            "value": 587.38
+          },
+          {
+            "month": "Jul-25",
+            "value": 618.32
+          },
+          {
+            "month": "Aug-25",
+            "value": 628.69
+          },
+          {
+            "month": "Sep-25",
+            "value": 662.86
+          },
+          {
+            "month": "Oct-25",
+            "value": 673.83
+          },
+          {
+            "month": "Nov-25",
+            "value": 673.46
+          },
+          {
+            "month": "Dec-25",
+            "value": 732.81
+          },
+          {
+            "month": "Jan-26",
+            "value": 727.95
+          },
+          {
+            "month": "Feb-26",
+            "value": 801.27
+          },
+          {
+            "month": "Mar-26",
+            "value": 813.4
+          },
+          {
+            "month": "Apr-26",
+            "value": 772.33
+          }
+        ]
+      },
+      {
+        "id": "SME_BOOK",
+        "name": "SME Loan Book",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.25,
+        "target": 5000000000.0,
+        "actual_range": [
+          3000000000.0,
+          7000000000.0
+        ],
+        "actual": 5456975852.0,
+        "achievement": 109.1,
+        "score": 3.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 4250101559.9
+          },
+          {
+            "month": "Jun-25",
+            "value": 4442380160.34
+          },
+          {
+            "month": "Jul-25",
+            "value": 4586862850.52
+          },
+          {
+            "month": "Aug-25",
+            "value": 4715567264.27
+          },
+          {
+            "month": "Sep-25",
+            "value": 4928580135.45
+          },
+          {
+            "month": "Oct-25",
+            "value": 5151458095.91
+          },
+          {
+            "month": "Nov-25",
+            "value": 5089673396.04
+          },
+          {
+            "month": "Dec-25",
+            "value": 5464380438.23
+          },
+          {
+            "month": "Jan-26",
+            "value": 5372543244.34
+          },
+          {
+            "month": "Feb-26",
+            "value": 5517259135.31
+          },
+          {
+            "month": "Mar-26",
+            "value": 5809308599.36
+          },
+          {
+            "month": "Apr-26",
+            "value": 6179327185.56
+          }
+        ]
+      },
+      {
+        "id": "SME_NPL",
+        "name": "SME NPL Ratio",
+        "unit": "%",
+        "direction": "lower",
+        "weight": 0.2,
+        "target": 4.0,
+        "actual_range": [
+          3.0,
+          8.0
+        ],
+        "actual": 6.28,
+        "achievement": 63.7,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 4.4
+          },
+          {
+            "month": "Jun-25",
+            "value": 4.57
+          },
+          {
+            "month": "Jul-25",
+            "value": 4.72
+          },
+          {
+            "month": "Aug-25",
+            "value": 4.89
+          },
+          {
+            "month": "Sep-25",
+            "value": 5.01
+          },
+          {
+            "month": "Oct-25",
+            "value": 5.23
+          },
+          {
+            "month": "Nov-25",
+            "value": 5.31
+          },
+          {
+            "month": "Dec-25",
+            "value": 5.42
+          },
+          {
+            "month": "Jan-26",
+            "value": 5.79
+          },
+          {
+            "month": "Feb-26",
+            "value": 6.04
+          },
+          {
+            "month": "Mar-26",
+            "value": 6.41
+          },
+          {
+            "month": "Apr-26",
+            "value": 6.42
+          }
+        ]
+      },
+      {
+        "id": "SME_TRAINING",
+        "name": "SME Training Events",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.1,
+        "target": 36,
+        "actual_range": [
+          20,
+          50
+        ],
+        "actual": 32.0,
+        "achievement": 88.9,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 22.4
+          },
+          {
+            "month": "Jun-25",
+            "value": 23.15
+          },
+          {
+            "month": "Jul-25",
+            "value": 23.81
+          },
+          {
+            "month": "Aug-25",
+            "value": 24.78
+          },
+          {
+            "month": "Sep-25",
+            "value": 25.86
+          },
+          {
+            "month": "Oct-25",
+            "value": 26.35
+          },
+          {
+            "month": "Nov-25",
+            "value": 27.25
+          },
+          {
+            "month": "Dec-25",
+            "value": 29.59
+          },
+          {
+            "month": "Jan-26",
+            "value": 29.64
+          },
+          {
+            "month": "Feb-26",
+            "value": 31.32
+          },
+          {
+            "month": "Mar-26",
+            "value": 31.31
+          },
+          {
+            "month": "Apr-26",
+            "value": 32.58
+          }
+        ]
+      },
+      {
+        "id": "SME_XSELL",
+        "name": "SME Cross-sell",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 3.0,
+        "actual_range": [
+          2.0,
+          4.0
+        ],
+        "actual": 4.0,
+        "achievement": 133.3,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 2.8
+          },
+          {
+            "month": "Jun-25",
+            "value": 2.9
+          },
+          {
+            "month": "Jul-25",
+            "value": 3.03
+          },
+          {
+            "month": "Aug-25",
+            "value": 3.16
+          },
+          {
+            "month": "Sep-25",
+            "value": 3.2
+          },
+          {
+            "month": "Oct-25",
+            "value": 3.38
+          },
+          {
+            "month": "Nov-25",
+            "value": 3.33
+          },
+          {
+            "month": "Dec-25",
+            "value": 3.71
+          },
+          {
+            "month": "Jan-26",
+            "value": 3.66
+          },
+          {
+            "month": "Feb-26",
+            "value": 3.97
+          },
+          {
+            "month": "Mar-26",
+            "value": 3.97
+          },
+          {
+            "month": "Apr-26",
+            "value": 4.17
+          }
+        ]
+      },
+      {
+        "id": "SME_REPAY",
+        "name": "SME Repayment Rate",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.1,
+        "target": 92.0,
+        "actual_range": [
+          80,
+          98
+        ],
+        "actual": 96.69,
+        "achievement": 105.1,
+        "score": 3.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 67.68
+          },
+          {
+            "month": "Jun-25",
+            "value": 70.21
+          },
+          {
+            "month": "Jul-25",
+            "value": 73.96
+          },
+          {
+            "month": "Aug-25",
+            "value": 77.02
+          },
+          {
+            "month": "Sep-25",
+            "value": 77.1
+          },
+          {
+            "month": "Oct-25",
+            "value": 82.6
+          },
+          {
+            "month": "Nov-25",
+            "value": 82.52
+          },
+          {
+            "month": "Dec-25",
+            "value": 83.93
+          },
+          {
+            "month": "Jan-26",
+            "value": 87.59
+          },
+          {
+            "month": "Feb-26",
+            "value": 92.72
+          },
+          {
+            "month": "Mar-26",
+            "value": 94.57
+          },
+          {
+            "month": "Apr-26",
+            "value": 96.39
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Kiambu",
+        "tagged_customers": 138,
+        "proposition_score": 2.67,
+        "champion_rm": "301051"
+      },
+      {
+        "branch": "Muranga",
+        "tagged_customers": 329,
+        "proposition_score": 3.96,
+        "champion_rm": "300034"
+      },
+      {
+        "branch": "Kisumu Express",
+        "tagged_customers": 415,
+        "proposition_score": 3.98,
+        "champion_rm": "300902"
+      },
+      {
+        "branch": "Laptrust",
+        "tagged_customers": 59,
+        "proposition_score": 3.57,
+        "champion_rm": "300702"
+      },
+      {
+        "branch": "Narok",
+        "tagged_customers": 484,
+        "proposition_score": 3.89,
+        "champion_rm": "300619"
+      },
+      {
+        "branch": "Molo",
+        "tagged_customers": 343,
+        "proposition_score": 2.59,
+        "champion_rm": "300470"
+      },
+      {
+        "branch": "Bungoma",
+        "tagged_customers": 244,
+        "proposition_score": 3.58,
+        "champion_rm": "300844"
+      },
+      {
+        "branch": "Kilimani",
+        "tagged_customers": 465,
+        "proposition_score": 3.79,
+        "champion_rm": "300034"
+      },
+      {
+        "branch": "Githunguri",
+        "tagged_customers": 310,
+        "proposition_score": 2.71,
+        "champion_rm": "300034"
+      },
+      {
+        "branch": "Ruaka",
+        "tagged_customers": 425,
+        "proposition_score": 3.28,
+        "champion_rm": "300844"
+      },
+      {
+        "branch": "KTDA Retail",
+        "tagged_customers": 183,
+        "proposition_score": 3.12,
+        "champion_rm": "300302"
+      },
+      {
+        "branch": "Kangari",
+        "tagged_customers": 353,
+        "proposition_score": 3.82,
+        "champion_rm": "300744"
+      },
+      {
+        "branch": "Gikomba",
+        "tagged_customers": 133,
+        "proposition_score": 4.3,
+        "champion_rm": "300619"
+      },
+      {
+        "branch": "Kakamega",
+        "tagged_customers": 327,
+        "proposition_score": 3.07,
+        "champion_rm": "300034"
+      },
+      {
+        "branch": "Cargen House",
+        "tagged_customers": 248,
+        "proposition_score": 2.88,
+        "champion_rm": "300302"
+      }
+    ],
+    "contributing_rms": [
+      "301222",
+      "301067",
+      "300034",
+      "300744",
+      "300619",
+      "301051",
+      "300470",
+      "301040",
+      "300844",
+      "300786",
+      "301163",
+      "300302",
+      "301179",
+      "300702",
+      "300902"
+    ],
+    "total_tagged_customers": 257,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "AGR": {
+    "tag": "AGR",
+    "name": "Agribusiness",
+    "icon": "\ud83c\udf3e",
+    "color": "#10B981",
+    "description": "Agricultural finance and agri-business banking",
+    "head_staff_code": "300018",
+    "head_name": "Helena Wetungu",
+    "proposition_score": 2.5,
+    "kpis": [
+      {
+        "id": "AGR_ACQ",
+        "name": "Agri Customers Acquired",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 600,
+        "actual_range": [
+          300,
+          800
+        ],
+        "actual": 390.0,
+        "achievement": 65.0,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 273.0
+          },
+          {
+            "month": "Jun-25",
+            "value": 282.21
+          },
+          {
+            "month": "Jul-25",
+            "value": 297.57
+          },
+          {
+            "month": "Aug-25",
+            "value": 305.1
+          },
+          {
+            "month": "Sep-25",
+            "value": 322.05
+          },
+          {
+            "month": "Oct-25",
+            "value": 329.23
+          },
+          {
+            "month": "Nov-25",
+            "value": 324.11
+          },
+          {
+            "month": "Dec-25",
+            "value": 343.72
+          },
+          {
+            "month": "Jan-26",
+            "value": 353.6
+          },
+          {
+            "month": "Feb-26",
+            "value": 357.86
+          },
+          {
+            "month": "Mar-26",
+            "value": 364.65
+          },
+          {
+            "month": "Apr-26",
+            "value": 395.15
+          }
+        ]
+      },
+      {
+        "id": "AGR_BOOK",
+        "name": "Agri Loan Book",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.3,
+        "target": 3000000000.0,
+        "actual_range": [
+          1500000000.0,
+          4000000000.0
+        ],
+        "actual": 280295527.0,
+        "achievement": 9.3,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 1271417812.0
+          },
+          {
+            "month": "Jun-25",
+            "value": 1320647733.11
+          },
+          {
+            "month": "Jul-25",
+            "value": 1385309532.36
+          },
+          {
+            "month": "Aug-25",
+            "value": 1433496288.52
+          },
+          {
+            "month": "Sep-25",
+            "value": 1460144977.41
+          },
+          {
+            "month": "Oct-25",
+            "value": 1530683483.38
+          },
+          {
+            "month": "Nov-25",
+            "value": 1586173442.56
+          },
+          {
+            "month": "Dec-25",
+            "value": 1597057835.84
+          },
+          {
+            "month": "Jan-26",
+            "value": 1732615462.48
+          },
+          {
+            "month": "Feb-26",
+            "value": 1649642107.91
+          },
+          {
+            "month": "Mar-26",
+            "value": 1770529488.68
+          },
+          {
+            "month": "Apr-26",
+            "value": 1887941348.86
+          }
+        ]
+      },
+      {
+        "id": "AGR_NPL",
+        "name": "Agri NPL Ratio",
+        "unit": "%",
+        "direction": "lower",
+        "weight": 0.2,
+        "target": 5.0,
+        "actual_range": [
+          3.0,
+          10.0
+        ],
+        "actual": 7.78,
+        "achievement": 64.3,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 5.45
+          },
+          {
+            "month": "Jun-25",
+            "value": 5.67
+          },
+          {
+            "month": "Jul-25",
+            "value": 5.8
+          },
+          {
+            "month": "Aug-25",
+            "value": 6.15
+          },
+          {
+            "month": "Sep-25",
+            "value": 6.15
+          },
+          {
+            "month": "Oct-25",
+            "value": 6.5
+          },
+          {
+            "month": "Nov-25",
+            "value": 6.62
+          },
+          {
+            "month": "Dec-25",
+            "value": 7.08
+          },
+          {
+            "month": "Jan-26",
+            "value": 6.96
+          },
+          {
+            "month": "Feb-26",
+            "value": 7.22
+          },
+          {
+            "month": "Mar-26",
+            "value": 7.57
+          },
+          {
+            "month": "Apr-26",
+            "value": 7.62
+          }
+        ]
+      },
+      {
+        "id": "AGR_SEASONAL",
+        "name": "Seasonal Loan Recovery",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.3,
+        "target": 88.0,
+        "actual_range": [
+          70,
+          95
+        ],
+        "actual": 92.68,
+        "achievement": 105.3,
+        "score": 3.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 64.88
+          },
+          {
+            "month": "Jun-25",
+            "value": 67.76
+          },
+          {
+            "month": "Jul-25",
+            "value": 69.74
+          },
+          {
+            "month": "Aug-25",
+            "value": 71.48
+          },
+          {
+            "month": "Sep-25",
+            "value": 76.23
+          },
+          {
+            "month": "Oct-25",
+            "value": 76.1
+          },
+          {
+            "month": "Nov-25",
+            "value": 81.19
+          },
+          {
+            "month": "Dec-25",
+            "value": 81.5
+          },
+          {
+            "month": "Jan-26",
+            "value": 87.42
+          },
+          {
+            "month": "Feb-26",
+            "value": 86.8
+          },
+          {
+            "month": "Mar-26",
+            "value": 93.22
+          },
+          {
+            "month": "Apr-26",
+            "value": 91.36
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Kilimani",
+        "tagged_customers": 219,
+        "proposition_score": 4.44,
+        "champion_rm": "301368"
+      },
+      {
+        "branch": "Mlolongo",
+        "tagged_customers": 445,
+        "proposition_score": 2.75,
+        "champion_rm": "300889"
+      },
+      {
+        "branch": "Migori",
+        "tagged_customers": 344,
+        "proposition_score": 3.42,
+        "champion_rm": "300701"
+      },
+      {
+        "branch": "Kongowea",
+        "tagged_customers": 254,
+        "proposition_score": 2.54,
+        "champion_rm": "300413"
+      },
+      {
+        "branch": "Nyeri",
+        "tagged_customers": 218,
+        "proposition_score": 3.85,
+        "champion_rm": "300808"
+      },
+      {
+        "branch": "City Hall",
+        "tagged_customers": 98,
+        "proposition_score": 3.86,
+        "champion_rm": "300033"
+      },
+      {
+        "branch": "Embu",
+        "tagged_customers": 303,
+        "proposition_score": 4.32,
+        "champion_rm": "300946"
+      },
+      {
+        "branch": "Nyali",
+        "tagged_customers": 374,
+        "proposition_score": 4.41,
+        "champion_rm": "300978"
+      },
+      {
+        "branch": "Nakuru Market",
+        "tagged_customers": 441,
+        "proposition_score": 3.59,
+        "champion_rm": "301150"
+      },
+      {
+        "branch": "Nanyuki",
+        "tagged_customers": 267,
+        "proposition_score": 3.2,
+        "champion_rm": "300808"
+      },
+      {
+        "branch": "Thika",
+        "tagged_customers": 80,
+        "proposition_score": 4.35,
+        "champion_rm": "300413"
+      },
+      {
+        "branch": "Kisii",
+        "tagged_customers": 138,
+        "proposition_score": 2.52,
+        "champion_rm": "301368"
+      },
+      {
+        "branch": "Kariobangi",
+        "tagged_customers": 409,
+        "proposition_score": 3.0,
+        "champion_rm": "300808"
+      },
+      {
+        "branch": "Molo",
+        "tagged_customers": 346,
+        "proposition_score": 3.79,
+        "champion_rm": "300701"
+      },
+      {
+        "branch": "Kikuyu",
+        "tagged_customers": 476,
+        "proposition_score": 4.06,
+        "champion_rm": "301424"
+      }
+    ],
+    "contributing_rms": [
+      "301124",
+      "300022",
+      "301082",
+      "301150",
+      "300889",
+      "300808",
+      "300701",
+      "301424",
+      "301368",
+      "301370",
+      "300978",
+      "300413",
+      "301280",
+      "300946",
+      "300033"
+    ],
+    "total_tagged_customers": 24,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "TF": {
+    "tag": "TF",
+    "name": "Trade Finance",
+    "icon": "\ud83d\udea2",
+    "color": "#6366F1",
+    "description": "Import/export finance, letters of credit, guarantees",
+    "head_staff_code": "300017",
+    "head_name": "Stella Kithinji",
+    "proposition_score": 2.75,
+    "kpis": [
+      {
+        "id": "TF_VOLUME",
+        "name": "Trade Finance Volume",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.35,
+        "target": 8000000000.0,
+        "actual_range": [
+          4000000000.0,
+          12000000000.0
+        ],
+        "actual": 3207965239.0,
+        "achievement": 40.1,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 6287823846.5
+          },
+          {
+            "month": "Jun-25",
+            "value": 6538268529.49
+          },
+          {
+            "month": "Jul-25",
+            "value": 6716569018.73
+          },
+          {
+            "month": "Aug-25",
+            "value": 7101825904.36
+          },
+          {
+            "month": "Sep-25",
+            "value": 7456902978.72
+          },
+          {
+            "month": "Oct-25",
+            "value": 7344093502.1
+          },
+          {
+            "month": "Nov-25",
+            "value": 8035402378.14
+          },
+          {
+            "month": "Dec-25",
+            "value": 8306619397.01
+          },
+          {
+            "month": "Jan-26",
+            "value": 8017478501.63
+          },
+          {
+            "month": "Feb-26",
+            "value": 8645344883.28
+          },
+          {
+            "month": "Mar-26",
+            "value": 8939014595.51
+          },
+          {
+            "month": "Apr-26",
+            "value": 8534497992.94
+          }
+        ]
+      },
+      {
+        "id": "TF_CLIENTS",
+        "name": "Active TF Clients",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 120,
+        "actual_range": [
+          60,
+          160
+        ],
+        "actual": 2432.0,
+        "achievement": 2026.7,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 71.4
+          },
+          {
+            "month": "Jun-25",
+            "value": 74.28
+          },
+          {
+            "month": "Jul-25",
+            "value": 76.15
+          },
+          {
+            "month": "Aug-25",
+            "value": 78.17
+          },
+          {
+            "month": "Sep-25",
+            "value": 84.48
+          },
+          {
+            "month": "Oct-25",
+            "value": 82.77
+          },
+          {
+            "month": "Nov-25",
+            "value": 88.43
+          },
+          {
+            "month": "Dec-25",
+            "value": 90.98
+          },
+          {
+            "month": "Jan-26",
+            "value": 91.26
+          },
+          {
+            "month": "Feb-26",
+            "value": 100.88
+          },
+          {
+            "month": "Mar-26",
+            "value": 98.89
+          },
+          {
+            "month": "Apr-26",
+            "value": 104.0
+          }
+        ]
+      },
+      {
+        "id": "TF_TAT",
+        "name": "LC/LG Processing TAT",
+        "unit": "days",
+        "direction": "lower",
+        "weight": 0.25,
+        "target": 3.0,
+        "actual_range": [
+          2,
+          7
+        ],
+        "actual": 3.72,
+        "achievement": 80.6,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 2.6
+          },
+          {
+            "month": "Jun-25",
+            "value": 2.7
+          },
+          {
+            "month": "Jul-25",
+            "value": 2.81
+          },
+          {
+            "month": "Aug-25",
+            "value": 2.89
+          },
+          {
+            "month": "Sep-25",
+            "value": 2.97
+          },
+          {
+            "month": "Oct-25",
+            "value": 3.14
+          },
+          {
+            "month": "Nov-25",
+            "value": 3.12
+          },
+          {
+            "month": "Dec-25",
+            "value": 3.31
+          },
+          {
+            "month": "Jan-26",
+            "value": 3.37
+          },
+          {
+            "month": "Feb-26",
+            "value": 3.64
+          },
+          {
+            "month": "Mar-26",
+            "value": 3.6
+          },
+          {
+            "month": "Apr-26",
+            "value": 3.66
+          }
+        ]
+      },
+      {
+        "id": "TF_INCOME",
+        "name": "TF Fee Income",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 500000000.0,
+        "actual_range": [
+          200000000.0,
+          700000000.0
+        ],
+        "actual": 456146866.0,
+        "achievement": 91.2,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 319302806.2
+          },
+          {
+            "month": "Jun-25",
+            "value": 330768186.61
+          },
+          {
+            "month": "Jul-25",
+            "value": 344997076.84
+          },
+          {
+            "month": "Aug-25",
+            "value": 361325472.01
+          },
+          {
+            "month": "Sep-25",
+            "value": 376288327.76
+          },
+          {
+            "month": "Oct-25",
+            "value": 387124983.03
+          },
+          {
+            "month": "Nov-25",
+            "value": 398287873.99
+          },
+          {
+            "month": "Dec-25",
+            "value": 406697533.09
+          },
+          {
+            "month": "Jan-26",
+            "value": 420110476.89
+          },
+          {
+            "month": "Feb-26",
+            "value": 447300004.49
+          },
+          {
+            "month": "Mar-26",
+            "value": 467643377.32
+          },
+          {
+            "month": "Apr-26",
+            "value": 462518875.4
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Nakuru Finance",
+        "tagged_customers": 316,
+        "proposition_score": 4.24,
+        "champion_rm": "300175"
+      },
+      {
+        "branch": "Kangari",
+        "tagged_customers": 104,
+        "proposition_score": 4.35,
+        "champion_rm": "300017"
+      },
+      {
+        "branch": "Mwea",
+        "tagged_customers": 64,
+        "proposition_score": 3.43,
+        "champion_rm": "300017"
+      },
+      {
+        "branch": "Industrial Area",
+        "tagged_customers": 269,
+        "proposition_score": 3.52,
+        "champion_rm": "300027"
+      },
+      {
+        "branch": "Githunguri",
+        "tagged_customers": 114,
+        "proposition_score": 3.53,
+        "champion_rm": "300042"
+      },
+      {
+        "branch": "Nanyuki",
+        "tagged_customers": 490,
+        "proposition_score": 3.04,
+        "champion_rm": "300168"
+      },
+      {
+        "branch": "Kongowea",
+        "tagged_customers": 416,
+        "proposition_score": 3.48,
+        "champion_rm": "300027"
+      },
+      {
+        "branch": "Nyahururu",
+        "tagged_customers": 397,
+        "proposition_score": 4.18,
+        "champion_rm": "300026"
+      },
+      {
+        "branch": "Ukunda",
+        "tagged_customers": 236,
+        "proposition_score": 4.49,
+        "champion_rm": "300171"
+      },
+      {
+        "branch": "Mumias",
+        "tagged_customers": 322,
+        "proposition_score": 3.73,
+        "champion_rm": "300027"
+      },
+      {
+        "branch": "Githurai",
+        "tagged_customers": 146,
+        "proposition_score": 2.8,
+        "champion_rm": "300027"
+      },
+      {
+        "branch": "Kenyatta Avenue",
+        "tagged_customers": 410,
+        "proposition_score": 4.46,
+        "champion_rm": "300025"
+      },
+      {
+        "branch": "Gateway Mall",
+        "tagged_customers": 123,
+        "proposition_score": 2.76,
+        "champion_rm": "300168"
+      },
+      {
+        "branch": "Litein",
+        "tagged_customers": 459,
+        "proposition_score": 3.81,
+        "champion_rm": "300222"
+      },
+      {
+        "branch": "JKIA",
+        "tagged_customers": 460,
+        "proposition_score": 3.83,
+        "champion_rm": "300222"
+      }
+    ],
+    "contributing_rms": [
+      "300222",
+      "300043",
+      "300029",
+      "300017",
+      "300020",
+      "300026",
+      "300171",
+      "300022",
+      "300027",
+      "300176",
+      "300175",
+      "300025",
+      "300042",
+      "300168",
+      "300023"
+    ],
+    "total_tagged_customers": 148,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "GOV": {
+    "tag": "GOV",
+    "name": "Govt & Institutional",
+    "icon": "\ud83c\udfdb\ufe0f",
+    "color": "#64748B",
+    "description": "Government parastatals, NGOs, SACCOs, faith-based",
+    "head_staff_code": "300019",
+    "head_name": "Wendy Akinyi",
+    "proposition_score": 2.9,
+    "kpis": [
+      {
+        "id": "GOV_CLIENTS",
+        "name": "Govt/PSI Clients",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.25,
+        "target": 80,
+        "actual_range": [
+          40,
+          120
+        ],
+        "actual": 144.0,
+        "achievement": 180.0,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 53.9
+          },
+          {
+            "month": "Jun-25",
+            "value": 55.63
+          },
+          {
+            "month": "Jul-25",
+            "value": 57.57
+          },
+          {
+            "month": "Aug-25",
+            "value": 59.33
+          },
+          {
+            "month": "Sep-25",
+            "value": 62.77
+          },
+          {
+            "month": "Oct-25",
+            "value": 64.36
+          },
+          {
+            "month": "Nov-25",
+            "value": 66.73
+          },
+          {
+            "month": "Dec-25",
+            "value": 65.83
+          },
+          {
+            "month": "Jan-26",
+            "value": 68.82
+          },
+          {
+            "month": "Feb-26",
+            "value": 71.77
+          },
+          {
+            "month": "Mar-26",
+            "value": 75.26
+          },
+          {
+            "month": "Apr-26",
+            "value": 76.68
+          }
+        ]
+      },
+      {
+        "id": "GOV_DEPOSITS",
+        "name": "Govt Deposits",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.35,
+        "target": 15000000000.0,
+        "actual_range": [
+          8000000000.0,
+          25000000000.0
+        ],
+        "actual": 801750000.0,
+        "achievement": 5.3,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 14491052543.8
+          },
+          {
+            "month": "Jun-25",
+            "value": 15016005793.04
+          },
+          {
+            "month": "Jul-25",
+            "value": 15717251684.86
+          },
+          {
+            "month": "Aug-25",
+            "value": 15873345162.68
+          },
+          {
+            "month": "Sep-25",
+            "value": 16304562696.09
+          },
+          {
+            "month": "Oct-25",
+            "value": 16856281438.46
+          },
+          {
+            "month": "Nov-25",
+            "value": 17995115425.99
+          },
+          {
+            "month": "Dec-25",
+            "value": 18766664958.84
+          },
+          {
+            "month": "Jan-26",
+            "value": 19574057886.96
+          },
+          {
+            "month": "Feb-26",
+            "value": 19078893271.54
+          },
+          {
+            "month": "Mar-26",
+            "value": 20716763577.09
+          },
+          {
+            "month": "Apr-26",
+            "value": 19866348040.04
+          }
+        ]
+      },
+      {
+        "id": "GOV_LOANS",
+        "name": "Govt Loan Book",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.25,
+        "target": 5000000000.0,
+        "actual_range": [
+          2000000000.0,
+          8000000000.0
+        ],
+        "actual": 108000000.0,
+        "achievement": 2.2,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 2203573138.2
+          },
+          {
+            "month": "Jun-25",
+            "value": 2286776860.22
+          },
+          {
+            "month": "Jul-25",
+            "value": 2370687454.69
+          },
+          {
+            "month": "Aug-25",
+            "value": 2495451520.21
+          },
+          {
+            "month": "Sep-25",
+            "value": 2501748398.08
+          },
+          {
+            "month": "Oct-25",
+            "value": 2585561626.46
+          },
+          {
+            "month": "Nov-25",
+            "value": 2815109750.23
+          },
+          {
+            "month": "Dec-25",
+            "value": 2735486927.68
+          },
+          {
+            "month": "Jan-26",
+            "value": 2796584019.39
+          },
+          {
+            "month": "Feb-26",
+            "value": 3128276167.21
+          },
+          {
+            "month": "Mar-26",
+            "value": 3035312569.38
+          },
+          {
+            "month": "Apr-26",
+            "value": 3118941520.23
+          }
+        ]
+      },
+      {
+        "id": "GOV_TENDERS",
+        "name": "Tender Bonds Issued",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 200,
+        "actual_range": [
+          100,
+          300
+        ],
+        "actual": 271.0,
+        "achievement": 135.5,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 189.7
+          },
+          {
+            "month": "Jun-25",
+            "value": 198.48
+          },
+          {
+            "month": "Jul-25",
+            "value": 205.25
+          },
+          {
+            "month": "Aug-25",
+            "value": 211.34
+          },
+          {
+            "month": "Sep-25",
+            "value": 224.56
+          },
+          {
+            "month": "Oct-25",
+            "value": 228.23
+          },
+          {
+            "month": "Nov-25",
+            "value": 226.8
+          },
+          {
+            "month": "Dec-25",
+            "value": 249.65
+          },
+          {
+            "month": "Jan-26",
+            "value": 254.48
+          },
+          {
+            "month": "Feb-26",
+            "value": 246.0
+          },
+          {
+            "month": "Mar-26",
+            "value": 251.16
+          },
+          {
+            "month": "Apr-26",
+            "value": 277.99
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Kasarani",
+        "tagged_customers": 197,
+        "proposition_score": 3.98,
+        "champion_rm": "300048"
+      },
+      {
+        "branch": "Mombasa Nkrumah",
+        "tagged_customers": 54,
+        "proposition_score": 3.45,
+        "champion_rm": "300048"
+      },
+      {
+        "branch": "Narok",
+        "tagged_customers": 189,
+        "proposition_score": 4.18,
+        "champion_rm": "300048"
+      },
+      {
+        "branch": "Kitale",
+        "tagged_customers": 120,
+        "proposition_score": 2.71,
+        "champion_rm": "300050"
+      },
+      {
+        "branch": "Gateway Mall",
+        "tagged_customers": 336,
+        "proposition_score": 2.95,
+        "champion_rm": "300045"
+      },
+      {
+        "branch": "River Road",
+        "tagged_customers": 283,
+        "proposition_score": 3.25,
+        "champion_rm": "300049"
+      },
+      {
+        "branch": "Kericho",
+        "tagged_customers": 353,
+        "proposition_score": 2.6,
+        "champion_rm": "300049"
+      },
+      {
+        "branch": "City Hall",
+        "tagged_customers": 393,
+        "proposition_score": 3.62,
+        "champion_rm": "300019"
+      },
+      {
+        "branch": "Laptrust",
+        "tagged_customers": 180,
+        "proposition_score": 4.43,
+        "champion_rm": "300046"
+      },
+      {
+        "branch": "Nyamira",
+        "tagged_customers": 286,
+        "proposition_score": 3.44,
+        "champion_rm": "300047"
+      },
+      {
+        "branch": "Eldoret West",
+        "tagged_customers": 472,
+        "proposition_score": 4.09,
+        "champion_rm": "300019"
+      },
+      {
+        "branch": "Ol Kalau",
+        "tagged_customers": 321,
+        "proposition_score": 4.39,
+        "champion_rm": "300019"
+      },
+      {
+        "branch": "Kisii",
+        "tagged_customers": 191,
+        "proposition_score": 3.09,
+        "champion_rm": "300046"
+      },
+      {
+        "branch": "Cargen House",
+        "tagged_customers": 352,
+        "proposition_score": 2.58,
+        "champion_rm": "300047"
+      },
+      {
+        "branch": "Embu",
+        "tagged_customers": 281,
+        "proposition_score": 3.63,
+        "champion_rm": "300048"
+      }
+    ],
+    "contributing_rms": [
+      "300046",
+      "300050",
+      "300045",
+      "300048",
+      "300047",
+      "300049",
+      "300019"
+    ],
+    "total_tagged_customers": 7,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "BNC": {
+    "tag": "BNC",
+    "name": "Bancassurance",
+    "icon": "\ud83d\udee1\ufe0f",
+    "color": "#8B5CF6",
+    "description": "Embedded insurance products through banking channels",
+    "head_staff_code": "300178",
+    "head_name": "Irene Kiprotich",
+    "proposition_score": 2.15,
+    "kpis": [
+      {
+        "id": "BNC_POLICIES",
+        "name": "Policies Sold",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.3,
+        "target": 5000,
+        "actual_range": [
+          2000,
+          7000
+        ],
+        "actual": 2841.0,
+        "achievement": 56.8,
+        "score": 2.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 1988.7
+          },
+          {
+            "month": "Jun-25",
+            "value": 2051.25
+          },
+          {
+            "month": "Jul-25",
+            "value": 2115.53
+          },
+          {
+            "month": "Aug-25",
+            "value": 2264.92
+          },
+          {
+            "month": "Sep-25",
+            "value": 2329.94
+          },
+          {
+            "month": "Oct-25",
+            "value": 2379.33
+          },
+          {
+            "month": "Nov-25",
+            "value": 2496.81
+          },
+          {
+            "month": "Dec-25",
+            "value": 2608.42
+          },
+          {
+            "month": "Jan-26",
+            "value": 2567.62
+          },
+          {
+            "month": "Feb-26",
+            "value": 2589.31
+          },
+          {
+            "month": "Mar-26",
+            "value": 2905.53
+          },
+          {
+            "month": "Apr-26",
+            "value": 2753.05
+          }
+        ]
+      },
+      {
+        "id": "BNC_PREMIUM",
+        "name": "Bancassurance Premium",
+        "unit": "KES",
+        "direction": "higher",
+        "weight": 0.3,
+        "target": 800000000.0,
+        "actual_range": [
+          400000000.0,
+          1200000000.0
+        ],
+        "actual": 86000000.0,
+        "achievement": 10.8,
+        "score": 1.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 681499793.1
+          },
+          {
+            "month": "Jun-25",
+            "value": 705317212.09
+          },
+          {
+            "month": "Jul-25",
+            "value": 729047556.19
+          },
+          {
+            "month": "Aug-25",
+            "value": 772663856.14
+          },
+          {
+            "month": "Sep-25",
+            "value": 779746964.68
+          },
+          {
+            "month": "Oct-25",
+            "value": 789899912.16
+          },
+          {
+            "month": "Nov-25",
+            "value": 824830650.43
+          },
+          {
+            "month": "Dec-25",
+            "value": 843891493.29
+          },
+          {
+            "month": "Jan-26",
+            "value": 867457107.61
+          },
+          {
+            "month": "Feb-26",
+            "value": 883543644.76
+          },
+          {
+            "month": "Mar-26",
+            "value": 944503209.17
+          },
+          {
+            "month": "Apr-26",
+            "value": 959740843.94
+          }
+        ]
+      },
+      {
+        "id": "BNC_PENETR",
+        "name": "BNC Penetration Rate",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 18.0,
+        "actual_range": [
+          10,
+          25
+        ],
+        "actual": 17.95,
+        "achievement": 99.7,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 12.56
+          },
+          {
+            "month": "Jun-25",
+            "value": 13.0
+          },
+          {
+            "month": "Jul-25",
+            "value": 13.63
+          },
+          {
+            "month": "Aug-25",
+            "value": 14.05
+          },
+          {
+            "month": "Sep-25",
+            "value": 14.75
+          },
+          {
+            "month": "Oct-25",
+            "value": 14.81
+          },
+          {
+            "month": "Nov-25",
+            "value": 15.93
+          },
+          {
+            "month": "Dec-25",
+            "value": 15.74
+          },
+          {
+            "month": "Jan-26",
+            "value": 16.9
+          },
+          {
+            "month": "Feb-26",
+            "value": 17.61
+          },
+          {
+            "month": "Mar-26",
+            "value": 17.62
+          },
+          {
+            "month": "Apr-26",
+            "value": 17.63
+          }
+        ]
+      },
+      {
+        "id": "BNC_CLAIMS",
+        "name": "Claims Ratio",
+        "unit": "%",
+        "direction": "lower",
+        "weight": 0.2,
+        "target": 55.0,
+        "actual_range": [
+          40,
+          70
+        ],
+        "actual": 66.09,
+        "achievement": 83.2,
+        "score": 2.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 46.26
+          },
+          {
+            "month": "Jun-25",
+            "value": 48.09
+          },
+          {
+            "month": "Jul-25",
+            "value": 49.96
+          },
+          {
+            "month": "Aug-25",
+            "value": 52.33
+          },
+          {
+            "month": "Sep-25",
+            "value": 53.72
+          },
+          {
+            "month": "Oct-25",
+            "value": 55.47
+          },
+          {
+            "month": "Nov-25",
+            "value": 56.89
+          },
+          {
+            "month": "Dec-25",
+            "value": 60.43
+          },
+          {
+            "month": "Jan-26",
+            "value": 62.42
+          },
+          {
+            "month": "Feb-26",
+            "value": 64.47
+          },
+          {
+            "month": "Mar-26",
+            "value": 63.68
+          },
+          {
+            "month": "Apr-26",
+            "value": 69.87
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Busia",
+        "tagged_customers": 337,
+        "proposition_score": 2.73,
+        "champion_rm": "300180"
+      },
+      {
+        "branch": "Rongai",
+        "tagged_customers": 331,
+        "proposition_score": 3.83,
+        "champion_rm": "300890"
+      },
+      {
+        "branch": "FB Towers Retail",
+        "tagged_customers": 405,
+        "proposition_score": 3.43,
+        "champion_rm": "300544"
+      },
+      {
+        "branch": "Thika",
+        "tagged_customers": 372,
+        "proposition_score": 4.37,
+        "champion_rm": "300184"
+      },
+      {
+        "branch": "Nkubu",
+        "tagged_customers": 489,
+        "proposition_score": 4.43,
+        "champion_rm": "300533"
+      },
+      {
+        "branch": "JKIA",
+        "tagged_customers": 383,
+        "proposition_score": 4.44,
+        "champion_rm": "301427"
+      },
+      {
+        "branch": "Embu",
+        "tagged_customers": 199,
+        "proposition_score": 2.68,
+        "champion_rm": "300533"
+      },
+      {
+        "branch": "Ngara",
+        "tagged_customers": 83,
+        "proposition_score": 3.06,
+        "champion_rm": "301427"
+      },
+      {
+        "branch": "Karatina",
+        "tagged_customers": 196,
+        "proposition_score": 3.74,
+        "champion_rm": "301427"
+      },
+      {
+        "branch": "Litein",
+        "tagged_customers": 291,
+        "proposition_score": 4.35,
+        "champion_rm": "301053"
+      },
+      {
+        "branch": "Kakamega",
+        "tagged_customers": 408,
+        "proposition_score": 3.96,
+        "champion_rm": "300970"
+      },
+      {
+        "branch": "Kitengela",
+        "tagged_customers": 330,
+        "proposition_score": 3.77,
+        "champion_rm": "300693"
+      },
+      {
+        "branch": "Kajiado",
+        "tagged_customers": 326,
+        "proposition_score": 2.98,
+        "champion_rm": "300821"
+      },
+      {
+        "branch": "Molo",
+        "tagged_customers": 77,
+        "proposition_score": 3.58,
+        "champion_rm": "300879"
+      },
+      {
+        "branch": "Gikomba Area 42",
+        "tagged_customers": 324,
+        "proposition_score": 3.29,
+        "champion_rm": "301053"
+      }
+    ],
+    "contributing_rms": [
+      "301427",
+      "301053",
+      "300970",
+      "300879",
+      "301031",
+      "300890",
+      "300948",
+      "300180",
+      "300544",
+      "300693",
+      "300533",
+      "301291",
+      "300497",
+      "300821",
+      "300184"
+    ],
+    "total_tagged_customers": 7,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  },
+  "DFS": {
+    "tag": "DFS",
+    "name": "Digital Finance",
+    "icon": "\ud83d\udcf1",
+    "color": "#06B6D4",
+    "description": "Mobile banking, agency network, digital lending",
+    "head_staff_code": "300051",
+    "head_name": "Lawrence Wekesa",
+    "proposition_score": 3.73,
+    "kpis": [
+      {
+        "id": "DFS_MOBILE",
+        "name": "Mobile Banking Active Users",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.25,
+        "target": 150000,
+        "actual_range": [
+          80000,
+          200000
+        ],
+        "actual": 170759.0,
+        "achievement": 113.8,
+        "score": 4.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 119531.3
+          },
+          {
+            "month": "Jun-25",
+            "value": 125089.17
+          },
+          {
+            "month": "Jul-25",
+            "value": 129425.06
+          },
+          {
+            "month": "Aug-25",
+            "value": 133324.27
+          },
+          {
+            "month": "Sep-25",
+            "value": 134575.05
+          },
+          {
+            "month": "Oct-25",
+            "value": 138851.74
+          },
+          {
+            "month": "Nov-25",
+            "value": 150300.11
+          },
+          {
+            "month": "Dec-25",
+            "value": 158402.47
+          },
+          {
+            "month": "Jan-26",
+            "value": 157784.67
+          },
+          {
+            "month": "Feb-26",
+            "value": 161726.84
+          },
+          {
+            "month": "Mar-26",
+            "value": 161318.35
+          },
+          {
+            "month": "Apr-26",
+            "value": 177276.76
+          }
+        ]
+      },
+      {
+        "id": "DFS_MIGRATION",
+        "name": "Digital Txn Migration",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.25,
+        "target": 60.0,
+        "actual_range": [
+          40,
+          80
+        ],
+        "actual": 74.82,
+        "achievement": 124.7,
+        "score": 4.5,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 52.37
+          },
+          {
+            "month": "Jun-25",
+            "value": 54.66
+          },
+          {
+            "month": "Jul-25",
+            "value": 55.93
+          },
+          {
+            "month": "Aug-25",
+            "value": 58.62
+          },
+          {
+            "month": "Sep-25",
+            "value": 59.36
+          },
+          {
+            "month": "Oct-25",
+            "value": 63.86
+          },
+          {
+            "month": "Nov-25",
+            "value": 62.61
+          },
+          {
+            "month": "Dec-25",
+            "value": 67.79
+          },
+          {
+            "month": "Jan-26",
+            "value": 69.54
+          },
+          {
+            "month": "Feb-26",
+            "value": 71.99
+          },
+          {
+            "month": "Mar-26",
+            "value": 71.46
+          },
+          {
+            "month": "Apr-26",
+            "value": 78.79
+          }
+        ]
+      },
+      {
+        "id": "DFS_AGENTS",
+        "name": "Active Agency Agents",
+        "unit": "count",
+        "direction": "higher",
+        "weight": 0.2,
+        "target": 800,
+        "actual_range": [
+          400,
+          1200
+        ],
+        "actual": 467.0,
+        "achievement": 58.4,
+        "score": 2.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 326.9
+          },
+          {
+            "month": "Jun-25",
+            "value": 337.2
+          },
+          {
+            "month": "Jul-25",
+            "value": 349.85
+          },
+          {
+            "month": "Aug-25",
+            "value": 359.23
+          },
+          {
+            "month": "Sep-25",
+            "value": 385.54
+          },
+          {
+            "month": "Oct-25",
+            "value": 401.88
+          },
+          {
+            "month": "Nov-25",
+            "value": 406.21
+          },
+          {
+            "month": "Dec-25",
+            "value": 418.77
+          },
+          {
+            "month": "Jan-26",
+            "value": 448.92
+          },
+          {
+            "month": "Feb-26",
+            "value": 426.84
+          },
+          {
+            "month": "Mar-26",
+            "value": 466.82
+          },
+          {
+            "month": "Apr-26",
+            "value": 439.57
+          }
+        ]
+      },
+      {
+        "id": "DFS_MOBILE_L",
+        "name": "Mobile Loan Uptake",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 25.0,
+        "actual_range": [
+          15,
+          40
+        ],
+        "actual": 88.0,
+        "achievement": 352.0,
+        "score": 5.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 11.0
+          },
+          {
+            "month": "Jun-25",
+            "value": 11.37
+          },
+          {
+            "month": "Jul-25",
+            "value": 11.84
+          },
+          {
+            "month": "Aug-25",
+            "value": 12.08
+          },
+          {
+            "month": "Sep-25",
+            "value": 12.82
+          },
+          {
+            "month": "Oct-25",
+            "value": 13.35
+          },
+          {
+            "month": "Nov-25",
+            "value": 13.22
+          },
+          {
+            "month": "Dec-25",
+            "value": 14.54
+          },
+          {
+            "month": "Jan-26",
+            "value": 15.02
+          },
+          {
+            "month": "Feb-26",
+            "value": 14.82
+          },
+          {
+            "month": "Mar-26",
+            "value": 14.54
+          },
+          {
+            "month": "Apr-26",
+            "value": 14.77
+          }
+        ]
+      },
+      {
+        "id": "DFS_UPTIME",
+        "name": "Platform Uptime",
+        "unit": "%",
+        "direction": "higher",
+        "weight": 0.15,
+        "target": 99.5,
+        "actual_range": [
+          97,
+          100
+        ],
+        "actual": 98.58,
+        "achievement": 99.1,
+        "score": 3.0,
+        "monthly_trend": [
+          {
+            "month": "May-25",
+            "value": 69.01
+          },
+          {
+            "month": "Jun-25",
+            "value": 72.17
+          },
+          {
+            "month": "Jul-25",
+            "value": 73.35
+          },
+          {
+            "month": "Aug-25",
+            "value": 77.42
+          },
+          {
+            "month": "Sep-25",
+            "value": 81.69
+          },
+          {
+            "month": "Oct-25",
+            "value": 81.81
+          },
+          {
+            "month": "Nov-25",
+            "value": 85.95
+          },
+          {
+            "month": "Dec-25",
+            "value": 87.4
+          },
+          {
+            "month": "Jan-26",
+            "value": 87.26
+          },
+          {
+            "month": "Feb-26",
+            "value": 90.56
+          },
+          {
+            "month": "Mar-26",
+            "value": 94.01
+          },
+          {
+            "month": "Apr-26",
+            "value": 102.24
+          }
+        ]
+      }
+    ],
+    "branch_contributions": [
+      {
+        "branch": "Moi Avenue",
+        "tagged_customers": 330,
+        "proposition_score": 2.56,
+        "champion_rm": "300817"
+      },
+      {
+        "branch": "Donholm",
+        "tagged_customers": 407,
+        "proposition_score": 3.09,
+        "champion_rm": "300551"
+      },
+      {
+        "branch": "Mlolongo",
+        "tagged_customers": 256,
+        "proposition_score": 2.95,
+        "champion_rm": "300439"
+      },
+      {
+        "branch": "Bomet",
+        "tagged_customers": 390,
+        "proposition_score": 3.15,
+        "champion_rm": "300551"
+      },
+      {
+        "branch": "Eastleigh",
+        "tagged_customers": 101,
+        "proposition_score": 2.96,
+        "champion_rm": "300052"
+      },
+      {
+        "branch": "Litein",
+        "tagged_customers": 357,
+        "proposition_score": 3.17,
+        "champion_rm": "301250"
+      },
+      {
+        "branch": "Kutus",
+        "tagged_customers": 252,
+        "proposition_score": 2.92,
+        "champion_rm": "301250"
+      },
+      {
+        "branch": "Kasarani",
+        "tagged_customers": 205,
+        "proposition_score": 4.32,
+        "champion_rm": "301250"
+      },
+      {
+        "branch": "Bungoma",
+        "tagged_customers": 243,
+        "proposition_score": 3.89,
+        "champion_rm": "301038"
+      },
+      {
+        "branch": "Gatundu",
+        "tagged_customers": 493,
+        "proposition_score": 4.34,
+        "champion_rm": "300817"
+      },
+      {
+        "branch": "Kerugoya",
+        "tagged_customers": 139,
+        "proposition_score": 3.52,
+        "champion_rm": "300562"
+      },
+      {
+        "branch": "Nanyuki",
+        "tagged_customers": 426,
+        "proposition_score": 3.74,
+        "champion_rm": "300817"
+      },
+      {
+        "branch": "Nkubu",
+        "tagged_customers": 203,
+        "proposition_score": 2.84,
+        "champion_rm": "300299"
+      },
+      {
+        "branch": "FB Towers Corporate",
+        "tagged_customers": 393,
+        "proposition_score": 3.66,
+        "champion_rm": "300864"
+      },
+      {
+        "branch": "Othaya",
+        "tagged_customers": 242,
+        "proposition_score": 3.77,
+        "champion_rm": "300453"
+      }
+    ],
+    "contributing_rms": [
+      "300562",
+      "300058",
+      "300052",
+      "300817",
+      "300783",
+      "301038",
+      "300299",
+      "300864",
+      "301250",
+      "301146",
+      "300453",
+      "300439",
+      "300551",
+      "300493",
+      "300955"
+    ],
+    "total_tagged_customers": 6,
+    "last_updated": "2026-04-17",
+    "period": "2026"
+  }
+}

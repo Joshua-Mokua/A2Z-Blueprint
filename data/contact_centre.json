@@ -1,0 +1,295 @@
+{
+  "as_at": "2026-04-18",
+  "today": {
+    "calls_received": 2840,
+    "calls_answered": 2695,
+    "abandoned": 145,
+    "aht_seconds": 312,
+    "fcr_pct": 71.4,
+    "csat_score": 3.8,
+    "escalations": 89,
+    "sla_within_30s_pct": 84.2,
+    "avg_wait_seconds": 45
+  },
+  "agents": [
+    {
+      "id": "CC001",
+      "name": "Agent 1",
+      "calls_today": 58,
+      "aht_seconds": 269,
+      "fcr_pct": 81.7,
+      "csat": 4.1,
+      "status": "Break"
+    },
+    {
+      "id": "CC002",
+      "name": "Agent 2",
+      "calls_today": 70,
+      "aht_seconds": 399,
+      "fcr_pct": 76.5,
+      "csat": 4.2,
+      "status": "Available"
+    },
+    {
+      "id": "CC003",
+      "name": "Agent 3",
+      "calls_today": 73,
+      "aht_seconds": 408,
+      "fcr_pct": 84.0,
+      "csat": 3.6,
+      "status": "On Call"
+    },
+    {
+      "id": "CC004",
+      "name": "Agent 4",
+      "calls_today": 52,
+      "aht_seconds": 419,
+      "fcr_pct": 81.7,
+      "csat": 4.7,
+      "status": "Wrap-up"
+    },
+    {
+      "id": "CC005",
+      "name": "Agent 5",
+      "calls_today": 35,
+      "aht_seconds": 286,
+      "fcr_pct": 85.4,
+      "csat": 4.1,
+      "status": "Break"
+    },
+    {
+      "id": "CC006",
+      "name": "Agent 6",
+      "calls_today": 39,
+      "aht_seconds": 276,
+      "fcr_pct": 80.9,
+      "csat": 4.8,
+      "status": "Available"
+    },
+    {
+      "id": "CC007",
+      "name": "Agent 7",
+      "calls_today": 82,
+      "aht_seconds": 375,
+      "fcr_pct": 62.5,
+      "csat": 3.9,
+      "status": "Wrap-up"
+    },
+    {
+      "id": "CC008",
+      "name": "Agent 8",
+      "calls_today": 45,
+      "aht_seconds": 334,
+      "fcr_pct": 65.9,
+      "csat": 3.7,
+      "status": "Available"
+    },
+    {
+      "id": "CC009",
+      "name": "Agent 9",
+      "calls_today": 38,
+      "aht_seconds": 279,
+      "fcr_pct": 60.5,
+      "csat": 4.2,
+      "status": "Available"
+    },
+    {
+      "id": "CC010",
+      "name": "Agent 10",
+      "calls_today": 52,
+      "aht_seconds": 353,
+      "fcr_pct": 78.2,
+      "csat": 4.0,
+      "status": "Break"
+    },
+    {
+      "id": "CC011",
+      "name": "Agent 11",
+      "calls_today": 61,
+      "aht_seconds": 309,
+      "fcr_pct": 62.5,
+      "csat": 4.0,
+      "status": "Wrap-up"
+    },
+    {
+      "id": "CC012",
+      "name": "Agent 12",
+      "calls_today": 62,
+      "aht_seconds": 268,
+      "fcr_pct": 64.9,
+      "csat": 4.3,
+      "status": "Break"
+    },
+    {
+      "id": "CC013",
+      "name": "Agent 13",
+      "calls_today": 68,
+      "aht_seconds": 410,
+      "fcr_pct": 65.8,
+      "csat": 3.6,
+      "status": "Available"
+    },
+    {
+      "id": "CC014",
+      "name": "Agent 14",
+      "calls_today": 35,
+      "aht_seconds": 292,
+      "fcr_pct": 65.5,
+      "csat": 3.5,
+      "status": "On Call"
+    },
+    {
+      "id": "CC015",
+      "name": "Agent 15",
+      "calls_today": 83,
+      "aht_seconds": 305,
+      "fcr_pct": 65.1,
+      "csat": 3.4,
+      "status": "Break"
+    },
+    {
+      "id": "CC016",
+      "name": "Agent 16",
+      "calls_today": 82,
+      "aht_seconds": 350,
+      "fcr_pct": 61.1,
+      "csat": 3.8,
+      "status": "On Call"
+    },
+    {
+      "id": "CC017",
+      "name": "Agent 17",
+      "calls_today": 67,
+      "aht_seconds": 383,
+      "fcr_pct": 84.2,
+      "csat": 4.5,
+      "status": "Available"
+    },
+    {
+      "id": "CC018",
+      "name": "Agent 18",
+      "calls_today": 60,
+      "aht_seconds": 250,
+      "fcr_pct": 70.3,
+      "csat": 3.9,
+      "status": "Available"
+    },
+    {
+      "id": "CC019",
+      "name": "Agent 19",
+      "calls_today": 55,
+      "aht_seconds": 387,
+      "fcr_pct": 70.0,
+      "csat": 3.8,
+      "status": "Break"
+    }
+  ],
+  "queue_now": {
+    "waiting": 4,
+    "longest_wait_sec": 29
+  },
+  "common_issues": [
+    {
+      "issue": "Balance inquiry",
+      "count": 520,
+      "pct": 18.3
+    },
+    {
+      "issue": "Mobile app support",
+      "count": 412,
+      "pct": 14.5
+    },
+    {
+      "issue": "Card block/unblock",
+      "count": 380,
+      "pct": 13.4
+    },
+    {
+      "issue": "Loan application status",
+      "count": 290,
+      "pct": 10.2
+    },
+    {
+      "issue": "Statement request",
+      "count": 245,
+      "pct": 8.6
+    },
+    {
+      "issue": "Complaint \u2013 branch service",
+      "count": 198,
+      "pct": 7.0
+    },
+    {
+      "issue": "Internet banking reset",
+      "count": 180,
+      "pct": 6.3
+    },
+    {
+      "issue": "Other",
+      "count": 615,
+      "pct": 21.7
+    }
+  ],
+  "monthly": [
+    {
+      "month": "01",
+      "calls": 68272,
+      "fcr": 68.2
+    },
+    {
+      "month": "02",
+      "calls": 65642,
+      "fcr": 69.7
+    },
+    {
+      "month": "03",
+      "calls": 70076,
+      "fcr": 76.3
+    },
+    {
+      "month": "04",
+      "calls": 66857,
+      "fcr": 68.9
+    },
+    {
+      "month": "05",
+      "calls": 58468,
+      "fcr": 70.4
+    },
+    {
+      "month": "06",
+      "calls": 74296,
+      "fcr": 72.0
+    },
+    {
+      "month": "07",
+      "calls": 57577,
+      "fcr": 72.0
+    },
+    {
+      "month": "08",
+      "calls": 65167,
+      "fcr": 75.5
+    },
+    {
+      "month": "09",
+      "calls": 62260,
+      "fcr": 71.3
+    },
+    {
+      "month": "10",
+      "calls": 60509,
+      "fcr": 68.8
+    },
+    {
+      "month": "11",
+      "calls": 58736,
+      "fcr": 73.3
+    },
+    {
+      "month": "12",
+      "calls": 61353,
+      "fcr": 77.1
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "build_date": "2026.04.13",
+  "locked_at": "2026-04-13T18:57:08.435373",
+  "description": "A2Z Blueprint v1.0 \u2014 bank-neutral performance platform",
+  "features": [
+    "BSC scorecard with real bank scoring scale",
+    "Target cascade MD \u2192 all staff",
+    "Pipeline CRM with horizontal Kanban",
+    "Leave management (self-service + manager)",
+    "Admin: fully configurable bank identity, roles, hierarchy, KPIs",
+    "Zero hardcoded bank identity \u2014 all from org_config",
+    "CSS variable theming \u2014 brand color configurable",
+    "mtime-cached config reads \u2014 fast re-renders",
+    "1437 staff, 94 branches, 122 roles, 10 regions"
+  ],
+  "config_items": [
+    "bank_name",
+    "bank_code",
+    "brand_color",
+    "currency_symbol",
+    "fiscal_year",
+    "pillar_weights",
+    "scoring_scale",
+    "performance_bands",
+    "leave_types",
+    "pipeline_stages",
+    "product_types",
+    "staff_bands",
+    "roles",
+    "hierarchy",
+    "role_categories",
+    "branches",
+    "regions",
+    "enabled_modules",
+    "password_prefix"
+  ],
+  "files": {
+    "a2z/app.py": {
+      "sha256_prefix": "f75b2fb3901a7527",
+      "size": 30801
+    },
+    "a2z/utils/core.py": {
+      "sha256_prefix": "6fd10bd4598cafd9",
+      "size": 246153
+    },
+    "a2z/pages/1_perform.py": {
+      "sha256_prefix": "29d343ac7bceca6b",
+      "size": 98654
+    },
+    "a2z/pages/3_pipeline.py": {
+      "sha256_prefix": "2971dd38da7f40ff",
+      "size": 115423
+    },
+    "a2z/pages/7_admin.py": {
+      "sha256_prefix": "2e0dc9af0f2cc34b",
+      "size": 140133
+    },
+    "a2z/pages/12_cascade.py": {
+      "sha256_prefix": "7c67c5507f3808b4",
+      "size": 163185
+    },
+    "a2z/data/org_config.json": {
+      "sha256_prefix": "238a123d31498bce",
+      "size": 48944
+    },
+    "a2z/data/kpi_library.json": {
+      "sha256_prefix": "b007edcefd20f55f",
+      "size": 26066
+    }
+  },
+  "total_lines": 26468
+}

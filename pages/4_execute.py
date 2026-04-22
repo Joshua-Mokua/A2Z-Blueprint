@@ -4,19 +4,22 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import json
 from datetime import datetime, timedelta, date
 from utils.core import *
+from utils.core import get_workstreams_from_hierarchy, get_workstream_staff
 
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("execute")
+
 
 # Load session state
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
 st.markdown(
-    "<div style='padding:14px 20px;background:#8E44AD;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Execute — Strategy Execution</div>"
-    "<div style='color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px'>G0–G5 gates · Milestones · Ideation · Escalations</div>"
-    "</div>", unsafe_allow_html=True)
+    "<div style=\'padding:16px 22px;background:#8E44AD;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Execute — Strategy Execution</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>G0–G5 gates · Milestones · Ideation · Escalations</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 
 # Shared data
@@ -48,6 +51,7 @@ if my_actions:
                     em.confirm_milestone(act['init_id'], act['ms_id'], uname)
                     audit_log("MS_CONFIRMED", uname, f"{act['init_id']}:{act['ms_id']}")
                     st.success("Milestone confirmed!")
+                    st.cache_data.clear()
                     st.rerun()
     st.markdown("---")
 
@@ -62,7 +66,7 @@ can_create    = True   # any active user can create an initiative or idea
 # ── EXECUTE SUB-TABS ──────────────────────────────────────────
 ex_tabs = st.tabs(["📊 Dashboard", "📋 Initiatives", "➕ Create", "💡 Ideation",
                     "⚙️ Workstreams", "📈 Impact tracking",
-                    "🎯 My milestones", "🚨 Escalation tracker"])
+                    "🎯 My milestones", "➕ My milestone tasks", "🚨 Escalation tracker"])
 
 # ════════════════════════════════════════════════════════════════
 # EX-TAB 1: DASHBOARD
@@ -124,13 +128,14 @@ with ex_tabs[0]:
                 st.markdown(f"- **{i['id']}** {i['name']} — {i['workstream']}")
 
         # Pending approvals
-        pending = [i for i in all_inits if 'pending_gate' in i]
+        pending = [i for i in all_inits
+                   if i.get('pending_gate') and isinstance(i['pending_gate'], dict)]
         if pending:
             st.info(f"{len(pending)} initiative(s) awaiting gate approval")
             for i in pending:
                 pg = i['pending_gate']
-                approvers_done = sum(1 for v in pg['approvals'].values() if v['status']=='Approved')
-                approvers_total = len(pg['approvals'])
+                approvers_done = sum(1 for v in pg.get('approvals',{}).values() if v.get('status')=='Approved')
+                approvers_total = len(pg.get('approvals', {}))
                 st.markdown(f"- **{i['id']}** {i['name']} → {pg['target']} "
                             f"({approvers_done}/{approvers_total} approvals)")
 
@@ -193,6 +198,19 @@ with ex_tabs[1]:
                 if ms_total:
                     st.progress(ms_pct/100, text=f"Milestones: {ms_complete}/{ms_total} complete")
 
+                # Budget utilisation bar
+                _budget = float(init.get("budget", 0) or 0)
+                _spent  = float(init.get("spent",  0) or 0)
+                if _budget > 0:
+                    _util = min(_spent / _budget, 1.5)  # cap at 150% for display
+                    _util_pct = round(_spent / _budget * 100, 1)
+                    _bud_color = ("🔴 Over budget" if _util_pct > 100
+                                  else "🟡 At risk" if _util_pct > 85
+                                  else "🟢 On track")
+                    st.progress(min(_util, 1.0),
+                                text=f"Budget: KES {_spent/1e6:.1f}M / {_budget/1e6:.1f}M "
+                                     f"({_util_pct:.0f}%) — {_bud_color}")
+
                 if pending_g:
                     st.warning(f"Awaiting approval to move to {pending_g}")
                     # Show approval status
@@ -208,7 +226,7 @@ with ex_tabs[1]:
                     elif is_finance:     my_role_key = 'finance'
 
                     if my_role_key and my_role_key in pg.get('approvals',{}):
-                        if pg['approvals'][my_role_key]['status'] == 'Pending':
+                        if pg.get('approvals', {})[my_role_key]['status'] == 'Pending':
                             ap1, ap2, ap3 = st.columns([1,1,2])
                             appr_note = ap3.text_input("Note (optional)", key=f"apn_{init['id']}")
                             if ap1.button("✅ Approve", key=f"appr_{init['id']}"):
@@ -250,9 +268,13 @@ with ex_tabs[1]:
 
                 # Milestone management (G2+)
                 if gate in ('G2','G3','G4') or (gate == 'G1' and init.get('business_case')):
-                    with st.expander("Milestones", expanded=(gate=='G3')):
+                    _ms_count  = len(init.get('milestones', []))
+                    _ms_label  = f"Milestones ({_ms_count})" if _ms_count else "Milestones"
+                    _can_add_ms= (init.get('io') == uname or is_exec_admin or
+                                  uname in [ms.get('owner','') for ms in init.get('milestones',[])])
+                    with st.expander(_ms_label, expanded=(gate=='G3')):
                         if not init.get('milestones'):
-                            if init.get('io') == uname or is_exec_admin:
+                            if _can_add_ms:
                                 st.info("No milestones yet. Add the first milestone below.")
                                 with st.form(f"ms_form_{init['id']}"):
                                     m1, m2, m3 = st.columns(3)
@@ -269,15 +291,81 @@ with ex_tabs[1]:
                                         })
                                         st.success("Milestone added!"); st.rerun()
                         else:
+                            # ── Add milestone button — always available at G3+ ──
+                            if _can_add_ms:
+                                with st.expander("➕ Add milestone", expanded=False):
+                                    with st.form(f"ms_add_{init['id']}_{_ms_count}"):
+                                        _m1, _m2, _m3 = st.columns(3)
+                                        _ms_name  = _m1.text_input("Milestone name *")
+                                        _ms_type  = _m2.selectbox("Type", MILESTONE_TYPES)
+                                        # Owner dropdown — workstream staff
+                                        _init_ws_id = ws_key_map.get(init.get('workstream',''), "")
+                                        _ms_ws_staff= []
+                                        if _init_ws_id:
+                                            try:
+                                                _ms_ws_staff = get_workstream_staff(_init_ws_id, True)
+                                            except: pass
+                                        if _ms_ws_staff:
+                                            _ms_owner_opts = [s["name"] for s in _ms_ws_staff]
+                                            _ms_owner = _m3.selectbox("Owner", _ms_owner_opts, key=f"ms_own_{init['id']}_{_ms_count}")
+                                        else:
+                                            _ms_owner = _m3.text_input("Owner (username)", key=f"ms_own_t_{init['id']}")
+                                        _ms_due  = st.date_input("Due date", key=f"ms_due_{init['id']}_{_ms_count}")
+                                        _ms_desc = st.text_area("Description", height=60, key=f"ms_desc_{init['id']}_{_ms_count}")
+                                        # Cross-workstream dependency
+                                        _dep_ws_opts = ["— None —"] + [
+                                            f"{k} — {v['name']}" for k,v in workstreams.items()
+                                            if f"{k} — {v['name']}" != init.get('workstream','')]
+                                        _dep_ws = st.selectbox(
+                                            "Depends on workstream (optional)",
+                                            _dep_ws_opts,
+                                            key=f"dep_ws_{init['id']}_{_ms_count}",
+                                            help="Flag if completing this milestone requires input from another workstream")
+                                        _dep_desc = ""
+                                        if _dep_ws != "— None —":
+                                            _dep_desc = st.text_input(
+                                                "What is needed from that workstream?",
+                                                key=f"dep_desc_{init['id']}_{_ms_count}",
+                                                placeholder="e.g. Credit to approve facility limits before rollout")
+
+                                        if st.form_submit_button("➕ Add milestone", type="primary"):
+                                            if _ms_name:
+                                                # Detect if owner is from a different workstream
+                                                _ms_owner_ws = ""
+                                                try:
+                                                    from utils.core import get_workstreams_from_hierarchy as _gws_h
+                                                    for _wk, _wv in _gws_h().items():
+                                                        try:
+                                                            _wss3 = get_workstream_staff(_wk, False)
+                                                            if any(s['name']==_ms_owner for s in _wss3):
+                                                                _ms_owner_ws = f"{_wk} — {_wv['name']}"
+                                                                break
+                                                        except: pass
+                                                except: pass
+
+                                                em.add_milestone(init['id'], {
+                                                    'name': _ms_name, 'type': _ms_type,
+                                                    'owner': _ms_owner, 'due_date': str(_ms_due),
+                                                    'description': _ms_desc,
+                                                    'owner_workstream': _ms_owner_ws,
+                                                    'depends_on_workstream': "" if _dep_ws == "— None —" else _dep_ws,
+                                                    'depends_on_description': _dep_desc,
+                                                })
+                                                audit_log("MS_ADDED", uname, f"{init['id']}:{_ms_name}")
+                                                st.success(f"Milestone '{_ms_name}' added!")
+                                                st.cache_data.clear()
+                                                st.rerun()
+                                            else:
+                                                st.error("Milestone name is required.")
                             for ms in init['milestones']:
                                 ms_type_color = {'Implementation':'#185FA5',
-                                                 'Health Check':'#0F6E56',
+                                                 'Health Check':'var(--brand-hover,#0F6E56)',
                                                  'Money Step':'#993C1D'}.get(ms['type'],'#888780')
                                 conf_icon = "✅" if ms['confirmed'] else "⏳"
                                 esc_level = ExecuteManager._escalation_level(ms)
                                 esc_cfg   = ESC_CONFIG.get(esc_level, ESC_CONFIG[0])
                                 try:
-                                    days_diff = (date.fromisoformat(ms['due_date']) - date.today()).days
+                                    days_diff = (date.fromisoformat(ms.get('due_date','')) - date.today()).days
                                 except: days_diff = 0
                                 open_blockers = [b for b in ms.get('blockers',[]) if not b['resolved']]
 
@@ -291,9 +379,9 @@ with ex_tabs[1]:
                                     f"<span style='font-size:11px;color:{ms_type_color}'>[{ms['type']}]</span></span>"
                                     f"<span>{escalation_badge(esc_level)}</span></div>"
                                     f"<div style='font-size:12px;color:var(--color-text-secondary);margin-top:4px'>"
-                                    f"Owner: <b>{ms['owner']}</b>"
+                                    f"Owner: <b>{ms.get('owner','')}</b>"
                                     f"{' | Co: ' + ', '.join(ms.get('co_owners',[])) if ms.get('co_owners') else ''}"
-                                    f" | Due: <b>{ms['due_date']}</b> {days_label(days_diff)}"
+                                    f" | Due: <b>{ms.get('due_date','')}</b> {days_label(days_diff)}"
                                     f" | Status: <b>{ms['status']}</b> {conf_icon}"
                                     f"{'<br><span style="color:#A32D2D">⚠ Delay reason: ' + ms['delay_reason'] + '</span>' if ms.get('delay_reason') else ''}"
                                     f"{'<br><span style="color:#A32D2D">🚧 ' + str(len(open_blockers)) + ' open blocker(s)</span>' if open_blockers else ''}"
@@ -301,7 +389,7 @@ with ex_tabs[1]:
                                     unsafe_allow_html=True)
 
                                 # Status + delay reason update (G3 owners and IO)
-                                can_update_ms = (ms['owner'] == uname or
+                                can_update_ms = (ms.get('owner','') == uname or
                                                  uname in ms.get('co_owners',[]) or
                                                  init.get('io') == uname or is_exec_admin)
                                 if gate == 'G3' and can_update_ms:
@@ -349,6 +437,7 @@ with ex_tabs[1]:
                                             audit_log("MS_UPDATED", uname,
                                                 f"{init['id']}:{ms['id']}:{new_ms_st}"
                                                 + (f":{delay_cat}" if delay_cat else ""))
+                                            st.cache_data.clear()
                                             st.rerun()
 
                                         # Raise blocker
@@ -362,6 +451,7 @@ with ex_tabs[1]:
                                                 audit_log("BLOCKER_RAISED", uname,
                                                     f"{init['id']}:{ms['id']}:{blocker_text}")
                                                 st.warning(f"Blocker raised — escalated to Lead")
+                                                st.cache_data.clear()
                                                 st.rerun()
 
                                         # Resolve open blockers
@@ -383,6 +473,7 @@ with ex_tabs[1]:
                                                     key=f"resb_{init['id']}_{ms['id']}_{bi}"):
                                                     em.resolve_blocker(init['id'], ms['id'], bl_idx, res_text, uname)
                                                     st.success("Blocker resolved!")
+                                                    st.cache_data.clear()
                                                     st.rerun()
 
                             # Add more milestones
@@ -397,6 +488,7 @@ with ex_tabs[1]:
                                         em.add_milestone(init['id'],{
                                             'name':ms_name,'type':ms_type,
                                             'owner':ms_owner,'due_date':str(ms_due),'description':''})
+                                        st.cache_data.clear()
                                         st.rerun()
 
 # ════════════════════════════════════════════════════════════════
@@ -405,60 +497,215 @@ with ex_tabs[1]:
 with ex_tabs[2]:
     st.subheader("Create new initiative")
 
-    workstreams = em.workstreams
-    ws_names = [f"{k} — {v['name']}" for k,v in workstreams.items()] if workstreams else []
-    sub_ws_map = {f"{k} — {v['name']}": v.get('sub_workstreams',[]) for k,v in workstreams.items()}
+    # Load workstreams from hierarchy (auto-seeded from chiefs) + any saved config
+    try:
+        from utils.core import get_workstreams_from_hierarchy as _gwsh
+        workstreams = _gwsh()
+        if workstreams and not em.workstreams:
+            em.workstreams = workstreams
+    except:
+        workstreams = em.workstreams
+    ws_names    = [f"{k} — {v['name']}" for k,v in workstreams.items()] if workstreams else []
+    sub_ws_map  = {f"{k} — {v['name']}": v.get('sub_workstreams',[]) for k,v in workstreams.items()}
+    ws_key_map  = {f"{k} — {v['name']}": k for k,v in workstreams.items()}
 
-    with st.form("create_initiative"):
-        st.markdown("#### Basic details")
-        c1, c2 = st.columns(2)
-        with c1:
-            init_name  = st.text_input("Initiative name *")
-            init_cat   = st.selectbox("Category *", INITIATIVE_CATEGORIES)
-            init_ws    = st.selectbox("Workstream *",
-                ['-- Select --'] + ws_names if ws_names else ['-- No workstreams set up yet --'])
-        with c2:
-            init_obj   = st.text_area("Objective *", height=100,
-                placeholder="What problem does this solve? What outcome are we driving?")
-            init_impact_est = st.number_input("Estimated impact (KES or units)", min_value=0.0, step=100000.0)
+    # ── Auto-detect user's workstream from their role in the hierarchy ──
+    _my_role    = str(ud.get('role', ''))
+    _my_ws_name = None
+    for _ws_k, _ws_v in workstreams.items():
+        _chief_role = _ws_v.get('full_role', '')
+        if not _chief_role: continue
+        # User belongs to this workstream if their role is the chief OR
+        # is reachable under the chief in the hierarchy
+        try:
+            _ws_chk_staff = get_workstream_staff(_ws_k, include_cross_functional=False)
+            if any(s['name'] == ud.get('full_name','') or s['role'] == _my_role
+                   for s in _ws_chk_staff):
+                _my_ws_name = f"{_ws_k} — {_ws_v['name']}"
+                break
+        except Exception as _wd_e:
+            pass  # silent — auto-detect is best-effort
 
-        # Sub-workstream
-        if init_ws and init_ws in sub_ws_map and sub_ws_map[init_ws]:
-            init_sub_ws = st.selectbox("Sub-workstream", ['--'] + sub_ws_map[init_ws])
+    # Default to user's workstream if detected, else first option
+    _ws_default_idx = 0
+    if _my_ws_name and _my_ws_name in ws_names:
+        _ws_default_idx = ws_names.index(_my_ws_name) + 1  # +1 for '-- Select --' sentinel
+
+    # ── Workstream selector OUTSIDE form so it triggers rerun + populates IO ──
+    st.markdown("#### Basic details")
+    _cr_col1, _cr_col2 = st.columns(2)
+    with _cr_col1:
+        _cr_ws = st.selectbox(
+            "Workstream *",
+            ['-- Select workstream --'] + ws_names if ws_names else ['-- No workstreams set up yet --'],
+            index=_ws_default_idx,
+            key="cr_ws_sel")
+        _cr_cat = st.selectbox("Category *", INITIATIVE_CATEGORIES, key="cr_cat")
+    with _cr_col2:
+        _cr_obj = st.text_area("Objective *", height=100,
+            placeholder="What problem does this solve? What outcome are we driving?",
+            key="cr_obj")
+        _cr_impact = st.number_input("Estimated impact (KES or units)",
+            min_value=0.0, step=100000.0, key="cr_impact")
+
+    # Sub-workstream
+    if _cr_ws and _cr_ws in sub_ws_map and sub_ws_map[_cr_ws]:
+        _cr_sub_ws = st.selectbox("Sub-workstream", ['--'] + sub_ws_map[_cr_ws], key="cr_sub")
+    else:
+        _cr_sub_ws = st.text_input("Sub-workstream (if any)", key="cr_sub_t")
+
+    # ── Resolve workstream staff NOW (outside form, reruns on WS change) ──
+    _cr_ws_id  = ws_key_map.get(_cr_ws, "") if _cr_ws and not _cr_ws.startswith('--') else ""
+    _cr_staff  = []
+    if _cr_ws_id:
+        _cr_staff = get_workstream_staff(_cr_ws_id, include_cross_functional=True)
+
+    st.markdown("#### Ownership")
+    _oc1, _oc2 = st.columns(2)
+    with _oc1:
+        if _cr_staff:
+            _io_opts  = [f"{s['name']}  ·  {s['role'][:30]}" +
+                         (" 🔀" if s.get('source')=='cross_functional' else "")
+                         for s in _cr_staff]
+            _io_names = [s["name"] for s in _cr_staff]
+            _def_io   = _io_names.index(ud.get("full_name","")) if ud.get("full_name","") in _io_names else 0
+            _cr_io_lbl = st.selectbox(
+                "Initiative owner *", _io_opts, index=_def_io, key="cr_io_sel")
+            _cr_io = _io_names[_io_opts.index(_cr_io_lbl)]
         else:
-            init_sub_ws = st.text_input("Sub-workstream (if any)")
+            st.caption("Select a workstream above to see staff list")
+            _cr_io = st.text_input("Initiative owner (name) *", value=ud.get("full_name",""), key="cr_io_t")
 
-        st.markdown("#### Ownership")
-        oc1, oc2 = st.columns(2)
-        with oc1:
-            init_io     = st.text_input("Initiative owner (username) *", value=uname)
-        with oc2:
-            init_io_bk  = st.text_input("Backup initiative owner (username)")
+    with _oc2:
+        if _cr_staff:
+            _bk_opts  = ["— None —"] + [
+                f"{s['name']}  ·  {s['role'][:30]}" +
+                (" 🔀" if s.get('source')=='cross_functional' else "")
+                for s in _cr_staff]
+            _bk_names = [""] + [s["name"] for s in _cr_staff]
+            _cr_bk_lbl = st.selectbox("Backup IO", _bk_opts, key="cr_bk_sel")
+            _cr_bk = _bk_names[_bk_opts.index(_cr_bk_lbl)]
+        else:
+            _cr_bk = st.text_input("Backup IO (optional)", key="cr_bk_t")
+
+    # ── Rest of form (name, KPIs, tags, submit) stays inside st.form ──
+    with st.form("create_initiative"):
+        init_name  = st.text_input("Initiative name *", key="cr_name")
 
         st.markdown("#### Impact KPIs (optional — required for G2 business case)")
         kpi_selections = st.multiselect("Which KPIs will this initiative impact?",
             IMPACT_KPI_OPTIONS, key="init_kpis")
-        init_tags = st.text_input("Tags (comma-separated)", placeholder="wallet share, deposits, Q1")
+        init_tags = st.text_input("Tags (comma-separated)",
+            placeholder="wallet share, deposits, Q1", key="cr_tags")
 
         if st.form_submit_button("Create initiative", type="primary"):
-            if not init_name or not init_obj or init_ws.startswith('--'):
+            if not init_name or not _cr_obj or _cr_ws.startswith('--'):
                 st.error("Name, objective and workstream are required.")
+            elif not _cr_io:
+                st.error("Initiative owner is required.")
             else:
-                ws_key = init_ws.split(' — ')[0] if ' — ' in init_ws else init_ws
                 new_id = em.create_initiative({
-                    'name': init_name, 'objective': init_obj,
-                    'category': init_cat,
-                    'workstream': init_ws,
-                    'sub_workstream': init_sub_ws,
-                    'io': init_io, 'io_backup': init_io_bk,
-                    'estimated_impact': init_impact_est,
+                    'name': init_name, 'objective': _cr_obj,
+                    'category': _cr_cat,
+                    'workstream': _cr_ws,
+                    'sub_workstream': _cr_sub_ws,
+                    'io': _cr_io, 'io_backup': _cr_bk,
+                    'estimated_impact': _cr_impact,
                     'impact_kpis': kpi_selections,
                     'tags': [t.strip() for t in init_tags.split(',') if t.strip()],
                     'created_by': uname,
                 })
                 audit_log("INITIATIVE_CREATED", uname, f"{new_id}:{init_name}")
-                st.success(f"Initiative {new_id} created! It is at G0. Submit it to G1 when ready.")
+                st.success(f"✅ Initiative **{new_id}** created at G0. Submit to G1 when ready.")
+                st.cache_data.clear()
                 st.rerun()
+
+
+
+        # ── Cross-workstream dependency delays ────────────────────
+        # "Your workstream is blocking another team's milestone"
+        st.markdown("---")
+        st.markdown(
+            "<div style='padding:10px 16px;background:#EAF3DE;"
+            "border-left:4px solid var(--brand-primary,#006B3F);"
+            "border-radius:0 6px 6px 0;margin-bottom:12px'>"
+            "<b style='color:var(--brand-primary,#006B3F)'>🔀 Cross-workstream dependencies</b> "
+            "<span style='font-size:12px;color:#3B6D11'>"
+            "Milestones in other workstreams that are waiting on your team's output.</span>"
+            "</div>", unsafe_allow_html=True)
+
+        # Determine which workstream(s) the logged-in user's workstream covers
+        _esc_wss = get_workstreams_from_hierarchy()
+        _my_ws_matches = []
+        try:
+            for _wk, _wv in _esc_wss.items():
+                _wss_e = get_workstream_staff(_wk, False)
+                if (any(s['name']==ud.get('full_name','') for s in _wss_e) or
+                    _wv.get('sponsor_username')==uname or is_exec_admin):
+                    _my_ws_matches.append(f"{_wk} — {_wv['name']}")
+        except: pass
+
+        if is_exec_admin:
+            _my_ws_matches = [f"{k} — {v['name']}" for k,v in _esc_wss.items()]
+
+        _cross_blocking = []
+        for _ws_name in _my_ws_matches:
+            _cross_blocking.extend(em.get_cross_ws_delays_for_workstream(_ws_name))
+
+        if not _cross_blocking:
+            st.success("No cross-workstream dependencies waiting on your team — great!")
+        else:
+            st.warning(f"{len(_cross_blocking)} milestone(s) in other workstreams "
+                       f"are waiting on your team's output.")
+            for _cb in _cross_blocking:
+                _days = _cb.get('days_to_due', 999)
+                _urgency_clr = '#A32D2D' if _days < 0 else '#BA7517' if _days <= 7 else '#185FA5'
+                _urgency_txt = f"{abs(_days)}d overdue" if _days < 0 else f"due in {_days}d"
+                st.markdown(
+                    f"<div style='padding:12px 16px;background:var(--color-background-primary);"
+                    f"border:0.5px solid var(--color-border-tertiary);"
+                    f"border-left:4px solid {_urgency_clr};"
+                    f"border-radius:0 8px 8px 0;margin:6px 0'>"
+                    f"<div style='display:flex;justify-content:space-between;align-items:flex-start'>"
+                    f"<div>"
+                    f"<div style='font-weight:500;font-size:13px'>"
+                    f"🔀 <b>{_cb['initiative_name']}</b> → {_cb['name']}</div>"
+                    f"<div style='font-size:12px;color:var(--color-text-secondary);margin-top:4px'>"
+                    f"Owner: <b>{_cb['owner']}</b> | "
+                    f"Their workstream: <b>{_cb['blocking_workstream']}</b> | "
+                    f"IO: {_cb['io']}"
+                    f"</div>"
+                    f"<div style='font-size:12px;color:#BA7517;margin-top:4px'>"
+                    f"⏳ Needs from <b style='color:{_urgency_clr}'>"
+                    f"{_cb['needs_from_workstream']}</b>: "
+                    f"{_cb.get('depends_on_description','(no detail provided)')}"
+                    f"</div>"
+                    f"</div>"
+                    f"<span style='font-size:11px;font-weight:600;color:{_urgency_clr};"
+                    f"background:{"#FCEBEB" if _days<0 else "#FAEEDA"};"
+                    f"padding:2px 8px;border-radius:10px'>{_urgency_txt}</span>"
+                    f"</div></div>", unsafe_allow_html=True)
+
+                # CTA — offer to raise a cross-WS blocker or confirm support
+                _cb_col1, _cb_col2 = st.columns([3,1])
+                with _cb_col2:
+                    if st.button("✅ Confirm support",
+                                 key=f"cf_sup_{_cb['initiative_id']}_{_cb['id']}"):
+                        # Record a note on the milestone
+                        for _ini in em.initiatives:
+                            if _ini['id'] == _cb['initiative_id']:
+                                for _ms in _ini['milestones']:
+                                    if _ms['id'] == _cb['id']:
+                                        _ms.setdefault('cross_ws_notes',[]).append({
+                                            'by': uname, 'date': str(date.today()),
+                                            'note': f"{ud.get('full_name',uname)} confirmed support "
+                                                    f"from {_my_ws_matches[0] if _my_ws_matches else 'their workstream'}"
+                                        })
+                        em._save_initiatives()
+                        audit_log("CROSS_WS_SUPPORT", uname, f"{_cb['initiative_id']}:{_cb['id']}")
+                        st.success("Support confirmed — IO notified.")
+                        st.cache_data.clear()
+                        st.rerun()
 
 # ════════════════════════════════════════════════════════════════
 # EX-TAB 4: IDEATION
@@ -482,6 +729,7 @@ with ex_tabs[3]:
                         'workstream': idea_ws, 'submitted_by': uname,
                     })
                     st.success(f"Idea {idea_id} submitted!")
+                    st.cache_data.clear()
                     st.rerun()
                 else:
                     st.error("Title required.")
@@ -518,6 +766,7 @@ with ex_tabs[3]:
             if uname not in idea.get('votes',[]):
                 if st.button(f"Vote for this ({votes})", key=f"vote_{idea['id']}"):
                     em.vote_idea(idea['id'], uname)
+                    st.cache_data.clear()
                     st.rerun()
             else:
                 st.caption(f"You voted for this ({votes} votes total)")
@@ -544,43 +793,101 @@ with ex_tabs[3]:
 # EX-TAB 5: WORKSTREAMS SETUP
 # ════════════════════════════════════════════════════════════════
 with ex_tabs[4]:
-    st.subheader("Workstream setup")
-    st.caption("Define your workstreams (departments) and their sponsors.")
+    st.caption(
+        "Workstreams are configured in **Admin → Workstreams**. "
+        "This view is read-only.")
+    st.info("⚙️ To rename workstreams, add sub-workstreams, or manage cross-functional "
+            "pools — go to **Admin panel → Organisation → Workstreams**.", icon="⚙️")
 
-    if is_exec_admin or is_sponsor:
-        with st.form("ws_setup"):
-            wc1, wc2 = st.columns(2)
-            with wc1:
-                ws_id      = st.text_input("Workstream ID", placeholder="e.g. SME, RETAIL, HR")
-                ws_name    = st.text_input("Workstream name", placeholder="e.g. SME Banking")
-                ws_sponsor = st.text_input("Sponsor (Director name / username)")
-            with wc2:
-                sub_ws = st.text_area("Sub-workstreams (one per line)",
-                    placeholder="e.g. SME Direct / SME Relationship / SME Credit")
-            if st.form_submit_button("Save workstream"):
-                if ws_id and ws_name:
-                    sub_list = [s.strip() for s in sub_ws.splitlines() if s.strip()]
-                    em.upsert_workstream(ws_id.upper(), ws_name, ws_sponsor, sub_list)
-                    audit_log("WS_SAVED", uname, f"{ws_id}:{ws_name}")
-                    st.success(f"Workstream {ws_id} saved!"); st.rerun()
-                else:
-                    st.error("ID and name required.")
+    # Reload latest workstreams
+    try:
+        from utils.core import get_workstreams_from_hierarchy as _gwsh2
+        _all_ws = _gwsh2()
+    except:
+        _all_ws = em.workstreams
 
-    if em.workstreams:
-        st.markdown("#### Current workstreams")
-        for ws_id, ws in em.workstreams.items():
-            with st.expander(f"{ws_id} — {ws['name']}  |  Sponsor: {ws.get('sponsor','—')}"):
-                st.write("Sub-workstreams:", ", ".join(ws.get('sub_workstreams',[])) or "None")
-                inits = em.get_initiatives(workstream=f"{ws_id} — {ws['name']}", status='All')
-                st.caption(f"Initiatives: {len(inits)}")
-                gate_dist = {}
-                for i in inits:
-                    g = i['gate']
-                    gate_dist[g] = gate_dist.get(g,0)+1
-                if gate_dist:
-                    st.caption(" | ".join(f"{g}: {c}" for g,c in gate_dist.items()))
-    else:
-        st.info("No workstreams configured yet. Add your first workstream above.")
+    # ── Workstream cards ────────────────────────────────────────
+    for _ws_id, _ws in _all_ws.items():
+        _inits = [i for i in em.initiatives
+                  if i.get('workstream','').startswith(_ws_id)]
+        _gate_dist = {}
+        for _i in _inits:
+            _g = _i['gate']
+            _gate_dist[_g] = _gate_dist.get(_g,0)+1
+
+        with st.expander(
+            f"**{_ws_id}** — {_ws['name']}"
+            f"  ·  Sponsor: {_ws.get('sponsor_name', _ws.get('sponsor','—'))}"
+            f"  ·  {len(_inits)} initiative(s)",
+            expanded=False):
+
+            _wc1, _wc2 = st.columns([1,1])
+
+            with _wc1:
+                st.markdown("**Workstream details**")
+                st.markdown(f"**Chief role:** {_ws.get('full_role','—')}")
+                st.markdown(f"**Sponsor:** {_ws.get('sponsor_name', _ws.get('sponsor','—'))}")
+                _subs = _ws.get('sub_workstreams',[])
+                if _subs:
+                    st.markdown(f"**Sub-workstreams:** {', '.join(_subs)}")
+
+            with _wc2:
+                st.markdown("**Cross-functional pool**")
+                st.caption("Add staff from other workstreams who can be IO on initiatives here.")
+
+                _pool = _ws.get('cross_functional_pool', [])
+                # Show current pool
+                _users_all = um.users if um else {}
+                _pool_names = [_users_all.get(u, {}).get('full_name', u) for u in _pool]
+                if _pool_names:
+                    for _pn in _pool_names:
+                        st.markdown(
+                            f"<span style='background:var(--color-background-info);"
+                            f"color:var(--color-text-info);padding:2px 8px;border-radius:10px;"
+                            f"font-size:11px;margin:2px'>🔀 {_pn}</span>",
+                            unsafe_allow_html=True)
+
+                if is_exec_admin:
+                    with st.form(f"cf_pool_{_ws_id}"):
+                        # Dropdown of ALL staff NOT already in this workstream
+                        _outside_staff = [
+                            (u, d.get('full_name',u))
+                            for u,d in _users_all.items()
+                            if d.get('active') and u not in _pool
+                        ]
+                        _outside_opts  = ["— Select staff —"] + [f"{n} ({u})" for u,n in sorted(_outside_staff, key=lambda x:x[1])]
+                        _add_cf = st.selectbox("Add to cross-functional pool",
+                                                _outside_opts, key=f"cf_add_{_ws_id}")
+                        _c1, _c2 = st.columns(2)
+                        if _c1.form_submit_button("➕ Add", type="primary"):
+                            if _add_cf != "— Select staff —":
+                                _cf_user = _add_cf.split("(")[-1].rstrip(")")
+                                _ws_file = (Path(__file__).parent.parent / "data" / "execute_workstreams.json")
+                                try:
+                                    _saved_ws = json.loads(_ws_file.read_text()) if _ws_file.exists() else {}
+                                except: _saved_ws = {}
+                                _saved_ws.setdefault(_ws_id, dict(_all_ws[_ws_id]))
+                                _cur_pool = _saved_ws[_ws_id].get('cross_functional_pool', [])
+                                if _cf_user not in _cur_pool:
+                                    _cur_pool.append(_cf_user)
+                                _saved_ws[_ws_id]['cross_functional_pool'] = _cur_pool
+                                _ws_file.write_text(json.dumps(_saved_ws, indent=2))
+                                audit_log("WS_CF_ADDED", uname, f"{_ws_id}:{_cf_user}")
+                                st.success("Added"); st.rerun()
+
+            # Initiative gate summary
+            if _gate_dist:
+                st.markdown("**Initiatives by gate**")
+                _gate_html = " &nbsp; ".join(
+                    f"<span style='background:{EXECUTE_GATES.get(_g,{}).get('bg','#eee')};"
+                    f"color:{EXECUTE_GATES.get(_g,{}).get('color','#333')};"
+                    f"padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600'>"
+                    f"{_g} ({_c})</span>"
+                    for _g,_c in _gate_dist.items())
+                st.markdown(_gate_html, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.caption("To add or modify workstreams, go to **Admin panel → Organisation → Workstreams**.")
 
 # ════════════════════════════════════════════════════════════════
 # EX-TAB 6: IMPACT TRACKING (G4)
@@ -662,12 +969,101 @@ with ex_tabs[6]:
     st.subheader("My milestones")
     st.caption("Every milestone assigned to you across all initiatives — sorted by urgency.")
 
-    my_mss = em.get_all_milestones_for_owner(uname)
+    _my_full_name = ud.get("full_name", "")
+    my_mss = em.get_all_milestones_for_owner(uname, full_name=_my_full_name)
+
+    # Detect user's workstream(s) for own-vs-cross separation
+    try:
+        _my_wss = get_workstreams_from_hierarchy()
+        _my_ws_ids = set()
+        for _wk, _wv in _my_wss.items():
+            if any(s['name']==_my_full_name for s in get_workstream_staff(_wk, False)):
+                _my_ws_ids.add(f"{_wk} — {_wv['name']}")
+    except:
+        _my_ws_ids = set()
+
+    def _is_cross_ws_ms(ms):
+        ms_ws = ms.get('workstream','')
+        if not ms_ws or not _my_ws_ids: return False
+        return ms_ws not in _my_ws_ids
 
     if not my_mss:
         st.info("No milestones currently assigned to you. "
                 "When an Initiative Owner assigns you to a milestone, it will appear here.")
     else:
+        # Split into own-WS and cross-WS
+        _own_mss  = [m for m in my_mss if not _is_cross_ws_ms(m)]
+        _cross_mss= [m for m in my_mss if _is_cross_ws_ms(m)]
+
+        if _cross_mss:
+            _xwc1, _xwc2 = st.columns(2)
+            _xwc1.metric("Own workstream", len(_own_mss))
+            _xwc2.metric("Cross-functional", len(_cross_mss),
+                          help="Milestones from initiatives in other workstreams")
+            # Cross-WS alert banner
+            _open_cross = [m for m in _cross_mss if m.get('status') != 'Complete']
+            if _open_cross:
+                st.markdown(
+                    f"<div style='padding:10px 14px;background:#E6F1FB;"
+                    f"border-left:4px solid #185FA5;border-radius:0 6px 6px 0;margin-bottom:12px'>"
+                    f"🔀 <b style='color:#185FA5'>You have {len(_open_cross)} open cross-functional "
+                    f"milestone(s)</b> from other workstreams. Your delivery affects their gate progress."
+                    f"</div>", unsafe_allow_html=True)
+
+        if _own_mss:
+            st.markdown("#### Own workstream milestones")
+        if not _own_mss and not _cross_mss:
+            my_mss = []  # triggers the empty message below
+    if not my_mss:
+        pass
+    elif True:
+        # ── BSC linkage — show how milestones affect Initiative Score ─
+        _casc_ms = st.session_state.get("cascade_manager")
+        _ud_ms   = st.session_state.get("user_data", {})
+        _sc_ms   = str(_ud_ms.get("staff_code", "") or uname)
+        _nm_ms   = _ud_ms.get("full_name", uname)
+        _role_ms = _ud_ms.get("role","")
+        _bsc_df  = st.session_state.get("staff_scores", pd.DataFrame())
+        _my_bsc_row = _bsc_df[_bsc_df["Staff Name"]==_nm_ms] if not _bsc_df.empty else pd.DataFrame()
+
+        _init_kpi_row = None
+        _dilig_kpi_row = None
+        if not _my_bsc_row.empty and "Final_BSC_Score" in _my_bsc_row.columns:
+            _bsc_val = float(_my_bsc_row.iloc[0]["Final_BSC_Score"] or 0)
+            _df_proc = st.session_state.get("df_processed", pd.DataFrame())
+            if not _df_proc.empty:
+                _init_rows = _df_proc[(_df_proc["Staff Name"]==_nm_ms) &
+                                      (_df_proc["KPI"].isin(["Initiative Score","Initiative Implementation Score"]))]
+                _dilig_rows = _df_proc[(_df_proc["Staff Name"]==_nm_ms) &
+                                       (_df_proc["KPI"]=="Diligence Score")]
+                _init_kpi_row  = _init_rows.iloc[0] if len(_init_rows) else None
+                _dilig_kpi_row = _dilig_rows.iloc[0] if len(_dilig_rows) else None
+
+        if _init_kpi_row is not None or _dilig_kpi_row is not None:
+            _bsc_c1, _bsc_c2 = st.columns(2)
+            for _bsc_col, _kpi_row, _kpi_name, _icon in [
+                (_bsc_c1, _init_kpi_row,  "Initiative Score", "🎯"),
+                (_bsc_c2, _dilig_kpi_row, "Diligence Score",  "⏱️"),
+            ]:
+                if _kpi_row is not None:
+                    _tgt = float(_kpi_row.get("Annual Target",0) or 0)
+                    _act = float(_kpi_row.get("YTD_Actual",0) or 0)
+                    _pct = _act/_tgt*100 if _tgt else 0
+                    _sc  = float(_kpi_row.get("Score",0) or 0)
+                    _wt  = float(_kpi_row.get("Weight",0) or 0)
+                    _clr = "var(--brand-primary,#006B3F)" if _pct>=90 else "#F5A623" if _pct>=60 else "#E24B4A"
+                    _bsc_col.markdown(
+                        f"<div style='padding:10px 12px;background:var(--color-background-primary);"
+                        f"border:0.5px solid var(--color-border-tertiary);border-left:3px solid {_clr};"
+                        f"border-radius:6px;margin-bottom:10px'>"
+                        f"<div style='font-size:10px;color:var(--color-text-tertiary);font-weight:600'>"
+                        f"{_icon} {_kpi_name} (BSC weight {_wt*100:.0f}%)</div>"
+                        f"<div style='font-size:18px;font-weight:700;color:{_clr}'>"
+                        f"{_act:.1f} / {_tgt:.1f}</div>"
+                        f"<div style='font-size:10px;color:var(--color-text-secondary)'>"
+                        f"Achievement: {_pct:.0f}% · Score: {_sc:.2f}/5.0</div>"
+                        f"</div>", unsafe_allow_html=True)
+
         # Summary metrics
         total_ms   = len(my_mss)
         overdue    = sum(1 for m in my_mss if m['days_to_due'] < 0 and m['status'] != 'Complete')
@@ -701,7 +1097,7 @@ with ex_tabs[6]:
                 esc_cfg   = ESC_CONFIG.get(esc_level, ESC_CONFIG[0])
                 days      = ms['days_to_due']
                 open_blk  = [b for b in ms.get('blockers',[]) if not b['resolved']]
-                ms_type_c = {'Implementation':'#185FA5','Health Check':'#0F6E56',
+                ms_type_c = {'Implementation':'#185FA5','Health Check':'var(--brand-hover,#0F6E56)',
                              'Money Step':'#993C1D'}.get(ms.get('type',''),'#888780')
 
                 # Card header colour by urgency
@@ -713,15 +1109,38 @@ with ex_tabs[6]:
 
                 with st.expander(
                     f"{esc_cfg['icon']} {ms['initiative_name']} → {ms['name']}  "
-                    f"|  {ms.get('type','')}  |  Due {ms['due_date']}",
+                    f"|  {ms.get('type','')}  |  Due {ms.get('due_date','')}",
                     expanded=(esc_level >= 2)):
 
-                    # Context row
+                    # Context row — with cross-workstream badge
+                    _ms_ws   = ms.get('workstream','—')
+                    _my_wss  = [f"{k} — {v['name']}" for k,v in workstreams.items()
+                                if any(s.get('name')==_my_full_name
+                                       for s in [])]  # placeholder
+                    _is_cross_ws = (ms.get('owner_workstream','') != '' and
+                                    ms.get('owner_workstream','') != _ms_ws)
+
                     ctx1, ctx2, ctx3, ctx4 = st.columns(4)
                     ctx1.markdown(f"**Initiative:** {ms['initiative_id']}")
-                    ctx2.markdown(f"**Workstream:** {ms.get('workstream','—')}")
+                    _ws_display = _ms_ws
+                    if _is_cross_ws:
+                        _ws_display = (f"{_ms_ws} "
+                                       f"<span style='background:#E6F1FB;color:#185FA5;"
+                                       f"font-size:10px;padding:1px 6px;border-radius:10px;"
+                                       f"font-weight:600'>🔀 cross-WS</span>")
+                    ctx2.markdown(f"**Workstream:** {_ws_display}", unsafe_allow_html=True)
                     ctx3.markdown(f"**Gate:** {ms.get('gate','—')}")
                     ctx4.markdown(f"**IO:** {ms.get('io','—')}")
+
+                    # Cross-WS dependency notice — show if this milestone depends on another WS
+                    if ms.get('depends_on_workstream'):
+                        st.markdown(
+                            f"<div style='padding:8px 12px;background:#FAEEDA;"
+                            f"border-left:3px solid #BA7517;border-radius:0 6px 6px 0;"
+                            f"font-size:12px;margin:4px 0'>"
+                            f"⏳ <b>Waiting on:</b> {ms['depends_on_workstream']}"
+                            f"{' — ' + ms['depends_on_description'] if ms.get('depends_on_description') else ''}"
+                            f"</div>", unsafe_allow_html=True)
 
                     # Status banner
                     st.markdown(
@@ -808,6 +1227,7 @@ with ex_tabs[6]:
                                     f"{ms['initiative_id']}:{ms['id']}:{new_st}"
                                     + (f":{delay_cat}" if delay_cat else ""))
                                 st.success("Updated!")
+                                st.cache_data.clear()
                                 st.rerun()
                     elif not ms['confirmed']:
                         if st.button(f"Confirm I accept this milestone",
@@ -815,12 +1235,150 @@ with ex_tabs[6]:
                                      type="primary"):
                             em.confirm_milestone(ms['initiative_id'], ms['id'], uname)
                             st.success("Milestone confirmed!")
+                            st.cache_data.clear()
                             st.rerun()
 
 # ════════════════════════════════════════════════════════════════
-# EX-TAB 8: ESCALATION TRACKER (Management view)
+# ════════════════════════════════════════════════════════════════
+# EX-TAB 8: CREATE MILESTONE TASK (standalone, cross-WS visible)
 # ════════════════════════════════════════════════════════════════
 with ex_tabs[7]:
+    st.caption("Add milestones to any active initiative you own or co-own, or view your cross-functional assignments.")
+
+    # My cross-functional assignments — full detail
+    _my_fn2 = ud.get("full_name","")
+    _all_my_mss2 = em.get_all_milestones_for_owner(uname, full_name=_my_fn2)
+    _cross_view = [m for m in _all_my_mss2
+                   if m.get('owner_workstream') and m.get('workstream') != m.get('owner_workstream')]
+
+    if _cross_view:
+        st.markdown("#### Your cross-functional milestone assignments")
+        st.caption("These are from initiatives in other workstreams where you were specifically assigned.")
+        for _cm in _cross_view:
+            _cm_days = _cm.get('days_to_due', 999)
+            _cm_clr  = '#A32D2D' if _cm_days < 0 else '#BA7517' if _cm_days <= 7 else 'var(--color-text-secondary)'
+            st.markdown(
+                f"<div style='padding:12px 16px;background:var(--color-background-primary);"
+                f"border:0.5px solid var(--color-border-tertiary);"
+                f"border-left:4px solid #185FA5;border-radius:0 8px 8px 0;margin:6px 0'>"
+                f"<div style='font-weight:500'>"
+                f"🔀 <b>{_cm['initiative_name']}</b> → {_cm['name']}</div>"
+                f"<div style='font-size:12px;color:var(--color-text-secondary);margin-top:4px'>"
+                f"Type: {_cm.get('type','')} | "
+                f"Their workstream: <b>{_cm.get('workstream','—')}</b> | "
+                f"IO: {_cm.get('io','—')} | "
+                f"Gate: {_cm.get('gate','—')}"
+                f"</div>"
+                f"<div style='font-size:12px;margin-top:4px'>"
+                f"Status: <b>{_cm.get('status','—')}</b> | "
+                f"<span style='color:{_cm_clr}'>"
+                f"Due: {_cm.get('due_date','—')}"
+                f"{' (' + str(abs(_cm_days)) + 'd overdue)' if _cm_days < 0 else ''}"
+                f"</span>"
+                f"</div>"
+                f"</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("#### Add milestone to an initiative")
+
+    # Show initiatives where logged-in user is IO or co-IO
+    _my_inits = [i for i in em.initiatives
+                 if (i.get('io') == _my_fn2 or i.get('io') == uname or
+                     i.get('io_backup') == _my_fn2 or i.get('io_backup') == uname)
+                 and i.get('gate') in ('G1','G2','G3','G4')
+                 and i.get('status','Active') == 'Active']
+
+    if not _my_inits:
+        st.info("No active initiatives where you are the Initiative Owner. "
+                "Milestones can be added from the Initiatives tab once your initiative reaches G1.")
+    else:
+        # Select initiative
+        _mi_opts = [f"{i['id']} — {i['name']} [{i['gate']}]" for i in _my_inits]
+        _mi_sel  = st.selectbox("Select your initiative", _mi_opts, key="ms_create_init_sel")
+        _mi_id   = _mi_sel.split(' — ')[0] if _mi_sel else None
+        _mi_init = em.get_initiative(_mi_id) if _mi_id else None
+
+        if _mi_init:
+            _mi_ws_id = _mi_init.get('workstream','').split(' — ')[0] if ' — ' in _mi_init.get('workstream','') else ''
+            _mi_staff = []
+            if _mi_ws_id:
+                try:
+                    _mi_staff = get_workstream_staff(_mi_ws_id, include_cross_functional=True)
+                except: pass
+
+            # Show current milestones
+            if _mi_init.get('milestones'):
+                st.markdown(f"**Current milestones ({len(_mi_init['milestones'])}):**")
+                for _ms_e in _mi_init['milestones']:
+                    _s_clr = {'Complete':'#3B6D11','In Progress':'#185FA5',
+                              'Delayed':'#A32D2D'}.get(_ms_e['status'],'#888')
+                    st.markdown(
+                        f"<span style='font-size:12px'>"
+                        f"<b>{_ms_e['id']}</b>: {_ms_e['name']} "
+                        f"— <span style='color:{_s_clr}'>{_ms_e['status']}</span>"
+                        f" | Owner: {_ms_e['owner']} | Due: {_ms_e['due_date']}"
+                        f"</span>", unsafe_allow_html=True)
+                st.markdown("")
+
+            # Add new milestone form
+            st.markdown("**Add new milestone:**")
+            with st.form(f"ms_create_tab_{_mi_id}"):
+                _mc1, _mc2, _mc3 = st.columns(3)
+                _mc_name = _mc1.text_input("Milestone name *")
+                _mc_type = _mc2.selectbox("Type", MILESTONE_TYPES)
+                if _mi_staff:
+                    _mc_owner_opts = [f"{s['name']} · {s['role'][:28]}" +
+                                      (" 🔀" if s.get('source')=='cross_functional' else "")
+                                      for s in _mi_staff]
+                    _mc_owner_names= [s['name'] for s in _mi_staff]
+                    _mc_owner_lbl  = _mc3.selectbox("Owner *", _mc_owner_opts,
+                                                     key=f"mc_own_{_mi_id}")
+                    _mc_owner = _mc_owner_names[_mc_owner_opts.index(_mc_owner_lbl)]
+                    # Auto-detect owner workstream
+                    _mc_own_ws = next((f"{k} — {v['name']}"
+                                       for k,v in get_workstreams_from_hierarchy().items()
+                                       for s in (_mi_staff or [])
+                                       if s['name']==_mc_owner and
+                                       s.get('source')=='cross_functional'), '')
+                else:
+                    _mc_owner = _mc3.text_input("Owner (name) *")
+                    _mc_own_ws = ""
+
+                _mc_due  = st.date_input("Due date *", key=f"mc_due_{_mi_id}")
+                _mc_desc = st.text_area("Description", height=60)
+
+                # Cross-WS dependency
+                _mc_dep_opts = ["— None —"] + [
+                    f"{k} — {v['name']}" for k,v in get_workstreams_from_hierarchy().items()
+                    if f"{k} — {v['name']}" != _mi_init.get('workstream','')]
+                _mc_dep_ws = st.selectbox("Depends on workstream (optional)",
+                                           _mc_dep_opts, key=f"mc_dep_{_mi_id}")
+                _mc_dep_desc = ""
+                if _mc_dep_ws != "— None —":
+                    _mc_dep_desc = st.text_input("What is needed from them?",
+                                                  key=f"mc_dep_desc_{_mi_id}")
+
+                if st.form_submit_button("➕ Add milestone", type="primary"):
+                    if _mc_name and _mc_owner:
+                        _new_ms_id = em.add_milestone(_mi_id, {
+                            'name': _mc_name, 'type': _mc_type,
+                            'owner': _mc_owner, 'due_date': str(_mc_due),
+                            'description': _mc_desc,
+                            'owner_workstream': _mc_own_ws,
+                            'depends_on_workstream': "" if _mc_dep_ws == "— None —" else _mc_dep_ws,
+                            'depends_on_description': _mc_dep_desc,
+                        })
+                        audit_log("MS_ADDED_TAB", uname, f"{_mi_id}:{_mc_name}")
+                        st.success(f"✅ Milestone {_new_ms_id} added to {_mi_id}!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.error("Milestone name and owner are required.")
+
+# ════════════════════════════════════════════════════════════════
+# EX-TAB 9: ESCALATION TRACKER (Management view)
+# ════════════════════════════════════════════════════════════════
+with ex_tabs[8]:
     st.subheader("Escalation tracker")
     st.caption("Milestones requiring management attention — sorted by severity.")
 
@@ -867,8 +1425,8 @@ with ex_tabs[7]:
                     f"<span style='color:#791F1F;font-weight:500'>{ms['overdue_days']}d overdue</span>"
                     f"</div>"
                     f"<div style='font-size:12px;color:#501313;margin-top:4px'>"
-                    f"Owner: <b>{ms['owner']}</b> | Workstream: {ms['workstream']} | "
-                    f"IO: {ms['io']} | Due: {ms['due_date']}"
+                    f"Owner: <b>{ms.get('owner','')}</b> | Workstream: {ms.get('workstream','')} | "
+                    f"IO: {ms.get('io','')} | Due: {ms.get('due_date','')}"
                     f"{'<br><b>Delay category: ' + delay_cat + '</b>' if delay_cat else '<br><b style="color:#A32D2D">⚠ Delay category not stated</b>'}"
                     f"{'<br>Detail: ' + ms['delay_reason'] if ms.get('delay_reason') else ''}"
                     f"{'<br>🚧 ' + str(len(open_blk)) + ' open blocker(s): ' + open_blk[0]['blocker'] if open_blk else ''}"
@@ -893,7 +1451,7 @@ with ex_tabs[7]:
                     f"border-radius:0 4px 4px 0;margin:3px 0;font-size:12px'>"
                     f"<b>{ms['initiative_name']} → {ms['name']}</b> "
                     f"<span style='color:#5F5E5A'>Should have started {days_late}d ago</span><br>"
-                    f"Owner: {ms['owner']} | Start date: {ms.get('start_date','?')} | Due: {ms['due_date']}"
+                    f"Owner: {ms.get('owner','')} | Start date: {ms.get('start_date','?')} | Due: {ms.get('due_date','')}"
                     f"</div>", unsafe_allow_html=True)
 
         # LEVEL 3 — Lead escalations
@@ -917,8 +1475,8 @@ with ex_tabs[7]:
                     f"<span style='color:#A32D2D;font-weight:500'>{ms['overdue_days']}d overdue</span>"
                     f"</div>"
                     f"<div style='font-size:12px;color:#791F1F;margin-top:4px'>"
-                    f"Owner: {ms['owner']} | Workstream: {ms['workstream']} | "
-                    f"IO: {ms['io']} | Due: {ms['due_date']}"
+                    f"Owner: {ms.get('owner','')} | Workstream: {ms.get('workstream','')} | "
+                    f"IO: {ms.get('io','')} | Due: {ms.get('due_date','')}"
                     f"{'<br><b>Delay reason:</b> ' + ms.get('delay_reason','Not stated') if ms.get('delay_reason') else '<br><b>Delay reason: Not stated</b>'}"
                     f"{'<br>🚧 ' + str(len(open_blk)) + ' unresolved blocker(s)' if open_blk else ''}"
                     f"</div></div>", unsafe_allow_html=True)
@@ -950,7 +1508,7 @@ with ex_tabs[7]:
                     f"border-radius:0 6px 6px 0;margin:4px 0;font-size:13px'>"
                     f"<b>{ms['initiative_name']} — {ms['name']}</b> "
                     f"<span style='color:#993C1D'>{ms['overdue_days']}d overdue</span><br>"
-                    f"Owner: {ms['owner']} | Workstream: {ms['workstream']} | Due: {ms['due_date']}"
+                    f"Owner: {ms.get('owner','')} | Workstream: {ms.get('workstream','')} | Due: {ms.get('due_date','')}"
                     f"{'<br>Delay: ' + ms['delay_reason'] if ms.get('delay_reason') else ''}"
                     f"{'<br>🚧 Blocker: ' + open_blk[0]['blocker'] if open_blk else ''}"
                     f"</div>", unsafe_allow_html=True)
@@ -972,7 +1530,7 @@ with ex_tabs[7]:
                     f"border-radius:0 4px 4px 0;margin:3px 0;font-size:12px'>"
                     f"<b>{ms['initiative_name']} — {ms['name']}</b> "
                     f"<span style='color:#BA7517'>{ms['overdue_days']}d overdue</span> | "
-                    f"Owner: {ms['owner']} | Due: {ms['due_date']}"
+                    f"Owner: {ms.get('owner','')} | Due: {ms.get('due_date','')}"
                     f"{'| Delay: ' + ms['delay_reason'] if ms.get('delay_reason') else ''}"
                     f"</div>", unsafe_allow_html=True)
 
@@ -987,10 +1545,10 @@ with ex_tabs[7]:
                     'Initiative':      ms['initiative_name'],
                     'Milestone':       ms['name'],
                     'Type':            ms.get('type',''),
-                    'Owner':           ms['owner'],
-                    'Workstream':      ms['workstream'],
-                    'IO':              ms['io'],
-                    'Due Date':        ms['due_date'],
+                    'Owner':           ms.get('owner',''),
+                    'Workstream':      ms.get('workstream',''),
+                    'IO':              ms.get('io',''),
+                    'Due Date':        ms.get('due_date',''),
                     'Days Overdue':    ms['overdue_days'],
                     'Status':          ms['status'],
                     'Delay Reason':    ms.get('delay_reason',''),

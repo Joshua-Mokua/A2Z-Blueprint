@@ -1,5 +1,7 @@
 streamlit>=1.29.0
-pandas
-numpy
-plotly
-openpyxl
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.15.0
+openpyxl>=3.1.0
+requests>=2.31.0
+bcrypt>=4.0.0

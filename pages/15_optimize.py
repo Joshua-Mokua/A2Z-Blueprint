@@ -7,6 +7,9 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("optimize")
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
@@ -32,11 +35,16 @@ OPTIMIZATION_WEIGHTS = {
 }
 
 st.markdown(
-    "<div style='padding:14px 20px;background:#8E44AD;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Branch Optimization Engine</div>"
-    "<div style='color:#D7BDE2;font-size:11px;margin-top:2px'>"
-    "Staff mix analysis · Revenue efficiency · Cross-sell scoring · Network benchmarking"
-    "</div></div>", unsafe_allow_html=True)
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📐 Branch Optimizer</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Capacity · Staffing · Efficiency</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#8E44AD;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Branch Optimization Engine</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Staff mix analysis · Revenue efficiency · Cross-sell scoring · Network benchmarking</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "🏦 Branch scores",
@@ -159,7 +167,7 @@ with tabs[0]:
 
         # Color by score
         bm_df["Color"] = bm_df["Opt Score"].apply(
-            lambda x: "#006B3F" if x>=70 else ("#F5A623" if x>=50 else "#E24B4A"))
+            lambda x: "var(--brand-primary,#006B3F)" if x>=70 else ("#F5A623" if x>=50 else "#E24B4A"))
 
         fig_opt = go.Figure()
         for _, row in bm_df.iterrows():
@@ -177,7 +185,7 @@ with tabs[0]:
                     f"Staff: {row['Total Staff']} | Biz ratio: {row['Business Ratio']:.0%}"
                     "<extra></extra>"))
 
-        fig_opt.add_vline(x=70, line_dash="dash", line_color="#006B3F",
+        fig_opt.add_vline(x=70, line_dash="dash", line_color="var(--brand-primary,#006B3F)",
                            annotation_text="Target: 70")
         fig_opt.add_vline(x=50, line_dash="dot", line_color="#E24B4A",
                            annotation_text="Minimum: 50")
@@ -199,7 +207,7 @@ with tabs[0]:
         def hl_score(v):
             try:
                 fv = float(str(v).replace('%',''))
-                if fv >= 70 or fv >= 0.85: return 'color:#006B3F;font-weight:500'
+                if fv >= 70 or fv >= 0.85: return 'color:var(--brand-primary,#006B3F);font-weight:500'
                 if fv >= 50 or fv >= 0.70: return 'color:#F5A623'
                 return 'color:#E24B4A'
             except: return ''
@@ -242,7 +250,7 @@ with tabs[1]:
         fig_sc = px.scatter(bm_df, x="Business Ratio", y="Avg BSC",
                              size="Total Staff", color="Opt Score",
                              text="Branch",
-                             color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                             color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                              title="Business ratio vs BSC performance — bubble = total staff",
                              labels={"Business Ratio":"Business staff %","Avg BSC":"Avg BSC score"})
         fig_sc.add_vline(x=0.60, line_dash="dash", line_color="#8E44AD",
@@ -295,7 +303,7 @@ with tabs[2]:
 
         fig_eff = px.bar(ef_df, x="Branch", y="Rev/Staff (M)",
                          color="Rev/Staff (M)",
-                         color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                         color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                          title="Revenue per staff member (KES Millions)")
         median_rev = ef_df["Rev/Staff (M)"].median()
         fig_eff.add_hline(y=median_rev, line_dash="dash", line_color="#185FA5",
@@ -322,7 +330,7 @@ with tabs[2]:
             if heat_rows:
                 heat_df = pd.DataFrame(heat_rows).set_index("Branch")
                 fig_h = px.imshow(heat_df,
-                    color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                    color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                     title="KPI achievement % by branch (Financial pillar)",
                     aspect="auto", text_auto=".0f")
                 fig_h.update_layout(height=max(300, len(heat_df)*22))
@@ -412,7 +420,7 @@ with tabs[4]:
             fig_reg = px.bar(reg_df, x="Region", y="Avg Opt Score",
                               color="Region", title="Average optimization score by region",
                               text="Avg Opt Score",
-                              color_discrete_sequence=["#006B3F","#F5A623","#185FA5"])
+                              color_discrete_sequence=["var(--brand-primary,#006B3F)","#F5A623","#185FA5"])
             fig_reg.update_layout(height=280, showlegend=False,
                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_reg, use_container_width=True)
@@ -421,7 +429,7 @@ with tabs[4]:
             fig_biz = px.bar(reg_df, x="Region", y="Biz Ratio",
                               color="Region", title="Business staff ratio by region",
                               text=reg_df["Biz Ratio"].apply(lambda x: f"{x:.0%}"),
-                              color_discrete_sequence=["#006B3F","#F5A623","#185FA5"])
+                              color_discrete_sequence=["var(--brand-primary,#006B3F)","#F5A623","#185FA5"])
             fig_biz.add_hline(y=0.60, line_dash="dash", line_color="#8E44AD",
                                annotation_text="60% target")
             fig_biz.update_yaxes(tickformat=".0%")

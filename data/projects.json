@@ -1,0 +1,2027 @@
+[
+  {
+    "id": "PRJ0001",
+    "name": "Project 1: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0060",
+    "category": "Operations",
+    "priority": "High",
+    "status": "Monitoring",
+    "project_manager": "Brenda Andanje",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Commercial & Corporate",
+    "start_date": "2026-02-16",
+    "planned_end_date": "2026-12-24",
+    "actual_end_date": "",
+    "budget_m": 323.98,
+    "spent_m": 165.82,
+    "pct_complete": 10,
+    "pct_budget_used": 51.2,
+    "rag_status": "Green",
+    "risks": 4,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-11",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-07",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-13",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-06",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-07",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0002",
+    "name": "Project 2: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0044",
+    "category": "Compliance",
+    "priority": "Medium",
+    "status": "Cancelled",
+    "project_manager": "Veronica Mutai",
+    "sponsor": "Gregory Chirchir",
+    "department": "Commercial & Corporate",
+    "start_date": "2026-01-02",
+    "planned_end_date": "2026-08-22",
+    "actual_end_date": "2026-03-24",
+    "budget_m": 269.36,
+    "spent_m": 81.14,
+    "pct_complete": 64,
+    "pct_budget_used": 30.1,
+    "rag_status": "Red",
+    "risks": 1,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-14",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-26",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-19",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-10",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0003",
+    "name": "Project 3: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0036",
+    "category": "Technology",
+    "priority": "Medium",
+    "status": "Executing",
+    "project_manager": "Elijah Nasambu",
+    "sponsor": "Gregory Chirchir",
+    "department": "People & HR",
+    "start_date": "2026-03-09",
+    "planned_end_date": "2026-10-18",
+    "actual_end_date": "",
+    "budget_m": 21.97,
+    "spent_m": 15.68,
+    "pct_complete": 87,
+    "pct_budget_used": 71.4,
+    "rag_status": "Green",
+    "risks": 0,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-15",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-08",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-17",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-14",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-20",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-12",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-20",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0004",
+    "name": "Project 4: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0034",
+    "category": "Infrastructure",
+    "priority": "High",
+    "status": "Executing",
+    "project_manager": "Mildred Muthoni",
+    "sponsor": "William Mwanake",
+    "department": "IT & Digital",
+    "start_date": "2026-03-19",
+    "planned_end_date": "2026-12-16",
+    "actual_end_date": "",
+    "budget_m": 398.48,
+    "spent_m": 344.97,
+    "pct_complete": 47,
+    "pct_budget_used": 86.6,
+    "rag_status": "Red",
+    "risks": 1,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-09",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-03",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-17",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-07",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-17",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0005",
+    "name": "Project 5: Branch Expansion",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0001",
+    "category": "Business",
+    "priority": "Critical",
+    "status": "Planning",
+    "project_manager": "Michael Ndegwa",
+    "sponsor": "William Mwanake",
+    "department": "Retail Banking",
+    "start_date": "2026-03-11",
+    "planned_end_date": "2026-09-24",
+    "actual_end_date": "",
+    "budget_m": 362.48,
+    "spent_m": 143.54,
+    "pct_complete": 37,
+    "pct_budget_used": 39.6,
+    "rag_status": "Green",
+    "risks": 1,
+    "open_issues": 6,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-10",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-25",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-29",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-06-30",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0006",
+    "name": "Project 6: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0026",
+    "category": "Operations",
+    "priority": "High",
+    "status": "Monitoring",
+    "project_manager": "Zipporah Kibet",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Retail Banking",
+    "start_date": "2025-11-04",
+    "planned_end_date": "2027-03-13",
+    "actual_end_date": "",
+    "budget_m": 282.25,
+    "spent_m": 211.72,
+    "pct_complete": 55,
+    "pct_budget_used": 75.0,
+    "rag_status": "Green",
+    "risks": 1,
+    "open_issues": 8,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-21",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-29",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-08",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-29",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-11",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0007",
+    "name": "Project 7: System Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0020",
+    "category": "Technology",
+    "priority": "Medium",
+    "status": "Cancelled",
+    "project_manager": "Evans Gakunju",
+    "sponsor": "Yasmin Makokha",
+    "department": "Diaspora & Special Segments",
+    "start_date": "2026-02-03",
+    "planned_end_date": "2027-01-02",
+    "actual_end_date": "2026-03-31",
+    "budget_m": 234.59,
+    "spent_m": 205.7,
+    "pct_complete": 47,
+    "pct_budget_used": 87.7,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-02",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-28",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-08",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-20",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-17",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0008",
+    "name": "Project 8: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0057",
+    "category": "Technology",
+    "priority": "Low",
+    "status": "Executing",
+    "project_manager": "Festus Njenga",
+    "sponsor": "William Mwanake",
+    "department": "Risk & Compliance",
+    "start_date": "2025-10-25",
+    "planned_end_date": "2027-01-25",
+    "actual_end_date": "",
+    "budget_m": 21.39,
+    "spent_m": 13.92,
+    "pct_complete": 47,
+    "pct_budget_used": 65.1,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 0,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-01",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-05",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-19",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-14",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-30",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-08",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0009",
+    "name": "Project 9: System Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0022",
+    "category": "Business",
+    "priority": "High",
+    "status": "On Hold",
+    "project_manager": "Mildred Muthoni",
+    "sponsor": "Yasmin Makokha",
+    "department": "Commercial & Corporate",
+    "start_date": "2026-01-15",
+    "planned_end_date": "2026-07-20",
+    "actual_end_date": "",
+    "budget_m": 50.93,
+    "spent_m": 20.1,
+    "pct_complete": 48,
+    "pct_budget_used": 39.5,
+    "rag_status": "Green",
+    "risks": 5,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-18",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-08",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-19",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-13",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0010",
+    "name": "Project 10: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0012",
+    "category": "Infrastructure",
+    "priority": "Medium",
+    "status": "Completed",
+    "project_manager": "Michael Ndegwa",
+    "sponsor": "Yasmin Makokha",
+    "department": "Trade Finance",
+    "start_date": "2026-03-08",
+    "planned_end_date": "2026-08-09",
+    "actual_end_date": "",
+    "budget_m": 164.4,
+    "spent_m": 119.45,
+    "pct_complete": 90,
+    "pct_budget_used": 72.7,
+    "rag_status": "Red",
+    "risks": 2,
+    "open_issues": 4,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-05",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-31",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-21",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0011",
+    "name": "Project 11: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0056",
+    "category": "Operations",
+    "priority": "Low",
+    "status": "Monitoring",
+    "project_manager": "Michael Baya",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Finance",
+    "start_date": "2025-12-23",
+    "planned_end_date": "2026-06-26",
+    "actual_end_date": "2026-04-01",
+    "budget_m": 143.28,
+    "spent_m": 107.42,
+    "pct_complete": 58,
+    "pct_budget_used": 75.0,
+    "rag_status": "Red",
+    "risks": 5,
+    "open_issues": 4,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-06",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-04",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-28",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-04",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-02",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-12",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-16",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0012",
+    "name": "Project 12: Process Automation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0033",
+    "category": "Compliance",
+    "priority": "High",
+    "status": "On Hold",
+    "project_manager": "Michael Baya",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Digital Financial Services",
+    "start_date": "2025-12-18",
+    "planned_end_date": "2026-11-16",
+    "actual_end_date": "",
+    "budget_m": 18.03,
+    "spent_m": 7.73,
+    "pct_complete": 31,
+    "pct_budget_used": 42.9,
+    "rag_status": "Amber",
+    "risks": 1,
+    "open_issues": 1,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-12",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-09",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-04",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-14",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0013",
+    "name": "Project 13: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0022",
+    "category": "Compliance",
+    "priority": "Medium",
+    "status": "On Hold",
+    "project_manager": "Zipporah Kibet",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Retail Banking",
+    "start_date": "2026-02-07",
+    "planned_end_date": "2026-08-12",
+    "actual_end_date": "",
+    "budget_m": 335.66,
+    "spent_m": 179.08,
+    "pct_complete": 67,
+    "pct_budget_used": 53.4,
+    "rag_status": "Amber",
+    "risks": 3,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-03",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-06",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-10",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-04",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-09",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0014",
+    "name": "Project 14: Process Automation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0052",
+    "category": "Infrastructure",
+    "priority": "High",
+    "status": "Executing",
+    "project_manager": "Festus Njenga",
+    "sponsor": "Yasmin Makokha",
+    "department": "Retail Banking",
+    "start_date": "2025-12-15",
+    "planned_end_date": "2027-02-19",
+    "actual_end_date": "",
+    "budget_m": 34.29,
+    "spent_m": 10.84,
+    "pct_complete": 84,
+    "pct_budget_used": 31.6,
+    "rag_status": "Amber",
+    "risks": 2,
+    "open_issues": 6,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-21",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-22",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-26",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-06",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-01",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-10",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0015",
+    "name": "Project 15: Branch Expansion",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0045",
+    "category": "Operations",
+    "priority": "Low",
+    "status": "Completed",
+    "project_manager": "Lorna Okeyo",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Finance",
+    "start_date": "2025-12-25",
+    "planned_end_date": "2026-09-18",
+    "actual_end_date": "",
+    "budget_m": 367.12,
+    "spent_m": 229.81,
+    "pct_complete": 90,
+    "pct_budget_used": 62.6,
+    "rag_status": "Green",
+    "risks": 1,
+    "open_issues": 0,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-15",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-05",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-21",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-03",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-21",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-15",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0016",
+    "name": "Project 16: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0021",
+    "category": "Business",
+    "priority": "Critical",
+    "status": "Cancelled",
+    "project_manager": "Beatrice Musyoka",
+    "sponsor": "Yasmin Makokha",
+    "department": "Credit",
+    "start_date": "2026-03-11",
+    "planned_end_date": "2026-08-27",
+    "actual_end_date": "",
+    "budget_m": 96.43,
+    "spent_m": 72.34,
+    "pct_complete": 41,
+    "pct_budget_used": 75.0,
+    "rag_status": "Green",
+    "risks": 1,
+    "open_issues": 2,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-16",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-06",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-19",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-20",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-13",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0017",
+    "name": "Project 17: System Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0056",
+    "category": "People",
+    "priority": "Medium",
+    "status": "Cancelled",
+    "project_manager": "Wendy Akinyi",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Risk & Compliance",
+    "start_date": "2025-10-23",
+    "planned_end_date": "2027-01-27",
+    "actual_end_date": "",
+    "budget_m": 357.6,
+    "spent_m": 198.9,
+    "pct_complete": 75,
+    "pct_budget_used": 55.6,
+    "rag_status": "Green",
+    "risks": 0,
+    "open_issues": 2,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-20",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-21",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0018",
+    "name": "Project 18: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0024",
+    "category": "Compliance",
+    "priority": "Medium",
+    "status": "Executing",
+    "project_manager": "Miriam Nzuki",
+    "sponsor": "Yasmin Makokha",
+    "department": "Executive",
+    "start_date": "2025-12-15",
+    "planned_end_date": "2027-01-23",
+    "actual_end_date": "",
+    "budget_m": 144.68,
+    "spent_m": 132.41,
+    "pct_complete": 72,
+    "pct_budget_used": 91.5,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-09",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-07",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-11",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-09",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-02",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-20",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-11",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0019",
+    "name": "Project 19: Branch Expansion",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0031",
+    "category": "Business",
+    "priority": "Critical",
+    "status": "On Hold",
+    "project_manager": "Lilian Lagat",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Retail Banking",
+    "start_date": "2026-02-06",
+    "planned_end_date": "2026-07-22",
+    "actual_end_date": "",
+    "budget_m": 300.52,
+    "spent_m": 86.39,
+    "pct_complete": 54,
+    "pct_budget_used": 28.7,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-13",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-29",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-01",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-04",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-26",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0020",
+    "name": "Project 20: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0032",
+    "category": "Compliance",
+    "priority": "Critical",
+    "status": "Planning",
+    "project_manager": "Kurt Chebet",
+    "sponsor": "Gregory Chirchir",
+    "department": "Trade Finance",
+    "start_date": "2025-11-17",
+    "planned_end_date": "2026-08-06",
+    "actual_end_date": "",
+    "budget_m": 159.12,
+    "spent_m": 52.19,
+    "pct_complete": 18,
+    "pct_budget_used": 32.8,
+    "rag_status": "Red",
+    "risks": 1,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-16",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-04",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-08",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-04",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-13",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-12",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0021",
+    "name": "Project 21: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0047",
+    "category": "Business",
+    "priority": "Critical",
+    "status": "Cancelled",
+    "project_manager": "William Mwanake",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Trade Finance",
+    "start_date": "2025-12-28",
+    "planned_end_date": "2026-07-06",
+    "actual_end_date": "",
+    "budget_m": 319.48,
+    "spent_m": 302.82,
+    "pct_complete": 27,
+    "pct_budget_used": 94.8,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-12",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-06",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-26",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-06-30",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-22",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-10",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0022",
+    "name": "Project 22: Digital Transformation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0028",
+    "category": "Infrastructure",
+    "priority": "Medium",
+    "status": "Planning",
+    "project_manager": "Oliver Mwenda",
+    "sponsor": "William Mwanake",
+    "department": "Diaspora & Special Segments",
+    "start_date": "2026-02-18",
+    "planned_end_date": "2027-02-18",
+    "actual_end_date": "",
+    "budget_m": 468.17,
+    "spent_m": 144.04,
+    "pct_complete": 15,
+    "pct_budget_used": 30.8,
+    "rag_status": "Red",
+    "risks": 2,
+    "open_issues": 2,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-04",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-25",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-17",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-08",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0023",
+    "name": "Project 23: Digital Transformation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0026",
+    "category": "People",
+    "priority": "Medium",
+    "status": "Initiation",
+    "project_manager": "Elijah Nasambu",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Retail Banking",
+    "start_date": "2026-01-11",
+    "planned_end_date": "2026-07-30",
+    "actual_end_date": "",
+    "budget_m": 89.35,
+    "spent_m": 78.76,
+    "pct_complete": 23,
+    "pct_budget_used": 88.2,
+    "rag_status": "Red",
+    "risks": 0,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-14",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-01",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-21",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-13",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-04",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-17",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-20",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0024",
+    "name": "Project 24: Process Automation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0045",
+    "category": "Infrastructure",
+    "priority": "Critical",
+    "status": "Initiation",
+    "project_manager": "Zipporah Kibet",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Trade Finance",
+    "start_date": "2026-02-25",
+    "planned_end_date": "2026-08-04",
+    "actual_end_date": "",
+    "budget_m": 390.93,
+    "spent_m": 217.38,
+    "pct_complete": 58,
+    "pct_budget_used": 55.6,
+    "rag_status": "Red",
+    "risks": 1,
+    "open_issues": 4,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-11",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-28",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-29",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-04",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-07",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-24",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-14",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0025",
+    "name": "Project 25: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0010",
+    "category": "Technology",
+    "priority": "Low",
+    "status": "Planning",
+    "project_manager": "Emmanuel Kuria",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Risk & Compliance",
+    "start_date": "2026-01-17",
+    "planned_end_date": "2026-11-09",
+    "actual_end_date": "",
+    "budget_m": 369.1,
+    "spent_m": 327.33,
+    "pct_complete": 81,
+    "pct_budget_used": 88.7,
+    "rag_status": "Amber",
+    "risks": 3,
+    "open_issues": 1,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-04",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-26",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-24",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-08",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0026",
+    "name": "Project 26: New Product Launch",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0020",
+    "category": "Operations",
+    "priority": "Critical",
+    "status": "Planning",
+    "project_manager": "William Mwanake",
+    "sponsor": "Gregory Chirchir",
+    "department": "Executive",
+    "start_date": "2025-11-01",
+    "planned_end_date": "2026-09-02",
+    "actual_end_date": "",
+    "budget_m": 190.86,
+    "spent_m": 101.82,
+    "pct_complete": 35,
+    "pct_budget_used": 53.3,
+    "rag_status": "Green",
+    "risks": 1,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-20",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-05",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-25",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-08",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0027",
+    "name": "Project 27: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0035",
+    "category": "Business",
+    "priority": "Low",
+    "status": "Initiation",
+    "project_manager": "Veronica Mutai",
+    "sponsor": "Gregory Chirchir",
+    "department": "Trade Finance",
+    "start_date": "2026-01-11",
+    "planned_end_date": "2026-06-15",
+    "actual_end_date": "",
+    "budget_m": 135.15,
+    "spent_m": 31.38,
+    "pct_complete": 22,
+    "pct_budget_used": 23.2,
+    "rag_status": "Amber",
+    "risks": 4,
+    "open_issues": 2,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-18",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-03",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-23",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-09",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-15",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0028",
+    "name": "Project 28: Compliance Programme",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0036",
+    "category": "Compliance",
+    "priority": "High",
+    "status": "Completed",
+    "project_manager": "Elijah Nasambu",
+    "sponsor": "Gregory Chirchir",
+    "department": "Executive",
+    "start_date": "2026-03-10",
+    "planned_end_date": "2026-11-20",
+    "actual_end_date": "2026-04-17",
+    "budget_m": 18.67,
+    "spent_m": 14.25,
+    "pct_complete": 60,
+    "pct_budget_used": 76.3,
+    "rag_status": "Amber",
+    "risks": 3,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-01",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-25",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-19",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-10",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-09",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-17",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-07",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0029",
+    "name": "Project 29: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0006",
+    "category": "Technology",
+    "priority": "High",
+    "status": "Planning",
+    "project_manager": "Miriam Nzuki",
+    "sponsor": "Gregory Chirchir",
+    "department": "Risk & Compliance",
+    "start_date": "2026-02-04",
+    "planned_end_date": "2026-06-02",
+    "actual_end_date": "",
+    "budget_m": 276.46,
+    "spent_m": 191.59,
+    "pct_complete": 41,
+    "pct_budget_used": 69.3,
+    "rag_status": "Green",
+    "risks": 0,
+    "open_issues": 6,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-09",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-04",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-23",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-06-30",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-08",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-09",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0030",
+    "name": "Project 30: Branch Expansion",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0058",
+    "category": "Infrastructure",
+    "priority": "High",
+    "status": "Planning",
+    "project_manager": "William Yego",
+    "sponsor": "Gregory Chirchir",
+    "department": "Credit",
+    "start_date": "2025-11-15",
+    "planned_end_date": "2026-11-02",
+    "actual_end_date": "",
+    "budget_m": 270.3,
+    "spent_m": 56.63,
+    "pct_complete": 91,
+    "pct_budget_used": 21.0,
+    "rag_status": "Green",
+    "risks": 2,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-20",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-25",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-30",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-14",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-15",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0031",
+    "name": "Project 31: New Product Launch",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0003",
+    "category": "Infrastructure",
+    "priority": "High",
+    "status": "Executing",
+    "project_manager": "Michael Baya",
+    "sponsor": "William Mwanake",
+    "department": "Legal",
+    "start_date": "2026-02-24",
+    "planned_end_date": "2026-06-02",
+    "actual_end_date": "",
+    "budget_m": 289.0,
+    "spent_m": 191.11,
+    "pct_complete": 96,
+    "pct_budget_used": 66.1,
+    "rag_status": "Amber",
+    "risks": 5,
+    "open_issues": 8,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-17",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-24",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-26",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-13",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-31",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-13",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-19",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0032",
+    "name": "Project 32: System Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0027",
+    "category": "Infrastructure",
+    "priority": "Medium",
+    "status": "Executing",
+    "project_manager": "Keith Makokha",
+    "sponsor": "Emmanuel Kuria",
+    "department": "IT & Digital",
+    "start_date": "2026-02-22",
+    "planned_end_date": "2026-10-21",
+    "actual_end_date": "",
+    "budget_m": 236.05,
+    "spent_m": 54.82,
+    "pct_complete": 14,
+    "pct_budget_used": 23.2,
+    "rag_status": "Amber",
+    "risks": 0,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-19",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-22",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-20",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-25",
+        "status": "In Progress"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-19",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0033",
+    "name": "Project 33: Staff Development",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0060",
+    "category": "Business",
+    "priority": "Low",
+    "status": "Completed",
+    "project_manager": "Caleb Andanje",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Retail Banking",
+    "start_date": "2026-02-22",
+    "planned_end_date": "2026-07-19",
+    "actual_end_date": "",
+    "budget_m": 221.07,
+    "spent_m": 156.04,
+    "pct_complete": 99,
+    "pct_budget_used": 70.6,
+    "rag_status": "Green",
+    "risks": 5,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-04",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-22",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-21",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-20",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-17",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0034",
+    "name": "Project 34: New Product Launch",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0042",
+    "category": "People",
+    "priority": "Low",
+    "status": "Completed",
+    "project_manager": "Gregory Chirchir",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Diaspora & Special Segments",
+    "start_date": "2026-01-26",
+    "planned_end_date": "2027-01-24",
+    "actual_end_date": "",
+    "budget_m": 320.19,
+    "spent_m": 124.47,
+    "pct_complete": 23,
+    "pct_budget_used": 38.9,
+    "rag_status": "Amber",
+    "risks": 3,
+    "open_issues": 7,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-05",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-05",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-10",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-03",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-07",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0035",
+    "name": "Project 35: Process Automation",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0052",
+    "category": "Technology",
+    "priority": "Critical",
+    "status": "Executing",
+    "project_manager": "Oliver Mwenda",
+    "sponsor": "William Mwanake",
+    "department": "IT & Digital",
+    "start_date": "2026-02-16",
+    "planned_end_date": "2026-09-23",
+    "actual_end_date": "",
+    "budget_m": 48.55,
+    "spent_m": 16.53,
+    "pct_complete": 80,
+    "pct_budget_used": 34.1,
+    "rag_status": "Red",
+    "risks": 0,
+    "open_issues": 6,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-10",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-23",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-16",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-07",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-03",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-14",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0036",
+    "name": "Project 36: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0045",
+    "category": "Technology",
+    "priority": "Medium",
+    "status": "Monitoring",
+    "project_manager": "Kevin Kirimi",
+    "sponsor": "Nicholas Ndegwa",
+    "department": "Commercial & Corporate",
+    "start_date": "2025-11-23",
+    "planned_end_date": "2026-08-10",
+    "actual_end_date": "",
+    "budget_m": 137.35,
+    "spent_m": 60.45,
+    "pct_complete": 74,
+    "pct_budget_used": 44.0,
+    "rag_status": "Amber",
+    "risks": 1,
+    "open_issues": 8,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-03",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-22",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-13",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-04",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-29",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-20",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-21",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0037",
+    "name": "Project 37: System Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0007",
+    "category": "Infrastructure",
+    "priority": "Critical",
+    "status": "Cancelled",
+    "project_manager": "Beatrice Musyoka",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Commercial & Corporate",
+    "start_date": "2026-03-05",
+    "planned_end_date": "2027-04-18",
+    "actual_end_date": "",
+    "budget_m": 389.88,
+    "spent_m": 213.0,
+    "pct_complete": 84,
+    "pct_budget_used": 54.6,
+    "rag_status": "Green",
+    "risks": 5,
+    "open_issues": 0,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-06",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-07",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-19",
+        "status": "Not Started"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-20",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0038",
+    "name": "Project 38: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0011",
+    "category": "People",
+    "priority": "Medium",
+    "status": "On Hold",
+    "project_manager": "Caleb Andanje",
+    "sponsor": "William Mwanake",
+    "department": "Digital Financial Services",
+    "start_date": "2026-02-03",
+    "planned_end_date": "2026-07-19",
+    "actual_end_date": "",
+    "budget_m": 339.79,
+    "spent_m": 70.33,
+    "pct_complete": 53,
+    "pct_budget_used": 20.7,
+    "rag_status": "Red",
+    "risks": 5,
+    "open_issues": 4,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-21",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-31",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-21",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-10",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-01",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 6",
+        "due": "2026-08-29",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-19",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0039",
+    "name": "Project 39: Infrastructure Upgrade",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0037",
+    "category": "Operations",
+    "priority": "Medium",
+    "status": "Planning",
+    "project_manager": "Michael Ndegwa",
+    "sponsor": "Emmanuel Kuria",
+    "department": "Retail Banking",
+    "start_date": "2026-01-22",
+    "planned_end_date": "2026-08-13",
+    "actual_end_date": "",
+    "budget_m": 406.96,
+    "spent_m": 181.6,
+    "pct_complete": 45,
+    "pct_budget_used": 44.6,
+    "rag_status": "Amber",
+    "risks": 3,
+    "open_issues": 5,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-08",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-28",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-27",
+        "status": "Overdue"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-02",
+        "status": "In Progress"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-22",
+        "status": "Complete"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-07",
+    "notes": ""
+  },
+  {
+    "id": "PRJ0040",
+    "name": "Project 40: Branch Expansion",
+    "description": "Strategic project tracked from initiative approval through delivery.",
+    "initiative_id": "INIT0024",
+    "category": "People",
+    "priority": "Low",
+    "status": "On Hold",
+    "project_manager": "Kurt Chebet",
+    "sponsor": "Gregory Chirchir",
+    "department": "Diaspora & Special Segments",
+    "start_date": "2026-02-24",
+    "planned_end_date": "2026-08-29",
+    "actual_end_date": "2026-04-08",
+    "budget_m": 106.77,
+    "spent_m": 72.22,
+    "pct_complete": 64,
+    "pct_budget_used": 67.6,
+    "rag_status": "Amber",
+    "risks": 0,
+    "open_issues": 3,
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-05-02",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-06-03",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-10",
+        "status": "Not Started"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-01",
+        "status": "Complete"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-07-22",
+        "status": "Overdue"
+      }
+    ],
+    "stakeholders": [],
+    "last_updated": "2026-04-11",
+    "notes": ""
+  }
+]

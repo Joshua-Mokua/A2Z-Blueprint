@@ -1,0 +1,92 @@
+[
+  {
+    "ts": "2026-04-21T21:52:37.362765",
+    "user": "admin",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-21T22:05:19.182965",
+    "user": "william001",
+    "action": "LOGIN_FAIL",
+    "detail": "Invalid credentials (attempt 1)",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-21T22:09:11.539113",
+    "user": "william001",
+    "action": "LOGIN_FAIL",
+    "detail": "Invalid credentials (attempt 2)",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-21T22:11:53.521997",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-21T22:18:40.911080",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-22T04:46:30.603297",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-22T05:32:04.583494",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-22T21:42:53.363162",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-22T21:54:28.592247",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-04-22T22:07:55.900516",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
+  }
+]

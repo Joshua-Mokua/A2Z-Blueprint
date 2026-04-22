@@ -1,0 +1,112 @@
+{
+  "WS01": {
+    "name": "Retail Banking",
+    "full_role": "Chief Retail Banking Officer",
+    "sponsor_username": "nicholas002",
+    "sponsor_name": "Nicholas Ndegwa",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS02": {
+    "name": "Commercial",
+    "full_role": "Chief Commercial Officer",
+    "sponsor_username": "emmanuel003",
+    "sponsor_name": "Emmanuel Kuria",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS03": {
+    "name": "Finance",
+    "full_role": "Chief Financial Officer",
+    "sponsor_username": "yasmin004",
+    "sponsor_name": "Yasmin Makokha",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS04": {
+    "name": "Credit",
+    "full_role": "Chief Credit Officer",
+    "sponsor_username": "gregory005",
+    "sponsor_name": "Gregory Chirchir",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS05": {
+    "name": "Risk",
+    "full_role": "Chief Risk Officer",
+    "sponsor_username": "mary006",
+    "sponsor_name": "Mary Waweru",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS06": {
+    "name": "ICT",
+    "full_role": "Chief Information Officer",
+    "sponsor_username": "festus007",
+    "sponsor_name": "Festus Njenga",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS07": {
+    "name": "Operations",
+    "full_role": "Chief Operating Officer",
+    "sponsor_username": "grace008",
+    "sponsor_name": "Grace Makokha",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS08": {
+    "name": "Human Resources",
+    "full_role": "Chief Human Resource Officer",
+    "sponsor_username": "lilian009",
+    "sponsor_name": "Lilian Murithi",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS09": {
+    "name": "Legal & Compliance",
+    "full_role": "Company Secretary and Chief Legal Officer",
+    "sponsor_username": "mark010",
+    "sponsor_name": "Mark Charo",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS10": {
+    "name": "Internal Audit",
+    "full_role": "Senior Manager Internal Audit",
+    "sponsor_username": "joyce207",
+    "sponsor_name": "Joyce Matheka",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  },
+  "WS11": {
+    "name": "Marketing & Comms",
+    "full_role": "Head Of Marketing and Corporate Communication",
+    "sponsor_username": "alex222",
+    "sponsor_name": "Alex Mwenda",
+    "sub_workstreams": [],
+    "cross_functional_pool": [],
+    "created_at": "2026-01-01",
+    "auto_seeded": true
+  }
+}

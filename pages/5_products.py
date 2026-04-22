@@ -6,17 +6,30 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
+try:
+    from utils.core import get_fiscal_year as _gfy
+except: _gfy = lambda: _gfy()
+
 
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("products")
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _load_products():
+    p = Path(__file__).parent.parent / "data" / "products.json"
+    return json.loads(p.read_text()) if p.exists() else []
+
+products = _load_products()
+
+
 
 # Load session state
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
 st.markdown(
-    "<div style='padding:14px 20px;background:#D35400;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Products</div>"
-    "<div style='color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px'>Product lifecycle registry · Performance tracking</div>"
-    "</div>", unsafe_allow_html=True)
+    "<div style=\'padding:16px 22px;background:#D35400;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Products</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Product lifecycle registry · Performance tracking</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 
 # Shared data
@@ -47,7 +60,7 @@ for col, (cat, s) in zip([oc1,oc2,oc3,oc4], cat_summary.items()):
 
 st.markdown("---")
 
-pt1, pt2, pt3 = st.tabs(["📋 Registry", "➕ Add product", "📊 Lifecycle view"])
+pt1, pt2, pt3, pt4 = st.tabs(["📋 Registry", "➕ Add product", "📊 Lifecycle view", "📈 Performance"])
 
 # ── Registry ─────────────────────────────────────────────────
 with pt1:
@@ -77,7 +90,7 @@ with pt1:
             stage_cfg  = PRODUCT_LIFECYCLE_STAGES.get(prod.get("lifecycle_stage","Active"), {})
             cat_cfg    = PRODUCT_CATEGORIES.get(prod.get("category",""), {})
             health     = prod.get("health","On track")
-            h_clr      = {"On track":"#1D9E75","Needs review":"#BA7517",
+            h_clr      = {"On track":"var(--brand-mid,#1D9E75)","Needs review":"#BA7517",
                            "At risk":"#E24B4A","Suspended":"#5F5E5A"}.get(health,"#888780")
 
             with st.expander(
@@ -259,5 +272,87 @@ with pt3:
                 for p in at_risk:
                     st.caption(f"  {p['name']} ({p['category']}) — owner: {p.get('owner','—')}")
 
+
+with pt4:
+    st.subheader("Product performance analytics")
+    st.caption("KPI actuals linked to products — BSC data vs product targets.")
+
+    all_prods = prod_m.get_products()
+    if not all_prods or df_proc.empty:
+        st.info("Upload BSC data and add products to see performance analytics.")
+    else:
+        # Use cascade targets if available (more accurate than upload targets)
+        _casc_prod = st.session_state.get("cascade_manager")
+        _bank_tgts = {}
+        if _casc_prod:
+            for _bk, _bv in (getattr(_casc_prod,"bank_targets",{}) or {}).items():
+                if str(_bv.get("period","")) in (_gfy(),"2025"):
+                    _kn = _bv.get("kpi","")
+                    if _kn: _bank_tgts[_kn] = float(_bv.get("target",0))
+
+        # Map products to their linked KPIs in df_proc
+        perf_rows = []
+        for prod in all_prods:
+            for linked_kpi in (prod.get("linked_kpis") or []):
+                kpi_rows = df_proc[df_proc["KPI"] == linked_kpi]
+                if kpi_rows.empty: continue
+                act_total = float(kpi_rows["YTD_Actual"].sum()) if "YTD_Actual" in kpi_rows.columns else 0
+                # Prefer cascade/bank target over uploaded Annual Target
+                tgt_total = _bank_tgts.get(linked_kpi) or float(kpi_rows["Annual Target"].sum())
+                _tgt_src  = "📊" if linked_kpi in _bank_tgts else "📁"
+                pct       = act_total/tgt_total*100 if tgt_total else 0
+                perf_rows.append({
+                    "Product":    prod["name"],
+                    "Category":   prod.get("category",""),
+                    "KPI":        linked_kpi,
+                    "Target":     f"{_tgt_src} {fmt_num(tgt_total, True)}",
+                    "YTD Actual": fmt_num(act_total, True),
+                    "Achievement": f"{pct:.1f}%",
+                    "_pct":       pct,
+                    "Health":     prod.get("health","On track"),
+                })
+
+        if perf_rows:
+            perf_df = pd.DataFrame(perf_rows)
+
+            # Summary metrics
+            pa1,pa2,pa3,pa4 = st.columns(4)
+            pa1.metric("Products tracked", len(all_prods))
+            pa2.metric("On track (≥90%)", int((perf_df["_pct"]>=90).sum()))
+            pa3.metric("Needs review", int(((perf_df["_pct"]>=60)&(perf_df["_pct"]<90)).sum()))
+            pa4.metric("At risk (<60%)", int((perf_df["_pct"]<60).sum()))
+
+            # Chart
+            fig_pa = px.bar(
+                perf_df.sort_values("_pct"),
+                x="_pct", y="Product", orientation="h",
+                color="_pct",
+                color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
+                range_color=[0,130],
+                title="Product KPI achievement (%)",
+                labels={"_pct":"Achievement %","Product":"Product"})
+            fig_pa.add_vline(x=100, line_dash="dash", line_color="#374151", line_width=1)
+            fig_pa.update_layout(height=max(300,len(perf_rows)*32),
+                                 coloraxis_showscale=False,
+                                 plot_bgcolor="rgba(0,0,0,0)",
+                                 paper_bgcolor="rgba(0,0,0,0)",
+                                 margin=dict(l=0,r=0,t=40,b=0))
+            st.plotly_chart(fig_pa, use_container_width=True)
+
+            # Detail table
+            def _pa_hl(v):
+                try:
+                    p = float(str(v).replace("%",""))
+                    if p >= 100: return "color:var(--brand-primary,#006B3F);font-weight:700"
+                    if p >= 90:  return "color:var(--brand-mid,#1D9E75);font-weight:600"
+                    if p >= 60:  return "color:#F5A623"
+                    return "color:#E24B4A;font-weight:700"
+                except: return ""
+            disp_pa = perf_df.drop(columns=["_pct"])
+            st.dataframe(
+                disp_pa.style.map(_pa_hl, subset=["Achievement"]),
+                use_container_width=True, hide_index=True)
+        else:
+            st.info("No linked KPI data found. Link KPIs to products in the Registry tab.")
 
 # ── TAB 12: INTEGRATE — MD & EXECUTIVE COMMAND CENTRE ─────────────────────

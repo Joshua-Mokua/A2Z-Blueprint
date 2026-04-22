@@ -1,589 +1,1141 @@
-"""pages/6_integrate.py — Integrate module."""
+"""pages/6_integrate.py — Integrate: MD & Executive Command Centre."""
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
+try:
+    from utils.core import get_fiscal_year as _gfy
+except: _gfy = lambda: _gfy()
 
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("integrate")
 
-# Load session state
-um, ud, uname, em, ri_pm, prod_m, pm, vm_obj, lm, ssm = load_shared_state()
+try:
+    _ = LEAVE_TYPES
+except NameError:
+    LEAVE_TYPES = {}
 
-# Shared data
-uploaded_file = st.session_state.get("uploaded_file")
-staff_scores  = st.session_state.get("staff_scores", pd.DataFrame())
-df_proc       = st.session_state.get("df_processed", pd.DataFrame())
-filtered      = st.session_state.get("filtered_staff", pd.DataFrame())
-all_months    = st.session_state.get("all_months", [])
+um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+staff_scores = st.session_state.get("staff_scores",  pd.DataFrame())
+df_proc      = st.session_state.get("df_processed",  pd.DataFrame())
+filtered     = st.session_state.get("filtered_staff", pd.DataFrame())
+all_months   = st.session_state.get("all_months",    [])
+active_months= st.session_state.get("active_months", [])
 
+now          = datetime.now()
+month_label  = now.strftime('%B %Y')
+m_elapsed    = max(1, now.month)
+m_remaining  = max(1, 12 - now.month)
 
-# ── Data assembly ────────────────────────────────────────────
-now         = datetime.now()
-month_label = now.strftime('%B %Y')
-m_elapsed   = max(1, now.month)
-m_remaining = max(1, 12 - now.month)
+# ── HELPERS ──────────────────────────────────────────────────────────
+def fmt_pct(p): return f"{p:.1f}%"
 
-perf_df  = staff_scores.copy() if 'staff_scores' in st.session_state else pd.DataFrame()
-kpi_df   = st.session_state.get('df_processed', pd.DataFrame())
-all_inits = em.get_initiatives(status='All')
-
-# ── PERFORM aggregates ────────────────────────────────────────
-total_staff    = len(perf_df) if len(perf_df) else 0
-avg_bsc        = round(perf_df['Final_BSC_Score'].mean(), 2) if len(perf_df) else 0
-exceeded       = int((perf_df['Final_BSC_Score'] >= 3.1).sum()) if len(perf_df) else 0
-at_risk        = int((perf_df['Final_BSC_Score'] <  2.5).sum()) if len(perf_df) else 0
-on_target      = int((perf_df['Final_BSC_Score'].between(3.0, 3.1)).sum()) if len(perf_df) else 0
-below_target   = int((perf_df['Final_BSC_Score'].between(2.5, 3.0)).sum()) if len(perf_df) else 0
-
-# ── KPI financial totals ──────────────────────────────────────
-def kpi_total(kpi_names, field='YTD_Actual'):
-    if kpi_df.empty: return 0
-    return float(kpi_df[kpi_df['KPI'].isin(kpi_names)][field].sum())
-
-dep_actual  = kpi_total(['Deposit Growth'])
-dep_target  = kpi_total(['Deposit Growth'], 'Annual Target')
-loan_actual = kpi_total(['Loans Disbursement','Loan Book Growth'])
-loan_target = kpi_total(['Loans Disbursement','Loan Book Growth'], 'Annual Target')
-nfi_actual  = kpi_total(['Fees and Commission','Bancassurance','DFS Revenue','Treasury'])
-nfi_target  = kpi_total(['Fees and Commission','Bancassurance','DFS Revenue','Treasury'], 'Annual Target')
-pbt_actual  = kpi_total(['PBT'])
-pbt_target  = kpi_total(['PBT'], 'Annual Target')
-cust_actual = kpi_total(['Customer Growth'])
-cust_target = kpi_total(['Customer Growth'], 'Annual Target')
-npl_actual  = kpi_total(['NPL','PAR'])
-npl_target  = kpi_total(['NPL','PAR'], 'Annual Target')
+# ── LOCAL HELPERS (depend on df_proc session state) ─────────────────
+def kpi_total(names, field='YTD_Actual'):
+    """Sum a KPI field across all rows matching names."""
+    if df_proc.empty: return 0.0
+    col = field if field in df_proc.columns else ('Annual Actual' if field == 'YTD_Actual' else field)
+    if col not in df_proc.columns: return 0.0
+    return float(df_proc[df_proc['KPI'].isin(names)][col].sum())
 
 def ach(act, tgt):
-    return round(act/tgt*100, 1) if tgt else 0
-def run_rate_eoy(act):
-    return round((act / m_elapsed) * 12, 2) if m_elapsed else 0
+    return round(act / tgt * 100, 1) if tgt else 0.0
+
 def traffic(pct):
-    if pct >= 90: return '#1D9E75','🟢'
-    if pct >= 70: return '#BA7517','🟡'
-    return '#E24B4A','🔴'
+    if pct >= 90: return 'var(--brand-primary,#006B3F)', '🟢'
+    if pct >= 70: return '#BA7517', '🟡'
+    return '#E24B4A', '🔴'
 
-# ── EXECUTE aggregates ────────────────────────────────────────
-g_counts    = em.gate_counts()
-g3_inits    = [i for i in all_inits if i.get('gate')=='G3']
-g4_inits    = [i for i in all_inits if i.get('gate')=='G4']
-g5_inits    = [i for i in all_inits if i.get('gate')=='G5']
-all_ms      = [ms for i in g3_inits for ms in i.get('milestones',[])]
-ms_done     = sum(1 for m in all_ms if m.get('status')=='Complete')
-ms_delayed  = sum(1 for m in all_ms if ExecuteManager._escalation_level(m) >= 2)
-ms_critical = sum(1 for m in all_ms if ExecuteManager._escalation_level(m) >= 4)
-esc_buckets = em.get_escalation_dashboard(all_inits)
-total_esc   = sum(len(v) for v in esc_buckets.values())
-critical_esc = len(esc_buckets.get(4, [])) + len(esc_buckets.get(3, []))
-exec_health = round((ms_done / len(all_ms) * 100), 0) if all_ms else 100
+def eoy_est(act):
+    return round((act / m_elapsed) * 12, 0) if m_elapsed else 0
 
-# ── PIPELINE aggregates ───────────────────────────────────────
+# ── PERFORM DATA ──────────────────────────────────────────────────────
+total_staff  = len(staff_scores) if len(staff_scores) else 0
+avg_bsc      = round(staff_scores['Final_BSC_Score'].mean(), 2) if len(staff_scores) else 0
+exceeded     = int((staff_scores['Final_BSC_Score'] >= 3.1).sum()) if len(staff_scores) else 0
+at_risk      = int((staff_scores['Final_BSC_Score'] <  2.5).sum()) if len(staff_scores) else 0
+below_target = int(staff_scores['Final_BSC_Score'].between(2.5, 3.0).sum()) if len(staff_scores) else 0
+on_target    = int(staff_scores['Final_BSC_Score'].between(3.0, 3.1).sum()) if len(staff_scores) else 0
+
+# Region performance
+has_region  = 'Region' in staff_scores.columns
+region_bsc  = {}
+if has_region:
+    for rgn in REGIONS:
+        rg_df = staff_scores[staff_scores['Region'] == rgn]
+        region_bsc[rgn] = round(rg_df['Final_BSC_Score'].mean(), 2) if len(rg_df) else 0
+
+# ── KPI FINANCIAL TOTALS ──────────────────────────────────────────────
+dep_act  = kpi_total(['Deposit Growth'])
+dep_tgt  = kpi_total(['Deposit Growth'],              'Annual Target')
+loan_act = kpi_total(['Loans Disbursement','Loan Book Growth'])
+loan_tgt = kpi_total(['Loans Disbursement','Loan Book Growth'], 'Annual Target')
+nfi_act  = kpi_total(['Fees and Commission','Bancassurance','DFS Revenue','Treasury'])
+nfi_tgt  = kpi_total(['Fees and Commission','Bancassurance','DFS Revenue','Treasury'], 'Annual Target')
+pbt_act  = kpi_total(['PBT'])
+pbt_tgt  = kpi_total(['PBT'],                         'Annual Target')
+cust_act = kpi_total(['Customer Growth'])
+cust_tgt = kpi_total(['Customer Growth'],             'Annual Target')
+dfs_act  = kpi_total(['DFS Revenue'])
+dfs_tgt  = kpi_total(['DFS Revenue'],                 'Annual Target')
+
+# ── EXECUTE DATA ──────────────────────────────────────────────────────
+all_inits    = em.get_initiatives(status='All')
+g_counts     = em.gate_counts()
+g3_inits     = [i for i in all_inits if i.get('gate')=='G3']
+g4_inits     = [i for i in all_inits if i.get('gate')=='G4']
+g5_inits     = [i for i in all_inits if i.get('gate')=='G5']
+all_ms       = [m for i in g3_inits for m in i.get('milestones',[])]
+ms_done      = sum(1 for m in all_ms if m.get('status')=='Complete')
+ms_critical  = sum(1 for m in all_ms if ExecuteManager._escalation_level(m) >= 3)
+esc_buckets  = em.get_escalation_dashboard(all_inits)
+critical_esc = len(esc_buckets.get(4,[])) + len(esc_buckets.get(3,[]))
+exec_health  = round(ms_done / len(all_ms) * 100, 0) if all_ms else 100
+
+# Execute: turnaround initiatives (from SBU page)
+turnaround_inits = [i for i in all_inits
+                    if any(t in i.get('tags',[]) for t in ('turnaround','operating-leverage','cir'))]
+
+# ── PIPELINE DATA ─────────────────────────────────────────────────────
 ri_deals   = ri_pm.get_deals()
 ri_summary = ri_pm.category_summary(
     ri_deals,
-    {cat: kpi_total(cfg['kpis']) for cat, cfg in RI_CATEGORIES.items()},
-    {cat: kpi_total(cfg['kpis'], 'Annual Target') for cat, cfg in RI_CATEGORIES.items()},
+    {cat: kpi_total(cfg['kpis'])                for cat, cfg in RI_CATEGORIES.items()},
+    {cat: kpi_total(cfg['kpis'],'Annual Target') for cat, cfg in RI_CATEGORIES.items()},
 )
-total_pip_wtd = sum(s['pipeline_wtd'] for s in ri_summary.values())
-total_won     = sum(s['won_ytd']      for s in ri_summary.values())
-total_actual_all  = sum(s['ytd_actual']   for s in ri_summary.values()
-                        if ri_summary[list(ri_summary.keys())[0]]['unit']=='KES')
+total_pip_wtd = sum(s['pipeline_wtd']  for s in ri_summary.values())
+total_won_ytd = sum(s['won_ytd']       for s in ri_summary.values())
 
-# ── INTEGRATION signals ───────────────────────────────────────
-# Initiatives at G4/G5 linked to revenue KPIs
-revenue_kpi_names = {k for cfg in RI_CATEGORIES.values() for k in cfg['kpis']}
-rev_linked = [i for i in g4_inits+g5_inits
-              if any(k in revenue_kpi_names for k in i.get('impact_kpis',[]))]
+# ── SBU DATA (from session if financials were uploaded) ───────────────
+sbu_pnl_cached = st.session_state.get('sbu_pnl_data', pd.DataFrame())
 
-# Branches with low performance AND delayed execution
-if len(perf_df) and 'Unit' in perf_df.columns:
-    weak_units: set = set(str(u) for u in perf_df[perf_df['Final_BSC_Score'] < 2.5]['Unit'].dropna().unique())
-    delayed_ws: set = set(
-        str(i.get('workstream','')).split('—')[-1].strip()
-        for i in all_inits
-        if any(m.get('status')=='Delayed' for m in i.get('milestones',[])))
+# ── PRODUCT DATA ──────────────────────────────────────────────────────
+all_products  = prod_m.get_products()
+at_risk_prods = [p for p in all_products if p.get('health') == 'At risk']
+pilot_prods   = [p for p in all_products if p.get('lifecycle_stage') == 'Pilot']
+active_prods  = [p for p in all_products if p.get('lifecycle_stage') in
+                 ('Active','Growth','Optimising','Launch')]
+
+# ── INTEGRATION SIGNALS ───────────────────────────────────────────────
+rev_kpi_names = {k for cfg in RI_CATEGORIES.values() for k in cfg['kpis']}
+rev_linked    = [i for i in g4_inits+g5_inits
+                 if any(k in rev_kpi_names for k in i.get('impact_kpis',[]))]
+
+if len(staff_scores) and 'Unit' in staff_scores.columns:
+    weak_units: set  = set(str(u) for u in staff_scores[staff_scores['Final_BSC_Score']<2.5]['Unit'].dropna().unique())
+    delayed_ws: set  = set(str(i.get('workstream','')).split('—')[-1].strip()
+                       for i in all_inits if any(m.get('status')=='Delayed' for m in i.get('milestones',[])))
     double_risk: set = weak_units & delayed_ws
 else:
-    double_risk = set()
+    double_risk: set = set()
+
+# Branch profitability signal (from SBU page action plans)
+action_plans  = st.session_state.get('sbu_action_plans', {})
+branches_with_plans  = len([k for k,v in action_plans.items() if v])
+open_actions  = sum(1 for plans in action_plans.values()
+                    for a in plans if a.get('status') not in ('Complete',))
+overdue_actions = sum(1 for plans in action_plans.values()
+                      for a in plans
+                      if a.get('due','9999') < str(date.today()) and
+                      a.get('status') not in ('Complete',))
 
 # ════════════════════════════════════════════════════════════════
-# DASHBOARD LAYOUT
+# HEADER — Ecobank branded command centre
 # ════════════════════════════════════════════════════════════════
-
-# ── HEADER BAR ───────────────────────────────────────────────
-clr_pbt, ico_pbt = traffic(ach(pbt_actual, pbt_target))
-clr_dep, ico_dep = traffic(ach(dep_actual, dep_target))
-clr_loan,ico_loan= traffic(ach(loan_actual, loan_target))
+clr_pbt, ico_pbt = traffic(ach(pbt_act, pbt_tgt))
+clr_dep, ico_dep = traffic(ach(dep_act, dep_tgt))
+clr_loan,ico_loan= traffic(ach(loan_act,loan_tgt))
 
 st.markdown(
-    f"<div style='padding:18px 22px;background:var(--color-background-secondary);"
-    f"border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);"
-    f"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px'>"
+    f"<div style='padding:18px 24px;background:var(--brand-primary,#006B3F);"
+    f"border-radius:12px;margin-bottom:20px;"
+    f"display:flex;justify-content:space-between;align-items:center'>"
     f"<div>"
-    f"<div style='font-size:20px;font-weight:500'>A2Z — Executive Command Centre</div>"
-    f"<div style='font-size:12px;color:var(--color-text-secondary);margin-top:3px'>"
-    f"Perform · Execute · Integrate &nbsp;|&nbsp; {month_label} &nbsp;|&nbsp; "
-    f"{total_staff} staff &nbsp;·&nbsp; {len(all_inits)} initiatives &nbsp;·&nbsp; "
-    f"{len(ri_deals)} pipeline deals</div>"
+    f"<div style='color:var(--color-background-primary);font-size:20px;font-weight:500'>A2Z Blueprint — Executive Command Centre</div>"
+    f"<div style='color:var(--brand-accent,#9FE1CB);font-size:12px;margin-top:4px'>"
+    f"Perform · SBU · Execute · Pipeline · Products &nbsp;|&nbsp; {month_label} &nbsp;|&nbsp; "
+    f"{total_staff} staff · {len(all_inits)} initiatives · {len(ri_deals)} pipeline deals · "
+    f"{len(all_products)} products registered</div>"
     f"</div>"
-    f"<div style='display:flex;gap:16px;font-size:13px'>"
-    f"<span>{ico_dep} Deposits {ach(dep_actual,dep_target):.0f}%</span>"
-    f"<span>{ico_loan} Loans {ach(loan_actual,loan_target):.0f}%</span>"
-    f"<span>{ico_pbt} PBT {ach(pbt_actual,pbt_target):.0f}%</span>"
-    f"<span style='color:{'#E24B4A' if critical_esc else '#1D9E75'}'>"
-    f"{'🚨' if critical_esc else '✅'} {critical_esc} critical escalation(s)</span>"
+    f"<div style='display:flex;gap:18px;font-size:13px;align-items:center'>"
+    f"<span style='color:var(--color-background-primary)'>{ico_dep} Deposits <b>{ach(dep_act,dep_tgt):.0f}%</b></span>"
+    f"<span style='color:var(--color-background-primary)'>{ico_loan} Loans <b>{ach(loan_act,loan_tgt):.0f}%</b></span>"
+    f"<span style='color:var(--color-background-primary)'>{ico_pbt} PBT <b>{ach(pbt_act,pbt_tgt):.0f}%</b></span>"
+    f"<span style='background:#F5A623;color:#3D2600;padding:4px 10px;"
+    f"border-radius:6px;font-weight:500;font-size:12px'>"
+    f"{'🚨 ' + str(critical_esc) + ' escalation(s)' if critical_esc else '✅ No escalations'}</span>"
     f"</div></div>",
     unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════
-# ROW 1 — THE P&L SNAPSHOT (5 key numbers)
+# DASHBOARD TABS
 # ════════════════════════════════════════════════════════════════
-st.markdown("### P&L & balance sheet snapshot")
-
-def kpi_card(label, actual, target, unit='KES', is_reverse=False):
-    pct  = ach(actual, target)
-    if is_reverse:
-        pct = 100 - pct if pct < 100 else 100
-    clr, ico = traffic(100 - pct if is_reverse else pct)
-    eoy  = run_rate_eoy(actual)
-    gap  = max(0, target - actual)
-    bar  = min(100, pct)
-    return (
-        f"<div style='padding:14px 16px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);"
-        f"height:100%'>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;"
-        f"letter-spacing:.5px;margin-bottom:6px'>{label}</div>"
-        f"<div style='font-size:22px;font-weight:500;color:var(--color-text-primary)'>"
-        f"{ico} {fmt_num(actual, short=True)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary);margin:2px 0'>"
-        f"Target {fmt_num(target, short=True)} {unit}</div>"
-        f"<div style='height:5px;background:var(--color-border-tertiary);"
-        f"border-radius:3px;margin:8px 0 4px'>"
-        f"<div style='width:{bar:.0f}%;height:100%;background:{clr};border-radius:3px'></div>"
-        f"</div>"
-        f"<div style='display:flex;justify-content:space-between;font-size:11px'>"
-        f"<span style='color:{clr};font-weight:500'>{pct:.1f}%</span>"
-        f"<span style='color:var(--color-text-tertiary)'>EOY est. {fmt_num(eoy, short=True)}</span>"
-        f"</div>"
-        f"{'<div style=\"font-size:11px;color:#E24B4A;margin-top:4px\">Gap: ' + fmt_num(gap, short=True) + '</div>' if gap > 0 else ''}"
-        f"</div>")
-
-r1c1,r1c2,r1c3,r1c4,r1c5 = st.columns(5)
-r1c1.markdown(kpi_card("Deposits (liabilities)", dep_actual, dep_target), unsafe_allow_html=True)
-r1c2.markdown(kpi_card("Loans (assets)",         loan_actual, loan_target), unsafe_allow_html=True)
-r1c3.markdown(kpi_card("Non-funded income",       nfi_actual, nfi_target), unsafe_allow_html=True)
-r1c4.markdown(kpi_card("PBT",                     pbt_actual, pbt_target), unsafe_allow_html=True)
-r1c5.markdown(kpi_card("New customers",           cust_actual, cust_target, unit=''), unsafe_allow_html=True)
+dash_tabs = st.tabs([
+    "📊 P&L overview",
+    "🏦 SBU performance",
+    "👥 People & execution",
+    "💼 Pipeline & products",
+    "🔗 Live signals",
+    "📋 Board pack",
+])
 
 # ════════════════════════════════════════════════════════════════
-# ROW 2 — PEOPLE · PIPELINE · EXECUTION (the three engines)
+# TAB 1 — P&L OVERVIEW
 # ════════════════════════════════════════════════════════════════
-st.markdown("### Three engines")
+with dash_tabs[0]:
+    st.markdown("#### P&L & balance sheet — institution wide")
 
-eng1, eng2, eng3 = st.columns(3)
+    def kpi_card(label, actual, target, unit='KES', sub=None):
+        pct = ach(actual, target)
+        clr, ico = traffic(pct)
+        gap = max(0, target - actual)
+        bar = min(100, pct)
+        eoy = eoy_est(actual)
+        sub_html = f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:2px'>{sub}</div>" if sub else ""
+        return (
+            f"<div style='padding:14px 16px;background:var(--color-background-secondary);"
+            f"border-radius:10px;border:0.5px solid var(--color-border-tertiary);height:100%'>"
+            f"<div style='font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;"
+            f"letter-spacing:.6px;margin-bottom:6px'>{label}</div>"
+            f"<div style='font-size:22px;font-weight:500'>{ico} {fmt_num(actual,True)}</div>"
+            f"<div style='font-size:11px;color:var(--color-text-secondary);margin:2px 0'>"
+            f"Target: {fmt_num(target,True)} {unit}</div>"
+            f"{sub_html}"
+            f"<div style='height:5px;background:var(--color-border-tertiary);"
+            f"border-radius:3px;margin:8px 0 4px'>"
+            f"<div style='width:{bar:.0f}%;height:100%;background:{clr};border-radius:3px'></div></div>"
+            f"<div style='display:flex;justify-content:space-between;font-size:11px'>"
+            f"<span style='color:{clr};font-weight:500'>{pct:.1f}%</span>"
+            f"<span style='color:var(--color-text-tertiary)'>EOY: {fmt_num(eoy,True)}</span></div>"
+            f"{'<div style=\"font-size:11px;color:#E24B4A;margin-top:3px\">Gap: '+fmt_num(gap,True)+'</div>' if gap>0 else ''}"
+            f"</div>")
 
-# Engine 1 — People (Perform)
-bsc_clr, bsc_ico = traffic(avg_bsc / 5 * 100)
-with eng1:
-    st.markdown(
-        f"<div style='padding:16px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:13px;font-weight:500;color:#185FA5;margin-bottom:12px'>"
-        f"People performance</div>"
-        f"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        f"<div><div style='font-size:20px;font-weight:500'>{bsc_ico} {avg_bsc:.2f}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>avg BSC score</div></div>"
-        f"<div><div style='font-size:20px;font-weight:500'>{total_staff}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>total staff</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500;color:#1D9E75'>{exceeded}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>exceeded target</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500;color:#E24B4A'>{at_risk}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>at risk (&lt;2.5)</div></div>"
-        f"</div></div>",
-        unsafe_allow_html=True)
+    c1,c2,c3,c4,c5,c6 = st.columns(6)
+    c1.markdown(kpi_card("Deposits", dep_act,  dep_tgt,  sub=f"SBU: Retail Banking"), unsafe_allow_html=True)
+    c2.markdown(kpi_card("Loans",    loan_act, loan_tgt, sub=f"SBU: SME + Corporate"), unsafe_allow_html=True)
+    c3.markdown(kpi_card("NFI",      nfi_act,  nfi_tgt,  sub="Fees + DFS + Banca"), unsafe_allow_html=True)
+    c4.markdown(kpi_card("DFS revenue", dfs_act, dfs_tgt, sub="Digital & Channels SBU"), unsafe_allow_html=True)
+    c5.markdown(kpi_card("PBT",      pbt_act,  pbt_tgt,  sub="All SBUs combined"), unsafe_allow_html=True)
+    c6.markdown(kpi_card("Customers",cust_act, cust_tgt, unit='', sub="New accounts opened"), unsafe_allow_html=True)
 
-    # Mini performance distribution bar
-    if total_staff > 0:
-        fig_mini = px.bar(
-            pd.DataFrame([
-                {'Band':'Exceeded','Count':exceeded,'color':'#1D9E75'},
-                {'Band':'On target','Count':on_target,'color':'#F39C12'},
-                {'Band':'Below','Count':below_target,'color':'#E67E22'},
-                {'Band':'At risk','Count':at_risk,'color':'#E24B4A'},
-            ]),
-            x='Count', y='Band', orientation='h', color='Band',
-            color_discrete_map={'Exceeded':'#1D9E75','On target':'#F39C12',
-                                'Below':'#E67E22','At risk':'#E24B4A'},
-            title='Distribution')
-        fig_mini.update_layout(height=180, showlegend=False, margin=dict(l=0,r=0,t=30,b=0),
-                               plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        fig_mini.update_xaxes(showgrid=False)
-        st.plotly_chart(fig_mini, use_container_width=True)
+    st.markdown("---")
 
-# Engine 2 — Pipeline (Revenue Intelligence)
-with eng2:
-    pip_ach = ach(dep_actual+loan_actual+nfi_actual,
-                  dep_target+loan_target+nfi_target)
-    pip_clr, pip_ico = traffic(pip_ach)
-    st.markdown(
-        f"<div style='padding:16px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:13px;font-weight:500;color:#0F6E56;margin-bottom:12px'>"
-        f"Revenue pipeline</div>"
-        f"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        f"<div><div style='font-size:20px;font-weight:500'>{pip_ico} {pip_ach:.0f}%</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>overall achievement</div></div>"
-        f"<div><div style='font-size:20px;font-weight:500'>{fmt_num(total_pip_wtd, short=True)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>weighted pipeline</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500;color:#1D9E75'>{fmt_num(total_won, short=True)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>won YTD</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500'>{len(ri_deals)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>active deals</div></div>"
-        f"</div></div>",
-        unsafe_allow_html=True)
+    # Revenue vs target waterfall per KPI category
+    chart_data = [
+        {'KPI':'Deposits','Actual':dep_act,'Target':dep_tgt,'EOY':eoy_est(dep_act)},
+        {'KPI':'Loans',   'Actual':loan_act,'Target':loan_tgt,'EOY':eoy_est(loan_act)},
+        {'KPI':'NFI',     'Actual':nfi_act,'Target':nfi_tgt,'EOY':eoy_est(nfi_act)},
+        {'KPI':'DFS',     'Actual':dfs_act,'Target':dfs_tgt,'EOY':eoy_est(dfs_act)},
+        {'KPI':'PBT',     'Actual':pbt_act,'Target':pbt_tgt,'EOY':eoy_est(pbt_act)},
+    ]
+    ch_df = pd.DataFrame(chart_data)
+    ch1, ch2 = st.columns(2)
+    with ch1:
+        fig = px.bar(ch_df.melt(id_vars='KPI',value_vars=['Actual','Target','EOY'],
+                                var_name='Type',value_name='Value'),
+                     x='KPI', y='Value', color='Type', barmode='group',
+                     title='Actual vs target vs EOY forecast',
+                     color_discrete_map={'Actual':'var(--brand-primary,#006B3F)','Target':'#D3D1C7','EOY':'#F5A623'})
+        fig.update_layout(height=300, showlegend=True,
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+            yaxis_tickformat=',.0f', margin=dict(l=0,r=0,t=40,b=0))
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Category coverage bars
-    cat_rows = []
-    for cat, s in ri_summary.items():
-        if s['annual_target'] > 0:
-            cat_rows.append({
-                'Category': RI_CATEGORIES[cat]['label'][:12],
-                'Achieved': ach(s['ytd_actual'], s['annual_target']),
-                'Pipeline': min(100 - ach(s['ytd_actual'], s['annual_target']),
-                                ach(s['pipeline_wtd'], s['annual_target'])),
-            })
-    if cat_rows:
-        cat_df = pd.DataFrame(cat_rows)
-        fig_cat = px.bar(cat_df, x='Category', y=['Achieved','Pipeline'],
-                         barmode='stack', title='Coverage vs target %',
-                         color_discrete_map={'Achieved':'#1D9E75','Pipeline':'#85B7EB'})
-        fig_cat.add_hline(y=100, line_dash='dash', line_color='orange',
-                          annotation_text='Target')
-        fig_cat.update_layout(height=180, showlegend=False, margin=dict(l=0,r=0,t=30,b=0),
-                              plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-                              yaxis_title='%')
-        st.plotly_chart(fig_cat, use_container_width=True)
-
-# Engine 3 — Execution (Execute)
-exec_clr, exec_ico = ('#1D9E75','🟢') if exec_health>=80 else (('#BA7517','🟡') if exec_health>=60 else ('#E24B4A','🔴'))
-with eng3:
-    st.markdown(
-        f"<div style='padding:16px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:13px;font-weight:500;color:#BA7517;margin-bottom:12px'>"
-        f"Strategy execution</div>"
-        f"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        f"<div><div style='font-size:20px;font-weight:500'>{exec_ico} {exec_health:.0f}%</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>milestone health</div></div>"
-        f"<div><div style='font-size:20px;font-weight:500'>{len(all_inits)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>total initiatives</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500;color:#1D9E75'>{len(g5_inits)}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>embedded (G5)</div></div>"
-        f"<div><div style='font-size:18px;font-weight:500;color:#E24B4A'>{critical_esc}</div>"
-        f"<div style='font-size:11px;color:var(--color-text-secondary)'>critical escalations</div></div>"
-        f"</div></div>",
-        unsafe_allow_html=True)
-
-    # Gate funnel mini
-    if any(g_counts.values()):
-        gf_df = pd.DataFrame([
-            {'Gate': g, 'Count': g_counts.get(g, 0),
-             'Color': EXECUTE_GATES[g]['color']}
-            for g in GATE_ORDER])
-        fig_gf = px.bar(gf_df, x='Gate', y='Count', title='Initiative gates',
-                        color='Gate',
-                        color_discrete_map={g: EXECUTE_GATES[g]['color'] for g in GATE_ORDER})
-        fig_gf.update_layout(height=180, showlegend=False, margin=dict(l=0,r=0,t=30,b=0),
-                             plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_gf, use_container_width=True)
-    else:
-        st.caption("No initiatives yet — add them in Execute tab.")
+    with ch2:
+        # Gap coverage stacked bar
+        gap_rows = []
+        for _, r in ch_df.iterrows():
+            tgt = r['Target']
+            if tgt <= 0: continue
+            done  = min(100, ach(r['Actual'], tgt))
+            pip   = min(100-done, ach(total_pip_wtd/max(1,len(chart_data)), tgt))
+            gap   = max(0, 100 - done - pip)
+            gap_rows.append({'KPI':r['KPI'],'Achieved':done,'Pipeline':pip,'Gap':gap})
+        if gap_rows:
+            gdf = pd.DataFrame(gap_rows)
+            fig2 = px.bar(gdf, x='KPI', y=['Achieved','Pipeline','Gap'],
+                          title='Gap coverage (% of annual target)',
+                          color_discrete_map={'Achieved':'var(--brand-primary,#006B3F)','Pipeline':'#85B7EB','Gap':'#E24B4A'},
+                          barmode='stack')
+            fig2.update_layout(height=300, yaxis_title='% of target', yaxis_range=[0,110],
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0,r=0,t=40,b=0), showlegend=True)
+            st.plotly_chart(fig2, use_container_width=True)
 
 # ════════════════════════════════════════════════════════════════
-# ROW 3 — INTEGRATION SIGNALS (the unique value of this tab)
+# TAB 2 — SBU PERFORMANCE
 # ════════════════════════════════════════════════════════════════
-st.markdown("### Integration signals")
-st.caption("Where performance, pipeline, and execution intersect — the insights no single module shows alone.")
+with dash_tabs[1]:
+    st.markdown("#### SBU performance — four business units")
+    st.caption("Based on BSC KPI actuals mapped to each SBU. "
+               "Upload the Financials Excel in Operating Leverage for full P&L.")
 
-sig_cols = st.columns(3)
+    SBU_MAP = {
+        'Retail Banking': {
+            'kpis':['Deposit Growth','Customer Growth','Bancassurance'],
+            'head':'Director Retail','color':'var(--brand-primary,#006B3F)','bg':'var(--brand-light,#E8F5EE)',
+            'branches': [u for u,r in BRANCH_REGION.items()],
+        },
+        'SME & Commercial': {
+            'kpis':['Loans Disbursement','Loan Book Growth','Fees and Commission'],
+            'head':'Director Commercial Banking','color':'#185FA5','bg':'#E6F1FB',
+            'branches':[],
+        },
+        'Corporate & Institutional': {
+            'kpis':['Trade Finance','Treasury'],
+            'head':'Head of Corporate','color':'#534AB7','bg':'#EEEDFE',
+            'branches':[],
+        },
+        'Digital & Channels (DFS)': {
+            'kpis':['DFS Revenue','Digital Transaction Migration'],
+            'head':'Head of Digital Innovation','color':'#BA7517','bg':'#FAEEDA',
+            'branches':[],
+        },
+    }
 
-# Signal 1: Execution → Revenue linkage
-with sig_cols[0]:
-    linked_pct = len(rev_linked) / max(1, len(g4_inits)+len(g5_inits)) * 100
-    s_clr = '#1D9E75' if linked_pct >= 70 else ('#BA7517' if linked_pct >= 40 else '#E24B4A')
-    st.markdown(
-        f"<div style='padding:14px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border-left:4px solid {s_clr};"
-        f"border-top:0.5px solid var(--color-border-tertiary);"
-        f"border-right:0.5px solid var(--color-border-tertiary);"
-        f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
-        f"Execution → revenue linkage</div>"
-        f"<div style='font-size:26px;font-weight:500;color:{s_clr}'>"
-        f"{len(rev_linked)}</div>"
-        f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
-        f"of {len(g4_inits)+len(g5_inits)} active/embedded initiatives "
-        f"are linked to revenue KPIs</div>"
-        f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
-        f"{'Good linkage — initiatives driving measurable revenue impact' if linked_pct>=70 else 'Review: ensure initiatives are mapped to revenue KPIs'}"
-        f"</div></div>",
-        unsafe_allow_html=True)
+    sbu_cols = st.columns(4)
+    for ci, (sbu_name, sbu_cfg) in enumerate(SBU_MAP.items()):
+        kpi_rows = df_proc[df_proc['KPI'].isin(sbu_cfg['kpis'])] if not df_proc.empty else pd.DataFrame()
+        sbu_act = float(kpi_rows['YTD_Actual'].sum()) if len(kpi_rows) else 0
+        sbu_tgt = float(kpi_rows['Annual Target'].sum()) if len(kpi_rows) else 0
+        sbu_pct = ach(sbu_act, sbu_tgt)
+        clr, ico = traffic(sbu_pct)
 
-# Signal 2: Double-risk units (low performance + delayed execution)
-with sig_cols[1]:
-    dr_clr = '#E24B4A' if double_risk else '#1D9E75'
-    st.markdown(
-        f"<div style='padding:14px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border-left:4px solid {dr_clr};"
-        f"border-top:0.5px solid var(--color-border-tertiary);"
-        f"border-right:0.5px solid var(--color-border-tertiary);"
-        f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
-        f"Double-risk units</div>"
-        f"<div style='font-size:26px;font-weight:500;color:{dr_clr}'>"
-        f"{len(double_risk)}</div>"
-        f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
-        f"units with low BSC score AND delayed execution milestones</div>"
-        f"{'<div style=\"font-size:11px;color:#E24B4A;margin-top:6px\">' + ', '.join([str(x) for x in list(double_risk)[:3]]) + '</div>' if double_risk else ''}"
-        f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:4px'>"
-        f"{'These units need urgent intervention — poor performance and stalled execution' if double_risk else 'No double-risk units — performance and execution aligned'}"
-        f"</div></div>",
-        unsafe_allow_html=True)
-
-# Signal 3: Pipeline vs performance gap
-with sig_cols[2]:
-    # Units with good pipeline but low BSC — execution not converting
-    if len(perf_df) and 'Unit' in perf_df.columns:
-        unit_bsc = perf_df.groupby('Unit')['Final_BSC_Score'].mean()
-        low_bsc_units  = set(unit_bsc[unit_bsc < 2.8].index)
-        # Any RI deals in those units?
-        ri_unit_deals  = {d.get('staff_name','') for d in ri_deals if d.get('stage') in ('Proposal','Negotiation','Compliance')}
-        conversion_gap = len(low_bsc_units)
-    else:
-        conversion_gap = 0
-        low_bsc_units  = set()
-
-    cg_clr = '#E24B4A' if conversion_gap > 3 else ('#BA7517' if conversion_gap > 0 else '#1D9E75')
-    st.markdown(
-        f"<div style='padding:14px;background:var(--color-background-secondary);"
-        f"border-radius:var(--border-radius-lg);border-left:4px solid {cg_clr};"
-        f"border-top:0.5px solid var(--color-border-tertiary);"
-        f"border-right:0.5px solid var(--color-border-tertiary);"
-        f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
-        f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
-        f"Performance conversion gap</div>"
-        f"<div style='font-size:26px;font-weight:500;color:{cg_clr}'>"
-        f"{conversion_gap}</div>"
-        f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
-        f"units below 2.8 BSC — pipeline activity may not be converting to results</div>"
-        f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
-        f"{'Review coaching and conversion quality in these units' if conversion_gap else 'Good — performance aligned with activity levels'}"
-        f"</div></div>",
-        unsafe_allow_html=True)
-
-# ════════════════════════════════════════════════════════════════
-# ROW 4 — BRANCH HEATMAP (the MD's field view)
-# ════════════════════════════════════════════════════════════════
-if len(perf_df) and 'Unit' in perf_df.columns:
-    st.markdown("### Branch performance heatmap")
-    st.caption("Each branch scored across BSC performance, deposit achievement, loan achievement, and customer growth.")
-
-    branch_df = perf_df[perf_df.get('Category', pd.Series(['Branch']*len(perf_df))) == 'Branch'] \
-                if 'Category' in perf_df.columns else perf_df
-
-    if len(branch_df) > 0 and 'Unit' in branch_df.columns:
-        unit_scores = branch_df.groupby('Unit').agg(
-            BSC_Score   = ('Final_BSC_Score','mean'),
-            Staff_Count = ('Staff Name','count'),
-            Exceeded    = ('Final_BSC_Score', lambda x: (x>=3.1).sum()),
-            At_Risk     = ('Final_BSC_Score', lambda x: (x<2.5).sum()),
-        ).reset_index()
-
-        # Merge KPI actuals by unit
-        if not kpi_df.empty and 'Unit' in kpi_df.columns:
-            def unit_kpi_ach(unit, kpi_list):
-                rows = kpi_df[(kpi_df['Unit']==unit) & (kpi_df['KPI'].isin(kpi_list))]
-                tgt = rows['Annual Target'].sum()
-                act = rows['YTD_Actual'].sum()
-                return round(act/tgt*100, 1) if tgt else 0
-
-            unit_scores['Deposit %'] = unit_scores['Unit'].apply(
-                lambda u: unit_kpi_ach(u, ['Deposit Growth']))
-            unit_scores['Loans %'] = unit_scores['Unit'].apply(
-                lambda u: unit_kpi_ach(u, ['Loans Disbursement','Loan Book Growth']))
-            unit_scores['Customer %'] = unit_scores['Unit'].apply(
-                lambda u: unit_kpi_ach(u, ['Customer Growth']))
-
-            pivot_cols = ['Deposit %','Loans %','Customer %','BSC_Score']
+        # PBT for this SBU's branches
+        if sbu_name == 'Retail Banking' and 'Unit' in df_proc.columns:
+            br_units = list(BRANCH_REGION.keys())
+            pbt_rows = df_proc[(df_proc['Unit'].isin(br_units)) & (df_proc['KPI']=='PBT')]
+            sbu_pbt  = float(pbt_rows['YTD_Actual'].sum())
         else:
-            pivot_cols = ['BSC_Score']
+            pbt_rows = df_proc[df_proc['KPI']=='PBT'] if not df_proc.empty else pd.DataFrame()
+            sbu_pbt  = 0
 
-        unit_scores = unit_scores.sort_values(by='BSC_Score', ascending=False)
-        display_cols = ['Unit','BSC_Score','Staff_Count','At_Risk'] + \
-                       [c for c in ['Deposit %','Loans %','Customer %'] if c in unit_scores.columns]
-
-        # Heatmap
-        if len(pivot_cols) > 1:
-            heat_data = unit_scores[['Unit'] + pivot_cols].set_index('Unit')
-            # Normalise each column 0-100
-            for col in pivot_cols:
-                mn, mx = heat_data[col].min(), heat_data[col].max()
-                heat_data[col] = ((heat_data[col]-mn)/(mx-mn)*100).round(1) if mx>mn else 50
-
-            fig_heat = px.imshow(
-                heat_data.T,
-                color_continuous_scale=[[0,'#E24B4A'],[0.5,'#F39C12'],[1,'#1D9E75']],
-                aspect='auto', title='Branch performance heatmap (normalised)',
-                text_auto='.0f')
-            fig_heat.update_layout(
-                height=max(200, len(pivot_cols)*50 + 60),
-                coloraxis_showscale=False,
-                margin=dict(l=0,r=0,t=40,b=0))
-            st.plotly_chart(fig_heat, use_container_width=True)
-
-        # Table
-        disp = unit_scores[display_cols].copy()
-        disp['BSC_Score'] = disp['BSC_Score'].round(2)
-        disp.columns = [c.replace('_',' ') for c in disp.columns]
-        st.dataframe(disp, use_container_width=True, hide_index=True)
-
-# ════════════════════════════════════════════════════════════════
-# ROW 5 — ESCALATION SURFACE (what needs MD attention NOW)
-# ════════════════════════════════════════════════════════════════
-if critical_esc > 0 or double_risk:
-    st.markdown("### Items requiring executive attention")
-
-    if critical_esc > 0:
-        st.markdown(
-            f"<div style='padding:12px 16px;background:#FCEBEB;border-left:4px solid #A32D2D;"
-            f"border-radius:0 6px 6px 0;margin:6px 0'>"
-            f"<b style='color:#A32D2D'>🚨 {critical_esc} milestone(s) at critical escalation level</b> — "
-            f"overdue >7 days or structural delay. Sponsor intervention required."
-            f"</div>", unsafe_allow_html=True)
-        for ms in esc_buckets.get(4,[])[:3] + esc_buckets.get(3,[])[:3]:
+        with sbu_cols[ci]:
             st.markdown(
-                f"<div style='font-size:12px;padding:6px 12px 6px 20px;"
-                f"color:var(--color-text-secondary);border-left:2px solid #E24B4A;margin:2px 0'>"
-                f"<b>{ms.get('initiative_name','')}</b> → {ms.get('name','')} | "
-                f"Owner: {ms.get('owner','')} | {ms.get('overdue_days',0)}d overdue | "
-                f"Workstream: {ms.get('workstream','')}"
-                f"</div>", unsafe_allow_html=True)
+                f"<div style='padding:14px;background:{sbu_cfg['bg']};"
+                f"border-left:4px solid {sbu_cfg['color']};border-radius:0 8px 8px 0;"
+                f"margin-bottom:8px'>"
+                f"<div style='font-size:11px;color:{sbu_cfg['color']};font-weight:500;"
+                f"margin-bottom:6px'>{sbu_name}</div>"
+                f"<div style='font-size:10px;color:var(--color-text-tertiary);margin-bottom:8px'>"
+                f"{sbu_cfg['head']}</div>"
+                f"<div style='font-size:20px;font-weight:500'>{ico} {sbu_pct:.0f}%</div>"
+                f"<div style='font-size:11px;color:var(--color-text-secondary)'>"
+                f"{fmt_num(sbu_act,True)} / {fmt_num(sbu_tgt,True)}</div>"
+                f"<div style='height:4px;background:var(--color-border-tertiary);"
+                f"border-radius:2px;margin:8px 0 4px'>"
+                f"<div style='width:{min(100,sbu_pct):.0f}%;height:100%;"
+                f"background:{clr};border-radius:2px'></div></div>"
+                f"<div style='font-size:10px;color:var(--color-text-tertiary)'>"
+                f"KPIs: {', '.join(sbu_cfg['kpis'][:2])}"
+                f"{'...' if len(sbu_cfg['kpis'])>2 else ''}</div>"
+                f"</div>",
+                unsafe_allow_html=True)
 
-    if double_risk:
-        st.markdown(
-            f"<div style='padding:12px 16px;background:#FFF3CD;border-left:4px solid #BA7517;"
-            f"border-radius:0 6px 6px 0;margin:6px 0'>"
-            f"<b style='color:#BA7517'>⚠️ Double-risk units: {', '.join(str(x) for x in double_risk)}</b> — "
-            f"low BSC performance AND stalled execution milestones. Review urgently."
-            f"</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("#### Branch profitability — Retail SBU")
+
+    # Region rollup
+    if has_region and not df_proc.empty and 'Unit' in df_proc.columns:
+        region_cols = st.columns(3)
+        for ri, rgn in enumerate(REGIONS):
+            rgn_branches = [u for u,r in BRANCH_REGION.items() if r==rgn]
+            rgn_pbt = df_proc[(df_proc['Unit'].isin(rgn_branches)) & (df_proc['KPI']=='PBT')]
+            rgn_dep = df_proc[(df_proc['Unit'].isin(rgn_branches)) & (df_proc['KPI']=='Deposit Growth')]
+            pbt_v   = float(rgn_pbt['YTD_Actual'].sum())
+            pbt_t   = float(rgn_pbt['Annual Target'].sum())
+            dep_v   = float(rgn_dep['YTD_Actual'].sum())
+            n_branches = len(rgn_branches)
+            pbt_pct = ach(pbt_v, pbt_t)
+            rclr, rico = traffic(pbt_pct)
+            # Regional head BSC
+            rh_bsc = region_bsc.get(rgn, 0)
+            with region_cols[ri]:
+                st.markdown(
+                    f"<div style='padding:12px 14px;background:var(--color-background-secondary);"
+                    f"border-radius:8px;border:0.5px solid var(--color-border-tertiary)'>"
+                    f"<div style='font-weight:500;font-size:13px;color:var(--brand-primary,#006B3F)'>{rgn} Region</div>"
+                    f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px'>"
+                    f"{n_branches} branches</div>"
+                    f"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"
+                    f"<div><div style='font-size:16px;font-weight:500'>{rico} {pbt_pct:.0f}%</div>"
+                    f"<div style='font-size:10px;color:var(--color-text-tertiary)'>PBT achievement</div></div>"
+                    f"<div><div style='font-size:16px;font-weight:500'>{rh_bsc:.2f}</div>"
+                    f"<div style='font-size:10px;color:var(--color-text-tertiary)'>Reg. Head BSC</div></div>"
+                    f"<div><div style='font-size:14px'>{fmt_num(pbt_v,True)}</div>"
+                    f"<div style='font-size:10px;color:var(--color-text-tertiary)'>PBT actual</div></div>"
+                    f"<div><div style='font-size:14px'>{fmt_num(dep_v,True)}</div>"
+                    f"<div style='font-size:10px;color:var(--color-text-tertiary)'>Deposits</div></div>"
+                    f"</div></div>",
+                    unsafe_allow_html=True)
+
+    # Branch P&L heatmap
+    if not df_proc.empty and 'Unit' in df_proc.columns:
+        branch_kpis = ['Deposit Growth','Loans Disbursement','Fees and Commission','PBT']
+        br_pivot = {}
+        for branch in BRANCH_REGION:
+            br_rows = df_proc[df_proc['Unit']==branch]
+            row = {}
+            for kpi in branch_kpis:
+                k = br_rows[br_rows['KPI']==kpi]
+                if len(k):
+                    tgt = float(k['Annual Target'].values[0])
+                    act = float(k['YTD_Actual'].values[0])
+                    row[kpi] = round(act/tgt*100,1) if tgt else 0
+                else:
+                    row[kpi] = 0
+            br_pivot[branch] = row
+        if br_pivot:
+            hm = pd.DataFrame(br_pivot).T
+            hm.columns = ['Deposits %','Loans %','NFI %','PBT %']
+            fig_hm = px.imshow(hm.T,
+                color_continuous_scale=[[0,'#E24B4A'],[0.5,'#F5A623'],[1,'var(--brand-primary,#006B3F)']],
+                text_auto='.0f', aspect='auto',
+                title='Branch performance heatmap — % of annual target')
+            fig_hm.update_layout(height=220, margin=dict(l=0,r=0,t=40,b=0),
+                coloraxis_colorbar_title='%')
+            st.plotly_chart(fig_hm, use_container_width=True)
 
 # ════════════════════════════════════════════════════════════════
-# ROW 6 — DETAILED DRILL-DOWN (expandable sections)
+# TAB 3 — PEOPLE & EXECUTION
 # ════════════════════════════════════════════════════════════════
-st.markdown("---")
-st.markdown("### Drill-down")
+with dash_tabs[2]:
+    st.markdown("#### People Intelligence & Target Cascade — MD View")
+    st.caption(f"As at {datetime.now().strftime('%d %b %Y')} · Upload BSC data to refresh")
 
-with st.expander("Revenue intelligence — category detail", expanded=False):
-    ri_cols = st.columns(4)
-    for ci, (cat, s) in enumerate(ri_summary.items()):
-        cfg = RI_CATEGORIES[cat]
-        pct = ach(s['ytd_actual'], s['annual_target'])
-        clr_r, _ = traffic(pct)
-        with ri_cols[ci]:
+    # ── TOP SUMMARY ROW ──────────────────────────────────────────
+    hr_exits_12m   = len(hr_m.get_exits(12))    if hr_m else 0
+    hr_pips        = len(hr_m.get_active_pips()) if hr_m else 0
+    hr_disc        = len(hr_m.get_active_cases()) if hr_m else 0
+    hr_on_leave    = len(lm.get_active_leave())  if lm  else 0
+
+    sc1,sc2,sc3,sc4,sc5,sc6,sc7,sc8 = st.columns(8)
+    sc1.metric("Total staff",     total_staff)
+    sc2.metric("Avg BSC",         f"{avg_bsc:.2f}")
+    sc3.metric("Exceeded",        exceeded)
+    sc4.metric("At risk (<2.5)",  at_risk,
+               delta=f"-{at_risk}" if at_risk else "0", delta_color="inverse")
+    sc5.metric("On leave",        hr_on_leave)
+    sc6.metric("Exits (12m)",     hr_exits_12m,
+               delta=f"-{hr_exits_12m}" if hr_exits_12m else "0", delta_color="inverse")
+    sc7.metric("Active PIPs",     hr_pips,
+               delta=f"-{hr_pips}" if hr_pips else "0", delta_color="inverse")
+    sc8.metric("Disc. cases",     hr_disc,
+               delta=f"-{hr_disc}" if hr_disc else "0", delta_color="inverse")
+
+    st.markdown("---")
+    pa_col, pb_col = st.columns(2)
+
+    # ── LEFT: PERFORMANCE DISTRIBUTION + REGION BSC ──────────────
+    with pa_col:
+        st.markdown("**Performance distribution**")
+        if len(staff_scores):
+            bands = pd.DataFrame([
+                {'Band':'Exceeded (≥3.1)', 'Count': exceeded,     'Color':'var(--brand-primary,#006B3F)'},
+                {'Band':'On target (3.0)', 'Count': on_target,    'Color':'var(--brand-mid,#1D9E75)'},
+                {'Band':'Below (2.5–3.0)', 'Count': below_target, 'Color':'#F5A623'},
+                {'Band':'At risk (<2.5)',  'Count': at_risk,       'Color':'#E24B4A'},
+            ])
+            fig_b = px.bar(bands, x='Count', y='Band', orientation='h',
+                           color='Band', title='Staff performance bands',
+                           color_discrete_map={r['Band']:r['Color'] for _,r in bands.iterrows()})
+            fig_b.update_layout(height=200, showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0,r=0,t=36,b=0))
+            st.plotly_chart(fig_b, use_container_width=True)
+
+        if region_bsc:
+            st.markdown("**BSC by region**")
+            for rgn, score in region_bsc.items():
+                rclr, _ = traffic(score/5*100)
+                bar_w = min(100, score/5*100)
+                st.markdown(
+                    f"<div style='display:flex;justify-content:space-between;"
+                    f"align-items:center;padding:5px 0;font-size:12px'>"
+                    f"<span style='min-width:100px'>{rgn} Region</span>"
+                    f"<div style='flex:1;margin:0 10px;height:6px;"
+                    f"background:#EEE;border-radius:3px'>"
+                    f"<div style='width:{bar_w:.0f}%;height:100%;"
+                    f"background:{rclr};border-radius:3px'></div></div>"
+                    f"<span style='color:{rclr};font-weight:600;min-width:36px'>"
+                    f"{score:.2f}</span></div>",
+                    unsafe_allow_html=True)
+
+        # HR alerts
+        hr_alerts = []
+        if hr_pips:
+            for pip in hr_m.get_active_pips():
+                days_left = hr_m.pip_days_remaining(pip)
+                if days_left <= 14:
+                    hr_alerts.append(f"🚨 PIP deadline: {pip['staff_name']} — {days_left}d left")
+        if hr_disc:
+            for case in hr_m.get_active_cases():
+                try:
+                    days_open = (datetime.now()-datetime.fromisoformat(case['recorded_at'])).days
+                    if days_open > 30:
+                        hr_alerts.append(f"⚠️ Stalled case: {case['staff_name']} ({days_open}d open)")
+                except: pass
+        if hr_alerts:
+            st.markdown("**HR alerts**")
+            for a in hr_alerts[:4]:
+                st.markdown(
+                    f"<div style='padding:5px 10px;background:#FFFBF0;"
+                    f"border-left:3px solid #F5A623;font-size:11px;margin:2px 0'>"
+                    f"{a}</div>", unsafe_allow_html=True)
+
+    # ── RIGHT: TARGET CASCADE STATUS ─────────────────────────────
+    with pb_col:
+        st.markdown("**Target cascade status**")
+        if casc and casc.cascade:
+            # Build cascade summary per level
+            cascade_summary = {}
+            for key, entry in casc.cascade.items():
+                from_code = entry['from_code']
+                name_row  = staff_scores[staff_scores['Staff Code'].astype(str)==from_code] if len(staff_scores) else pd.DataFrame()
+                from_name = name_row['Staff Name'].values[0] if len(name_row) else from_code
+                from_role = name_row['Role'].values[0] if len(name_row) else '—'
+                total     = entry['total_target']
+                alloc     = entry['allocated_sum']
+                cov       = round(alloc/total*100,1) if total else 0
+                n_rpt     = len(entry['allocations'])
+                kpi       = entry['kpi']
+
+                if from_name not in cascade_summary:
+                    cascade_summary[from_name] = {
+                        'role': from_role, 'kpis': [], 'min_cov': 100}
+                cascade_summary[from_name]['kpis'].append({'kpi':kpi,'cov':cov,'rpts':n_rpt})
+                cascade_summary[from_name]['min_cov'] = min(
+                    cascade_summary[from_name]['min_cov'], cov)
+
+            # Show each manager's cascade coverage
+            for mgr_name, info in list(cascade_summary.items())[:8]:
+                min_cov = info['min_cov']
+                clr = 'var(--brand-primary,#006B3F)' if min_cov >= 95 else ('#F5A623' if min_cov >= 50 else '#E24B4A')
+                icon = '✅' if min_cov >= 95 else ('⚠️' if min_cov >= 50 else '❌')
+                kpi_summary = ', '.join([f"{k['kpi']} {k['cov']:.0f}%"
+                                          for k in info['kpis'][:2]])
+                st.markdown(
+                    f"<div style='padding:7px 10px;background:var(--color-background-secondary);"
+                    f"border-left:4px solid {clr};"
+                    f"border-radius:0 4px 4px 0;margin:3px 0;font-size:11px'>"
+                    f"<div style='display:flex;justify-content:space-between'>"
+                    f"<span><b>{mgr_name}</b> "
+                    f"<span style='color:#888;font-size:10px'>{info['role']}</span></span>"
+                    f"<span style='color:{clr};font-weight:600'>{icon} {min_cov:.0f}% min coverage</span>"
+                    f"</div>"
+                    f"<div style='color:#888;margin-top:2px'>{kpi_summary}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True)
+
+            # Managers with no cascade at all
+            if len(staff_scores):
+                mgr_roles = ['Director Retail','Director Commercial Banking',
+                             'Head Of Corporate','Head Of Digital Innovation',
+                             'Regional Head','Branch Manager','Head Of SME','Head Of Retail']
+                all_mgrs  = staff_scores[staff_scores['Role'].isin(mgr_roles)]['Staff Name'].tolist()
+                who_alloc = set(v['from_code'] for v in casc.cascade.values())
+                not_alloc = [m for m in all_mgrs
+                             if len(staff_scores[staff_scores['Staff Name']==m]) > 0
+                             and str(staff_scores[staff_scores['Staff Name']==m]['Staff Code'].values[0])
+                             not in who_alloc]
+                if not_alloc:
+                    st.markdown(
+                        f"<div style='padding:8px 10px;background:#FFFBF0;"
+                        f"border-left:3px solid #F5A623;font-size:11px;margin-top:8px'>"
+                        f"⚠️ <b>{len(not_alloc)} manager(s) not yet cascaded:</b> "
+                        f"{', '.join(not_alloc[:5])}"
+                        f"{'...' if len(not_alloc)>5 else ''}</div>",
+                        unsafe_allow_html=True)
+
+            # Overall cascade coverage chart
+            cov_data = []
+            for mgr_name, info in cascade_summary.items():
+                for k in info['kpis']:
+                    cov_data.append({'Manager': mgr_name[:14], 'KPI': k['kpi'],
+                                     'Coverage': k['cov']})
+            if cov_data:
+                cov_df = pd.DataFrame(cov_data)
+                fig_cov = px.bar(cov_df, x='Manager', y='Coverage', color='KPI',
+                                 barmode='group',
+                                 title='Cascade coverage % by manager',
+                                 color_discrete_sequence=px.colors.qualitative.Set2)
+                fig_cov.add_hline(y=100, line_dash='dot',
+                                   line_color='var(--brand-primary,#006B3F)', line_width=1)
+                fig_cov.update_layout(height=230, yaxis_range=[0,115],
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(l=0,r=0,t=36,b=40), legend=dict(
+                        orientation='h', y=-0.25, font=dict(size=9)))
+                st.plotly_chart(fig_cov, use_container_width=True)
+        else:
+            st.info("No cascade allocations recorded yet. "
+                    "Line managers should allocate in the Target Cascade page.")
+
+    # ── BOTTOM: EXECUTION + HR TABLE ────────────────────────────
+    st.markdown("---")
+    ea_col, eb_col = st.columns(2)
+
+    with ea_col:
+        st.markdown("**Strategy execution**")
+        e1,e2,e3,e4 = st.columns(4)
+        e1.metric("Initiatives",   len(all_inits))
+        e2.metric("Executing (G3)",len(g3_inits))
+        e3.metric("Embedded (G5)", len(g5_inits))
+        e4.metric("Critical esc.", critical_esc,
+                  delta=f"-{critical_esc}" if critical_esc else "0",
+                  delta_color="inverse")
+
+        if any(g_counts.values()):
+            gf = pd.DataFrame([
+                {'Gate':g,'Count':g_counts.get(g,0),'Color':EXECUTE_GATES[g]['color']}
+                for g in GATE_ORDER])
+            fig_gf = px.bar(gf, x='Gate', y='Count', color='Gate',
+                            title='Initiative gate distribution',
+                            color_discrete_map={g:EXECUTE_GATES[g]['color'] for g in GATE_ORDER})
+            fig_gf.update_layout(height=180, showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0,r=0,t=36,b=0))
+            st.plotly_chart(fig_gf, use_container_width=True)
+
+        if all_ms:
+            ms_del = sum(1 for m in all_ms if ExecuteManager._escalation_level(m)>=2)
+            st.progress(ms_done/len(all_ms),
+                        text=f"{ms_done}/{len(all_ms)} milestones complete · {ms_del} at risk")
+
+        if overdue_actions:
             st.markdown(
-                f"<div style='padding:12px;background:{cfg['bg']};"
-                f"border-left:3px solid {cfg['color']};border-radius:0 6px 6px 0'>"
-                f"<b style='color:{cfg['color']}'>{cfg['label']}</b><br>"
-                f"<span style='font-size:18px;font-weight:500'>{fmt_num(s['ytd_actual'],True)}</span>"
-                f"<span style='font-size:11px;color:var(--color-text-secondary)'> / {fmt_num(s['annual_target'],True)}</span><br>"
-                f"<span style='color:{clr_r};font-weight:500'>{pct:.1f}%</span>"
-                f"<span style='font-size:11px;color:var(--color-text-secondary)'> | Pipeline: {fmt_num(s['pipeline_wtd'],True)}</span><br>"
-                f"<span style='font-size:11px;color:var(--color-text-secondary)'>EOY forecast: {fmt_num(s['forecast_eoy'],True)}</span>"
-                f"</div>", unsafe_allow_html=True)
+                f"<div style='padding:8px 12px;background:#FFFBF0;"
+                f"border-left:3px solid #F5A623;border-radius:0 4px 4px 0;font-size:12px'>"
+                f"⚠️ <b>{overdue_actions}</b> branch action item(s) overdue</div>",
+                unsafe_allow_html=True)
 
-with st.expander("Strategy execution — initiative status", expanded=False):
-    if all_inits:
-        init_rows = []
-        for i in all_inits:
-            ms_all  = i.get('milestones',[])
-            ms_done_i = sum(1 for m in ms_all if m.get('status')=='Complete')
-            ms_del_i  = sum(1 for m in ms_all if ExecuteManager._escalation_level(m)>=2)
-            init_rows.append({
-                'ID':          i['id'],
-                'Initiative':  i['name'][:40],
-                'Category':    i.get('category',''),
-                'Workstream':  i.get('workstream','')[:25],
-                'Gate':        i.get('gate',''),
-                'IO':          i.get('io',''),
-                'Milestones':  f"{ms_done_i}/{len(ms_all)}",
-                'Delayed':     ms_del_i,
+        st.markdown(
+            "<div style='padding:10px 14px;background:var(--color-background-secondary);"
+            "border-radius:8px;border:0.5px solid var(--color-border-tertiary);margin-top:8px'>"
+            "<div style='font-weight:500;font-size:12px;margin-bottom:4px'>"
+            "🔍 Competitor Intelligence</div>"
+            "<div style='font-size:11px;color:var(--color-text-secondary)'>"
+            "Full Kenya banking industry analysis available in Competitor Intel page — "
+            "market position, watch list, strategic gaps and board brief."
+            "</div></div>",
+            unsafe_allow_html=True)
+
+    with eb_col:
+        st.markdown("**HR snapshot**")
+        # Exits by reason (last 12 months)
+        analytics = hr_m.exit_analytics() if hr_m else {}
+        if analytics.get('total',0):
+            by_r = analytics.get('by_reason',{})
+            if by_r:
+                ex_df = pd.DataFrame(list(by_r.items()),
+                                     columns=['Reason','Count']).sort_values('Count',ascending=False)
+                fig_ex = px.bar(ex_df.head(6), x='Count', y='Reason',
+                                orientation='h', title='Exits by reason (all time)',
+                                color='Count',
+                                color_continuous_scale=['#E8F5EE','var(--brand-primary,#006B3F)'])
+                fig_ex.update_layout(height=200, showlegend=False,
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(l=0,r=0,t=36,b=0))
+                st.plotly_chart(fig_ex, use_container_width=True)
+
+        # Active PIPs
+        if hr_pips:
+            st.markdown(f"**Active PIPs ({hr_pips})**")
+            for pip in hr_m.get_active_pips():
+                days_left = hr_m.pip_days_remaining(pip)
+                pct_elapsed = max(0, round((pip['duration_days']-days_left)/pip['duration_days']*100))
+                clr = '#E24B4A' if days_left<=7 else ('#F5A623' if days_left<=14 else 'var(--brand-primary,#006B3F)')
+                st.markdown(
+                    f"<div style='padding:6px 10px;background:var(--color-background-secondary);"
+                    f"border-left:3px solid {clr};border-radius:0 4px 4px 0;"
+                    f"font-size:11px;margin:2px 0'>"
+                    f"<b>{pip['staff_name']}</b> · {pip['unit']} · "
+                    f"{days_left}d remaining ({pct_elapsed}% elapsed)"
+                    f"</div>", unsafe_allow_html=True)
+
+        # Currently on leave
+        on_leave_now = lm.get_active_leave() if lm else []
+        if on_leave_now:
+            st.markdown(f"**On leave now ({len(on_leave_now)})**")
+            for r in on_leave_now[:5]:
+                lt_clr = LEAVE_TYPES.get(r.get('leave_type',''),{}).get('color','#888')
+                st.markdown(
+                    f"<div style='padding:4px 10px;border-left:3px solid {lt_clr};"
+                    f"font-size:11px;margin:2px 0'>"
+                    f"<b>{r['staff_name']}</b> — {r['leave_type']} "
+                    f"(until {r['end_date']})</div>",
+                    unsafe_allow_html=True)
+
+# TAB 4 — PIPELINE & PRODUCTS
+# ════════════════════════════════════════════════════════════════
+with dash_tabs[3]:
+    pp1, pp2 = st.columns(2)
+
+    with pp1:
+        st.markdown("#### Revenue pipeline")
+        p1,p2,p3 = st.columns(3)
+        p1.metric("Active deals",       len(ri_deals))
+        p2.metric("Weighted pipeline",  fmt_num(total_pip_wtd, short=True))
+        p3.metric("Won YTD",            fmt_num(total_won_ytd, short=True))
+
+        # Category coverage bars
+        cat_rows = []
+        for cat, s in ri_summary.items():
+            if s['annual_target'] > 0:
+                pct_a = ach(s['ytd_actual'], s['annual_target'])
+                pct_p = min(100-pct_a, ach(s['pipeline_wtd'], s['annual_target']))
+                cat_rows.append({
+                    'Category': RI_CATEGORIES[cat]['label'][:14],
+                    'Achieved': pct_a,
+                    'Pipeline': pct_p,
+                    'Gap':      max(0, 100-pct_a-pct_p),
+                })
+        if cat_rows:
+            cat_df = pd.DataFrame(cat_rows)
+            fig_cat = px.bar(cat_df, x='Category', y=['Achieved','Pipeline','Gap'],
+                             title='Pipeline coverage by category',
+                             color_discrete_map={'Achieved':'var(--brand-primary,#006B3F)','Pipeline':'#85B7EB','Gap':'#E24B4A'},
+                             barmode='stack')
+            fig_cat.add_hline(y=100, line_dash='dash', line_color='#F5A623',
+                               annotation_text='100% target')
+            fig_cat.update_layout(height=280, yaxis_title='% of target',
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0,r=0,t=40,b=0), showlegend=True)
+            st.plotly_chart(fig_cat, use_container_width=True)
+
+    with pp2:
+        st.markdown("#### Product portfolio")
+        q1,q2,q3,q4 = st.columns(4)
+        q1.metric("Total products",  len(all_products))
+        q2.metric("Active",          len(active_prods))
+        q3.metric("In pilot",        len(pilot_prods))
+        q4.metric("At risk",         len(at_risk_prods),
+                  delta=f"-{len(at_risk_prods)}" if at_risk_prods else "0",
+                  delta_color="inverse")
+
+        # Category breakdown
+        cat_summary = prod_m.category_summary()
+        prod_rows = [
+            {'Category':cat,'Count':s['count'],'Active':s['active'],
+             'At risk':s['at_risk'],'Pilot':s['in_pilot']}
+            for cat, s in cat_summary.items() if s['count'] > 0
+        ]
+        if prod_rows:
+            pr_df = pd.DataFrame(prod_rows)
+            fig_pr = px.bar(pr_df, x='Category', y=['Active','Pilot','At risk'],
+                            title='Product portfolio by category',
+                            color_discrete_map={'Active':'var(--brand-primary,#006B3F)','Pilot':'#F5A623','At risk':'#E24B4A'},
+                            barmode='stack')
+            fig_pr.update_layout(height=280,
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0,r=0,t=40,b=0), showlegend=True)
+            st.plotly_chart(fig_pr, use_container_width=True)
+        else:
+            st.info("No products registered yet — add them in the Products module.")
+
+        # At-risk products
+        if at_risk_prods:
+            st.markdown("**Products requiring attention:**")
+            for p in at_risk_prods[:3]:
+                st.markdown(
+                    f"<div style='font-size:12px;padding:4px 0;"
+                    f"color:var(--color-text-secondary)'>"
+                    f"⚠️ {p['name']} ({p['category']} · {p.get('lifecycle_stage','')}) "
+                    f"— owner: {p.get('owner','—')}</div>",
+                    unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 5 — INTEGRATION SIGNALS
+# ════════════════════════════════════════════════════════════════
+with dash_tabs[4]:
+    st.markdown("#### Integration signals — live cross-module intelligence")
+    st.caption("Real-time signals from all 17 modules. Amber/red items require MD attention.")
+
+    # ── NEW MODULE SIGNALS ────────────────────────────────────────
+    # CIMS signal
+    cims_mgr = st.session_state.get("cims_manager")
+    if cims_mgr:
+        cims_open    = len([t for t in cims_mgr.tickets if t.get("status") not in ("Resolved","Cancelled")])
+        cims_overdue = 0
+        now_dt = datetime.now()
+        for t in cims_mgr.tickets:
+            if t.get("status") not in ("Resolved","Cancelled") and t.get("due_at"):
+                try:
+                    if now_dt > datetime.fromisoformat(t["due_at"][:19]): cims_overdue += 1
+                except: pass
+        cims_resolved = [t for t in cims_mgr.tickets if t.get("status")=="Resolved"]
+        cims_breached = sum(1 for t in cims_resolved if t.get("breached"))
+        cims_score    = (len(cims_resolved)-cims_breached)/max(len(cims_resolved),1)
+        cims_clr = 'var(--brand-primary,#006B3F)' if cims_score>=0.9 else ('#F5A623' if cims_score>=0.75 else '#E24B4A')
+        st.markdown(
+            f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+            f"border-left:4px solid {cims_clr};border-radius:0 6px 6px 0;margin:3px 0'>"
+            f"<div style='display:flex;justify-content:space-between;font-size:12px'>"
+            f"<span>📨 <b>CIMS</b> — TAT Score: <b style='color:{cims_clr}'>{cims_score:.1%}</b> | "
+            f"Open: <b>{cims_open}</b> | Overdue: <b style='color:#E24B4A'>{cims_overdue}</b></span>"
+            f"<span style='color:{cims_clr}'>{'✅ On track' if cims_score>=0.90 else '⚠️ Below 90% target'}</span>"
+            f"</div></div>", unsafe_allow_html=True)
+
+    # SLA Tracker signal
+    slm = st.session_state.get("sla_manager")
+    if slm:
+        sla_anl = slm.analytics()
+        sla_open    = sla_anl.get("open", 0)
+        sla_score   = sla_anl.get("sla_score", 1.0)
+        sla_breached= sla_anl.get("breached", 0)
+        sla_clr     = 'var(--brand-primary,#006B3F)' if sla_score>=0.90 else ('#F5A623' if sla_score>=0.75 else '#E24B4A')
+        st.markdown(
+            f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+            f"border-left:4px solid {sla_clr};border-radius:0 6px 6px 0;margin:3px 0'>"
+            f"<div style='display:flex;justify-content:space-between;font-size:12px'>"
+            f"<span>🎯 <b>SLA Tracker</b> — Score: <b style='color:{sla_clr}'>{sla_score:.1%}</b> | "
+            f"Open tickets: <b>{sla_open}</b> | Breached: <b>{sla_breached}</b></span>"
+            f"<span style='color:{sla_clr}'>"
+            f"{'✅ On track' if sla_score>=0.90 else '⚠️ Below 90% target'}</span>"
+            f"</div></div>", unsafe_allow_html=True)
+
+    # Branch Daily Log signal
+    blm = st.session_state.get("branch_log_manager")
+    if blm:
+        today_logs  = blm.get_today()
+        submitted   = len(today_logs)
+        validated   = len([l for l in today_logs if l.get("validated")])
+        pending_val = len([l for l in today_logs if not l.get("validated") and not l.get("rejected",False)])
+        log_clr     = 'var(--brand-primary,#006B3F)' if submitted > 0 else '#F5A623'
+        st.markdown(
+            f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+            f"border-left:4px solid {log_clr};border-radius:0 6px 6px 0;margin:3px 0'>"
+            f"<div style='font-size:12px'>"
+            f"📝 <b>Branch Daily Log</b> — Today: <b>{submitted}</b> submitted | "
+            f"<b>{validated}</b> validated | "
+            f"<span style='color:#F5A623'><b>{pending_val}</b> awaiting manager validation</span>"
+            f"</div></div>", unsafe_allow_html=True)
+
+    # Cascade signal
+    _casc_sig = st.session_state.get("cascade_manager")
+    if _casc_sig:
+        _all_users_sig = um.users if um else {}
+        _locked_count = 0; _given_count = 0; _total_sig = 0
+        for _usig, _udsig in _all_users_sig.items():
+            if not _udsig.get("active"): continue
+            _sc_sig = str(_udsig.get("staff_code","") or _usig)
+            _nm_sig = _udsig.get("full_name","")
+            _given_sig = _casc_sig.get_what_i_was_given(_sc_sig,_gfy(),_nm_sig)
+            try:
+                _locked_sig = _casc_sig.targets_locked(_sc_sig,_gfy())
+            except AttributeError:
+                # Stale CascadeManager — reload
+                try:
+                    from utils.core import CascadeManager as _CM_int
+                    _casc_sig = _CM_int()
+                    st.session_state["cascade_manager"] = _casc_sig
+                    _locked_sig = _casc_sig.targets_locked(_sc_sig,_gfy())
+                except Exception:
+                    _locked_sig = False
+            _total_sig += 1
+            if _given_sig: _given_count += 1
+            if _locked_sig: _locked_count += 1
+        _casc_pct = _given_count/_total_sig*100 if _total_sig else 0
+        _lock_pct  = _locked_count/_total_sig*100 if _total_sig else 0
+        _csig_clr = 'var(--brand-primary,#006B3F)' if _casc_pct>=90 else '#F5A623' if _casc_pct>=60 else '#E24B4A'
+        st.markdown(
+            f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+            f"border-left:4px solid {_csig_clr};border-radius:0 6px 6px 0;margin:3px 0'>"
+            f"<div style='display:flex;justify-content:space-between;font-size:12px'>"
+            f"<span>🎯 <b>Cascade</b> — Targets given: "
+            f"<b style='color:{_csig_clr}'>{_given_count}/{_total_sig} ({_casc_pct:.0f}%)</b> | "
+            f"Locked: <b>{_locked_count} ({_lock_pct:.0f}%)</b></span>"
+            f"<span style='color:{_csig_clr}'>"
+            f"{'✅ On track' if _casc_pct>=90 else '⚠️ Cascade incomplete'}</span>"
+            f"</div></div>", unsafe_allow_html=True)
+
+    # Campaign signal
+    cpm = st.session_state.get("campaign_manager")
+    if cpm:
+        active_camps = cpm.get_active()
+        if active_camps:
+            for camp in active_camps:
+                total, target, pct = cpm.campaign_progress(camp["id"])
+                camp_clr = 'var(--brand-primary,#006B3F)' if pct>=80 else ('#F5A623' if pct>=50 else '#E24B4A')
+                days_left = (date.fromisoformat(camp["end_date"]) - date.today()).days
+                st.markdown(
+                    f"<div style='padding:8px 14px;background:var(--color-background-secondary);"
+                    f"border-left:4px solid {camp_clr};border-radius:0 6px 6px 0;margin:3px 0'>"
+                    f"<div style='font-size:12px'>"
+                    f"🚀 <b>Campaign: {camp['name']}</b> — {pct:.0f}% of target | "
+                    f"{days_left}d remaining | KPI: {camp.get('kpi_linked','')}"
+                    f"</div></div>", unsafe_allow_html=True)
+    st.caption("These signals only appear here — they require all three pillars (Perform, Execute, Pipeline) to be active.")
+
+    sig_cols = st.columns(3)
+
+    # Signal 1: Execution → Revenue linkage
+    with sig_cols[0]:
+        linked_pct = len(rev_linked)/max(1,len(g4_inits)+len(g5_inits))*100
+        s_clr = 'var(--brand-primary,#006B3F)' if linked_pct>=70 else ('#BA7517' if linked_pct>=40 else '#E24B4A')
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {s_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"Execute → revenue linkage</div>"
+            f"<div style='font-size:28px;font-weight:500;color:{s_clr}'>{len(rev_linked)}</div>"
+            f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            f"of {len(g4_inits)+len(g5_inits)} active initiatives linked to revenue KPIs</div>"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
+            f"{'Good — strategy driving measurable revenue' if linked_pct>=70 else 'Map more initiatives to revenue KPIs'}"
+            f"</div></div>",
+            unsafe_allow_html=True)
+
+    # Signal 2: Double-risk (low BSC + stalled execution)
+    with sig_cols[1]:
+        dr_clr = '#E24B4A' if double_risk else 'var(--brand-primary,#006B3F)'
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {dr_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"Double-risk units</div>"
+            f"<div style='font-size:28px;font-weight:500;color:{dr_clr}'>{len(double_risk)}</div>"
+            f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            f"units with low BSC AND stalled execution milestones</div>"
+            f"{'<div style=\"font-size:11px;color:#E24B4A;margin-top:4px\">' + ', '.join(str(x) for x in list(double_risk)[:3]) + '</div>' if double_risk else ''}"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:4px'>"
+            f"{'Urgent — poor performance and stalled execution' if double_risk else 'No double-risk units'}"
+            f"</div></div>",
+            unsafe_allow_html=True)
+
+    # Signal 3: SBU action plans vs BSC performance
+    with sig_cols[2]:
+        ap_clr = '#E24B4A' if overdue_actions>0 else 'var(--brand-primary,#006B3F)'
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {ap_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"SBU turnaround tracker</div>"
+            f"<div style='font-size:28px;font-weight:500;color:{ap_clr}'>{open_actions}</div>"
+            f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            f"open branch action items · {overdue_actions} overdue</div>"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
+            f"{branches_with_plans} branches have active turnaround plans</div>"
+            f"</div>",
+            unsafe_allow_html=True)
+
+    # Row 2 of signals
+    st.markdown("---")
+    sig2 = st.columns(3)
+
+    # Signal 4: Products linked to initiatives
+    prods_with_init = len([p for p in all_products if p.get('linked_initiatives')])
+    with sig2[0]:
+        p_clr = 'var(--brand-primary,#006B3F)' if prods_with_init > 0 else '#BA7517'
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {p_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"Products ↔ initiatives linked</div>"
+            f"<div style='font-size:28px;font-weight:500;color:{p_clr}'>{prods_with_init}</div>"
+            f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            f"of {len(all_products)} products linked to an Execute initiative</div>"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
+            f"{'Link products to initiatives in the Products module' if prods_with_init==0 else 'Execution is connected to product delivery'}"
+            f"</div></div>",
+            unsafe_allow_html=True)
+
+    # Signal 5: Pipeline vs BSC performance gap
+    with sig2[1]:
+        low_bsc_units = set(str(u) for u in staff_scores[staff_scores['Final_BSC_Score']<2.8]['Unit'].dropna().unique()) if len(staff_scores) else set()
+        conv_gap = len(low_bsc_units)
+        cg_clr = '#E24B4A' if conv_gap > 5 else ('#BA7517' if conv_gap > 0 else 'var(--brand-primary,#006B3F)')
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {cg_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"Performance conversion gap</div>"
+            f"<div style='font-size:28px;font-weight:500;color:{cg_clr}'>{conv_gap}</div>"
+            f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            f"units below 2.8 BSC — pipeline not converting to performance</div>"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary);margin-top:6px'>"
+            f"{'Review coaching and conversion quality' if conv_gap else 'Performance aligned with activity'}"
+            f"</div></div>",
+            unsafe_allow_html=True)
+
+    # Signal 6: Operating leverage (from session if loaded)
+    with sig2[2]:
+        fin_loaded = not sbu_pnl_cached.empty
+        ol_clr = 'var(--brand-primary,#006B3F)' if fin_loaded else '#888780'
+        st.markdown(
+            f"<div style='padding:14px;background:var(--color-background-secondary);"
+            f"border-radius:8px;border-left:4px solid {ol_clr};"
+            f"border-top:0.5px solid var(--color-border-tertiary);"
+            f"border-right:0.5px solid var(--color-border-tertiary);"
+            f"border-bottom:0.5px solid var(--color-border-tertiary)'>"
+            f"<div style='font-size:12px;font-weight:500;margin-bottom:8px'>"
+            f"Operating leverage status</div>"
+            f"<div style='font-size:14px;color:{ol_clr};margin-bottom:6px'>"
+            f"{'✅ Financials loaded — view in Operating Leverage page' if fin_loaded else '⏳ Upload SBU Financials Excel to see cost vs revenue growth'}"
+            f"</div>"
+            f"<div style='font-size:11px;color:var(--color-text-tertiary)'>"
+            f"CIR benchmarks: &lt;55% excellent · 55-65% acceptable · &gt;65% action needed"
+            f"</div></div>",
+            unsafe_allow_html=True)
+
+    # Critical escalations surface
+    if critical_esc > 0 or double_risk or overdue_actions > 0:
+        st.markdown("---")
+        st.markdown("#### Requires executive attention now")
+
+        if critical_esc > 0:
+            st.markdown(
+                f"<div style='padding:10px 14px;background:#FFF0F0;"
+                f"border-left:4px solid #A32D2D;border-radius:0 6px 6px 0;margin:4px 0'>"
+                f"🚨 <b>{critical_esc} milestone(s)</b> at critical escalation — "
+                f">7 days overdue or structural delay. Sponsor intervention required.</div>",
+                unsafe_allow_html=True)
+            for ms in (esc_buckets.get(4,[]) + esc_buckets.get(3,[]))[:4]:
+                st.markdown(
+                    f"<div style='font-size:12px;padding:4px 12px 4px 24px;"
+                    f"color:var(--color-text-secondary);border-left:2px solid #E24B4A;margin:2px 0'>"
+                    f"<b>{ms.get('initiative_name','')}</b> → {ms.get('name','')} | "
+                    f"Owner: {ms.get('owner','')} | {ms.get('overdue_days',0)}d overdue</div>",
+                    unsafe_allow_html=True)
+
+        if overdue_actions > 0:
+            st.markdown(
+                f"<div style='padding:10px 14px;background:#FFFBF0;"
+                f"border-left:4px solid #F5A623;border-radius:0 6px 6px 0;margin:4px 0'>"
+                f"⚠️ <b>{overdue_actions} branch action item(s)</b> overdue — "
+                f"review in SBU Performance → Action Plans.</div>",
+                unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown(
+            "<div style='padding:12px 16px;background:var(--color-background-secondary);"
+            "border-radius:8px;border:0.5px solid var(--color-border-tertiary)'>"
+            "<div style='font-weight:500;margin-bottom:6px'>🔍 Competitor Intelligence</div>"
+            "<div style='font-size:12px;color:var(--color-text-secondary)'>"
+            "Full Kenya banking industry analysis is available in the "
+            "<b>Competitor Intel</b> page — market position, watch list, "
+            "strategic gaps, and board brief. Upload the Industry Financial "
+            "Review Excel to activate."
+            "</div></div>",
+            unsafe_allow_html=True)
+
+        if double_risk:
+            st.markdown(
+                f"<div style='padding:10px 14px;background:#FFF0F0;"
+                f"border-left:4px solid #E24B4A;border-radius:0 6px 6px 0;margin:4px 0'>"
+                f"🔴 <b>Double-risk units: {', '.join(str(x) for x in double_risk)}</b> — "
+                f"low BSC AND stalled execution. Urgent review required.</div>",
+                unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 6 — BOARD PACK
+# ════════════════════════════════════════════════════════════════
+with dash_tabs[5]:
+    st.markdown("#### Board pack export")
+    st.caption("One-click snapshot of all executive metrics for board reporting.")
+
+    # Live preview
+    st.markdown("**Q1 2026 — Executive summary preview**")
+    preview_data = {
+        'Category': ['Financial','Financial','Financial','Financial','Financial',
+                     'People','People','People',
+                     'Execution','Execution','Execution',
+                     'Products','Products'],
+        'Metric':   ['Deposits YTD','Loans YTD','NFI YTD','DFS Revenue YTD','PBT YTD',
+                     'Total Staff','Avg BSC Score','At-risk staff',
+                     'Total Initiatives','Executing (G3)','Embedded (G5)',
+                     'Total Products','At-risk Products'],
+        'Value':    [fmt_num(dep_act,True), fmt_num(loan_act,True), fmt_num(nfi_act,True),
+                     fmt_num(dfs_act,True), fmt_num(pbt_act,True),
+                     str(total_staff), f"{avg_bsc:.2f}", str(at_risk),
+                     str(len(all_inits)), str(len(g3_inits)), str(len(g5_inits)),
+                     str(len(all_products)), str(len(at_risk_prods))],
+        'Target':   [fmt_num(dep_tgt,True), fmt_num(loan_tgt,True), fmt_num(nfi_tgt,True),
+                     fmt_num(dfs_tgt,True), fmt_num(pbt_tgt,True),
+                     '—','3.00','0',
+                     '—','—','—',
+                     '—','0'],
+        'Achievement': [f"{ach(dep_act,dep_tgt):.1f}%", f"{ach(loan_act,loan_tgt):.1f}%",
+                        f"{ach(nfi_act,nfi_tgt):.1f}%", f"{ach(dfs_act,dfs_tgt):.1f}%",
+                        f"{ach(pbt_act,pbt_tgt):.1f}%",
+                        '—',f"{avg_bsc/3*100:.0f}%",
+                        '—','—','—','—','—','—'],
+    }
+    prev_df = pd.DataFrame(preview_data)
+
+    def hl_cat(v):
+        if v == 'Financial': return 'background-color:var(--brand-light,#E8F5EE);color:var(--brand-primary,#006B3F);font-weight:500'
+        if v == 'People':    return 'background-color:#E6F1FB;color:#185FA5;font-weight:500'
+        if v == 'Execution': return 'background-color:#FAEEDA;color:#BA7517;font-weight:500'
+        if v == 'Products':  return 'background-color:#EEEDFE;color:#534AB7;font-weight:500'
+        return ''
+
+    st.dataframe(prev_df.style.map(hl_cat, subset=['Category']),
+                 use_container_width=True, hide_index=True)
+
+    if st.button("⬇️ Download board pack CSV", type="primary"):
+        board_rows = []
+        for kpi_name, act, tgt in [
+            ('Deposit Growth', dep_act, dep_tgt),
+            ('Loans (Disbursements + Book)', loan_act, loan_tgt),
+            ('Non-Funded Income', nfi_act, nfi_tgt),
+            ('DFS Revenue', dfs_act, dfs_tgt),
+            ('Profit Before Tax', pbt_act, pbt_tgt),
+            ('New Customers', cust_act, cust_tgt),
+        ]:
+            board_rows.append({
+                'Section':'Financial','Metric':kpi_name,
+                'YTD Actual':fmt_num(act),'Annual Target':fmt_num(tgt),
+                'Achievement':f"{ach(act,tgt):.1f}%",
+                'EOY Forecast':fmt_num(eoy_est(act)),
             })
-        init_df = pd.DataFrame(init_rows)
-        def hl_gate(v):
-            cfg = EXECUTE_GATES.get(v, {})
-            return f"background-color:{cfg.get('bg','')};color:{cfg.get('color','')}"
-        st.dataframe(
-            init_df.style.map(hl_gate, subset=['Gate']),
-            use_container_width=True, hide_index=True)
-    else:
-        st.info("No initiatives yet.")
-
-with st.expander("People performance — top 10 and bottom 10", expanded=False):
-    if len(perf_df):
-        pt1, pt2 = st.columns(2)
-        with pt1:
-            st.markdown("**Top 10 performers**")
-            top10 = perf_df.assign(_rank=perf_df['Overall_Rank'].astype(float)).nsmallest(10,'_rank')[
-                ['Staff Name','Role','Unit','Final_BSC_Score','Performance_Remark']].copy()
-            top10['Final_BSC_Score'] = top10['Final_BSC_Score'].apply(fmt_score)
-            st.dataframe(top10.style.map(highlight_performance, subset=['Performance_Remark']),
-                         use_container_width=True, hide_index=True)
-        with pt2:
-            st.markdown("**Bottom 10 — needs attention**")
-            bot10 = perf_df.assign(_rank=perf_df['Overall_Rank'].astype(float)).nlargest(10,'_rank')[
-                ['Staff Name','Role','Unit','Final_BSC_Score','Performance_Remark']].copy()
-            bot10['Final_BSC_Score'] = bot10['Final_BSC_Score'].apply(fmt_score)
-            st.dataframe(bot10.style.map(highlight_performance, subset=['Performance_Remark']),
-                         use_container_width=True, hide_index=True)
-
-# ── Board-pack download ───────────────────────────────────────
-st.markdown("---")
-st.markdown("### Board pack export")
-st.caption("Generate a single CSV snapshot of the executive view for board reporting.")
-if st.button("⬇️ Generate board pack snapshot", type="primary"):
-    board_rows = []
-    board_rows.append({'Section':'FINANCIAL PERFORMANCE','Metric':'','Value':'','Target':'','Achievement %':''})
-    for label, actual, target in [
-        ('Deposits',    dep_actual,  dep_target),
-        ('Loans',       loan_actual, loan_target),
-        ('NFI',         nfi_actual,  nfi_target),
-        ('PBT',         pbt_actual,  pbt_target),
-        ('Customers',   cust_actual, cust_target),
-    ]:
-        board_rows.append({
-            'Section': 'Financial',
-            'Metric':  label,
-            'Value':   fmt_num(actual),
-            'Target':  fmt_num(target),
-            'Achievement %': f"{ach(actual,target):.1f}%",
-        })
-    board_rows.append({'Section':'PEOPLE','Metric':'Avg BSC Score','Value':fmt_score(avg_bsc),'Target':'3.00','Achievement %':f"{avg_bsc/3*100:.0f}%"})
-    board_rows.append({'Section':'PEOPLE','Metric':'Exceeded target','Value':str(exceeded),'Target':'','Achievement %':f"{exceeded/max(1,total_staff)*100:.0f}%"})
-    board_rows.append({'Section':'PEOPLE','Metric':'At risk (<2.5)','Value':str(at_risk),'Target':'0','Achievement %':''})
-    board_rows.append({'Section':'EXECUTION','Metric':'Total initiatives','Value':str(len(all_inits)),'Target':'','Achievement %':''})
-    board_rows.append({'Section':'EXECUTION','Metric':'Embedded (G5)','Value':str(len(g5_inits)),'Target':'','Achievement %':''})
-    board_rows.append({'Section':'EXECUTION','Metric':'Critical escalations','Value':str(critical_esc),'Target':'0','Achievement %':''})
-    board_rows.append({'Section':'EXECUTION','Metric':'Milestone health','Value':f"{exec_health:.0f}%",'Target':'100%','Achievement %':''})
-
-    bp_df = pd.DataFrame(board_rows)
-    bp_csv = bp_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        "Download board pack CSV",
-        bp_csv,
-        f"A2Z_BoardPack_{now.strftime('%Y%m%d')}.csv",
-        "text/csv")
-
-
+        for metric, val, tgt in [
+            ('Total Staff', total_staff, '—'),
+            ('Avg BSC Score', f"{avg_bsc:.2f}", '3.00'),
+            ('Exceeded Target (≥3.1)', exceeded, '—'),
+            ('At Risk (<2.5)', at_risk, '0'),
+        ]:
+            board_rows.append({'Section':'People','Metric':metric,
+                                'YTD Actual':str(val),'Annual Target':tgt,
+                                'Achievement':'—','EOY Forecast':'—'})
+        for metric, val in [
+            ('Total Initiatives', len(all_inits)),
+            ('In Execution (G3)', len(g3_inits)),
+            ('Impact Tracking (G4)', len(g4_inits)),
+            ('Embedded (G5)', len(g5_inits)),
+            ('Critical Escalations', critical_esc),
+            ('Turnaround Initiatives', len(turnaround_inits)),
+        ]:
+            board_rows.append({'Section':'Execution','Metric':metric,
+                                'YTD Actual':str(val),'Annual Target':'—',
+                                'Achievement':'—','EOY Forecast':'—'})
+        for metric, val in [
+            ('Products Registered', len(all_products)),
+            ('Active Products', len(active_prods)),
+            ('In Pilot', len(pilot_prods)),
+            ('At Risk', len(at_risk_prods)),
+        ]:
+            board_rows.append({'Section':'Products','Metric':metric,
+                                'YTD Actual':str(val),'Annual Target':'—',
+                                'Achievement':'—','EOY Forecast':'—'})
+        bp_df = pd.DataFrame(board_rows)
+        bp_csv = bp_df.to_csv(index=False).encode('utf-8')
+        st.download_button("Download CSV", bp_csv,
+                           f"A2Z_BoardPack_{now.strftime('%Y%m%d')}.csv","text/csv")

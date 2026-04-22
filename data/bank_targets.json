@@ -1,0 +1,182 @@
+{
+  "PBT|2026": {
+    "target": 650000000000.0,
+    "buffer_pct": 0
+  },
+  "Total NFI|2026": {
+    "target": 130000000000.0,
+    "buffer_pct": 0
+  },
+  "Retail & MSME Deposit Growth|2026": {
+    "target": 400000000000.0,
+    "buffer_pct": 0
+  },
+  "Commercial Deposit Growth|2026": {
+    "target": 5000000000000.0,
+    "buffer_pct": 0
+  },
+  "CASA Ratio|2026": {
+    "target": 60.0,
+    "buffer_pct": 0
+  },
+  "Top 100 Customers Deposit|2026": {
+    "target": 10000000000.0,
+    "buffer_pct": 0
+  },
+  "Collection Throughput|2026": {
+    "target": 11.0,
+    "buffer_pct": 0
+  },
+  "Number of Business Borrowers|2026": {
+    "target": 5000.0,
+    "buffer_pct": 0
+  },
+  "Disbursements Retail Loans|2026": {
+    "target": 230000000000.0,
+    "buffer_pct": 0
+  },
+  "Disbursements MSME Loans|2026": {
+    "target": 2300000000000.0,
+    "buffer_pct": 0
+  },
+  "Disbursements Corporate Loans|2026": {
+    "target": 12000000000.0,
+    "buffer_pct": 0
+  },
+  "Loan Book Growth|2026": {
+    "target": 2500000000000.0,
+    "buffer_pct": 0
+  },
+  "NPL Ratio|2026": {
+    "target": 3.0,
+    "buffer_pct": 0
+  },
+  "PAR|2026": {
+    "target": 5.0,
+    "buffer_pct": 0
+  },
+  "Account Dormancy|2026": {
+    "target": 15.0,
+    "buffer_pct": 0
+  },
+  "Channel Dormancy|2026": {
+    "target": 20.0,
+    "buffer_pct": 0
+  },
+  "New Accounts|2026": {
+    "target": 229000.0,
+    "buffer_pct": 0
+  },
+  "CX Score|2026": {
+    "target": 4.0,
+    "buffer_pct": 0
+  },
+  "Compliance Score|2026": {
+    "target": 95.0,
+    "buffer_pct": 0
+  },
+  "Audit Score|2026": {
+    "target": 90.0,
+    "buffer_pct": 0
+  },
+  "Staff Productivity|2026": {
+    "target": 3.0,
+    "buffer_pct": 0
+  },
+  "Credit Approval Rate|2026": {
+    "target": 70.0,
+    "buffer_pct": 0
+  },
+  "Credit Rework Rate|2026": {
+    "target": 15.0,
+    "buffer_pct": 0
+  },
+  "Credit TAT \u2014 Express Lane|2026": {
+    "target": 3.0,
+    "buffer_pct": 0
+  },
+  "Credit TAT \u2014 Standard Lane|2026": {
+    "target": 10.0,
+    "buffer_pct": 0
+  },
+  "Credit TAT \u2014 Complex Lane|2026": {
+    "target": 21.0,
+    "buffer_pct": 0
+  },
+  "Credit Decline Rate|2026": {
+    "target": 20.0,
+    "buffer_pct": 0
+  },
+  "Loan Disbursement TAT|2026": {
+    "target": 5.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 Security Perfection|2026": {
+    "target": 80.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 Loan Documentation|2026": {
+    "target": 85.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 External Counsel|2026": {
+    "target": 75.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 Valuation|2026": {
+    "target": 80.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 Title Deed Custody|2026": {
+    "target": 90.0,
+    "buffer_pct": 0
+  },
+  "Legal TAT \u2014 Legal Opinion|2026": {
+    "target": 85.0,
+    "buffer_pct": 0
+  },
+  "Legal Overdue Rate|2026": {
+    "target": 10.0,
+    "buffer_pct": 0
+  },
+  "FD Ratification Volume|2026": {
+    "target": 10000000000.0,
+    "buffer_pct": 0
+  },
+  "FD Ratification TAT|2026": {
+    "target": 2.0,
+    "buffer_pct": 0
+  },
+  "FD Approval Rate|2026": {
+    "target": 70.0,
+    "buffer_pct": 0
+  },
+  "FD Rate Variance vs Market|2026": {
+    "target": 0.5,
+    "buffer_pct": 0
+  },
+  "Net Interest Margin|2026": {
+    "target": 7.5,
+    "buffer_pct": 0
+  },
+  "Compliance Case Clearance Rate|2026": {
+    "target": 75.0,
+    "buffer_pct": 0
+  },
+  "Compliance SLA \u2014 Critical Cases|2026": {
+    "target": 95.0,
+    "buffer_pct": 0
+  },
+  "Compliance SLA \u2014 High Risk Cases|2026": {
+    "target": 85.0,
+    "buffer_pct": 0
+  },
+  "Open Compliance Cases|2026": {
+    "target": 20.0,
+    "buffer_pct": 0
+  },
+  "Compliance Escalation Rate|2026": {
+    "target": 10.0,
+    "buffer_pct": 0
+  }
+}

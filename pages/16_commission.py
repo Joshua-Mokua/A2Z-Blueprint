@@ -6,15 +6,20 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
-from pages._shared import load_shared_state
+try:
+    from utils.core import get_fiscal_year as _gfy
+except: _gfy = lambda: _gfy()
 
+from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("commission")
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
 df_proc      = st.session_state.get("df_processed", pd.DataFrame())
 
 # ── COMMISSION TIERS ─────────────────────────────────────────────────
 COMMISSION_TIERS = {
-    "Loans Disbursement": [
+    "Disbursements Retail Loans": [
         {"min_pct": 0,   "max_pct": 50,  "rate": 0.0000, "label": "Below 50% — no commission"},
         {"min_pct": 50,  "max_pct": 70,  "rate": 0.0005, "label": "50–70% — 0.05% of disbursed"},
         {"min_pct": 70,  "max_pct": 90,  "rate": 0.0010, "label": "70–90% — 0.10% of disbursed"},
@@ -22,7 +27,7 @@ COMMISSION_TIERS = {
         {"min_pct": 100, "max_pct": 110, "rate": 0.0020, "label": "100–110% — 0.20% of disbursed"},
         {"min_pct": 110, "max_pct": 999, "rate": 0.0025, "label": ">110% — 0.25% of disbursed"},
     ],
-    "Deposit Growth": [
+    "Retail & MSME Deposit Growth": [
         {"min_pct": 0,   "max_pct": 50,  "rate": 0.0000, "label": "Below 50% — no commission"},
         {"min_pct": 50,  "max_pct": 70,  "rate": 0.0003, "label": "50–70% — 0.03%"},
         {"min_pct": 70,  "max_pct": 90,  "rate": 0.0005, "label": "70–90% — 0.05%"},
@@ -30,7 +35,7 @@ COMMISSION_TIERS = {
         {"min_pct": 100, "max_pct": 110, "rate": 0.0010, "label": "100–110% — 0.10%"},
         {"min_pct": 110, "max_pct": 999, "rate": 0.0015, "label": ">110% — 0.15%"},
     ],
-    "New Customer Acquisition": [
+    "New Accounts": [
         {"min_pct": 0,   "max_pct": 50,  "rate": 0,    "label": "Below 50% — no commission", "per_unit": 0},
         {"min_pct": 50,  "max_pct": 70,  "rate": 0,    "label": "50–70% — KES 200/customer",   "per_unit": 200},
         {"min_pct": 70,  "max_pct": 90,  "rate": 0,    "label": "70–90% — KES 350/customer",   "per_unit": 350},
@@ -38,7 +43,7 @@ COMMISSION_TIERS = {
         {"min_pct": 100, "max_pct": 110, "rate": 0,    "label": "100–110% — KES 750/customer", "per_unit": 750},
         {"min_pct": 110, "max_pct": 999, "rate": 0,    "label": ">110% — KES 1,000/customer",  "per_unit": 1000},
     ],
-    "DFS Revenue": [
+    "Collection Throughput": [
         {"min_pct": 0,   "max_pct": 50,  "rate": 0.00,  "label": "Below 50% — no commission"},
         {"min_pct": 50,  "max_pct": 100, "rate": 0.005, "label": "50–100% — 0.5% of DFS revenue"},
         {"min_pct": 100, "max_pct": 999, "rate": 0.010, "label": ">100% — 1.0% of DFS revenue"},
@@ -90,12 +95,41 @@ def compute_commission(kpi, actual, target, remark):
     return round(comm * mult, 2)
 
 # ── HEADER ───────────────────────────────────────────────────────────
+
 st.markdown(
-    "<div style='padding:14px 20px;background:#1D4D35;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Commission Model & Sales Rankings</div>"
-    "<div style='color:#9FE1CB;font-size:11px;margin-top:2px'>"
-    "Direct Sales Officers · Relationship Managers · Tier-based commissions · Leaderboard"
-    "</div></div>", unsafe_allow_html=True)
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>💰 Commission</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "RM incentives · Tier calculation</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>💰 Commission</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "RM incentives · Tier calculation · Payouts</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>💰 Commission</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "RM incentives · Tier calculation · Payouts</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>💰 Commission</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "RM incentives · Tier calculation · Payroll</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#1D4D35;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Commission Model & Sales Rankings</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Direct Sales Officers · Relationship Managers · Tier-based commissions · Leaderboard</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "💰 Commission calculator",
@@ -196,26 +230,42 @@ with tabs[0]:
                 total_comm = 0
                 comm_breakdown = []
 
+                # Try to get cascade targets for accuracy
+                _casc_inst_c = st.session_state.get("cascade_manager")
+                _staff_code_c = str(sr.get("Staff Code","") or "")
+                _casc_given_c = (_casc_inst_c.get_what_i_was_given(
+                    _staff_code_c, _gfy(), sel_staff) if _casc_inst_c else [])
+                _casc_tgt_map = {g["kpi"]: float(g["amount"]) for g in _casc_given_c}
+
                 for kpi, tiers in COMMISSION_TIERS.items():
-                    kdf = df_proc[(df_proc["Staff Name"]==sel_staff) & (df_proc["KPI"]==kpi)] if not df_proc.empty else pd.DataFrame()
-                    if len(kdf) == 0:
+                    kdf = (df_proc[(df_proc["Staff Name"]==sel_staff) & (df_proc["KPI"]==kpi)]
+                           if not df_proc.empty else pd.DataFrame())
+                    actual = float(kdf["YTD_Actual"].values[0]) if (len(kdf) and "YTD_Actual" in kdf.columns) else 0
+
+                    # Use cascade target if available, else KPI data target
+                    if kpi in _casc_tgt_map and _casc_tgt_map[kpi]:
+                        target = _casc_tgt_map[kpi]
+                        tgt_src = "📊 cascade"
+                    elif len(kdf):
+                        target = float(kdf["Annual Target"].values[0])
+                        tgt_src = "📁 uploaded"
+                    else:
                         continue
-                    actual = float(kdf["YTD_Actual"].values[0]) if "YTD_Actual" in kdf.columns else 0
-                    target = float(kdf["Annual Target"].values[0])
-                    pct    = actual/target*100 if target else 0
+
+                    if target == 0: continue
+                    pct    = actual/target*100
                     comm   = compute_commission(kpi, actual, target, remark)
                     total_comm += comm
-
                     tier_label = next((t["label"] for t in tiers
                                        if t["min_pct"]<=pct<t["max_pct"]), "—")
-
                     comm_breakdown.append({
-                        "KPI":           kpi,
-                        "Target":        fmt_num(target, True),
-                        "Actual":        fmt_num(actual, True),
-                        "Achievement":   f"{pct:.1f}%",
-                        "Rate applied":  tier_label,
-                        "Commission (KES)": f"{comm:,.0f}",
+                        "KPI":              kpi,
+                        "Target":           fmt_num(target, True),
+                        "Source":           tgt_src,
+                        "YTD Actual":       fmt_num(actual, True),
+                        "Achievement":      f"{pct:.1f}%",
+                        "Tier":             tier_label.split("—")[0].strip(),
+                        "Commission (KES)": f"KES {comm:,.0f}",
                     })
 
                 if comm_breakdown:
@@ -223,15 +273,16 @@ with tabs[0]:
                     st.dataframe(cbd_df, use_container_width=True, hide_index=True)
 
                     st.markdown(
-                        f"<div style='padding:14px 18px;background:#E8F5EE;"
+                        f"<div style='padding:14px 18px;background:var(--brand-light,#E8F5EE);"
                         f"border-radius:8px;text-align:center;margin-top:12px'>"
-                        f"<div style='font-size:28px;font-weight:700;color:#006B3F'>"
+                        f"<div style='font-size:28px;font-weight:700;color:var(--brand-primary,#006B3F)'>"
                         f"KES {total_comm:,.0f}</div>"
                         f"<div style='font-size:13px;color:#444;margin-top:4px'>"
                         f"Total commission earned (YTD) · {remark} · BSC {bsc:.2f}</div>"
                         f"</div>", unsafe_allow_html=True)
                 else:
-                    st.info("No commission-eligible KPIs found for this staff member.")
+                    st.info("No commission-eligible KPIs found for this staff member. "
+                            "Ensure cascade targets are set and BSC data is uploaded.")
 
 # ════════════════════════════════════════════════════════════════
 # TAB 2 — LEADERBOARD
@@ -265,10 +316,10 @@ with tabs[1]:
                 f"#{row['Rank']}</span> "
                 f"<b style='font-size:14px'>{row['Staff Name']}</b> "
                 f"<span style='color:#888;font-size:11px'>{row['Role']} · {row['Unit']}</span> "
-                f"<span style='background:{tier['color']};color:white;padding:2px 8px;"
+                f"<span style='background:{tier['color']};color:var(--color-background-primary);padding:2px 8px;"
                 f"border-radius:10px;font-size:10px'>{row['Tier']}</span></div>"
                 f"<div style='text-align:right'>"
-                f"<div style='font-size:16px;font-weight:700;color:#006B3F'>"
+                f"<div style='font-size:16px;font-weight:700;color:var(--brand-primary,#006B3F)'>"
                 f"KES {row['Total Commission']:,.0f}</div>"
                 f"<div style='font-size:10px;color:#888'>BSC {row['BSC Score']:.2f} · {row['Performance']}</div>"
                 f"</div></div>"
@@ -387,7 +438,7 @@ with tabs[4]:
             fig_tv = px.bar(_long, x="Staff Name", y="Value", color="Metric",
                              barmode="group",
                              title=f"{sel_kpi} — target vs actual",
-                             color_discrete_map={"Annual Target":"#CCCCCC","YTD_Actual":"#006B3F"})
+                             color_discrete_map={"Annual Target":"#CCCCCC","YTD_Actual":"var(--brand-primary,#006B3F)"})
             fig_tv.update_layout(height=320, xaxis_tickangle=-30,
                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_tv, use_container_width=True)
@@ -421,3 +472,57 @@ with tabs[4]:
             st.dataframe(disp_tv, use_container_width=True, hide_index=True)
         else:
             st.info(f"No {sel_kpi} data found for DSO/RM staff.")
+
+# ── Tier Calculator ───────────────────────────────────────────────
+with st.expander("🧮 Commission Tier Calculator", expanded=False):
+    st.markdown("**Compute commission for any BSC score and role:**")
+    _cc1,_cc2,_cc3 = st.columns(3)
+    _sim_score = _cc1.number_input("BSC Score", 1.0, 5.0, 3.5, 0.1, key="cc_score")
+    _sim_grade = _cc2.selectbox("Role Grade", ["G1","G2","G3","G4","G5","G6"], key="cc_grade", index=2)
+    _sim_base  = _cc3.number_input("Gross Salary (KES)", 30000.0, 500000.0, 80000.0, 5000.0, key="cc_base")
+    
+    _TIERS = {
+        "Exceeds Exceptional (≥4.5)":   (4.5, 0.25),
+        "Exceeds Expectations (4.0–4.4)":(4.0, 0.20),
+        "Meets Plus (3.5–3.9)":          (3.5, 0.15),
+        "Meets Expectations (3.0–3.4)":  (3.0, 0.10),
+        "Developing (2.5–2.9)":          (2.5, 0.05),
+        "Below Expectations (<2.5)":     (0.0, 0.00),
+    }
+    _tier_name = next((t for t,(mn,_) in _TIERS.items() if _sim_score>=mn), "Below Expectations")
+    _tier_pct  = next((p for _,(mn,p) in _TIERS.items() if _sim_score>=mn), 0)
+    _comm_amt  = round(_sim_base * _tier_pct, 0)
+    st.markdown(
+        f"**Result:** {_tier_name} — **{_tier_pct*100:.0f}% of gross salary** = **KES {_comm_amt:,.0f}**")
+    
+    st.markdown("**Tier schedule:**")
+    for tier,(min_score,pct) in _TIERS.items():
+        active = "→ **YOU**" if tier==_tier_name else ""
+        st.markdown(f"  {'🟢' if pct>=0.15 else '🟡' if pct>0 else '🔴'} "
+                    f"{tier}: **{pct*100:.0f}%** of salary {active}")
+
+# ── Manager team view ─────────────────────────────────────────────
+_is_manager = any(x in role.lower() for x in ("manager","director","head","chief","area"))
+if _is_manager or is_admin:
+    with st.expander("👥 My Team Commission Summary", expanded=False):
+        import pandas as _pd_tc
+        _comm_all = json.loads((DATA/"commission_records.json").read_text()) if (DATA/"commission_records.json").exists() else []
+        _scores_all = json.loads((DATA/"feb_2026_staff_scores.json").read_text()) if (DATA/"feb_2026_staff_scores.json").exists() else {}
+        
+        # Filter to unit if branch manager
+        _unit = ud.get("unit","")
+        if _unit and not is_admin:
+            _team_comm = [c for c in _comm_all if c.get("unit","")==_unit]
+        else:
+            _team_comm = _comm_all[:50]  # top 50 for HO managers
+        
+        if _team_comm:
+            _tc_rows = [{"Staff":c.get("staff_name","")[:22],"Tier":c.get("tier","—"),
+                          "BSC Score":c.get("bsc_score",0),"Commission (KES)":c.get("total_commission",0),
+                          "Status":c.get("status","Pending")}
+                         for c in sorted(_team_comm,key=lambda x:-x.get("total_commission",0))[:20]]
+            st.dataframe(_pd_tc.DataFrame(_tc_rows), use_container_width=True, hide_index=True)
+            _team_total = sum(c.get("total_commission",0) for c in _team_comm)
+            st.caption(f"Team total commission: KES {_team_total:,.0f}")
+        else:
+            st.info("No commission records found for your team.")

@@ -1,0 +1,6274 @@
+[
+  {
+    "id": "INI0001",
+    "name": "Digital Branch Productivity Programme",
+    "objective": "Increase branch staff productivity score from 3.14 to 3.5 by embedding digital tools and structured coaching across 94 branches.",
+    "category": "Impact Generation",
+    "workstream": "WS01 \u2014 Retail Banking",
+    "sub_workstream": "Branch Performance",
+    "io": "Veronica Mutai",
+    "io_backup": "",
+    "estimated_impact": 500000000,
+    "impact_kpis": [],
+    "tags": [
+      "productivity",
+      "digital",
+      "branches"
+    ],
+    "created_by": "Veronica Mutai",
+    "gate": "G5",
+    "gate_history": [
+      {
+        "gate": "G0",
+        "date": "2026-04-14",
+        "by": "Veronica Mutai",
+        "note": "Created"
+      },
+      {
+        "gate": "G1",
+        "date": "2026-04-14",
+        "by": "Nicholas Ndegwa",
+        "note": "All approved. "
+      },
+      {
+        "gate": "G2",
+        "date": "2026-04-14",
+        "by": "Yasmin Makokha",
+        "note": "All approved. "
+      },
+      {
+        "gate": "G3",
+        "date": "2026-04-14",
+        "by": "Yasmin Makokha",
+        "note": "All approved. "
+      },
+      {
+        "gate": "G4",
+        "date": "2026-04-14",
+        "by": "Yasmin Makokha",
+        "note": "All approved. "
+      },
+      {
+        "gate": "G5",
+        "date": "2026-04-14",
+        "by": "Yasmin Makokha",
+        "note": "All approved. "
+      }
+    ],
+    "approvals": {},
+    "business_case": {
+      "problem": "Branch staff avg BSC score 3.14, below 3.5 target",
+      "solution": "Digital coaching platform + weekly team huddles",
+      "cost_est": 15000000,
+      "benefit_est": 500000000,
+      "roi": "33x",
+      "timeline_months": 9,
+      "submitted_by": "Veronica Mutai",
+      "submitted_at": "2026-04-14"
+    },
+    "milestones": [
+      {
+        "id": "MS001",
+        "name": "Platform selection & procurement",
+        "type": "Implementation",
+        "owner": "Veronica Mutai",
+        "due_date": "2026-05-14",
+        "description": "",
+        "status": "Complete",
+        "confirmed": true,
+        "has_started": false,
+        "delay_reason": "",
+        "blockers": [],
+        "co_owners": [],
+        "progress_note": "Milestone achieved on schedule"
+      },
+      {
+        "id": "MS002",
+        "name": "Branch manager training rollout",
+        "type": "Implementation",
+        "owner": "Veronica Mutai",
+        "due_date": "2026-06-13",
+        "description": "",
+        "status": "Complete",
+        "confirmed": true,
+        "has_started": false,
+        "delay_reason": "",
+        "blockers": [],
+        "co_owners": [],
+        "progress_note": "Milestone achieved on schedule"
+      },
+      {
+        "id": "MS003",
+        "name": "Pilot \u2014 10 branches",
+        "type": "Health Check",
+        "owner": "Veronica Mutai",
+        "due_date": "2026-06-28",
+        "description": "",
+        "status": "Complete",
+        "confirmed": true,
+        "has_started": false,
+        "delay_reason": "",
+        "blockers": [],
+        "co_owners": [],
+        "progress_note": "Milestone achieved on schedule"
+      },
+      {
+        "id": "MS004",
+        "name": "Full rollout \u2014 84 branches",
+        "type": "Implementation",
+        "owner": "Veronica Mutai",
+        "due_date": "2026-08-12",
+        "description": "",
+        "status": "Complete",
+        "confirmed": true,
+        "has_started": false,
+        "delay_reason": "",
+        "blockers": [],
+        "co_owners": [],
+        "progress_note": "Milestone achieved on schedule"
+      },
+      {
+        "id": "MS005",
+        "name": "KPIs hit: avg score \u22653.5",
+        "type": "Money Step",
+        "owner": "Veronica Mutai",
+        "due_date": "2026-09-11",
+        "description": "",
+        "status": "Complete",
+        "confirmed": true,
+        "has_started": false,
+        "delay_reason": "",
+        "blockers": [],
+        "co_owners": [],
+        "progress_note": "Milestone achieved on schedule"
+      }
+    ],
+    "milestone_confirmations": {
+      "MS001": {
+        "Veronica Mutai": true
+      },
+      "MS002": {
+        "Veronica Mutai": true
+      },
+      "MS003": {
+        "Veronica Mutai": true
+      },
+      "MS004": {
+        "Veronica Mutai": true
+      },
+      "MS005": {
+        "Veronica Mutai": true
+      }
+    },
+    "monthly_impacts": [
+      {
+        "month": "Jan 2026",
+        "kpi": "Staff Productivity",
+        "target": 3.5,
+        "actual": 2.9,
+        "note": "Tracked monthly",
+        "recorded_at": "2026-04-14"
+      },
+      {
+        "month": "Feb 2026",
+        "kpi": "Staff Productivity",
+        "target": 3.5,
+        "actual": 3.2,
+        "note": "Tracked monthly",
+        "recorded_at": "2026-04-14"
+      },
+      {
+        "month": "Mar 2026",
+        "kpi": "Staff Productivity",
+        "target": 3.5,
+        "actual": 3.6,
+        "note": "Tracked monthly",
+        "recorded_at": "2026-04-14"
+      }
+    ],
+    "impact_kpis_tracked": [],
+    "created_at": "2026-04-14T02:42:41.177153",
+    "updated_at": "2026-04-14T02:42:41.177156",
+    "status": "Active"
+  },
+  {
+    "id": "INI0002",
+    "name": "Digital Onboarding Platform",
+    "workstream": "WS06",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Digital Onboarding Platform",
+    "start_date": "2025-07-03",
+    "target_date": "2026-07-12",
+    "budget": 158000000,
+    "spent": 5000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-07-03",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate in progress",
+        "budget_approved": 7000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 83000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300115",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0003",
+    "name": "Mobile Banking Enhancement",
+    "workstream": "WS02",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Mobile Banking Enhancement",
+    "start_date": "2025-07-30",
+    "target_date": "2026-07-08",
+    "budget": 106000000,
+    "spent": 6000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-30",
+        "approver": "Alex Mwenda",
+        "notes": "Concept gate passed",
+        "budget_approved": 44000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-08-24",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 21000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 55000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300017",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0004",
+    "name": "Branch Network Expansion",
+    "workstream": "WS08",
+    "owner_code": "300005",
+    "owner": "Gregory Chirchir",
+    "owner_role": "Chief Credit Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Branch Network Expansion",
+    "start_date": "2026-01-04",
+    "target_date": "2026-09-01",
+    "budget": 28000000,
+    "spent": 12000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-01-04",
+        "approver": "Stella Kithinji",
+        "notes": "Concept gate passed",
+        "budget_approved": 46000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-02-01",
+        "approver": "Gregory Chirchir",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 2000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-02-15",
+        "approver": "Mary Waweru",
+        "notes": "Design gate in progress",
+        "budget_approved": 30000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 24000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0005",
+    "name": "Credit Scoring Engine",
+    "workstream": "WS10",
+    "owner_code": "300007",
+    "owner": "Festus Njenga",
+    "owner_role": "Chief Information Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Credit Scoring Engine",
+    "start_date": "2025-07-15",
+    "target_date": "2026-09-02",
+    "budget": 125000000,
+    "spent": 8000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-15",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 2000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-08-12",
+        "approver": "Yasmin Makokha",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 50000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-12",
+        "approver": "Alex Mwenda",
+        "notes": "Design gate passed",
+        "budget_approved": 4000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-10-01",
+        "approver": "Lorna Matheka",
+        "notes": "Development gate in progress",
+        "budget_approved": 7000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 39000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300013",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0006",
+    "name": "Treasury Management System",
+    "workstream": "WS09",
+    "owner_code": "300008",
+    "owner": "Grace Makokha",
+    "owner_role": "Chief Operating Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Treasury Management System",
+    "start_date": "2025-11-09",
+    "target_date": "2026-05-18",
+    "budget": 13000000,
+    "spent": 10000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-11-09",
+        "approver": "Festus Njenga",
+        "notes": "Concept gate passed",
+        "budget_approved": 43000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-11-28",
+        "approver": "Lilian Murithi",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 42000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-12-31",
+        "approver": "Stella Kithinji",
+        "notes": "Design gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-01-14",
+        "approver": "Festus Njenga",
+        "notes": "Development gate passed",
+        "budget_approved": 13000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-01-24",
+        "approver": "Alex Mwenda",
+        "notes": "Testing gate in progress",
+        "budget_approved": 18000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 76000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0007",
+    "name": "Compliance Automation",
+    "workstream": "WS07",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Compliance Automation",
+    "start_date": "2026-02-28",
+    "target_date": "2026-06-09",
+    "budget": 54000000,
+    "spent": 24000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-02-28",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate passed",
+        "budget_approved": 30000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-03-13",
+        "approver": "Grace Makokha",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 45000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-04-21",
+        "approver": "Gregory Chirchir",
+        "notes": "Design gate passed",
+        "budget_approved": 29000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-04-14",
+        "approver": "Festus Njenga",
+        "notes": "Development gate passed",
+        "budget_approved": 47000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2026-06-08",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Testing gate passed",
+        "budget_approved": 42000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2026-05-29",
+        "approver": "Grace Makokha",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 24000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 67000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Mark Charo",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0008",
+    "name": "Customer Experience Programme",
+    "workstream": "WS02",
+    "owner_code": "300009",
+    "owner": "Lilian Murithi",
+    "owner_role": "Chief Human Resource Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Customer Experience Programme",
+    "start_date": "2025-12-06",
+    "target_date": "2026-05-27",
+    "budget": 197000000,
+    "spent": 5000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-12-06",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Concept gate in progress",
+        "budget_approved": 40000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 95000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300003",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0009",
+    "name": "Trade Finance Digitalisation",
+    "workstream": "WS03",
+    "owner_code": "300008",
+    "owner": "Grace Makokha",
+    "owner_role": "Chief Operating Officer",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Trade Finance Digitalisation",
+    "start_date": "2025-11-23",
+    "target_date": "2026-07-29",
+    "budget": 26000000,
+    "spent": 8000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-11-23",
+        "approver": "Mark Charo",
+        "notes": "Concept gate passed",
+        "budget_approved": 9000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-12-22",
+        "approver": "Stella Kithinji",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 33000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 27000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0010",
+    "name": "SME Banking Growth Initiative",
+    "workstream": "WS01",
+    "owner_code": "300007",
+    "owner": "Festus Njenga",
+    "owner_role": "Chief Information Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: SME Banking Growth Initiative",
+    "start_date": "2026-01-22",
+    "target_date": "2026-09-14",
+    "budget": 88000000,
+    "spent": 9000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-01-22",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Concept gate passed",
+        "budget_approved": 4000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-02-12",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 23000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-02-11",
+        "approver": "William Mwanake",
+        "notes": "Design gate in progress",
+        "budget_approved": 33000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 51000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300008",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Mark Charo",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0011",
+    "name": "Bancassurance Scale-Up",
+    "workstream": "WS03",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Bancassurance Scale-Up",
+    "start_date": "2025-12-29",
+    "target_date": "2026-05-24",
+    "budget": 55000000,
+    "spent": 8000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-12-29",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 14000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-01-21",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 22000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-02-15",
+        "approver": "Mark Charo",
+        "notes": "Design gate passed",
+        "budget_approved": 15000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2026-02-03",
+        "approver": "Lilian Murithi",
+        "notes": "Development gate in progress",
+        "budget_approved": 26000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 92000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300008",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0012",
+    "name": "Data Analytics Centre",
+    "workstream": "WS08",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Data Analytics Centre",
+    "start_date": "2026-03-07",
+    "target_date": "2026-06-05",
+    "budget": 103000000,
+    "spent": 15000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-03-07",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-03-23",
+        "approver": "Thomas Mungai",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-04-04",
+        "approver": "Emmanuel Kuria",
+        "notes": "Design gate passed",
+        "budget_approved": 43000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-04-21",
+        "approver": "Festus Njenga",
+        "notes": "Development gate passed",
+        "budget_approved": 18000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-06-07",
+        "approver": "Lilian Murithi",
+        "notes": "Testing gate in progress",
+        "budget_approved": 27000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 54000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300005",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Festus Njenga",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0013",
+    "name": "Cybersecurity Upgrade",
+    "workstream": "WS08",
+    "owner_code": "300005",
+    "owner": "Gregory Chirchir",
+    "owner_role": "Chief Credit Officer",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Cybersecurity Upgrade",
+    "start_date": "2025-12-17",
+    "target_date": "2026-08-28",
+    "budget": 144000000,
+    "spent": 12000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-12-17",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-01-10",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-02-07",
+        "approver": "Thomas Mungai",
+        "notes": "Design gate passed",
+        "budget_approved": 18000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-01-25",
+        "approver": "Alex Mwenda",
+        "notes": "Development gate passed",
+        "budget_approved": 14000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2026-02-23",
+        "approver": "William Mwanake",
+        "notes": "Testing gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2026-04-16",
+        "approver": "Lorna Matheka",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 22000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 55000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0014",
+    "name": "Green Finance Products",
+    "workstream": "WS02",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Green Finance Products",
+    "start_date": "2025-10-25",
+    "target_date": "2026-07-09",
+    "budget": 150000000,
+    "spent": 3000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-10-25",
+        "approver": "Thomas Mungai",
+        "notes": "Concept gate in progress",
+        "budget_approved": 37000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 95000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0015",
+    "name": "Agency Banking Rollout",
+    "workstream": "WS11",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Agency Banking Rollout",
+    "start_date": "2026-02-15",
+    "target_date": "2026-09-22",
+    "budget": 85000000,
+    "spent": 6000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-02-15",
+        "approver": "Stella Kithinji",
+        "notes": "Concept gate passed",
+        "budget_approved": 12000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2026-03-17",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 7000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 47000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300003",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0016",
+    "name": "Islamic Finance Window",
+    "workstream": "WS07",
+    "owner_code": "300005",
+    "owner": "Gregory Chirchir",
+    "owner_role": "Chief Credit Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Islamic Finance Window",
+    "start_date": "2026-03-10",
+    "target_date": "2026-10-10",
+    "budget": 94000000,
+    "spent": 9000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-03-10",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Concept gate passed",
+        "budget_approved": 16000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-03-20",
+        "approver": "Gregory Chirchir",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 8000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-04-05",
+        "approver": "Lorna Matheka",
+        "notes": "Design gate in progress",
+        "budget_approved": 36000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 87000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0017",
+    "name": "Diaspora Banking Service",
+    "workstream": "WS08",
+    "owner_code": "300010",
+    "owner": "Mark Charo",
+    "owner_role": "Company Secretary and Chief Legal Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Diaspora Banking Service",
+    "start_date": "2025-08-11",
+    "target_date": "2026-09-04",
+    "budget": 11000000,
+    "spent": 12000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-11",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 24000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-09-06",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 17000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-09-24",
+        "approver": "Gregory Chirchir",
+        "notes": "Design gate passed",
+        "budget_approved": 23000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-09-13",
+        "approver": "Stella Kithinji",
+        "notes": "Development gate in progress",
+        "budget_approved": 46000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 47000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300005",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Mary Waweru",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0018",
+    "name": "Operational Excellence Programme",
+    "workstream": "WS01",
+    "owner_code": "300010",
+    "owner": "Mark Charo",
+    "owner_role": "Company Secretary and Chief Legal Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Operational Excellence Programme",
+    "start_date": "2025-09-23",
+    "target_date": "2026-08-01",
+    "budget": 12000000,
+    "spent": 20000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-09-23",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 4000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-10-06",
+        "approver": "Emmanuel Kuria",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-19",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Design gate passed",
+        "budget_approved": 3000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-11-04",
+        "approver": "Lilian Murithi",
+        "notes": "Development gate passed",
+        "budget_approved": 23000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-01-17",
+        "approver": "Lorna Matheka",
+        "notes": "Testing gate in progress",
+        "budget_approved": 42000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 55000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0019",
+    "name": "HR Digital Transformation",
+    "workstream": "WS01",
+    "owner_code": "300009",
+    "owner": "Lilian Murithi",
+    "owner_role": "Chief Human Resource Officer",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: HR Digital Transformation",
+    "start_date": "2025-08-26",
+    "target_date": "2026-10-04",
+    "budget": 14000000,
+    "spent": 30000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-26",
+        "approver": "Thomas Mungai",
+        "notes": "Concept gate passed",
+        "budget_approved": 10000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-09-12",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 2000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-01",
+        "approver": "Lilian Murithi",
+        "notes": "Design gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-11-03",
+        "approver": "Gregory Chirchir",
+        "notes": "Development gate passed",
+        "budget_approved": 21000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2025-10-21",
+        "approver": "Lorna Matheka",
+        "notes": "Testing gate passed",
+        "budget_approved": 38000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2025-10-25",
+        "approver": "Alex Mwenda",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 12000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 53000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300001",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "William Mwanake",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0020",
+    "name": "Supply Chain Finance Product",
+    "workstream": "WS11",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Supply Chain Finance Product",
+    "start_date": "2025-06-30",
+    "target_date": "2026-08-16",
+    "budget": 64000000,
+    "spent": 5000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-06-30",
+        "approver": "Stella Kithinji",
+        "notes": "Concept gate in progress",
+        "budget_approved": 26000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 53000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0021",
+    "name": "Real Estate Finance Growth",
+    "workstream": "WS08",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Real Estate Finance Growth",
+    "start_date": "2025-10-09",
+    "target_date": "2026-05-17",
+    "budget": 95000000,
+    "spent": 10000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-09",
+        "approver": "Emmanuel Kuria",
+        "notes": "Concept gate passed",
+        "budget_approved": 41000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-11-01",
+        "approver": "Emmanuel Kuria",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 32000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 14000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0022",
+    "name": "Digital Onboarding Platform",
+    "workstream": "WS06",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Digital Onboarding Platform",
+    "start_date": "2025-07-03",
+    "target_date": "2026-10-03",
+    "budget": 192000000,
+    "spent": 12000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-03",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 7000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-20",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2025-08-26",
+        "approver": "Festus Njenga",
+        "notes": "Design gate in progress",
+        "budget_approved": 37000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 40000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300010",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0023",
+    "name": "Mobile Banking Enhancement",
+    "workstream": "WS02",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Mobile Banking Enhancement",
+    "start_date": "2025-07-30",
+    "target_date": "2026-09-24",
+    "budget": 168000000,
+    "spent": 4000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-30",
+        "approver": "Alex Mwenda",
+        "notes": "Concept gate passed",
+        "budget_approved": 44000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-08-24",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 21000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-31",
+        "approver": "Festus Njenga",
+        "notes": "Design gate passed",
+        "budget_approved": 17000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-10-01",
+        "approver": "Mary Waweru",
+        "notes": "Development gate in progress",
+        "budget_approved": 25000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 21000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300005",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0024",
+    "name": "Branch Network Expansion",
+    "workstream": "WS06",
+    "owner_code": "300001",
+    "owner": "William Mwanake",
+    "owner_role": "Chief Executive & Managing Director",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Branch Network Expansion",
+    "start_date": "2025-09-12",
+    "target_date": "2026-09-27",
+    "budget": 71000000,
+    "spent": 20000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-09-12",
+        "approver": "Festus Njenga",
+        "notes": "Concept gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-10-04",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 36000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-11-01",
+        "approver": "Alex Mwenda",
+        "notes": "Design gate passed",
+        "budget_approved": 8000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-11-20",
+        "approver": "Lilian Murithi",
+        "notes": "Development gate passed",
+        "budget_approved": 49000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-01-06",
+        "approver": "Grace Makokha",
+        "notes": "Testing gate in progress",
+        "budget_approved": 26000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 75000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300010",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0025",
+    "name": "Credit Scoring Engine",
+    "workstream": "WS01",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Credit Scoring Engine",
+    "start_date": "2025-06-23",
+    "target_date": "2026-08-02",
+    "budget": 145000000,
+    "spent": 30000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-06-23",
+        "approver": "Stella Kithinji",
+        "notes": "Concept gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-16",
+        "approver": "Grace Makokha",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 10000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-12",
+        "approver": "Yasmin Makokha",
+        "notes": "Design gate passed",
+        "budget_approved": 8000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-09-21",
+        "approver": "Stella Kithinji",
+        "notes": "Development gate passed",
+        "budget_approved": 30000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2025-10-01",
+        "approver": "Stella Kithinji",
+        "notes": "Testing gate passed",
+        "budget_approved": 35000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2025-09-21",
+        "approver": "Lilian Murithi",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 26000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 61000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300004",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0026",
+    "name": "Treasury Management System",
+    "workstream": "WS09",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Treasury Management System",
+    "start_date": "2025-07-10",
+    "target_date": "2026-09-17",
+    "budget": 124000000,
+    "spent": 5000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-07-10",
+        "approver": "Yasmin Makokha",
+        "notes": "Concept gate in progress",
+        "budget_approved": 17000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 65000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300222",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0027",
+    "name": "Compliance Automation",
+    "workstream": "WS02",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Compliance Automation",
+    "start_date": "2025-08-05",
+    "target_date": "2026-09-15",
+    "budget": 21000000,
+    "spent": 6000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-05",
+        "approver": "Gregory Chirchir",
+        "notes": "Concept gate passed",
+        "budget_approved": 29000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-08-20",
+        "approver": "Festus Njenga",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 47000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 57000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300004",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Festus Njenga",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0028",
+    "name": "Customer Experience Programme",
+    "workstream": "WS08",
+    "owner_code": "300003",
+    "owner": "Emmanuel Kuria",
+    "owner_role": "Chief Commercial Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Customer Experience Programme",
+    "start_date": "2026-03-10",
+    "target_date": "2026-07-18",
+    "budget": 35000000,
+    "spent": 15000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-03-10",
+        "approver": "William Mwanake",
+        "notes": "Concept gate passed",
+        "budget_approved": 29000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-04-07",
+        "approver": "Lilian Murithi",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-05-07",
+        "approver": "Thomas Mungai",
+        "notes": "Design gate in progress",
+        "budget_approved": 13000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 79000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300013",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0029",
+    "name": "Trade Finance Digitalisation",
+    "workstream": "WS10",
+    "owner_code": "300010",
+    "owner": "Mark Charo",
+    "owner_role": "Company Secretary and Chief Legal Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Trade Finance Digitalisation",
+    "start_date": "2025-07-09",
+    "target_date": "2026-06-25",
+    "budget": 39000000,
+    "spent": 20000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-09",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 15000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-08-03",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 9000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-09-05",
+        "approver": "Stella Kithinji",
+        "notes": "Design gate passed",
+        "budget_approved": 33000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-09-04",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Development gate in progress",
+        "budget_approved": 27000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 74000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Festus Njenga",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0030",
+    "name": "SME Banking Growth Initiative",
+    "workstream": "WS01",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: SME Banking Growth Initiative",
+    "start_date": "2025-09-21",
+    "target_date": "2026-10-09",
+    "budget": 163000000,
+    "spent": 10000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-09-21",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate passed",
+        "budget_approved": 50000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-10-01",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 33000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-11-10",
+        "approver": "Mary Waweru",
+        "notes": "Design gate passed",
+        "budget_approved": 44000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-11-17",
+        "approver": "Grace Makokha",
+        "notes": "Development gate passed",
+        "budget_approved": 21000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2025-11-12",
+        "approver": "Grace Makokha",
+        "notes": "Testing gate in progress",
+        "budget_approved": 30000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 85000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0031",
+    "name": "Bancassurance Scale-Up",
+    "workstream": "WS02",
+    "owner_code": "300013",
+    "owner": "Lorna Matheka",
+    "owner_role": "Head Of Women Banking",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Bancassurance Scale-Up",
+    "start_date": "2025-08-25",
+    "target_date": "2026-09-28",
+    "budget": 60000000,
+    "spent": 30000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-25",
+        "approver": "Yasmin Makokha",
+        "notes": "Concept gate passed",
+        "budget_approved": 42000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-09-09",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 42000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-18",
+        "approver": "Alex Mwenda",
+        "notes": "Design gate passed",
+        "budget_approved": 4000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-11-05",
+        "approver": "Alex Mwenda",
+        "notes": "Development gate passed",
+        "budget_approved": 49000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2025-12-23",
+        "approver": "Yasmin Makokha",
+        "notes": "Testing gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2025-10-14",
+        "approver": "Emmanuel Kuria",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 42000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 30000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0032",
+    "name": "Data Analytics Centre",
+    "workstream": "WS07",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Data Analytics Centre",
+    "start_date": "2025-10-12",
+    "target_date": "2026-07-22",
+    "budget": 123000000,
+    "spent": 4000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-10-12",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate in progress",
+        "budget_approved": 12000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 46000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300003",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0033",
+    "name": "Cybersecurity Upgrade",
+    "workstream": "WS02",
+    "owner_code": "300005",
+    "owner": "Gregory Chirchir",
+    "owner_role": "Chief Credit Officer",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Cybersecurity Upgrade",
+    "start_date": "2025-11-28",
+    "target_date": "2026-08-28",
+    "budget": 144000000,
+    "spent": 4000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-11-28",
+        "approver": "William Mwanake",
+        "notes": "Concept gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-12-22",
+        "approver": "Lorna Matheka",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 22000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 55000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0034",
+    "name": "Green Finance Products",
+    "workstream": "WS02",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Green Finance Products",
+    "start_date": "2025-10-25",
+    "target_date": "2026-10-05",
+    "budget": 38000000,
+    "spent": 3000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-25",
+        "approver": "Thomas Mungai",
+        "notes": "Concept gate passed",
+        "budget_approved": 37000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-11-10",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 19000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2025-12-20",
+        "approver": "Gregory Chirchir",
+        "notes": "Design gate in progress",
+        "budget_approved": 43000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 22000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300003",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0035",
+    "name": "Agency Banking Rollout",
+    "workstream": "WS02",
+    "owner_code": "300013",
+    "owner": "Lorna Matheka",
+    "owner_role": "Head Of Women Banking",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Agency Banking Rollout",
+    "start_date": "2025-07-01",
+    "target_date": "2026-07-20",
+    "budget": 111000000,
+    "spent": 4000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-01",
+        "approver": "Gregory Chirchir",
+        "notes": "Concept gate passed",
+        "budget_approved": 38000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-13",
+        "approver": "Gregory Chirchir",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 21000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-07-31",
+        "approver": "Gregory Chirchir",
+        "notes": "Design gate passed",
+        "budget_approved": 17000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-08-06",
+        "approver": "William Mwanake",
+        "notes": "Development gate in progress",
+        "budget_approved": 27000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 22000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300001",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0036",
+    "name": "Islamic Finance Window",
+    "workstream": "WS06",
+    "owner_code": "300010",
+    "owner": "Mark Charo",
+    "owner_role": "Company Secretary and Chief Legal Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Islamic Finance Window",
+    "start_date": "2025-10-07",
+    "target_date": "2026-06-15",
+    "budget": 180000000,
+    "spent": 15000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-07",
+        "approver": "Mark Charo",
+        "notes": "Concept gate passed",
+        "budget_approved": 41000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-11-06",
+        "approver": "Stella Kithinji",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-29",
+        "approver": "Festus Njenga",
+        "notes": "Design gate passed",
+        "budget_approved": 21000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-01-02",
+        "approver": "Yasmin Makokha",
+        "notes": "Development gate passed",
+        "budget_approved": 39000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-01-11",
+        "approver": "Festus Njenga",
+        "notes": "Testing gate in progress",
+        "budget_approved": 44000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 59000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300222",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0037",
+    "name": "Diaspora Banking Service",
+    "workstream": "WS06",
+    "owner_code": "300017",
+    "owner": "Stella Kithinji",
+    "owner_role": "Head Of Corporates & Trade Finance",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Diaspora Banking Service",
+    "start_date": "2025-10-20",
+    "target_date": "2026-06-17",
+    "budget": 138000000,
+    "spent": 18000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-20",
+        "approver": "Gregory Chirchir",
+        "notes": "Concept gate passed",
+        "budget_approved": 50000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-11-12",
+        "approver": "Mary Waweru",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 38000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-11-09",
+        "approver": "Lilian Murithi",
+        "notes": "Design gate passed",
+        "budget_approved": 22000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-12-07",
+        "approver": "Lilian Murithi",
+        "notes": "Development gate passed",
+        "budget_approved": 4000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2025-12-11",
+        "approver": "Emmanuel Kuria",
+        "notes": "Testing gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2025-12-24",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 3000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 13000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300010",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0038",
+    "name": "Operational Excellence Programme",
+    "workstream": "WS03",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Operational Excellence Programme",
+    "start_date": "2025-12-14",
+    "target_date": "2026-10-01",
+    "budget": 180000000,
+    "spent": 5000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-12-14",
+        "approver": "William Mwanake",
+        "notes": "Concept gate in progress",
+        "budget_approved": 43000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 42000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300004",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0039",
+    "name": "HR Digital Transformation",
+    "workstream": "WS05",
+    "owner_code": "300007",
+    "owner": "Festus Njenga",
+    "owner_role": "Chief Information Officer",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: HR Digital Transformation",
+    "start_date": "2025-10-07",
+    "target_date": "2026-10-04",
+    "budget": 14000000,
+    "spent": 10000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-07",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 38000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-10-19",
+        "approver": "Alex Mwenda",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 12000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 53000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300001",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "William Mwanake",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0040",
+    "name": "Supply Chain Finance Product",
+    "workstream": "WS11",
+    "owner_code": "300004",
+    "owner": "Yasmin Makokha",
+    "owner_role": "Chief Financial Officer",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Supply Chain Finance Product",
+    "start_date": "2025-06-30",
+    "target_date": "2026-08-11",
+    "budget": 56000000,
+    "spent": 9000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-06-30",
+        "approver": "Stella Kithinji",
+        "notes": "Concept gate passed",
+        "budget_approved": 26000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-21",
+        "approver": "Thomas Mungai",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 15000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2025-08-23",
+        "approver": "Alex Mwenda",
+        "notes": "Design gate in progress",
+        "budget_approved": 18000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 68000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0041",
+    "name": "Real Estate Finance Growth",
+    "workstream": "WS03",
+    "owner_code": "300007",
+    "owner": "Festus Njenga",
+    "owner_role": "Chief Information Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Real Estate Finance Growth",
+    "start_date": "2025-07-12",
+    "target_date": "2026-07-22",
+    "budget": 40000000,
+    "spent": 4000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-12",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-08-04",
+        "approver": "Thomas Mungai",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 3000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-09-10",
+        "approver": "Emmanuel Kuria",
+        "notes": "Design gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-09-07",
+        "approver": "Mary Waweru",
+        "notes": "Development gate in progress",
+        "budget_approved": 35000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 78000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300222",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Mark Charo",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0042",
+    "name": "Digital Onboarding Platform",
+    "workstream": "WS06",
+    "owner_code": "300002",
+    "owner": "Nicholas Ndegwa",
+    "owner_role": "Chief Retail Banking Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Digital Onboarding Platform",
+    "start_date": "2025-07-03",
+    "target_date": "2026-10-13",
+    "budget": 117000000,
+    "spent": 10000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-03",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 7000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-20",
+        "approver": "Mark Charo",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-26",
+        "approver": "Festus Njenga",
+        "notes": "Design gate passed",
+        "budget_approved": 37000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-09-22",
+        "approver": "Alex Mwenda",
+        "notes": "Development gate passed",
+        "budget_approved": 47000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2025-10-11",
+        "approver": "Thomas Mungai",
+        "notes": "Testing gate in progress",
+        "budget_approved": 50000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 88000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0043",
+    "name": "Mobile Banking Enhancement",
+    "workstream": "WS01",
+    "owner_code": "300008",
+    "owner": "Grace Makokha",
+    "owner_role": "Chief Operating Officer",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Mobile Banking Enhancement",
+    "start_date": "2025-07-09",
+    "target_date": "2026-09-10",
+    "budget": 41000000,
+    "spent": 30000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-09",
+        "approver": "Yasmin Makokha",
+        "notes": "Concept gate passed",
+        "budget_approved": 26000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-07-27",
+        "approver": "Mary Waweru",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 23000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-22",
+        "approver": "Stella Kithinji",
+        "notes": "Design gate passed",
+        "budget_approved": 33000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-10-07",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Development gate passed",
+        "budget_approved": 47000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2025-09-27",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Testing gate passed",
+        "budget_approved": 36000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2025-11-21",
+        "approver": "Gregory Chirchir",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 19000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 13000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Nicholas Ndegwa",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0044",
+    "name": "Branch Network Expansion",
+    "workstream": "WS02",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Branch Network Expansion",
+    "start_date": "2025-08-12",
+    "target_date": "2026-09-18",
+    "budget": 106000000,
+    "spent": 5000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-08-12",
+        "approver": "Thomas Mungai",
+        "notes": "Concept gate in progress",
+        "budget_approved": 49000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 63000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "William Mwanake",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0045",
+    "name": "Credit Scoring Engine",
+    "workstream": "WS09",
+    "owner_code": "300017",
+    "owner": "Stella Kithinji",
+    "owner_role": "Head Of Corporates & Trade Finance",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Credit Scoring Engine",
+    "start_date": "2026-01-24",
+    "target_date": "2026-06-16",
+    "budget": 165000000,
+    "spent": 8000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-01-24",
+        "approver": "Festus Njenga",
+        "notes": "Concept gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2026-02-07",
+        "approver": "Grace Makokha",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 15000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 79000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0046",
+    "name": "Treasury Management System",
+    "workstream": "WS08",
+    "owner_code": "300017",
+    "owner": "Stella Kithinji",
+    "owner_role": "Head Of Corporates & Trade Finance",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Treasury Management System",
+    "start_date": "2025-08-24",
+    "target_date": "2026-09-10",
+    "budget": 138000000,
+    "spent": 12000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-24",
+        "approver": "Yasmin Makokha",
+        "notes": "Concept gate passed",
+        "budget_approved": 19000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-09-11",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 3000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2025-09-21",
+        "approver": "Lorna Matheka",
+        "notes": "Design gate in progress",
+        "budget_approved": 39000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 35000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300017",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0047",
+    "name": "Compliance Automation",
+    "workstream": "WS09",
+    "owner_code": "300007",
+    "owner": "Festus Njenga",
+    "owner_role": "Chief Information Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Compliance Automation",
+    "start_date": "2026-02-28",
+    "target_date": "2026-09-15",
+    "budget": 21000000,
+    "spent": 12000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-02-28",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate passed",
+        "budget_approved": 30000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-03-13",
+        "approver": "Grace Makokha",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 45000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-04-21",
+        "approver": "Gregory Chirchir",
+        "notes": "Design gate passed",
+        "budget_approved": 29000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2026-04-14",
+        "approver": "Festus Njenga",
+        "notes": "Development gate in progress",
+        "budget_approved": 47000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 57000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300004",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Festus Njenga",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0048",
+    "name": "Customer Experience Programme",
+    "workstream": "WS08",
+    "owner_code": "300003",
+    "owner": "Emmanuel Kuria",
+    "owner_role": "Chief Commercial Officer",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Customer Experience Programme",
+    "start_date": "2026-03-10",
+    "target_date": "2026-07-23",
+    "budget": 176000000,
+    "spent": 15000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-03-10",
+        "approver": "William Mwanake",
+        "notes": "Concept gate passed",
+        "budget_approved": 29000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-04-07",
+        "approver": "Lilian Murithi",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-05-07",
+        "approver": "Thomas Mungai",
+        "notes": "Design gate passed",
+        "budget_approved": 13000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-04-30",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Development gate passed",
+        "budget_approved": 40000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-04-23",
+        "approver": "Thomas Mungai",
+        "notes": "Testing gate in progress",
+        "budget_approved": 35000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 10000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300013",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0049",
+    "name": "Trade Finance Digitalisation",
+    "workstream": "WS09",
+    "owner_code": "300003",
+    "owner": "Emmanuel Kuria",
+    "owner_role": "Chief Commercial Officer",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Trade Finance Digitalisation",
+    "start_date": "2025-11-23",
+    "target_date": "2026-09-26",
+    "budget": 55000000,
+    "spent": 24000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-11-23",
+        "approver": "Mark Charo",
+        "notes": "Concept gate passed",
+        "budget_approved": 9000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-12-22",
+        "approver": "Stella Kithinji",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 33000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-12-31",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Design gate passed",
+        "budget_approved": 27000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-01-07",
+        "approver": "Emmanuel Kuria",
+        "notes": "Development gate passed",
+        "budget_approved": 38000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2026-02-07",
+        "approver": "Lilian Murithi",
+        "notes": "Testing gate passed",
+        "budget_approved": 27000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2026-03-13",
+        "approver": "Thomas Mungai",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 10000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 23000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "William Mwanake",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0050",
+    "name": "SME Banking Growth Initiative",
+    "workstream": "WS06",
+    "owner_code": "300008",
+    "owner": "Grace Makokha",
+    "owner_role": "Chief Operating Officer",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: SME Banking Growth Initiative",
+    "start_date": "2025-10-13",
+    "target_date": "2026-09-20",
+    "budget": 124000000,
+    "spent": 5000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-10-13",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate in progress",
+        "budget_approved": 8000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 29000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300010",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0051",
+    "name": "Bancassurance Scale-Up",
+    "workstream": "WS02",
+    "owner_code": "300013",
+    "owner": "Lorna Matheka",
+    "owner_role": "Head Of Women Banking",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Bancassurance Scale-Up",
+    "start_date": "2025-08-25",
+    "target_date": "2026-10-02",
+    "budget": 17000000,
+    "spent": 8000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-25",
+        "approver": "Yasmin Makokha",
+        "notes": "Concept gate passed",
+        "budget_approved": 42000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2025-09-09",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 42000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 71000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300003",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Yasmin Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0052",
+    "name": "Data Analytics Centre",
+    "workstream": "WS09",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Data Analytics Centre",
+    "start_date": "2026-01-06",
+    "target_date": "2026-08-22",
+    "budget": 83000000,
+    "spent": 6000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-01-06",
+        "approver": "Lorna Matheka",
+        "notes": "Concept gate passed",
+        "budget_approved": 12000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-01-28",
+        "approver": "Gregory Chirchir",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 28000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-03-01",
+        "approver": "Festus Njenga",
+        "notes": "Design gate in progress",
+        "budget_approved": 6000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 32000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300008",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300115",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Gregory Chirchir",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300008",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0053",
+    "name": "Cybersecurity Upgrade",
+    "workstream": "WS09",
+    "owner_code": "300006",
+    "owner": "Mary Waweru",
+    "owner_role": "Chief Risk Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: Cybersecurity Upgrade",
+    "start_date": "2025-07-14",
+    "target_date": "2026-09-09",
+    "budget": 170000000,
+    "spent": 12000000,
+    "priority": "Critical",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-07-14",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Concept gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-08-09",
+        "approver": "Thomas Mungai",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 18000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-08-09",
+        "approver": "Alex Mwenda",
+        "notes": "Design gate passed",
+        "budget_approved": 14000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-09-03",
+        "approver": "William Mwanake",
+        "notes": "Development gate in progress",
+        "budget_approved": 6000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 79000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300001",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0054",
+    "name": "Green Finance Products",
+    "workstream": "WS10",
+    "owner_code": "300013",
+    "owner": "Lorna Matheka",
+    "owner_role": "Head Of Women Banking",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Green Finance Products",
+    "start_date": "2025-11-27",
+    "target_date": "2026-06-18",
+    "budget": 30000000,
+    "spent": 15000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-11-27",
+        "approver": "Mark Charo",
+        "notes": "Concept gate passed",
+        "budget_approved": 46000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-12-15",
+        "approver": "Lilian Murithi",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 49000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-01-22",
+        "approver": "Stella Kithinji",
+        "notes": "Design gate passed",
+        "budget_approved": 14000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-02-19",
+        "approver": "Gregory Chirchir",
+        "notes": "Development gate passed",
+        "budget_approved": 37000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-02-07",
+        "approver": "Lorna Matheka",
+        "notes": "Testing gate in progress",
+        "budget_approved": 36000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 65000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300001",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Stella Kithinji",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0055",
+    "name": "Agency Banking Rollout",
+    "workstream": "WS03",
+    "owner_code": "300115",
+    "owner": "Thomas Mungai",
+    "owner_role": "Head Of ICT",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Agency Banking Rollout",
+    "start_date": "2026-01-22",
+    "target_date": "2026-05-30",
+    "budget": 29000000,
+    "spent": 12000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-01-22",
+        "approver": "Mary Waweru",
+        "notes": "Concept gate passed",
+        "budget_approved": 18000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-02-19",
+        "approver": "Alex Mwenda",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 5000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2026-03-01",
+        "approver": "Mary Waweru",
+        "notes": "Design gate passed",
+        "budget_approved": 11000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2026-03-17",
+        "approver": "Gregory Chirchir",
+        "notes": "Development gate passed",
+        "budget_approved": 5000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2026-03-03",
+        "approver": "Festus Njenga",
+        "notes": "Testing gate passed",
+        "budget_approved": 50000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2026-04-22",
+        "approver": "Festus Njenga",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 1000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 49000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300002",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Mark Charo",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0056",
+    "name": "Islamic Finance Window",
+    "workstream": "WS06",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Active",
+    "current_gate": "G0",
+    "description": "Strategic initiative: Islamic Finance Window",
+    "start_date": "2025-10-07",
+    "target_date": "2026-05-25",
+    "budget": 108000000,
+    "spent": 3000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "current",
+        "date": "2025-10-07",
+        "approver": "Mark Charo",
+        "notes": "Concept gate in progress",
+        "budget_approved": 41000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 86000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300002",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300009",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Festus Njenga",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0057",
+    "name": "Diaspora Banking Service",
+    "workstream": "WS06",
+    "owner_code": "300005",
+    "owner": "Gregory Chirchir",
+    "owner_role": "Chief Credit Officer",
+    "status": "Active",
+    "current_gate": "G1",
+    "description": "Strategic initiative: Diaspora Banking Service",
+    "start_date": "2026-02-16",
+    "target_date": "2026-06-16",
+    "budget": 81000000,
+    "spent": 8000000,
+    "priority": "Medium",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2026-02-16",
+        "approver": "William Mwanake",
+        "notes": "Concept gate passed",
+        "budget_approved": 19000000
+      },
+      {
+        "gate": "G1",
+        "status": "current",
+        "date": "2026-03-08",
+        "approver": "Gregory Chirchir",
+        "notes": "Feasibility gate in progress",
+        "budget_approved": 47000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 84000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300009",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0058",
+    "name": "Operational Excellence Programme",
+    "workstream": "WS02",
+    "owner_code": "300001",
+    "owner": "William Mwanake",
+    "owner_role": "Chief Executive & Managing Director",
+    "status": "Active",
+    "current_gate": "G2",
+    "description": "Strategic initiative: Operational Excellence Programme",
+    "start_date": "2025-12-24",
+    "target_date": "2026-08-01",
+    "budget": 12000000,
+    "spent": 12000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-12-24",
+        "approver": "Nicholas Ndegwa",
+        "notes": "Concept gate passed",
+        "budget_approved": 8000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2026-01-04",
+        "approver": "Emmanuel Kuria",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G2",
+        "status": "current",
+        "date": "2026-02-04",
+        "approver": "Mark Charo",
+        "notes": "Design gate in progress",
+        "budget_approved": 42000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 55000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300007",
+        "name": "Festus Njenga",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300007",
+        "name": "Lorna Matheka",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Thomas Mungai",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300003",
+        "name": "Emmanuel Kuria",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0059",
+    "name": "HR Digital Transformation",
+    "workstream": "WS01",
+    "owner_code": "300009",
+    "owner": "Lilian Murithi",
+    "owner_role": "Chief Human Resource Officer",
+    "status": "Active",
+    "current_gate": "G3",
+    "description": "Strategic initiative: HR Digital Transformation",
+    "start_date": "2025-08-26",
+    "target_date": "2026-06-20",
+    "budget": 165000000,
+    "spent": 20000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "pending"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-08-26",
+        "approver": "Thomas Mungai",
+        "notes": "Concept gate passed",
+        "budget_approved": 10000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-09-12",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 2000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-01",
+        "approver": "Lilian Murithi",
+        "notes": "Design gate passed",
+        "budget_approved": 31000000
+      },
+      {
+        "gate": "G3",
+        "status": "current",
+        "date": "2025-11-03",
+        "approver": "Gregory Chirchir",
+        "notes": "Development gate in progress",
+        "budget_approved": 21000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 32000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300013",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300222",
+        "name": "Lilian Murithi",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0060",
+    "name": "Supply Chain Finance Product",
+    "workstream": "WS05",
+    "owner_code": "300222",
+    "owner": "Alex Mwenda",
+    "owner_role": "Head Of Marketing and Corporate Communication",
+    "status": "Active",
+    "current_gate": "G4",
+    "description": "Strategic initiative: Supply Chain Finance Product",
+    "start_date": "2025-09-24",
+    "target_date": "2026-08-26",
+    "budget": 186000000,
+    "spent": 15000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "pending"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-09-24",
+        "approver": "Lilian Murithi",
+        "notes": "Concept gate passed",
+        "budget_approved": 49000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-10-14",
+        "approver": "William Mwanake",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 43000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-14",
+        "approver": "Lorna Matheka",
+        "notes": "Design gate passed",
+        "budget_approved": 16000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-12-08",
+        "approver": "William Mwanake",
+        "notes": "Development gate passed",
+        "budget_approved": 15000000
+      },
+      {
+        "gate": "G4",
+        "status": "current",
+        "date": "2026-01-06",
+        "approver": "Alex Mwenda",
+        "notes": "Testing gate in progress",
+        "budget_approved": 10000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 81000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300006",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300004",
+        "name": "Mary Waweru",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300006",
+        "name": "Grace Makokha",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300013",
+        "name": "Grace Makokha",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  },
+  {
+    "id": "INI0061",
+    "name": "Real Estate Finance Growth",
+    "workstream": "WS08",
+    "owner_code": "300009",
+    "owner": "Lilian Murithi",
+    "owner_role": "Chief Human Resource Officer",
+    "status": "Completed",
+    "current_gate": "G5",
+    "description": "Strategic initiative: Real Estate Finance Growth",
+    "start_date": "2025-10-09",
+    "target_date": "2026-07-22",
+    "budget": 40000000,
+    "spent": 6000000,
+    "priority": "High",
+    "milestones": [
+      {
+        "name": "Milestone 1",
+        "due": "2026-04-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 2",
+        "due": "2026-05-16",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 3",
+        "due": "2026-06-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 4",
+        "due": "2026-07-15",
+        "status": "completed"
+      },
+      {
+        "name": "Milestone 5",
+        "due": "2026-08-14",
+        "status": "completed"
+      }
+    ],
+    "gates": [
+      {
+        "gate": "G0",
+        "status": "passed",
+        "date": "2025-10-09",
+        "approver": "Emmanuel Kuria",
+        "notes": "Concept gate passed",
+        "budget_approved": 41000000
+      },
+      {
+        "gate": "G1",
+        "status": "passed",
+        "date": "2025-11-01",
+        "approver": "Emmanuel Kuria",
+        "notes": "Feasibility gate passed",
+        "budget_approved": 32000000
+      },
+      {
+        "gate": "G2",
+        "status": "passed",
+        "date": "2025-10-29",
+        "approver": "Mary Waweru",
+        "notes": "Design gate passed",
+        "budget_approved": 34000000
+      },
+      {
+        "gate": "G3",
+        "status": "passed",
+        "date": "2025-12-17",
+        "approver": "Thomas Mungai",
+        "notes": "Development gate passed",
+        "budget_approved": 3000000
+      },
+      {
+        "gate": "G4",
+        "status": "passed",
+        "date": "2026-02-06",
+        "approver": "Emmanuel Kuria",
+        "notes": "Testing gate passed",
+        "budget_approved": 6000000
+      },
+      {
+        "gate": "G5",
+        "status": "current",
+        "date": "2026-01-12",
+        "approver": "Mary Waweru",
+        "notes": "Deployed gate in progress",
+        "budget_approved": 35000000
+      }
+    ],
+    "kpis": [
+      {
+        "kpi": "Cost Savings KES",
+        "target": 78000000.0,
+        "actual": 0
+      }
+    ],
+    "team_members": [
+      {
+        "staff_code": "300222",
+        "name": "Alex Mwenda",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300017",
+        "name": "Mark Charo",
+        "role": "Member"
+      },
+      {
+        "staff_code": "300005",
+        "name": "Mark Charo",
+        "role": "Member"
+      }
+    ],
+    "risks": [],
+    "last_updated": "2026-04-16"
+  }
+]

@@ -1,0 +1,96 @@
+{
+  "as_at": "2026-04-21",
+  "cbk_limit_ear_pct": 20.0,
+  "cbk_limit_eve_pct": 20.0,
+  "scenarios": [
+    {
+      "name": "+200bps",
+      "ear_impact_m": -142.5,
+      "eve_impact_m": -285.0,
+      "ear_pct": 8.2,
+      "eve_pct": 9.7
+    },
+    {
+      "name": "+100bps",
+      "ear_impact_m": -71.2,
+      "eve_impact_m": -142.5,
+      "ear_pct": 4.1,
+      "eve_pct": 4.9
+    },
+    {
+      "name": "-100bps",
+      "ear_impact_m": 68.4,
+      "eve_impact_m": 138.2,
+      "ear_pct": 3.9,
+      "eve_pct": 4.7
+    },
+    {
+      "name": "-200bps",
+      "ear_impact_m": 136.8,
+      "eve_impact_m": 276.4,
+      "ear_pct": 7.9,
+      "eve_pct": 9.4
+    },
+    {
+      "name": "Parallel+200",
+      "ear_impact_m": -155.0,
+      "eve_impact_m": -310.0,
+      "ear_pct": 8.9,
+      "eve_pct": 10.5
+    }
+  ],
+  "repricing_gap": [
+    {
+      "bucket": "0-1M",
+      "assets_b": 18.4,
+      "liabilities_b": 22.1,
+      "gap_b": -3.7,
+      "cumulative_b": -3.7
+    },
+    {
+      "bucket": "1-3M",
+      "assets_b": 24.2,
+      "liabilities_b": 28.5,
+      "gap_b": -4.3,
+      "cumulative_b": -8.0
+    },
+    {
+      "bucket": "3-6M",
+      "assets_b": 19.8,
+      "liabilities_b": 16.4,
+      "gap_b": 3.4,
+      "cumulative_b": -4.6
+    },
+    {
+      "bucket": "6-12M",
+      "assets_b": 22.6,
+      "liabilities_b": 18.9,
+      "gap_b": 3.7,
+      "cumulative_b": -0.9
+    },
+    {
+      "bucket": "1-3Y",
+      "assets_b": 28.4,
+      "liabilities_b": 18.2,
+      "gap_b": 10.2,
+      "cumulative_b": 9.3
+    },
+    {
+      "bucket": ">3Y",
+      "assets_b": 25.3,
+      "liabilities_b": 12.8,
+      "gap_b": 12.5,
+      "cumulative_b": 21.8
+    }
+  ],
+  "nim_current_pct": 5.82,
+  "net_interest_income_m": 1275,
+  "total_earning_assets_b": 138.7,
+  "equity_b": 14.8,
+  "limits_config": {
+    "ear_warning_pct": 15.0,
+    "ear_limit_pct": 20.0,
+    "eve_warning_pct": 15.0,
+    "eve_limit_pct": 20.0
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "reporting_date": "2026-04-17",
+  "reporting_period": "Dec-25",
+  "total_ecl_provision": 3411799481.0,
+  "loans_ecl": 3390549981.0,
+  "investments_ecl": 8212000.0,
+  "obs_ecl": 13037500.0,
+  "stage_breakdown": {
+    "Stage 1": 4462,
+    "Stage 2": 0,
+    "Stage 3": 583
+  },
+  "coverage_ratio": 3.84,
+  "last_updated": "2026-04-17"
+}

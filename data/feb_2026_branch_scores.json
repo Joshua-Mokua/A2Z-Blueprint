@@ -1,0 +1,477 @@
+{
+  "MOLO BRANCH": {
+    "rank": 1,
+    "pbt_achievement": 0.9077,
+    "league": "Large"
+  },
+  "RIVER ROAD WEST BRANCH": {
+    "rank": 2,
+    "pbt_achievement": 1.2004,
+    "league": "Large"
+  },
+  "MUMIAS BRANCH": {
+    "rank": 3,
+    "pbt_achievement": 1.3881,
+    "league": "Medium"
+  },
+  "RIVER ROAD BRANCH": {
+    "rank": 4,
+    "pbt_achievement": 1.1502,
+    "league": "Premier"
+  },
+  "FBT RETAIL": {
+    "rank": 5,
+    "pbt_achievement": 1.1536,
+    "league": "Premier"
+  },
+  "ELDORET WEST BRANCH": {
+    "rank": 6,
+    "pbt_achievement": 0.8414,
+    "league": "Large"
+  },
+  "THIKA MAKONGENI BRANCH": {
+    "rank": 7,
+    "pbt_achievement": 0.5032,
+    "league": "Medium"
+  },
+  "KIKUYU BRANCH": {
+    "rank": 8,
+    "pbt_achievement": 0.9214,
+    "league": "Premier"
+  },
+  "UTAWALA BRANCH": {
+    "rank": 9,
+    "pbt_achievement": 0.7367,
+    "league": "Large"
+  },
+  "WESTLANDS BRANCH": {
+    "rank": 10,
+    "pbt_achievement": 1.4526,
+    "league": "Premier"
+  },
+  "KERICHO BRANCH": {
+    "rank": 11,
+    "pbt_achievement": 1.4592,
+    "league": "Premier"
+  },
+  "NGARA BRANCH": {
+    "rank": 12,
+    "pbt_achievement": 0.9621,
+    "league": "Premier"
+  },
+  "ISIOLO": {
+    "rank": 13,
+    "pbt_achievement": 0.7358,
+    "league": "Medium"
+  },
+  "MACHAKOS BRANCH": {
+    "rank": 14,
+    "pbt_achievement": 0.7769,
+    "league": "Large"
+  },
+  "DONHOLM BRANCH": {
+    "rank": 15,
+    "pbt_achievement": 1.0346,
+    "league": "Premier"
+  },
+  "CHUKA BRANCH": {
+    "rank": 16,
+    "pbt_achievement": 1.2658,
+    "league": "Medium"
+  },
+  "KONGOWEA": {
+    "rank": 17,
+    "pbt_achievement": 0.7302,
+    "league": "Medium"
+  },
+  "LIMURU BRANCH": {
+    "rank": 18,
+    "pbt_achievement": 1.0999,
+    "league": "Premier"
+  },
+  "EASTLEIGH BRANCH": {
+    "rank": 19,
+    "pbt_achievement": 0.6505,
+    "league": "Medium"
+  },
+  "ONGATA RONGAI BRANCH": {
+    "rank": 20,
+    "pbt_achievement": 5.4603,
+    "league": "Medium"
+  },
+  "NAKURU FINANCE  BRANCH": {
+    "rank": 21,
+    "pbt_achievement": 1.3458,
+    "league": "Premier"
+  },
+  "KAYOLE BRANCH": {
+    "rank": 22,
+    "pbt_achievement": 0.9669,
+    "league": "Premier"
+  },
+  "GIKOMBA BRANCH": {
+    "rank": 23,
+    "pbt_achievement": 0.7933,
+    "league": "Premier"
+  },
+  "JKIA BRANCH": {
+    "rank": 24,
+    "pbt_achievement": 2.9497,
+    "league": "Medium"
+  },
+  "MOMBASA KENYATTA AVENUE": {
+    "rank": 25,
+    "pbt_achievement": 0.6835,
+    "league": "Medium"
+  },
+  "NAROK  BRANCH": {
+    "rank": 26,
+    "pbt_achievement": 0.9022,
+    "league": "Large"
+  },
+  "KENYATTA AVENUE BRANCH": {
+    "rank": 27,
+    "pbt_achievement": 1.3586,
+    "league": "Premier"
+  },
+  "DAGORETTI BRANCH": {
+    "rank": 28,
+    "pbt_achievement": -1.8083,
+    "league": "Large"
+  },
+  "KAHAWA WEST BRANCH": {
+    "rank": 29,
+    "pbt_achievement": 1.1102,
+    "league": "Medium"
+  },
+  "LAPTRUST NBI BRANCH": {
+    "rank": 30,
+    "pbt_achievement": 1.1664,
+    "league": "Large"
+  },
+  "KITENGELA BRANCH": {
+    "rank": 31,
+    "pbt_achievement": 1.0142,
+    "league": "Large"
+  },
+  "LITEIN BRANCH": {
+    "rank": 32,
+    "pbt_achievement": 0.8013,
+    "league": "Large"
+  },
+  "FBT CORP": {
+    "rank": 33,
+    "pbt_achievement": 0.2915,
+    "league": "Premier"
+  },
+  "KITALE BRANCH": {
+    "rank": 34,
+    "pbt_achievement": 0.7996,
+    "league": "Premier"
+  },
+  "KITUI BRANCH": {
+    "rank": 35,
+    "pbt_achievement": 1.2084,
+    "league": "Large"
+  },
+  "KIRIA-INI BRANCH": {
+    "rank": 36,
+    "pbt_achievement": 0.8149,
+    "league": "Medium"
+  },
+  "GITHURAI BRANCH": {
+    "rank": 37,
+    "pbt_achievement": 1.2827,
+    "league": "Premier"
+  },
+  "KERUGOYA BRANCH": {
+    "rank": 38,
+    "pbt_achievement": 1.2656,
+    "league": "Premier"
+  },
+  "KISUMU EXPRESS BRANCH": {
+    "rank": 39,
+    "pbt_achievement": 1.8579,
+    "league": "Premier"
+  },
+  "BUNGOMA BRANCH": {
+    "rank": 40,
+    "pbt_achievement": 1.0964,
+    "league": "Large"
+  },
+  "BUSIA BRANCH": {
+    "rank": 41,
+    "pbt_achievement": 1.997,
+    "league": "Medium"
+  },
+  "MERU BRANCH": {
+    "rank": 42,
+    "pbt_achievement": 0.7406,
+    "league": "Premier"
+  },
+  "KAJIADO BRANCH": {
+    "rank": 43,
+    "pbt_achievement": 0.95,
+    "league": "Large"
+  },
+  "KARIOBANGI BRANCH": {
+    "rank": 44,
+    "pbt_achievement": 1.0169,
+    "league": "Large"
+  },
+  "MTWAPA  BRANCH": {
+    "rank": 45,
+    "pbt_achievement": 0.9686,
+    "league": "Medium"
+  },
+  "OL KALOU BRANCH": {
+    "rank": 46,
+    "pbt_achievement": 0.536,
+    "league": "Large"
+  },
+  "MIGORI BRANCH": {
+    "rank": 47,
+    "pbt_achievement": -0.0571,
+    "league": "Medium"
+  },
+  "NYERI BRANCH": {
+    "rank": 49,
+    "pbt_achievement": 0.8945,
+    "league": "Premier"
+  },
+  "WOTE BRANCH": {
+    "rank": 50,
+    "pbt_achievement": 0.4015,
+    "league": "Medium"
+  },
+  "BANANA BRANCH": {
+    "rank": 51,
+    "pbt_achievement": 0.8117,
+    "league": "Large"
+  },
+  "KUTUS BRANCH": {
+    "rank": 52,
+    "pbt_achievement": 0.9202,
+    "league": "Medium"
+  },
+  "KAKAMEGA BRANCH": {
+    "rank": 53,
+    "pbt_achievement": 0.2421,
+    "league": "Large"
+  },
+  "THIKA BRANCH": {
+    "rank": 54,
+    "pbt_achievement": 0.7375,
+    "league": "Premier"
+  },
+  "MWEA BRANCH": {
+    "rank": 55,
+    "pbt_achievement": 0.6616,
+    "league": "Large"
+  },
+  "NAIVASHA BRANCH": {
+    "rank": 56,
+    "pbt_achievement": 0.7273,
+    "league": "Premier"
+  },
+  "UKUNDA BRANCH": {
+    "rank": 57,
+    "pbt_achievement": 0.9844,
+    "league": "Medium"
+  },
+  "KAPSABET BRANCH": {
+    "rank": 58,
+    "pbt_achievement": 0.9295,
+    "league": "Large"
+  },
+  "GITHUNGURI BRANCH": {
+    "rank": 59,
+    "pbt_achievement": 0.7886,
+    "league": "Premier"
+  },
+  "NAKURU MARKET BRANCH": {
+    "rank": 60,
+    "pbt_achievement": 0.6917,
+    "league": "Premier"
+  },
+  "RUIRU BRANCH": {
+    "rank": 61,
+    "pbt_achievement": 0.9342,
+    "league": "Premier"
+  },
+  "OTHAYA BRANCH": {
+    "rank": 62,
+    "pbt_achievement": 0.8122,
+    "league": "Medium"
+  },
+  "MALINDI BRANCH": {
+    "rank": 63,
+    "pbt_achievement": 1.597,
+    "league": "Medium"
+  },
+  "KARATINA BRANCH": {
+    "rank": 64,
+    "pbt_achievement": 1.1131,
+    "league": "Large"
+  },
+  "KILIFI BRANCH": {
+    "rank": 65,
+    "pbt_achievement": -12.9817,
+    "league": "New"
+  },
+  "RUAKA BRANCH": {
+    "rank": 66,
+    "pbt_achievement": 0.9188,
+    "league": "Medium"
+  },
+  "SONALUX BRANCH": {
+    "rank": 67,
+    "pbt_achievement": 1.0813,
+    "league": "Premier"
+  },
+  "KIAMBU BRANCH": {
+    "rank": 68,
+    "pbt_achievement": 0.8294,
+    "league": "Premier"
+  },
+  "KTDA": {
+    "rank": 69,
+    "pbt_achievement": 0.7683,
+    "league": "Premier"
+  },
+  "ELDORET BRANCH": {
+    "rank": 70,
+    "pbt_achievement": 0.9022,
+    "league": "Premier"
+  },
+  "NYAMIRA BRANCH": {
+    "rank": 71,
+    "pbt_achievement": 1.1019,
+    "league": "Medium"
+  },
+  "MOMBASA NKRUMAH": {
+    "rank": 72,
+    "pbt_achievement": 0.6787,
+    "league": "Premier"
+  },
+  "CARGEN BRANCH": {
+    "rank": 73,
+    "pbt_achievement": 1.0629,
+    "league": "Premier"
+  },
+  "KASARANI BRANCH": {
+    "rank": 74,
+    "pbt_achievement": 0.737,
+    "league": "Premier"
+  },
+  "KANGARI BRANCH": {
+    "rank": 75,
+    "pbt_achievement": 0.7978,
+    "league": "Medium"
+  },
+  "GATEWAY MALL NBI BRANCH": {
+    "rank": 76,
+    "pbt_achievement": 0.8385,
+    "league": "Premier"
+  },
+  "NANYUKI BRANCH": {
+    "rank": 77,
+    "pbt_achievement": 0.4392,
+    "league": "Large"
+  },
+  "BOMET BRANCH": {
+    "rank": 78,
+    "pbt_achievement": 0.914,
+    "league": "Large"
+  },
+  "KILIMANI BRANCH": {
+    "rank": 79,
+    "pbt_achievement": 1.0245,
+    "league": "Premier"
+  },
+  "MBS DIGO  BRANCH": {
+    "rank": 80,
+    "pbt_achievement": 1.0502,
+    "league": "Premier"
+  },
+  "NYAHURURU BRANCH": {
+    "rank": 81,
+    "pbt_achievement": 0.9137,
+    "league": "Large"
+  },
+  "MLOLONGO BRANCH": {
+    "rank": 82,
+    "pbt_achievement": 0.6812,
+    "league": "Large"
+  },
+  "KISII BRANCH": {
+    "rank": 83,
+    "pbt_achievement": 1.0871,
+    "league": "Premier"
+  },
+  "NBI CITY HALL BRANCH": {
+    "rank": 84,
+    "pbt_achievement": -0.2939,
+    "league": "Large"
+  },
+  "NKUBU BRANCH": {
+    "rank": 85,
+    "pbt_achievement": 1.4121,
+    "league": "Medium"
+  },
+  "EMBU BRANCH": {
+    "rank": 86,
+    "pbt_achievement": 0.9081,
+    "league": "Premier"
+  },
+  "MAUA BRANCH": {
+    "rank": 87,
+    "pbt_achievement": 0.8376,
+    "league": "Medium"
+  },
+  "GATUNDU BRANCH": {
+    "rank": 88,
+    "pbt_achievement": 0.7336,
+    "league": "Premier"
+  },
+  "GIKOMBA AREA 42 BRANCH": {
+    "rank": 89,
+    "pbt_achievement": 0.5276,
+    "league": "Large"
+  },
+  "KAGWE BRANCH": {
+    "rank": 90,
+    "pbt_achievement": 0.6684,
+    "league": "Medium"
+  },
+  "MURANGA BRANCH": {
+    "rank": 91,
+    "pbt_achievement": 0.5508,
+    "league": "Large"
+  },
+  "KANGEMA BRANCH": {
+    "rank": 92,
+    "pbt_achievement": 0.2377,
+    "league": "Medium"
+  },
+  "WANGIGE BRANCH": {
+    "rank": 93,
+    "pbt_achievement": 0.8137,
+    "league": "Medium"
+  },
+  "INDUSTRIAL AREA BRANCH": {
+    "rank": 94,
+    "pbt_achievement": 0.8874,
+    "league": "Premier"
+  },
+  "KANGEMI BRANCH": {
+    "rank": 95,
+    "pbt_achievement": 0.1255,
+    "league": "Medium"
+  },
+  "NYALI": {
+    "rank": 96,
+    "pbt_achievement": -0.2845,
+    "league": "Medium"
+  }
+}

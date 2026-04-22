@@ -1,0 +1,82 @@
+[
+  {
+    "id": "EVT0001",
+    "title": "Q1 2026 BSC Review",
+    "date": "2026-04-30",
+    "type": "Performance",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0002",
+    "title": "CBK Quarterly Return Due",
+    "date": "2026-04-15",
+    "type": "Regulatory",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0003",
+    "title": "IFRS 9 ECL Review",
+    "date": "2026-04-20",
+    "type": "Risk",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0004",
+    "title": "April Board Meeting",
+    "date": "2026-04-25",
+    "type": "Governance",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0005",
+    "title": "FD Rate Review",
+    "date": "2026-04-10",
+    "type": "Treasury",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0006",
+    "title": "Compliance Training",
+    "date": "2026-04-22",
+    "type": "Training",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0007",
+    "title": "Branch Managers Meeting",
+    "date": "2026-05-05",
+    "type": "Operations",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0008",
+    "title": "CBK Examination",
+    "date": "2026-05-15",
+    "type": "Regulatory",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0009",
+    "title": "Mid-year Target Review",
+    "date": "2026-06-30",
+    "type": "Performance",
+    "branch": "All",
+    "all_day": true
+  },
+  {
+    "id": "EVT0010",
+    "title": "Annual General Meeting",
+    "date": "2026-07-15",
+    "type": "Governance",
+    "branch": "All",
+    "all_day": true
+  }
+]

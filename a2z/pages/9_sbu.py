@@ -7,8 +7,16 @@ import plotly.graph_objects as go
 from datetime import datetime, date
 from utils.core import *
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("sbu")
 
-um, ud, uname, em, ri_pm, prod_m, pm, vm_obj, lm, ssm = load_shared_state()
+
+um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#185FA5;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>SBU Performance</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Branch P&L · Turnaround tracker · Action plans</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
+
 staff_scores  = st.session_state.get("staff_scores",  pd.DataFrame())
 df_proc       = st.session_state.get("df_processed",  pd.DataFrame())
 filtered      = st.session_state.get("filtered_staff", pd.DataFrame())
@@ -16,17 +24,17 @@ active_months = st.session_state.get("active_months", [])
 
 if len(staff_scores) == 0:
     st.markdown(
-        f"<div style='padding:40px;text-align:center;background:#E8F5EE;"
-        f"border-radius:12px;border:1px solid #006B3F33'>"
+        f"<div style='padding:40px;text-align:center;background:var(--brand-light,#E8F5EE);"
+        f"border-radius:12px;border:1px solid var(--brand-primary,#006B3F)33'>"
         f"<div style='font-size:32px;margin-bottom:12px'>🏦</div>"
-        f"<div style='font-size:18px;font-weight:500;color:#006B3F'>Upload your BSC data to view SBU performance</div>"
+        f"<div style='font-size:18px;font-weight:500;color:var(--brand-primary,#006B3F)'>Upload your BSC data to view SBU performance</div>"
         f"</div>", unsafe_allow_html=True)
     st.stop()
 
 # ── P&L KPI MAPPING ──────────────────────────────────────────────────
-PNL_INCOME_KPIS = ['Loans Disbursement','Fees and Commission','DFS Revenue',
+PNL_INCOME_KPIS = ['Disbursements Retail Loans','Total NFI','Collection Throughput',
                     'Treasury','Trade Finance','Bancassurance']
-PNL_BALANCE_KPIS = ['Deposit Growth','Loan Book Growth']
+PNL_BALANCE_KPIS = ['Retail & MSME Deposit Growth','Loan Book Growth']
 PNL_QUALITY_KPIS = ['NPL','PAR']
 PNL_PROFIT_KPI   = 'PBT'
 PNL_CUSTOMER_KPI = 'Customer Growth'
@@ -34,13 +42,13 @@ PNL_CUSTOMER_KPI = 'Customer Growth'
 ALL_PNL_KPIS = PNL_INCOME_KPIS + PNL_BALANCE_KPIS + PNL_QUALITY_KPIS + [PNL_PROFIT_KPI, PNL_CUSTOMER_KPI]
 
 BRANCH_LABELS = {
-    'Loans Disbursement':  'Loan disbursements',
-    'Fees and Commission': 'Fees & commission',
-    'DFS Revenue':         'DFS revenue',
+    'Disbursements Retail Loans':  'Loan disbursements',
+    'Total NFI': 'Fees & commission',
+    'Collection Throughput':         'DFS revenue',
     'Treasury':            'Treasury income',
     'Trade Finance':       'Trade finance',
     'Bancassurance':       'Bancassurance',
-    'Deposit Growth':      'Deposit book',
+    'Retail & MSME Deposit Growth':      'Deposit book',
     'Loan Book Growth':    'Loan book',
     'NPL':                 'NPL ratio',
     'PAR':                 'PAR ratio',
@@ -72,7 +80,9 @@ def build_branch_pnl(df_in: pd.DataFrame) -> pd.DataFrame:
             k_data = u_data[u_data['KPI'] == kpi]
             if len(k_data):
                 tgt = float(k_data['Annual Target'].values[0])
-                act = float(k_data['Annual Actual'].values[0])
+                # Use YTD_Actual (normalised from Annual Actual by process_kpi_data)
+                act_col = 'YTD_Actual' if 'YTD_Actual' in k_data.columns else 'Annual Actual'
+                act = float(k_data[act_col].values[0])
                 row[f'{kpi}_tgt'] = tgt
                 row[f'{kpi}_act'] = act
                 row[f'{kpi}_pct'] = round(act/tgt*100, 1) if tgt and tgt != 0 else 0
@@ -94,12 +104,12 @@ def build_branch_pnl(df_in: pd.DataFrame) -> pd.DataFrame:
             row['status_bg']    = '#FAEEDA'
         elif pbt_pct < 100:
             row['status'] = 'On track'
-            row['status_color'] = '#1D9E75'
+            row['status_color'] = 'var(--brand-mid,#1D9E75)'
             row['status_bg']    = '#E1F5EE'
         else:
             row['status'] = 'Outperforming'
-            row['status_color'] = '#006B3F'
-            row['status_bg']    = '#E8F5EE'
+            row['status_color'] = 'var(--brand-primary,#006B3F)'
+            row['status_bg']    = 'var(--brand-light,#E8F5EE)'
 
         rows.append(row)
 
@@ -131,20 +141,20 @@ else:
 # HEADER
 # ════════════════════════════════════════════════════════════════
 st.markdown(
-    f"<div style='padding:16px 20px;background:#006B3F;border-radius:10px;"
+    f"<div style='padding:16px 20px;background:var(--brand-primary,#006B3F);border-radius:10px;"
     f"margin-bottom:16px;display:flex;justify-content:space-between;align-items:center'>"
     f"<div>"
-    f"<div style='color:white;font-size:18px;font-weight:500'>SBU Performance</div>"
-    f"<div style='color:#9FE1CB;font-size:12px;margin-top:2px'>"
+    f"<div style='color:var(--color-background-primary);font-size:18px;font-weight:500'>SBU Performance</div>"
+    f"<div style='color:var(--brand-accent,#9FE1CB);font-size:12px;margin-top:2px'>"
     f"Branch P&L · Regional performance · Profitability analysis · Turnaround tracking</div>"
     f"</div>"
     f"<div style='display:flex;gap:20px;font-size:13px'>"
-    f"<span style='color:white'>{len(view_pnl[view_pnl['status']=='Loss-making'])} "
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status']=='Loss-making'])} "
     f"<span style='color:#F5A623'>loss-making</span></span>"
-    f"<span style='color:white'>{len(view_pnl[view_pnl['status']=='Below target'])} "
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status']=='Below target'])} "
     f"<span style='color:#FAC775'>below target</span></span>"
-    f"<span style='color:white'>{len(view_pnl[view_pnl['status'].isin(['On track','Outperforming'])])} "
-    f"<span style='color:#9FE1CB'>profitable</span></span>"
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status'].isin(['On track','Outperforming'])])} "
+    f"<span style='color:var(--brand-accent,#9FE1CB)'>profitable</span></span>"
     f"</div></div>",
     unsafe_allow_html=True)
 
@@ -159,10 +169,10 @@ with sbu_tabs[0]:
     # Summary metrics
     total_pbt_tgt = view_pnl[f'{PNL_PROFIT_KPI}_tgt'].sum()
     total_pbt_act = view_pnl[f'{PNL_PROFIT_KPI}_act'].sum()
-    total_dep_act = view_pnl[f'Deposit Growth_act'].sum()
-    total_dep_tgt = view_pnl[f'Deposit Growth_tgt'].sum()
-    total_loan_act = view_pnl[f'Loans Disbursement_act'].sum()
-    total_loan_tgt = view_pnl[f'Loans Disbursement_tgt'].sum()
+    total_dep_act = view_pnl[f'Retail & MSME Deposit Growth_act'].sum()
+    total_dep_tgt = view_pnl[f'Retail & MSME Deposit Growth_tgt'].sum()
+    total_loan_act = view_pnl[f'Disbursements Retail Loans_act'].sum()
+    total_loan_tgt = view_pnl[f'Disbursements Retail Loans_tgt'].sum()
     loss_count     = len(view_pnl[view_pnl['status']=='Loss-making'])
     profit_count   = len(view_pnl[view_pnl['status'].isin(['On track','Outperforming'])])
 
@@ -198,7 +208,7 @@ with sbu_tabs[0]:
             x=chart_df['Unit'],
             y=chart_df[f'{PNL_PROFIT_KPI}_tgt'] / 1e6,
             marker_color='rgba(0,0,0,0.1)',
-            marker_line_color='#006B3F',
+            marker_line_color='var(--brand-primary,#006B3F)',
             marker_line_width=1.5,
             name='PBT target',
         )
@@ -225,7 +235,7 @@ with sbu_tabs[0]:
         fig_hm = px.imshow(
             hm_data,
             color_continuous_scale=[[0,'#E24B4A'],[0.35,'#F5A623'],
-                                     [0.7,'#1D9E75'],[1,'#006B3F']],
+                                     [0.7,'var(--brand-mid,#1D9E75)'],[1,'var(--brand-primary,#006B3F)']],
             text_auto='.0f', aspect='auto',
             title='KPI achievement % — red = below 50%, green = above 100%')
         fig_hm.update_coloraxes(colorbar_title='%')
@@ -274,6 +284,23 @@ with sbu_tabs[1]:
             # P&L table
             bc1, bc2 = st.columns([3,2])
             with bc1:
+                # Key banking ratios
+                pbt_a_br = branch.get(f'{PNL_PROFIT_KPI}_act', 0)
+                oi_a     = branch.get('Disbursements Retail Loans_act', 0) + branch.get('Loan Book Growth_act', 0)
+                dep_a    = branch.get('Retail & MSME Deposit Growth_act', 0)
+                rev_ph   = fmt_num(
+                    (dep_a + oi_a) / max(1, len([s for s in staff_scores['Unit'].tolist()
+                                                  if s == branch['Unit']])), short=True
+                ) if len(staff_scores) else '—'
+                cir_br   = round(abs((branch.get(f'{PNL_PROFIT_KPI}_tgt', 1) - pbt_a_br)) /
+                           max(1, dep_a + oi_a) * 100, 1) if (dep_a + oi_a) > 0 else 0
+
+                kr1,kr2,kr3 = st.columns(3)
+                kr1.metric("PBT", fmt_num(pbt_a_br, short=True))
+                kr2.metric("CIR estimate", f"{cir_br:.1f}%")
+                kr3.metric("Revenue/staff", rev_ph)
+                st.markdown("---")
+
                 st.markdown("**Income statement**")
                 pnl_rows = []
                 total_income_act = 0
@@ -303,7 +330,7 @@ with sbu_tabs[1]:
                         pct = float(str(v).replace('%',''))
                         if pct < 0:  return 'color:#E24B4A;font-weight:500'
                         if pct < 70: return 'color:#BA7517'
-                        if pct >= 100: return 'color:#006B3F;font-weight:500'
+                        if pct >= 100: return 'color:var(--brand-primary,#006B3F);font-weight:500'
                     except: pass
                     return ''
                 st.dataframe(
@@ -348,9 +375,9 @@ with sbu_tabs[2]:
 
     for region in REGIONS:
         reg_branches = view_pnl[
-            (view_pnl['Region'] == region) & (view_pnl['Role'] == 'Branch Manager')]
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin(get_org_roles('branch_staff') or ['Branch Manager']))]
         reg_head = view_pnl[
-            (view_pnl['Region'] == region) & (view_pnl['Role'] == 'Regional Head')]
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin([r for r in (get_org_roles() or []) if 'area' in r.lower() or 'regional' in r.lower() or 'head' in r.lower()] or ['Regional Head','Area Manager']))]
 
         if len(reg_branches) == 0: continue
 
@@ -358,13 +385,13 @@ with sbu_tabs[2]:
         r_pbt_act = reg_branches[f'{PNL_PROFIT_KPI}_act'].sum()
         r_pbt_tgt = reg_branches[f'{PNL_PROFIT_KPI}_tgt'].sum()
         r_pbt_pct = round(r_pbt_act/r_pbt_tgt*100,1) if r_pbt_tgt else 0
-        r_dep_act = reg_branches[f'Deposit Growth_act'].sum()
-        r_dep_tgt = reg_branches[f'Deposit Growth_tgt'].sum()
+        r_dep_act = reg_branches[f'Retail & MSME Deposit Growth_act'].sum()
+        r_dep_tgt = reg_branches[f'Retail & MSME Deposit Growth_tgt'].sum()
         r_loss    = len(reg_branches[reg_branches['status']=='Loss-making'])
         rh_name   = reg_head['Manager'].values[0] if len(reg_head) else '—'
 
-        r_clr = '#E24B4A' if r_pbt_act < 0 else ('#BA7517' if r_pbt_pct < 70 else '#006B3F')
-        r_bg  = '#FCEBEB' if r_pbt_act < 0 else ('#FAEEDA' if r_pbt_pct < 70 else '#E8F5EE')
+        r_clr = '#E24B4A' if r_pbt_act < 0 else ('#BA7517' if r_pbt_pct < 70 else 'var(--brand-primary,#006B3F)')
+        r_bg  = '#FCEBEB' if r_pbt_act < 0 else ('#FAEEDA' if r_pbt_pct < 70 else 'var(--brand-light,#E8F5EE)')
 
         with st.expander(
             f"{region} Region  ·  Regional Head: {rh_name}  ·  "
@@ -409,7 +436,7 @@ with sbu_tabs[3]:
 
     at_risk = view_pnl[
         (view_pnl['status'].isin(['Loss-making','Below target'])) &
-        (view_pnl['Role'] == 'Branch Manager')
+        (view_pnl['Role'].isin(get_org_roles('branch_staff') or ['Branch Manager']))
     ].sort_values(f'{PNL_PROFIT_KPI}_act')
 
     if len(at_risk) == 0:
@@ -442,7 +469,7 @@ with sbu_tabs[3]:
                 rc1, rc2 = st.columns(2)
                 weak_kpis  = []
                 strong_kpis = []
-                for kpi in PNL_INCOME_KPIS + ['Deposit Growth']:
+                for kpi in PNL_INCOME_KPIS + ['Retail & MSME Deposit Growth']:
                     pct = branch.get(f'{kpi}_pct', 0)
                     if pct < 60:   weak_kpis.append((kpi, pct))
                     elif pct >= 90: strong_kpis.append((kpi, pct))
@@ -517,8 +544,8 @@ with sbu_tabs[3]:
                                           f"drive — currently at {pct:.0f}% of target")
                 for i, strat in enumerate(strategies[:5], 1):
                     st.markdown(
-                        f"<div style='padding:6px 12px;border-left:3px solid #006B3F;"
-                        f"background:#E8F5EE;font-size:12px;margin:3px 0'>"
+                        f"<div style='padding:6px 12px;border-left:3px solid var(--brand-primary,#006B3F);"
+                        f"background:var(--brand-light,#E8F5EE);font-size:12px;margin:3px 0'>"
                         f"{i}. {strat}</div>",
                         unsafe_allow_html=True)
 
@@ -549,7 +576,7 @@ with sbu_tabs[3]:
                         'io':               uname,
                         'io_backup':        '',
                         'estimated_impact': float(gap),
-                        'impact_kpis':      ['PBT', 'Deposit Growth'],
+                        'impact_kpis':      ['PBT', 'Retail & MSME Deposit Growth'],
                         'tags':             ['turnaround', branch['Region'].lower()],
                         'created_by':       uname,
                     })
@@ -563,10 +590,21 @@ with sbu_tabs[4]:
     st.subheader("Action plans & performance tracker")
     st.caption("Branch-level action plans with progress tracking. Linked to BSC performance.")
 
-    # Load saved action plans from session state (in production: persist to JSON)
+    # Load action plans from disk (persisted)
+    _ap_file = DATA_DIR / "sbu_action_plans.json"
     if 'sbu_action_plans' not in st.session_state:
-        st.session_state['sbu_action_plans'] = {}
+        try:
+            _ap_raw = _ap_file.read_text() if _ap_file.exists() else "{}"
+            st.session_state['sbu_action_plans'] = json.loads(_ap_raw)
+        except:
+            st.session_state['sbu_action_plans'] = {}
     action_plans = st.session_state['sbu_action_plans']
+
+    def _save_action_plans():
+        """Persist action plans to disk."""
+        try:
+            _ap_file.write_text(json.dumps(action_plans, indent=2, default=str))
+        except: pass
 
     # Branch selector
     all_branches = view_pnl[view_pnl['Role']=='Branch Manager']['Unit'].tolist()
@@ -589,35 +627,45 @@ with sbu_tabs[4]:
     # Add action item
     with st.form(f"add_action_{sel_branch}"):
         st.markdown("**Add action item**")
-        ac1, ac2, ac3 = st.columns(3)
-        action_text = ac1.text_input("Action *", placeholder="e.g. Launch salary account drive")
-        action_owner= ac2.text_input("Owner", placeholder="Staff name / username")
-        action_due  = ac3.date_input("Due date")
-        action_kpi  = st.selectbox("Linked KPI", [""] + ALL_PNL_KPIS)
-        action_target = st.text_input("Success metric", placeholder="e.g. 50 new accounts by 30 Apr")
+        ac1, ac2 = st.columns(2)
+        action_text   = ac1.text_input("Action *", placeholder="e.g. Launch salary account drive")
+        action_target = ac2.text_input("Success metric", placeholder="e.g. 50 new accounts by 30 Apr")
+        ac3, ac4, ac5 = st.columns(3)
+        action_owner   = ac3.text_input("Primary owner *", placeholder="Username or name")
+        action_owner2  = ac4.text_input("Secondary owner", placeholder="Backup / co-owner")
+        action_due     = ac5.date_input("Due date")
+        action_kpi     = st.selectbox("Linked KPI", [""] + ALL_PNL_KPIS)
+        action_esc_to  = st.text_input("Escalate to (if overdue)", placeholder="Branch manager / Regional Head username")
 
         if st.form_submit_button("Add action item", type="primary"):
-            if action_text:
+            if action_text and action_owner:
                 key = sel_branch
                 if key not in action_plans:
                     action_plans[key] = []
                 action_plans[key].append({
-                    'id':       f"AP{len(action_plans.get(key,[]))+1:03d}",
-                    'action':   action_text,
-                    'owner':    action_owner,
-                    'due':      str(action_due),
-                    'kpi':      action_kpi,
-                    'target':   action_target,
-                    'status':   'Not started',
-                    'progress': 0,
-                    'notes':    '',
-                    'created':  str(date.today()),
+                    'id':             f"AP{len(action_plans.get(key,[]))+1:03d}",
+                    'action':         action_text,
+                    'owner':          action_owner,
+                    'secondary_owner':action_owner2,
+                    'escalate_to':    action_esc_to,
+                    'due':            str(action_due),
+                    'kpi':            action_kpi,
+                    'target':         action_target,
+                    'status':         'Not started',
+                    'accepted':       False,
+                    'accepted_at':    '',
+                    'progress':       0,
+                    'notes':          [],
+                    'esc_level':      0,
+                    'created':        str(date.today()),
+                    'created_by':     uname,
                 })
                 st.session_state['sbu_action_plans'] = action_plans
-                st.success("Action item added!")
+                audit_log("ACTION_CREATED", uname, f"{sel_branch}:{action_text[:40]}")
+                st.success("Action item added — owner must accept before work begins.")
                 st.rerun()
             else:
-                st.error("Action text is required.")
+                st.error("Action and primary owner are required.")
 
     # Display existing action items
     branch_actions = action_plans.get(sel_branch, [])
@@ -630,36 +678,100 @@ with sbu_tabs[4]:
         st.progress(overall_prog/100, text=f"Overall: {done_count}/{len(branch_actions)} complete ({overall_prog:.0f}%)")
 
         for ai, action in enumerate(branch_actions):
-            status     = action['status']
-            s_icon     = {'Not started':'⏳','In progress':'🔄','Complete':'✅','Blocked':'🚧'}.get(status,'⏳')
-            overdue    = action['due'] < str(date.today()) and status != 'Complete'
+            status   = action['status']
+            accepted = action.get('accepted', False)
+            overdue  = action['due'] < str(date.today()) and status != 'Complete'
+            days_od  = (date.today() - date.fromisoformat(action['due'])).days if overdue else 0
+
+            # Auto-compute escalation level
+            esc = 0
+            if overdue and not accepted:  esc = 2  # owner hasn't even accepted
+            elif days_od > 7:             esc = 3  # sponsor
+            elif days_od > 2:             esc = 2  # lead
+            elif days_od > 0:             esc = 1  # IO
+            action_plans[sel_branch][ai]['esc_level'] = esc
+
+            esc_badge = {0:'', 1:'🟡 IO alert', 2:'🔴 Lead escalation', 3:'🚨 Sponsor'}[esc]
+            acc_badge = '✅ Accepted' if accepted else '⏳ Pending acceptance'
+            s_icon    = {'Not started':'⏳','In progress':'🔄','Complete':'✅','Blocked':'🚧'}.get(status,'⏳')
 
             with st.expander(
-                f"{s_icon} {action['id']} — {action['action']}"
-                f"  |  {action['owner'] or '—'}  |  Due {action['due']}"
-                f"{'  ⚠️ OVERDUE' if overdue else ''}",
-                expanded=overdue):
+                f"{s_icon} {action['id']} — {action['action'][:50]}"
+                f"  |  Owner: {action['owner']}  |  Due {action['due']}"
+                f"{'  ⚠️ ' + str(days_od) + 'd OVERDUE' if overdue else ''}"
+                f"  |  {esc_badge if esc else acc_badge}",
+                expanded=(esc >= 2 or not accepted)):
 
-                uc1, uc2 = st.columns(2)
-                uc1.caption(f"KPI: {action.get('kpi','—')}")
-                uc2.caption(f"Target: {action.get('target','—')}")
+                # Context row
+                cc1,cc2,cc3 = st.columns(3)
+                cc1.caption(f"KPI: {action.get('kpi','—')}")
+                cc2.caption(f"Target: {action.get('target','—')}")
+                cc3.caption(f"Escalate to: {action.get('escalate_to','—')}")
 
-                up1, up2, up3 = st.columns([2,1,2])
-                new_status = up1.selectbox(
-                    "Status",
-                    ['Not started','In progress','Complete','Blocked'],
-                    index=['Not started','In progress','Complete','Blocked'].index(
-                        status) if status in ['Not started','In progress','Complete','Blocked'] else 0,
-                    key=f"aps_{sel_branch}_{ai}")
-                new_prog = up2.slider("Progress %", 0, 100,
-                    value=action.get('progress',0), step=10, key=f"app_{sel_branch}_{ai}")
-                new_note = up3.text_input("Update note", key=f"apn_{sel_branch}_{ai}")
+                if action.get('secondary_owner'):
+                    st.caption(f"Secondary owner: {action['secondary_owner']}")
 
-                if st.button("Save", key=f"apb_{sel_branch}_{ai}", type="primary"):
-                    action_plans[sel_branch][ai]['status']   = new_status
-                    action_plans[sel_branch][ai]['progress'] = new_prog
-                    if new_note:
-                        action_plans[sel_branch][ai]['notes'] = new_note
-                    st.session_state['sbu_action_plans'] = action_plans
-                    audit_log("ACTION_UPDATED", uname, f"{sel_branch}:{action['id']}:{new_status}")
-                    st.success("Updated!"); st.rerun()
+                # Escalation banner
+                if esc > 0:
+                    esc_msg = {1:"Owner notified — follow up required",
+                               2:f"Lead attention needed — {days_od}d overdue",
+                               3:f"Sponsor escalation — {days_od}d overdue. Immediate action required"}[esc]
+                    esc_bg  = {1:'#FFFBF0',2:'#FFF5F0',3:'#FFF0F0'}[esc]
+                    esc_clr = {1:'#BA7517',2:'#993C1D',3:'#A32D2D'}[esc]
+                    st.markdown(
+                        f"<div style='padding:8px 12px;background:{esc_bg};"
+                        f"border-left:3px solid {esc_clr};border-radius:0 4px 4px 0;"
+                        f"font-size:12px;margin:4px 0'>"
+                        f"<b style='color:{esc_clr}'>{esc_badge}</b> — {esc_msg}</div>",
+                        unsafe_allow_html=True)
+
+                # Acceptance button (for the owner)
+                if not accepted and (action['owner'] == uname or
+                                     action.get('secondary_owner') == uname):
+                    if st.button(f"✅ I accept this action item",
+                                  key=f"acc_{sel_branch}_{ai}", type="primary"):
+                        action_plans[sel_branch][ai]['accepted']    = True
+                        action_plans[sel_branch][ai]['accepted_at'] = str(date.today())
+                        st.session_state['sbu_action_plans'] = action_plans
+                        audit_log("ACTION_ACCEPTED", uname, f"{sel_branch}:{action['id']}")
+                        st.success("Action accepted — you are now accountable for delivery.")
+                        st.rerun()
+                elif not accepted:
+                    st.warning(f"Awaiting acceptance from {action['owner']}")
+
+                # Progress update (only after acceptance)
+                if accepted:
+                    up1, up2, up3 = st.columns([2,1,2])
+                    status_opts = ['Not started','In progress','Complete','Blocked']
+                    new_status = up1.selectbox("Status", status_opts,
+                        index=status_opts.index(status) if status in status_opts else 0,
+                        key=f"aps_{sel_branch}_{ai}")
+                    new_prog = up2.slider("Progress", 0, 100,
+                        value=action.get('progress',0), step=10,
+                        key=f"app_{sel_branch}_{ai}")
+                    new_note = up3.text_input("Update note", key=f"apn_{sel_branch}_{ai}")
+
+                    if st.button("Save update", key=f"apb_{sel_branch}_{ai}", type="primary"):
+                        action_plans[sel_branch][ai]['status']   = new_status
+                        action_plans[sel_branch][ai]['progress'] = new_prog
+                        if new_note:
+                            notes = action_plans[sel_branch][ai].get('notes', [])
+                            if isinstance(notes, str): notes = [notes] if notes else []
+                            notes.append({'note': new_note, 'by': uname,
+                                          'date': str(date.today())})
+                            action_plans[sel_branch][ai]['notes'] = notes
+                        st.session_state['sbu_action_plans'] = action_plans
+                        audit_log("ACTION_UPDATED", uname,
+                                  f"{sel_branch}:{action['id']}:{new_status}")
+                        st.success("Updated!"); st.rerun()
+
+                # Notes history
+                notes_hist = action.get('notes', [])
+                if notes_hist:
+                    with st.expander("Update history"):
+                        if isinstance(notes_hist, list):
+                            for n in reversed(notes_hist[-5:]):
+                                if isinstance(n, dict):
+                                    st.caption(f"{n.get('date','')} ({n.get('by','')}): {n.get('note','')}")
+                                else:
+                                    st.caption(str(n))

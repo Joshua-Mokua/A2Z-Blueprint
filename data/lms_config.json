@@ -1,0 +1,222 @@
+{
+  "_meta": {
+    "description": "LMS module configuration \u2014 editable via Admin \u2192 LMS Config tab",
+    "last_updated": "2026-04-16",
+    "updated_by": "admin"
+  },
+  "swim_lanes": {
+    "express": {
+      "label": "Express",
+      "description": "Repeat borrowers \u00b7 Clean history \u00b7 Auto-score",
+      "max_amount": 5000000,
+      "requires_repeat": true,
+      "requires_clean": true,
+      "sla_days": 3,
+      "color": "#16A34A",
+      "approvers": [
+        "Branch Manager",
+        "Chief Credit Officer"
+      ]
+    },
+    "standard": {
+      "label": "Standard",
+      "description": "New borrowers \u00b7 Full appraisal",
+      "min_amount": 0,
+      "max_amount": 100000000,
+      "requires_repeat": false,
+      "requires_clean": false,
+      "sla_days": 10,
+      "color": "#2563EB",
+      "approvers": [
+        "Chief Credit Officer",
+        "Credit Committee"
+      ]
+    },
+    "complex": {
+      "label": "Complex",
+      "description": "Large corporate \u00b7 Trade Finance \u00b7 Committee required",
+      "min_amount": 100000000,
+      "sla_days": 21,
+      "color": "#7C3AED",
+      "approvers": [
+        "Credit Committee",
+        "Board Credit Committee"
+      ]
+    }
+  },
+  "decline_reasons": [
+    "Insufficient cash flow",
+    "Inadequate collateral",
+    "Poor credit history",
+    "Incomplete documentation",
+    "Policy limit exceeded",
+    "Sector concentration risk",
+    "Negative equity",
+    "Unacceptable business plan",
+    "Director adverse listing",
+    "AML/KYC concerns",
+    "Regulatory restriction",
+    "High debt-service ratio",
+    "CRB adverse listing",
+    "Insufficient income",
+    "Business not viable"
+  ],
+  "rework_reasons": [
+    "Missing audited accounts",
+    "Collateral valuation expired",
+    "Board resolution not provided",
+    "Insurance certificate missing",
+    "Financial projections unrealistic",
+    "CRB report outstanding",
+    "Title deed not submitted",
+    "Guarantor financials missing",
+    "Business registration expired",
+    "Land search required",
+    "Additional security required",
+    "Revised repayment schedule needed"
+  ],
+  "condition_types": [
+    "Insurance certificate",
+    "Valuation report",
+    "Board resolution",
+    "Title deed registration",
+    "Land search",
+    "Legal charge",
+    "Debenture",
+    "Board minutes",
+    "CRB clearance",
+    "KRA PIN certificate",
+    "Share certificate",
+    "Guarantee document",
+    "Letter of offer acceptance",
+    "Security agreement"
+  ],
+  "document_checklist": {
+    "default": [
+      "CRB Report",
+      "Bank Statements (6 months)",
+      "Business Registration",
+      "ID/Passport",
+      "KRA PIN",
+      "Financial Statements"
+    ],
+    "above_10m": [
+      "Audited Accounts",
+      "Business Plan",
+      "Valuation Report"
+    ],
+    "corporate": [
+      "Board Resolution",
+      "Memorandum of Association",
+      "Certificate of Incorporation"
+    ],
+    "mortgage": [
+      "Title deed",
+      "Valuation report",
+      "Sale agreement"
+    ]
+  },
+  "compliance_flag_types": [
+    {
+      "code": "PEP",
+      "label": "Politically Exposed Person",
+      "risk_level": "High",
+      "escalate_to": "CCO"
+    },
+    {
+      "code": "SANCTION",
+      "label": "Sanctioned Entity",
+      "risk_level": "Critical",
+      "escalate_to": "CCO + Central Bank"
+    },
+    {
+      "code": "ADV_MEDIA",
+      "label": "Adverse Media",
+      "risk_level": "Medium",
+      "escalate_to": "Compliance Officer"
+    },
+    {
+      "code": "RESTRICTED",
+      "label": "Restricted Sector",
+      "risk_level": "High",
+      "escalate_to": "CCO"
+    },
+    {
+      "code": "AML",
+      "label": "AML Flag",
+      "risk_level": "High",
+      "escalate_to": "CCO"
+    },
+    {
+      "code": "UNUSUAL",
+      "label": "Unusual Transaction",
+      "risk_level": "Medium",
+      "escalate_to": "Compliance Officer"
+    }
+  ],
+  "compliance_sla_days": {
+    "Critical": 1,
+    "High": 3,
+    "Medium": 7,
+    "Low": 14
+  },
+  "fd_rate_bands": {
+    "30": {
+      "min_rate": 7.0,
+      "max_rate": 11.0,
+      "label": "30 days"
+    },
+    "60": {
+      "min_rate": 7.5,
+      "max_rate": 11.5,
+      "label": "60 days"
+    },
+    "90": {
+      "min_rate": 8.0,
+      "max_rate": 12.0,
+      "label": "90 days"
+    },
+    "182": {
+      "min_rate": 8.5,
+      "max_rate": 12.5,
+      "label": "6 months"
+    },
+    "364": {
+      "min_rate": 9.0,
+      "max_rate": 13.5,
+      "label": "12 months"
+    }
+  },
+  "approval_authorities": [
+    {
+      "level": 1,
+      "label": "Branch Manager",
+      "max_amount": 5000000,
+      "min_amount": 0
+    },
+    {
+      "level": 2,
+      "label": "Regional Head",
+      "max_amount": 20000000,
+      "min_amount": 5000001
+    },
+    {
+      "level": 3,
+      "label": "Chief Credit Officer",
+      "max_amount": 100000000,
+      "min_amount": 20000001
+    },
+    {
+      "level": 4,
+      "label": "Credit Committee",
+      "max_amount": 500000000,
+      "min_amount": 100000001
+    },
+    {
+      "level": 5,
+      "label": "Board Credit Committee",
+      "max_amount": 9999999999,
+      "min_amount": 500000001
+    }
+  ]
+}

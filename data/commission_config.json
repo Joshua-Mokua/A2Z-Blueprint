@@ -1,0 +1,76 @@
+{
+  "period": "2026",
+  "scheme": "Tiered performance-linked commission",
+  "tiers": [
+    {
+      "tier": "Bronze",
+      "min_bsc": 2.0,
+      "max_bsc": 2.49,
+      "pct_of_salary": 2.5
+    },
+    {
+      "tier": "Silver",
+      "min_bsc": 2.5,
+      "max_bsc": 2.99,
+      "pct_of_salary": 5.0
+    },
+    {
+      "tier": "Gold",
+      "min_bsc": 3.0,
+      "max_bsc": 3.49,
+      "pct_of_salary": 8.0
+    },
+    {
+      "tier": "Platinum",
+      "min_bsc": 3.5,
+      "max_bsc": 3.99,
+      "pct_of_salary": 12.0
+    },
+    {
+      "tier": "Diamond",
+      "min_bsc": 4.0,
+      "max_bsc": 5.0,
+      "pct_of_salary": 18.0
+    }
+  ],
+  "sales_commission": {
+    "Personal Loan": {
+      "rate_pct": 0.5,
+      "cap_kes": 50000
+    },
+    "Business Loan": {
+      "rate_pct": 0.75,
+      "cap_kes": 100000
+    },
+    "Mortgage": {
+      "rate_pct": 0.25,
+      "cap_kes": 200000
+    },
+    "Fixed Deposit": {
+      "rate_pct": 0.15,
+      "cap_kes": 30000
+    },
+    "Bancassurance Policy": {
+      "rate_pct": 5.0,
+      "cap_kes": 20000
+    },
+    "Asset Finance": {
+      "rate_pct": 0.5,
+      "cap_kes": 75000
+    },
+    "Trade Finance LC": {
+      "rate_pct": 0.3,
+      "cap_kes": 150000
+    }
+  },
+  "qualifiers": {
+    "min_bsc_for_commission": 2.5,
+    "min_kpi_achievement": 80,
+    "exclusions": [
+      "Under Performance Improvement Plan",
+      "On Leave > 30 days"
+    ]
+  },
+  "payment_schedule": "Quarterly \u2014 Jan/Apr/Jul/Oct",
+  "last_updated": "2026-04-17"
+}

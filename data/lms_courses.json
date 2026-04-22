@@ -1,0 +1,128 @@
+[
+  {
+    "id": "CRS0001",
+    "title": "CBK AML/CFT Certification",
+    "category": "Compliance",
+    "cbk_mandatory": true,
+    "duration_hours": 8,
+    "frequency": "Annual",
+    "description": "CBK-required training: CBK AML/CFT Certification"
+  },
+  {
+    "id": "CRS0002",
+    "title": "Credit Risk Analysis Fundamentals",
+    "category": "Credit",
+    "cbk_mandatory": true,
+    "duration_hours": 16,
+    "frequency": "Annual",
+    "description": "CBK-required training: Credit Risk Analysis Fundamentals"
+  },
+  {
+    "id": "CRS0003",
+    "title": "Customer Service Excellence",
+    "category": "Retail",
+    "cbk_mandatory": true,
+    "duration_hours": 4,
+    "frequency": "Annual",
+    "description": "CBK-required training: Customer Service Excellence"
+  },
+  {
+    "id": "CRS0004",
+    "title": "Anti-Bribery & Corruption",
+    "category": "All",
+    "cbk_mandatory": true,
+    "duration_hours": 2,
+    "frequency": "Annual",
+    "description": "CBK-required training: Anti-Bribery & Corruption"
+  },
+  {
+    "id": "CRS0005",
+    "title": "Data Protection & Privacy (DPA)",
+    "category": "All",
+    "cbk_mandatory": true,
+    "duration_hours": 2,
+    "frequency": "Annual",
+    "description": "CBK-required training: Data Protection & Privacy (DPA)"
+  },
+  {
+    "id": "CRS0006",
+    "title": "Digital Banking Essentials",
+    "category": "IT & Digital",
+    "cbk_mandatory": false,
+    "duration_hours": 8,
+    "frequency": "Annual",
+    "description": "Professional development: Digital Banking Essentials"
+  },
+  {
+    "id": "CRS0007",
+    "title": "IFRS 9 for Practitioners",
+    "category": "Finance",
+    "cbk_mandatory": true,
+    "duration_hours": 16,
+    "frequency": "Bi-annual",
+    "description": "CBK-required training: IFRS 9 for Practitioners"
+  },
+  {
+    "id": "CRS0008",
+    "title": "Leadership Excellence",
+    "category": "Management",
+    "cbk_mandatory": false,
+    "duration_hours": 24,
+    "frequency": "Once",
+    "description": "Professional development: Leadership Excellence"
+  },
+  {
+    "id": "CRS0009",
+    "title": "Branch Operations Procedures",
+    "category": "Retail",
+    "cbk_mandatory": true,
+    "duration_hours": 8,
+    "frequency": "Annual",
+    "description": "CBK-required training: Branch Operations Procedures"
+  },
+  {
+    "id": "CRS0010",
+    "title": "Cybersecurity Awareness",
+    "category": "All",
+    "cbk_mandatory": true,
+    "duration_hours": 2,
+    "frequency": "Annual",
+    "description": "CBK-required training: Cybersecurity Awareness"
+  },
+  {
+    "id": "CRS0011",
+    "title": "Product Knowledge \u2014 Loans",
+    "category": "Retail",
+    "cbk_mandatory": true,
+    "duration_hours": 4,
+    "frequency": "Annual",
+    "description": "CBK-required training: Product Knowledge \u2014 Loans"
+  },
+  {
+    "id": "CRS0012",
+    "title": "Trade Finance Essentials",
+    "category": "Commercial",
+    "cbk_mandatory": false,
+    "duration_hours": 16,
+    "frequency": "Annual",
+    "description": "Professional development: Trade Finance Essentials"
+  },
+  {
+    "id": "CRS0013",
+    "title": "Treasury Operations",
+    "category": "Treasury",
+    "cbk_mandatory": false,
+    "duration_hours": 24,
+    "frequency": "Annual",
+    "description": "Professional development: Treasury Operations"
+  },
+  {
+    "id": "CRS0014",
+    "title": "HR Policies & Procedures",
+    "category": "All",
+    "cbk_mandatory": true,
+    "duration_hours": 4,
+    "frequency": "Annual",
+    "description": "CBK-required training: HR Policies & Procedures"
+  }
+]

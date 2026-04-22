@@ -1,0 +1,346 @@
+{
+  "Loan Drawdown Request": {
+    "category": "Credit & Lending",
+    "sla_hours": 4,
+    "priority": "High",
+    "owner_unit": "Credit",
+    "description": "Customer request to draw down approved loan facility",
+    "required_docs": [
+      "Drawdown request letter",
+      "Proof of purpose (if required)"
+    ]
+  },
+  "Credit Limit Review": {
+    "category": "Credit & Lending",
+    "sla_hours": 48,
+    "priority": "High",
+    "owner_unit": "Credit",
+    "description": "Request to review and adjust credit limit on facility",
+    "required_docs": [
+      "Financial statements (6 months)",
+      "Credit review form"
+    ]
+  },
+  "Loan Restructuring": {
+    "category": "Credit & Lending",
+    "sla_hours": 72,
+    "priority": "High",
+    "owner_unit": "Credit",
+    "description": "Request to restructure loan terms \u2014 tenor, rate, repayment schedule",
+    "required_docs": [
+      "Restructuring request form",
+      "Financial statements",
+      "Board resolution (corporates)"
+    ]
+  },
+  "Collateral Substitution": {
+    "category": "Credit & Lending",
+    "sla_hours": 48,
+    "priority": "Medium",
+    "owner_unit": "Credit",
+    "description": "Customer requests to substitute pledged collateral",
+    "required_docs": [
+      "Collateral valuation report",
+      "Substitution request form"
+    ]
+  },
+  "Partial Discharge of Security": {
+    "category": "Credit & Lending",
+    "sla_hours": 48,
+    "priority": "Medium",
+    "owner_unit": "Credit",
+    "description": "Release portion of pledged security upon partial repayment",
+    "required_docs": [
+      "Discharge form",
+      "Proof of repayment"
+    ]
+  },
+  "Letter of Offer Amendment": {
+    "category": "Credit & Lending",
+    "sla_hours": 24,
+    "priority": "High",
+    "owner_unit": "Credit",
+    "description": "Amendment to terms in an issued letter of offer",
+    "required_docs": [
+      "Amendment request",
+      "Reason for amendment"
+    ]
+  },
+  "Account Mandate Change": {
+    "category": "Account Operations",
+    "sla_hours": 24,
+    "priority": "High",
+    "owner_unit": "Operations",
+    "description": "Change of authorised signatories or mandate requirements",
+    "required_docs": [
+      "Mandate update form",
+      "ID of new signatories",
+      "Board resolution (corporates)"
+    ]
+  },
+  "Account Name Change": {
+    "category": "Account Operations",
+    "sla_hours": 48,
+    "priority": "Medium",
+    "owner_unit": "Operations",
+    "description": "Legal name change on account following marriage, deed poll or corporate rename",
+    "required_docs": [
+      "Name change document",
+      "ID",
+      "Gazette notice (corporate)"
+    ]
+  },
+  "Account Closure": {
+    "category": "Account Operations",
+    "sla_hours": 24,
+    "priority": "High",
+    "owner_unit": "Operations",
+    "description": "Customer request to close an active account",
+    "required_docs": [
+      "Closure form",
+      "ID",
+      "Original documents"
+    ]
+  },
+  "Stop Payment Order": {
+    "category": "Account Operations",
+    "sla_hours": 2,
+    "priority": "Critical",
+    "owner_unit": "Operations",
+    "description": "Instruct bank to stop payment on a specific cheque or transaction",
+    "required_docs": [
+      "Stop order form",
+      "Cheque details"
+    ]
+  },
+  "Standing Order Setup/Amendment": {
+    "category": "Account Operations",
+    "sla_hours": 4,
+    "priority": "Medium",
+    "owner_unit": "Operations",
+    "description": "Create, amend or cancel a recurring standing order",
+    "required_docs": [
+      "Standing order form"
+    ]
+  },
+  "Direct Debit Setup/Amendment": {
+    "category": "Account Operations",
+    "sla_hours": 4,
+    "priority": "Medium",
+    "owner_unit": "Operations",
+    "description": "Authorise or amend direct debit mandate",
+    "required_docs": [
+      "Direct debit mandate form",
+      "ID"
+    ]
+  },
+  "Lien Placement/Release": {
+    "category": "Account Operations",
+    "sla_hours": 4,
+    "priority": "High",
+    "owner_unit": "Operations",
+    "description": "Place or release a lien on customer funds",
+    "required_docs": [
+      "Lien form",
+      "Authorisation letter"
+    ]
+  },
+  "Letter of Credit Opening": {
+    "category": "Trade Finance",
+    "sla_hours": 24,
+    "priority": "High",
+    "owner_unit": "Treasury",
+    "description": "Open a documentary letter of credit on behalf of importer",
+    "required_docs": [
+      "LC application form",
+      "Pro-forma invoice",
+      "Import licence (if applicable)"
+    ]
+  },
+  "Letter of Credit Amendment": {
+    "category": "Trade Finance",
+    "sla_hours": 8,
+    "priority": "High",
+    "owner_unit": "Treasury",
+    "description": "Amend terms of an existing LC",
+    "required_docs": [
+      "Amendment form",
+      "Justification letter"
+    ]
+  },
+  "Bank Guarantee Issuance": {
+    "category": "Trade Finance",
+    "sla_hours": 48,
+    "priority": "High",
+    "owner_unit": "Treasury",
+    "description": "Issue a performance, bid or advance payment guarantee",
+    "required_docs": [
+      "Guarantee form",
+      "Underlying contract",
+      "Indemnity agreement"
+    ]
+  },
+  "Documentary Collection": {
+    "category": "Trade Finance",
+    "sla_hours": 24,
+    "priority": "Medium",
+    "owner_unit": "Treasury",
+    "description": "Process inward or outward documentary collection",
+    "required_docs": [
+      "Collection application",
+      "Shipping documents"
+    ]
+  },
+  "Foreign Currency Purchase": {
+    "category": "Treasury & FX",
+    "sla_hours": 2,
+    "priority": "High",
+    "owner_unit": "Treasury",
+    "description": "Customer request to purchase foreign currency",
+    "required_docs": [
+      "FX purchase form",
+      "Supporting documents (purpose)"
+    ]
+  },
+  "Forward Contract Booking": {
+    "category": "Treasury & FX",
+    "sla_hours": 4,
+    "priority": "High",
+    "owner_unit": "Treasury",
+    "description": "Book a forward FX contract to hedge future currency exposure",
+    "required_docs": [
+      "Forward contract form",
+      "Underlying trade documents"
+    ]
+  },
+  "RTGS/SWIFT Transfer": {
+    "category": "Treasury & FX",
+    "sla_hours": 2,
+    "priority": "Critical",
+    "owner_unit": "Operations",
+    "description": "Large-value real-time gross settlement or SWIFT wire transfer",
+    "required_docs": [
+      "Transfer instruction form",
+      "ID",
+      "Source of funds (if required)"
+    ]
+  },
+  "Cheque Book Request": {
+    "category": "Customer Service",
+    "sla_hours": 24,
+    "priority": "Low",
+    "owner_unit": "Operations",
+    "description": "Request new cheque book for an account",
+    "required_docs": [
+      "Cheque book request form"
+    ]
+  },
+  "Banker's Cheque": {
+    "category": "Customer Service",
+    "sla_hours": 1,
+    "priority": "Medium",
+    "owner_unit": "Operations",
+    "description": "Request for a bank-certified cheque",
+    "required_docs": [
+      "Banker's cheque form",
+      "ID"
+    ]
+  },
+  "Reference Letter": {
+    "category": "Customer Service",
+    "sla_hours": 24,
+    "priority": "Low",
+    "owner_unit": "Operations",
+    "description": "Request for bank reference letter for visa, tenancy or other purpose",
+    "required_docs": [
+      "Reference letter request form"
+    ]
+  },
+  "Statement of Account": {
+    "category": "Customer Service",
+    "sla_hours": 4,
+    "priority": "Low",
+    "owner_unit": "Operations",
+    "description": "Request for detailed account statement",
+    "required_docs": [
+      "Statement request form"
+    ]
+  },
+  "Confirmation of Balance": {
+    "category": "Customer Service",
+    "sla_hours": 4,
+    "priority": "Low",
+    "owner_unit": "Operations",
+    "description": "Confirmation of balance for audit or due diligence purposes",
+    "required_docs": [
+      "Confirmation request",
+      "Auditor authorisation"
+    ]
+  },
+  "KYC/CDD Update": {
+    "category": "Compliance",
+    "sla_hours": 48,
+    "priority": "High",
+    "owner_unit": "Compliance & Legal",
+    "description": "Customer due diligence refresh \u2014 update KYC documents",
+    "required_docs": [
+      "Updated ID",
+      "Proof of address",
+      "Source of funds declaration"
+    ]
+  },
+  "Garnishee Order Processing": {
+    "category": "Compliance",
+    "sla_hours": 4,
+    "priority": "Critical",
+    "owner_unit": "Compliance & Legal",
+    "description": "Court-ordered garnishee \u2014 freeze and process as instructed",
+    "required_docs": [
+      "Court order (original)",
+      "Legal team sign-off"
+    ]
+  },
+  "AML Query Response": {
+    "category": "Compliance",
+    "sla_hours": 24,
+    "priority": "Critical",
+    "owner_unit": "Compliance & Legal",
+    "description": "Respond to AML or KYC query from regulator or correspondent bank",
+    "required_docs": [
+      "Query letter",
+      "Customer documents"
+    ]
+  },
+  "Card Hotlisting": {
+    "category": "Card Services",
+    "sla_hours": 0.5,
+    "priority": "Critical",
+    "owner_unit": "Operations",
+    "description": "Immediately block a lost, stolen or compromised card",
+    "required_docs": [
+      "Customer ID or PIN verification"
+    ]
+  },
+  "Card Limit Adjustment": {
+    "category": "Card Services",
+    "sla_hours": 4,
+    "priority": "Medium",
+    "owner_unit": "Operations",
+    "description": "Increase or decrease card transaction or credit limit",
+    "required_docs": [
+      "Limit adjustment form",
+      "ID verification"
+    ]
+  },
+  "Chargeback Dispute": {
+    "category": "Card Services",
+    "sla_hours": 48,
+    "priority": "High",
+    "owner_unit": "Operations",
+    "description": "Customer disputes a card transaction \u2014 initiate chargeback",
+    "required_docs": [
+      "Dispute form",
+      "Transaction details"
+    ]
+  }
+}

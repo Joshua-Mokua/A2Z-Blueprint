@@ -7,8 +7,39 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+require_access("branch_log")
+
+
+
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+role     = str(ud.get("role", "")).lower()
+name     = ud.get("full_name", uname)
+is_admin = ud.get("is_admin", False)
+sc       = str(ud.get("staff_code", ""))
+
+# ── Area Manager: branch submission tracker ─────────────────────
+_is_area_mgr = any(x in role.lower() for x in ("area manager","regional","head of branches","head of retail"))
+if _is_area_mgr or is_admin:
+    st.markdown("**Branch log submission tracker:**")
+    import json as _jbl
+    from pathlib import Path as _pbl
+    _logs = _jbl.loads((_pbl(__file__).parent.parent/"data"/"branch_actuals.json").read_text()) if (_pbl(__file__).parent.parent/"data"/"branch_actuals.json").exists() else {}
+    _branches_all = list(set(u.get("unit","") for u in json.loads((_pbl(__file__).parent.parent/"data"/"users.json").read_text()).values()
+                             if u.get("unit","") not in ("Head Office","HO","")))
+    _today_bl = date.today()
+    _month_logs = {k:v for k,v in _logs.items() if isinstance(v,dict) and str(_today_bl)[:7] in k}
+    _submitted   = len(_month_logs)
+    _pending_sub = len(_branches_all) - _submitted
+    _bs1,_bs2,_bs3 = st.columns(3)
+    _bs1.metric("Submitted this month", _submitted)
+    _bs2.metric("Pending submission",   max(_pending_sub,0))
+    _bs3.metric("Total branches",       len(_branches_all))
+    if _pending_sub > 0:
+        st.warning(f"⚠️ {_pending_sub} branch(es) have not submitted their monthly log")
+    st.markdown("---")
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
 
 # ── LOG FIELDS ───────────────────────────────────────────────────────
@@ -145,9 +176,49 @@ my_sc     = str(ud.get("staff_code",""))
 is_mgr    = any(k in role_low for k in ("manager","director","head","regional","admin"))
 is_admin  = "admin" in role_low or ud.get("can_view_all", False)
 
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📝 Branch Daily Log</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Daily reporting · Handover</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📝 Branch Daily Log</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Daily reporting · Handover · Manager view</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📝 Branch Daily Log</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Daily reporting · Handover · Manager view</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📝 Branch Daily Log</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Daily reporting · Manager view · Handover</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📝 Branch Daily Log</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Daily reporting · Manager view</span></div>",
+    unsafe_allow_html=True)
+
+
 st.markdown(
     "<div style='padding:14px 20px;background:#2C3E50;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>Daily Branch Activity Log</div>"
+    "<div style='color:var(--color-background-primary);font-size:16px;font-weight:500'>Daily Branch Activity Log</div>"
     "<div style='color:#BDC3C7;font-size:11px;margin-top:2px'>"
     f"Submit · Validate · Track · Analyse | Today: {date.today().strftime('%A, %d %B %Y')}"
     "</div></div>", unsafe_allow_html=True)
@@ -173,8 +244,8 @@ with tabs[0]:
     if my_today:
         status = "✅ Validated" if my_today.get("validated") else ("❌ Rejected" if my_today.get("rejected") else "⏳ Awaiting validation")
         st.markdown(
-            f"<div style='padding:10px 14px;background:#E8F5EE;"
-            f"border-left:4px solid #006B3F;border-radius:0 6px 6px 0;margin-bottom:12px'>"
+            f"<div style='padding:10px 14px;background:var(--brand-light,#E8F5EE);"
+            f"border-left:4px solid var(--brand-primary,#006B3F);border-radius:0 6px 6px 0;margin-bottom:12px'>"
             f"<b>Already submitted today</b> · Status: {status}"
             f"{'<br>Manager note: ' + my_today['manager_note'] if my_today.get('manager_note') else ''}"
             f"</div>", unsafe_allow_html=True)
@@ -231,6 +302,7 @@ with tabs[0]:
             rec = blm.submit(log_data)
             audit_log("BRANCH_LOG_SUBMITTED", uname, f"{my_unit_val}:{date.today()}")
             st.success(f"✅ Daily log submitted. Awaiting manager validation.")
+            st.cache_data.clear()
             st.rerun()
 
 # ════════════════════════════════════════════════════════════════
@@ -274,7 +346,7 @@ with tabs[1]:
                         f"<div style='font-size:11px;padding:2px 0'>"
                         f"<span style='color:#888'>{l}:</span> "
                         f"<b>{display}</b>"
-                        f"<span style='color:#006B3F;font-size:10px'>{kpi_tag}</span>"
+                        f"<span style='color:var(--brand-primary,#006B3F);font-size:10px'>{kpi_tag}</span>"
                         f"</div>", unsafe_allow_html=True)
 
                 if log.get("remarks"):
@@ -291,6 +363,7 @@ with tabs[1]:
                         audit_log("BRANCH_LOG_VALIDATED", uname,
                                   f"{log['id']}:{'approved' if approved else 'rejected'}")
                         st.success("Decision recorded.")
+                        st.cache_data.clear()
                         st.rerun()
 
 # ════════════════════════════════════════════════════════════════
@@ -351,6 +424,51 @@ with tabs[2]:
 # ════════════════════════════════════════════════════════════════
 with tabs[3]:
     st.subheader("Activity trends")
+
+    # Submission heatmap — days x weeks
+    _all_logs = blm.get_all() if blm else []
+    if _all_logs:
+        from collections import defaultdict
+        import calendar as _cal
+        _sub_days = defaultdict(int)
+        _today_bl = date.today()
+        _start_bl = _today_bl.replace(day=1)
+        for _lg in _all_logs:
+            _ld = str(_lg.get("date",""))[:10]
+            if _ld >= str(_start_bl):
+                _sub_days[_ld] += 1
+
+        # Calendar heatmap for current month
+        _mo_days  = _cal.monthrange(_today_bl.year, _today_bl.month)[1]
+        _first_wd = date(_today_bl.year, _today_bl.month, 1).weekday()
+        _cells_html = (
+            "<div style='background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;"
+            "padding:12px;margin-bottom:12px'>"
+            "<div style='font-size:11px;font-weight:700;color:var(--color-text-primary);margin-bottom:8px'>"
+            f"📅 Submission heatmap — {_cal.month_name[_today_bl.month]} {_today_bl.year}</div>"
+            "<div style='display:grid;grid-template-columns:repeat(7,1fr);gap:3px;max-width:420px'>"
+        )
+        for _dn in ["Mo","Tu","We","Th","Fr","Sa","Su"]:
+            _cells_html += f"<div style='font-size:9px;color:var(--color-text-tertiary);text-align:center;font-weight:600'>{_dn}</div>"
+        for _ in range(_first_wd):
+            _cells_html += "<div></div>"
+        for _d in range(1, _mo_days+1):
+            _dt_str = f"{_today_bl.year}-{_today_bl.month:02d}-{_d:02d}"
+            _cnt    = _sub_days.get(_dt_str, 0)
+            _is_td  = (_d == _today_bl.day)
+            _bg     = ("var(--brand-primary,#006B3F)" if _cnt>=5 else "#4ADE80" if _cnt>=3 else "#BBF7D0" if _cnt>=1 else "#F3F4F6")
+            _fg     = "var(--color-background-primary)" if _cnt>=3 else ("#111827" if _cnt==0 else "#166534")
+            _brd    = "2px solid #F5A623" if _is_td else "none"
+            _cells_html += (
+                f"<div style='background:{_bg};color:{_fg};border:{_brd};"
+                f"border-radius:4px;padding:4px 2px;text-align:center;"
+                f"font-size:10px;font-weight:{'700' if _is_td else '500'}'>"
+                f"<div>{_d}</div>"
+                f"{'<div style="font-size:8px">' + str(_cnt) + '</div>' if _cnt else ''}"
+                f"</div>"
+            )
+        _cells_html += "</div></div>"
+        st.markdown(_cells_html, unsafe_allow_html=True)
     tr_unit = st.selectbox("Unit", ["All"] + sorted(set(l["unit"] for l in blm.logs)),
                             key="tr_unit_f")
     tr_metric = st.selectbox("Metric", [l for _,l,t,_,_ in LOG_FIELDS if t!="text"],
@@ -373,7 +491,7 @@ with tabs[3]:
         fig_tr = px.line(daily, x="Date", y="Value",
                          title=f"{tr_metric} — daily trend ({tr_unit})",
                          markers=True, line_shape="spline")
-        fig_tr.update_traces(line_color="#006B3F", line_width=2)
+        fig_tr.update_traces(line_color="var(--brand-primary,#006B3F)", line_width=2)
         fig_tr.update_layout(height=320,
             plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_tr, use_container_width=True)
@@ -382,7 +500,7 @@ with tabs[3]:
         staff_daily = tr_df.groupby("Staff")["Value"].sum().reset_index().sort_values("Value",ascending=False)
         fig_sb = px.bar(staff_daily.head(15), x="Staff", y="Value",
                         title=f"{tr_metric} by staff",
-                        color="Value", color_continuous_scale=["#E8F5EE","#006B3F"])
+                        color="Value", color_continuous_scale=["#E8F5EE","var(--brand-primary,#006B3F)"])
         fig_sb.update_layout(height=280, xaxis_tickangle=-30,
             plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_sb, use_container_width=True)
@@ -464,9 +582,9 @@ with tabs[4]:
         compliance_df = compliance_df.sort_values("Compliance %", ascending=False)
         fig_c = px.bar(compliance_df.head(20), x="Staff Name", y="Compliance %",
                        color="Compliance %",
-                       color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                       color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                        range_color=[0,100], title="Log submission compliance (%)")
-        fig_c.add_hline(y=80, line_dash="dash", line_color="#006B3F",
+        fig_c.add_hline(y=80, line_dash="dash", line_color="var(--brand-primary,#006B3F)",
                          annotation_text="80% target")
         fig_c.update_layout(height=300, xaxis_tickangle=-30,
             plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')

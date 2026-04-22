@@ -1,0 +1,1780 @@
+{
+  "as_at": "2026-04-18",
+  "overall_nps": 38,
+  "by_branch": [
+    {
+      "branch": "Banana",
+      "nps": 22,
+      "promoters": 60,
+      "passives": 26,
+      "detractors": 21,
+      "responses": 381
+    },
+    {
+      "branch": "Bomet",
+      "nps": 70,
+      "promoters": 46,
+      "passives": 17,
+      "detractors": 24,
+      "responses": 368
+    },
+    {
+      "branch": "Bungoma",
+      "nps": 50,
+      "promoters": 66,
+      "passives": 28,
+      "detractors": 22,
+      "responses": 301
+    },
+    {
+      "branch": "Busia",
+      "nps": 63,
+      "promoters": 77,
+      "passives": 24,
+      "detractors": 12,
+      "responses": 51
+    },
+    {
+      "branch": "Cargen House",
+      "nps": 54,
+      "promoters": 45,
+      "passives": 13,
+      "detractors": 14,
+      "responses": 100
+    },
+    {
+      "branch": "Chuka",
+      "nps": 43,
+      "promoters": 40,
+      "passives": 25,
+      "detractors": 15,
+      "responses": 157
+    },
+    {
+      "branch": "City Hall",
+      "nps": 40,
+      "promoters": 56,
+      "passives": 21,
+      "detractors": 16,
+      "responses": 242
+    },
+    {
+      "branch": "Dagoretti",
+      "nps": 62,
+      "promoters": 72,
+      "passives": 30,
+      "detractors": 7,
+      "responses": 224
+    },
+    {
+      "branch": "Digo",
+      "nps": 20,
+      "promoters": 75,
+      "passives": 27,
+      "detractors": 14,
+      "responses": 197
+    },
+    {
+      "branch": "Donholm",
+      "nps": 44,
+      "promoters": 49,
+      "passives": 30,
+      "detractors": 23,
+      "responses": 208
+    },
+    {
+      "branch": "Eastleigh",
+      "nps": 16,
+      "promoters": 63,
+      "passives": 21,
+      "detractors": 19,
+      "responses": 266
+    },
+    {
+      "branch": "Eldoret",
+      "nps": 20,
+      "promoters": 65,
+      "passives": 28,
+      "detractors": 22,
+      "responses": 305
+    },
+    {
+      "branch": "Eldoret West",
+      "nps": 70,
+      "promoters": 47,
+      "passives": 23,
+      "detractors": 21,
+      "responses": 357
+    },
+    {
+      "branch": "Embu",
+      "nps": 71,
+      "promoters": 71,
+      "passives": 22,
+      "detractors": 21,
+      "responses": 182
+    },
+    {
+      "branch": "FB Towers Corporate",
+      "nps": 69,
+      "promoters": 66,
+      "passives": 28,
+      "detractors": 20,
+      "responses": 312
+    },
+    {
+      "branch": "FB Towers Retail",
+      "nps": 48,
+      "promoters": 41,
+      "passives": 28,
+      "detractors": 12,
+      "responses": 116
+    },
+    {
+      "branch": "Gateway Mall",
+      "nps": 67,
+      "promoters": 43,
+      "passives": 26,
+      "detractors": 8,
+      "responses": 368
+    },
+    {
+      "branch": "Gatundu",
+      "nps": 42,
+      "promoters": 70,
+      "passives": 14,
+      "detractors": 20,
+      "responses": 167
+    },
+    {
+      "branch": "Gikomba",
+      "nps": 69,
+      "promoters": 47,
+      "passives": 30,
+      "detractors": 19,
+      "responses": 395
+    },
+    {
+      "branch": "Gikomba Area 42",
+      "nps": 45,
+      "promoters": 74,
+      "passives": 18,
+      "detractors": 22,
+      "responses": 255
+    },
+    {
+      "branch": "Githunguri",
+      "nps": 57,
+      "promoters": 59,
+      "passives": 27,
+      "detractors": 25,
+      "responses": 306
+    },
+    {
+      "branch": "Githurai",
+      "nps": 59,
+      "promoters": 70,
+      "passives": 22,
+      "detractors": 18,
+      "responses": 153
+    },
+    {
+      "branch": "Industrial Area",
+      "nps": 33,
+      "promoters": 57,
+      "passives": 10,
+      "detractors": 6,
+      "responses": 126
+    },
+    {
+      "branch": "Isiolo",
+      "nps": 56,
+      "promoters": 78,
+      "passives": 24,
+      "detractors": 21,
+      "responses": 300
+    },
+    {
+      "branch": "JKIA",
+      "nps": 38,
+      "promoters": 52,
+      "passives": 18,
+      "detractors": 20,
+      "responses": 288
+    },
+    {
+      "branch": "KTDA Retail",
+      "nps": 47,
+      "promoters": 71,
+      "passives": 23,
+      "detractors": 22,
+      "responses": 389
+    },
+    {
+      "branch": "Kagwe",
+      "nps": 17,
+      "promoters": 58,
+      "passives": 20,
+      "detractors": 19,
+      "responses": 100
+    },
+    {
+      "branch": "Kahawa West",
+      "nps": 43,
+      "promoters": 72,
+      "passives": 18,
+      "detractors": 19,
+      "responses": 143
+    },
+    {
+      "branch": "Kajiado",
+      "nps": 42,
+      "promoters": 70,
+      "passives": 12,
+      "detractors": 25,
+      "responses": 186
+    },
+    {
+      "branch": "Kakamega",
+      "nps": 72,
+      "promoters": 71,
+      "passives": 21,
+      "detractors": 8,
+      "responses": 149
+    },
+    {
+      "branch": "Kangari",
+      "nps": 62,
+      "promoters": 66,
+      "passives": 14,
+      "detractors": 19,
+      "responses": 57
+    },
+    {
+      "branch": "Kangema",
+      "nps": 20,
+      "promoters": 40,
+      "passives": 24,
+      "detractors": 23,
+      "responses": 329
+    },
+    {
+      "branch": "Kangemi",
+      "nps": 68,
+      "promoters": 45,
+      "passives": 29,
+      "detractors": 11,
+      "responses": 176
+    },
+    {
+      "branch": "Kapsabet",
+      "nps": 22,
+      "promoters": 79,
+      "passives": 11,
+      "detractors": 22,
+      "responses": 187
+    },
+    {
+      "branch": "Karatina",
+      "nps": 57,
+      "promoters": 80,
+      "passives": 21,
+      "detractors": 9,
+      "responses": 52
+    }
+  ],
+  "by_product": [
+    {
+      "product": "Current Account",
+      "nps": 30,
+      "satisfaction": 4.1
+    },
+    {
+      "product": "Savings Account",
+      "nps": 46,
+      "satisfaction": 4.3
+    },
+    {
+      "product": "Personal Loan",
+      "nps": 65,
+      "satisfaction": 3.8
+    },
+    {
+      "product": "Mortgage",
+      "nps": 56,
+      "satisfaction": 4.5
+    },
+    {
+      "product": "Asset Finance",
+      "nps": 44,
+      "satisfaction": 3.4
+    },
+    {
+      "product": "Business Loan",
+      "nps": 47,
+      "satisfaction": 3.3
+    },
+    {
+      "product": "Fixed Deposit",
+      "nps": 48,
+      "satisfaction": 4.4
+    },
+    {
+      "product": "Mobile Banking",
+      "nps": 42,
+      "satisfaction": 3.5
+    }
+  ],
+  "verbatims": [
+    {
+      "date": "2026-04-05",
+      "branch": "Eastleigh",
+      "product": "Personal Loan",
+      "score": 10,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Kagwe",
+      "product": "Fixed Deposit",
+      "score": 3,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Banana",
+      "product": "Savings Account",
+      "score": 7,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-17",
+      "branch": "Industrial Area",
+      "product": "Business Loan",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Kangari",
+      "product": "Business Loan",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Dagoretti",
+      "product": "Mobile Banking",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Kapsabet",
+      "product": "Mortgage",
+      "score": 7,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "FB Towers Corporate",
+      "product": "Savings Account",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-17",
+      "branch": "Eldoret West",
+      "product": "Personal Loan",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Eldoret West",
+      "product": "Mobile Banking",
+      "score": 1,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Kapsabet",
+      "product": "Mortgage",
+      "score": 9,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Eldoret",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Kagwe",
+      "product": "Savings Account",
+      "score": 7,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Industrial Area",
+      "product": "Personal Loan",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-03",
+      "branch": "Kagwe",
+      "product": "Asset Finance",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Kapsabet",
+      "product": "Mobile Banking",
+      "score": 8,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Kapsabet",
+      "product": "Asset Finance",
+      "score": 2,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-11",
+      "branch": "Banana",
+      "product": "Savings Account",
+      "score": 8,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "Karatina",
+      "product": "Personal Loan",
+      "score": 1,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Eastleigh",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Gatundu",
+      "product": "Mortgage",
+      "score": 10,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "Gatundu",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Kahawa West",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-25",
+      "branch": "Industrial Area",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Cargen House",
+      "product": "Asset Finance",
+      "score": 6,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Gateway Mall",
+      "product": "Savings Account",
+      "score": 1,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Gateway Mall",
+      "product": "Fixed Deposit",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "FB Towers Retail",
+      "product": "Current Account",
+      "score": 5,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Industrial Area",
+      "product": "Business Loan",
+      "score": 8,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-20",
+      "branch": "KTDA Retail",
+      "product": "Business Loan",
+      "score": 10,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-30",
+      "branch": "Kakamega",
+      "product": "Fixed Deposit",
+      "score": 2,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Kangemi",
+      "product": "Asset Finance",
+      "score": 7,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Industrial Area",
+      "product": "Current Account",
+      "score": 7,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Githurai",
+      "product": "Asset Finance",
+      "score": 2,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-25",
+      "branch": "Kagwe",
+      "product": "Business Loan",
+      "score": 10,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Githurai",
+      "product": "Mortgage",
+      "score": 9,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Dagoretti",
+      "product": "Personal Loan",
+      "score": 10,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Bungoma",
+      "product": "Personal Loan",
+      "score": 9,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-30",
+      "branch": "Gikomba Area 42",
+      "product": "Current Account",
+      "score": 7,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-07",
+      "branch": "Kagwe",
+      "product": "Fixed Deposit",
+      "score": 7,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-25",
+      "branch": "Kagwe",
+      "product": "Mortgage",
+      "score": 3,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Bomet",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-11",
+      "branch": "Bomet",
+      "product": "Current Account",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "Gateway Mall",
+      "product": "Business Loan",
+      "score": 3,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Eldoret",
+      "product": "Current Account",
+      "score": 9,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Kapsabet",
+      "product": "Business Loan",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "FB Towers Retail",
+      "product": "Mobile Banking",
+      "score": 1,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Kangemi",
+      "product": "Personal Loan",
+      "score": 7,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "FB Towers Corporate",
+      "product": "Asset Finance",
+      "score": 6,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-07",
+      "branch": "Industrial Area",
+      "product": "Mobile Banking",
+      "score": 8,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-21",
+      "branch": "Gikomba Area 42",
+      "product": "Mortgage",
+      "score": 3,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Kangema",
+      "product": "Current Account",
+      "score": 6,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Bungoma",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-07",
+      "branch": "Karatina",
+      "product": "Asset Finance",
+      "score": 3,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-21",
+      "branch": "Bomet",
+      "product": "Mortgage",
+      "score": 10,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "Bungoma",
+      "product": "Fixed Deposit",
+      "score": 7,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Kangemi",
+      "product": "Savings Account",
+      "score": 2,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "JKIA",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Bungoma",
+      "product": "Mortgage",
+      "score": 3,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Karatina",
+      "product": "Asset Finance",
+      "score": 6,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Eldoret West",
+      "product": "Current Account",
+      "score": 10,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Kahawa West",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Kapsabet",
+      "product": "Current Account",
+      "score": 3,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Donholm",
+      "product": "Personal Loan",
+      "score": 1,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Banana",
+      "product": "Business Loan",
+      "score": 2,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Embu",
+      "product": "Personal Loan",
+      "score": 10,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "City Hall",
+      "product": "Business Loan",
+      "score": 8,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Cargen House",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Dagoretti",
+      "product": "Business Loan",
+      "score": 8,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Kapsabet",
+      "product": "Mortgage",
+      "score": 6,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-20",
+      "branch": "Industrial Area",
+      "product": "Savings Account",
+      "score": 2,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Kangema",
+      "product": "Asset Finance",
+      "score": 5,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Githunguri",
+      "product": "Fixed Deposit",
+      "score": 9,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Kangema",
+      "product": "Fixed Deposit",
+      "score": 6,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Kakamega",
+      "product": "Mortgage",
+      "score": 6,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "JKIA",
+      "product": "Mortgage",
+      "score": 3,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Digo",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Dagoretti",
+      "product": "Business Loan",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Donholm",
+      "product": "Asset Finance",
+      "score": 4,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Dagoretti",
+      "product": "Asset Finance",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "KTDA Retail",
+      "product": "Fixed Deposit",
+      "score": 1,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Kagwe",
+      "product": "Business Loan",
+      "score": 2,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-20",
+      "branch": "Karatina",
+      "product": "Mortgage",
+      "score": 7,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Githurai",
+      "product": "Current Account",
+      "score": 7,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-18",
+      "branch": "Gatundu",
+      "product": "Asset Finance",
+      "score": 3,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "Kagwe",
+      "product": "Mobile Banking",
+      "score": 8,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-18",
+      "branch": "Bungoma",
+      "product": "Mortgage",
+      "score": 2,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Bomet",
+      "product": "Mortgage",
+      "score": 8,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-30",
+      "branch": "Isiolo",
+      "product": "Savings Account",
+      "score": 9,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Banana",
+      "product": "Savings Account",
+      "score": 3,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-11",
+      "branch": "Kakamega",
+      "product": "Mortgage",
+      "score": 10,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-27",
+      "branch": "Gikomba Area 42",
+      "product": "Savings Account",
+      "score": 10,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-27",
+      "branch": "Kapsabet",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Kagwe",
+      "product": "Current Account",
+      "score": 3,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Kangari",
+      "product": "Business Loan",
+      "score": 6,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Kangari",
+      "product": "Asset Finance",
+      "score": 8,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Gateway Mall",
+      "product": "Current Account",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-18",
+      "branch": "Kangari",
+      "product": "Business Loan",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Isiolo",
+      "product": "Asset Finance",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Embu",
+      "product": "Current Account",
+      "score": 7,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Kangemi",
+      "product": "Asset Finance",
+      "score": 8,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Kangemi",
+      "product": "Business Loan",
+      "score": 8,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Githurai",
+      "product": "Business Loan",
+      "score": 3,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Eldoret",
+      "product": "Asset Finance",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "City Hall",
+      "product": "Mortgage",
+      "score": 1,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-11",
+      "branch": "Embu",
+      "product": "Fixed Deposit",
+      "score": 9,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Embu",
+      "product": "Asset Finance",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Githunguri",
+      "product": "Business Loan",
+      "score": 7,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Donholm",
+      "product": "Personal Loan",
+      "score": 3,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Bungoma",
+      "product": "Asset Finance",
+      "score": 5,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Gatundu",
+      "product": "Business Loan",
+      "score": 3,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Eldoret",
+      "product": "Current Account",
+      "score": 3,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "Kangema",
+      "product": "Current Account",
+      "score": 5,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Isiolo",
+      "product": "Savings Account",
+      "score": 8,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Githunguri",
+      "product": "Personal Loan",
+      "score": 9,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-03",
+      "branch": "Banana",
+      "product": "Current Account",
+      "score": 2,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "Gateway Mall",
+      "product": "Business Loan",
+      "score": 1,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Eldoret West",
+      "product": "Savings Account",
+      "score": 7,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Eastleigh",
+      "product": "Mortgage",
+      "score": 4,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Isiolo",
+      "product": "Personal Loan",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Kahawa West",
+      "product": "Mobile Banking",
+      "score": 6,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Gikomba Area 42",
+      "product": "Mobile Banking",
+      "score": 9,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-16",
+      "branch": "Embu",
+      "product": "Mortgage",
+      "score": 2,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-07",
+      "branch": "Eastleigh",
+      "product": "Savings Account",
+      "score": 3,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Kahawa West",
+      "product": "Mortgage",
+      "score": 7,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Donholm",
+      "product": "Asset Finance",
+      "score": 5,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Banana",
+      "product": "Mobile Banking",
+      "score": 9,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-21",
+      "branch": "Gatundu",
+      "product": "Business Loan",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Donholm",
+      "product": "Mortgage",
+      "score": 6,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Busia",
+      "product": "Business Loan",
+      "score": 5,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Kakamega",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Gatundu",
+      "product": "Asset Finance",
+      "score": 1,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "Bungoma",
+      "product": "Savings Account",
+      "score": 9,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "City Hall",
+      "product": "Fixed Deposit",
+      "score": 10,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-30",
+      "branch": "Kangari",
+      "product": "Current Account",
+      "score": 3,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Bomet",
+      "product": "Savings Account",
+      "score": 7,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Karatina",
+      "product": "Asset Finance",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Cargen House",
+      "product": "Savings Account",
+      "score": 6,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Kangari",
+      "product": "Mortgage",
+      "score": 6,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-27",
+      "branch": "FB Towers Retail",
+      "product": "Fixed Deposit",
+      "score": 4,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "Bungoma",
+      "product": "Mobile Banking",
+      "score": 4,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Eldoret West",
+      "product": "Savings Account",
+      "score": 10,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-31",
+      "branch": "JKIA",
+      "product": "Mobile Banking",
+      "score": 9,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-03",
+      "branch": "Embu",
+      "product": "Fixed Deposit",
+      "score": 1,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Digo",
+      "product": "Asset Finance",
+      "score": 4,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Kahawa West",
+      "product": "Current Account",
+      "score": 6,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-19",
+      "branch": "Kapsabet",
+      "product": "Savings Account",
+      "score": 10,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Embu",
+      "product": "Savings Account",
+      "score": 9,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "KTDA Retail",
+      "product": "Savings Account",
+      "score": 2,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Banana",
+      "product": "Mortgage",
+      "score": 4,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Eastleigh",
+      "product": "Asset Finance",
+      "score": 6,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Eastleigh",
+      "product": "Current Account",
+      "score": 4,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-21",
+      "branch": "Kajiado",
+      "product": "Current Account",
+      "score": 6,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Kangemi",
+      "product": "Current Account",
+      "score": 4,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-17",
+      "branch": "Gikomba",
+      "product": "Savings Account",
+      "score": 3,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-10",
+      "branch": "Embu",
+      "product": "Current Account",
+      "score": 5,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-03",
+      "branch": "Gateway Mall",
+      "product": "Savings Account",
+      "score": 9,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Kapsabet",
+      "product": "Mortgage",
+      "score": 8,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Industrial Area",
+      "product": "Mortgage",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Chuka",
+      "product": "Mortgage",
+      "score": 1,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "JKIA",
+      "product": "Savings Account",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "FB Towers Retail",
+      "product": "Personal Loan",
+      "score": 9,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "Githurai",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Chuka",
+      "product": "Current Account",
+      "score": 6,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Digo",
+      "product": "Mortgage",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Githunguri",
+      "product": "Personal Loan",
+      "score": 8,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Banana",
+      "product": "Fixed Deposit",
+      "score": 2,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Kagwe",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-16",
+      "branch": "Bomet",
+      "product": "Asset Finance",
+      "score": 4,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "FB Towers Retail",
+      "product": "Asset Finance",
+      "score": 10,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-09",
+      "branch": "Karatina",
+      "product": "Current Account",
+      "score": 1,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-20",
+      "branch": "Eldoret",
+      "product": "Mobile Banking",
+      "score": 10,
+      "comment": "Queue too long at month end"
+    },
+    {
+      "date": "2026-04-11",
+      "branch": "Kangari",
+      "product": "Personal Loan",
+      "score": 10,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-04-15",
+      "branch": "Cargen House",
+      "product": "Personal Loan",
+      "score": 1,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-14",
+      "branch": "Kagwe",
+      "product": "Asset Finance",
+      "score": 1,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-30",
+      "branch": "Gikomba",
+      "product": "Personal Loan",
+      "score": 7,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Dagoretti",
+      "product": "Savings Account",
+      "score": 4,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-04",
+      "branch": "Cargen House",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-25",
+      "branch": "Kajiado",
+      "product": "Asset Finance",
+      "score": 5,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-26",
+      "branch": "Kagwe",
+      "product": "Mobile Banking",
+      "score": 5,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-23",
+      "branch": "Eastleigh",
+      "product": "Savings Account",
+      "score": 10,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Embu",
+      "product": "Asset Finance",
+      "score": 7,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Githunguri",
+      "product": "Personal Loan",
+      "score": 2,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Digo",
+      "product": "Business Loan",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-12",
+      "branch": "Gikomba Area 42",
+      "product": "Fixed Deposit",
+      "score": 5,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-22",
+      "branch": "Kajiado",
+      "product": "Mortgage",
+      "score": 3,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-04-17",
+      "branch": "Eldoret West",
+      "product": "Asset Finance",
+      "score": 3,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Digo",
+      "product": "Mobile Banking",
+      "score": 7,
+      "comment": "Interest rates too high"
+    },
+    {
+      "date": "2026-03-28",
+      "branch": "Busia",
+      "product": "Asset Finance",
+      "score": 1,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Gikomba Area 42",
+      "product": "Fixed Deposit",
+      "score": 4,
+      "comment": "Loan process took too long"
+    },
+    {
+      "date": "2026-03-24",
+      "branch": "Kangemi",
+      "product": "Business Loan",
+      "score": 6,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-02",
+      "branch": "FB Towers Corporate",
+      "product": "Current Account",
+      "score": 7,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Isiolo",
+      "product": "Mortgage",
+      "score": 9,
+      "comment": "Friendly staff"
+    },
+    {
+      "date": "2026-04-07",
+      "branch": "Bomet",
+      "product": "Savings Account",
+      "score": 4,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-13",
+      "branch": "Kangema",
+      "product": "Fixed Deposit",
+      "score": 8,
+      "comment": "Mobile app crashes frequently"
+    },
+    {
+      "date": "2026-04-05",
+      "branch": "Kangemi",
+      "product": "Mortgage",
+      "score": 6,
+      "comment": "Great service, very fast"
+    },
+    {
+      "date": "2026-04-01",
+      "branch": "Chuka",
+      "product": "Savings Account",
+      "score": 2,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-06",
+      "branch": "Dagoretti",
+      "product": "Mobile Banking",
+      "score": 10,
+      "comment": "ATM always out of cash"
+    },
+    {
+      "date": "2026-03-29",
+      "branch": "Kapsabet",
+      "product": "Savings Account",
+      "score": 7,
+      "comment": "RM was very helpful"
+    },
+    {
+      "date": "2026-04-08",
+      "branch": "Gikomba Area 42",
+      "product": "Current Account",
+      "score": 2,
+      "comment": "Queue too long at month end"
+    }
+  ],
+  "trend": [
+    {
+      "month": "01/2025",
+      "nps": 38
+    },
+    {
+      "month": "02/2025",
+      "nps": 32
+    },
+    {
+      "month": "03/2025",
+      "nps": 42
+    },
+    {
+      "month": "04/2025",
+      "nps": 48
+    },
+    {
+      "month": "05/2025",
+      "nps": 41
+    },
+    {
+      "month": "06/2025",
+      "nps": 31
+    },
+    {
+      "month": "07/2025",
+      "nps": 48
+    },
+    {
+      "month": "08/2025",
+      "nps": 31
+    },
+    {
+      "month": "09/2025",
+      "nps": 34
+    },
+    {
+      "month": "10/2025",
+      "nps": 45
+    },
+    {
+      "month": "11/2025",
+      "nps": 43
+    },
+    {
+      "month": "12/2025",
+      "nps": 38
+    }
+  ]
+}

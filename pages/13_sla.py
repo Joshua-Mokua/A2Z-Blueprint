@@ -6,7 +6,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
-from pages._shared import load_shared_state
+from pages._shared import load_shared_state, get_user_proposition
+from pages._access import require_access, get_my_scope
+require_access("sla")
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
@@ -18,7 +21,7 @@ SLA_CATEGORIES = {
         "sla_hours": 24, "priority": "High",
         "description": "New account fully opened and customer notified",
         "owner_roles": ["Customer Service Officer","Branch Operations Manager","Branch Manager"],
-        "color": "#006B3F",
+        "color": "var(--brand-primary,#006B3F)",
     },
     "Loan Processing": {
         "sla_hours": 72, "priority": "Critical",
@@ -196,6 +199,9 @@ class SLAManager:
         score    = round((total-breached)/total, 4)
         return score, total, breached
 
+    def get_all(self):
+        return self.tickets
+
     def analytics(self):
         total     = len(self.tickets)
         resolved  = [t for t in self.tickets if t["status"]=="Resolved"]
@@ -232,12 +238,57 @@ if "sla_manager" not in st.session_state:
 slm = st.session_state["sla_manager"]
 
 # ── HEADER ───────────────────────────────────────────────────────────
+
+
 st.markdown(
-    "<div style='padding:14px 20px;background:#185FA5;border-radius:10px;margin-bottom:16px'>"
-    "<div style='color:white;font-size:16px;font-weight:500'>SLA Tracker</div>"
-    "<div style='color:#BDD7F5;font-size:11px;margin-top:2px'>"
-    "Service Level Agreement tracking · CX scoring · Breach alerts · Staff accountability"
-    "</div></div>", unsafe_allow_html=True)
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>📋 SLA Tracker</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Customer service levels · TAT · Escalations</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#185FA5;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>SLA Tracker</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Service Level Agreement tracking · CX scoring · Breach alerts · Staff accountability</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
 
 tabs = st.tabs([
     "📊 Dashboard",
@@ -246,6 +297,7 @@ tabs = st.tabs([
     "👤 Staff SLA scores",
     "📈 Analytics",
     "⚙️ SLA definitions",
+    "⚖️ LMS / Legal / Compliance",
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -254,7 +306,7 @@ tabs = st.tabs([
 with tabs[0]:
     anl = slm.analytics()
     overall_score = anl["sla_score"]
-    score_clr = '#006B3F' if overall_score>=0.90 else ('#F5A623' if overall_score>=0.75 else '#E24B4A')
+    score_clr = 'var(--brand-primary,#006B3F)' if overall_score>=0.90 else ('#F5A623' if overall_score>=0.75 else '#E24B4A')
 
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Overall SLA score",  f"{overall_score:.1%}",
@@ -281,9 +333,9 @@ with tabs[0]:
                 "steps":[
                     {"range":[0,75],"color":"#FDEDEC"},
                     {"range":[75,90],"color":"#FEF6E4"},
-                    {"range":[90,100],"color":"#E8F5EE"},
+                    {"range":[90,100],"color":"var(--brand-light,#E8F5EE)"},
                 ],
-                "threshold":{"line":{"color":"#006B3F","width":3},"value":90},
+                "threshold":{"line":{"color":"var(--brand-primary,#006B3F)","width":3},"value":90},
             }
         ))
         fig_g.update_layout(height=240,
@@ -300,7 +352,7 @@ with tabs[0]:
             def hl_score(v):
                 try:
                     p = float(str(v).replace('%',''))
-                    if p >= 90: return 'color:#006B3F;font-weight:500'
+                    if p >= 90: return 'color:var(--brand-primary,#006B3F);font-weight:500'
                     if p >= 75: return 'color:#F5A623'
                     return 'color:#E24B4A;font-weight:500'
                 except: return ''
@@ -336,7 +388,7 @@ with tabs[0]:
                 f"border-radius:0 6px 6px 0;margin:3px 0;font-size:12px'>"
                 f"<div style='display:flex;justify-content:space-between'>"
                 f"<span><b>{t['id']}</b> · {t['category']} "
-                f"<span style='background:{pri_clr};color:white;padding:1px 5px;"
+                f"<span style='background:{pri_clr};color:var(--color-background-primary);padding:1px 5px;"
                 f"border-radius:8px;font-size:10px'>{t['priority']}</span></span>"
                 f"<span style='color:{border_clr};font-weight:500'>{status_txt}</span></div>"
                 f"<div style='color:#666;margin-top:2px'>"
@@ -394,6 +446,7 @@ with tabs[1]:
                 audit_log("SLA_TICKET_LOGGED", uname, f"{t['id']}:{sla_cat}:{sla_unit}")
                 due_str = datetime.fromisoformat(t["due_at"][:19]).strftime("%d %b %Y %H:%M")
                 st.success(f"✅ Ticket **{t['id']}** logged. Due by: **{due_str}**")
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.error("Category, unit and description are required.")
@@ -439,6 +492,7 @@ with tabs[2]:
                         breached_msg = "⚠️ SLA was breached" if resolved_t.get("breached") else "✅ Resolved within SLA"
                         audit_log("SLA_RESOLVED", uname, f"{sel_id}:{breached_msg}")
                         st.success(f"Ticket {sel_id} resolved. {breached_msg}")
+                        st.cache_data.clear()
                         st.rerun()
                     else:
                         st.error("Resolution notes are required.")
@@ -477,10 +531,10 @@ with tabs[3]:
 
             # Chart
             fig_s = px.bar(sc_df, x="Staff", y="SLA Score", color="SLA Score",
-                           color_continuous_scale=["#E24B4A","#F5A623","#006B3F"],
+                           color_continuous_scale=["#E24B4A","#F5A623","var(--brand-primary,#006B3F)"],
                            title=f"Staff SLA scores — last {days_back} days",
                            range_color=[0,1])
-            fig_s.add_hline(y=0.90, line_dash="dash", line_color="#006B3F",
+            fig_s.add_hline(y=0.90, line_dash="dash", line_color="var(--brand-primary,#006B3F)",
                              annotation_text="90% target")
             fig_s.update_layout(height=320, xaxis_tickangle=-35,
                 yaxis_tickformat=".0%",
@@ -490,7 +544,7 @@ with tabs[3]:
             def hl_sla(v):
                 try:
                     if isinstance(v, float):
-                        if v>=0.95: return 'color:#006B3F;font-weight:500'
+                        if v>=0.95: return 'color:var(--brand-primary,#006B3F);font-weight:500'
                         if v>=0.85: return 'color:#F5A623'
                         return 'color:#E24B4A;font-weight:500'
                 except: pass
@@ -509,6 +563,82 @@ with tabs[3]:
 # ════════════════════════════════════════════════════════════════
 with tabs[4]:
     st.subheader("SLA analytics")
+
+    _sla_all = slm.get_all() if slm else []
+    if not _sla_all:
+        st.info("No SLA tickets yet.")
+    else:
+        _sl_df = pd.DataFrame(_sla_all)
+
+        # Summary metrics
+        _sa1,_sa2,_sa3,_sa4 = st.columns(4)
+        _total_sl   = len(_sla_all)
+        _breached_sl= sum(1 for t in _sla_all if t.get("breached"))
+        _open_sl    = sum(1 for t in _sla_all if t.get("status") not in ("Resolved","Closed"))
+        _tat_score  = (_total_sl - _breached_sl)/_total_sl*100 if _total_sl else 0
+        _sa1.metric("Total tickets",    _total_sl)
+        _sa2.metric("Open",             _open_sl)
+        _sa3.metric("Breached",         _breached_sl,
+                    delta=f"-{_breached_sl}" if _breached_sl else None, delta_color="inverse")
+        _sa4.metric("TAT score",        f"{_tat_score:.1f}%",
+                    delta="Target: 90%",
+                    delta_color="normal" if _tat_score>=90 else "inverse")
+
+        _sl_c1, _sl_c2 = st.columns(2)
+
+        # Breach by unit heatmap
+        with _sl_c1:
+            if "unit" in _sl_df.columns:
+                _unit_breach = (_sl_df.groupby("unit")
+                                .apply(lambda g: pd.Series({
+                                    "Total":   len(g),
+                                    "Breached":g["breached"].sum() if "breached" in g else 0
+                                })).reset_index())
+                _unit_breach["Breach Rate"] = (_unit_breach["Breached"] /
+                                               _unit_breach["Total"] * 100).round(1)
+                _unit_breach = _unit_breach.sort_values("Breach Rate", ascending=False)
+                fig_ub = px.bar(_unit_breach, x="Breach Rate", y="unit",
+                                orientation="h",
+                                title="Breach rate by unit (%)",
+                                color="Breach Rate",
+                                color_continuous_scale=["var(--brand-primary,#006B3F)","#F5A623","#E24B4A"],
+                                range_color=[0,50],
+                                labels={"unit":"Unit","Breach Rate":"Breach %"})
+                fig_ub.add_vline(x=10, line_dash="dash", line_color="#374151")
+                fig_ub.update_layout(height=max(280,len(_unit_breach)*28),
+                                     coloraxis_showscale=False,
+                                     plot_bgcolor="rgba(0,0,0,0)",
+                                     paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_ub, use_container_width=True)
+
+        # Ticket type breakdown
+        with _sl_c2:
+            if "ticket_type" in _sl_df.columns:
+                _type_cnt = _sl_df["ticket_type"].value_counts().reset_index()
+                _type_cnt.columns = ["Type","Count"]
+                fig_tp = px.pie(_type_cnt, names="Type", values="Count",
+                                title="Tickets by type",
+                                color_discrete_sequence=px.colors.qualitative.Set2)
+                fig_tp.update_layout(height=280, margin=dict(l=0,r=0,t=40,b=0))
+                st.plotly_chart(fig_tp, use_container_width=True)
+
+        # Trend — tickets per week
+        if "created_at" in _sl_df.columns:
+            try:
+                _sl_df["week"] = pd.to_datetime(
+                    _sl_df["created_at"].str[:10]).dt.to_period("W").astype(str)
+                _wk = _sl_df.groupby("week").agg(
+                    Total=("id","count"),
+                    Breached=("breached","sum")).reset_index()
+                _wk.columns = ["Week","Total","Breached"]
+                fig_wk = px.bar(_wk, x="Week", y=["Total","Breached"],
+                                title="Weekly ticket volume",
+                                barmode="overlay",
+                                color_discrete_map={"Total":"#185FA5","Breached":"#E24B4A"})
+                fig_wk.update_layout(height=240, plot_bgcolor="rgba(0,0,0,0)",
+                                     paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_wk, use_container_width=True)
+            except: pass
     anl = slm.analytics()
 
     if anl["total"] == 0:
@@ -525,7 +655,7 @@ with tabs[4]:
                 cat_df = pd.DataFrame(cat_data).sort_values("Breach rate", ascending=False)
                 fig_br = px.bar(cat_df, x="Breach rate", y="Category",
                                 orientation='h', color="Breach rate",
-                                color_continuous_scale=["#006B3F","#F5A623","#E24B4A"],
+                                color_continuous_scale=["var(--brand-primary,#006B3F)","#F5A623","#E24B4A"],
                                 title="Breach rate % by category",
                                 range_color=[0,50])
                 fig_br.update_layout(height=320,
@@ -584,10 +714,121 @@ with tabs[5]:
             f"border-radius:0 6px 6px 0;margin:3px 0;font-size:12px'>"
             f"<div style='display:flex;justify-content:space-between'>"
             f"<b>{cat}</b>"
-            f"<span style='background:{clr};color:white;padding:1px 6px;"
+            f"<span style='background:{clr};color:var(--color-background-primary);padding:1px 6px;"
             f"border-radius:8px;font-size:10px'>{cfg['priority']} · {cfg['sla_hours']}h SLA</span>"
             f"</div>"
             f"<div style='color:#666;margin-top:2px'>{cfg['description']}</div>"
             f"<div style='color:#888;font-size:11px;margin-top:2px'>"
             f"Owner roles: {', '.join(cfg['owner_roles'][:3])}</div>"
             f"</div>", unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 7 — LMS / LEGAL / COMPLIANCE SLA TRACKER
+# ════════════════════════════════════════════════════════════════
+with tabs[6]:
+    st.markdown("**Cross-module SLA tracking** — Legal matters, Credit TAT, and Compliance case resolution.")
+    from pathlib import Path as _Path
+    import json as _json
+    from datetime import date as _dt_lms
+    from collections import defaultdict as _dd_lms
+
+    _DATA = _Path(__file__).parent.parent / "data"
+
+    _lt1, _lt2, _lt3 = st.tabs(["⚖️ Legal Matters", "🏦 Credit TAT", "🛡️ Compliance"])
+
+    # ── Legal SLA ─────────────────────────────────────────────────
+    with _lt1:
+        try:
+            _legal = _json.loads((_DATA/"legal_matters.json").read_text())
+            _open_legal = [m for m in _legal if m["status"] not in ("completed","on_hold")]
+            _overdue_l  = [m for m in _open_legal if m.get("sla_breached")]
+            _lm1,_lm2,_lm3,_lm4 = st.columns(4)
+            _lm1.metric("Open Matters",    len(_open_legal))
+            _lm2.metric("Overdue",         len(_overdue_l), delta_color="inverse")
+            _lm3.metric("On Track",        len(_open_legal)-len(_overdue_l))
+            _sla_r = round(sum(1 for m in _legal if m["status"]=="completed" and not m.get("sla_breached"))/
+                           max(sum(1 for m in _legal if m["status"]=="completed"),1)*100,1)
+            _lm4.metric("SLA Rate",        f"{_sla_r}%")
+            if _overdue_l:
+                st.error(f"🔴 {len(_overdue_l)} legal matters past SLA")
+            _by_type = _dd_lms(lambda:{"open":0,"overdue":0,"completed":0,"on_time":0})
+            for _m in _legal:
+                _bt = _by_type[_m["matter_type"]]
+                if _m["status"] == "completed":
+                    _bt["completed"] += 1
+                    if not _m.get("sla_breached"): _bt["on_time"] += 1
+                elif _m["status"] not in ("on_hold",):
+                    _bt["open"] += 1
+                    if _m.get("sla_breached"): _bt["overdue"] += 1
+            _rows_l = [{"Type": mt,"Open": d["open"],"Overdue": d["overdue"],
+                         "Completed": d["completed"],
+                         "SLA Rate": f"{round(d['on_time']/max(d['completed'],1)*100,1)}%"}
+                        for mt,d in sorted(_by_type.items())]
+            st.dataframe(st.data_editor(None) if False else __import__("pandas").DataFrame(_rows_l),
+                         use_container_width=True, hide_index=True)
+        except Exception as _e:
+            st.info(f"Legal data not available: {_e}")
+
+    # ── Credit TAT ────────────────────────────────────────────────
+    with _lt2:
+        try:
+            _apps = _json.loads((_DATA/"loan_applications.json").read_text())
+            _decided = [a for a in _apps if a["status"] in
+                        ("approved","declined","returned","credit_admin","disbursed")]
+            _breached = [a for a in _decided if a.get("tat_days",0) > a.get("sla_target_days",10)]
+            _am1,_am2,_am3,_am4 = st.columns(4)
+            _am1.metric("Decided",        len(_decided))
+            _am2.metric("SLA Breached",   len(_breached), delta_color="inverse")
+            _am3.metric("SLA Rate", f"{round((len(_decided)-len(_breached))/max(len(_decided),1)*100,1)}%")
+            _avg_tat = round(sum(a.get("tat_days",0) for a in _decided)/max(len(_decided),1),1)
+            _am4.metric("Avg TAT (days)", str(_avg_tat))
+            # By swim lane
+            for _lane in ("Express","Standard","Complex"):
+                _lane_apps = [a for a in _decided if a.get("swim_lane")==_lane]
+                if not _lane_apps: continue
+                _l_tat    = round(sum(a.get("tat_days",0) for a in _lane_apps)/len(_lane_apps),1)
+                _l_sla    = {"Express":3,"Standard":10,"Complex":21}.get(_lane,10)
+                _l_breach = sum(1 for a in _lane_apps if a.get("tat_days",0) > _l_sla)
+                _l_rate   = round((len(_lane_apps)-_l_breach)/len(_lane_apps)*100,1)
+                _icon = "✅" if _l_rate >= 80 else "🟡" if _l_rate >= 60 else "🔴"
+                st.markdown(f"  {_icon} **{_lane}**: {len(_lane_apps)} decided · "
+                             f"Avg TAT {_l_tat}d (SLA {_l_sla}d) · SLA Rate {_l_rate}%")
+        except Exception as _e:
+            st.info(f"Credit data not available: {_e}")
+
+    # ── Compliance SLA ────────────────────────────────────────────
+    with _lt3:
+        try:
+            _comp  = _json.loads((_DATA/"compliance_cases.json").read_text())
+            _lms_c = _json.loads((_DATA/"lms_config.json").read_text())
+            _sla_d = _lms_c.get("compliance_sla_days", {"Critical":1,"High":3,"Medium":7,"Low":14})
+            _open_c = [c for c in _comp if c["status"] in ("open","under_review")]
+            _today_c = _dt_lms.today()
+            _breach_c = 0
+            for _c in _open_c:
+                _rl = _c.get("risk_level","Low")
+                _sla = _sla_d.get(_rl, 7)
+                try:
+                    _raised = _dt_lms.fromisoformat(_c.get("raised_date",str(_today_c)))
+                    if (_today_c - _raised).days > _sla: _breach_c += 1
+                except: pass
+            _cleared = sum(1 for c in _comp if c["status"]=="cleared")
+            _cm1,_cm2,_cm3,_cm4 = st.columns(4)
+            _cm1.metric("Total Cases",   len(_comp))
+            _cm2.metric("Open",          len(_open_c))
+            _cm3.metric("SLA Breached",  _breach_c, delta_color="inverse")
+            _cm4.metric("Cleared",       _cleared)
+            # By risk level
+            for _rl in ("Critical","High","Medium","Low"):
+                _rl_c = [c for c in _open_c if c.get("risk_level")==_rl]
+                if not _rl_c: continue
+                _rl_sla = _sla_d.get(_rl, 7)
+                _rl_br  = sum(1 for c in _rl_c
+                               if (_today_c - _dt_lms.fromisoformat(c.get("raised_date",str(_today_c)))).days > _rl_sla
+                               if c.get("raised_date"))
+                _icon = "🔴" if _rl=="Critical" and _rl_br > 0 else "🟡" if _rl_br > 0 else "✅"
+                st.markdown(f"  {_icon} **{_rl}** (SLA {_rl_sla}d): "
+                             f"{len(_rl_c)} open · {_rl_br} breached")
+        except Exception as _e:
+            st.info(f"Compliance data not available: {_e}")

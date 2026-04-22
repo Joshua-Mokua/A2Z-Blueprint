@@ -5,6 +5,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
+import datetime as _dt
 import hashlib
 import json
 import re
@@ -78,7 +79,7 @@ def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
     body = f"""
 <html><body style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
 <div style="background:#1B4F72;padding:20px;border-radius:8px 8px 0 0">
-  <h2 style="color:white;margin:0">A2Z Execute</h2>
+  <h2 style="color:var(--color-background-primary);margin:0">A2Z Execute</h2>
   <p style="color:#AED6F1;margin:4px 0 0">Milestone Alert</p>
 </div>
 <div style="padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px">
@@ -128,7 +129,7 @@ def send_structural_delay_email(to_emails, ms_name, init_name, workstream,
     body = f"""
 <html><body style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
 <div style="background:#A32D2D;padding:20px;border-radius:8px 8px 0 0">
-  <h2 style="color:white;margin:0">A2Z Execute — Immediate escalation</h2>
+  <h2 style="color:var(--color-background-primary);margin:0">A2Z Execute — Immediate escalation</h2>
   <p style="color:#F7C1C1;margin:4px 0 0">Structural / Regulatory Delay — All parties notified</p>
 </div>
 <div style="padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px">
@@ -172,7 +173,7 @@ def send_start_alert_email(to_email, recipient_name, ms_name, init_name, start_d
     body = f"""
 <html><body style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
 <div style="background:#185FA5;padding:20px;border-radius:8px 8px 0 0">
-  <h2 style="color:white;margin:0">A2Z Execute</h2>
+  <h2 style="color:var(--color-background-primary);margin:0">A2Z Execute</h2>
   <p style="color:#B5D4F4;margin:4px 0 0">Milestone starting today</p>
 </div>
 <div style="padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px">
@@ -226,12 +227,12 @@ def run_escalation_scan(em, user_registry):
             esc = ExecuteManager._escalation_level(ms)
             if esc == 0: continue
 
-            owner_email, owner_name = get_email(ms['owner'])
+            owner_email, owner_name = get_email(ms.get('owner',''))
             io_email,    io_name    = get_email(init.get('io',''))
             workstream   = init.get('workstream','')
 
             try:
-                due       = date.fromisoformat(ms['due_date'])
+                due       = date.fromisoformat(ms.get('due_date',''))
                 days_over = (today - due).days
                 days_to   = (due - today).days
             except:
@@ -242,7 +243,7 @@ def run_escalation_scan(em, user_registry):
                 if owner_email:
                     send_milestone_alert_email(
                         owner_email, owner_name, ms['name'], init['name'],
-                        ms['due_date'], f"due in 2 days", 1, workstream, io_name)
+                        ms.get('due_date',''), f"due in 2 days", 1, workstream, io_name)
                     alerts.append({'type':'due_soon','ms':ms['name'],'to':owner_email})
 
             # ── Start date = today — start alert ──────────────────
@@ -263,14 +264,14 @@ def run_escalation_scan(em, user_registry):
                     send_structural_delay_email(
                         all_emails, ms['name'], init['name'], workstream,
                         ms['delay_category'], ms.get('delay_reason',''),
-                        ms['owner'], io_name)
+                        ms.get('owner',''), io_name)
                     alerts.append({'type':'structural','ms':ms['name'],'level':4})
 
             # ── Day 2 overdue → IO email ───────────────────────────
             elif days_over >= 2 and esc >= 2 and io_email:
                 send_milestone_alert_email(
                     io_email, io_name, ms['name'], init['name'],
-                    ms['due_date'], f"{days_over}d overdue", esc, workstream, io_name)
+                    ms.get('due_date',''), f"{days_over}d overdue", esc, workstream, io_name)
                 alerts.append({'type':'overdue_io','ms':ms['name'],'days':days_over})
 
     return alerts
@@ -298,7 +299,7 @@ def send_welcome_email(to_email, full_name, username, temp_password):
         body = f"""
 <html><body style="font-family:Arial,sans-serif;max-width:500px;margin:auto">
 <div style="background:#1B4F72;padding:20px;border-radius:8px 8px 0 0">
-  <h2 style="color:white;margin:0">🏦 A2Z Perform</h2>
+  <h2 style="color:var(--color-background-primary);margin:0">🏦 A2Z Perform</h2>
   <p style="color:#AED6F1;margin:4px 0 0">Performance Management System</p>
 </div>
 <div style="padding:24px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px">
@@ -342,6 +343,90 @@ def highlight_performance(val):
     }
     return colors.get(val, "")
 
+# Count-type KPIs — whole number display, no KES prefix
+COUNT_KPIS_CORE = {
+    "Transactions", "New Customer Acquisition", "Dormancy Reactivation",
+    "Cards Issued", "Loans Referred", "Bancassurance",
+    "New Accounts", "Number of Business Borrowers",
+    "Active Initiatives Count", "Number of New Customers",
+}
+
+def is_count_kpi_core(k):
+    """True if KPI is a count — display as integer not KES."""
+    return (str(k) in COUNT_KPIS_CORE or
+            any(x in str(k).lower() for x in
+                ("accounts opened","cards issued","registrations",
+                 "referred","reactivat","acquisition","transactions processed",
+                 "number of","borrower","initiatives count","new accounts")))
+
+def fmt_kpi_value(v, kpi="", short=False):
+    """Format a KPI value — BSC score / % / count / KES (5-tier)."""
+    try:
+        if pd.isna(v) or v is None: return "—"
+        f = float(v)
+        if f == 0: return "—"
+        kl = str(kpi).lower()
+
+        # Tier 1: BSC score KPIs (1–5 scale) — plain decimal, never %
+        _bsc_score_kpis = {
+            "staff productivity", "diligence score", "cx score",
+            "nps score", "employee satisfaction score",
+            "ideation score", "initiative score",
+        }
+        if kl in _bsc_score_kpis:
+            return f"{f:.2f}"
+
+        # Tier 2: Always KES — never treated as % even if name has ratio/rate
+        _kes_kpi_names = {
+            "disbursements corporate loans", "disbursements retail loans",
+            "disbursements msme loans", "loans disbursement",
+            "loan book growth", "retail & msme deposit growth",
+            "commercial deposit growth", "deposit growth",
+            "total nfi", "fees and commission", "pbt",
+            "top 100 customers deposit", "collection throughput",
+            "trade finance", "treasury revenue", "bancassurance", "dfs revenue",
+        }
+        if kl in _kes_kpi_names:
+            if short:
+                if abs(f) >= 1e9: return f"KES {f/1e9:,.2f}B"
+                if abs(f) >= 1e6: return f"KES {f/1e6:,.2f}M"
+                return f"KES {f:,.0f}"
+            if abs(f) >= 1e9: return f"KES {f/1e9:,.3f}B"
+            if abs(f) >= 1e6: return f"KES {f/1e6:,.2f}M"
+            return f"KES {f:,.0f}"
+
+        # Tier 3: Percentage/ratio KPIs
+        _pct_explicit = {
+            "compliance score", "audit score", "audit closure",
+            "timely reconciliations", "sla adherence score",
+            "credit tat score", "campaign conversion rate",
+            "digital transaction migration", "branch optimization score",
+            "strategic initiative completion rate", "training completion rate",
+            "staff retention rate", "recovery rate", "case resolution rate",
+            "account dormancy", "channel dormancy",
+        }
+        if (kl in _pct_explicit or
+                any(x in kl for x in ("ratio", " rate", "margin", "tat", "closure", "%",
+                                       "cir", "npl", "par", "roe", "roa", "nim", "ldr", "car",
+                                       "compliance", "reconciliation", "dormancy",
+                                       "uptime", "coverage", "utilisation"))):
+            disp = f * 100 if abs(f) <= 1.5 else f
+            return f"{disp:,.2f}%"
+
+        # Tier 4: Count KPIs
+        if is_count_kpi_core(kpi):
+            return f"{int(round(f)):,}"
+
+        # Tier 5: Financial KES
+        if short:
+            if abs(f) >= 1e9: return f"KES {f/1e9:,.2f}B"
+            if abs(f) >= 1e6: return f"KES {f/1e6:,.2f}M"
+            if abs(f) >= 1e3: return f"KES {f/1e3:,.1f}K"
+            return f"KES {f:,.0f}"
+        if abs(f) >= 1e9: return f"KES {f/1e9:,.3f}B"
+        if abs(f) >= 1e6: return f"KES {f/1e6:,.2f}M"
+        return f"KES {f:,.0f}"
+    except: return str(v)
 def fmt_num(v, short=False):
     """Accounting format: comma separator, 2 decimal places."""
     try:
@@ -371,6 +456,51 @@ def clean_code(v):
     return str(v).strip().strip("'").strip()
 
 
+
+
+# ══════════════════════════════════════════════════════════════════
+# BSC MONTH-END LOCK
+# Once locked, scores are frozen for audit. Only MD/Admin can unlock.
+# ══════════════════════════════════════════════════════════════════
+def is_bsc_locked(data_path="data") -> bool:
+    """Return True if BSC is locked for the current period."""
+    import json
+    from pathlib import Path
+    p = Path(data_path) / "bsc_lock.json"
+    if not p.exists(): return False
+    lock = json.loads(p.read_text())
+    return lock.get("locked", False)
+
+def lock_bsc(locked_by: str, period: str, data_path="data"):
+    """Lock BSC scores for the period. Only callable by admin/MD."""
+    import json
+    from datetime import date
+    from pathlib import Path
+    p = Path(data_path) / "bsc_lock.json"
+    lock_data = {
+        "locked":     True,
+        "locked_by":  locked_by,
+        "period":     period,
+        "locked_at":  str(date.today()),
+        "unlock_log": []
+    }
+    p.write_text(json.dumps(lock_data, indent=2))
+
+def unlock_bsc(unlocked_by: str, reason: str, data_path="data"):
+    """Unlock BSC scores. Requires reason for audit."""
+    import json
+    from datetime import date
+    from pathlib import Path
+    p = Path(data_path) / "bsc_lock.json"
+    lock = json.loads(p.read_text()) if p.exists() else {}
+    lock["locked"] = False
+    lock.setdefault("unlock_log", []).append({
+        "unlocked_by": unlocked_by,
+        "reason": reason,
+        "date": str(date.today())
+    })
+    p.write_text(json.dumps(lock, indent=2))
+
 # ═══════════════════════════════════════════════════════════════════════
 # PRODUCT LIFECYCLE MODULE — Banking product registry
 # Assets · Liabilities · NFI · Channels
@@ -393,7 +523,7 @@ PRODUCT_CATEGORIES = {
         },
     },
     "Liabilities": {
-        "color": "#0F6E56", "bg": "#E1F5EE", "icon": "🏦",
+        "color": "var(--brand-hover,#0F6E56)", "bg": "#E1F5EE", "icon": "🏦",
         "description": "Deposit-taking products — balance sheet funding",
         "kpi_links": ["Deposit Growth"],
         "lifecycle": ["Concept","Pilot","Active","Growth","Mature","Sunset"],
@@ -438,13 +568,13 @@ PRODUCT_CATEGORIES = {
 PRODUCT_LIFECYCLE_STAGES = {
     "Concept":         {"color":"#888780","bg":"#F1EFE8","desc":"Idea stage — being evaluated"},
     "Pilot":           {"color":"#185FA5","bg":"#E6F1FB","desc":"Limited rollout — testing"},
-    "Active":          {"color":"#1D9E75","bg":"#E1F5EE","desc":"Live and available to customers"},
+    "Active":          {"color":"var(--brand-mid,#1D9E75)","bg":"#E1F5EE","desc":"Live and available to customers"},
     "Growth":          {"color":"#3B6D11","bg":"#EAF3DE","desc":"Scaling — high acquisition focus"},
     "Mature":          {"color":"#BA7517","bg":"#FAEEDA","desc":"Stable — optimise & retain"},
     "Sunset":          {"color":"#A32D2D","bg":"#FCEBEB","desc":"Being phased out"},
     "Planning":        {"color":"#534AB7","bg":"#EEEDFE","desc":"Under development"},
     "Development":     {"color":"#185FA5","bg":"#E6F1FB","desc":"Being built"},
-    "Launch":          {"color":"#0F6E56","bg":"#E1F5EE","desc":"Recently launched"},
+    "Launch":          {"color":"var(--brand-hover,#0F6E56)","bg":"#E1F5EE","desc":"Recently launched"},
     "Optimising":      {"color":"#3B6D11","bg":"#EAF3DE","desc":"Active improvement cycle"},
     "Decommissioned":  {"color":"#5F5E5A","bg":"#F1EFE8","desc":"Retired"},
 }
@@ -476,9 +606,9 @@ def cache_upload(uploaded_file, session_key: str) -> bytes | None:
 
 # ─── ECOBANK BRAND THEME ────────────────────────────────────────────
 BRAND = {
-    'primary':      '#006B3F',   # Ecobank deep green
-    'secondary':    '#F5A623',   # Ecobank gold
-    'primary_light':'#E8F5EE',   # light green surface
+    'primary':      'var(--brand-primary,#006B3F)',   # brand primary (configurable)
+    'secondary':    '#F5A623',   # brand secondary (configurable)
+    'primary_light':'var(--brand-light,#E8F5EE)',   # light green surface
     'secondary_light':'#FEF6E4', # light gold surface
     'dark':         '#004A2B',   # deep dark green
     'text_on_primary': '#FFFFFF',
@@ -566,10 +696,41 @@ BUSINESS_ROLES: frozenset = frozenset([
     'Head Of Products','Products Manager','Products Officer',
     'Marketing Manager','Marketing Officer','Head Of Marketing',
 ])
-BRANCH_MANAGEMENT: frozenset = frozenset([
-    'Branch Manager','Branch Operations Manager','Branch Operations Supervisor',
-    'Credit Manager','Customer Service Officer',
-])
+def _get_branch_management_roles() -> frozenset:
+    """Load branch management roles from org_config — never hardcoded."""
+    try:
+        _cfg = get_org_config()
+        _hier = _cfg.get('hierarchy', {})
+        _br_staff = set(_cfg.get('role_categories', {}).get('branch_staff', []))
+        # Branch management = branch staff that have direct reports
+        from collections import defaultdict
+        _ch = defaultdict(list)
+        for r, parents in _hier.items():
+            for p in parents:
+                _ch[p].append(r)
+        _mgmt = {r for r in _br_staff if _ch.get(r)}
+        return frozenset(_mgmt) if _mgmt else frozenset(['Branch Manager','Branch Operations Manager'])
+    except:
+        return frozenset(['Branch Manager','Branch Operations Manager'])
+# Lazy: populated on first use, cleared when org_config changes
+_BRANCH_MANAGEMENT_CACHE: frozenset = frozenset()
+
+def _ensure_branch_management():
+    global _BRANCH_MANAGEMENT_CACHE
+    if not _BRANCH_MANAGEMENT_CACHE:
+        _BRANCH_MANAGEMENT_CACHE = _get_branch_management_roles()
+    return _BRANCH_MANAGEMENT_CACHE
+
+# Keep the name for backward compatibility
+class _BranchMgmtProxy:
+    def __contains__(self, item):
+        return item in _ensure_branch_management()
+    def __iter__(self):
+        return iter(_ensure_branch_management())
+    def __len__(self):
+        return len(_ensure_branch_management())
+
+BRANCH_MANAGEMENT = _BranchMgmtProxy()
 
 def get_role_function(role, category):
     """
@@ -582,25 +743,263 @@ def get_role_function(role, category):
     if role in BUSINESS_ROLES:         return 'Business'
     return 'Support'
 
+
+# ─── EXECUTE / WORKSTREAM HELPERS ────────────────────────────────────
+
+def get_workstreams_from_hierarchy() -> dict:
+    """
+    Return workstreams. Saved execute_workstreams.json is the primary source —
+    it was seeded from the hierarchy and may have been customised via Admin.
+    Falls back to rebuilding from org_config if the file is missing.
+    """
+    ws_file = DATA_DIR / "execute_workstreams.json"
+    # Saved file is authoritative
+    if ws_file.exists():
+        try:
+            saved = json.loads(ws_file.read_text())
+            if saved and isinstance(saved, dict):
+                return saved
+        except: pass
+
+    # Fallback: derive from org_config hierarchy
+    try:
+        cfg   = get_org_config()
+        hier  = cfg.get('hierarchy', {})
+        roots = [r for r, p in hier.items() if not p]
+        if not roots: return {}
+        ceo   = roots[0]
+        chiefs= [r for r, p in hier.items() if ceo in p]
+        result = {}
+        for i, chief_role in enumerate(chiefs):
+            ws_id = f"WS{i+1:02d}"
+            short = (chief_role
+                     .replace('Chief','').replace('Officer','')
+                     .replace('& Managing Director','')
+                     .replace('  ',' ').strip())
+            result[ws_id] = {
+                'name': short, 'full_role': chief_role,
+                'sponsor_username': '', 'sponsor_name': chief_role,
+                'sub_workstreams': [], 'cross_functional_pool': [],
+            }
+        return result
+    except:
+        return {}
+
+def get_workstream_staff(workstream_id: str, include_cross_functional: bool = True) -> list:
+    """
+    Return all staff codes reachable from the workstream's chief role.
+    Includes cross_functional_pool members if include_cross_functional=True.
+    Returns list of {'code', 'name', 'role', 'unit'} dicts.
+    """
+    try:
+        wss   = get_workstreams_from_hierarchy()
+        ws    = wss.get(workstream_id, {})
+        chief_role = ws.get('full_role', '')
+        cfg   = get_org_config()
+        hier  = cfg.get('hierarchy', {})
+
+        # Build children map
+        from collections import defaultdict
+        children = defaultdict(list)
+        for role, parents in hier.items():
+            for p in parents:
+                children[p].append(role)
+
+        # BFS from chief_role to collect all descendant roles
+        reachable_roles = set()
+        queue = [chief_role] if chief_role else []
+        while queue:
+            role = queue.pop(0)
+            reachable_roles.add(role)
+            for child in children.get(role, []):
+                if child not in reachable_roles:
+                    queue.append(child)
+
+        # Load staff register and filter
+        sr_file = DATA_DIR / "staff_register.xlsx"
+        if not sr_file.exists():
+            return []
+        import openpyxl
+        wb = openpyxl.load_workbook(str(sr_file))
+        ws_sheet = wb.active
+        headers = [ws_sheet.cell(1,c).value for c in range(1, ws_sheet.max_column+1)]
+        rc = headers.index('Role')      if 'Role'       in headers else 2
+        nc = headers.index('Staff Name')if 'Staff Name' in headers else 1
+        sc = headers.index('Staff Code')if 'Staff Code' in headers else 0
+        uc = headers.index('Unit')      if 'Unit'       in headers else 3
+
+        staff = []
+        for row in ws_sheet.iter_rows(min_row=2, values_only=True):
+            if not row[0]: continue
+            role = str(row[rc] or '')
+            if role in reachable_roles:
+                staff.append({
+                    'code': str(row[sc] or ''),
+                    'name': str(row[nc] or ''),
+                    'role': role,
+                    'unit': str(row[uc] or ''),
+                    'source': 'hierarchy',
+                })
+
+        # Add cross-functional pool
+        if include_cross_functional:
+            pool = ws.get('cross_functional_pool', [])
+            existing_codes = {s['code'] for s in staff}
+            for uname_cf in pool:
+                if uname_cf not in existing_codes:
+                    # Look up from users.json
+                    try:
+                        users_data = json.loads((DATA_DIR/"users.json").read_text())
+                        ud = users_data.get(uname_cf, {})
+                        if ud:
+                            staff.append({
+                                'code': str(ud.get('staff_code', uname_cf)),
+                                'name': ud.get('full_name', uname_cf),
+                                'role': ud.get('role', ''),
+                                'unit': ud.get('unit', ''),
+                                'source': 'cross_functional',
+                            })
+                    except: pass
+
+        return sorted(staff, key=lambda x: x['name'])
+    except Exception as _gws_exc:
+        import traceback as _tb
+        _tb.print_exc()   # visible in Streamlit logs
+        return []
+
 # ─── PIPELINE CONSTANTS (Banking CRM) ────────────────────────────────
-PIPELINE_STAGES = [
-    {"stage": "Lead",           "icon": "🎯", "description": "Identified prospect, no contact yet"},
-    {"stage": "Contacted",      "icon": "📞", "description": "Initial call / meeting booked"},
-    {"stage": "Qualified",      "icon": "✅", "description": "Needs confirmed, fits product criteria"},
-    {"stage": "Proposal",       "icon": "📄", "description": "Term sheet / offer presented"},
-    {"stage": "Negotiation",    "icon": "🤝", "description": "Terms being discussed / docs in progress"},
-    {"stage": "Compliance",     "icon": "🔏", "description": "KYC / AML / credit checks underway"},
-    {"stage": "Closed Won",     "icon": "🏆", "description": "Deal signed, account opened / facility drawn"},
-    {"stage": "Closed Lost",    "icon": "❌", "description": "Prospect chose competitor or declined"},
+# ── Category-specific pipeline stage paths ────────────────────────────
+# Each pipeline category follows its own progression
+PIPELINE_STAGES_ACCOUNT = [
+    {"stage":"Lead",            "icon":"🎯", "description":"Identified prospect — account not yet opened"},
+    {"stage":"Contacted",       "icon":"📞", "description":"Initial engagement — relationship started"},
+    {"stage":"KYC / Documentation","icon":"📋","description":"Customer documents collected"},
+    {"stage":"Account Opening", "icon":"🏦", "description":"Account opening form submitted to operations"},
+    {"stage":"Compliance Review","icon":"🔏","description":"AML / KYC / compliance screening"},
+    {"stage":"Closed Won",      "icon":"🏆", "description":"Account opened and activated"},
+    {"stage":"Closed Lost",     "icon":"❌", "description":"Customer did not open account"},
 ]
+PIPELINE_STAGES_LOAN = [
+    {"stage":"Lead",            "icon":"🎯", "description":"Identified credit need — no formal application"},
+    {"stage":"Contacted",       "icon":"📞", "description":"Discussion of credit need and product options"},
+    {"stage":"Qualified",       "icon":"✅", "description":"Basic eligibility confirmed — credit appetite assessed"},
+    {"stage":"Application",     "icon":"📝", "description":"Loan application form submitted"},
+    {"stage":"Credit Assessment","icon":"🔍","description":"Credit committee / risk assessment underway"},
+    {"stage":"Offer / Proposal","icon":"📄", "description":"Term sheet / offer letter issued to customer"},
+    {"stage":"Negotiation",     "icon":"🤝", "description":"Terms being negotiated — legal docs in progress"},
+    {"stage":"Compliance",      "icon":"🔏", "description":"KYC / AML / security perfection underway"},
+    {"stage":"Closed Won",      "icon":"🏆", "description":"Facility signed and disbursed"},
+    {"stage":"Closed Lost",     "icon":"❌", "description":"Customer declined or credit declined"},
+]
+PIPELINE_STAGES_DEPOSIT = [
+    {"stage":"Lead",            "icon":"🎯", "description":"Identified deposit opportunity — no commitment"},
+    {"stage":"Contacted",       "icon":"📞", "description":"Initial discussion — rates and terms presented"},
+    {"stage":"Proposal",        "icon":"📄", "description":"Formal deposit proposal / term sheet presented"},
+    {"stage":"Negotiation",     "icon":"🤝", "description":"Rate / tenor negotiation underway"},
+    {"stage":"Documentation",   "icon":"📋", "description":"Deposit agreement and KYC documentation"},
+    {"stage":"Closed Won",      "icon":"🏆", "description":"Deposit placed / funds received"},
+    {"stage":"Closed Lost",     "icon":"❌", "description":"Customer placed funds elsewhere"},
+]
+# Generic fallback (other products — insurance, digital, treasury)
+PIPELINE_STAGES_GENERIC = [
+    {"stage":"Lead",            "icon":"🎯", "description":"Identified opportunity"},
+    {"stage":"Contacted",       "icon":"📞", "description":"Initial engagement"},
+    {"stage":"Qualified",       "icon":"✅", "description":"Need confirmed and qualified"},
+    {"stage":"Proposal",        "icon":"📄", "description":"Offer / proposal presented"},
+    {"stage":"Negotiation",     "icon":"🤝", "description":"Terms being agreed"},
+    {"stage":"Closed Won",      "icon":"🏆", "description":"Deal concluded"},
+    {"stage":"Closed Lost",     "icon":"❌", "description":"Opportunity lost"},
+]
+
+# Master list — all unique stages across all paths (for filtering / reporting)
+PIPELINE_STAGES = PIPELINE_STAGES_LOAN   # default for backward compat
 STAGE_NAMES    = [s["stage"] for s in PIPELINE_STAGES]
 ACTIVE_STAGES  = [s["stage"] for s in PIPELINE_STAGES if s["stage"] not in ("Closed Won","Closed Lost")]
+
+# All unique stage names across all categories
+ALL_STAGE_NAMES = list(dict.fromkeys(
+    s["stage"] for stages in [
+        PIPELINE_STAGES_ACCOUNT, PIPELINE_STAGES_LOAN,
+        PIPELINE_STAGES_DEPOSIT, PIPELINE_STAGES_GENERIC]
+    for s in stages))
+ALL_ACTIVE_STAGES = [s for s in ALL_STAGE_NAMES if s not in ("Closed Won","Closed Lost")]
+
+def get_pipeline_category(product_type: str) -> str:
+    """Map a product type to its pipeline category."""
+    _ACCT_PRODS = {
+        "Current Account (CASA)","Savings Account (CASA)","Fixed Deposit",
+        "Call Deposit","Notice Deposit","Junior Account",
+        "Business Current Account","Business Savings","Other Deposit",
+    }
+    _LOAN_PRODS = {
+        "Business Loan","Personal Loan","Mortgage / Home Loan","Overdraft",
+        "Trade Finance","Asset Finance","Invoice Discounting","LPO Finance",
+        "Agricultural Loan","Staff Loan","Credit Card","Other Loan",
+    }
+    if product_type in _ACCT_PRODS:  return "Account"
+    if product_type in _LOAN_PRODS:  return "Loan"
+    if "deposit" in product_type.lower() or "casa" in product_type.lower(): return "Account"
+    if "loan" in product_type.lower() or "credit" in product_type.lower() or        "overdraft" in product_type.lower() or "finance" in product_type.lower(): return "Loan"
+    if "deposit" in product_type.lower(): return "Deposit"
+    return "Other"
+
+def get_stages_for_category(category: str) -> list:
+    """Return stage list for a pipeline category."""
+    return {
+        "Account": PIPELINE_STAGES_ACCOUNT,
+        "Loan":    PIPELINE_STAGES_LOAN,
+        "Deposit": PIPELINE_STAGES_DEPOSIT,
+    }.get(category, PIPELINE_STAGES_GENERIC)
+
+# ── Contact person standard positions ─────────────────────────────────
+CONTACT_POSITIONS = [
+    "— Select position —",
+    # C-Suite
+    "Managing Director (MD) / CEO",
+    "Chief Finance Officer (CFO)",
+    "Chief Operations Officer (COO)",
+    "Chief Commercial Officer (CCO)",
+    "Chief Executive Officer (CEO)",
+    # Board / Directors
+    "Chairman / Board Member",
+    "Director",
+    # Senior Management
+    "Finance Director / VP Finance",
+    "Head of Finance",
+    "Head of Treasury",
+    "Head of Procurement",
+    "General Manager",
+    # Management
+    "Finance Manager",
+    "Treasury Manager",
+    "Procurement Manager",
+    "Operations Manager",
+    "HR Manager",
+    "Branch Manager",
+    # Key Influencers
+    "Finance Officer / Accountant",
+    "Procurement Officer",
+    "Business Development Manager",
+    "Sales Manager",
+    "Owner / Proprietor",
+    "Partner",
+    # Other
+    "Other (specify below)",
+]
+DECISION_LEVELS = [
+    "— Select —",
+    "Ultimate decision maker — signs off",
+    "Key influencer — recommends to board",
+    "Evaluator — reviews options",
+    "Gatekeeper — controls access",
+    "End user — no signing authority",
+]
 
 # ─── REVENUE INTELLIGENCE — KPI CATEGORY MAPPING ────────────────────
 RI_CATEGORIES = {
     'Deposits': {
         'kpis':      ['Deposit Growth'],
-        'color':     '#0F6E56',   # teal-600
+        'color':     'var(--brand-hover,#0F6E56)',   # teal-600
         'bg':        '#E1F5EE',   # teal-50
         'label':     'Liabilities',
         'unit':      'KES',
@@ -677,7 +1076,7 @@ EXECUTE_GATES = {
            'desc': 'Initiative created — not yet submitted'},
     'G1': {'label': 'Validated',      'color': '#185FA5', 'bg': '#E6F1FB',
            'desc': 'Initiative approved as submitted'},
-    'G2': {'label': 'Business case',  'color': '#0F6E56', 'bg': '#E1F5EE',
+    'G2': {'label': 'Business case',  'color': 'var(--brand-hover,#0F6E56)', 'bg': '#E1F5EE',
            'desc': 'Business case approved, prioritised'},
     'G3': {'label': 'Implementation', 'color': '#BA7517', 'bg': '#FAEEDA',
            'desc': 'Milestone plan locked, executing'},
@@ -774,20 +1173,615 @@ IMPACT_KPI_OPTIONS = [
     'NPL Reduction', 'Staff Productivity', 'Process Efficiency', 'Other',
 ]
 
-PRODUCT_TYPES  = [
-    "Business Loan","Personal Loan","Mortgage","Overdraft","Trade Finance",
-    "Asset Finance","Invoice Discounting","Deposit Account","Current Account",
-    "Insurance","Bancassurance","Treasury","Digital Banking","Other",
+# ── Pipeline product catalogue (grouped) ──────────────────────────────
+PRODUCT_CATALOGUE = {
+    "Loans & Credit": [
+        "Business Loan","Personal Loan","Mortgage / Home Loan","Overdraft",
+        "Trade Finance","Asset Finance","Invoice Discounting","LPO Finance",
+        "Agricultural Loan","Staff Loan","Credit Card","Other Loan",
+    ],
+    "Deposits & CASA": [
+        "Current Account (CASA)","Savings Account (CASA)",
+        "Salary Account","Fixed Deposit","Call Deposit","Notice Deposit",
+        "Junior Account","Business Current Account","Business Savings","Other Deposit",
+    ],
+    "Insurance & Bancassurance": [
+        "Life Insurance","Credit Life","General Insurance",
+        "Bancassurance — Medical","Bancassurance — Motor",
+        "Pension / Investment","Other Insurance",
+    ],
+    "Digital & Transactional": [
+        "Mobile Banking","Internet Banking","DFS Onboarding",
+        "Agency Banking","Point of Sale (POS)","International Transfer",
+        "Other Digital",
+    ],
+    "Treasury & Investments": [
+        "Treasury Bill","Treasury Bond","Foreign Exchange","Money Market",
+        "Other Treasury",
+    ],
+    "Other Facilities": [
+        "Bank Guarantee","Letter of Credit","Bid Bond","Performance Bond",
+        "Other",
+    ],
+}
+# Flat list for dropdowns — with category labels as separators (prefixed ---)
+PRODUCT_TYPES = []
+for _cat, _prods in PRODUCT_CATALOGUE.items():
+    PRODUCT_TYPES.extend(_prods)
+
+# ── Customer segmentation ─────────────────────────────────────────────
+CUSTOMER_SEGMENTS = {
+    "Individual": ["Affluent","Core Middle","Mass / Retail"],
+    "Business":   ["Large Corporate","Corporate","SME","Micro Enterprise"],
+}
+
+# ── CBK Economic sectors ──────────────────────────────────────────────
+# ── Individual customer profile (non-CBK) ─────────────────────────────
+INDIVIDUAL_SECTORS = {
+    "Employment / Profession": [
+        "Salaried — Civil Servant / Government",
+        "Salaried — Private Sector",
+        "Salaried — NGO / International Organisation",
+        "Self-Employed Professional (Doctor, Lawyer, Engineer, Accountant)",
+        "Teacher / Lecturer",
+        "Military / Police / Uniformed Services",
+        "Diplomat / Foreign National",
+    ],
+    "Business Owner": [
+        "Sole Trader / Hawker",
+        "Small Business Owner",
+        "Medium Business Owner",
+        "Farmer / Agri-preneur",
+        "Landlord / Property Owner",
+    ],
+    "Social / Life Stage": [
+        "Student",
+        "Retired",
+        "Housewife / Homemaker",
+        "Unemployed / Job Seeker",
+        "Diaspora / Returning Resident",
+    ],
+}
+# Flat list for dropdown
+INDIVIDUAL_SECTOR_LIST = [
+    f"{cat} — {item}"
+    for cat, items in INDIVIDUAL_SECTORS.items()
+    for item in items
 ]
+
+CBK_SECTORS = [
+    "Agriculture, Forestry & Fishing",
+    "Mining & Quarrying",
+    "Manufacturing",
+    "Electricity, Gas & Water Supply",
+    "Building & Construction",
+    "Trade (Wholesale & Retail)",
+    "Tourism, Restaurant & Hotels",
+    "Transport & Communication",
+    "Real Estate & Business Services",
+    "Financial Services",
+    "Community, Social & Personal Services",
+    "Government & Public Sector",
+    "Non-Profit / NGO",
+    "Other / Not Classified",
+]
+
+# ── Kenya commercial banks (CBK licensed) ─────────────────────────────
+KENYA_BANKS = [
+    "Absa Bank Kenya","Access Bank Kenya","African Banking Corporation (ABC)",
+    "Bank of Africa Kenya","Bank of Baroda Kenya","Bank of India",
+    "Citibank NA Kenya","Co-operative Bank of Kenya","Consolidated Bank",
+    "Credit Bank","DTB — Diamond Trust Bank","Ecobank Kenya",
+    "Equity Bank Kenya","Family Bank","First Community Bank",
+    "Guaranty Trust Bank (GTB)","Gulf African Bank","HFC Bank",
+    "Housing Finance (HFC)","I&M Bank Kenya","KCB Group",
+    "Kingdom Bank","Mayfair CIB Bank","NCBA Bank Kenya",
+    "National Bank of Kenya","Paramount Bank","Premier Bank Kenya",
+    "Prime Bank Kenya","SBM Bank Kenya","Sidian Bank",
+    "Spire Bank","Stanbic Bank Kenya","Standard Chartered Bank Kenya",
+    "UBA Kenya Bank","Victoria Commercial Bank",
+]
+
 ACTIVITY_TYPES = [
     "Cold Call","Discovery Meeting","Follow-up Call","Product Presentation",
     "Site Visit","Credit Committee","Proposal Submitted","Contract Signing",
-    "Account Opening","Referral","Email","WhatsApp","Other",
+    "Account Opening","Referral","Email","WhatsApp / Messenger","Other",
 ]
 LOSS_REASONS   = [
-    "Pricing","Competitor offer","Credit declined","Customer withdrew",
-    "Documentation issues","Relationship breakdown","Other",
+    "Pricing too high","Competitor offer (lower rate)",
+    "Competitor offer (better terms)","Credit declined by bank",
+    "Customer withdrew / no longer interested",
+    "Documentation / KYC issues","Relationship breakdown",
+    "Regulatory / compliance issue","Deal superseded by another product",
+    "Other",
 ]
+
+# Pipeline delete/cancel approval levels (by stage reached)
+# Stages up to this index can be self-deleted; beyond requires manager approval
+PIPELINE_DELETE_SELF_MAX = "Lead"     # can self-delete only at Lead stage
+PIPELINE_VALIDATE_STAGE  = "Contacted"  # stage at which manager must validate
+
+# ── KPI Library — persistent configuration ───────────────────────────
+KPI_LIBRARY_FILE = DATA_DIR / "kpi_library.json"
+
+# Default KPI library — full banking KPI catalogue
+DEFAULT_KPI_LIBRARY = {
+    "Financial": [
+        {"id":"DEP_GROWTH",    "name":"Deposit Growth",             "unit":"KES",   "direction":"higher","cbs_source":"accounts.deposit_bal",      "fixed":False,"default_weight":0.15,"description":"Growth in customer deposit balances vs baseline"},
+        {"id":"LOAN_GROWTH",   "name":"Loan Book Growth",           "unit":"KES",   "direction":"higher","cbs_source":"accounts.loan_outstanding",   "fixed":False,"default_weight":0.15,"description":"Growth in net loans and advances vs baseline"},
+        {"id":"LOAN_DISB",     "name":"Loans Disbursement",         "unit":"KES",   "direction":"higher","cbs_source":"accounts.loan_new",           "fixed":False,"default_weight":0.10,"description":"Value of new loans disbursed in period"},
+        {"id":"FEES_COMM",     "name":"Fees and Commission",        "unit":"KES",   "direction":"higher","cbs_source":"accounts.fee_income",         "fixed":False,"default_weight":0.10,"description":"Non-interest income from fees and commissions"},
+        {"id":"DFS_REV",       "name":"DFS Revenue",                "unit":"KES",   "direction":"higher","cbs_source":"transactions.mobile_volume",  "fixed":False,"default_weight":0.05,"description":"Revenue from digital financial services"},
+        {"id":"BANCASSURANCE", "name":"Bancassurance",              "unit":"KES",   "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.05,"description":"Premium income from insurance products sold"},
+        {"id":"PBT",           "name":"PBT",                        "unit":"KES",   "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.05,"description":"Profit Before Tax contribution"},
+        {"id":"NPL_RATIO",     "name":"NPL Ratio",                  "unit":"%",     "direction":"lower", "cbs_source":"accounts.npl_ratio",         "fixed":False,"default_weight":0.10,"description":"Non-performing loans as % of total loan book"},
+        {"id":"PAR",           "name":"PAR",                        "unit":"%",     "direction":"lower", "cbs_source":"accounts.par_ratio",         "fixed":False,"default_weight":0.05,"description":"Portfolio at risk — loans overdue >30 days"},
+        {"id":"CIR",           "name":"Cost-to-Income Ratio",       "unit":"%",     "direction":"lower", "cbs_source":"manual",                     "fixed":True, "default_weight":0.05,"description":"Operating costs / operating income (bank-wide)"},
+        {"id":"NIM",           "name":"Net Interest Margin",        "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":True, "default_weight":0.05,"description":"Net interest income as % of earning assets (HO only)"},
+        {"id":"ROE",           "name":"Return on Equity",           "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":True, "default_weight":0.05,"description":"Net profit as % of shareholders equity (HO only)"},
+        {"id":"TRADE_FIN",     "name":"Trade Finance",              "unit":"KES",   "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.05,"description":"Revenue from trade finance products"},
+        {"id":"TREASURY",      "name":"Treasury Revenue",           "unit":"KES",   "direction":"higher","cbs_source":"manual",                     "fixed":True, "default_weight":0.05,"description":"Net revenue from treasury operations"},
+    ],
+    "Customer Focus": [
+        {"id":"NEW_CUST",      "name":"New Customer Acquisition",   "unit":"Count", "direction":"higher","cbs_source":"customers.new_onboarded",    "fixed":False,"default_weight":0.20,"description":"Net-new customers onboarded in period"},
+        {"id":"ACTIVE_ACCTS",  "name":"Active Account Growth",      "unit":"Count", "direction":"higher","cbs_source":"accounts.active_count",      "fixed":False,"default_weight":0.20,"description":"Net growth in active accounts (opens minus dormancies)"},
+        {"id":"DORMANCY_REACT","name":"Dormancy Reactivation",      "unit":"Count", "direction":"higher","cbs_source":"accounts.reactivated",       "fixed":False,"default_weight":0.15,"description":"Dormant accounts reactivated in period"},
+        {"id":"DIGITAL_ACT",   "name":"Digital Active Customers",   "unit":"Count", "direction":"higher","cbs_source":"transactions.digital_cifs",  "fixed":False,"default_weight":0.15,"description":"Customers transacting digitally ≥1 time per month"},
+        {"id":"NPS",           "name":"NPS Score",                  "unit":"Score", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.15,"description":"Net Promoter Score — customer advocacy measure"},
+        {"id":"CX_SCORE",      "name":"CX Score",                   "unit":"Score", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"Customer experience composite score"},
+        {"id":"COMPLAINT_RES", "name":"Complaint Resolution Rate",  "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"% complaints resolved within SLA"},
+        {"id":"CUST_RETENTION","name":"Customer Retention Rate",    "unit":"%",     "direction":"higher","cbs_source":"customers.retention",        "fixed":False,"default_weight":0.10,"description":"% of customers retained in period"},
+    ],
+    "Operational Excellence": [
+        {"id":"TRANSACTIONS",  "name":"Transactions Volume",        "unit":"Count", "direction":"higher","cbs_source":"transactions.count",         "fixed":False,"default_weight":0.15,"description":"Total customer transactions across all channels"},
+        {"id":"COMPLIANCE",    "name":"Compliance Score",           "unit":"%",     "direction":"higher","cbs_source":"customers.kyc_verified_pct", "fixed":False,"default_weight":0.15,"description":"KYC verification rate across portfolio"},
+        {"id":"AUDIT_SCORE",   "name":"Audit Score",                "unit":"Score", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.15,"description":"Internal audit score for branch/unit"},
+        {"id":"SLA_SCORE",     "name":"SLA Adherence Score",        "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"% of service requests fulfilled within SLA"},
+        {"id":"REG_TIMELINESS","name":"Regulatory Reporting Timeliness","unit":"%", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"% of regulatory submissions filed on time"},
+        {"id":"DIGITAL_MIG",   "name":"Digital Transaction Migration","unit":"%",   "direction":"higher","cbs_source":"transactions.digital_pct",   "fixed":False,"default_weight":0.10,"description":"% transactions on digital vs branch channels"},
+        {"id":"CREDIT_TAT",    "name":"Credit Approval TAT",        "unit":"Days",  "direction":"lower", "cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"Avg days from loan application to decision"},
+        {"id":"RECONCILIATION","name":"Timely Reconciliations",     "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.10,"description":"% of reconciliations completed within deadline"},
+        {"id":"AML_SAR",       "name":"AML SAR Filing Rate",        "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.05,"description":"% of SARs filed within regulatory deadline"},
+    ],
+    "People & Learning": [
+        {"id":"DILIGENCE",     "name":"Diligence Score",            "unit":"Score", "direction":"higher","cbs_source":"system.diligence",           "fixed":False,"default_weight":0.30,"description":"Composite score: attendance, reporting, deadlines"},
+        {"id":"TRAINING",      "name":"Training Completion Rate",   "unit":"%",     "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.25,"description":"% of mandatory training completed"},
+        {"id":"STAFF_SAT",     "name":"Staff Satisfaction Index",   "unit":"Score", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.25,"description":"Employee engagement score from periodic survey"},
+        {"id":"SUCCESSION",    "name":"Succession Readiness",       "unit":"Score", "direction":"higher","cbs_source":"manual",                     "fixed":False,"default_weight":0.20,"description":"% of critical roles with identified successors"},
+    ],
+}
+
+# Default role → KPI assignments
+DEFAULT_ROLE_KPIS = {
+    "Managing Director":                ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","PBT","NPL_RATIO","CIR","NIM","ROE","NEW_CUST","DIGITAL_ACT","NPS","DILIGENCE"],
+    "Director Retail Banking":          ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","NPL_RATIO","NEW_CUST","DIGITAL_ACT","TRANSACTIONS","COMPLIANCE","DILIGENCE"],
+    "Director Commercial Banking":      ["LOAN_GROWTH","LOAN_DISB","FEES_COMM","TRADE_FIN","NPL_RATIO","PAR","NEW_CUST","DILIGENCE"],
+    "Regional Head":                    ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","NPL_RATIO","NEW_CUST","ACTIVE_ACCTS","TRANSACTIONS","COMPLIANCE","DILIGENCE"],
+    "Branch Manager":                   ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","DFS_REV","NPL_RATIO","NEW_CUST","ACTIVE_ACCTS","TRANSACTIONS","COMPLIANCE","DORMANCY_REACT","DILIGENCE"],
+    "Branch Credit Manager":            ["LOAN_GROWTH","LOAN_DISB","FEES_COMM","NPL_RATIO","PAR","NEW_CUST","COMPLIANCE","DILIGENCE"],
+    "Branch Operations Manager":        ["TRANSACTIONS","ACTIVE_ACCTS","DORMANCY_REACT","COMPLIANCE","DIGITAL_MIG","SLA_SCORE","DILIGENCE"],
+    "Branch Operations Supervisor":     ["TRANSACTIONS","DORMANCY_REACT","COMPLIANCE","DILIGENCE"],
+    "Relationship Officer Personal Banking": ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","NEW_CUST","ACTIVE_ACCTS","COMPLIANCE","DILIGENCE"],
+    "Relationship Officer Business Banking": ["LOAN_GROWTH","LOAN_DISB","DEP_GROWTH","FEES_COMM","NPL_RATIO","NEW_CUST","COMPLIANCE","DILIGENCE"],
+    "Direct Sales Officer":             ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","DILIGENCE"],
+    "Customer Service Officer":         ["TRANSACTIONS","NEW_CUST","DORMANCY_REACT","COMPLIANCE","DILIGENCE"],
+    "Teller":                           ["TRANSACTIONS","COMPLIANCE","DILIGENCE"],
+    "Relationship Manager Corporate":   ["LOAN_GROWTH","LOAN_DISB","FEES_COMM","TRADE_FIN","DEP_GROWTH","NPL_RATIO","NEW_CUST","DILIGENCE"],
+    "Relationship Manager SME":         ["LOAN_GROWTH","LOAN_DISB","DEP_GROWTH","FEES_COMM","NPL_RATIO","NEW_CUST","COMPLIANCE","DILIGENCE"],
+}
+
+CBS_SOURCE_LABELS = {
+    "accounts.deposit_bal":      "CBS — Sum of deposit balances in portfolio",
+    "accounts.loan_outstanding": "CBS — Sum of loan outstanding in portfolio",
+    "accounts.loan_new":         "CBS — New loans disbursed in period",
+    "accounts.fee_income":       "CBS — Fee income from portfolio accounts",
+    "accounts.npl_ratio":        "CBS — NPL / total loans in portfolio",
+    "accounts.par_ratio":        "CBS — Loans overdue >30d / total portfolio",
+    "accounts.active_count":     "CBS — Count of active accounts in portfolio",
+    "accounts.reactivated":      "CBS — Dormant accounts with recent activity",
+    "customers.new_onboarded":   "CBS — New CIFs opened in period",
+    "customers.kyc_verified_pct":"CBS — % of portfolio with verified KYC",
+    "customers.retention":       "CBS — Customers retained vs prior period",
+    "transactions.count":        "CBS — Transaction count at branch",
+    "transactions.mobile_volume":"CBS — Mobile banking transaction volume",
+    "transactions.digital_cifs": "CBS — Distinct CIFs transacting digitally",
+    "transactions.digital_pct":  "CBS — % transactions on digital channels",
+    "system.diligence":          "System — Auto-computed from attendance & deadlines",
+    "manual":                    "Manual — Entered by HR / admin / manager",
+}
+
+_KPI_LIB_CACHE: dict = {}
+_KPI_LIB_MTIME: float = 0.0
+
+def get_kpi_library() -> dict:
+    """Load the bank's active KPI library from disk. Returns default if not configured."""
+    global _KPI_LIB_CACHE, _KPI_LIB_MTIME
+    try:
+        _f = KPI_LIBRARY_FILE
+        if _f.exists():
+            _mt = _f.stat().st_mtime
+            if _mt == _KPI_LIB_MTIME and _KPI_LIB_CACHE:
+                return _KPI_LIB_CACHE
+    except: pass
+    if not KPI_LIBRARY_FILE.exists():
+        return {"pillars": DEFAULT_KPI_LIBRARY, "role_kpis": DEFAULT_ROLE_KPIS, "active_kpis": []}
+    try:
+        return json.loads(KPI_LIBRARY_FILE.read_text())
+    except:
+        return {"pillars": DEFAULT_KPI_LIBRARY, "role_kpis": DEFAULT_ROLE_KPIS, "active_kpis": []}
+
+def save_kpi_library(library: dict):
+    global _KPI_LIB_CACHE, _KPI_LIB_MTIME
+    _KPI_LIB_CACHE = {}; _KPI_LIB_MTIME = 0.0
+    """Persist the KPI library configuration to disk."""
+    KPI_LIBRARY_FILE.write_text(json.dumps(library, indent=2))
+
+def get_active_kpis() -> list:
+    """Return only the KPIs the bank has activated."""
+    lib = get_kpi_library()
+    active_ids = set(lib.get("active_kpis", []))
+    result = []
+    for pillar, kpis in lib.get("pillars", DEFAULT_KPI_LIBRARY).items():
+        for k in kpis:
+            if not active_ids or k["id"] in active_ids:
+                result.append({**k, "pillar": pillar})
+    return result
+
+def get_role_kpis(role: str) -> list:
+    """Return KPI IDs assigned to a role."""
+    lib = get_kpi_library()
+    return lib.get("role_kpis", DEFAULT_ROLE_KPIS).get(role, [])
+
+def get_pillar_weights() -> dict:
+    """Return pillar-level weights {pillar_name: weight}."""
+    lib = get_kpi_library()
+    return lib.get("pillar_weights", {
+        "Financial": 0.40,
+        "Customer Focus": 0.25,
+        "Operational Excellence": 0.25,
+        "People & Learning": 0.10,
+    })
+
+
+# ── Organisation Configuration — admin-configurable ──────────────────
+ORG_CONFIG_FILE = DATA_DIR / "org_config.json"
+
+DEFAULT_ORG_CONFIG = {
+    "bank_name":    "A2Z Blueprint",
+    "bank_code":    "ECO",
+    "country":      "Kenya",
+    "currency":     "KES",
+    "currency_symbol": "KES",
+    "logo_url":     "",
+    "branches": [
+        {"code":"BRN001","name":"Head Office",        "region":"Head Office","county":"Nairobi",   "type":"HO",       "tier":1},
+        {"code":"BRN002","name":"Upper Hill Branch",  "region":"Nairobi",   "county":"Nairobi",   "type":"Flagship", "tier":1},
+        {"code":"BRN003","name":"Westlands Branch",   "region":"Nairobi",   "county":"Nairobi",   "type":"Flagship", "tier":1},
+        {"code":"BRN004","name":"Sarit Centre Branch","region":"Nairobi",   "county":"Nairobi",   "type":"Main",     "tier":2},
+        {"code":"BRN005","name":"Industrial Area Branch","region":"Nairobi","county":"Nairobi",   "type":"Main",     "tier":2},
+        {"code":"BRN006","name":"Karen Branch",       "region":"Nairobi",   "county":"Nairobi",   "type":"Standard", "tier":3},
+        {"code":"BRN007","name":"Eastleigh Branch",   "region":"Nairobi",   "county":"Nairobi",   "type":"Standard", "tier":3},
+        {"code":"BRN008","name":"Gigiri Branch",      "region":"Nairobi",   "county":"Nairobi",   "type":"Standard", "tier":3},
+        {"code":"BRN009","name":"Mombasa Road Branch","region":"Nairobi",   "county":"Nairobi",   "type":"Standard", "tier":3},
+        {"code":"BRN010","name":"Thika Road Mall Branch","region":"Nairobi","county":"Nairobi",   "type":"Standard", "tier":3},
+        {"code":"BRN011","name":"Mombasa Main Branch","region":"Coast",     "county":"Mombasa",   "type":"Flagship", "tier":1},
+        {"code":"BRN012","name":"Nyali Branch",       "region":"Coast",     "county":"Mombasa",   "type":"Main",     "tier":2},
+        {"code":"BRN013","name":"Diani Branch",       "region":"Coast",     "county":"Kwale",     "type":"Standard", "tier":3},
+        {"code":"BRN014","name":"Malindi Branch",     "region":"Coast",     "county":"Kilifi",    "type":"Standard", "tier":3},
+        {"code":"BRN015","name":"Kisumu Main Branch", "region":"Nyanza",    "county":"Kisumu",    "type":"Flagship", "tier":1},
+        {"code":"BRN016","name":"Kisumu Mega Branch", "region":"Nyanza",    "county":"Kisumu",    "type":"Main",     "tier":2},
+        {"code":"BRN017","name":"Migori Branch",      "region":"Nyanza",    "county":"Migori",    "type":"Standard", "tier":3},
+        {"code":"BRN018","name":"Homabay Branch",     "region":"Nyanza",    "county":"Homabay",   "type":"Standard", "tier":3},
+        {"code":"BRN019","name":"Nakuru Main Branch", "region":"Rift Valley","county":"Nakuru",   "type":"Flagship", "tier":1},
+        {"code":"BRN020","name":"Nakuru West Branch", "region":"Rift Valley","county":"Nakuru",   "type":"Main",     "tier":2},
+        {"code":"BRN021","name":"Eldoret Main Branch","region":"Rift Valley","county":"Uasin Gishu","type":"Flagship","tier":1},
+        {"code":"BRN022","name":"Kitale Branch",      "region":"Rift Valley","county":"Trans Nzoia","type":"Main",   "tier":2},
+        {"code":"BRN023","name":"Bungoma Branch",     "region":"Western",   "county":"Bungoma",   "type":"Main",     "tier":2},
+        {"code":"BRN024","name":"Kakamega Branch",    "region":"Western",   "county":"Kakamega",  "type":"Standard", "tier":3},
+        {"code":"BRN025","name":"Kisii Main Branch",  "region":"Nyanza",    "county":"Kisii",     "type":"Main",     "tier":2},
+        {"code":"BRN026","name":"Nyeri Branch",       "region":"Central",   "county":"Nyeri",     "type":"Standard", "tier":3},
+        {"code":"BRN027","name":"Thika Branch",       "region":"Central",   "county":"Kiambu",    "type":"Main",     "tier":2},
+        {"code":"BRN028","name":"Kikuyu Branch",      "region":"Central",   "county":"Kiambu",    "type":"Standard", "tier":3},
+        {"code":"BRN029","name":"Meru Branch",        "region":"Eastern",   "county":"Meru",      "type":"Standard", "tier":3},
+        {"code":"BRN030","name":"Embu Branch",        "region":"Eastern",   "county":"Embu",      "type":"Standard", "tier":3},
+        {"code":"BRN031","name":"Machakos Branch",    "region":"Eastern",   "county":"Machakos",  "type":"Standard", "tier":3},
+        {"code":"BRN032","name":"Kitui Branch",       "region":"Eastern",   "county":"Kitui",     "type":"Light",    "tier":4},
+        {"code":"BRN033","name":"Garissa Branch",     "region":"North Eastern","county":"Garissa", "type":"Light",   "tier":4},
+        {"code":"BRN034","name":"Wajir Branch",       "region":"North Eastern","county":"Wajir",   "type":"Light",   "tier":4},
+        {"code":"BRN035","name":"Lamu Branch",        "region":"Coast",     "county":"Lamu",      "type":"Light",    "tier":4},
+    ],
+    "regions": ["Nairobi","Coast","Nyanza","Rift Valley","Western","Central","Eastern","North Eastern","Head Office"],
+    "hierarchy": {
+        "Managing Director": [],
+        "Director Retail Banking": ["Managing Director"],
+        "Director Commercial Banking": ["Managing Director"],
+        "Head Of Retail": ["Director Retail Banking"],
+        "Head Of Corporate": ["Director Commercial Banking"],
+        "Head Of SME": ["Director Commercial Banking"],
+        "Regional Head": ["Head Of Retail","Director Retail Banking"],
+        "Branch Manager": ["Regional Head"],
+        "Branch Operations Manager": ["Branch Manager"],
+        "Branch Credit Manager": ["Branch Manager"],
+        "Branch Operations Supervisor": ["Branch Operations Manager"],
+        "Customer Service Officer": ["Branch Operations Manager"],
+        "Teller": ["Branch Operations Manager"],
+        "Relationship Officer Personal Banking": ["Branch Credit Manager"],
+        "Relationship Officer Business Banking": ["Branch Credit Manager"],
+        "Direct Sales Officer": ["Branch Credit Manager"],
+        "Relationship Manager Corporate": ["Head Of Corporate"],
+        "Relationship Manager SME": ["Head Of SME"],
+        "Chief Finance Officer": ["Managing Director"],
+        "Chief Risk Officer": ["Managing Director"],
+        "Chief Operations Officer": ["Managing Director"],
+        "Chief Compliance Officer": ["Managing Director"],
+        "Chief Human Resources Officer": ["Managing Director"],
+    },
+    "roles": [
+        "Managing Director","Director Retail Banking","Director Commercial Banking",
+        "Head Of Retail","Head Of Corporate","Head Of SME","Regional Head",
+        "Branch Manager","Branch Operations Manager","Branch Credit Manager",
+        "Branch Operations Supervisor","Customer Service Officer","Teller",
+        "Relationship Officer Personal Banking","Relationship Officer Business Banking",
+        "Direct Sales Officer","Relationship Manager Corporate","Relationship Manager SME",
+        "Chief Finance Officer","Chief Risk Officer","Chief Operations Officer",
+        "Chief Compliance Officer","Chief Human Resources Officer","Chief Credit Officer",
+        "Head Of Digital Innovation","Head Of Strategy","Head Of Internal Audit",
+        "Head Of Marketing","IT Manager","Operations Manager","Procurement Manager",
+        "HR Business Partner","HR Officer","Compliance Officer","Risk Manager",
+        "Financial Controller","Treasury Manager","Internal Auditor","Strategy Analyst",
+        "Marketing Officer","IT Support Officer","Recovery Officer","Procurement Officer",
+        "Credit Analyst","Credit Administrator","Debt Recovery Unit Manager",
+    ],
+}
+
+# Module-level cache — avoids repeated disk reads on every Streamlit rerun
+# Invalidated by save_org_config() and on explicit cache clear
+_ORG_CONFIG_CACHE: dict = {}
+_ORG_CONFIG_MTIME: float = 0.0
+
+def get_org_config() -> dict:
+    """Load org config with module-level cache. Reads disk only when file changes."""
+    global _ORG_CONFIG_CACHE, _ORG_CONFIG_MTIME
+    try:
+        if not ORG_CONFIG_FILE.exists():
+            return DEFAULT_ORG_CONFIG.copy()
+        mtime = ORG_CONFIG_FILE.stat().st_mtime
+        if mtime != _ORG_CONFIG_MTIME or not _ORG_CONFIG_CACHE:
+            saved = json.loads(ORG_CONFIG_FILE.read_text())
+            merged = DEFAULT_ORG_CONFIG.copy()
+            merged.update(saved)
+            _ORG_CONFIG_CACHE = merged
+            _ORG_CONFIG_MTIME = mtime
+        return _ORG_CONFIG_CACHE
+    except:
+        return DEFAULT_ORG_CONFIG.copy()
+
+def save_org_config(cfg: dict):
+    """Persist org config to disk and invalidate cache."""
+    global _ORG_CONFIG_CACHE, _ORG_CONFIG_MTIME
+    _ORG_CONFIG_CACHE = {}
+    _ORG_CONFIG_MTIME = 0.0
+    ORG_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+
+def get_branch_region_map() -> dict:
+    """Dynamic branch→region map from org config. Replaces hardcoded BRANCH_REGION."""
+    cfg = get_org_config()
+    return {b["name"]: b["region"] for b in cfg.get("branches", [])}
+
+def get_branch_list() -> list:
+    """All branch names from org config."""
+    cfg = get_org_config()
+    return [b["name"] for b in cfg.get("branches", []) if b.get("type") != "HO"]
+
+def get_all_branches() -> list:
+    """All branch dicts from org config."""
+    return get_org_config().get("branches", [])
+
+def get_org_hierarchy() -> dict:
+    """Role → list of parent roles. From org config."""
+    return get_org_config().get("hierarchy", {})
+
+def get_scoring_scale() -> list:
+    """BSC scoring scale thresholds — from org_config, fully configurable."""
+    try:
+        cfg = get_org_config()
+        return cfg.get("scoring_scale", {}).get("thresholds", [])
+    except: return []
+
+def bsc_score_from_pct(achievement_pct: float, reverse: bool = False) -> float:
+    """
+    Convert achievement % to BSC score using configurable scoring scale.
+    reverse=True for KPIs where lower is better (NPL, PAR, Dormancy).
+    """
+    if achievement_pct is None: return 0.0
+    pct = achievement_pct if not reverse else (200 - achievement_pct)
+    thresholds = get_scoring_scale()
+    if not thresholds:
+        # Fallback built-in scale
+        if pct > 130: return 5.0
+        if pct > 120: return 4.5
+        if pct > 110: return 4.0
+        if pct > 100: return 3.5
+        if pct >= 91: return 3.0
+        if pct >= 61: return 2.5
+        if pct >= 51: return 2.0
+        if pct >= 31: return 1.5
+        return 1.0
+    for t in sorted(thresholds, key=lambda x: -x["min"]):
+        if pct >= t["min"]: return float(t["score"])
+    return 1.0
+
+def get_performance_bands() -> list:
+    """Performance band definitions — from org_config."""
+    try:
+        cfg = get_org_config()
+        return cfg.get("performance_bands", [])
+    except: return []
+
+def score_to_band(score: float) -> dict:
+    """Return the performance band dict for a given BSC score."""
+    bands = get_performance_bands()
+    if not bands:
+        # Fallback
+        if score >= 4.5: return {"label":"Exceeded By Far","color":"var(--brand-primary,#006B3F)","bg":"var(--brand-light,#E8F5EE)"}
+        if score >= 3.5: return {"label":"Exceeded",       "color":"var(--brand-mid,#1D9E75)","bg":"#D1FAE5"}
+        if score >= 3.0: return {"label":"Met",             "color":"#F5A623","bg":"#FFFBEB"}
+        if score >= 2.0: return {"label":"Partially Met",   "color":"#E67E22","bg":"#FEF3C7"}
+        return            {"label":"Unmet",            "color":"#E24B4A","bg":"#FEF2F2"}
+    for b in sorted(bands, key=lambda x: -x["min_score"]):
+        if score >= b["min_score"]: return b
+    return bands[-1] if bands else {"label":"Unmet","color":"#E24B4A","bg":"#FEF2F2"}
+
+def get_currency() -> str:
+    """Currency symbol from org_config."""
+    try:
+        return get_org_config().get("currency_symbol", "KES")
+    except: return "KES"
+
+def get_fiscal_year() -> str:
+    """Active fiscal year / period from org_config."""
+    try:
+        return str(get_org_config().get("active_period", str(get_org_config().get("active_period","2026"))))
+    except: return str(get_org_config().get("active_period","2026"))
+
+def get_pipeline_stages() -> list:
+    """Pipeline stages from org_config — names, colors, default probabilities."""
+    try:
+        cfg = get_org_config()
+        stages = cfg.get("pipeline_stages", [])
+        if stages: return stages
+    except: pass
+    return [
+        {"stage":"Prospecting","color":"#6366F1","prob_default":20},
+        {"stage":"Needs Analysis","color":"#8B5CF6","prob_default":35},
+        {"stage":"Proposal","color":"#3B82F6","prob_default":50},
+        {"stage":"Credit Review","color":"#F59E0B","prob_default":55},
+        {"stage":"Approval","color":"#10B981","prob_default":85},
+        {"stage":"Disbursed","color":"var(--brand-mid,#1D9E75)","prob_default":100},
+        {"stage":"Closed Lost","color":"#6B7280","prob_default":0},
+    ]
+
+def get_product_types() -> list:
+    """Product types for pipeline from org_config."""
+    try:
+        return get_org_config().get("product_types", [])
+    except: return []
+
+def get_leave_types() -> dict:
+    """Leave types from org_config — overrides LEAVE_TYPES constant."""
+    try:
+        lt = get_org_config().get("leave_types", {})
+        if lt: return lt
+    except: pass
+    return LEAVE_TYPES  # fallback to core constant
+
+def get_org_roles() -> list:
+    """All role names at this bank."""
+    return get_org_config().get("roles", [])
+
+def get_root_roles() -> list:
+    """Top-of-hierarchy roles (CEO/MD) — from org_config hierarchy."""
+    try:
+        hier = get_org_config().get('hierarchy', {})
+        return [r for r, parents in hier.items() if not parents]
+    except:
+        return []
+
+def is_top_management(role: str) -> bool:
+    """True if this role is at or near the root of the hierarchy.
+    Matches exact root roles AND common aliases (MD, CEO, Chief Executive)."""
+    roots = get_root_roles()
+    if role in roots:
+        return True
+    # Fuzzy: any root whose name contains this role string or vice versa
+    role_l = role.lower()
+    for r in roots:
+        r_l = r.lower()
+        if role_l in r_l or r_l in role_l:
+            return True
+    # Common aliases
+    aliases = {'md','ceo','chief executive','managing director'}
+    return any(a in role_l for a in aliases)
+
+def is_branch_role(role: str) -> bool:
+    """True if this role belongs to branch staff (Category=Branch)."""
+    try:
+        br = get_org_config().get('role_categories', {}).get('branch_staff', [])
+        return role in br if br else False
+    except:
+        return False
+
+def rename_role_everywhere(old_name: str, new_name: str) -> dict:
+    """
+    Atomically rename a role across: org_config (roles, hierarchy,
+    role_categories), kpi_library (role_kpis), users.json.
+    Returns summary of what was updated.
+    """
+    summary = {}
+    try:
+        cfg = get_org_config()
+        cfg['roles'] = [new_name if r == old_name else r
+                        for r in cfg.get('roles', [])]
+        new_hier = {}
+        for r, parents in cfg.get('hierarchy', {}).items():
+            new_key    = new_name if r == old_name else r
+            new_parents= [new_name if p == old_name else p for p in parents]
+            new_hier[new_key] = new_parents
+        cfg['hierarchy'] = new_hier
+        new_cats = {}
+        for cat, roles in cfg.get('role_categories', {}).items():
+            new_cats[cat] = [new_name if r == old_name else r for r in roles]
+        cfg['role_categories'] = new_cats
+        save_org_config(cfg)
+        summary['org_config'] = True
+    except Exception as e:
+        summary['org_config'] = str(e)
+    try:
+        lib = get_kpi_library()
+        rk  = lib.get('role_kpis', {})
+        if old_name in rk:
+            rk[new_name] = rk.pop(old_name)
+            lib['role_kpis'] = rk
+            save_kpi_library(lib)
+        summary['kpi_library'] = True
+    except Exception as e:
+        summary['kpi_library'] = str(e)
+    return summary
+
+def get_performance_bands() -> list:
+    """Performance band definitions from org_config."""
+    try:
+        return get_org_config().get('performance_bands', [])
+    except:
+        return []
+
+def get_scoring_scale() -> list:
+    """BSC scoring thresholds from org_config."""
+    try:
+        return get_org_config().get('scoring_scale', {}).get('thresholds', [])
+    except:
+        return []
+
+
+def get_pipeline_settings() -> dict:
+    """Load pipeline settings (custom products, stages etc.) from disk."""
+    _f = DATA_DIR / "pipeline_settings.json"
+    if not _f.exists():
+        return {}
+    try:
+        return json.loads(_f.read_text())
+    except:
+        return {}
+
+def save_pipeline_settings(settings: dict):
+    _f = DATA_DIR / "pipeline_settings.json"
+    _f.write_text(json.dumps(settings, indent=2))
+
+def get_custom_product_types() -> list:
+    """Return product types, using custom list if admin has configured one."""
+    settings = get_pipeline_settings()
+    custom = settings.get("product_types", [])
+    return custom if custom else PRODUCT_TYPES
 
 # ─── KPI INSIGHT ENGINE ──────────────────────────────────────────────
 def get_kpi_insights(kpis_df):
@@ -808,7 +1802,7 @@ def get_kpi_insights(kpis_df):
         kpi   = str(r.get('KPI',''))
         pillar= str(r.get('Pillar','General'))
         w     = r.get('Weight', 0)
-        tgt   = r.get('Annual Target', np.nan)
+        tgt   = r.get('Annual Target', 0) or 0
         act   = r.get('YTD_Actual', np.nan)
 
         if pd.isna(score): continue
@@ -976,15 +1970,27 @@ def process_kpi_data(df):
     # New format: 'Jan-26 Actual' → rename to 'Jan-26'
     rename_map = {}
     for col in df.columns:
+        col_str = str(col)  # guard against integer column names
         for month in ['Jan','Feb','Mar','Apr','May','Jun',
                       'Jul','Aug','Sep','Oct','Nov','Dec']:
-            if col.startswith(month) and col.endswith(' Actual'):
-                # e.g. 'Jan-26 Actual' → 'Jan-26'
-                rename_map[col] = col.replace(' Actual','')
+            if col_str.startswith(month) and col_str.endswith(' Actual'):
+                rename_map[col] = col_str.replace(' Actual','')
     if rename_map:
         df = df.rename(columns=rename_map)
 
+    # Drop any purely-numeric unnamed columns (openpyxl artefacts)
+    df = df[[c for c in df.columns
+             if not (isinstance(c, int) or str(c).startswith('Unnamed'))]]
+
     df = df.copy()
+    # Ensure Staff Code column exists and is string
+    if 'Staff Code' not in df.columns:
+        # Try to find it with different capitalisation
+        sc_candidates = [c for c in df.columns if str(c).lower().replace(' ','') == 'staffcode']
+        if sc_candidates:
+            df = df.rename(columns={sc_candidates[0]: 'Staff Code'})
+        else:
+            df['Staff Code'] = '0'
     df['Staff Code'] = df['Staff Code'].astype(str).str.strip()
 
     month_cols    = detect_month_actual_columns(df)
@@ -1021,12 +2027,23 @@ def process_kpi_data(df):
 
     if 'Annual Target' not in df.columns and 'Target' in df.columns:
         df['Annual Target'] = df['Target']
+    elif 'Annual Target' not in df.columns:
+        # No target column — targets come from cascade module
+        # Create placeholder zeros; cascade write-back fills these in
+        df['Annual Target'] = 0.0
 
     reverse_kpis = ['PAR','NPL','PORTFOLIO AT RISK','DELINQUENCY','COST','EXPENSE']
     # Vectorized scoring — no iterrows, runs 50x faster on 2782 rows
-    target = pd.to_numeric(df['Annual Target'], errors='coerce')
-    actual = pd.to_numeric(df['YTD_Actual'],    errors='coerce').fillna(0)
-    kpi_up = df['KPI'].astype(str).str.upper()
+    target_raw = pd.to_numeric(df['Annual Target'], errors='coerce').fillna(0)
+    actual     = pd.to_numeric(df['YTD_Actual'],    errors='coerce').fillna(0)
+    kpi_up     = df['KPI'].astype(str).str.upper()
+
+    # When Annual Target is zero (e.g. pre-cascade or new format),
+    # fall back to Annual Actual as a proxy target so scoring still works
+    annual_actual_col = pd.to_numeric(
+        df.get('Annual Actual', pd.Series(0, index=df.index)), errors='coerce').fillna(0)
+    target = target_raw.where(target_raw != 0, annual_actual_col)
+    df['Annual Target'] = target  # keep the resolved value in df
 
     is_rev  = kpi_up.apply(lambda k: any(t in k for t in reverse_kpis))
     valid   = target.notna() & (target != 0)
@@ -1056,6 +2073,48 @@ def process_kpi_data(df):
     return df
 
 @st.cache_data(show_spinner=False)
+
+def compute_initiative_kpis(staff_name: str) -> dict:
+    """
+    Compute initiative KPI actuals for a staff member from execute_initiatives.json.
+    Returns: {
+      'Initiative Implementation Score': float (0-100 weighted avg gate progress),
+      'Active Initiatives Count': int
+    }
+    Gate weights: G0=0, G1=20, G2=40, G3=60, G4=80, G5=100
+    """
+    GATE_SCORES = {'G0':0,'G1':20,'G2':40,'G3':60,'G4':80,'G5':100}
+    try:
+        init_file = DATA_DIR / "execute_initiatives.json"
+        if not init_file.exists():
+            return {'Initiative Implementation Score': 0, 'Active Initiatives Count': 0}
+        initiatives = json.loads(init_file.read_text())
+        if not isinstance(initiatives, list):
+            initiatives = []
+
+        owned = [i for i in initiatives
+                 if (i.get('io','') == staff_name or
+                     i.get('io_backup','') == staff_name or
+                     any(ms.get('owner','') == staff_name
+                         for ms in i.get('milestones',[])))
+                 and i.get('gate','G0') not in ('Dropped',)]
+
+        active = [i for i in owned if i.get('gate','G0') in ('G1','G2','G3','G4')]
+
+        if not owned:
+            return {'Initiative Implementation Score': 0, 'Active Initiatives Count': 0}
+
+        # Weighted implementation score
+        gate_scores = [GATE_SCORES.get(i.get('gate','G0'), 0) for i in owned]
+        impl_score  = round(sum(gate_scores) / len(gate_scores), 1)
+
+        return {
+            'Initiative Implementation Score': impl_score,
+            'Active Initiatives Count': len(active),
+        }
+    except:
+        return {'Initiative Implementation Score': 0, 'Active Initiatives Count': 0}
+
 def build_staff_scores(df):
     grp = [c for c in ['Staff Name','Role','Unit','Category','Staff Code','Staff Status'] if c in df.columns]
     staff = df.groupby(grp, as_index=False).agg(
@@ -1118,98 +2177,43 @@ def build_staff_registry(_raw_bytes: bytes):
 
 
 # ─── KENYA LEAVE TYPES (Employment Act 2007 & amendments) ────────────
-LEAVE_TYPES = {
-    "Annual Leave": {
-        "days_entitled": 21,
-        "max_days":      21,
-        "description":   "21 working days per year (Employment Act s.28)",
-        "paid":          True,
-        "affects_performance": False,
-        "compensation":  "pro_rata",
-        "color":         "#006B3F",
-    },
-    "Sick Leave": {
-        "days_entitled": 14,
-        "max_days":      14,
-        "description":   "7 days full pay + 7 days half pay per year (s.30)",
-        "paid":          True,
-        "affects_performance": True,
-        "compensation":  "exclude_month",
-        "color":         "#E24B4A",
-    },
-    "Maternity Leave": {
-        "days_entitled": 91,
-        "max_days":      91,
-        "description":   "3 months fully paid maternity leave (s.29)",
-        "paid":          True,
-        "affects_performance": True,
-        "compensation":  "exclude_all",
-        "color":         "#9B59B6",
-    },
-    "Paternity Leave": {
-        "days_entitled": 14,
-        "max_days":      14,
-        "description":   "2 weeks fully paid paternity leave (s.29A)",
-        "paid":          True,
-        "affects_performance": False,
-        "compensation":  "pro_rata",
-        "color":         "#185FA5",
-    },
-    "Compassionate Leave": {
-        "days_entitled": 5,
-        "max_days":      5,
-        "description":   "Bereavement/compassionate — immediate family",
-        "paid":          True,
-        "affects_performance": False,
-        "compensation":  "pro_rata",
-        "color":         "#7F8C8D",
-    },
-    "Study Leave": {
-        "days_entitled": 0,
-        "max_days":      0,
-        "description":   "Employer-discretionary; exam preparation or professional courses",
-        "paid":          True,
-        "affects_performance": False,
-        "compensation":  "pro_rata",
-        "color":         "#F5A623",
-    },
-    "Leave Without Pay": {
-        "days_entitled": 0,
-        "max_days":      0,
-        "description":   "Unpaid leave by mutual agreement",
-        "paid":          False,
-        "affects_performance": True,
-        "compensation":  "exclude_month",
-        "color":         "#E67E22",
-    },
-    "Garden Leave": {
-        "days_entitled": 0,
-        "max_days":      0,
-        "description":   "Notice period served at home on full pay",
-        "paid":          True,
-        "affects_performance": True,
-        "compensation":  "exclude_all",
-        "color":         "#BDC3C7",
-    },
-    "Sabbatical Leave": {
-        "days_entitled": 0,
-        "max_days":      0,
-        "description":   "Extended leave for research, development or personal growth",
-        "paid":          False,
-        "affects_performance": True,
-        "compensation":  "exclude_all",
-        "color":         "#1ABC9C",
-    },
-    "Public Holiday": {
-        "days_entitled": 0,
-        "max_days":      0,
-        "description":   "Public/gazetted holidays as per Kenya Public Holidays Act",
-        "paid":          True,
-        "affects_performance": False,
-        "compensation":  "none",
-        "color":         "#95A5A6",
-    },
+# Default leave entitlements — admin can override these via Admin → Leave Settings
+# Days are configurable per company policy, not tied to any specific legislation
+LEAVE_TYPES_DEFAULT = {
+    "Annual Leave":        {"days_entitled": 21, "max_days": 21, "paid": True,  "affects_performance": False, "compensation": "pro_rata",     "color": "var(--brand-primary,#006B3F)", "description": "Annual leave entitlement per year"},
+    "Sick Leave":          {"days_entitled": 14, "max_days": 14, "paid": True,  "affects_performance": True,  "compensation": "exclude_month", "color": "#E24B4A", "description": "Sick leave — full pay period"},
+    "Maternity Leave":     {"days_entitled": 91, "max_days": 91, "paid": True,  "affects_performance": True,  "compensation": "exclude_all",   "color": "#9B59B6", "description": "Fully paid maternity leave"},
+    "Paternity Leave":     {"days_entitled": 14, "max_days": 14, "paid": True,  "affects_performance": False, "compensation": "pro_rata",      "color": "#185FA5", "description": "Fully paid paternity leave"},
+    "Compassionate Leave": {"days_entitled": 5,  "max_days": 5,  "paid": True,  "affects_performance": False, "compensation": "pro_rata",      "color": "#7F8C8D", "description": "Bereavement/compassionate — immediate family"},
+    "Study Leave":         {"days_entitled": 0,  "max_days": 0,  "paid": True,  "affects_performance": False, "compensation": "pro_rata",      "color": "#F5A623", "description": "Employer-discretionary; exam or professional courses"},
+    "Leave Without Pay":   {"days_entitled": 0,  "max_days": 0,  "paid": False, "affects_performance": True,  "compensation": "exclude_month", "color": "#E67E22", "description": "Unpaid leave by mutual agreement"},
+    "Garden Leave":        {"days_entitled": 0,  "max_days": 0,  "paid": True,  "affects_performance": True,  "compensation": "exclude_all",   "color": "#BDC3C7", "description": "Notice period served at home on full pay"},
+    "Sabbatical Leave":    {"days_entitled": 0,  "max_days": 0,  "paid": False, "affects_performance": True,  "compensation": "exclude_all",   "color": "#1ABC9C", "description": "Extended leave for research or personal development"},
+    "Public Holiday":      {"days_entitled": 0,  "max_days": 0,  "paid": True,  "affects_performance": False, "compensation": "none",          "color": "#95A5A6", "description": "Public/gazetted holidays"},
 }
+
+def _load_leave_settings() -> dict:
+    """Load leave settings — admin-configured days override defaults."""
+    _f = DATA_DIR / "leave_settings.json"
+    if _f.exists():
+        try:
+            saved = json.loads(_f.read_text())
+            merged = {}
+            for lt, defaults in LEAVE_TYPES_DEFAULT.items():
+                merged[lt] = {**defaults, **(saved.get(lt,{}))}
+            return merged
+        except: pass
+    return LEAVE_TYPES_DEFAULT.copy()
+
+LEAVE_TYPES = _load_leave_settings()
+
+def save_leave_settings(settings: dict):
+    """Persist admin-configured leave days to disk."""
+    _f = DATA_DIR / "leave_settings.json"
+    _f.write_text(json.dumps(settings, indent=2))
+    # Reload global
+    global LEAVE_TYPES
+    LEAVE_TYPES = settings
 
 # ─── EXIT REASONS ─────────────────────────────────────────────────────
 
@@ -1344,10 +2348,71 @@ class LeaveManager:
         self.save()
         return record
 
+    # ── Leave application workflow ──────────────────────────────────
+    def apply_leave(self, staff_code, staff_name, staff_role, staff_unit,
+                    leave_type, start_date, end_date, reason, relief_staff=""):
+        """Staff submits a leave application — status=Pending until manager approves."""
+        import datetime as _dt
+        _start = _dt.date.fromisoformat(str(start_date)[:10]) if isinstance(start_date,str) else start_date
+        _end   = _dt.date.fromisoformat(str(end_date)[:10]) if isinstance(end_date,str) else end_date
+        days   = (_end - _start).days + 1
+        lt_cfg = LEAVE_TYPES.get(leave_type, LEAVE_TYPES.get("Annual Leave",{}))
+        rec = {
+            "id":             f"LV{len(self.records)+1:05d}",
+            "staff_code":     clean_code(staff_code),
+            "staff_name":     staff_name,
+            "staff_role":     staff_role,
+            "staff_unit":     staff_unit,
+            "leave_type":     leave_type,
+            "start_date":     str(_start),
+            "end_date":       str(_end),
+            "days":           days,
+            "reason":         reason,
+            "relief_staff":   relief_staff,
+            "approved":       None,        # None=pending, True=approved, False=rejected
+            "approved_by":    "",
+            "approved_at":    "",
+            "rejection_reason": "",
+            "applied_at":     datetime.now().isoformat(),
+            "compensation":   lt_cfg.get("compensation","none"),
+            "affects_perf":   lt_cfg.get("affects_performance",False),
+            "hr_notified":    False,
+            "status":         "Pending",
+        }
+        self.records.append(rec)
+        self.save()
+        return rec["id"]
+
+    def approve_leave(self, leave_id, approved_by, approve=True, reason=""):
+        """Manager approves or rejects a leave application."""
+        for r in self.records:
+            if str(r.get("id","")) == str(leave_id):
+                r["approved"]    = approve
+                r["approved_by"] = approved_by
+                r["approved_at"] = datetime.now().isoformat()
+                r["status"]      = "Approved" if approve else "Rejected"
+                r["rejection_reason"] = reason if not approve else ""
+                r["hr_notified"] = True   # flag for HR records
+                self.save()
+                return True
+        return False
+
+    def get_pending_approvals(self, manager_unit=None, manager_role=None):
+        """Get leave requests awaiting manager approval."""
+        pending = [r for r in self.records if r.get("approved") is None]
+        if manager_unit:
+            pending = [r for r in pending
+                       if r.get("staff_unit","") == manager_unit]
+        return sorted(pending, key=lambda x: x.get("applied_at",""))
+
+    def get_all_leaves(self):
+        return self.records
+
     def get_active_leave(self, staff_code=None):
         today = datetime.now().date()
         active = [r for r in self.records
-                  if r['start_date'] <= str(today) <= r['end_date']]
+                  if r.get("approved") is not False  # not rejected
+                  and r['start_date'] <= str(today) <= r['end_date']]
         if staff_code:
             active = [r for r in active if r['staff_code'] == clean_code(staff_code)]
         return active
@@ -1694,8 +2759,28 @@ class CascadeManager:
     Each level allocates portions of their own target downwards.
     """
     def __init__(self):
-        self.file    = DATA_DIR / "target_cascade.json"
-        self.cascade = self._load()
+        self.file        = DATA_DIR / "target_cascade.json"
+        self.bank_file   = DATA_DIR / "bank_targets.json"
+        self.fixed_file  = DATA_DIR / "fixed_kpis.json"
+        self.cascade     = self._load()
+        self.bank_targets= self._load_bank()
+        self.fixed_kpis  = self._load_fixed()
+
+    def __getattr__(self, name):
+        """Return safe defaults for any missing attribute — prevents stale-instance errors."""
+        _safe_defaults = {
+            "targets_locked": False,
+            "cascade": {},
+            "bank_targets": {},
+            "fixed_kpis": {},
+            "cascade_deadlines": {},
+            "global_timeline": {},
+            "review_requests": [],
+        }
+        if name in _safe_defaults:
+            return _safe_defaults[name]
+        # For unknown methods, return a no-op callable
+        return lambda *a, **k: None
 
     def _load(self):
         if not self.file.exists(): self.file.write_text("{}")
@@ -1705,8 +2790,458 @@ class CascadeManager:
             return d if isinstance(d, dict) else {}
         except: return {}
 
+    def _load_bank(self):
+        if not self.bank_file.exists(): self.bank_file.write_text("{}")
+        try:
+            raw = self.bank_file.read_text()
+            d = json.loads(raw) if raw.strip() else {}
+            return d if isinstance(d, dict) else {}
+        except: return {}
+
+    def _load_fixed(self):
+        if not self.fixed_file.exists(): self.fixed_file.write_text("{}")
+        try:
+            raw = self.fixed_file.read_text()
+            d = json.loads(raw) if raw.strip() else {}
+            return d if isinstance(d, dict) else {}
+        except: return {}
+
     def _save(self):
         self.file.write_text(json.dumps(self.cascade, indent=2, default=str))
+
+    # ── Deadline tracking ─────────────────────────────────────────────
+    def set_cascade_deadline(self, from_code: str, period: str,
+                              confirm_by: str, cascade_by: str, set_by: str):
+        """
+        MD/manager sets deadlines for a reportee:
+        confirm_by  : ISO date string — deadline to acknowledge/confirm targets
+        cascade_by  : ISO date string — deadline to cascade down to their reports
+        Compliance tracked as Diligence score component.
+        """
+        dl_key = f"deadline|{from_code}|{period}"
+        self.cascade[dl_key] = {
+            "type":        "deadline",
+            "from_code":   from_code,
+            "period":      period,
+            "confirm_by":  confirm_by,
+            "cascade_by":  cascade_by,
+            "set_by":      set_by,
+            "set_at":      datetime.now().isoformat(),
+            "confirmed_at": None,
+            "cascaded_at":  None,
+            "confirmed":    False,
+            "cascaded":     False,
+        }
+        self._save()
+
+    def get_cascade_deadline(self, staff_code: str, period: str,
+                               staff_name: str = ""):
+        sc = clean_code(staff_code)
+        # Direct lookup first
+        entry = self.cascade.get(f"deadline|{sc}|{period}")
+        if entry:
+            return entry
+        # Fallback: scan all deadline entries for this period and name
+        if staff_name:
+            sn = str(staff_name).strip().lower()
+            for key, e in self.cascade.items():
+                if not key.startswith("deadline|"): continue
+                if e.get("period","") != period: continue
+                from_c = clean_code(e.get("from_code",""))
+                # Check if this deadline was SET FOR this person via
+                # their to_name in any allocation
+                for ak, ae in self.cascade.items():
+                    if ak.startswith("deadline|") or ak.startswith("global_"): continue
+                    for alloc in ae.get("allocations",[]):
+                        to_name = str(alloc.get("to_name","")).strip().lower()
+                        to_code = clean_code(alloc.get("to_code",""))
+                        if (sn in to_name or to_name in sn) and to_code:
+                            direct = self.cascade.get(f"deadline|{to_code}|{period}")
+                            if direct:
+                                return direct
+        return None
+
+    def mark_confirmed(self, staff_code: str, period: str):
+        dl = self.cascade.get(f"deadline|{staff_code}|{period}")
+        if dl:
+            dl["confirmed"]    = True
+            dl["confirmed_at"] = datetime.now().isoformat()
+            self._save()
+
+    def mark_cascaded(self, staff_code: str, period: str):
+        dl = self.cascade.get(f"deadline|{staff_code}|{period}")
+        if dl:
+            dl["cascaded"]    = True
+            dl["cascaded_at"] = datetime.now().isoformat()
+            self._save()
+
+    def deadline_compliance_score(self, staff_code: str, period: str) -> float:
+        """0–100 score for meeting cascade deadlines. Feeds Diligence Score."""
+        dl = self.get_cascade_deadline(staff_code, period)
+        if not dl:
+            return 100.0  # No deadline set = not penalised
+        score = 0.0
+        today = datetime.now().date()
+
+        # Confirmation compliance (50 points)
+        if dl.get("confirmed"):
+            conf_dt = datetime.fromisoformat(dl["confirmed_at"]).date()
+            due_dt  = datetime.fromisoformat(dl["confirm_by"]).date()
+            score  += 50.0 if conf_dt <= due_dt else 25.0  # partial for late
+        elif datetime.fromisoformat(dl["confirm_by"]).date() < today:
+            score  += 0.0  # overdue and not done
+
+        # Cascade compliance (50 points)
+        if dl.get("cascaded"):
+            casc_dt = datetime.fromisoformat(dl["cascaded_at"]).date()
+            due_dt  = datetime.fromisoformat(dl["cascade_by"]).date()
+            score  += 50.0 if casc_dt <= due_dt else 25.0
+        elif datetime.fromisoformat(dl["cascade_by"]).date() < today:
+            score  += 0.0
+
+        return score
+
+    def all_deadlines_summary(self, period: str) -> list:
+        """Summary of all deadlines for a period — for MD oversight."""
+        today = datetime.now().date()
+        result = []
+        for key, entry in self.cascade.items():
+            if not key.startswith("deadline|"): continue
+            if entry.get("period") != period: continue
+            sc = entry["from_code"]
+            conf_due = datetime.fromisoformat(entry["confirm_by"]).date()
+            casc_due = datetime.fromisoformat(entry["cascade_by"]).date()
+            result.append({
+                "staff_code":   sc,
+                "confirm_by":   str(conf_due),
+                "cascade_by":   str(casc_due),
+                "confirmed":    entry.get("confirmed", False),
+                "cascaded":     entry.get("cascaded", False),
+                "conf_overdue": not entry.get("confirmed") and conf_due < today,
+                "casc_overdue": not entry.get("cascaded") and casc_due < today,
+                "score":        self.deadline_compliance_score(sc, period),
+            })
+        return sorted(result, key=lambda x: x["conf_overdue"], reverse=True)
+
+    # ── Global cascade timeline ──────────────────────────────────────
+    def set_global_timeline(self, period: str, cascade_end_date: str,
+                             levels: list, set_by: str):
+        """
+        MD sets the master cascade timeline.
+        levels = [{"role":"Director...","confirm_by":"2026-01-10","cascade_by":"2026-01-20"}, ...]
+        cascade_end_date = when cascade must reach the last level (staff)
+        """
+        key = f"global_timeline|{period}"
+        self.cascade[key] = {
+            "type":             "global_timeline",
+            "period":           period,
+            "cascade_end_date": cascade_end_date,
+            "levels":           levels,
+            "set_by":           set_by,
+            "set_at":           datetime.now().isoformat(),
+        }
+        self._save()
+
+    def get_global_timeline(self, period: str):
+        return self.cascade.get(f"global_timeline|{period}")
+
+    def validate_deadline_against_global(self, period: str,
+                                          role: str, confirm_by: str,
+                                          cascade_by: str) -> tuple:
+        """
+        Check that proposed deadlines fit within the global timeline.
+        Returns (is_valid: bool, message: str)
+        """
+        tl = self.get_global_timeline(period)
+        if not tl:
+            return True, ""  # no global timeline set — allow anything
+        end_date   = _dt.date.fromisoformat(tl["cascade_end_date"])
+        conf_dt    = _dt.date.fromisoformat(confirm_by)
+        casc_dt    = _dt.date.fromisoformat(cascade_by)
+        today      = _dt.date.today()
+        # Find expected window for this role
+        for lvl in tl.get("levels", []):
+            if role.lower() in lvl.get("role","").lower():
+                lvl_conf = _dt.date.fromisoformat(lvl["confirm_by"])
+                lvl_casc = _dt.date.fromisoformat(lvl["cascade_by"])
+                if conf_dt > lvl_conf:
+                    return False, (f"Confirm-by ({confirm_by}) is after the "
+                                   f"expected window for {role} ({lvl['confirm_by']}). "
+                                   f"Please set an earlier date.")
+                if casc_dt > lvl_casc:
+                    return False, (f"Cascade-by ({cascade_by}) is after the "
+                                   f"expected window for {role} ({lvl['cascade_by']}). "
+                                   f"Please set an earlier date.")
+        if casc_dt > end_date:
+            return False, (f"Cascade-by ({cascade_by}) is after the master "
+                           f"cascade end date ({tl['cascade_end_date']}). "
+                           f"The whole bank cascade must complete by {tl['cascade_end_date']}.")
+        return True, ""
+
+    def time_remaining_analysis(self, period: str) -> dict:
+        """
+        Analyse time remaining for cascade to reach last level.
+        Returns dict with days_remaining, levels_pending, is_on_track.
+        """
+        tl = self.get_global_timeline(period)
+        if not tl:
+            return {"days_remaining": None, "levels_pending": 0, "is_on_track": True}
+        today    = _dt.date.today()
+        end_date = _dt.date.fromisoformat(tl["cascade_end_date"])
+        days_rem = (end_date - today).days
+        # Count how many levels still have pending cascades
+        levels_done    = 0
+        levels_pending = 0
+        for lvl in tl.get("levels", []):
+            casc_date = _dt.date.fromisoformat(lvl["cascade_by"])
+            # Count staff who have cascaded from this level
+            done_count = sum(1 for k, e in self.cascade.items()
+                             if not k.startswith("deadline|")
+                             and not k.startswith("global_")
+                             and e.get("period") == period)
+            if casc_date < today:
+                levels_pending += 1
+            else:
+                levels_done += 1
+        return {
+            "days_remaining":  days_rem,
+            "levels_pending":  levels_pending,
+            "end_date":        str(end_date),
+            "is_on_track":     days_rem > 0 and levels_pending == 0,
+            "is_overdue":      days_rem < 0,
+        }
+
+    # ── Review requests ───────────────────────────────────────────────
+    def request_review(self, staff_code: str, staff_name: str,
+                        period: str, kpi: str, reason: str, requested_target: float):
+        """Staff member requests a review of their cascaded target."""
+        rr_file = DATA_DIR / "cascade_review_requests.json"
+        if not rr_file.exists(): rr_file.write_text("[]")
+        try:
+            requests = json.loads(rr_file.read_text())
+        except:
+            requests = []
+        requests.append({
+            "id":               f"RR{len(requests)+1:04d}",
+            "staff_code":       staff_code,
+            "staff_name":       staff_name,
+            "period":           period,
+            "kpi":              kpi,
+            "reason":           reason,
+            "requested_target": requested_target,
+            "status":           "Pending",  # Pending / Approved / Rejected
+            "response":         "",
+            "raised_at":        datetime.now().isoformat(),
+            "resolved_at":      None,
+            "resolved_by":      None,
+        })
+        rr_file.write_text(json.dumps(requests, indent=2, default=str))
+
+    def get_review_requests(self, period: str = None, staff_code: str = None) -> list:
+        rr_file = DATA_DIR / "cascade_review_requests.json"
+        if not rr_file.exists(): return []
+        try:
+            requests = json.loads(rr_file.read_text())
+        except:
+            return []
+        if period:     requests = [r for r in requests if r.get("period")==period]
+        if staff_code: requests = [r for r in requests if r.get("staff_code")==staff_code]
+        return requests
+
+    def resolve_review(self, rr_id: str, status: str, response: str, by: str):
+        rr_file = DATA_DIR / "cascade_review_requests.json"
+        if not rr_file.exists(): return
+        try:
+            requests = json.loads(rr_file.read_text())
+        except:
+            return
+        for r in requests:
+            if r["id"] == rr_id:
+                r["status"]       = status
+                r["response"]     = response
+                r["resolved_by"]  = by
+                r["resolved_at"]  = datetime.now().isoformat()
+        rr_file.write_text(json.dumps(requests, indent=2, default=str))
+
+    # ── Target locking (on acceptance) ────────────────────────────────
+    def lock_targets(self, staff_code: str, period: str):
+        """
+        Lock targets for this staff member and period.
+        Writes targets_locked flag to the deadline entry in target_cascade.json,
+        updates locked_targets.json for quick lookup, and triggers
+        inject_cascade_targets so the actuals xlsx reflects the latest targets.
+        """
+        sc = clean_code(staff_code)
+        # 1. Mark locked in cascade deadline entry
+        dl = self.cascade.get(f"deadline|{sc}|{period}")
+        if dl:
+            dl["targets_locked"] = True
+            dl["locked_at"]      = datetime.now().isoformat()
+        else:
+            # Create deadline entry if missing
+            self.cascade[f"deadline|{sc}|{period}"] = {
+                "staff_code":     sc,
+                "period":         period,
+                "targets_locked": True,
+                "locked_at":      datetime.now().isoformat(),
+                "confirmed":      True,
+                "confirmed_at":   datetime.now().isoformat(),
+            }
+        self._save()
+
+        # 2. Update locked_targets.json for fast lookup
+        lt_file = DATA_DIR / "locked_targets.json"
+        try:
+            lt_data = json.loads(lt_file.read_text()) if lt_file.exists() else {}
+            if not isinstance(lt_data, dict):
+                lt_data = {}
+            lt_data[f"{sc}|{period}"] = True
+            lt_file.write_text(json.dumps(lt_data, indent=2))
+        except Exception:
+            pass
+
+        # 3. Inject latest cascade targets into actuals xlsx
+        try:
+            act_files = sorted(
+                [f for f in DATA_DIR.glob("actuals_*.xlsx") if "backup" not in f.name],
+                reverse=True)
+            if act_files:
+                from utils.actuals_engine import inject_cascade_targets
+                inject_cascade_targets(act_files[0])
+        except Exception:
+            pass
+
+    def _resolve_staff_code(self, staff_code: str, staff_name: str = "") -> str:
+        """Try to resolve a username to a numeric staff code by scanning deadlines."""
+        sc = clean_code(staff_code)
+        # If it looks numeric already, return as-is
+        if sc.isdigit():
+            return sc
+        # Scan deadline entries for a name match
+        sn = str(staff_name).strip().lower()
+        for key, entry in self.cascade.items():
+            if not key.startswith("deadline|"):
+                continue
+            for alloc_key, alloc_entry in self.cascade.items():
+                if alloc_key.startswith("deadline|") or alloc_key.startswith("global_"):
+                    continue
+                for alloc in alloc_entry.get("allocations",[]):
+                    to_name = str(alloc.get("to_name","")).strip().lower()
+                    if sn and to_name and (sn in to_name or to_name in sn):
+                        return clean_code(alloc.get("to_code", sc))
+        return sc
+
+    def targets_locked(self, staff_code: str, period: str,
+                        staff_name: str = "") -> bool:
+        sc = clean_code(staff_code)
+        # Try direct key
+        dl = self.cascade.get(f"deadline|{sc}|{period}")
+        if dl:
+            return bool(dl.get("targets_locked", False))
+        # Fallback: search all deadline entries for name match
+        if staff_name:
+            sn = str(staff_name).strip().lower()
+            for key, entry in self.cascade.items():
+                if not key.startswith("deadline|"): continue
+                to_name = str(entry.get("to_name","")).strip().lower()
+                en_name = str(entry.get("staff_name","")).strip().lower()
+                if sn and (sn in to_name or to_name in sn or
+                            sn in en_name or en_name in sn):
+                    return bool(entry.get("targets_locked", False))
+        # Final fallback — check locked_targets.json
+        # (pre-populated entries + written by lock_targets on every new lock)
+        try:
+            lt_file = DATA_DIR / "locked_targets.json"
+            if lt_file.exists():
+                lt_data = json.loads(lt_file.read_text())
+                if isinstance(lt_data, dict) and lt_data.get(f"{sc}|{period}"):
+                    return True
+        except Exception:
+            pass
+        return False
+
+    def write_targets_to_df(self, df: "pd.DataFrame", period: str) -> "pd.DataFrame":
+        """
+        Write accepted+locked cascade targets into the BSC dataframe.
+        Replaces Annual Target with the cascaded amount for staff who have
+        accepted and locked their targets.
+
+        Called after process_kpi_data so the scorecard reflects agreed targets.
+        Returns the modified dataframe.
+        """
+        import pandas as _pd
+        df = df.copy()
+        if "Annual Target" not in df.columns:
+            df["Annual Target"] = 0.0
+
+        # Iterate all cascade allocations
+        for key, entry in self.cascade.items():
+            if key.startswith("deadline|") or key.startswith("global_"):
+                continue
+            kpi   = entry.get("kpi","")
+            per   = entry.get("period","")
+            if per != period:
+                continue
+            for alloc in entry.get("allocations",[]):
+                to_code = str(alloc.get("to_code",""))
+                amount  = float(alloc.get("amount",0) or 0)
+                if not to_code or amount==0:
+                    continue
+                # Check targets are locked for this person
+                if not self.targets_locked(to_code, period):
+                    continue
+                # Write into df where Staff Code matches and KPI matches
+                mask = ((df["Staff Code"].astype(str).str.strip()==to_code) &
+                        (df["KPI"]==kpi))
+                if mask.any():
+                    df.loc[mask,"Annual Target"] = amount
+        return df
+
+    def set_bank_target(self, kpi: str, period: str, target: float, buffer_pct: float = 0):
+        """MD sets the overall bank-level target for a KPI."""
+        key = f"{kpi}|{period}"
+        self.bank_targets[key] = {
+            "kpi": kpi, "period": period,
+            "target": target, "buffer_pct": buffer_pct,
+            "stretch_target": round(target * (1 + buffer_pct/100), 2),
+            "updated_at": datetime.now().isoformat(),
+            "updated_by": "MD",
+        }
+        self.bank_file.write_text(json.dumps(self.bank_targets, indent=2, default=str))
+
+    def get_bank_target(self, kpi: str, period: str):
+        return self.bank_targets.get(f"{kpi}|{period}")
+
+    def set_fixed_kpis(self, period: str, kpis: list, values: dict = None):
+        """MD marks KPIs as fixed with their locked values.
+        kpis: list of KPI names
+        values: {kpi: value} dict of locked targets
+        Storage: {period: {"kpis": [...], "values": {kpi: val}}}
+        """
+        existing = self.fixed_kpis.get(period, {})
+        if isinstance(existing, list):
+            existing = {"kpis": existing, "values": {}}
+        entry = {"kpis": kpis, "values": values or existing.get("values", {})}
+        self.fixed_kpis[period] = entry
+        self.fixed_file.write_text(json.dumps(self.fixed_kpis, indent=2, default=str))
+
+    def get_fixed_kpis(self, period: str) -> list:
+        entry = self.fixed_kpis.get(period, [])
+        if isinstance(entry, list): return entry          # legacy format
+        return entry.get("kpis", [])
+
+    def get_fixed_value(self, kpi: str, period: str) -> float:
+        """Return the locked value for a fixed KPI, or 0 if not set."""
+        entry = self.fixed_kpis.get(period, {})
+        if isinstance(entry, list): entry = {}
+        val = entry.get("values", {}).get(kpi, 0)
+        if val: return float(val)
+        # Fallback: bank_targets
+        bt = self.get_bank_target(kpi, period)
+        return float(bt["target"]) if bt and bt.get("target") else 0.0
+
+    def is_fixed(self, kpi: str, period: str) -> bool:
+        return kpi in self.get_fixed_kpis(period)
 
     def set_allocation(self, from_code: str, kpi: str, period: str,
                        allocations: list, total_target: float):
@@ -1737,20 +3272,36 @@ class CascadeManager:
         return {k: v for k, v in self.cascade.items()
                 if v.get("from_code") == sc and v.get("period") == period}
 
-    def get_what_i_was_given(self, staff_code: str, period: str):
-        """What targets have been cascaded TO this person?"""
-        sc = clean_code(staff_code)
+    def get_what_i_was_given(self, staff_code: str, period: str,
+                               staff_name: str = "") -> list:
+        """What targets have been cascaded TO this person?
+        Matches by staff_code first; falls back to staff_name if code is
+        a username string (not a numeric code) or if no matches found.
+        """
+        sc     = clean_code(staff_code)
+        sn     = str(staff_name).strip().lower()
         result = []
         for key, entry in self.cascade.items():
+            if key.startswith("deadline|") or key.startswith("global_"):
+                continue
+            if period and entry.get("period","") != period:
+                continue
             for alloc in entry.get("allocations", []):
-                if clean_code(alloc.get("to_code","")) == sc:
+                to_code = clean_code(alloc.get("to_code",""))
+                to_name = str(alloc.get("to_name","")).strip().lower()
+                # Match by code OR by name (handles case where user account
+                # was created with username instead of staff code)
+                code_match = (to_code == sc)
+                name_match = (sn and to_name and (sn in to_name or to_name in sn))
+                if code_match or name_match:
                     result.append({
                         "kpi":        entry["kpi"],
                         "period":     entry["period"],
                         "from_code":  entry["from_code"],
                         "amount":     alloc["amount"],
                         "total_pool": entry["total_target"],
-                        "my_share":   alloc["amount"]/entry["total_target"]*100 if entry["total_target"] else 0,
+                        "my_share":   alloc["amount"]/entry["total_target"]*100
+                                      if entry["total_target"] else 0,
                     })
         return result
 
@@ -1766,6 +3317,205 @@ class CascadeManager:
         alloc = entry["allocated_sum"]
         cov   = round(alloc/total*100, 1) if total else 0
         return alloc, total, cov, max(0, total-alloc)
+
+
+# ─── INTELLIGENT TARGET SUGGESTION ENGINE ─────────────────────────────
+def suggest_target(kpi: str, staff_name: str, df_proc: "pd.DataFrame",
+                   period: str = str(get_org_config().get("active_period","2026")), growth_trajectory: float = 0.0) -> dict:
+    """
+    Analyse historical BSC data and suggest a scientifically grounded target range.
+
+    Returns a dict with:
+      - prior_year_target    : what was set last year
+      - prior_year_actual    : what they actually achieved
+      - prior_year_pct       : achievement %
+      - avg_achievement_2yr  : rolling 2-year average achievement (if data exists)
+      - is_new_hire          : True if < 6 months data available
+      - suggested_min        : conservative floor (85th-pct of historical)
+      - suggested_target     : recommended target
+      - suggested_stretch    : stretch / ambitious ceiling
+      - rationale            : plain-English explanation
+      - confidence           : 'high' / 'medium' / 'low'
+    """
+    result = {
+        "prior_year_target":   0.0,
+        "prior_year_actual":   0.0,
+        "prior_year_pct":      0.0,
+        "avg_achievement_2yr": 0.0,
+        "is_new_hire":         False,
+        "suggested_min":       0.0,
+        "suggested_target":    0.0,
+        "suggested_stretch":   0.0,
+        "rationale":           "",
+        "confidence":          "low",
+    }
+
+    if df_proc is None or (hasattr(df_proc,'empty') and df_proc.empty):
+        result["rationale"] = "No historical data available."
+        result["is_new_hire"] = True
+        return result
+
+    # Filter to this staff member and KPI
+    staff_kpi = df_proc[(df_proc["Staff Name"] == staff_name) &
+                         (df_proc["KPI"] == kpi)].copy()
+
+    if staff_kpi.empty:
+        result["rationale"] = f"{staff_name} has no historical record for {kpi}. Treat as new hire."
+        result["is_new_hire"] = True
+        return result
+
+    # Detect month columns (any column containing 'Jan','Feb','Mar' etc.)
+    month_cols = [c for c in df_proc.columns
+                  if any(m in str(c) for m in
+                         ["Jan","Feb","Mar","Apr","May","Jun",
+                          "Jul","Aug","Sep","Oct","Nov","Dec"])]
+    has_months = len(month_cols) > 0
+
+    # Count months with actual data (non-zero, non-null)
+    months_with_data = 0
+    if has_months:
+        for mc in month_cols:
+            if mc in staff_kpi.columns:
+                v = pd.to_numeric(staff_kpi[mc].values[0], errors='coerce')
+                if not pd.isna(v) and v > 0:
+                    months_with_data += 1
+
+    # New hire detection: fewer than 6 months of data
+    is_new_hire = (months_with_data < 6 and has_months) or months_with_data == 0
+    result["is_new_hire"] = is_new_hire
+
+    # Extract annual target and actuals
+    row = staff_kpi.iloc[0]
+    cur_target = float(pd.to_numeric(row.get("Annual Target", 0), errors="coerce") or 0)
+    cur_actual  = float(pd.to_numeric(row.get("YTD_Actual",
+                         row.get("Annual Actual", 0)), errors="coerce") or 0)
+    cur_pct = round(cur_actual / cur_target * 100, 1) if cur_target else 0
+
+    result["prior_year_target"] = cur_target
+    result["prior_year_actual"] = cur_actual
+    result["prior_year_pct"]    = cur_pct
+
+    if is_new_hire:
+        # For new hires: use role peer average as baseline
+        if "Role" in df_proc.columns:
+            role = row.get("Role","")
+            peers = df_proc[(df_proc["Role"]==role) & (df_proc["KPI"]==kpi)]
+            if len(peers) > 1:
+                peer_tgts = pd.to_numeric(peers["Annual Target"], errors="coerce").dropna()
+                peer_acts = pd.to_numeric(peers.get("YTD_Actual",
+                                          peers.get("Annual Actual", peer_tgts)),
+                                          errors="coerce").dropna()
+                avg_peer_tgt = float(peer_tgts.mean()) if len(peer_tgts) else cur_target
+                avg_peer_ach = float(peer_acts.mean()) if len(peer_acts) else avg_peer_tgt * 0.85
+
+                # New hire gets 70% of peer average target (ramp-up period)
+                ramp = 0.70
+                suggested = round(avg_peer_tgt * ramp * (1 + growth_trajectory / 100), 2)
+                result.update({
+                    "suggested_min":     round(suggested * 0.85, 2),
+                    "suggested_target":  suggested,
+                    "suggested_stretch": round(suggested * 1.20, 2),
+                    "avg_achievement_2yr": round(avg_peer_ach / avg_peer_tgt * 100, 1)
+                                          if avg_peer_tgt else 0,
+                    "rationale": (
+                        f"New hire — using {ramp*100:.0f}% of peer average target "
+                        f"(KES {avg_peer_tgt:,.0f}) as ramp-up baseline. "
+                        f"Peer average achievement: {result['avg_achievement_2yr']:.1f}%. "
+                        f"Growth trajectory: {growth_trajectory:+.1f}%."
+                        if growth_trajectory else
+                        f"New hire — using {ramp*100:.0f}% of peer average target as ramp-up baseline."
+                    ),
+                    "confidence": "medium",
+                })
+                return result
+
+        # No peers found — return current target at 80%
+        result.update({
+            "suggested_min":     round(cur_target * 0.65, 2),
+            "suggested_target":  round(cur_target * 0.80, 2),
+            "suggested_stretch": round(cur_target * 1.00, 2),
+            "rationale": "New hire with no peer benchmark. Suggest 80% of current target as ramp-up.",
+            "confidence": "low",
+        })
+        return result
+
+    # EXISTING STAFF — science-based target setting
+    # Achievement tier logic:
+    #   >120% repeatedly → raise target aggressively
+    #   90-120% → raise moderately by trajectory + small push
+    #   70-90%  → hold or small increase (don't over-push)
+    #   <70%    → diagnose before raising; suggest hold or slight increase
+
+    traj_factor = 1 + (growth_trajectory / 100)
+    confidence  = "high" if cur_pct > 0 else "low"
+
+    if cur_pct >= 120:
+        # Consistently over-delivering — raise meaningfully
+        push = 1.15 * traj_factor
+        rationale = (
+            f"Achieved {cur_pct:.1f}% of target — significantly exceeding. "
+            f"Recommend +15% above prior target (+ {growth_trajectory:+.1f}% trajectory). "
+            f"Raising the ceiling will maintain motivation and grow the business."
+        )
+    elif cur_pct >= 100:
+        push = 1.08 * traj_factor
+        rationale = (
+            f"Achieved {cur_pct:.1f}% — on or slightly above target. "
+            f"Recommend +8% stretch (+ {growth_trajectory:+.1f}% trajectory). "
+            f"Consistent achiever; push gently upward."
+        )
+    elif cur_pct >= 90:
+        push = 1.04 * traj_factor
+        rationale = (
+            f"Achieved {cur_pct:.1f}% — near target. "
+            f"Recommend +4% nudge (+ {growth_trajectory:+.1f}% trajectory). "
+            f"Close to target; maintain pressure with modest increase."
+        )
+    elif cur_pct >= 70:
+        push = 1.00 * traj_factor
+        rationale = (
+            f"Achieved {cur_pct:.1f}% — below target. "
+            f"Recommend holding target flat (+ trajectory only: {growth_trajectory:+.1f}%). "
+            f"Focus on closing the current gap before raising the ceiling."
+        )
+    else:
+        push = 0.95 * traj_factor
+        rationale = (
+            f"Achieved only {cur_pct:.1f}% — well below target. "
+            f"Recommend reducing target slightly (-5%) to set a realistic but achievable goal. "
+            f"Investigate root cause before escalating targets."
+        )
+        confidence = "medium"
+
+    suggested_tgt = round(cur_target * push, 2)
+    result.update({
+        "suggested_min":     round(cur_target * max(push - 0.05, 0.85), 2),
+        "suggested_target":  suggested_tgt,
+        "suggested_stretch": round(cur_target * (push + 0.10), 2),
+        "avg_achievement_2yr": cur_pct,
+        "rationale": rationale,
+        "confidence": confidence,
+    })
+    return result
+
+
+def get_bank_growth_trajectory(kpi: str, bank_targets_dict: dict) -> float:
+    """
+    Estimate the bank's YoY growth trajectory for a KPI from saved bank targets.
+    Returns a % e.g. 15.0 means 15% growth expected.
+    """
+    # Find targets for this KPI across multiple periods
+    kpi_targets = {k.split("|")[1]: v["target"]
+                   for k, v in bank_targets_dict.items()
+                   if k.startswith(f"{kpi}|") and v.get("target", 0) > 0}
+    if len(kpi_targets) < 2:
+        return 10.0  # Default 10% growth trajectory when no history
+
+    periods = sorted(kpi_targets.keys())
+    t_prev  = kpi_targets[periods[-2]]
+    t_curr  = kpi_targets[periods[-1]]
+    if t_prev <= 0: return 10.0
+    return round((t_curr - t_prev) / t_prev * 100, 1)
 
 
 # ─── VALIDATION MANAGER (performance sign-off) ───────────────────────
@@ -2040,6 +3790,114 @@ class PipelineManager:
         if deal_id:    result = [a for a in result if a.get('deal_id') == deal_id]
         return list(reversed(result))[:limit]
 
+    def update_deal(self, deal_id: str, updates: dict, updated_by: str):
+        """Edit deal fields. Logs change as an activity."""
+        for d in self.deals:
+            if d['id'] == deal_id:
+                changed = []
+                for k, v in updates.items():
+                    if d.get(k) != v:
+                        changed.append(f"{k}: {d.get(k)} → {v}")
+                    d[k] = v
+                d['updated_at'] = datetime.now().isoformat()
+                d['updated_by'] = updated_by
+                if changed:
+                    self.add_activity({
+                        'deal_id': deal_id,
+                        'staff_code': d['staff_code'],
+                        'staff_name': d['staff_name'],
+                        'activity_type': 'Deal Updated',
+                        'note': 'Fields updated: ' + ', '.join(changed),
+                        'outcome': 'Updated',
+                    })
+                break
+        self._save_deals()
+
+    def get_deal(self, deal_id: str):
+        """Get a single deal by ID."""
+        return next((d for d in self.deals if d['id'] == deal_id), None)
+
+    def delete_deal(self, deal_id: str, deleted_by: str):
+        """Soft delete — mark as Closed Lost with reason 'Deleted'."""
+        for d in self.deals:
+            if d['id'] == deal_id:
+                d['stage'] = 'Closed Lost'
+                d['updated_at'] = datetime.now().isoformat()
+                d['updated_by'] = deleted_by
+                d['loss_reason'] = 'Deleted / Cancelled'
+                d['notes'] = (d.get('notes','') + ' [Deleted by ' + deleted_by + ']').strip()
+                break
+        self._save_deals()
+
+    def request_cancel(self, deal_id: str, requested_by: str, reason: str):
+        """Request cancellation — for deals beyond Lead stage needs manager approval."""
+        for d in self.deals:
+            if d['id'] == deal_id:
+                d['cancel_requested'] = True
+                d['cancel_requested_by'] = requested_by
+                d['cancel_requested_at'] = datetime.now().isoformat()
+                d['cancel_reason'] = reason
+                d['updated_at'] = datetime.now().isoformat()
+                break
+        self._save_deals()
+
+    def approve_cancel(self, deal_id: str, approved_by: str, approve: bool, note: str = ""):
+        """Manager approves or rejects a cancellation request."""
+        for d in self.deals:
+            if d['id'] == deal_id:
+                if approve:
+                    d['stage'] = 'Closed Lost'
+                    d['loss_reason'] = 'Cancelled — ' + d.get('cancel_reason','')
+                    d['updated_by'] = approved_by
+                d['cancel_approved'] = approve
+                d['cancel_approved_by'] = approved_by
+                d['cancel_approved_at'] = datetime.now().isoformat()
+                d['cancel_note'] = note
+                d['updated_at'] = datetime.now().isoformat()
+                break
+        self._save_deals()
+
+    def validate_deal(self, deal_id: str, validated_by: str, approved: bool, note: str = ""):
+        """Manager validates a deal at Contacted stage before it counts in forecast."""
+        for d in self.deals:
+            if d['id'] == deal_id:
+                d['manager_validated'] = approved
+                d['validated_by'] = validated_by
+                d['validated_at'] = datetime.now().isoformat()
+                d['validation_note'] = note
+                d['updated_at'] = datetime.now().isoformat()
+                break
+        self._save_deals()
+
+    def get_pending_validations(self, manager_codes: set = None):
+        """Deals at Contacted+ stage that need manager validation."""
+        idx = STAGE_NAMES.index(PIPELINE_VALIDATE_STAGE) if PIPELINE_VALIDATE_STAGE in STAGE_NAMES else 1
+        result = [d for d in self.deals
+                  if d['stage'] in STAGE_NAMES[idx:]
+                  and not d.get('manager_validated')
+                  and not d.get('cancel_requested')]
+        if manager_codes:
+            result = [d for d in result if d.get('staff_code','') in manager_codes]
+        return result
+
+    def get_cancel_requests(self, manager_codes: set = None):
+        """Deals with pending cancellation requests."""
+        result = [d for d in self.deals if d.get('cancel_requested') and not d.get('cancel_approved')]
+        if manager_codes:
+            result = [d for d in result if d.get('staff_code','') in manager_codes]
+        return result
+
+    def get_actions_due(self, staff_code=None, days_window=0):
+        """Deals with next_action_date on or before today + days_window."""
+        cutoff = str((datetime.now() + timedelta(days=days_window)).date())
+        today  = str(datetime.now().date())
+        result = [d for d in self.deals
+                  if d['stage'] in ACTIVE_STAGES
+                  and d.get('next_action_date','') <= cutoff]
+        if staff_code:
+            result = [d for d in result if d['staff_code'] == clean_code(staff_code)]
+        return result
+
     def pipeline_value(self, deals):
         return sum(float(d.get('deal_value', 0)) for d in deals if d['stage'] in ACTIVE_STAGES)
 
@@ -2183,13 +4041,13 @@ class ExecuteManager:
                 'by': approver_name, 'note': f"All approvers confirmed. {note}"
             })
             init['approvals'][f"{init['gate_history'][-2]['gate']}→{new_gate}"] = pg['approvals']
-            del init['pending_gate']
+            init.pop('pending_gate', None)
         elif 'Rejected' in statuses:
             init['gate_history'].append({
                 'gate': init['gate'], 'date': str(datetime.now().date()),
                 'by': approver_name, 'note': f"REJECTED at {pg['target']}. {note}"
             })
-            del init['pending_gate']
+            init.pop('pending_gate', None)
         init['updated_at'] = datetime.now().isoformat()
         self._save_initiatives()
         return True, "Approval recorded"
@@ -2215,6 +4073,9 @@ class ExecuteManager:
             'name':            milestone['name'],
             'type':            milestone['type'],
             'owner':           milestone['owner'],
+            'owner_workstream': milestone.get('owner_workstream', ''),  # WS of owner if cross-functional
+            'depends_on_workstream': milestone.get('depends_on_workstream', ''),  # cross-WS dependency
+            'depends_on_description': milestone.get('depends_on_description', ''),
             'co_owners':       milestone.get('co_owners', []),
             'due_date':        milestone['due_date'],
             'start_date':      milestone.get('start_date', str(datetime.now().date())),
@@ -2376,7 +4237,7 @@ class ExecuteManager:
         has_blocker = ms.get('blockers') and any(not b['resolved'] for b in ms['blockers'])
 
         try:
-            due = date.fromisoformat(ms['due_date'])
+            due = date.fromisoformat(ms.get('due_date',''))
             days_overdue = (today - due).days
             days_to_due  = (due - today).days
         except:
@@ -2494,7 +4355,7 @@ class ExecuteManager:
                             'workstream':   init.get('workstream',''),
                         })
             for ms in init.get('milestones',[]):
-                is_owner = (ms['owner'] == username or username in ms.get('co_owners',[]))
+                is_owner = (ms.get('owner','') == username or username in ms.get('co_owners',[]))
                 if not is_owner: continue
                 # Confirmation needed
                 if not ms['confirmed']:
@@ -2509,7 +4370,7 @@ class ExecuteManager:
                     esc = ExecuteManager._escalation_level(ms)
                     if esc > 0:
                         try:
-                            due = date.fromisoformat(ms['due_date'])
+                            due = date.fromisoformat(ms.get('due_date',''))
                             overdue = (date.today() - due).days
                         except: overdue = 0
                         actions.append({
@@ -2524,15 +4385,39 @@ class ExecuteManager:
                         })
         return actions
 
-    def get_all_milestones_for_owner(self, username):
-        """Return every milestone where username is owner or co-owner, with initiative context."""
+    def get_all_milestones_for_owner(self, username, full_name: str = ""):
+        """
+        Return every milestone where this person is owner or co-owner.
+        Matches on BOTH login username AND full_name because milestone owner
+        is stored as full_name (from the dropdown) but uname is the login key.
+        Also accepts cross-workstream assignments.
+        """
         result = []
+        # Build set of all identifiers for this person
+        identifiers = {username}
+        if full_name:
+            identifiers.add(full_name)
+        # Also resolve via users.json if possible
+        try:
+            users_data = json.loads((DATA_DIR / "users.json").read_text())
+            ud = users_data.get(username, {})
+            if ud.get("full_name"):
+                identifiers.add(ud["full_name"])
+            # Reverse: if username looks like a full name, find the login key too
+            for u, d in users_data.items():
+                if d.get("full_name") == username:
+                    identifiers.add(u)
+        except: pass
+
         for init in self.initiatives:
             for ms in init.get('milestones', []):
-                if ms['owner'] == username or username in ms.get('co_owners', []):
+                owner_match = (ms.get('owner','') in identifiers or
+                               any(co in identifiers for co in ms.get('co_owners', [])))
+                if not owner_match:
+                    continue
                     esc = ExecuteManager._escalation_level(ms)
                     try:
-                        due = date.fromisoformat(ms['due_date'])
+                        due = date.fromisoformat(ms.get('due_date',''))
                         days_diff = (due - date.today()).days
                     except:
                         days_diff = 999
@@ -2552,23 +4437,53 @@ class ExecuteManager:
                         'days_to_due':      days_diff,
                         'days_to_start':    days_to_start,
                         'needs_start_alert': needs_start,
-                        'is_primary_owner': ms['owner'] == username,
+                        'is_primary_owner': ms.get('owner','') in identifiers,
                     })
                     result.append(entry)
         result.sort(key=lambda x: (0 if int(x.get('escalation_level',0)) > 0 else 1, int(x.get('days_to_due',999))))
         return result
 
+
+    def get_cross_ws_delays_for_workstream(self, workstream_name: str) -> list:
+        """
+        Return milestones in OTHER workstreams whose delay is blocking 
+        initiatives that depend on this workstream's output.
+        Used to show workstream WS-B: 'WS-A is waiting on you'.
+        """
+        blocking = []
+        for init in self.initiatives:
+            for ms in init.get('milestones', []):
+                dep_ws = ms.get('depends_on_workstream', '')
+                if not dep_ws: continue
+                if workstream_name.lower() not in dep_ws.lower(): continue
+                if ms.get('status') in ('Complete',): continue
+                try:
+                    due = date.fromisoformat(ms.get('due_date',''))
+                    days_diff = (due - date.today()).days
+                except: days_diff = 999
+                blocking.append({
+                    **ms,
+                    'initiative_id':   init['id'],
+                    'initiative_name': init['name'],
+                    'blocking_workstream': init.get('workstream',''),
+                    'needs_from_workstream': dep_ws,
+                    'days_to_due': days_diff,
+                    'io': init.get('io',''),
+                })
+        blocking.sort(key=lambda x: x.get('days_to_due', 999))
+        return blocking
+
     def get_escalation_dashboard(self, scope_initiatives=None):
         """All milestones at risk — grouped by escalation level (banking timelines)."""
         inits = scope_initiatives or self.initiatives
-        buckets = {4: [], 3: [], 2: [], 1: [], 5: []}  # level → list
+        buckets = {4: [], 3: [], 2: [], 1: [], 5: [], 'cross_ws': []}  # level → list
         for init in inits:
             for ms in init.get('milestones',[]):
                 if ms.get('status') == 'Complete': continue
                 esc = ExecuteManager._escalation_level(ms)
                 if esc > 0:
                     try:
-                        due = date.fromisoformat(ms['due_date'])
+                        due = date.fromisoformat(ms.get('due_date',''))
                         overdue = (date.today() - due).days
                     except: overdue = 0
                     try:
@@ -2582,13 +4497,18 @@ class ExecuteManager:
                         'io':              init.get('io',''),
                         'gate':            init.get('gate',''),
                         'overdue_days':    max(0, overdue),
-                        'days_to_due':     (date.fromisoformat(ms['due_date']) - date.today()).days
+                        'days_to_due':     (date.fromisoformat(ms.get('due_date','')) - date.today()).days
                                            if ms.get('due_date') else 0,
                         'days_to_start':   days_to_start,
                         'needs_start_alert': ExecuteManager._needs_start_alert(ms),
                     })
                     if esc in buckets:
                         buckets[esc].append(item)
+                    # Cross-workstream dependency flag (separate, not mutually exclusive)
+                    if item.get('depends_on_workstream'):
+                        item['cross_ws_delayed'] = (ms.get('status') in ('Delayed','Not Started') and
+                                                     ms.get('delay_category','') in ('Dependency on another department','Cross-functional dependency','External dependency'))
+                        buckets['cross_ws'].append(item)
                     else:
                         buckets[max(buckets.keys())].append(item)
         for level in buckets:
@@ -2856,18 +4776,938 @@ class RIPipelineManager:
 
 
 # ─── AUDIT LOG ───────────────────────────────────────────────────────
-def audit_log(action, username, detail=""):
-    log_file = DATA_DIR / "audit_log.json"
+def audit_log(action: str, username: str, detail: str = "",
+              module: str = "", before: str = "", after: str = ""):
+    """
+    Append-only audit trail. Each entry is one JSON line in audit_trail.jsonl.
+    The file is never rewritten — only appended — making it tamper-evident.
+    Also maintains audit_log.json (last 2000) for the admin UI quick view.
+    """
+    import hashlib as _hl
+    entry = {
+        "ts":     datetime.now().isoformat(),
+        "user":   username,
+        "action": action,
+        "detail": str(detail)[:500],
+        "module": module,
+        "before": str(before)[:200] if before else "",
+        "after":  str(after)[:200]  if after  else "",
+    }
+    # ── Append-only JSONL (regulatory-grade immutable trail) ──────────
     try:
-        raw = log_file.read_text()
+        trail_file = DATA_DIR / "audit_trail.jsonl"
+        with open(str(trail_file), "a", encoding="utf-8") as _f:
+            _f.write(json.dumps(entry) + "\n")
+    except: pass
+    # ── Rolling JSON for UI (last 2000) ───────────────────────────────
+    try:
+        log_file = DATA_DIR / "audit_log.json"
+        raw = log_file.read_text() if log_file.exists() else "[]"
         log = json.loads(raw) if raw.strip() else []
         if not isinstance(log, list): log = []
-    except:
-        log = []
-    log.append({"time": datetime.now().isoformat(), "user": username, "action": action, "detail": detail})
-    log_file.write_text(json.dumps(log[-500:], indent=2))
+        log.append(entry)
+        log_file.write_text(json.dumps(log[-2000:], indent=2))
+    except: pass
+    # ── PostgreSQL audit trail ────────────────────────────────────────
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("audit_trail"):
+            _db.execute(
+                "INSERT INTO audit_trail (username, action, detail, module, before_val, after_val) VALUES (%s, %s, %s, %s, %s, %s)",
+                (username, action, str(detail)[:500], module,
+                 str(before)[:200] if before else "",
+                 str(after)[:200]  if after  else "")
+            )
+    except: pass
 
 # ─── USER MANAGER ────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════
+# CENTRAL ACCESS CONTROL SYSTEM
+# ══════════════════════════════════════════════════════════════════════
+
+# Module-level access definitions
+# Each module maps to the minimum permission needed and optional role list
+# "public"   → any logged-in user
+# "self"     → can see own data only
+# "team"     → can see self + direct reports
+# "unit"     → can see own unit
+# "all"      → can_view_all or admin
+# "admin"    → is_admin only
+# Sub-page definitions per module — admin can restrict to specific pages
+MODULE_PAGES = {
+    "perform":    ["My Scorecard","Rankings","Individual View","Validation","Analytics","Leave"],
+    "people":     ["Leave","Exits & Separations","Transfers","Disciplinary","PIP"],
+    "pipeline":   ["My Pipeline","Team Pipeline","Summary"],
+    "execute":    ["My Tasks","Workstreams","Finance Approvals","Gantt"],
+    "cascade":    ["Bank Targets & Timeline","Fixed KPIs","Set Team Targets",
+                   "My Targets","Cascade Tree","Coverage & Deadlines","Review Requests"],
+    "sla":        ["SLA Dashboard","By Branch","By Staff","Violations"],
+    "branch_log": ["Daily Log Entry","Log History","Supervisor Review"],
+    "commission": ["My Commission","Team Commission","Payouts"],
+    "cims":       ["Raise Instruction","My Instructions","Team Queue","Admin"],
+    "admin":      ["Users","Permissions","Reporting Lines","Transfers","Org Tree",
+                   "Audit Log","Upload Format","Leave Settings"],
+    "people":     ["Leave Management","Exits","Transfers","Disciplinary","PIP"],
+}
+
+
+
+# ══════════════════════════════════════════════════════════════════
+# MAKER-CHECKER: dual approval for high-value operations
+# CBK requirement for transactions above defined thresholds
+# ══════════════════════════════════════════════════════════════════
+MAKER_CHECKER_LIMITS = {
+    "fd_ratification":    10_000_000,   # FD > KES 10M needs dual approval
+    "loan_approval":      50_000_000,   # Loan > KES 50M needs dual approval
+    "waiver_approval":    500_000,      # Waiver > KES 500K needs dual approval
+    "legal_settlement":   5_000_000,    # Settlement > KES 5M needs dual approval
+    "recon_write_off":    1_000_000,    # Write-off > KES 1M needs dual approval
+}
+
+def requires_dual_approval(operation: str, amount: float) -> bool:
+    """Return True if this operation+amount requires a checker."""
+    limit = MAKER_CHECKER_LIMITS.get(operation, float("inf"))
+    return amount >= limit
+
+
+
+# ══════════════════════════════════════════════════════════════════
+# DEPARTMENT DEFINITIONS
+# Maps canonical dept names to navigation groups and modules
+# ══════════════════════════════════════════════════════════════════
+DEPARTMENTS = [
+    "Retail Banking",
+    "Commercial & Corporate",
+    "Credit",
+    "Treasury",
+    "Finance",
+    "Risk & Compliance",
+    "Legal",
+    "Operations",
+    "People & HR",
+    "IT & Digital",
+    "Bancassurance",
+    "Marketing",
+    "Internal Audit",
+    "Support Services",
+    "Executive",
+]
+
+# Modules that are ALWAYS visible regardless of department
+UNIVERSAL_MODULES = [
+    "perform",        # BSC (own score)
+    "smart_alerts",
+    "approvals",
+    "statement_analyzer",
+    "customer360",
+]
+
+# Department → primary modules (what the sidebar shows first)
+DEPT_PRIMARY_MODULES = {
+    "Retail Banking": [
+        "nps","crosssell",
+        "perform","cascade","pipeline","loan_applications","cims",
+        "branch_log","commission","sla","campaigns","propositions",
+        "optimize","products","customer360",
+    ],
+    "Commercial & Corporate": [
+        "crosssell",
+        "perform","cascade","pipeline","loan_applications","cims",
+        "commission","sla","campaigns","propositions","customer360",
+    ],
+    "Credit": [
+        "ews","collateral",
+        "perform","loan_applications","credit_analysis","credit_admin",
+        "credit_monitoring","debt_recovery","ifrs9","statement_analyzer",
+    ],
+    "Treasury": [
+        "perform","treasury","ifrs9","stress_testing","ra",
+    ],
+    "Finance": [
+        "budget",
+        "perform","sbu","opex","revenue_assurance","rms","ra","ifrs9",
+    ],
+    "Risk & Compliance": [
+        "perform","compliance","credit_monitoring","stress_testing",
+        "debt_recovery","legal","edms","ifrs9",
+    ],
+    "Legal": [
+        "perform","legal","edms","compliance",
+    ],
+    "Operations": [
+        "perform","rms","cims","edms","approvals","export",
+    ],
+    "People & HR": [
+        "lms","pip",
+        "perform","people","cascade",
+    ],
+    "IT & Digital": [
+        "incidents",
+        "perform","cbs","export","admin",
+    ],
+    "Bancassurance": [
+        "perform","campaigns","pipeline","propositions",
+    ],
+    "Marketing": [
+        "perform","campaigns","competitor","propositions",
+    ],
+    "Internal Audit": [
+        "perform","ra","compliance","credit_monitoring",
+    ],
+    "Support Services": [
+        "perform","edms",
+    ],
+    "Executive": [
+        "perform","integrate","ra","sbu","opex","competitor",
+        "stress_testing","people","cascade","customer360",
+        "pipeline","loan_applications","treasury","compliance",
+        "credit_monitoring","ifrs9","revenue_assurance",
+    ],
+}
+
+# Dept super-user permissions
+DEPT_SUPER_USER_MODULES = [
+    "admin",          # limited dept admin sub-panel only
+    "people",         # view their dept staff
+    "perform",        # see dept BSC summary
+]
+
+# ICT admin permissions
+ICT_ADMIN_MODULES = [
+    "admin",          # system health sub-panel only
+    "export",
+    "cbs",
+]
+
+def get_user_department(user_data: dict) -> str:
+    """Return canonical department name for a user."""
+    return user_data.get("department", "Retail Banking") or "Retail Banking"
+
+def is_dept_super_user(user_data: dict) -> bool:
+    return bool(user_data.get("is_dept_super_user", False))
+
+def is_ict_admin(user_data: dict) -> bool:
+    return bool(user_data.get("is_ict_admin", False))
+
+def get_dept_modules(user_data: dict) -> list:
+    """Return module keys visible to this user.
+    Reads from org_config.json dept_module_assignments first (admin-configurable),
+    falls back to hardcoded DEPT_PRIMARY_MODULES.
+    """
+    import json
+    from pathlib import Path as _P
+
+    dept    = get_user_department(user_data)
+    admin   = user_data.get("is_admin", False)
+    can_all = user_data.get("can_view_all", False)
+
+    if admin or can_all:
+        return list(DEPT_PRIMARY_MODULES.get("Executive", []))
+
+    # 1. Try org_config.json dept_module_assignments
+    try:
+        _oc_path = _P(__file__).parent.parent / "data" / "org_config.json"
+        if _oc_path.exists():
+            _oc = json.loads(_oc_path.read_text())
+            # Find dept id from dept name
+            _dept_id = None
+            for _d in _oc.get("departments", []):
+                if _d["name"] == dept:
+                    _dept_id = _d["id"]
+                    break
+            if _dept_id:
+                _primary = _oc.get("dept_module_assignments", {}).get(_dept_id)
+                if _primary:
+                    extra  = user_data.get("accessible_modules", [])
+                    hidden = set(user_data.get("hidden_modules", []))
+                    # Apply dept_module_config hidden modules
+                    _dmc_p = _P(__file__).parent.parent / "data" / "dept_module_config.json"
+                    if _dmc_p.exists():
+                        _dmc = json.loads(_dmc_p.read_text())
+                        hidden |= set(_dmc.get(dept, {}).get("hidden_modules", []))
+                    combined = list(dict.fromkeys(_primary + UNIVERSAL_MODULES + extra))
+                    return [m for m in combined if m not in hidden]
+    except Exception:
+        pass
+
+    # 2. Fall back to hardcoded DEPT_PRIMARY_MODULES
+    primary = DEPT_PRIMARY_MODULES.get(dept, DEPT_PRIMARY_MODULES.get("Retail Banking", []))
+    extra   = user_data.get("accessible_modules", [])
+    hidden  = set(user_data.get("hidden_modules", []))
+    combined = list(dict.fromkeys(primary + UNIVERSAL_MODULES + extra))
+    return [m for m in combined if m not in hidden]
+
+
+
+def get_pending_approvals(data_path) -> list:
+    """Read pending dual-approval items."""
+    import json
+    from pathlib import Path
+    p = Path(data_path).parent / "pending_approvals.json"
+    return json.loads(p.read_text()) if p.exists() else []
+
+def submit_for_approval(item: dict, data_path) -> str:
+    """Submit an item for checker approval. Returns approval ID."""
+    import json, uuid
+    from pathlib import Path
+    p = Path(data_path).parent / "pending_approvals.json"
+    items = json.loads(p.read_text()) if p.exists() else []
+    approval_id = f"APR{str(uuid.uuid4())[:8].upper()}"
+    item["approval_id"] = approval_id
+    item["status"] = "pending_checker"
+    items.append(item)
+    p.write_text(json.dumps(items, indent=2))
+    return approval_id
+
+
+MODULE_ACCESS = {
+    "perform":     {"min": "self",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Regional Head",
+                                                   "Branch Manager","Head Of Retail","Head Of Corporate",
+                                                   "Head Of SME","Chief Finance Officer","Chief Risk Officer",
+                                                   "Chief Operations Officer","Chief Compliance Officer",
+                                                   "Chief Human Resources Officer","Head Of Digital Innovation",
+                                                   "Head Of Strategy","Head Of Internal Audit","Head Of Marketing"]},
+    "people":      {"min": "team",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Regional Head","Branch Manager",
+                                                   "Chief Human Resources Officer","HR Business Partner"]},
+    "pipeline":    {"min": "self", "roles_all": []},
+    "execute":     {"min": "team",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Head Of Corporate","Head Of SME",
+                                                   "Head Of Digital Innovation","Head Of Strategy",
+                                                   "Chief Operations Officer","Regional Head","Branch Manager"]},
+    "products":    {"min": "all",   "roles_all": ["Admin","Managing Director","Director Commercial Banking",
+                                                   "Head Of Corporate","Head Of SME","Chief Finance Officer",
+                                                   "Director Retail Banking"]},
+    "integrate":   {"min": "all",   "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Chief Finance Officer"]},
+    "admin":       {"min": "admin", "roles_all": ["Admin"]},
+    "export":      {"min": "all",   "roles_all": ["Admin","Managing Director","Chief Finance Officer",
+                                                   "Director Retail Banking","Director Commercial Banking"]},
+    "sbu":         {"min": "all",   "roles_all": ["Admin","Managing Director","Chief Finance Officer",
+                                                   "Director Retail Banking","Director Commercial Banking",
+                                                   "Regional Head","Branch Manager"]},
+    "opex":        {"min": "all",   "roles_all": ["Admin","Managing Director","Chief Finance Officer",
+                                                   "Director Retail Banking","Director Commercial Banking"]},
+    "competitor":  {"min": "all",   "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Head Of Strategy",
+                                                   "Chief Finance Officer"]},
+    "cascade":     {"min": "self",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Head Of Retail","Head Of Corporate",
+                                                   "Head Of SME","Head Of Digital Innovation","Chief Finance Officer",
+                                                   "Chief Risk Officer","Chief Operations Officer",
+                                                   "Chief Compliance Officer","Chief Human Resources Officer",
+                                                   "Head Of Strategy","Head Of Internal Audit","Head Of Marketing",
+                                                   "Regional Head","Branch Manager","Branch Operations Manager",
+                                                   "Branch Credit Manager","Direct Sales Officer",
+                                                   "Relationship Officer Personal Banking","Teller",
+                                                   "Customer Service Officer","Relationship Manager Corporate",
+                                                   "Relationship Manager SME"]},
+    "sla":         {"min": "team",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Regional Head","Branch Manager",
+                                                   "Branch Operations Manager","Chief Operations Officer",
+                                                   "Chief Compliance Officer"]},
+    "branch_log":  {"min": "unit",  "roles_all": ["Admin","Managing Director","Regional Head",
+                                                   "Branch Manager","Branch Operations Manager","Teller",
+                                                   "Customer Service Officer","Direct Sales Officer",
+                                                   "Relationship Officer Personal Banking"]},
+    "optimize":    {"min": "all",   "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Regional Head","Branch Manager","Chief Operations Officer"]},
+    "commission":  {"min": "team",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Regional Head","Branch Manager",
+                                                   "Branch Credit Manager","Direct Sales Officer",
+                                                   "Relationship Manager Corporate","Relationship Manager SME",
+                                                   "Relationship Officer Personal Banking"]},
+    "campaigns":   {"min": "all",   "roles_all": ["Admin","Managing Director","Head Of Marketing",
+                                                   "Marketing Officer","Director Retail Banking",
+                                                   "Director Commercial Banking","Regional Head","Branch Manager"]},
+    "credit_monitoring":  {"min": "self", "roles_all": []},
+    "debt_recovery":      {"min": "self", "roles_all": []},
+    "loan_applications":  {"min": "self", "roles_all": []},
+    "legal":              {"min": "self", "roles_all": []},
+    "credit_analysis":    {"min": "self", "roles_all": []},
+    "credit_admin":       {"min": "self", "roles_all": []},
+    "compliance":         {"min": "self", "roles_all": []},
+    "treasury":           {"min": "self", "roles_all": []},
+    "propositions":       {"min": "self", "roles_all": []},
+    "ra":                  {"min": "self", "roles_all": []},
+    "revenue_assurance": {"min": "self", "roles_all": []},
+    "ifrs9":               {"min": "self", "roles_all": []},
+    "statement_analyzer":  {"min": "self", "roles_all": []},
+    "customer360":    {"min": "self", "roles_all": []},
+    "stress_testing":  {"min": "self", "roles_all": []},
+    "smart_alerts":    {"min": "self", "roles_all": []},
+    "approvals":       {"min": "self", "roles_all": []},
+    "digital_analytics":{"min": "self", "roles_all": []},
+    "rms":                 {"min": "self", "roles_all": []},
+    "edms":                {"min": "self", "roles_all": []},
+    "cims":        {"min": "self",  "roles_all": ["Admin","Managing Director","Director Retail Banking",
+                                                   "Director Commercial Banking","Chief Operations Officer",
+                                                   "Branch Manager","Branch Operations Manager",
+                                                   "Branch Credit Manager","Regional Head",
+                                                   "Customer Service Officer","Teller","Direct Sales Officer",
+                                                   "Relationship Officer Personal Banking",
+                                                   "Relationship Manager Corporate","Relationship Manager SME"]},
+}
+
+
+# ─── LOAN MANAGEMENT SYSTEM MANAGERS ─────────────────────────────────
+
+class LoanApplicationManager:
+    """Persist and manage loan_applications.json."""
+    def __init__(self):
+        self.file = DATA_DIR / "loan_applications.json"
+        self.apps = self._load()
+
+    def _load(self) -> list:
+        try:
+            return json.loads(self.file.read_text()) if self.file.exists() else []
+        except Exception:
+            return []
+
+    def save(self):
+        self.file.write_text(json.dumps(self.apps, indent=2, default=str))
+
+    def get(self, app_id: str) -> dict:
+        return next((a for a in self.apps if a["id"] == app_id), {})
+
+    def update(self, app_id: str, fields: dict):
+        for i, a in enumerate(self.apps):
+            if a["id"] == app_id:
+                self.apps[i].update(fields)
+                self.apps[i]["last_updated"] = datetime.now().date().isoformat()
+                self.save()
+                return True
+        return False
+
+    def submit_to_credit(self, app_id: str, analyst_code: str = "",
+                          analyst_name: str = "") -> bool:
+        app = self.get(app_id)
+        if not app:
+            return False
+        updates = {"status": "assigned", "last_updated": datetime.now().date().isoformat()}
+        if analyst_code:
+            updates["analyst"] = {"code": analyst_code, "name": analyst_name}
+        return self.update(app_id, updates)
+
+    def record_decision(self, app_id: str, verdict: str, authority: str,
+                        reason: str = "", conditions: list = None,
+                        comments: str = "") -> bool:
+        new_status = {
+            "approved": "approved", "decline": "declined",
+            "declined": "declined", "return":  "returned",
+            "returned": "returned",
+        }.get(verdict.lower(), verdict)
+        return self.update(app_id, {
+            "status":   new_status,
+            "decision": {
+                "verdict":    verdict.lower(),
+                "date":       datetime.now().date().isoformat(),
+                "authority":  authority,
+                "reason":     reason,
+                "conditions": conditions or [],
+                "comments":   comments,
+            },
+        })
+
+    def bsc_actuals(self) -> dict:
+        """Compute BSC actuals from LMS data for credit KPIs."""
+        from collections import defaultdict as _dd
+        rm_kpis: dict = _dd(lambda: _dd(float))
+        for app in self.apps:
+            if app.get("status") not in ("approved","credit_admin","disbursed"):
+                continue
+            rm  = str(app.get("rm_code",""))
+            amt = float(app.get("amount",0) or 0)
+            prod= str(app.get("product","") or "").lower()
+            if not rm or not amt:
+                continue
+            # Route to correct disbursement KPI
+            if any(x in prod for x in ("personal","salary","mortgage","asset","staff","advance")):
+                rm_kpis[rm]["Disbursements Retail Loans"] += amt
+            elif any(x in prod for x in ("corporate","trade finance","import","export","bond","syndic")):
+                rm_kpis[rm]["Disbursements Corporate Loans"] += amt
+            else:
+                rm_kpis[rm]["Disbursements MSME Loans"] += amt
+                rm_kpis[rm]["Number of Business Borrowers"] += 1
+            rm_kpis[rm]["Loan Book Growth"] += amt
+            rm_kpis[rm]["New Accounts"]      += 1
+        return {rm: dict(kpis) for rm, kpis in rm_kpis.items()}
+
+
+class CreditAdminManager:
+    """Persist credit_admin.json — pre-disbursement conditions."""
+    def __init__(self):
+        self.file = DATA_DIR / "credit_admin.json"
+        self.cases = self._load()
+
+    def _load(self) -> list:
+        try:
+            return json.loads(self.file.read_text()) if self.file.exists() else []
+        except Exception:
+            return []
+
+    def save(self):
+        self.file.write_text(json.dumps(self.cases, indent=2, default=str))
+
+    def get(self, case_id: str) -> dict:
+        return next((c for c in self.cases if c["id"] == case_id), {})
+
+    def fulfill_condition(self, case_id: str, condition_type: str,
+                           officer_name: str = "") -> bool:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            for cond in case.get("conditions", []):
+                if cond["type"] == condition_type and not cond["fulfilled"]:
+                    cond["fulfilled"] = True
+                    cond["date_met"]  = datetime.now().date().isoformat()
+                    cond["officer"]   = officer_name
+                    break
+            all_met = all(c["fulfilled"] for c in case.get("conditions", []))
+            case["all_conditions_met"]      = all_met
+            case["ready_for_disbursement"]  = all_met
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def clear_for_disbursement(self, case_id: str) -> bool:
+        for case in self.cases:
+            if case["id"] == case_id and case.get("ready_for_disbursement"):
+                case["disbursed"]          = True
+                case["disbursement_date"]  = datetime.now().date().isoformat()
+                case["last_updated"]       = datetime.now().date().isoformat()
+                self.save()
+                return True
+        return False
+
+
+class ComplianceManager:
+    """Persist compliance_cases.json."""
+    def __init__(self):
+        self.file = DATA_DIR / "compliance_cases.json"
+        self.cases = self._load()
+
+    def _load(self) -> list:
+        try:
+            return json.loads(self.file.read_text()) if self.file.exists() else []
+        except Exception:
+            return []
+
+    def save(self):
+        self.file.write_text(json.dumps(self.cases, indent=2, default=str))
+
+    def update_status(self, case_id: str, new_status: str,
+                       officer: str = "", notes: str = "",
+                       escalate_to: str = "") -> bool:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            case["status"]       = new_status
+            case["last_updated"] = datetime.now().date().isoformat()
+            if notes:   case["review_notes"]  = notes
+            if officer: case["assigned_officer"] = officer
+            if new_status == "cleared":
+                case["cleared_date"] = datetime.now().date().isoformat()
+            if new_status == "escalated" and escalate_to:
+                case["escalated_to"] = escalate_to
+            self.save()
+            return True
+        return False
+
+    def bsc_compliance_score(self) -> float:
+        """Return a compliance score (0-100) for BSC based on case clearance rate."""
+        if not self.cases:
+            return 85.0
+        cleared  = sum(1 for c in self.cases if c["status"] == "cleared")
+        rejected = sum(1 for c in self.cases if c["status"] == "rejected")
+        resolved = cleared + rejected
+        total    = len(self.cases)
+        if total == 0:
+            return 85.0
+        # Score = (resolved/total)*100, capped to reasonable range
+        raw = (resolved / total) * 100
+        return round(max(60.0, min(99.0, raw)), 1)
+
+
+class TreasuryManager:
+    """Persist treasury_fd.json — FD ratification queue."""
+    def __init__(self):
+        self.file = DATA_DIR / "treasury_fd.json"
+        self.requests = self._load()
+
+    def _load(self) -> list:
+        try:
+            return json.loads(self.file.read_text()) if self.file.exists() else []
+        except Exception:
+            return []
+
+    def save(self):
+        self.file.write_text(json.dumps(self.requests, indent=2, default=str))
+
+    def get(self, req_id: str) -> dict:
+        return next((r for r in self.requests if r["id"] == req_id), {})
+
+    def ratify(self, req_id: str, ratified_rate: float, officer: str,
+                counter: bool = False) -> bool:
+        for r in self.requests:
+            if r["id"] != req_id:
+                continue
+            r["ratified_rate"]   = ratified_rate
+            r["treasury_officer"] = officer
+            r["ratified_date"]   = datetime.now().date().isoformat()
+            r["status"] = "counter_offered" if counter else "approved"
+            if counter:
+                r["counter_rate"] = ratified_rate
+            self.save()
+            return True
+        return False
+
+    def book(self, req_id: str) -> bool:
+        for r in self.requests:
+            if r["id"] == req_id and r["status"] in ("approved","counter_offered"):
+                r["status"]      = "booked"
+                r["booked_date"] = datetime.now().date().isoformat()
+                self.save()
+                return True
+        return False
+
+
+# Reporting tree — role → all roles that report into it downward
+REPORTING_TREE = {
+    "Managing Director": {"tree_roles": None, "units": None},
+    "Director Retail Banking": {
+        "tree_roles": [
+            "Director Retail Banking","Head Of Retail","Regional Head",
+            "Branch Manager","Branch Operations Manager","Branch Credit Manager",
+            "Teller","Customer Service Officer","Direct Sales Officer",
+            "Relationship Officer Personal Banking",
+        ],
+        "units": None,   # handled specially — all Branch units
+    },
+    "Director Commercial Banking": {
+        "tree_roles": [
+            "Director Commercial Banking","Head Of SME","Head Of Corporate",
+            "Relationship Manager SME","Relationship Manager Corporate",
+            "Credit Analyst","Credit Administrator",
+        ],
+        "units": ["Commercial Banking","Corporate Banking","SME Banking","Credit"],
+    },
+    "Head Of Retail": {
+        "tree_roles": [
+            "Head Of Retail","Regional Head","Branch Manager",
+            "Branch Operations Manager","Branch Credit Manager",
+            "Teller","Customer Service Officer","Direct Sales Officer",
+            "Relationship Officer Personal Banking",
+        ],
+        "units": None,
+    },
+    "Head Of Corporate":          {"tree_roles":["Head Of Corporate","Relationship Manager Corporate"],"units":["Corporate Banking"]},
+    "Head Of SME":                {"tree_roles":["Head Of SME","Relationship Manager SME"],"units":["SME Banking"]},
+    "Head Of Digital Innovation": {"tree_roles":["Head Of Digital Innovation","IT Manager","IT Support Officer"],"units":["Digital & Channels","ICT"]},
+    "Head Of Strategy":           {"tree_roles":["Head Of Strategy","Strategy Analyst"],"units":["Strategy"]},
+    "Head Of Internal Audit":     {"tree_roles":["Head Of Internal Audit","Internal Auditor"],"units":["Internal Audit"]},
+    "Head Of Marketing":          {"tree_roles":["Head Of Marketing","Marketing Officer"],"units":["Marketing"]},
+    "Chief Finance Officer":      {"tree_roles":["Chief Finance Officer","Financial Controller","Treasury Manager"],"units":["Finance","Treasury"]},
+    "Chief Risk Officer":         {"tree_roles":["Chief Risk Officer","Risk Manager"],"units":["Risk"]},
+    "Chief Operations Officer":   {"tree_roles":["Chief Operations Officer","Operations Manager","Branch Operations Manager"],"units":["Operations"]},
+    "Chief Compliance Officer":   {"tree_roles":["Chief Compliance Officer","Compliance Officer","Legal Counsel"],"units":["Compliance & Legal"]},
+    "Chief Human Resources Officer":{"tree_roles":["Chief Human Resources Officer","HR Business Partner","HR Officer"],"units":["Human Resources"]},
+    "Chief Credit Officer":       {"tree_roles":["Chief Credit Officer","Credit Analyst","Credit Administrator"],"units":["Credit"]},
+    "Debt Recovery Unit Manager": {"tree_roles":["Debt Recovery Unit Manager","Recovery Officer"],"units":None},
+    "Procurement Manager":        {"tree_roles":["Procurement Manager","Procurement Officer"],"units":["Procurement"]},
+    "IT Manager":                 {"tree_roles":["IT Manager","IT Support Officer"],"units":["ICT"]},
+    "Operations Manager":         {"tree_roles":["Operations Manager","Branch Operations Manager"],"units":None},
+    "HR Business Partner":        {"tree_roles":["HR Business Partner","HR Officer"],"units":["Human Resources"]},
+    "Regional Head": {
+        "tree_roles": [
+            "Regional Head","Branch Manager","Branch Operations Manager","Branch Credit Manager",
+            "Branch Operations Supervisor","Teller","Customer Service Officer",
+            "Direct Sales Officer","Relationship Officer Personal Banking",
+            "Relationship Officer Business Banking",
+        ],
+        "units": None,   # scoped by region (matched via Region column)
+    },
+    "Branch Manager": {
+        "tree_roles": [
+            "Branch Manager","Branch Operations Manager","Branch Credit Manager",
+            "Branch Operations Supervisor","Teller","Customer Service Officer",
+            "Direct Sales Officer","Relationship Officer Personal Banking",
+            "Relationship Officer Business Banking",
+        ],
+        "units": None,   # scoped by unit (branch) in _UNIT_SCOPED_ROLES
+    },
+    "Branch Operations Manager": {
+        "tree_roles": [
+            "Branch Operations Manager","Branch Operations Supervisor",
+            "Teller","Customer Service Officer",
+        ],
+        "units": None,
+    },
+    "Branch Credit Manager": {
+        "tree_roles": [
+            "Branch Credit Manager","Relationship Officer Personal Banking",
+            "Relationship Officer Business Banking","Direct Sales Officer",
+        ],
+        "units": None,
+    },
+    "Branch Operations Supervisor": {
+        "tree_roles": ["Branch Operations Supervisor","Teller","Customer Service Officer"],
+        "units": None,
+    },
+}
+
+_UNIT_SCOPED_ROLES = {
+    "branch manager","branch operations manager","branch credit manager",
+    "branch operations supervisor","it manager","operations manager","hr business partner",
+    "relationship officer personal banking","relationship officer business banking",
+    "direct sales officer","customer service officer","teller",
+}
+# Regional Heads scope by Region column, not Unit
+_REGION_SCOPED_ROLES = {"regional head"}
+_ALL_VIEW_ROLES = {"managing director","admin"}
+
+
+def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
+    """
+    Return only the staff_scores rows this user is allowed to see,
+    following the exact org reporting tree.
+    Overall ranking is preserved from the full dataset.
+    """
+    import pandas as _pd
+    if staff_scores is None or (hasattr(staff_scores,"__len__") and len(staff_scores)==0):
+        return staff_scores
+
+    is_admin = user_data.get("is_admin", False)
+    can_all  = user_data.get("can_view_all", False)
+    role     = str(user_data.get("role","")).strip()
+    role_l   = role.lower()
+    my_name  = user_data.get("full_name","")
+    my_unit  = user_data.get("unit","")
+
+    # Only true admins and MD see everyone — not just anyone with can_view_all
+    # can_view_all is a legacy flag; tree_access is now role-based
+    if is_admin or "admin" in role_l or role_l in _ALL_VIEW_ROLES:
+        return staff_scores.copy()
+
+    # Find tree config
+    tree_cfg = REPORTING_TREE.get(role)
+    if tree_cfg is None:
+        for k in REPORTING_TREE:
+            if k.lower() == role_l:
+                tree_cfg = REPORTING_TREE[k]
+                break
+
+    if tree_cfg is None:
+        # No tree config — self only
+        self_rows = staff_scores[staff_scores["Staff Name"] == my_name].copy()
+        return self_rows
+
+    tree_roles = tree_cfg["tree_roles"]
+    tree_units = tree_cfg["units"]
+
+    # Filter by roles
+    if tree_roles is None:
+        visible = staff_scores.copy()
+    else:
+        visible = staff_scores[staff_scores["Role"].isin(tree_roles)].copy()
+
+    # Apply scope filter
+    if tree_units is not None:
+        # Fixed HO unit list
+        visible = visible[visible["Unit"].isin(tree_units)]
+
+    elif role_l in _REGION_SCOPED_ROLES:
+        # Regional Head — scope by Region column, not Unit
+        # Determine the region this person covers from their unit name or Region field
+        my_region = user_data.get("region","")
+        if not my_region:
+            # Derive from unit name e.g. "North Region" → "North"
+            unit_parts = str(my_unit).lower().split()
+            for part in ("north","central","south"):
+                if part in unit_parts:
+                    my_region = part.title()
+                    break
+        if my_region:
+            # Match "North" against Region column values like "North","North Region"
+            region_clean = my_region.lower().replace(" region","").strip()
+            def _region_match(r):
+                return str(r).lower().replace(" region","").strip() == region_clean
+            visible = visible[visible["Region"].apply(_region_match)]
+        # If we couldn't determine region, fall back to full tree (better than nothing)
+
+    elif role_l in ("director retail banking","head of retail"):
+        branch_units = [u for u in staff_scores["Unit"].unique() if "Branch" in str(u)]
+        retail_units = ["Retail Banking"] + branch_units
+        visible = visible[visible["Unit"].isin(retail_units)]
+
+    elif role_l in _UNIT_SCOPED_ROLES and my_unit:
+        visible = visible[visible["Unit"] == my_unit]
+
+    return visible
+
+
+def tab_visible_cascade(user_data: dict, tab_name: str) -> bool:
+    """Which cascade tabs should be visible for this user."""
+    role    = str(user_data.get("role","")).lower()
+    is_adm  = user_data.get("is_admin", False)
+    can_all = user_data.get("can_view_all", False)
+    is_md   = is_adm or can_all or "managing" in role or role in ("md","ceo","admin")
+    is_mgr  = is_md or any(k in role for k in (
+        "director","head of","regional","manager","chief"))
+    return {
+        "bank_targets":    is_md,
+        "fixed_kpis":      is_md,
+        "set_targets":     is_mgr,
+        "my_targets":      True,
+        "cascade_tree":    is_mgr,
+        "coverage":        is_mgr,
+        "review_requests": is_mgr,
+    }.get(tab_name, True)
+
+
+
+def check_access(user_data: dict, module: str) -> tuple:
+    """
+    Check if user has access to a module.
+    Checks in order: ICT module_control → admin flag → accessible_modules → role-based.
+    Returns (has_access: bool, reason: str)
+    """
+    if not user_data:
+        return False, "Not logged in"
+
+    role     = str(user_data.get("role","")).strip()
+    is_admin = user_data.get("is_admin", False)
+    can_all  = user_data.get("can_view_all", False)
+
+    # Check ICT module control (can disable modules bank-wide)
+    # Admins bypass this check
+    if not is_admin and not can_all and role != "Admin":
+        try:
+            import json
+            from pathlib import Path as _P
+            _mc_path = _P(__file__).parent.parent / "data" / "module_control.json"
+            if _mc_path.exists():
+                _mc = json.loads(_mc_path.read_text())
+                if _mc.get(module, {}).get("enabled", True) is False:
+                    return False, "Module disabled by ICT admin"
+        except Exception:
+            pass  # If file unreadable, don't block access
+
+    # Admins always have access
+    if is_admin or role == "Admin":
+        return True, "Admin"
+
+    cfg       = MODULE_ACCESS.get(module, {"min":"public","roles_all":[]})
+    min_level = cfg["min"]
+    roles_all = cfg["roles_all"]
+
+    # "self" and "public" modules are ALWAYS accessible to any logged-in user
+    # This must run before the accessible_modules override list check,
+    # because self-level modules (pipeline, cascade, cims) should never be blocked
+    if min_level in ("public","self"):
+        return True, "Self/public access"
+
+    # Check explicit module overrides on user account
+    # Only applies to non-self modules — a role in roles_all also grants access
+    accessible = user_data.get("accessible_modules")
+    if role in roles_all:
+        return True, f"Role '{role}' has access"
+    if accessible is not None and len(accessible) > 0:
+        if module in accessible:
+            return True, "Module override granted"
+        # Override list is set, role not in roles_all, module not in list
+        return False, "Not in accessible_modules list"
+
+    if min_level == "admin":
+        return False, "Admin only"
+    if min_level == "public":
+        return True, "Public"
+    role_l_ca = role.lower()
+    if can_all and (is_admin or role_l_ca in _ALL_VIEW_ROLES) and min_level in ("all","team","unit","self"):
+        return True, "can_view_all"
+
+    return False, f"Role '{role}' does not have access to {module}"
+
+
+
+
+def check_page_access(user_data: dict, module: str, page: str) -> bool:
+    """Check if user can access a specific page within a module."""
+    if not check_access(user_data, module)[0]:
+        return False
+    # Check sub-page restrictions
+    accessible_pages = user_data.get("accessible_pages", {})
+    if module in accessible_pages and accessible_pages[module]:
+        return page in accessible_pages[module]
+    return True  # no sub-page restriction set — all pages visible
+
+
+def fix_view_all_permissions(user_manager) -> int:
+    """Strip can_view_all from any non-MD/Admin account. Returns count fixed."""
+    MD_ROLES = {"managing director", "admin", "system admin"}
+    fixed = 0
+    for username, udata in user_manager.users.items():
+        role_l = str(udata.get("role","")).lower()
+        is_adm = bool(udata.get("is_admin", False))
+        if udata.get("can_view_all") and not is_adm and role_l not in MD_ROLES:
+            udata["can_view_all"] = False
+            fixed += 1
+    if fixed:
+        user_manager.save()
+    return fixed
+
+
+# ─── PROFILE PHOTO HELPERS ────────────────────────────────────────────
+import base64 as _b64
+
+PHOTO_DIR = DATA_DIR / "profile_photos"
+
+def save_profile_photo(staff_code: str, image_bytes: bytes, ext: str = "jpg") -> str:
+    """Save a staff profile photo. Returns the relative path."""
+    PHOTO_DIR.mkdir(exist_ok=True)
+    safe_code = str(staff_code).strip().replace("/","_")
+    path = PHOTO_DIR / f"{safe_code}.{ext}"
+    path.write_bytes(image_bytes)
+    return str(path)
+
+def get_photo_b64(staff_code: str, staff_name: str = "") -> str:
+    """Return base64-encoded photo for a staff member, or empty string if none."""
+    PHOTO_DIR.mkdir(exist_ok=True)
+    safe_code = str(staff_code).strip().replace("/","_")
+    for ext in ("jpg","jpeg","png","webp"):
+        p = PHOTO_DIR / f"{safe_code}.{ext}"
+        if p.exists():
+            data = _b64.b64encode(p.read_bytes()).decode()
+            return f"data:image/{ext};base64,{data}"
+    # Fallback: try by name slug
+    if staff_name:
+        slug = staff_name.lower().replace(" ","_").replace(".","")[:20]
+        for ext in ("jpg","jpeg","png"):
+            p = PHOTO_DIR / f"{slug}.{ext}"
+            if p.exists():
+                data = _b64.b64encode(p.read_bytes()).decode()
+                return f"data:image/{ext};base64,{data}"
+    return ""
+
+def photo_avatar_html(staff_code: str, staff_name: str,
+                       size: int = 44, initials_fallback: bool = True) -> str:
+    """Return <img> or initials-circle HTML for a staff member's photo."""
+    uri = get_photo_b64(staff_code, staff_name)
+    if uri:
+        return (f"<img src='{uri}' width='{size}' height='{size}' "
+                f"style='border-radius:50%;object-fit:cover;flex-shrink:0' />")
+    if initials_fallback:
+        parts = str(staff_name).strip().split()
+        ini   = ((parts[0][0]+parts[-1][0]).upper()
+                 if len(parts)>=2 else (staff_name[:2].upper() if staff_name else "?"))
+        return (f"<div style='width:{size}px;height:{size}px;border-radius:50%;"
+                f"background:linear-gradient(135deg,var(--brand-primary,#006B3F),var(--brand-mid,#1D9E75);"
+                f"display:flex;align-items:center;justify-content:center;"
+                f"color:var(--color-background-primary);font-size:{size//3}px;font-weight:800;flex-shrink:0'>{ini}</div>")
+    return ""
+
 class UserManager:
     def __init__(self):
         self.users_file = DATA_DIR / "users.json"
@@ -2878,8 +5718,28 @@ class UserManager:
             raw = self.users_file.read_text()
             users = json.loads(raw) if raw.strip() else {}
             if not users: raise ValueError("empty")
-            if 'admin' in users:
-                users['admin'].update({'can_view_all': True, 'role': 'Admin', 'active': True})
+            # Always ensure admin account exists and cannot be permanently removed
+            if 'admin' not in users:
+                users['admin'] = {
+                    "password":   hashlib.sha256("admin123".encode()).hexdigest(),
+                    "full_name":  "System Admin",
+                    "role":       "Admin",
+                    "department": "All",
+                    "can_view_all": True,
+                    "managed_roles": [], "managed_units": [],
+                    "managed_staff_codes": [],
+                    "staff_code": "ADMIN001",
+                    "email":      "admin@bank.com",
+                    "active":     True,
+                    "_protected": True,
+                }
+            else:
+                users['admin'].update({
+                    'can_view_all': True,
+                    'role': 'Admin',
+                    'active': True,
+                    '_protected': True,
+                })
             self._save(users)
             return users
         except:
@@ -2922,14 +5782,64 @@ class UserManager:
     def save_users(self):
         self._save(self.users)
 
-    def hash_pw(self, pw):
-        return hashlib.sha256(pw.encode()).hexdigest()
+    def can_delete_user(self, username: str) -> tuple:
+        """Returns (can_delete: bool, reason: str)."""
+        if username == "admin":
+            return False, "The admin account is protected and cannot be deleted."
+        u = self.users.get(username, {})
+        if u.get("_protected"):
+            return False, f"'{username}' is a protected account."
+        # Count active admins — must always have at least one
+        admins = [u2 for u2 in self.users.values()
+                  if u2.get("is_admin") or u2.get("role","").lower() == "admin"]
+        if len(admins) <= 1 and (u.get("is_admin") or u.get("role","").lower()=="admin"):
+            return False, "Cannot delete the last admin account."
+        return True, ""
+
+    def delete_user(self, username: str, verified_by: str) -> tuple:
+        """Delete user after protection check. Returns (success, message)."""
+        can, reason = self.can_delete_user(username)
+        if not can:
+            return False, reason
+        self.users.pop(username, None)
+        self.save_users()
+        return True, f"User '{username}' deleted by {verified_by}."
+
+    def hash_pw(self, pw: str) -> str:
+        """bcrypt hash with SHA-256 fallback. Always use verify_pw to check."""
+        try:
+            import bcrypt as _bc
+            return _bc.hashpw(pw.encode('utf-8'), _bc.gensalt(rounds=12)).decode('utf-8')
+        except ImportError:
+            return hashlib.sha256(pw.encode()).hexdigest()
+
+    def verify_pw(self, pw: str, stored: str) -> bool:
+        """Verify password — handles bcrypt and legacy SHA-256 hashes."""
+        if not pw or not stored:
+            return False
+        try:
+            import bcrypt as _bc
+            if stored.startswith('$2b$') or stored.startswith('$2a$'):
+                return _bc.checkpw(pw.encode('utf-8'), stored.encode('utf-8'))
+        except ImportError:
+            pass
+        return hashlib.sha256(pw.encode()).hexdigest() == stored
 
     def authenticate(self, username, password):
         u = self.users.get(username)
-        if u and u.get('active') and u['password'] == self.hash_pw(password):
-            return True, u
-        return False, None
+        if not u or not u.get('active'):
+            return False, None
+        if not self.verify_pw(password, u.get('password', '')):
+            return False, None
+        # Auto-upgrade legacy SHA-256 to bcrypt on successful login
+        stored = u.get('password', '')
+        if stored and not (stored.startswith('$2b$') or stored.startswith('$2a$')):
+            try:
+                u['password'] = self.hash_pw(password)
+                self.save_users()
+            except Exception:
+                pass
+        return True, u
 
     def change_password(self, username, new_password):
         self.users[username]['password'] = self.hash_pw(new_password)
@@ -2949,7 +5859,13 @@ class UserManager:
     def add_user(self, username, password, full_name, email="",
                  role="Staff", unit="", staff_code="",
                  can_view_all=False, can_execute=False, is_admin=False):
-        """Create a new user account."""
+        """Create a new user account with auto-derived module permissions."""
+        # Auto-derive module access from role
+        accessible = [m for m, cfg in MODULE_ACCESS.items()
+                      if role in cfg.get("roles_all",[])
+                      or cfg["min"] == "self"
+                      or (is_admin)
+                      or (can_view_all and cfg["min"] in ("all","team","unit","self"))]
         self.users[username] = {
             "password":    self.hash_pw(password),
             "full_name":   full_name,
@@ -2966,6 +5882,7 @@ class UserManager:
             "managed_units": [unit] if unit else [],
             "managed_staff_codes": [str(staff_code)] if staff_code else [],
             "must_change_password": False,
+            "accessible_modules":  accessible,
         }
         self.save_users()
         return self.users[username]

@@ -1,0 +1,702 @@
+[
+  {
+    "id": "PO00001",
+    "pr_id": "PR00001",
+    "vendor": "Modern Furniture",
+    "department": "Compliance",
+    "category": "Office Supplies",
+    "amount_kes": 203554.0,
+    "currency": "KES",
+    "issue_date": "2026-02-28",
+    "delivery_date": "2026-05-18",
+    "status": "Issued",
+    "items": [
+      {
+        "description": "Office Supplies \u2014 Compliance",
+        "qty": 1,
+        "unit_price_kes": 203554.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00002",
+    "pr_id": "PR00002",
+    "vendor": "Equip Africa",
+    "department": "Risk & Compliance",
+    "category": "Cleaning & Sanitation",
+    "amount_kes": 1490366.0,
+    "currency": "KES",
+    "issue_date": "2026-04-16",
+    "delivery_date": "2026-05-17",
+    "status": "Fully Received",
+    "items": [
+      {
+        "description": "Cleaning & Sanitation \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 1490366.0,
+        "received": true
+      }
+    ],
+    "goods_received_note": "GRN00002",
+    "delivery_note_ref": "DN47034",
+    "invoice_id": "INV00002",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00003",
+    "pr_id": "PR00003",
+    "vendor": "Office Mart Kenya",
+    "department": "Human Resources",
+    "category": "Utilities",
+    "amount_kes": 171887.0,
+    "currency": "KES",
+    "issue_date": "2026-04-10",
+    "delivery_date": "2026-05-10",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Utilities \u2014 Human Resources",
+        "qty": 1,
+        "unit_price_kes": 171887.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00003",
+    "delivery_note_ref": "DN49397",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00005",
+    "pr_id": "PR00005",
+    "vendor": "Nairobi IT Hub",
+    "department": "Risk & Compliance",
+    "category": "Travel & Accommodation",
+    "amount_kes": 2286135.0,
+    "currency": "KES",
+    "issue_date": "2026-02-25",
+    "delivery_date": "2026-05-25",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Travel & Accommodation \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 2286135.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00007",
+    "pr_id": "PR00007",
+    "vendor": "Kenya Power",
+    "department": "Finance",
+    "category": "Vehicle Fleet",
+    "amount_kes": 1899572.0,
+    "currency": "KES",
+    "issue_date": "2026-02-28",
+    "delivery_date": "2026-04-29",
+    "status": "Issued",
+    "items": [
+      {
+        "description": "Vehicle Fleet \u2014 Finance",
+        "qty": 1,
+        "unit_price_kes": 1899572.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00017",
+    "pr_id": "PR00017",
+    "vendor": "Printex Solutions",
+    "department": "Operations",
+    "category": "Marketing Materials",
+    "amount_kes": 1164698.0,
+    "currency": "KES",
+    "issue_date": "2026-03-14",
+    "delivery_date": "2026-05-04",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Marketing Materials \u2014 Operations",
+        "qty": 1,
+        "unit_price_kes": 1164698.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00006",
+    "delivery_note_ref": "DN16339",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00025",
+    "pr_id": "PR00025",
+    "vendor": "G4S Kenya",
+    "department": "Risk & Compliance",
+    "category": "Printing & Stationery",
+    "amount_kes": 502246.0,
+    "currency": "KES",
+    "issue_date": "2026-04-08",
+    "delivery_date": "2026-05-03",
+    "status": "Fully Received",
+    "items": [
+      {
+        "description": "Printing & Stationery \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 502246.0,
+        "received": true
+      }
+    ],
+    "goods_received_note": "GRN00007",
+    "delivery_note_ref": "DN31153",
+    "invoice_id": "INV00007",
+    "3way_match": true,
+    "notes": ""
+  },
+  {
+    "id": "PO00043",
+    "pr_id": "PR00043",
+    "vendor": "Kenya Power",
+    "department": "Treasury",
+    "category": "Security Services",
+    "amount_kes": 2332376.0,
+    "currency": "KES",
+    "issue_date": "2026-03-28",
+    "delivery_date": "2026-04-26",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Security Services \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 2332376.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00008",
+    "delivery_note_ref": "DN16542",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00058",
+    "pr_id": "PR00058",
+    "vendor": "G4S Kenya",
+    "department": "IT & Digital",
+    "category": "Utilities",
+    "amount_kes": 1902298.0,
+    "currency": "KES",
+    "issue_date": "2026-04-02",
+    "delivery_date": "2026-06-03",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Utilities \u2014 IT & Digital",
+        "qty": 1,
+        "unit_price_kes": 1902298.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00009",
+    "delivery_note_ref": "DN82785",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00059",
+    "pr_id": "PR00059",
+    "vendor": "Modern Furniture",
+    "department": "Risk & Compliance",
+    "category": "Furniture & Fittings",
+    "amount_kes": 495308.0,
+    "currency": "KES",
+    "issue_date": "2026-03-24",
+    "delivery_date": "2026-05-21",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Furniture & Fittings \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 495308.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00060",
+    "pr_id": "PR00060",
+    "vendor": "Equip Africa",
+    "department": "Treasury",
+    "category": "Utilities",
+    "amount_kes": 1296591.0,
+    "currency": "KES",
+    "issue_date": "2026-04-10",
+    "delivery_date": "2026-04-29",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Utilities \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 1296591.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00011",
+    "delivery_note_ref": "DN19620",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00061",
+    "pr_id": "PR00061",
+    "vendor": "Total Kenya",
+    "department": "Treasury",
+    "category": "Marketing Materials",
+    "amount_kes": 2412457.0,
+    "currency": "KES",
+    "issue_date": "2026-04-01",
+    "delivery_date": "2026-05-16",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Marketing Materials \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 2412457.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00066",
+    "pr_id": "PR00066",
+    "vendor": "Safaricom Business",
+    "department": "Marketing",
+    "category": "Utilities",
+    "amount_kes": 1332599.0,
+    "currency": "KES",
+    "issue_date": "2026-02-22",
+    "delivery_date": "2026-05-12",
+    "status": "Draft",
+    "items": [
+      {
+        "description": "Utilities \u2014 Marketing",
+        "qty": 1,
+        "unit_price_kes": 1332599.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00072",
+    "pr_id": "PR00072",
+    "vendor": "Jamii Telecoms",
+    "department": "Treasury",
+    "category": "IT Equipment",
+    "amount_kes": 1350846.0,
+    "currency": "KES",
+    "issue_date": "2026-04-14",
+    "delivery_date": "2026-06-01",
+    "status": "Draft",
+    "items": [
+      {
+        "description": "IT Equipment \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 1350846.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00074",
+    "pr_id": "PR00074",
+    "vendor": "Securex Agencies",
+    "department": "Risk & Compliance",
+    "category": "Security Services",
+    "amount_kes": 2147576.0,
+    "currency": "KES",
+    "issue_date": "2026-04-08",
+    "delivery_date": "2026-05-09",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Security Services \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 2147576.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00015",
+    "delivery_note_ref": "DN65747",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00076",
+    "pr_id": "PR00076",
+    "vendor": "Securex Agencies",
+    "department": "Operations",
+    "category": "Marketing Materials",
+    "amount_kes": 1316859.0,
+    "currency": "KES",
+    "issue_date": "2026-03-09",
+    "delivery_date": "2026-05-10",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Marketing Materials \u2014 Operations",
+        "qty": 1,
+        "unit_price_kes": 1316859.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00016",
+    "delivery_note_ref": "DN91448",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00078",
+    "pr_id": "PR00078",
+    "vendor": "Meru General Supplies",
+    "department": "Operations",
+    "category": "Furniture & Fittings",
+    "amount_kes": 196005.0,
+    "currency": "KES",
+    "issue_date": "2026-03-21",
+    "delivery_date": "2026-05-21",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Furniture & Fittings \u2014 Operations",
+        "qty": 1,
+        "unit_price_kes": 196005.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00083",
+    "pr_id": "PR00083",
+    "vendor": "Nakuru Supplies",
+    "department": "IT & Digital",
+    "category": "Maintenance & Repairs",
+    "amount_kes": 993467.0,
+    "currency": "KES",
+    "issue_date": "2026-04-18",
+    "delivery_date": "2026-05-05",
+    "status": "Issued",
+    "items": [
+      {
+        "description": "Maintenance & Repairs \u2014 IT & Digital",
+        "qty": 1,
+        "unit_price_kes": 993467.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00085",
+    "pr_id": "PR00085",
+    "vendor": "Nairobi IT Hub",
+    "department": "Treasury",
+    "category": "Travel & Accommodation",
+    "amount_kes": 202920.0,
+    "currency": "KES",
+    "issue_date": "2026-02-27",
+    "delivery_date": "2026-05-29",
+    "status": "Issued",
+    "items": [
+      {
+        "description": "Travel & Accommodation \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 202920.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00087",
+    "pr_id": "PR00087",
+    "vendor": "Kenya Power",
+    "department": "Risk & Compliance",
+    "category": "Cleaning & Sanitation",
+    "amount_kes": 2202416.0,
+    "currency": "KES",
+    "issue_date": "2026-04-06",
+    "delivery_date": "2026-04-24",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Cleaning & Sanitation \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 2202416.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00020",
+    "delivery_note_ref": "DN97993",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00092",
+    "pr_id": "PR00092",
+    "vendor": "Nairobi IT Hub",
+    "department": "Risk & Compliance",
+    "category": "Professional Services",
+    "amount_kes": 1875195.0,
+    "currency": "KES",
+    "issue_date": "2026-03-01",
+    "delivery_date": "2026-04-29",
+    "status": "Fully Received",
+    "items": [
+      {
+        "description": "Professional Services \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 1875195.0,
+        "received": true
+      }
+    ],
+    "goods_received_note": "GRN00021",
+    "delivery_note_ref": "DN38417",
+    "invoice_id": "INV00021",
+    "3way_match": true,
+    "notes": ""
+  },
+  {
+    "id": "PO00095",
+    "pr_id": "PR00095",
+    "vendor": "Safaricom Business",
+    "department": "Finance",
+    "category": "Office Supplies",
+    "amount_kes": 1730834.0,
+    "currency": "KES",
+    "issue_date": "2026-03-19",
+    "delivery_date": "2026-05-30",
+    "status": "Draft",
+    "items": [
+      {
+        "description": "Office Supplies \u2014 Finance",
+        "qty": 1,
+        "unit_price_kes": 1730834.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00102",
+    "pr_id": "PR00102",
+    "vendor": "Safaricom Business",
+    "department": "Risk & Compliance",
+    "category": "Cleaning & Sanitation",
+    "amount_kes": 904691.0,
+    "currency": "KES",
+    "issue_date": "2026-03-04",
+    "delivery_date": "2026-06-04",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Cleaning & Sanitation \u2014 Risk & Compliance",
+        "qty": 1,
+        "unit_price_kes": 904691.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00104",
+    "pr_id": "PR00104",
+    "vendor": "Printex Solutions",
+    "department": "Legal",
+    "category": "Travel & Accommodation",
+    "amount_kes": 425139.0,
+    "currency": "KES",
+    "issue_date": "2026-03-30",
+    "delivery_date": "2026-05-08",
+    "status": "Fully Received",
+    "items": [
+      {
+        "description": "Travel & Accommodation \u2014 Legal",
+        "qty": 1,
+        "unit_price_kes": 425139.0,
+        "received": true
+      }
+    ],
+    "goods_received_note": "GRN00024",
+    "delivery_note_ref": "DN93762",
+    "invoice_id": "INV00024",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00106",
+    "pr_id": "PR00106",
+    "vendor": "Securex Agencies",
+    "department": "Human Resources",
+    "category": "Security Services",
+    "amount_kes": 1439854.0,
+    "currency": "KES",
+    "issue_date": "2026-02-22",
+    "delivery_date": "2026-05-01",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Security Services \u2014 Human Resources",
+        "qty": 1,
+        "unit_price_kes": 1439854.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00025",
+    "delivery_note_ref": "DN84224",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00110",
+    "pr_id": "PR00110",
+    "vendor": "Jamii Telecoms",
+    "department": "Compliance",
+    "category": "Professional Services",
+    "amount_kes": 1953388.0,
+    "currency": "KES",
+    "issue_date": "2026-03-15",
+    "delivery_date": "2026-05-29",
+    "status": "Cancelled",
+    "items": [
+      {
+        "description": "Professional Services \u2014 Compliance",
+        "qty": 1,
+        "unit_price_kes": 1953388.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00112",
+    "pr_id": "PR00112",
+    "vendor": "Techbridge Ltd",
+    "department": "Operations",
+    "category": "Security Services",
+    "amount_kes": 709246.0,
+    "currency": "KES",
+    "issue_date": "2026-03-24",
+    "delivery_date": "2026-05-15",
+    "status": "Partially Received",
+    "items": [
+      {
+        "description": "Security Services \u2014 Operations",
+        "qty": 1,
+        "unit_price_kes": 709246.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "GRN00027",
+    "delivery_note_ref": "DN44251",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  },
+  {
+    "id": "PO00115",
+    "pr_id": "PR00115",
+    "vendor": "Nakuru Supplies",
+    "department": "Treasury",
+    "category": "Utilities",
+    "amount_kes": 1700703.0,
+    "currency": "KES",
+    "issue_date": "2026-03-05",
+    "delivery_date": "2026-05-12",
+    "status": "Draft",
+    "items": [
+      {
+        "description": "Utilities \u2014 Treasury",
+        "qty": 1,
+        "unit_price_kes": 1700703.0,
+        "received": false
+      }
+    ],
+    "goods_received_note": "",
+    "delivery_note_ref": "",
+    "invoice_id": "",
+    "3way_match": false,
+    "notes": ""
+  }
+]

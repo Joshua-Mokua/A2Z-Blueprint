@@ -1,0 +1,56 @@
+{
+  "as_at": "2026-04-17",
+  "channels": {
+    "mobile_app": {
+      "active_users": 185000,
+      "txn_count": 2850000,
+      "txn_value_kes": 14500000000,
+      "avg_session_min": 4.2,
+      "crash_rate_pct": 0.8,
+      "rating": 4.1,
+      "top_features": [
+        "Balance check",
+        "M-Pesa transfer",
+        "Mini statement",
+        "Airtime"
+      ]
+    },
+    "ussd": {
+      "active_users": 420000,
+      "txn_count": 1950000,
+      "txn_value_kes": 8200000000,
+      "avg_session_steps": 5.1,
+      "completion_rate_pct": 82
+    },
+    "internet": {
+      "active_users": 42000,
+      "txn_count": 380000,
+      "txn_value_kes": 52000000000,
+      "avg_session_min": 8.7,
+      "top_pages": [
+        "Transfers",
+        "Loans",
+        "Fixed Deposit",
+        "Forex"
+      ]
+    },
+    "agency": {
+      "active_agents": 2840,
+      "active_agents_30d": 2650,
+      "txn_count": 4200000,
+      "txn_value_kes": 18500000000,
+      "float_utilisation_pct": 71
+    },
+    "atm": {
+      "active_atms": 186,
+      "uptime_pct": 97.2,
+      "txn_count": 1850000,
+      "cash_dispensed_kes": 9200000000,
+      "avg_queue_seconds": 45
+    }
+  },
+  "digital_migration_rate": 68.5,
+  "branch_txn_shift_pct": -12.3,
+  "cost_per_digital_txn": 12.5,
+  "cost_per_branch_txn": 285.0
+}

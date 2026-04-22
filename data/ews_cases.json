@@ -1,0 +1,367 @@
+[
+  {
+    "id": "EWS00006",
+    "account_number": "ECO1000000060",
+    "client_cif": "100000039",
+    "outstanding": 1389966.33,
+    "branch": "Gigiri Branch",
+    "rm": "Olivia Mwanake",
+    "risk_score": 37,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments",
+      "Business closure risk"
+    ],
+    "dpd": 204,
+    "stage": "Red",
+    "last_reviewed": "2026-04-13",
+    "next_action": "2026-04-22",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-03-21",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00014",
+    "account_number": "ECO1000000113",
+    "client_cif": "100000074",
+    "outstanding": 28743213.25,
+    "branch": "Sarit Centre Branch",
+    "rm": "Mildred Muthoni",
+    "risk_score": 43,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 159,
+    "stage": "Red",
+    "last_reviewed": "2026-04-06",
+    "next_action": "2026-04-30",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-08",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00018",
+    "account_number": "ECO1000000143",
+    "client_cif": "100000092",
+    "outstanding": 21066437.0,
+    "branch": "Kisumu Main Branch",
+    "rm": "Norman Nafula",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 1618,
+    "stage": "Red",
+    "last_reviewed": "2026-04-05",
+    "next_action": "2026-04-30",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-11",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00025",
+    "account_number": "ECO1000000214",
+    "client_cif": "100000136",
+    "outstanding": 1018573.75,
+    "branch": "Bungoma Branch",
+    "rm": "Raymond Mutai",
+    "risk_score": 58,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments",
+      "Large unexplained debit"
+    ],
+    "dpd": 321,
+    "stage": "Red",
+    "last_reviewed": "2026-04-16",
+    "next_action": "2026-04-29",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-04-10",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00026",
+    "account_number": "ECO1000000222",
+    "client_cif": "100000140",
+    "outstanding": 2647767.57,
+    "branch": "Nakuru Main Branch",
+    "rm": "Bernadette Kinyanjui",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 6375,
+    "stage": "Red",
+    "last_reviewed": "2026-04-14",
+    "next_action": "2026-04-29",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-04-09",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00038",
+    "account_number": "ECO1000000360",
+    "client_cif": "100000228",
+    "outstanding": 21140681.48,
+    "branch": "Malindi Branch",
+    "rm": "Tina Njoroge",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 3222,
+    "stage": "Red",
+    "last_reviewed": "2026-04-05",
+    "next_action": "2026-04-25",
+    "recommended_action": "Restructure facility",
+    "raised_date": "2026-03-27",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00056",
+    "account_number": "ECO1000000555",
+    "client_cif": "100000343",
+    "outstanding": 2044438.53,
+    "branch": "Nakuru Main Branch",
+    "rm": "Agnes Kariuki",
+    "risk_score": 46,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments",
+      "Business closure risk"
+    ],
+    "dpd": 182,
+    "stage": "Red",
+    "last_reviewed": "2026-04-11",
+    "next_action": "2026-04-23",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-03-23",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00067",
+    "account_number": "ECO1000000645",
+    "client_cif": "100000391",
+    "outstanding": 873522.96,
+    "branch": "Upper Hill Branch",
+    "rm": "Caleb Makokha",
+    "risk_score": 67,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 275,
+    "stage": "Red",
+    "last_reviewed": "2026-04-14",
+    "next_action": "2026-04-25",
+    "recommended_action": "Call client immediately",
+    "raised_date": "2026-03-22",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00072",
+    "account_number": "ECO1000000693",
+    "client_cif": "100000422",
+    "outstanding": 1862521.02,
+    "branch": "Nakuru Main Branch",
+    "rm": "Isaac Sheikh",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 1539,
+    "stage": "Red",
+    "last_reviewed": "2026-04-04",
+    "next_action": "2026-04-24",
+    "recommended_action": "Schedule site visit",
+    "raised_date": "2026-03-30",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00079",
+    "account_number": "ECO1000000726",
+    "client_cif": "100000439",
+    "outstanding": 1523521.76,
+    "branch": "Gigiri Branch",
+    "rm": "Emmanuel Omondi",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 890,
+    "stage": "Red",
+    "last_reviewed": "2026-04-07",
+    "next_action": "2026-05-01",
+    "recommended_action": "Call client immediately",
+    "raised_date": "2026-03-28",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00086",
+    "account_number": "ECO1000000749",
+    "client_cif": "100000451",
+    "outstanding": 43509584.49,
+    "branch": "Mombasa Main Branch",
+    "rm": "Rebecca Nasambu",
+    "risk_score": 60,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 300,
+    "stage": "Red",
+    "last_reviewed": "2026-04-12",
+    "next_action": "2026-04-30",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-03-30",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00088",
+    "account_number": "ECO1000000758",
+    "client_cif": "100000456",
+    "outstanding": 31511240.42,
+    "branch": "Upper Hill Branch",
+    "rm": "Kelvin Mutiso",
+    "risk_score": 96,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 831,
+    "stage": "Red",
+    "last_reviewed": "2026-04-13",
+    "next_action": "2026-04-27",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-03-31",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00090",
+    "account_number": "ECO1000000785",
+    "client_cif": "100000474",
+    "outstanding": 1212038.37,
+    "branch": "Machakos Branch",
+    "rm": "Nathan Charo",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 3765,
+    "stage": "Red",
+    "last_reviewed": "2026-04-13",
+    "next_action": "2026-04-21",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-06",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00099",
+    "account_number": "ECO1000000853",
+    "client_cif": "100000512",
+    "outstanding": 13228694.55,
+    "branch": "Industrial Area Branch",
+    "rm": "Margaret Nekesa",
+    "risk_score": 94,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments",
+      "Sector stress"
+    ],
+    "dpd": 592,
+    "stage": "Red",
+    "last_reviewed": "2026-04-11",
+    "next_action": "2026-04-21",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-05",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00102",
+    "account_number": "ECO1000000871",
+    "client_cif": "100000521",
+    "outstanding": 724889.99,
+    "branch": "Nakuru West Branch",
+    "rm": "Daisy Komen",
+    "risk_score": 74,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 456,
+    "stage": "Red",
+    "last_reviewed": "2026-04-18",
+    "next_action": "2026-05-02",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-01",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00103",
+    "account_number": "ECO1000000875",
+    "client_cif": "100000524",
+    "outstanding": 2687088.2,
+    "branch": "Kisumu Main Branch",
+    "rm": "Olive Maina",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments",
+      "Covenant breach"
+    ],
+    "dpd": 1027,
+    "stage": "Red",
+    "last_reviewed": "2026-04-06",
+    "next_action": "2026-04-26",
+    "recommended_action": "Refer to recovery",
+    "raised_date": "2026-04-10",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00104",
+    "account_number": "ECO1000000878",
+    "client_cif": "100000525",
+    "outstanding": 4408090.31,
+    "branch": "Westlands Branch",
+    "rm": "Elijah Nasambu",
+    "risk_score": 100,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 2620,
+    "stage": "Red",
+    "last_reviewed": "2026-04-05",
+    "next_action": "2026-05-02",
+    "recommended_action": "Request additional collateral",
+    "raised_date": "2026-04-18",
+    "status": "Active"
+  },
+  {
+    "id": "EWS00109",
+    "account_number": "ECO1000000920",
+    "client_cif": "100000553",
+    "outstanding": 18018518.91,
+    "branch": "Kisumu Main Branch",
+    "rm": "Georgina Achola",
+    "risk_score": 86,
+    "triggers": [
+      "DPD > 60",
+      "Missed 2 payments"
+    ],
+    "dpd": 756,
+    "stage": "Red",
+    "last_reviewed": "2026-04-17",
+    "next_action": "2026-04-24",
+    "recommended_action": "Restructure facility",
+    "raised_date": "2026-04-17",
+    "status": "Active"
+  }
+]
