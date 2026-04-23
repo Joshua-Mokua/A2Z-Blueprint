@@ -78,7 +78,7 @@ TABLE_USE_DB = {
     "audit_trail":      True,
     "sessions":         False,
     # Tier 2 — Core business
-    "bsc_scores":       False,
+    "bsc_scores":       True,
     "kpi_definitions":  False,
     "targets":          False,
     "pipeline_deals":   True,

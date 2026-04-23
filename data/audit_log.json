@@ -115,5 +115,14 @@
     "module": "",
     "before": "",
     "after": ""
+  },
+  {
+    "ts": "2026-04-23T04:53:58.802467",
+    "user": "william001",
+    "action": "LOGIN",
+    "detail": "Success",
+    "module": "",
+    "before": "",
+    "after": ""
   }
 ]
