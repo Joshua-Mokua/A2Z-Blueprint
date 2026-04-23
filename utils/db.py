@@ -85,6 +85,7 @@ TABLE_USE_DB = {
     "loan_applications":True,
     # Tier 3 — Operational
     "watchlist":        True,
+    "cab":              True,
     "ews_cases":        True,
     "collateral":       False,
     "recoveries":       False,
@@ -98,9 +99,10 @@ TABLE_USE_DB = {
     "vendors":          True,
     "assets":           True,
     "contracts":        True,
-    "workforce":        False,
+    "workforce":        True,
     "disciplinary":     True,
     "projects":         True,
+    "deal_rooms":       True,
     "initiatives":      False,
 }
 
