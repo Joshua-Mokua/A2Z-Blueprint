@@ -46,6 +46,19 @@ def load_cm():
 
 cm_data   = load_cm()
 watchlist = cm_data.get("watchlist", [])
+# Normalise column names and types from PostgreSQL
+from decimal import Decimal as _Dec
+for _w in watchlist:
+    if "npl_days" not in _w and "dpd" in _w:
+        _w["npl_days"] = _w["dpd"]
+    if "branch_name" not in _w and "branch" in _w:
+        _w["branch_name"] = _w["branch"]
+    if "client_name" not in _w and "rm_name" in _w:
+        _w["client_name"] = _w.get("client_name", "")
+    # Convert Decimal to float for all numeric fields
+    for _k, _v in _w.items():
+        if isinstance(_v, _Dec):
+            _w[_k] = float(_v)
 
 if not watchlist:
     st.info("No credit monitoring data. Generate CBS data first.")
@@ -498,7 +511,7 @@ with cm_tabs[6]:
     st.markdown("**IFRS 9 Expected Credit Loss (ECL) Provisions** — staging and provision tracking.")
     import pandas as _pd_ifrs
 
-    _accounts = load_cm()
+    _accounts = load_cm().get("watchlist", [])
     _ifrs_data = []
     for _a in _accounts[:500]:  # cap for performance
         _npl_d = int(_a.get("npl_days",0) or 0)

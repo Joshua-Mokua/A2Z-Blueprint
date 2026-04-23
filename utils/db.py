@@ -84,7 +84,7 @@ TABLE_USE_DB = {
     "pipeline_deals":   True,
     "loan_applications":True,
     # Tier 3 — Operational
-    "watchlist":        False,
+    "watchlist":        True,
     "ews_cases":        True,
     "collateral":       False,
     "recoveries":       False,
