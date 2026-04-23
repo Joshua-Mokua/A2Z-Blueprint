@@ -99,7 +99,7 @@ TABLE_USE_DB = {
     "assets":           False,
     "contracts":        False,
     "workforce":        False,
-    "disciplinary":     False,
+    "disciplinary":     True,
     "projects":         False,
     "initiatives":      False,
 }
