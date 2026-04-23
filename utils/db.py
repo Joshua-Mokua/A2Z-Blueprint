@@ -90,7 +90,7 @@ TABLE_USE_DB = {
     "recoveries":       False,
     "compliance_cases": False,
     "aml_alerts":       True,
-    "rcsa_risks":       False,
+    "rcsa_risks":       True,
     # Tier 4 — Procurement / HR / Projects
     "purchase_requests":False,
     "purchase_orders":  False,
