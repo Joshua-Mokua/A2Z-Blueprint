@@ -100,7 +100,7 @@ TABLE_USE_DB = {
     "contracts":        False,
     "workforce":        False,
     "disciplinary":     True,
-    "projects":         False,
+    "projects":         True,
     "initiatives":      False,
 }
 
