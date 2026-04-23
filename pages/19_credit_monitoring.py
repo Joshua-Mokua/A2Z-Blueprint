@@ -35,6 +35,10 @@ st.markdown(
 # ── Load data ──────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)
 def load_cm():
+    from utils.db import db as _db
+    if _db.table_uses_db("watchlist"):
+        rows = _db.fetch_all("SELECT * FROM watchlist ORDER BY dpd DESC")
+        return {"watchlist": rows, "last_updated": ""}
     p = DATA / "credit_monitoring.json"
     if not p.exists():
         return {"watchlist": [], "last_updated": ""}
@@ -159,14 +163,15 @@ with cm_tabs[1]:
         ["All","Watch","Substandard","Doubtful","Loss"], key="cm_clf")
     stage_filt  = fc2.selectbox("Stage",
         ["All","Stage 1","Stage 2","Stage 3"], key="cm_stage")
+    _regions = sorted(df["region"].dropna().unique().tolist()) if "region" in df.columns else []
     region_filt = fc3.selectbox("Region",
-        ["All"] + sorted(df["region"].dropna().unique().tolist()), key="cm_reg")
+        ["All"] + _regions, key="cm_reg")
     search      = fc4.text_input("Search account / RM", key="cm_search")
 
     mask = pd.Series([True]*len(df))
     if clf_filt   != "All": mask &= df["classification"]==clf_filt
     if stage_filt != "All": mask &= df["stage"]==stage_filt
-    if region_filt!= "All": mask &= df["region"]==region_filt
+    if region_filt!= "All" and "region" in df.columns: mask &= df["region"]==region_filt
     if search.strip():
         s = search.strip().lower()
         mask &= (df["account_number"].str.lower().str.contains(s) |
