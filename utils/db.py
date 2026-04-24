@@ -103,11 +103,11 @@ TABLE_USE_DB = {
     "projects":         True,
     "initiatives":      False,
     # New modules v5.3
-    "partnerships":     True,
-    "referrals":        True,
-    "agent_fraud":      True,
+    "partnerships":     False,
+    "referrals":        False,
+    "agent_fraud":      False,
     "mou_categories":   False,
-    "sponsored_events": True,
+    "sponsored_events": False,
     "deal_rooms":       True,
 }
 

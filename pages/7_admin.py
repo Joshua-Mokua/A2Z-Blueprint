@@ -3311,25 +3311,8 @@ with tabs[16]:
             _rac_full["treasury_config"]["fx_currencies"] = _fx_ccys
             _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
 
+# ── RA Config tab content already rendered in tabs[12] above ────
 with tabs[17]:
-    # ── CONTEXT COMPACT (previously tabs[12] in RA Config) ────────
-    # Keep RA Config content here (moved from tabs[12])
-    st.subheader("📊 Reporting & Analytics Configuration")
-    _ra_cfg_path2 = Path(__file__).parent.parent / "data" / "proposition_config.json"
-    _ra_full_cfg2 = json.loads(_ra_cfg_path2.read_text())
-    _ra_cfg2      = _ra_full_cfg2.get("ra_config", {})
-    st.caption("Analytics module display and access settings.")
-    _r1,_r2,_r3 = st.columns(3)
-    _ra_months2 = _r1.slider("Date range (months)", 3, 24, _ra_cfg2.get("date_range_months",12), key="ra2_months")
-    _ra_names2  = _r2.toggle("Show staff names", _ra_cfg2.get("show_staff_names",True), key="ra2_names")
-    _ra_export2 = _r3.toggle("Allow export",    _ra_cfg2.get("allow_export",True), key="ra2_export")
-    if st.button("💾 Save", key="ra2_save", type="primary"):
-        _ra_full_cfg2["ra_config"]["date_range_months"] = _ra_months2
-        _ra_full_cfg2["ra_config"]["show_staff_names"]  = _ra_names2
-        _ra_full_cfg2["ra_config"]["allow_export"]      = _ra_export2
-        _ra_cfg_path2.write_text(json.dumps(_ra_full_cfg2,indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
-
-with tabs[18]:
     # ── STATEMENT ANALYZER CONFIG ─────────────────────────────────
     st.subheader("🧾 Statement Analyzer Configuration")
     _sa_cfg_path = Path(__file__).parent.parent / "data" / "proposition_config.json"
@@ -3389,9 +3372,26 @@ with tabs[18]:
 | Saving to loan application | Core workflow integration |
         """)
 
-with tabs[19]:
+with tabs[18]:
     st.subheader("System health")
     # ── Database status ─────────────────────────────────────────────
+    # ── FastAPI status ────────────────────────────────────────────
+    try:
+        from utils.api_client import api as _api
+        _api_health = _api.health()
+        if _api_health.get("status") == "healthy":
+            st.success(f"✅ FastAPI backend: running on port 8502 · "
+                      f"DB: {_api_health.get('db','?')} · "
+                      f"Cache keys: {_api_health.get('cache_keys',0)}")
+            if st.button("🗑️ Clear API cache", key="clear_api_cache"):
+                _api.clear_cache()
+                st.success("API cache cleared")
+        else:
+            st.info("ℹ️ FastAPI not running — using direct DB access. "
+                   "Run: python -m utils.api (in a second terminal) for faster performance.")
+    except Exception as _apie:
+        st.info("ℹ️ FastAPI module not available.")
+
     try:
         from utils.db import db as _db
         _db_health = _db.health_check()

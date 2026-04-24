@@ -5903,3 +5903,35 @@ class UserManager:
         return pd.DataFrame(), "No matching staff — check permissions in Admin panel"
 
 # ─── ADMIN PANEL ─────────────────────────────────────────────────────
+
+# ── Performance: cached summary loaders ──────────────────────────
+import streamlit as _st_perf
+
+@_st_perf.cache_data(ttl=300, show_spinner=False)
+def get_bsc_summary_cached(period: str = "Feb 2026"):
+    """Cached BSC summary — refreshes every 5 minutes."""
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("bsc_scores"):
+            rows = _db.fetch_all(
+                "SELECT dept, COUNT(*) as n, ROUND(AVG(final_score)::numeric,2) as avg "
+                "FROM bsc_scores WHERE period=%s GROUP BY dept", (period,))
+            total = sum(r.get("n",0) for r in rows)
+            avg   = sum(float(r.get("avg",0))*r.get("n",1) for r in rows)/max(total,1)
+            return {"by_dept":rows,"total":total,"avg":round(avg,2)}
+    except Exception:
+        pass
+    return {"by_dept":[],"total":0,"avg":0.0}
+
+@_st_perf.cache_data(ttl=60, show_spinner=False)
+def get_pipeline_summary_cached():
+    """Cached pipeline summary — refreshes every minute."""
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("pipeline_deals"):
+            return _db.fetch_all(
+                "SELECT stage, COUNT(*) as deals, SUM(amount) as value "
+                "FROM pipeline_deals GROUP BY stage ORDER BY value DESC")
+    except Exception:
+        pass
+    return []
