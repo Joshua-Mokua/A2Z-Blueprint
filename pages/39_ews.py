@@ -1,4 +1,3 @@
-from collections import defaultdict
 """pages/39_ews.py — Early Warning System.
 Rule-based credit deterioration triggers: missed payments, covenant breach,
 sector stress. Red/Amber/Yellow staging. RM action tracking.

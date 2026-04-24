@@ -4808,17 +4808,6 @@ def audit_log(action: str, username: str, detail: str = "",
         log.append(entry)
         log_file.write_text(json.dumps(log[-2000:], indent=2))
     except: pass
-    # ── PostgreSQL audit trail ────────────────────────────────────────
-    try:
-        from utils.db import db as _db
-        if _db.table_uses_db("audit_trail"):
-            _db.execute(
-                "INSERT INTO audit_trail (username, action, detail, module, before_val, after_val) VALUES (%s, %s, %s, %s, %s, %s)",
-                (username, action, str(detail)[:500], module,
-                 str(before)[:200] if before else "",
-                 str(after)[:200]  if after  else "")
-            )
-    except: pass
 
 # ─── USER MANAGER ────────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════════

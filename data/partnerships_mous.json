@@ -1,0 +1,1772 @@
+[
+  {
+    "id": "MOU0001",
+    "title": "KUSCCO \u2014 Referral Agreement",
+    "partner_name": "UAP Old Mutual",
+    "partner_type": "Retailer",
+    "mou_type": "Referral Agreement",
+    "department": "Bancassurance",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-11-04",
+    "effective_date": "2024-11-04",
+    "expiry_date": "2026-11-04",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 361.01,
+    "referral_revenue_ytd_m": 44.38,
+    "co_brand_income_ytd_m": 11.99,
+    "revenue_share_pct": 7.3,
+    "leads_generated_ytd": 420,
+    "accounts_opened_ytd": 127,
+    "activations_ytd": 34,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/9389",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0001",
+    "next_review_date": "2026-07-11",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 66,
+        "actual": 293
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 12.7,
+        "actual": 38.1
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-11-04",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-28",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-18",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-10"
+  },
+  {
+    "id": "MOU0002",
+    "title": "Naivas Supermarkets \u2014 Agency Agreement",
+    "partner_name": "M-KOPA Solar",
+    "partner_type": "Telco",
+    "mou_type": "Agency Agreement",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "william001",
+    "signed_date": "2025-06-06",
+    "effective_date": "2025-06-06",
+    "expiry_date": "2027-06-06",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 187.78,
+    "referral_revenue_ytd_m": 47.24,
+    "co_brand_income_ytd_m": 26.76,
+    "revenue_share_pct": 11.9,
+    "leads_generated_ytd": 102,
+    "accounts_opened_ytd": 23,
+    "activations_ytd": 30,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/8668",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0002",
+    "next_review_date": "2026-08-25",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 226,
+        "actual": 244
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 27.6,
+        "actual": 31.6
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-06-06",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-06",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-18",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-22"
+  },
+  {
+    "id": "MOU0003",
+    "title": "NHIF \u2014 Referral Agreement",
+    "partner_name": "Kenya Power",
+    "partner_type": "Government",
+    "mou_type": "Referral Agreement",
+    "department": "Trade Finance",
+    "relationship_manager": "thomas003",
+    "signed_date": "2025-05-16",
+    "effective_date": "2025-05-16",
+    "expiry_date": "2026-05-16",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 369.38,
+    "referral_revenue_ytd_m": 24.13,
+    "co_brand_income_ytd_m": 5.6,
+    "revenue_share_pct": 1.9,
+    "leads_generated_ytd": 319,
+    "accounts_opened_ytd": 24,
+    "activations_ytd": 15,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0003",
+    "next_review_date": "2026-10-04",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 245,
+        "actual": 246
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 44.6,
+        "actual": 28.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-05-16",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-01",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-13",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-14"
+  },
+  {
+    "id": "MOU0004",
+    "title": "Kenya Pipeline Company \u2014 Co-branded Product",
+    "partner_name": "Equity Group",
+    "partner_type": "Healthcare",
+    "mou_type": "Co-branded Product",
+    "department": "Bancassurance",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-10-14",
+    "effective_date": "2024-10-14",
+    "expiry_date": "2026-10-14",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 384.11,
+    "referral_revenue_ytd_m": 42.66,
+    "co_brand_income_ytd_m": 4.7,
+    "revenue_share_pct": 14.5,
+    "leads_generated_ytd": 280,
+    "accounts_opened_ytd": 21,
+    "activations_ytd": 32,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0004",
+    "next_review_date": "2026-07-24",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 178,
+        "actual": 287
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 29.0,
+        "actual": 29.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-10-14",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-05-29",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-17",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-12"
+  },
+  {
+    "id": "MOU0005",
+    "title": "Safaricom PLC \u2014 Agency Agreement",
+    "partner_name": "Kenya Revenue Authority",
+    "partner_type": "SACCO",
+    "mou_type": "Agency Agreement",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-05-29",
+    "effective_date": "2024-05-29",
+    "expiry_date": "2027-05-29",
+    "status": "Under Negotiation",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 350.75,
+    "referral_revenue_ytd_m": 30.95,
+    "co_brand_income_ytd_m": 11.23,
+    "revenue_share_pct": 11.3,
+    "leads_generated_ytd": 349,
+    "accounts_opened_ytd": 38,
+    "activations_ytd": 23,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": false,
+    "document_ref": "DOC0005",
+    "next_review_date": "2026-10-02",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 345,
+        "actual": 149
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 35.5,
+        "actual": 20.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-05-29",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-05",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-07",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-15"
+  },
+  {
+    "id": "MOU0006",
+    "title": "Kenya Revenue Authority \u2014 Supply Chain Finance",
+    "partner_name": "Equity Group",
+    "partner_type": "SACCO",
+    "mou_type": "Supply Chain Finance",
+    "department": "Trade Finance",
+    "relationship_manager": "william001",
+    "signed_date": "2026-01-07",
+    "effective_date": "2026-01-07",
+    "expiry_date": "2029-01-06",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 190.4,
+    "referral_revenue_ytd_m": 24.24,
+    "co_brand_income_ytd_m": 25.57,
+    "revenue_share_pct": 5.2,
+    "leads_generated_ytd": 243,
+    "accounts_opened_ytd": 0,
+    "activations_ytd": 9,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/2963",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0006",
+    "next_review_date": "2026-08-15",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 246,
+        "actual": 147
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 29.1,
+        "actual": 1.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2026-01-07",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-23",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-12",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-20"
+  },
+  {
+    "id": "MOU0007",
+    "title": "Naivas Supermarkets \u2014 Revenue Share",
+    "partner_name": "M-KOPA Solar",
+    "partner_type": "Healthcare",
+    "mou_type": "Revenue Share",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-07-19",
+    "effective_date": "2024-07-19",
+    "expiry_date": "2026-07-19",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 4.88,
+    "referral_revenue_ytd_m": 28.36,
+    "co_brand_income_ytd_m": 7.12,
+    "revenue_share_pct": 5.6,
+    "leads_generated_ytd": 278,
+    "accounts_opened_ytd": 167,
+    "activations_ytd": 18,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0007",
+    "next_review_date": "2026-09-04",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 384,
+        "actual": 229
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 48.7,
+        "actual": 22.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-07-19",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-18",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-06-28",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-30"
+  },
+  {
+    "id": "MOU0008",
+    "title": "UAP Old Mutual \u2014 Supply Chain Finance",
+    "partner_name": "Kenya Revenue Authority",
+    "partner_type": "Healthcare",
+    "mou_type": "Supply Chain Finance",
+    "department": "Bancassurance",
+    "relationship_manager": "william001",
+    "signed_date": "2024-12-26",
+    "effective_date": "2024-12-26",
+    "expiry_date": "2027-12-26",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 273.82,
+    "referral_revenue_ytd_m": 44.4,
+    "co_brand_income_ytd_m": 12.27,
+    "revenue_share_pct": 1.0,
+    "leads_generated_ytd": 479,
+    "accounts_opened_ytd": 166,
+    "activations_ytd": 46,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0008",
+    "next_review_date": "2026-06-18",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 140,
+        "actual": 131
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 38.4,
+        "actual": 18.9
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-12-26",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-15",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-24",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-19"
+  },
+  {
+    "id": "MOU0009",
+    "title": "World Bank IFC \u2014 Co-branded Product",
+    "partner_name": "Kenya Power",
+    "partner_type": "Telco",
+    "mou_type": "Co-branded Product",
+    "department": "Trade Finance",
+    "relationship_manager": "william001",
+    "signed_date": "2025-09-03",
+    "effective_date": "2025-09-03",
+    "expiry_date": "2026-09-03",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 228.18,
+    "referral_revenue_ytd_m": 48.62,
+    "co_brand_income_ytd_m": 5.8,
+    "revenue_share_pct": 11.5,
+    "leads_generated_ytd": 380,
+    "accounts_opened_ytd": 37,
+    "activations_ytd": 20,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/9306",
+    "board_approved": true,
+    "legal_reviewed": false,
+    "document_ref": "DOC0009",
+    "next_review_date": "2026-10-15",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 459,
+        "actual": 104
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 28.5,
+        "actual": 27.8
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-09-03",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-28",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-30",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-20"
+  },
+  {
+    "id": "MOU0010",
+    "title": "M-KOPA Solar \u2014 Co-branded Product",
+    "partner_name": "Britam Insurance",
+    "partner_type": "Healthcare",
+    "mou_type": "Co-branded Product",
+    "department": "Trade Finance",
+    "relationship_manager": "william001",
+    "signed_date": "2025-07-28",
+    "effective_date": "2025-07-28",
+    "expiry_date": "2026-07-28",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 167.27,
+    "referral_revenue_ytd_m": 32.96,
+    "co_brand_income_ytd_m": 2.2,
+    "revenue_share_pct": 11.9,
+    "leads_generated_ytd": 421,
+    "accounts_opened_ytd": 187,
+    "activations_ytd": 11,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0010",
+    "next_review_date": "2026-07-04",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 93,
+        "actual": 54
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 9.0,
+        "actual": 32.2
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-07-28",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-13",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-07",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-25"
+  },
+  {
+    "id": "MOU0011",
+    "title": "UAP Old Mutual \u2014 Supply Chain Finance",
+    "partner_name": "NHIF",
+    "partner_type": "Fintech",
+    "mou_type": "Supply Chain Finance",
+    "department": "Retail Banking",
+    "relationship_manager": "robert002",
+    "signed_date": "2025-10-15",
+    "effective_date": "2025-10-15",
+    "expiry_date": "2027-10-15",
+    "status": "Under Negotiation",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 438.22,
+    "referral_revenue_ytd_m": 14.88,
+    "co_brand_income_ytd_m": 20.63,
+    "revenue_share_pct": 3.3,
+    "leads_generated_ytd": 4,
+    "accounts_opened_ytd": 110,
+    "activations_ytd": 11,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0011",
+    "next_review_date": "2026-09-23",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 120,
+        "actual": 171
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 44.1,
+        "actual": 9.1
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-10-15",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-17",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-10-14",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-07"
+  },
+  {
+    "id": "MOU0012",
+    "title": "World Bank IFC \u2014 Revenue Share",
+    "partner_name": "Equity Group",
+    "partner_type": "Insurance",
+    "mou_type": "Revenue Share",
+    "department": "Marketing",
+    "relationship_manager": "thomas003",
+    "signed_date": "2025-08-18",
+    "effective_date": "2025-08-18",
+    "expiry_date": "2027-08-18",
+    "status": "Under Negotiation",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 7.92,
+    "referral_revenue_ytd_m": 47.66,
+    "co_brand_income_ytd_m": 19.57,
+    "revenue_share_pct": 1.7,
+    "leads_generated_ytd": 180,
+    "accounts_opened_ytd": 46,
+    "activations_ytd": 8,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0012",
+    "next_review_date": "2026-10-04",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 187,
+        "actual": 187
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 8.8,
+        "actual": 1.6
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-08-18",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-01",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-06-28",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-15"
+  },
+  {
+    "id": "MOU0013",
+    "title": "Britam Insurance \u2014 Supply Chain Finance",
+    "partner_name": "Kenya Power",
+    "partner_type": "Fintech",
+    "mou_type": "Supply Chain Finance",
+    "department": "Marketing",
+    "relationship_manager": "william001",
+    "signed_date": "2024-07-30",
+    "effective_date": "2024-07-30",
+    "expiry_date": "2025-07-30",
+    "status": "Expired",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 168.08,
+    "referral_revenue_ytd_m": 18.68,
+    "co_brand_income_ytd_m": 19.87,
+    "revenue_share_pct": 6.8,
+    "leads_generated_ytd": 36,
+    "accounts_opened_ytd": 78,
+    "activations_ytd": 39,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0013",
+    "next_review_date": "2026-10-12",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 197,
+        "actual": 78
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 17.7,
+        "actual": 39.6
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-07-30",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-09",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-06-26",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-22"
+  },
+  {
+    "id": "MOU0014",
+    "title": "Kenya Power \u2014 Co-branded Product",
+    "partner_name": "Kenya Bankers Association",
+    "partner_type": "NGO",
+    "mou_type": "Co-branded Product",
+    "department": "Marketing",
+    "relationship_manager": "william001",
+    "signed_date": "2024-07-10",
+    "effective_date": "2024-07-10",
+    "expiry_date": "2026-07-10",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 156.14,
+    "referral_revenue_ytd_m": 19.59,
+    "co_brand_income_ytd_m": 10.47,
+    "revenue_share_pct": 8.2,
+    "leads_generated_ytd": 167,
+    "accounts_opened_ytd": 66,
+    "activations_ytd": 40,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0014",
+    "next_review_date": "2026-06-09",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 154,
+        "actual": 362
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 14.3,
+        "actual": 34.3
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-07-10",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-03",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-23",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-08"
+  },
+  {
+    "id": "MOU0015",
+    "title": "Naivas Supermarkets \u2014 Agency Agreement",
+    "partner_name": "University of Nairobi",
+    "partner_type": "Insurance",
+    "mou_type": "Agency Agreement",
+    "department": "Retail Banking",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-11-29",
+    "effective_date": "2024-11-29",
+    "expiry_date": "2027-11-29",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 316.07,
+    "referral_revenue_ytd_m": 43.92,
+    "co_brand_income_ytd_m": 26.1,
+    "revenue_share_pct": 8.8,
+    "leads_generated_ytd": 23,
+    "accounts_opened_ytd": 153,
+    "activations_ytd": 2,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0015",
+    "next_review_date": "2026-06-18",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 312,
+        "actual": 149
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 39.1,
+        "actual": 19.7
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-11-29",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-06",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-03",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-05"
+  },
+  {
+    "id": "MOU0016",
+    "title": "NHIF \u2014 Referral Agreement",
+    "partner_name": "UAP Old Mutual",
+    "partner_type": "Government",
+    "mou_type": "Referral Agreement",
+    "department": "Retail Banking",
+    "relationship_manager": "robert002",
+    "signed_date": "2025-03-13",
+    "effective_date": "2025-03-13",
+    "expiry_date": "2026-03-13",
+    "status": "Expired",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 259.89,
+    "referral_revenue_ytd_m": 2.74,
+    "co_brand_income_ytd_m": 29.35,
+    "revenue_share_pct": 4.5,
+    "leads_generated_ytd": 103,
+    "accounts_opened_ytd": 83,
+    "activations_ytd": 6,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "CBK/REF/5303",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0016",
+    "next_review_date": "2026-05-31",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 413,
+        "actual": 56
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 45.4,
+        "actual": 24.2
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-03-13",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-16",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-10-12",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-21"
+  },
+  {
+    "id": "MOU0017",
+    "title": "Britam Insurance \u2014 Referral Agreement",
+    "partner_name": "NHIF",
+    "partner_type": "Fintech",
+    "mou_type": "Referral Agreement",
+    "department": "Marketing",
+    "relationship_manager": "robert002",
+    "signed_date": "2024-09-07",
+    "effective_date": "2024-09-07",
+    "expiry_date": "2027-09-07",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 208.26,
+    "referral_revenue_ytd_m": 10.92,
+    "co_brand_income_ytd_m": 7.55,
+    "revenue_share_pct": 5.6,
+    "leads_generated_ytd": 320,
+    "accounts_opened_ytd": 171,
+    "activations_ytd": 42,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0017",
+    "next_review_date": "2026-05-27",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 400,
+        "actual": 22
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 12.6,
+        "actual": 2.1
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-09-07",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-07",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-16",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-18"
+  },
+  {
+    "id": "MOU0018",
+    "title": "Kenya Power \u2014 Revenue Share",
+    "partner_name": "M-KOPA Solar",
+    "partner_type": "University",
+    "mou_type": "Revenue Share",
+    "department": "Retail Banking",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-08-22",
+    "effective_date": "2024-08-22",
+    "expiry_date": "2026-08-22",
+    "status": "Under Negotiation",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 257.72,
+    "referral_revenue_ytd_m": 16.93,
+    "co_brand_income_ytd_m": 25.13,
+    "revenue_share_pct": 10.5,
+    "leads_generated_ytd": 267,
+    "accounts_opened_ytd": 50,
+    "activations_ytd": 45,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/2705",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0018",
+    "next_review_date": "2026-06-26",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 295,
+        "actual": 10
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 16.8,
+        "actual": 0.8
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-08-22",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-26",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-24",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-10"
+  },
+  {
+    "id": "MOU0019",
+    "title": "University of Nairobi \u2014 Agency Agreement",
+    "partner_name": "AAR Healthcare",
+    "partner_type": "SACCO",
+    "mou_type": "Agency Agreement",
+    "department": "Bancassurance",
+    "relationship_manager": "thomas003",
+    "signed_date": "2025-06-16",
+    "effective_date": "2025-06-16",
+    "expiry_date": "2028-06-15",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 353.73,
+    "referral_revenue_ytd_m": 49.99,
+    "co_brand_income_ytd_m": 15.24,
+    "revenue_share_pct": 11.7,
+    "leads_generated_ytd": 370,
+    "accounts_opened_ytd": 50,
+    "activations_ytd": 32,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/2048",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0019",
+    "next_review_date": "2026-09-04",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 302,
+        "actual": 361
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 24.9,
+        "actual": 0.2
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-06-16",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-29",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-16",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-24"
+  },
+  {
+    "id": "MOU0020",
+    "title": "Kenya Revenue Authority \u2014 Joint Marketing",
+    "partner_name": "Kenya Power",
+    "partner_type": "Development Finance",
+    "mou_type": "Joint Marketing",
+    "department": "Marketing",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-08-16",
+    "effective_date": "2024-08-16",
+    "expiry_date": "2026-08-16",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 491.25,
+    "referral_revenue_ytd_m": 38.37,
+    "co_brand_income_ytd_m": 22.85,
+    "revenue_share_pct": 10.8,
+    "leads_generated_ytd": 43,
+    "accounts_opened_ytd": 42,
+    "activations_ytd": 13,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "CBK/REF/2437",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0020",
+    "next_review_date": "2026-09-07",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 142,
+        "actual": 309
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 49.6,
+        "actual": 18.1
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-08-16",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-18",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-12",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-25"
+  },
+  {
+    "id": "MOU0021",
+    "title": "World Bank IFC \u2014 Revenue Share",
+    "partner_name": "Safaricom PLC",
+    "partner_type": "Government",
+    "mou_type": "Revenue Share",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "william001",
+    "signed_date": "2026-01-12",
+    "effective_date": "2026-01-12",
+    "expiry_date": "2029-01-11",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 426.15,
+    "referral_revenue_ytd_m": 41.27,
+    "co_brand_income_ytd_m": 5.1,
+    "revenue_share_pct": 1.1,
+    "leads_generated_ytd": 443,
+    "accounts_opened_ytd": 27,
+    "activations_ytd": 38,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "CBK/REF/4128",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0021",
+    "next_review_date": "2026-08-10",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 438,
+        "actual": 262
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 39.8,
+        "actual": 30.8
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2026-01-12",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-01",
+        "status": "Pending"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-09-21",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-25"
+  },
+  {
+    "id": "MOU0022",
+    "title": "World Bank IFC \u2014 Joint Marketing",
+    "partner_name": "Britam Insurance",
+    "partner_type": "Government",
+    "mou_type": "Joint Marketing",
+    "department": "Marketing",
+    "relationship_manager": "robert002",
+    "signed_date": "2025-03-26",
+    "effective_date": "2025-03-26",
+    "expiry_date": "2028-03-25",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 471.82,
+    "referral_revenue_ytd_m": 9.12,
+    "co_brand_income_ytd_m": 16.8,
+    "revenue_share_pct": 10.5,
+    "leads_generated_ytd": 233,
+    "accounts_opened_ytd": 18,
+    "activations_ytd": 17,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "CBK/REF/9505",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0022",
+    "next_review_date": "2026-10-03",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 69,
+        "actual": 3
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 36.7,
+        "actual": 35.9
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2025-03-26",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-03",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-02",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-28"
+  },
+  {
+    "id": "MOU0023",
+    "title": "KUSCCO \u2014 Joint Marketing",
+    "partner_name": "Kenya Revenue Authority",
+    "partner_type": "NGO",
+    "mou_type": "Joint Marketing",
+    "department": "Marketing",
+    "relationship_manager": "robert002",
+    "signed_date": "2024-10-20",
+    "effective_date": "2024-10-20",
+    "expiry_date": "2025-10-20",
+    "status": "Expired",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 119.44,
+    "referral_revenue_ytd_m": 38.71,
+    "co_brand_income_ytd_m": 26.31,
+    "revenue_share_pct": 2.4,
+    "leads_generated_ytd": 277,
+    "accounts_opened_ytd": 144,
+    "activations_ytd": 14,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "CBK/REF/8090",
+    "board_approved": false,
+    "legal_reviewed": true,
+    "document_ref": "DOC0023",
+    "next_review_date": "2026-08-25",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 237,
+        "actual": 57
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 44.5,
+        "actual": 11.8
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-10-20",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-15",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-18",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-07"
+  },
+  {
+    "id": "MOU0024",
+    "title": "NHIF \u2014 Co-branded Product",
+    "partner_name": "Kenya Bankers Association",
+    "partner_type": "Insurance",
+    "mou_type": "Co-branded Product",
+    "department": "Marketing",
+    "relationship_manager": "robert002",
+    "signed_date": "2024-06-07",
+    "effective_date": "2024-06-07",
+    "expiry_date": "2026-06-07",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 126.41,
+    "referral_revenue_ytd_m": 31.46,
+    "co_brand_income_ytd_m": 25.03,
+    "revenue_share_pct": 9.1,
+    "leads_generated_ytd": 191,
+    "accounts_opened_ytd": 55,
+    "activations_ytd": 16,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0024",
+    "next_review_date": "2026-08-21",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 388,
+        "actual": 231
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 14.8,
+        "actual": 38.9
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-06-07",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-19",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-25",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-13"
+  },
+  {
+    "id": "MOU0025",
+    "title": "NHIF \u2014 Data Sharing",
+    "partner_name": "Naivas Supermarkets",
+    "partner_type": "Fintech",
+    "mou_type": "Data Sharing",
+    "department": "Bancassurance",
+    "relationship_manager": "william001",
+    "signed_date": "2026-02-10",
+    "effective_date": "2026-02-10",
+    "expiry_date": "2029-02-09",
+    "status": "Active",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 412.44,
+    "referral_revenue_ytd_m": 36.15,
+    "co_brand_income_ytd_m": 14.82,
+    "revenue_share_pct": 4.0,
+    "leads_generated_ytd": 329,
+    "accounts_opened_ytd": 55,
+    "activations_ytd": 1,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/9594",
+    "board_approved": true,
+    "legal_reviewed": false,
+    "document_ref": "DOC0025",
+    "next_review_date": "2026-10-03",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 181,
+        "actual": 151
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 46.2,
+        "actual": 28.9
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2026-02-10",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-14",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-17",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-03"
+  },
+  {
+    "id": "MOU0026",
+    "title": "Equity Group \u2014 API Integration",
+    "partner_name": "Naivas Supermarkets",
+    "partner_type": "Real Estate",
+    "mou_type": "API Integration",
+    "department": "Retail Banking",
+    "relationship_manager": "william001",
+    "signed_date": "2024-09-04",
+    "effective_date": "2024-09-04",
+    "expiry_date": "2027-09-04",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 65.4,
+    "referral_revenue_ytd_m": 15.72,
+    "co_brand_income_ytd_m": 26.84,
+    "revenue_share_pct": 4.5,
+    "leads_generated_ytd": 291,
+    "accounts_opened_ytd": 69,
+    "activations_ytd": 50,
+    "cbk_approval_required": true,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0026",
+    "next_review_date": "2026-10-18",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 74,
+        "actual": 215
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 47.0,
+        "actual": 27.0
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-09-04",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-10",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-10-04",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-05"
+  },
+  {
+    "id": "MOU0027",
+    "title": "KUSCCO \u2014 Co-branded Product",
+    "partner_name": "Naivas Supermarkets",
+    "partner_type": "NGO",
+    "mou_type": "Co-branded Product",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "william001",
+    "signed_date": "2024-11-16",
+    "effective_date": "2024-11-16",
+    "expiry_date": "2025-11-16",
+    "status": "Expired",
+    "auto_renew": true,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 321.41,
+    "referral_revenue_ytd_m": 21.19,
+    "co_brand_income_ytd_m": 8.41,
+    "revenue_share_pct": 9.6,
+    "leads_generated_ytd": 387,
+    "accounts_opened_ytd": 154,
+    "activations_ytd": 20,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/1263",
+    "board_approved": false,
+    "legal_reviewed": false,
+    "document_ref": "DOC0027",
+    "next_review_date": "2026-05-30",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 352,
+        "actual": 380
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 34.7,
+        "actual": 35.8
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-11-16",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-15",
+        "status": "Complete"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-08-24",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-03"
+  },
+  {
+    "id": "MOU0028",
+    "title": "Kenya Revenue Authority \u2014 Supply Chain Finance",
+    "partner_name": "NHIF",
+    "partner_type": "Fintech",
+    "mou_type": "Supply Chain Finance",
+    "department": "Bancassurance",
+    "relationship_manager": "william001",
+    "signed_date": "2024-09-26",
+    "effective_date": "2024-09-26",
+    "expiry_date": "2026-09-26",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 15.14,
+    "referral_revenue_ytd_m": 22.75,
+    "co_brand_income_ytd_m": 16.68,
+    "revenue_share_pct": 8.8,
+    "leads_generated_ytd": 140,
+    "accounts_opened_ytd": 179,
+    "activations_ytd": 3,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "CBK/REF/8365",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0028",
+    "next_review_date": "2026-09-09",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 131,
+        "actual": 87
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 26.6,
+        "actual": 38.2
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-09-26",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-04",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-22",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-19"
+  },
+  {
+    "id": "MOU0029",
+    "title": "University of Nairobi \u2014 Supply Chain Finance",
+    "partner_name": "UAP Old Mutual",
+    "partner_type": "SACCO",
+    "mou_type": "Supply Chain Finance",
+    "department": "Commercial & Corporate",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-06-18",
+    "effective_date": "2024-06-18",
+    "expiry_date": "2026-06-18",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 64.43,
+    "referral_revenue_ytd_m": 44.32,
+    "co_brand_income_ytd_m": 0.84,
+    "revenue_share_pct": 12.7,
+    "leads_generated_ytd": 70,
+    "accounts_opened_ytd": 184,
+    "activations_ytd": 48,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": true,
+    "document_ref": "DOC0029",
+    "next_review_date": "2026-05-29",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 459,
+        "actual": 169
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 38.6,
+        "actual": 26.0
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-06-18",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-07-20",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-06-28",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-04-19"
+  },
+  {
+    "id": "MOU0030",
+    "title": "World Bank IFC \u2014 Agency Agreement",
+    "partner_name": "Kenya Pipeline Company",
+    "partner_type": "Healthcare",
+    "mou_type": "Agency Agreement",
+    "department": "Digital Financial Services",
+    "relationship_manager": "thomas003",
+    "signed_date": "2024-05-13",
+    "effective_date": "2024-05-13",
+    "expiry_date": "2026-05-13",
+    "status": "Active",
+    "auto_renew": false,
+    "renewal_notice_days": 90,
+    "deal_value_kes_m": 238.67,
+    "referral_revenue_ytd_m": 14.54,
+    "co_brand_income_ytd_m": 26.58,
+    "revenue_share_pct": 14.9,
+    "leads_generated_ytd": 451,
+    "accounts_opened_ytd": 15,
+    "activations_ytd": 27,
+    "cbk_approval_required": false,
+    "cbk_approval_ref": "",
+    "board_approved": true,
+    "legal_reviewed": false,
+    "document_ref": "DOC0030",
+    "next_review_date": "2026-09-10",
+    "kpis": [
+      {
+        "metric": "Referral accounts",
+        "target": 241,
+        "actual": 193
+      },
+      {
+        "metric": "Revenue yield (KES M)",
+        "target": 9.6,
+        "actual": 2.9
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Signing",
+        "date": "2024-05-13",
+        "status": "Complete"
+      },
+      {
+        "name": "System integration",
+        "date": "2026-06-25",
+        "status": "In Progress"
+      },
+      {
+        "name": "Go-live",
+        "date": "2026-07-01",
+        "status": "Pending"
+      }
+    ],
+    "notes": "",
+    "created_at": "2026-03-28"
+  }
+]

@@ -85,7 +85,6 @@ TABLE_USE_DB = {
     "loan_applications":True,
     # Tier 3 — Operational
     "watchlist":        True,
-    "cab":              True,
     "ews_cases":        True,
     "collateral":       False,
     "recoveries":       False,
@@ -102,8 +101,14 @@ TABLE_USE_DB = {
     "workforce":        True,
     "disciplinary":     True,
     "projects":         True,
-    "deal_rooms":       True,
     "initiatives":      False,
+    # New modules v5.3
+    "partnerships":     True,
+    "referrals":        True,
+    "agent_fraud":      True,
+    "mou_categories":   False,
+    "sponsored_events": True,
+    "deal_rooms":       True,
 }
 
 # ── Connection pool ────────────────────────────────────────────────────────

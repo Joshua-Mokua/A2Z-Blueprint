@@ -1,6 +1,6 @@
 {
   "william001": {
-    "password": "$2b$12$XRGLokDDLPyQyQoOe.w2EeC5egobZ.Fx1WvXa/vvHS9FLaeDWpuAS",
+    "password": "$2b$12$47tiCKcU/NL3U21enAsVH.JaKL08zyGgrcfb0XIZ63fk0HgQ3bn22",
     "full_name": "William Mwanake",
     "role": "Chief Executive & Managing Director",
     "unit": "Head Office",
@@ -28505,7 +28505,7 @@
     "hidden_modules": []
   },
   "admin": {
-    "password": "$2b$12$dYSO6mpJQPib/ReK3CGc0eA6DWXVZloMxytUH5SkMjaHe1kTzGgSm",
+    "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
     "full_name": "System Admin",
     "role": "Admin",
     "unit": "Head Office",

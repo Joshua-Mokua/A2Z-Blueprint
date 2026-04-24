@@ -1,0 +1,317 @@
+{
+  "mou_types": [
+    {
+      "id": "REV_SHARE",
+      "name": "Revenue Share",
+      "icon": "\ud83d\udcb0",
+      "active": true,
+      "description": "Partner earns % of revenue from referred customers"
+    },
+    {
+      "id": "CO_BRAND",
+      "name": "Co-branded Product",
+      "icon": "\ud83c\udfaf",
+      "active": true,
+      "description": "Joint product under both brands"
+    },
+    {
+      "id": "REFERRAL",
+      "name": "Referral Agreement",
+      "icon": "\ud83d\udc65",
+      "active": true,
+      "description": "Partner refers customers, earns referral fee"
+    },
+    {
+      "id": "DATA_SHARE",
+      "name": "Data Sharing MOU",
+      "icon": "\ud83d\udcca",
+      "active": true,
+      "description": "Data exchange for analytics or credit scoring"
+    },
+    {
+      "id": "AGENCY",
+      "name": "Agency Agreement",
+      "icon": "\ud83c\udfea",
+      "active": true,
+      "description": "Partner acts as agent for bank products"
+    },
+    {
+      "id": "SUPPLY_CHAIN",
+      "name": "Supply Chain Finance",
+      "icon": "\ud83d\udd17",
+      "active": true,
+      "description": "Financing along a supply chain or value chain"
+    },
+    {
+      "id": "API_INTEG",
+      "name": "API Integration",
+      "icon": "\u26a1",
+      "active": true,
+      "description": "Technical API-level product integration"
+    },
+    {
+      "id": "JOINT_MKT",
+      "name": "Joint Marketing",
+      "icon": "\ud83d\udce3",
+      "active": true,
+      "description": "Co-marketing campaigns and brand activation"
+    }
+  ],
+  "partner_types": [
+    {
+      "id": "FINTECH",
+      "name": "Fintech",
+      "icon": "\ud83d\udcbb"
+    },
+    {
+      "id": "TELCO",
+      "name": "Telco / MNO",
+      "icon": "\ud83d\udcf1"
+    },
+    {
+      "id": "INSURER",
+      "name": "Insurance Company",
+      "icon": "\ud83d\udee1\ufe0f"
+    },
+    {
+      "id": "NGO",
+      "name": "NGO / Development",
+      "icon": "\ud83c\udf0d"
+    },
+    {
+      "id": "GOVT",
+      "name": "Government / Parastatal",
+      "icon": "\ud83c\udfdb\ufe0f"
+    },
+    {
+      "id": "SACCO",
+      "name": "SACCO / MFI",
+      "icon": "\ud83e\udd1d"
+    },
+    {
+      "id": "RETAIL",
+      "name": "Retailer / FMCG",
+      "icon": "\ud83d\uded2"
+    },
+    {
+      "id": "UNIV",
+      "name": "University / College",
+      "icon": "\ud83c\udf93"
+    },
+    {
+      "id": "DFI",
+      "name": "Development Finance",
+      "icon": "\ud83c\udfe6"
+    },
+    {
+      "id": "REALESTATE",
+      "name": "Real Estate",
+      "icon": "\ud83c\udfe2"
+    },
+    {
+      "id": "HEALTH",
+      "name": "Healthcare",
+      "icon": "\ud83c\udfe5"
+    },
+    {
+      "id": "AGRI",
+      "name": "Agribusiness",
+      "icon": "\ud83c\udf3e"
+    },
+    {
+      "id": "CHURCH",
+      "name": "Church / Religious",
+      "icon": "\u26ea"
+    },
+    {
+      "id": "SACCOS",
+      "name": "SACCO Umbrella",
+      "icon": "\ud83c\udfd7\ufe0f"
+    },
+    {
+      "id": "CORP",
+      "name": "Corporate Employer",
+      "icon": "\ud83d\udcbc"
+    }
+  ],
+  "event_categories": [
+    {
+      "id": "SPORTS",
+      "name": "Sports Sponsorship",
+      "icon": "\u26bd",
+      "active": true,
+      "target_metric": "brand_impressions"
+    },
+    {
+      "id": "CSR",
+      "name": "CSR / Community",
+      "icon": "\ud83c\udf31",
+      "active": true,
+      "target_metric": "beneficiaries_reached"
+    },
+    {
+      "id": "TRADE_FAIR",
+      "name": "Trade Fair / Expo",
+      "icon": "\ud83c\udfaa",
+      "active": true,
+      "target_metric": "leads_generated"
+    },
+    {
+      "id": "ROADSHOW",
+      "name": "Branch Roadshow",
+      "icon": "\ud83d\ude8c",
+      "active": true,
+      "target_metric": "accounts_opened"
+    },
+    {
+      "id": "DIGITAL",
+      "name": "Digital Campaign",
+      "icon": "\ud83d\udcf2",
+      "active": true,
+      "target_metric": "app_downloads"
+    },
+    {
+      "id": "CORPORATE",
+      "name": "Corporate Activation",
+      "icon": "\ud83c\udfe2",
+      "active": true,
+      "target_metric": "payroll_accounts"
+    },
+    {
+      "id": "FINANCIAL_LITERACY",
+      "name": "Financial Literacy",
+      "icon": "\ud83d\udcda",
+      "active": true,
+      "target_metric": "participants"
+    },
+    {
+      "id": "GOVT_PROG",
+      "name": "Government Programme",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "active": true,
+      "target_metric": "disbursements_kes"
+    }
+  ],
+  "referral_sources": [
+    {
+      "id": "STAFF",
+      "name": "Staff Referral",
+      "fee_kes": 500,
+      "active": true
+    },
+    {
+      "id": "AGENT",
+      "name": "Agent Referral",
+      "fee_kes": 300,
+      "active": true
+    },
+    {
+      "id": "CUSTOMER",
+      "name": "Customer Referral",
+      "fee_kes": 200,
+      "active": true
+    },
+    {
+      "id": "MOU",
+      "name": "MOU Partner Referral",
+      "fee_kes": 0,
+      "active": true,
+      "note": "Fee defined in MOU terms"
+    },
+    {
+      "id": "DIGITAL",
+      "name": "Digital / App",
+      "fee_kes": 0,
+      "active": true
+    },
+    {
+      "id": "BRANCH",
+      "name": "Branch Walk-in",
+      "fee_kes": 0,
+      "active": true
+    },
+    {
+      "id": "SOCIAL",
+      "name": "Social Media",
+      "fee_kes": 0,
+      "active": true
+    },
+    {
+      "id": "CORP_HR",
+      "name": "Corporate HR",
+      "fee_kes": 150,
+      "active": true
+    },
+    {
+      "id": "CHAMA",
+      "name": "Chama / Group",
+      "fee_kes": 100,
+      "active": true
+    },
+    {
+      "id": "ESTATE",
+      "name": "Estate Agent",
+      "fee_kes": 2500,
+      "active": true,
+      "note": "For mortgage referrals only"
+    }
+  ],
+  "beyond_banking_products": [
+    {
+      "id": "INSURANCE",
+      "name": "Bancassurance",
+      "icon": "\ud83d\udee1\ufe0f",
+      "partner": "Britam/UAP",
+      "commission_pct": 10
+    },
+    {
+      "id": "INVESTMENT",
+      "name": "Investment Products",
+      "icon": "\ud83d\udcc8",
+      "partner": "CIC/ICEA",
+      "commission_pct": 1.5
+    },
+    {
+      "id": "PENSION",
+      "name": "Pension / NSSF",
+      "icon": "\ud83c\udfd6\ufe0f",
+      "partner": "NSSF",
+      "commission_pct": 0
+    },
+    {
+      "id": "MOBILE_LN",
+      "name": "Mobile Loans",
+      "icon": "\ud83d\udcf1",
+      "partner": "M-KOPA/Tala",
+      "commission_pct": 2
+    },
+    {
+      "id": "SOLAR",
+      "name": "Solar / Green Finance",
+      "icon": "\u2600\ufe0f",
+      "partner": "M-KOPA",
+      "commission_pct": 3
+    },
+    {
+      "id": "EDUC_FIN",
+      "name": "Education Finance",
+      "icon": "\ud83c\udf93",
+      "partner": "HELB",
+      "commission_pct": 0
+    },
+    {
+      "id": "HEALTH_FIN",
+      "name": "Health Finance",
+      "icon": "\ud83c\udfe5",
+      "partner": "AAR/NHIF",
+      "commission_pct": 2
+    },
+    {
+      "id": "SACCO_LINK",
+      "name": "SACCO Linkage",
+      "icon": "\ud83e\udd1d",
+      "partner": "KUSCCO",
+      "commission_pct": 0.5
+    }
+  ]
+}

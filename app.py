@@ -832,6 +832,8 @@ _retail_grp = _dg([
     _pg("pages/38_nps.py",              "NPS / Voice of Cust", "⭐", "nps"),
     _pg("pages/45_crosssell.py",        "Cross-sell Intel",    "🔁", "crosssell"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
+    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
 ])
 
 # Commercial & Corporate
@@ -847,6 +849,7 @@ _comm_grp = _dg([
     _pg("pages/27_propositions.py",     "Propositions",       "🎯", "propositions"),
     _pg("pages/57_deal_room.py",      "Deal Room",            "🤝", "deal_room"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
 ])
 
 # Credit
@@ -906,6 +909,7 @@ _risk_grp = _dg([
     _pg("pages/54_rcsa.py",           "Risk Register (RCSA)", "🛡️", "rcsa"),
     _pg("pages/55_aml.py",            "AML Monitoring",       "🔍", "aml_monitoring"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+_pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
 ])
 
 # Legal
@@ -976,6 +980,8 @@ _audit_grp = _dg([
     _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
     _pg("pages/64_vendors.py",          "Vendor Management",    "🤝", "vendor_management"),
     _pg("pages/65_contracts.py",        "Contracts Register",   "📄", "contracts"),
+_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
+    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
 ])
 
 # Executive
@@ -1007,6 +1013,8 @@ _pg("pages/62_p2p.py",             "Procure-to-Pay",       "🛒", "p2p"),
     _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
     _pg("pages/64_vendors.py",         "Vendor Management",    "🤝", "vendor_management"),
     _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
+_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
+    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
 ])
 
 
@@ -1065,6 +1073,7 @@ _agn_grp = _dg([
     _pg("pages/51_agency_banking.py",   "Agent Network",      "🏪", "agency_banking"),
     _pg("pages/47_digital_channels.py", "Digital Channels",   "📱", "digital_channels"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+_pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
 ])
 
 # Admin

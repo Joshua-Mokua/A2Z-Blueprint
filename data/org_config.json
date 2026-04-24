@@ -2773,6 +2773,33 @@
       "icon": "\ud83d\udcc4",
       "active": true,
       "universal": false
+    },
+    {
+      "key": "partnerships",
+      "name": "Partnerships & MOUs",
+      "page": "66_partnerships.py",
+      "icon": "\ud83e\udd1d",
+      "active": true,
+      "universal": false,
+      "description": "MOUs, referrals, sponsored events, beyond banking, revenue yield tracking"
+    },
+    {
+      "key": "fraud_detection",
+      "name": "Agent Fraud Detection",
+      "page": "67_fraud.py",
+      "icon": "\ud83d\udd0e",
+      "active": true,
+      "universal": false,
+      "description": "Transaction splitting detection, velocity alerts, agent commission anomalies"
+    },
+    {
+      "key": "sponsored_events",
+      "name": "Sponsored Events",
+      "page": "66_partnerships.py",
+      "icon": "\ud83c\udfaa",
+      "active": true,
+      "universal": false,
+      "description": "Event tracking, ROI, penetration \u2014 tab within Partnerships module"
     }
   ],
   "dept_module_assignments": {
@@ -2793,7 +2820,9 @@
       "crosssell",
       "customer360",
       "statement_analyzer",
-      "projects"
+      "projects",
+      "partnerships",
+      "fraud_detection"
     ],
     "commercial": [
       "perform",
@@ -2809,7 +2838,8 @@
       "customer360",
       "statement_analyzer",
       "projects",
-      "deal_room"
+      "deal_room",
+      "partnerships"
     ],
     "trade_fin": [
       "perform",
@@ -2853,7 +2883,8 @@
       "ifrs9",
       "projects",
       "rcsa",
-      "aml_monitoring"
+      "aml_monitoring",
+      "fraud_detection"
     ],
     "legal": [
       "perform",
@@ -2928,14 +2959,16 @@
       "export",
       "projects",
       "p2p",
-      "asset_management"
+      "asset_management",
+      "fraud_detection"
     ],
     "marketing": [
       "perform",
       "campaigns",
       "competitor",
       "propositions",
-      "projects"
+      "projects",
+      "partnerships"
     ],
     "bnc": [
       "perform",
@@ -2987,7 +3020,9 @@
       "p2p",
       "asset_management",
       "vendor_management",
-      "contracts"
+      "contracts",
+      "partnerships",
+      "fraud_detection"
     ],
     "support": [
       "perform",
@@ -3040,7 +3075,12 @@
       "p2p",
       "asset_management",
       "vendor_management",
-      "contracts"
+      "contracts",
+      "partnerships",
+      "fraud_detection"
+    ],
+    "agn": [
+      "fraud_detection"
     ]
   },
   "thresholds": {
@@ -3112,7 +3152,15 @@
     "invoice_payment_sla_days": 30,
     "top_up_min_clean_months": 6,
     "top_up_max_utilisation_pct": 90,
-    "renewal_notice_days": 90
+    "renewal_notice_days": 90,
+    "agent_structuring_threshold_kes": 10000,
+    "agent_velocity_daily_limit": 20,
+    "agent_commission_threshold_kes": 100,
+    "mou_expiry_warning_days": 90,
+    "referral_conversion_target_pct": 50,
+    "event_roi_target_pct": 100,
+    "event_min_penetration_pct": 5,
+    "beyond_banking_annual_target_m": 50
   },
   "module_config": {},
   "regions": [

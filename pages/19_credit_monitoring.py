@@ -35,10 +35,6 @@ st.markdown(
 # ── Load data ──────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)
 def load_cm():
-    from utils.db import db as _db
-    if _db.table_uses_db("watchlist"):
-        rows = _db.fetch_all("SELECT * FROM watchlist ORDER BY dpd DESC")
-        return {"watchlist": rows, "last_updated": ""}
     p = DATA / "credit_monitoring.json"
     if not p.exists():
         return {"watchlist": [], "last_updated": ""}
@@ -46,19 +42,6 @@ def load_cm():
 
 cm_data   = load_cm()
 watchlist = cm_data.get("watchlist", [])
-# Normalise column names and types from PostgreSQL
-from decimal import Decimal as _Dec
-for _w in watchlist:
-    if "npl_days" not in _w and "dpd" in _w:
-        _w["npl_days"] = _w["dpd"]
-    if "branch_name" not in _w and "branch" in _w:
-        _w["branch_name"] = _w["branch"]
-    if "client_name" not in _w and "rm_name" in _w:
-        _w["client_name"] = _w.get("client_name", "")
-    # Convert Decimal to float for all numeric fields
-    for _k, _v in _w.items():
-        if isinstance(_v, _Dec):
-            _w[_k] = float(_v)
 
 if not watchlist:
     st.info("No credit monitoring data. Generate CBS data first.")
@@ -176,15 +159,14 @@ with cm_tabs[1]:
         ["All","Watch","Substandard","Doubtful","Loss"], key="cm_clf")
     stage_filt  = fc2.selectbox("Stage",
         ["All","Stage 1","Stage 2","Stage 3"], key="cm_stage")
-    _regions = sorted(df["region"].dropna().unique().tolist()) if "region" in df.columns else []
     region_filt = fc3.selectbox("Region",
-        ["All"] + _regions, key="cm_reg")
+        ["All"] + sorted(df["region"].dropna().unique().tolist()), key="cm_reg")
     search      = fc4.text_input("Search account / RM", key="cm_search")
 
     mask = pd.Series([True]*len(df))
     if clf_filt   != "All": mask &= df["classification"]==clf_filt
     if stage_filt != "All": mask &= df["stage"]==stage_filt
-    if region_filt!= "All" and "region" in df.columns: mask &= df["region"]==region_filt
+    if region_filt!= "All": mask &= df["region"]==region_filt
     if search.strip():
         s = search.strip().lower()
         mask &= (df["account_number"].str.lower().str.contains(s) |
@@ -511,7 +493,7 @@ with cm_tabs[6]:
     st.markdown("**IFRS 9 Expected Credit Loss (ECL) Provisions** — staging and provision tracking.")
     import pandas as _pd_ifrs
 
-    _accounts = load_cm().get("watchlist", [])
+    _accounts = load_cm()
     _ifrs_data = []
     for _a in _accounts[:500]:  # cap for performance
         _npl_d = int(_a.get("npl_days",0) or 0)

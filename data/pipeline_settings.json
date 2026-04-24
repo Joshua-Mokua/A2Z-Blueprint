@@ -233,6 +233,110 @@
       "avg_tap_days": 21,
       "docs_required": "Full financial review, viability assessment, security review",
       "requires_cco_approval": true
+    },
+    {
+      "category": "Partnership / MOU",
+      "description": "Strategic partnerships, MOU agreements, co-branded products, revenue share",
+      "stages": [
+        "Prospecting",
+        "Engagement",
+        "MOU Drafting",
+        "Legal Review",
+        "Signing",
+        "Active",
+        "Expired",
+        "Terminated"
+      ],
+      "avg_tap_days": 60,
+      "docs_required": "MOU document, board approval, legal sign-off, KYC of partner organisation",
+      "tracks_yield": true,
+      "yield_fields": [
+        "referral_revenue_m",
+        "co_brand_income_m",
+        "revenue_share_pct"
+      ]
+    },
+    {
+      "category": "Customer Referral",
+      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
+      "stages": [
+        "Referral Received",
+        "Contacted",
+        "Qualified",
+        "Converted",
+        "Closed-Won",
+        "Closed-Lost"
+      ],
+      "avg_tap_days": 14,
+      "docs_required": "Referral form, referral source details, KYC",
+      "tracks_yield": true,
+      "yield_fields": [
+        "referral_fee_kes",
+        "referral_source",
+        "referee_converted"
+      ]
+    },
+    {
+      "category": "Sponsored Event",
+      "description": "Bank-sponsored activations, sports events, CSR, trade fairs, roadshows",
+      "stages": [
+        "Proposal",
+        "Approved",
+        "Planning",
+        "Active",
+        "Post-Event Review",
+        "Closed"
+      ],
+      "avg_tap_days": 45,
+      "docs_required": "Event proposal, budget approval, sponsorship agreement",
+      "tracks_yield": true,
+      "yield_fields": [
+        "sponsorship_cost_kes",
+        "leads_generated",
+        "accounts_opened",
+        "media_value_kes"
+      ]
+    },
+    {
+      "category": "Beyond Banking",
+      "description": "Non-loan products: insurance cross-sell, investments, SACCO linkages, mobile money",
+      "stages": [
+        "Identified",
+        "Pitched",
+        "In Progress",
+        "Converted",
+        "Active",
+        "Lapsed"
+      ],
+      "avg_tap_days": 21,
+      "docs_required": "Product application, partner agreement, customer consent",
+      "tracks_yield": true,
+      "yield_fields": [
+        "product_type",
+        "premium_or_aum_kes",
+        "commission_kes"
+      ]
+    },
+    {
+      "category": "Retailer Finance",
+      "description": "LPO financing, supply chain finance, distributor credit, trade receivables",
+      "stages": [
+        "Prospecting",
+        "LPO/Invoice Received",
+        "Credit Review",
+        "Approval",
+        "Disbursed",
+        "Repaid",
+        "Closed"
+      ],
+      "avg_tap_days": 7,
+      "docs_required": "LPO or invoice, buyer confirmation, supplier KYC",
+      "tracks_yield": true,
+      "yield_fields": [
+        "lpo_value_kes",
+        "discount_rate_pct",
+        "tenor_days"
+      ]
     }
   ],
   "topup_probability_map": {
