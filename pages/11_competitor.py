@@ -43,10 +43,10 @@ with tabs[0]:
     st.markdown(f"**Kenya banking sector — {data.get('as_at',str(today))}**")
     st.markdown(f"CBK Rate: **{data.get('cbk_rate',13)}%**")
     
-    bank_rows = [{"Bank":bdata["full_name"][:28],"Tier":bdata["tier"],
-                   "Assets (B)":bdata["assets_kes_b"],"Loans (B)":bdata["loans_kes_b"],
-                   "Deposits (B)":bdata["deposits_kes_b"],"NPL%":bdata["npl_pct"],
-                   "CAR%":bdata["car_pct"],"NIM%":bdata["nim_pct"],"ROE%":bdata["roe_pct"],
+    bank_rows = [{"Bank":bdata.get("full_name", "")[:28],"Tier":bdata.get("tier", ""),
+                   "Assets (B)":bdata.get("assets_kes_b", 0),"Loans (B)":bdata.get("loans_kes_b", 0),
+                   "Deposits (B)":bdata.get("deposits_kes_b", 0),"NPL%":bdata.get("npl_pct", 0),
+                   "CAR%":bdata["car_pct"],"NIM%":bdata.get("nim_pct", 0),"ROE%":bdata.get("roe_pct", 0),
                    "Branches":bdata["branches"]}
                   for bank, bdata in sorted(banks.items(), key=lambda x:-x[1]["assets_kes_b"])]
     df_banks = pd.DataFrame(bank_rows)

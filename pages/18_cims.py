@@ -446,8 +446,8 @@ class CIMSManager:
                 t["allocated_at"]      = datetime.now().isoformat()
                 t["allocation_note"]   = "Auto-assigned (round-robin, leave-aware)"
                 if not t.get("first_response_at"):
-                    t["first_response_at"] = t["allocated_at"]
-                t["audit_trail"].append({
+                    t["first_response_at"] = t.get("allocated_at", "")
+                t.setdefault("audit_trail", []).append({
                     "action": "Auto-allocated",
                     "by":     "SYSTEM",
                     "at":     datetime.now().isoformat(),
@@ -464,7 +464,7 @@ class CIMSManager:
                 t["allocated_to_code"] = new_staff_code
                 t["allocated_to_name"] = new_staff_name
                 t["status"]            = "Allocated"
-                t["audit_trail"].append({
+                t.setdefault("audit_trail", []).append({
                     "action": f"Rerouted from {old_name}",
                     "by":     by,
                     "at":     datetime.now().isoformat(),
@@ -516,7 +516,7 @@ class CIMSManager:
                 t["allocation_note"]   = note
                 if not t.get("first_response_at"):
                     t["first_response_at"] = now.isoformat()
-                t["audit_trail"].append({
+                t.setdefault("audit_trail", []).append({
                     "action": "Allocated",
                     "by":     by,
                     "at":     now.isoformat(),
@@ -543,7 +543,7 @@ class CIMSManager:
                     due_dt  = datetime.fromisoformat(t["due_at"][:19])
                     t["breached"]    = now > due_dt
                     t["resolution_notes"] = note
-                t["audit_trail"].append({
+                t.setdefault("audit_trail", []).append({
                     "action": f"Status → {new_status}",
                     "by":     by,
                     "at":     now.isoformat(),
@@ -558,7 +558,7 @@ class CIMSManager:
             if t["id"] == ticket_id:
                 t["escalation_level"] = t.get("escalation_level", 0) + 1
                 t["status"] = "Escalated"
-                t["audit_trail"].append({
+                t.setdefault("audit_trail", []).append({
                     "action": "Escalated",
                     "by": by,
                     "at": datetime.now().isoformat(),

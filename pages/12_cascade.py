@@ -490,7 +490,7 @@ st.markdown(
 tl = casc.get_global_timeline(period)
 if tl:
     ta = casc.time_remaining_analysis(period)
-    days_rem = ta["days_remaining"]
+    days_rem = ta.get("days_remaining", 0)
     clr = "var(--brand-primary,#006B3F)" if days_rem and days_rem>14 else ("#F5A623" if days_rem and days_rem>0 else "#E24B4A")
     msg = (f"⏰ Cascade end: {tl['cascade_end_date']} · "
            f"{'🔴 Overdue' if ta['is_overdue'] else f'{days_rem}d remaining'}")
@@ -566,9 +566,9 @@ if _tab_visible_bank_targets:
 
         for lvl in mgr_levels:
             ex = existing_levels.get(lvl,{})
-            default_conf = (_safe_date(ex["confirm_by"])
+            default_conf = (_safe_date(ex.get("confirm_by", ""))
                             if ex.get("confirm_by") else today+_dt.timedelta(days=5))
-            default_casc = (_safe_date(ex["cascade_by"])
+            default_casc = (_safe_date(ex.get("cascade_by", ""))
                             if ex.get("cascade_by") else today+_dt.timedelta(days=12))
             lc1,lc2,lc3 = st.columns([2,1,1])
             lc1.markdown(f"<div style='padding:8px 0;font-size:12px;font-weight:600'>{lvl}</div>",
@@ -636,8 +636,8 @@ if _tab_visible_bank_targets:
 
         for kpi in kpis_p:
             existing = casc.get_bank_target(kpi, t_period)
-            cur_tgt  = existing["target"]     if existing else 0.0
-            cur_buf  = existing["buffer_pct"] if existing else 0.0
+            cur_tgt  = existing.get("target", 0.0)  if existing else 0.0
+            cur_buf  = existing.get("buffer_pct", 0.0) if existing else 0.0
             is_fix   = kpi in fixed_kpis; pct_kpi = is_pct(kpi)
 
             kpi_rows = df_proc[df_proc["KPI"]==kpi] if not df_proc.empty else pd.DataFrame()
@@ -2292,8 +2292,8 @@ if _tab_visible_my_targets:
     my_dl = casc.get_cascade_deadline(my_code, period, my_name_l)
     if my_dl:
         today_d  = _dt.date.today()
-        conf_due = _safe_date(my_dl["confirm_by"])
-        casc_due = _safe_date(my_dl["cascade_by"])
+        conf_due = _safe_date(my_dl.get("confirm_by") or my_dl.get("locked_at",""))
+        casc_due = _safe_date(my_dl.get("cascade_by") or my_dl.get("locked_at",""))
         confirmed= my_dl.get("confirmed",False)
         cascaded = my_dl.get("cascaded",False)
         dl_score = casc.deadline_compliance_score(my_code, period)
@@ -2832,9 +2832,9 @@ if _tab_visible_coverage:
                 name=nr["Staff Name"].values[0] if len(nr) else sc
                 dl_rows.append({
                     "Staff":name,
-                    "Confirm by":dl["confirm_by"],
+                    "Confirm by":dl.get("confirm_by", ""),
                     "Confirmed":"✅" if dl["confirmed"] else ("🔴" if dl["conf_overdue"] else "⏳"),
-                    "Cascade by":dl["cascade_by"],
+                    "Cascade by":dl.get("cascade_by", ""),
                     "Cascaded":"✅" if dl["cascaded"] else ("🔴" if dl["casc_overdue"] else "⏳"),
                     "Score":f"{dl['score']:.0f}/100",
                     "Locked":"🔒" if casc.targets_locked(dl["staff_code"],period) else "—",

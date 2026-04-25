@@ -119,7 +119,7 @@ class CampaignManager:
         today = str(date.today())
         return [c for c in self.campaigns
                 if c["status"]=="Active"
-                and c["start_date"]<=today<=c["end_date"]]
+                and c.get("start_date","")<=today<=c.get("end_date","9999-12-31")]
 
     def campaign_progress(self, camp_id: str):
         c = next((x for x in self.campaigns if x["id"]==camp_id), None)

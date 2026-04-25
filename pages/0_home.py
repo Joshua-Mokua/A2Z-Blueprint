@@ -185,7 +185,7 @@ if _prop_tag_home:
         _pcfg_h = _phj.loads((_php(__file__).parent.parent/"data"/"proposition_config.json").read_text())
         _pperf_h= _phj.loads((_php(__file__).parent.parent/"data"/"proposition_performance.json").read_text())
         _ph_prop = _pperf_h.get(_prop_tag_home,{})
-        _ph_cfg  = _pcfg_h["propositions"].get(_prop_tag_home,{})
+        _ph_cfg  = _pcfg_h.get("propositions", {}).get(_prop_tag_home,{})
         _ph_score= _ph_prop.get("proposition_score",0)
         _ph_color= _ph_cfg.get("color","#006B3F")
         _ph_icon = _ph_cfg.get("icon","🎯")

@@ -38,8 +38,8 @@ if _prop_tag_pg:
     try:
         import json as _pfj; from pathlib import Path as _pfp
         _pc2 = _pfj.loads((_pfp(__file__).parent.parent/"data"/"proposition_config.json").read_text())
-        _pn  = _pc2["propositions"].get(_prop_tag_pg,{}).get("name",_prop_tag_pg)
-        _pi  = _pc2["propositions"].get(_prop_tag_pg,{}).get("icon","🎯")
+        _pn  = _pc2.get("propositions", {}).get(_prop_tag_pg,{}).get("name",_prop_tag_pg)
+        _pi  = _pc2.get("propositions", {}).get(_prop_tag_pg,{}).get("icon","🎯")
         st.info(f"{_pi} **{_pn} view** — {len(visible)} tagged records")
     except Exception: pass
 

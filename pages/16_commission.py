@@ -84,11 +84,11 @@ def compute_commission(kpi, actual, target, remark):
         return 0.0
     comm = 0.0
     for tier in tiers:
-        if tier["min_pct"] <= pct < tier["max_pct"]:
+        if tier.get("min_pct", 0) <= pct < tier.get("max_pct", 0):
             if "per_unit" in tier:
-                comm = actual * tier["per_unit"]
+                comm = actual * tier.get("per_unit", 0)
             else:
-                comm = actual * tier["rate"]
+                comm = actual * tier.get("rate", 0)
             break
     # BSC performance multiplier
     mult = BONUS_MULTIPLIERS.get(remark, 1.0)

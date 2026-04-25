@@ -159,7 +159,7 @@ class SLAManager:
                 t["resolution"]  = resolution
                 t["status"]      = "Resolved"
                 try:
-                    due = datetime.fromisoformat(t["due_at"])
+                    due = datetime.fromisoformat(t["due_at"]) if t.get("due_at") else datetime.now()
                     t["breached"] = now > due
                 except: t["breached"] = False
                 t["resolved_by"] = resolved_by
@@ -172,7 +172,7 @@ class SLAManager:
         open_t = [t for t in self.tickets if t["status"]=="Open"]
         for t in open_t:
             try:
-                due = datetime.fromisoformat(t["due_at"])
+                due = datetime.fromisoformat(t["due_at"]) if t.get("due_at") else datetime.now()
                 t["_overdue"] = now > due
                 t["_hours_remaining"] = round((due-now).total_seconds()/3600, 1)
             except:

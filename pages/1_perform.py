@@ -343,10 +343,10 @@ def render_bsc_scorecard(staff_df, df_kpi):
             _pcfg_bsc = _pj2.loads((_pp2(__file__).parent.parent/"data"/"proposition_config.json").read_text())
             _pperf_bsc= _pj2.loads((_pp2(__file__).parent.parent/"data"/"proposition_performance.json").read_text())
             _pdata = _pperf_bsc.get(_prop_tag_bsc, {})
-            _pname = _pcfg_bsc["propositions"].get(_prop_tag_bsc,{}).get("name","")
-            _picon = _pcfg_bsc["propositions"].get(_prop_tag_bsc,{}).get("icon","🎯")
+            _pname = _pcfg_bsc.get("propositions", {}).get(_prop_tag_bsc,{}).get("name","")
+            _picon = _pcfg_bsc.get("propositions", {}).get(_prop_tag_bsc,{}).get("icon","🎯")
             _pscore= _pdata.get("proposition_score", 0)
-            _pcolor= _pcfg_bsc["propositions"].get(_prop_tag_bsc,{}).get("color","#006B3F")
+            _pcolor= _pcfg_bsc.get("propositions", {}).get(_prop_tag_bsc,{}).get("color","#006B3F")
             st.markdown(
                 f"<div style='background:{_pcolor}10;border:1.5px solid {_pcolor}40;"
                 f"border-radius:10px;padding:10px 16px;margin-bottom:12px;"

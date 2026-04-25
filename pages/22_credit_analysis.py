@@ -95,7 +95,7 @@ with tabs[0]:
     filt_st   = lf2.selectbox("Status",["All"]+list(STATUS_LABEL.values()), key="ca_st")
 
     if filt_lane != "All":
-        queue = [a for a in queue if a["swim_lane"] == filt_lane]
+        queue = [a for a in queue if a.get("swim_lane", "") == filt_lane]
     if filt_st != "All":
         rev   = {v:k for k,v in STATUS_LABEL.items()}
         queue = [a for a in queue if a["status"] == rev.get(filt_st,"")]
@@ -241,7 +241,7 @@ with tabs[2]:
             dec = a.get("decision") or {}
             rows.append({
                 "ID": a["id"], "Client": a["client_name"][:28],
-                "Product": a["product"][:20], "Lane": a["swim_lane"],
+                "Product": a["product"][:20], "Lane": a.get("swim_lane", ""),
                 "Amount (KES M)": round(a["amount"]/1e6,1),
                 "Verdict": dec.get("verdict","").upper(),
                 "Authority": dec.get("authority",""),
@@ -273,7 +273,7 @@ with tabs[3]:
         # By swim lane
         st.markdown("**Performance by swim lane:**")
         for lane in ["Express","Standard","Complex"]:
-            lane_d = [a for a in decided if a["swim_lane"]==lane]
+            lane_d = [a for a in decided if a.get("swim_lane", "")==lane]
             if not lane_d: continue
             ld_app = sum(1 for a in lane_d if a["status"] in ("approved","credit_admin","disbursed"))
             ld_dec = sum(1 for a in lane_d if a["status"]=="declined")

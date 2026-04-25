@@ -46,9 +46,9 @@ watchlist = cm_data.get("watchlist", [])
 from decimal import Decimal as _Dec
 for _w in watchlist:
     if "npl_days" not in _w and "dpd" in _w:
-        _w["npl_days"] = _w["dpd"]
+        _w["npl_days"] = _w.get("dpd", _w.get("npl_days", 0))
     if "branch_name" not in _w and "branch" in _w:
-        _w["branch_name"] = _w["branch"]
+        _w["branch_name"] = _w.get("branch", _w.get("branch_name", ""))
     if "client_name" not in _w and "rm_name" in _w:
         _w["client_name"] = _w.get("client_name", "")
     for _k, _v in list(_w.items()):

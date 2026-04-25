@@ -357,10 +357,10 @@ with tabs[3]:
             xs_rows = []
             for l in val_xs:
                 xs_rows.append({
-                    "Staff":      l["staff_name"],
-                    "Unit":       l["unit"],
-                    "Role":       l["role"],
-                    "Date":       l["log_date"],
+                    "Staff":      l.get("staff_name", ""),
+                    "Unit":       l.get("unit", ""),
+                    "Role":       l.get("role", ""),
+                    "Date":       l.get("log_date", ""),
                     "Cross-sells":int(l.get("cross_sell_success",0) or 0),
                     "Accounts":   int(l.get("accounts_opened",0) or 0),
                     "DFS":        int(l.get("dfs_registrations",0) or 0),

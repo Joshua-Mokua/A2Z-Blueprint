@@ -90,8 +90,8 @@ with tabs[0]:
 # ── TAB 2: SBU P&L ─────────────────────────────────────────────────
 with tabs[1]:
     st.markdown("**P&L by Strategic Business Unit:**")
-    sbu_rows = [{"SBU":sbu,"Income (B)":v["income_b"],"OpEx (B)":v["opex_b"],
-                  "CIR%":v["cir"],"PBT (B)":v["pbt_b"],"Loans (B)":v.get("loans_b",0),
+    sbu_rows = [{"SBU":sbu,"Income (B)":v.get("income_b", 0),"OpEx (B)":v.get("opex_b", 0),
+                  "CIR%":v.get("cir", 0),"PBT (B)":v.get("pbt_b", 0),"Loans (B)":v.get("loans_b",0),
                   "Deposits (B)":v.get("deposits_b",0),"Staff":v.get("staff",0)}
                  for sbu,v in sbus.items()]
     df_sbu = pd.DataFrame(sbu_rows)
@@ -99,7 +99,7 @@ with tabs[1]:
     
     # Highlight inefficient SBUs
     for sbu, v in sbus.items():
-        if v["cir"] > 80:
+        if v.get("cir", 0) > 80:
             st.warning(f"⚠️ **{sbu}**: CIR {v['cir']:.0f}% — above 80% threshold. Review cost structure.")
         elif v.get("pbt_b",0) < 0:
             st.error(f"🔴 **{sbu}**: Loss-making (PBT KES {v['pbt_b']:.1f}B). Action required.")

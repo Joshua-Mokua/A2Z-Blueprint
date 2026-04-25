@@ -2859,7 +2859,19 @@ class CascadeManager:
                             direct = self.cascade.get(f"deadline|{to_code}|{period}")
                             if direct:
                                 return direct
-        return None
+        # Return safe defaults — never crash pages that expect these keys
+        from datetime import timedelta as _td
+        _today = datetime.now()
+        return {
+            "staff_code":    staff_code,
+            "period":        period,
+            "confirm_by":    (_today + _td(days=30)).strftime("%Y-%m-%d"),
+            "cascade_by":    (_today + _td(days=14)).strftime("%Y-%m-%d"),
+            "confirmed":     False,
+            "cascaded":      False,
+            "targets_locked":False,
+            "locked_at":     "",
+        }
 
     def mark_confirmed(self, staff_code: str, period: str):
         dl = self.cascade.get(f"deadline|{staff_code}|{period}")
