@@ -1872,7 +1872,10 @@
       "K068",
       "K026",
       "K036",
-      "K017"
+      "K017",
+      "K109",
+      "K110",
+      "K111"
     ],
     "Infrastructure Engineer": [
       "K066",
@@ -1888,7 +1891,9 @@
       "K068",
       "K036",
       "K039",
-      "K017"
+      "K017",
+      "K109",
+      "K110"
     ],
     "Application Support": [
       "K066",
@@ -1969,7 +1974,10 @@
       "K069",
       "K070",
       "K071",
-      "K024"
+      "K024",
+      "K109",
+      "K066",
+      "K017"
     ],
     "Mobile Banking Officer": [
       "K069",
@@ -2185,6 +2193,40 @@
       "K068",
       "K070",
       "K069",
+      "K017",
+      "K109",
+      "K110",
+      "K111"
+    ],
+    "Integration Engineer": [
+      "K109",
+      "K110",
+      "K111",
+      "K039",
+      "K017"
+    ],
+    "FLEXCUBE Administrator": [
+      "K109",
+      "K110",
+      "K111",
+      "K066",
+      "K039",
+      "K017"
+    ],
+    "Application Support Lead": [
+      "K109",
+      "K110",
+      "K039",
+      "K066",
+      "K067",
+      "K017"
+    ],
+    "API Manager": [
+      "K109",
+      "K110",
+      "K111",
+      "K066",
+      "K039",
       "K017"
     ]
   },
@@ -3471,6 +3513,39 @@
       "source": "esg_climate",
       "auto_calc": "esg_score",
       "description": "Bank's overall ESG score (out of 100)"
+    },
+    {
+      "id": "K109",
+      "name": "FLEXCUBE Service Uptime (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "flexcube",
+      "auto_calc": "flexcube_uptime_pct",
+      "description": "% of FLEXCUBE/Apigee/JMS services up in the last 24 hours"
+    },
+    {
+      "id": "K110",
+      "name": "Integration Errors 24h (count)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "lower_better",
+      "source": "flexcube",
+      "auto_calc": "flexcube_errors_24h",
+      "description": "Number of FLEXCUBE integration errors in last 24 hours"
+    },
+    {
+      "id": "K111",
+      "name": "Event Sync Lag (minutes)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "minutes",
+      "direction": "lower_better",
+      "source": "flexcube",
+      "auto_calc": "flexcube_event_lag_min",
+      "description": "Minutes since last FLEXCUBE event was processed"
     }
   ]
 }

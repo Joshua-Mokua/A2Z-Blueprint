@@ -1,0 +1,103 @@
+{
+  "mode": "synthetic",
+  "endpoints": {
+    "apigee_base": "https://api.ecobank.co.ke/v1",
+    "fcubs_rest": "https://api.ecobank.co.ke/flexcube",
+    "obdx_rest": "https://api.ecobank.co.ke/obdx/v1",
+    "fcubs_soap_wsdl": "https://fcubs.ecobank.co.ke:8001/FCUBSAccService/FCUBSAccService?wsdl",
+    "jms_broker": "tcp://mq.ecobank.co.ke:61616"
+  },
+  "auth": {
+    "method": "oauth2",
+    "client_id": "${FLEXCUBE_CLIENT_ID}",
+    "client_secret_ref": "${FLEXCUBE_CLIENT_SECRET}",
+    "token_url": "https://api.ecobank.co.ke/oauth2/token",
+    "scopes": [
+      "accounts.read",
+      "loans.read",
+      "payments.read",
+      "customers.read",
+      "portfolio.read"
+    ],
+    "mtls_enabled": true
+  },
+  "jms_topics": {
+    "loan_disbursed": "ecobank.fcubs.loans.disbursed",
+    "account_opened": "ecobank.fcubs.accounts.opened",
+    "account_closed": "ecobank.fcubs.accounts.closed",
+    "transaction_posted": "ecobank.fcubs.txns.posted",
+    "aml_alert": "ecobank.fcubs.aml.alert",
+    "kyc_updated": "ecobank.fcubs.kyc.updated",
+    "card_issued": "ecobank.fcubs.cards.issued",
+    "card_blocked": "ecobank.fcubs.cards.blocked",
+    "merchant_onboarded": "ecobank.fcubs.merchants.onboarded"
+  },
+  "iso_standards": {
+    "iso20022_enabled": true,
+    "iso20022_messages": [
+      "pacs.008",
+      "pacs.002",
+      "camt.053",
+      "camt.054",
+      "pain.001",
+      "pain.002"
+    ],
+    "iso8583_enabled": true,
+    "iso8583_version": "1987",
+    "swift_enabled": true,
+    "swift_messages": [
+      "MT103",
+      "MT202",
+      "MT199",
+      "MT900",
+      "MT910",
+      "MT940",
+      "MT950"
+    ]
+  },
+  "timeouts": {
+    "rest_seconds": 5,
+    "soap_seconds": 10,
+    "batch_seconds": 300
+  },
+  "rate_limits": {
+    "rest_per_minute": 600,
+    "burst_per_second": 20
+  },
+  "fcubs_version": "14.7",
+  "obdx_version": "21.1",
+  "deployment": "on-prem-eti-ghana",
+  "environments": [
+    "dev",
+    "sit",
+    "uat",
+    "prod"
+  ],
+  "active_environment": "dev",
+  "data_residency": "Kenya (primary), Ghana (DR)",
+  "encryption": {
+    "in_transit": "TLS1.2+",
+    "at_rest": "TDE-AES256",
+    "keys": "HSM"
+  },
+  "compliance": {
+    "pci_dss": true,
+    "data_protection_act_2019": true,
+    "cbk_aml_kyc": true,
+    "iso_27001": true,
+    "iso_22301": true
+  },
+  "discovery_questions_pending": [
+    "Confirm FLEXCUBE Universal Banking version (assumed 14.7)",
+    "Confirm OBDX is deployed (assumed 21.1)",
+    "Confirm deployment topology \u2014 on-prem vs Apigee-fronted",
+    "Confirm whether read-only DB replica is available for reporting",
+    "Confirm JMS broker (Oracle WebLogic JMS vs IBM MQ vs ActiveMQ)",
+    "Confirm Apigee instance ownership and tenancy",
+    "Confirm sandbox/SIT credentials availability",
+    "Confirm SLA for batch ETL window (overnight cutoff)",
+    "Confirm DR/RTO/RPO targets",
+    "Confirm AML system (Oracle Mantas confirmed?)"
+  ],
+  "last_updated": "2026-04-25T19:49:39.800864Z"
+}

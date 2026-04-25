@@ -6353,6 +6353,50 @@ def compute_operational_kpi_actuals(username: str, period: str = "2026") -> dict
                                "detail":f"{adopt_rate:.0f}% customers on digital channels"}
     except Exception: pass
 
+    # ── K109/K110/K111: FLEXCUBE Integration Health (auto-computed) ──
+    try:
+        from utils import flexcube_adapter as _fcx
+        _h = _fcx.health_check()
+        _services = _h.get("services",{})
+        _n = len(_services)
+        _up = sum(1 for _s in _services.values() if "Up" in str(_s.get("status","")) or "Mocked" in str(_s.get("status","")))
+        _uptime = round(_up/max(_n,1)*100, 1)
+        actuals["K109"] = {"actual": _uptime, "source": "flexcube",
+                           "detail": f"{_up}/{_n} services up"}
+
+        # K110 — error count from event journal
+        _evt_log = DATA / "flexcube_events.json"
+        _err_24h = 0
+        if _evt_log.exists():
+            try:
+                _events = json.loads(_evt_log.read_text(encoding="utf-8"))
+                from datetime import datetime as _dt
+                _cutoff = _dt.utcnow() - _td(hours=24)
+                for _e in _events:
+                    try:
+                        _t = _dt.fromisoformat(_e["timestamp"].replace("Z",""))
+                        if _t > _cutoff and "error" in (_e.get("payload",{}) or {}):
+                            _err_24h += 1
+                    except: pass
+            except: pass
+        actuals["K110"] = {"actual": _err_24h, "source": "flexcube",
+                           "detail": "errors in last 24h"}
+
+        # K111 — minutes since last event
+        _lag_min = 0
+        if _evt_log.exists():
+            try:
+                _events = json.loads(_evt_log.read_text(encoding="utf-8"))
+                if _events:
+                    from datetime import datetime as _dt
+                    _last = _dt.fromisoformat(_events[0]["timestamp"].replace("Z",""))
+                    _lag_min = round((_dt.utcnow() - _last).total_seconds()/60, 1)
+            except: pass
+        actuals["K111"] = {"actual": _lag_min, "source": "flexcube",
+                           "detail": "minutes since last event"}
+    except Exception:
+        pass
+
     return actuals
 
 

@@ -935,5 +935,59 @@
       "_risk_grp",
       "_exec_grp"
     ]
+  },
+  "flexcube_integration": {
+    "hardcoded": {
+      "core_banking_system": "Oracle FLEXCUBE Universal Banking",
+      "vendor": "Oracle",
+      "primary_integration_styles": [
+        "REST",
+        "SOAP",
+        "JMS",
+        "ISO 20022",
+        "ISO 8583",
+        "SWIFT MT/MX"
+      ],
+      "deployment_model": "ETI Group Centralised",
+      "data_residency": "Kenya primary, Ghana DR",
+      "regulator": "Central Bank of Kenya",
+      "compliance": [
+        "PCI DSS",
+        "DPA Kenya 2019",
+        "ISO 27001",
+        "ISO 22301"
+      ],
+      "encryption_in_transit": "TLS 1.2+",
+      "encryption_at_rest": "TDE AES-256",
+      "key_management": "HSM"
+    },
+    "configurable": {
+      "mode_options": [
+        "synthetic",
+        "mock",
+        "live"
+      ],
+      "default_mode": "synthetic",
+      "rest_timeout_seconds": 5,
+      "soap_timeout_seconds": 10,
+      "batch_timeout_seconds": 300,
+      "rate_limit_per_minute": 600,
+      "burst_per_second": 20,
+      "uptime_target_pct": 99.5,
+      "max_errors_24h": 5,
+      "max_event_lag_minutes": 5,
+      "alert_email": "integration@ecobank.co.ke",
+      "auto_failover_to_synthetic": true
+    },
+    "bsc_kpis": [
+      "K109",
+      "K110",
+      "K111"
+    ],
+    "dept": "IT & Digital",
+    "nav_groups": [
+      "_it_grp",
+      "_exec_grp"
+    ]
   }
 }

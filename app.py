@@ -981,6 +981,7 @@ _it_grp = _dg([
 _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
     _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
     _pg("pages/72_observability.py",    "Observability",     "📡", "observability"),
+    _pg("pages/86_flexcube.py",        "FLEXCUBE Integration","🔌", "flexcube_integration"),
 ])
 
 # Bancassurance / Marketing / Misc
@@ -1042,6 +1043,7 @@ _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships
     _pg("pages/83_strategy.py",       "Strategic Init.",    "🎯", "strategic_initiatives"),
     _pg("pages/84_board.py",          "Board Papers",       "📋", "board_papers"),
     _pg("pages/85_esg.py",            "ESG & Climate",      "🌱", "esg_climate"),
+    _pg("pages/86_flexcube.py",        "FLEXCUBE Integration","🔌", "flexcube_integration"),
 ])
 
 

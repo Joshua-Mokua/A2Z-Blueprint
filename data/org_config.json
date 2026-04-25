@@ -2944,6 +2944,14 @@
       "icon": "\ud83c\udf31",
       "active": true,
       "dept": "Risk & Compliance"
+    },
+    {
+      "key": "flexcube_integration",
+      "name": "FLEXCUBE Integration",
+      "page": "86_flexcube.py",
+      "icon": "\ud83d\udd0c",
+      "active": true,
+      "dept": "IT & Digital"
     }
   ],
   "dept_module_assignments": {

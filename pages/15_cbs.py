@@ -8,8 +8,13 @@ from datetime import date, timedelta
 from collections import defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
+from utils import flexcube_adapter as fcx
 
 require_access("cbs")
+
+# ── FLEXCUBE Integration Status ──────────────────────────────────
+_fcx_mode = fcx.get_mode()
+_fcx_badge = fcx.get_status_badge()
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -43,6 +48,8 @@ def _load_base():
 
 acct_idx, cif_idx, cust_intel, apps, pipeline = _load_base()
 
+
+st.caption(f"📡 Data source: {_fcx_badge} | Mode: **{_fcx_mode.upper()}**")
 tabs = st.tabs(["🔍 Account Lookup","👤 CIF / Customer View","📊 Portfolio Summary","📋 Batch Search"])
 
 with tabs[0]:

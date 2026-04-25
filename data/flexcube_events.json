@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2026-04-25T19:52:39.031425Z",
+    "topic": "ecobank.fcubs.loans.disbursed",
+    "payload": {
+      "loan_id": "L9999",
+      "amount": 50000
+    },
+    "mode": "synthetic"
+  }
+]
