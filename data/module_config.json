@@ -1,0 +1,519 @@
+{
+  "clearing": {
+    "hardcoded": {
+      "systems": [
+        "RTGS",
+        "EFT",
+        "SWIFT",
+        "PESALINK",
+        "CHEQUE",
+        "MOBILE MONEY",
+        "CARD"
+      ],
+      "currencies": [
+        "KES",
+        "USD",
+        "EUR",
+        "GBP",
+        "UGX",
+        "TZS",
+        "RWF"
+      ],
+      "cbk_reporting_required": true,
+      "same_day_cutoff_time": "15:00",
+      "settlement_cycle_days": 1
+    },
+    "configurable": {
+      "fail_rate_threshold_pct": 5.0,
+      "recon_sla_hours": 24,
+      "escalation_email": "ops@ecobank.co.ke",
+      "nostro_accounts": [
+        {
+          "id": "NOSTRO01",
+          "name": "Standard Chartered USD",
+          "currency": "USD"
+        },
+        {
+          "id": "NOSTRO02",
+          "name": "Absa EUR",
+          "currency": "EUR"
+        },
+        {
+          "id": "NOSTRO03",
+          "name": "Stanbic GBP",
+          "currency": "GBP"
+        }
+      ],
+      "batch_windows": [
+        "08:00",
+        "11:00",
+        "14:00",
+        "16:00"
+      ],
+      "auto_reconcile": true,
+      "discrepancy_alert_kes": 1000
+    },
+    "bsc_kpis": [
+      "K055",
+      "K056",
+      "K057"
+    ],
+    "dept": "Operations",
+    "nav_groups": [
+      "_ops_grp",
+      "_finance_grp",
+      "_exec_grp"
+    ]
+  },
+  "consent": {
+    "hardcoded": {
+      "legal_bases": [
+        "Consent",
+        "Contractual",
+        "Legitimate Interest",
+        "Legal Obligation"
+      ],
+      "cbk_categories": [
+        "Personal Data",
+        "Financial Data",
+        "Sensitive Data"
+      ],
+      "gdpr_applicable": false,
+      "dpa_kenya_applicable": true,
+      "withdrawal_must_be_immediate": true
+    },
+    "configurable": {
+      "consent_types": [
+        {
+          "id": "MARKETING",
+          "name": "Marketing Communications",
+          "icon": "\ud83d\udce2",
+          "active": true,
+          "expiry_days": 365
+        },
+        {
+          "id": "DATA_SHARE",
+          "name": "Data Sharing",
+          "icon": "\ud83d\udcca",
+          "active": true,
+          "expiry_days": 730
+        },
+        {
+          "id": "CREDIT_SCORE",
+          "name": "Credit Scoring",
+          "icon": "\ud83d\udcc8",
+          "active": true,
+          "expiry_days": 1095
+        },
+        {
+          "id": "THIRD_PARTY",
+          "name": "Third-party Access",
+          "icon": "\ud83d\udd17",
+          "active": true,
+          "expiry_days": 365
+        },
+        {
+          "id": "BIOMETRIC",
+          "name": "Biometric Data",
+          "icon": "\ud83d\udc41\ufe0f",
+          "active": true,
+          "expiry_days": 730
+        },
+        {
+          "id": "LOCATION",
+          "name": "Location Tracking",
+          "icon": "\ud83d\udccd",
+          "active": false,
+          "expiry_days": 180
+        },
+        {
+          "id": "RESEARCH",
+          "name": "Research Surveys",
+          "icon": "\ud83d\udd2c",
+          "active": true,
+          "expiry_days": 90
+        }
+      ],
+      "data_processors": [
+        {
+          "id": "INTERNAL",
+          "name": "Internal (Ecobank)",
+          "requires_dpa": false
+        },
+        {
+          "id": "CRB",
+          "name": "Credit Reference Bureau",
+          "requires_dpa": true
+        },
+        {
+          "id": "SAFARICOM",
+          "name": "Safaricom PLC",
+          "requires_dpa": true
+        },
+        {
+          "id": "CREDIT_BUREAU",
+          "name": "TransUnion/Creditinfo",
+          "requires_dpa": true
+        }
+      ],
+      "expiry_warning_days": 30,
+      "auto_renew_enabled": false,
+      "capture_target_pct": 70
+    },
+    "bsc_kpis": [
+      "K058",
+      "K059"
+    ],
+    "dept": "Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_ops_grp",
+      "_exec_grp"
+    ]
+  },
+  "retailer_finance": {
+    "hardcoded": {
+      "facility_types": [
+        "LPO Finance",
+        "Invoice Discounting",
+        "Supply Chain Finance",
+        "Distributor Credit"
+      ],
+      "supply_chains": [
+        "FMCG",
+        "Electronics",
+        "Pharmaceuticals",
+        "Construction",
+        "Agriculture",
+        "Clothing",
+        "Petroleum"
+      ],
+      "max_tenor_days": 180,
+      "cbk_reportable": true
+    },
+    "configurable": {
+      "interest_rate_floor_pct": 12.0,
+      "interest_rate_ceiling_pct": 20.0,
+      "max_buyer_exposure_m": 500.0,
+      "tat_target_days": 3,
+      "npl_threshold_pct": 5.0,
+      "collateral_cover_ratio": 1.25,
+      "approved_buyers": [
+        {
+          "id": "NAIVAS",
+          "name": "Naivas Supermarkets",
+          "limit_m": 100,
+          "active": true
+        },
+        {
+          "id": "CARREFOUR",
+          "name": "Carrefour Kenya",
+          "limit_m": 200,
+          "active": true
+        },
+        {
+          "id": "QUICKMART",
+          "name": "QuickMart",
+          "limit_m": 50,
+          "active": true
+        },
+        {
+          "id": "TMALL",
+          "name": "T-Mall",
+          "limit_m": 30,
+          "active": true
+        }
+      ],
+      "approved_sectors": [
+        "Retail",
+        "Food & Beverage",
+        "Pharmaceuticals",
+        "Agriculture"
+      ]
+    },
+    "bsc_kpis": [
+      "K060",
+      "K061",
+      "K062"
+    ],
+    "dept": "Commercial & Corporate",
+    "nav_groups": [
+      "_comm_grp",
+      "_credit_grp",
+      "_tf_grp",
+      "_exec_grp"
+    ]
+  },
+  "bid_bond": {
+    "hardcoded": {
+      "bond_types": [
+        "Bid Bond",
+        "Performance Bond",
+        "Advance Payment Guarantee",
+        "Retention Bond",
+        "Customs Bond"
+      ],
+      "cbk_reporting_threshold_m": 50.0,
+      "max_single_exposure_m": 1000.0,
+      "board_approval_threshold_m": 500.0
+    },
+    "configurable": {
+      "commission_rates": {
+        "Bid Bond": 0.75,
+        "Performance Bond": 1.5,
+        "Advance Payment Guarantee": 2.0,
+        "Retention Bond": 1.0,
+        "Customs Bond": 0.5
+      },
+      "max_tenor_days": 365,
+      "auto_renewal_allowed": false,
+      "collateral_types": [
+        {
+          "id": "CASH",
+          "name": "Cash Margin",
+          "cover_ratio": 1.0
+        },
+        {
+          "id": "PROP",
+          "name": "Property Charge",
+          "cover_ratio": 1.5
+        },
+        {
+          "id": "DEB",
+          "name": "Debenture",
+          "cover_ratio": 1.25
+        },
+        {
+          "id": "CROSS",
+          "name": "Crosscharge",
+          "cover_ratio": 1.0
+        }
+      ],
+      "approved_beneficiaries": [
+        "Government of Kenya",
+        "Kenya Power",
+        "Kenya Railways",
+        "Kenya Pipeline",
+        "KPLC",
+        "Kenya Ports Authority",
+        "Nairobi City County",
+        "Ministry of Works"
+      ],
+      "call_rate_threshold_pct": 2.0
+    },
+    "bsc_kpis": [
+      "K063",
+      "K064",
+      "K065"
+    ],
+    "dept": "Trade Finance",
+    "nav_groups": [
+      "_tf_grp",
+      "_comm_grp",
+      "_exec_grp"
+    ]
+  },
+  "observability": {
+    "hardcoded": {
+      "critical_systems": [
+        "Core Banking (FlexCube)",
+        "Mobile Banking App",
+        "RTGS Gateway",
+        "ATM Network",
+        "SWIFT Interface",
+        "Card Management System"
+      ],
+      "alert_levels": [
+        "OK",
+        "WARN",
+        "CRIT"
+      ],
+      "metric_types": [
+        "Availability",
+        "Response Time",
+        "Error Rate",
+        "Throughput",
+        "CPU Usage",
+        "Memory Usage",
+        "Queue Depth",
+        "Transaction Volume"
+      ]
+    },
+    "configurable": {
+      "sla_uptime_target_pct": 99.5,
+      "warn_threshold_pct": 70.0,
+      "crit_threshold_pct": 90.0,
+      "alert_email": "it_ops@ecobank.co.ke",
+      "mttr_target_hours": 4.0,
+      "incident_target_count": 5,
+      "monitoring_systems": [
+        {
+          "id": "CBS",
+          "name": "Core Banking (FlexCube)",
+          "critical": true,
+          "team": "Core Banking Team"
+        },
+        {
+          "id": "MOBILE",
+          "name": "Mobile Banking App",
+          "critical": true,
+          "team": "Digital Team"
+        },
+        {
+          "id": "RTGS",
+          "name": "RTGS Gateway",
+          "critical": true,
+          "team": "IT Operations"
+        },
+        {
+          "id": "ATM",
+          "name": "ATM Network",
+          "critical": true,
+          "team": "IT Operations"
+        },
+        {
+          "id": "API",
+          "name": "API Gateway",
+          "critical": false,
+          "team": "Digital Team"
+        },
+        {
+          "id": "MIS",
+          "name": "Streamlit MIS",
+          "critical": false,
+          "team": "IT Operations"
+        }
+      ],
+      "check_interval_minutes": 5,
+      "retention_days": 90
+    },
+    "bsc_kpis": [
+      "K066",
+      "K067",
+      "K068"
+    ],
+    "dept": "IT & Digital",
+    "nav_groups": [
+      "_it_grp",
+      "_ops_grp",
+      "_exec_grp"
+    ]
+  },
+  "channels": {
+    "hardcoded": {
+      "channel_types": [
+        "Physical",
+        "Digital"
+      ],
+      "digital_channels": [
+        "Mobile Banking",
+        "Internet Banking",
+        "USSD",
+        "WhatsApp Banking",
+        "Card (Visa/MC)"
+      ],
+      "physical_channels": [
+        "Branch Network",
+        "ATM Network",
+        "Agency Banking"
+      ]
+    },
+    "configurable": {
+      "sla_uptime_target_pct": 99.5,
+      "digital_adoption_target_pct": 40.0,
+      "txn_growth_target_pct": 20.0,
+      "complaint_threshold": 50,
+      "channels": [
+        {
+          "id": "BRANCH",
+          "name": "Branch Network",
+          "type": "Physical",
+          "active": true,
+          "sla": 99.0
+        },
+        {
+          "id": "ATM",
+          "name": "ATM Network",
+          "type": "Physical",
+          "active": true,
+          "sla": 99.5
+        },
+        {
+          "id": "MOBILE",
+          "name": "Mobile Banking",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.9
+        },
+        {
+          "id": "INTERNET",
+          "name": "Internet Banking",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.5
+        },
+        {
+          "id": "USSD",
+          "name": "USSD",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.0
+        },
+        {
+          "id": "AGENCY",
+          "name": "Agency Banking",
+          "type": "Physical",
+          "active": true,
+          "sla": 98.0
+        },
+        {
+          "id": "CC",
+          "name": "Contact Centre",
+          "type": "Physical",
+          "active": true,
+          "sla": 99.0
+        },
+        {
+          "id": "WHATSAPP",
+          "name": "WhatsApp Banking",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.0
+        },
+        {
+          "id": "PESALINK",
+          "name": "PesaLink",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.5
+        },
+        {
+          "id": "SWIFT",
+          "name": "SWIFT",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.9
+        },
+        {
+          "id": "CARD",
+          "name": "Card (Visa/MC)",
+          "type": "Digital",
+          "active": true,
+          "sla": 99.5
+        }
+      ]
+    },
+    "bsc_kpis": [
+      "K069",
+      "K070",
+      "K071"
+    ],
+    "dept": "Digital Financial Services",
+    "nav_groups": [
+      "_dfs_grp",
+      "_it_grp",
+      "_ops_grp",
+      "_exec_grp"
+    ]
+  }
+}

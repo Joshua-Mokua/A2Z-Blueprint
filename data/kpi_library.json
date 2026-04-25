@@ -803,7 +803,10 @@
       "K005",
       "K016",
       "K019",
-      "K035"
+      "K035",
+      "K055",
+      "K056",
+      "K057"
     ],
     "Head of Procurement": [
       "K034",
@@ -1164,7 +1167,13 @@
       "K011",
       "K013",
       "K016",
-      "K019"
+      "K019",
+      "K055",
+      "K056",
+      "K057",
+      "K039",
+      "K015",
+      "K017"
     ],
     "Collections and Recoveries Officer": [
       "INIT_STATUS",
@@ -1423,7 +1432,11 @@
       "K011",
       "K003",
       "K016",
-      "K019"
+      "K019",
+      "K063",
+      "K064",
+      "K045",
+      "K017"
     ],
     "Trade Finance Operations Officer": [
       "K022",
@@ -1733,6 +1746,139 @@
       "K037",
       "K039",
       "K017"
+    ],
+    "Settlement Officer": [
+      "K055",
+      "K056",
+      "K057",
+      "K015",
+      "K016",
+      "K017"
+    ],
+    "Reconciliation Manager": [
+      "K057",
+      "K055",
+      "K056",
+      "K034",
+      "K036",
+      "K017"
+    ],
+    "Data Protection Officer": [
+      "K058",
+      "K059",
+      "K014",
+      "K015",
+      "K036",
+      "K017"
+    ],
+    "Compliance Manager": [
+      "K058",
+      "K059",
+      "K014",
+      "K015",
+      "K049",
+      "K036",
+      "K017"
+    ],
+    "Retailer Finance Manager": [
+      "K060",
+      "K061",
+      "K062",
+      "K063",
+      "K041",
+      "K036",
+      "K017"
+    ],
+    "Retailer Finance Officer": [
+      "K060",
+      "K061",
+      "K045",
+      "K041",
+      "K017"
+    ],
+    "Supply Chain Finance RM": [
+      "K060",
+      "K061",
+      "K062",
+      "K041",
+      "K042",
+      "K017"
+    ],
+    "Trade Finance Manager": [
+      "K063",
+      "K064",
+      "K065",
+      "K022",
+      "K036",
+      "K017"
+    ],
+    "Guarantees Officer": [
+      "K063",
+      "K064",
+      "K065",
+      "K022",
+      "K017"
+    ],
+    "IT Operations Manager": [
+      "K066",
+      "K067",
+      "K068",
+      "K026",
+      "K036",
+      "K017"
+    ],
+    "Infrastructure Engineer": [
+      "K066",
+      "K067",
+      "K068",
+      "K026",
+      "K039",
+      "K017"
+    ],
+    "DevOps Engineer": [
+      "K066",
+      "K067",
+      "K068",
+      "K036",
+      "K039",
+      "K017"
+    ],
+    "Application Support": [
+      "K066",
+      "K067",
+      "K039",
+      "K040",
+      "K017"
+    ],
+    "Digital Banking Manager": [
+      "K069",
+      "K070",
+      "K071",
+      "K024",
+      "K036",
+      "K017"
+    ],
+    "Channels Manager": [
+      "K069",
+      "K070",
+      "K071",
+      "K036",
+      "K017"
+    ],
+    "Mobile Banking Manager": [
+      "K069",
+      "K070",
+      "K071",
+      "K024",
+      "K017"
+    ],
+    "Contact Centre Manager": [
+      "K031",
+      "K032",
+      "K039",
+      "K069",
+      "K036",
+      "K017"
     ]
   },
   "pillar_weights": {
@@ -1805,7 +1951,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Loans Disbursed (KES M) \u2014 tracked monthly vs target"
+      "description": "Loans Disbursed (KES M) \u2014 tracked monthly vs target",
+      "source": "cbs_loans"
     },
     {
       "id": "K002",
@@ -1816,7 +1963,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Deposits Mobilised (KES M) \u2014 tracked monthly vs target"
+      "description": "Deposits Mobilised (KES M) \u2014 tracked monthly vs target",
+      "source": "cbs_deposits"
     },
     {
       "id": "K003",
@@ -1827,7 +1975,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Fee Income (KES M) \u2014 tracked monthly vs target"
+      "description": "Fee Income (KES M) \u2014 tracked monthly vs target",
+      "source": "cbs_fees"
     },
     {
       "id": "K004",
@@ -1838,7 +1987,8 @@
       "direction": "lower",
       "cbk_ref": "CBK Prudential",
       "active": true,
-      "description": "NPL Ratio (%) \u2014 tracked monthly vs target"
+      "description": "NPL Ratio (%) \u2014 tracked monthly vs target",
+      "source": "cbs_loans"
     },
     {
       "id": "K005",
@@ -1849,7 +1999,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Revenue vs Budget (%) \u2014 tracked monthly vs target"
+      "description": "Revenue vs Budget (%) \u2014 tracked monthly vs target",
+      "source": "management_accounts"
     },
     {
       "id": "K006",
@@ -1860,7 +2011,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "New Accounts Opened \u2014 tracked monthly vs target"
+      "description": "New Accounts Opened \u2014 tracked monthly vs target",
+      "source": "cbs_accounts"
     },
     {
       "id": "K007",
@@ -1871,7 +2023,8 @@
       "direction": "higher",
       "cbk_ref": "NPS",
       "active": true,
-      "description": "Customer Satisfaction Score \u2014 tracked monthly vs target"
+      "description": "Customer Satisfaction Score \u2014 tracked monthly vs target",
+      "source": "nps"
     },
     {
       "id": "K008",
@@ -1882,7 +2035,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Customer Complaints Resolved (%) \u2014 tracked monthly vs target"
+      "description": "Customer Complaints Resolved (%) \u2014 tracked monthly vs target",
+      "source": "cims"
     },
     {
       "id": "K009",
@@ -1893,7 +2047,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Product Deepening Ratio \u2014 tracked monthly vs target"
+      "description": "Product Deepening Ratio \u2014 tracked monthly vs target",
+      "source": "cbs_accounts"
     },
     {
       "id": "K010",
@@ -1904,7 +2059,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "SLA Adherence (%) \u2014 tracked monthly vs target"
+      "description": "SLA Adherence (%) \u2014 tracked monthly vs target",
+      "source": "sla_tickets"
     },
     {
       "id": "K011",
@@ -1915,7 +2071,8 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "TAT \u2014 Loan Processing (days) \u2014 tracked monthly vs target"
+      "description": "TAT \u2014 Loan Processing (days) \u2014 tracked monthly vs target",
+      "source": "loan_applications"
     },
     {
       "id": "K012",
@@ -1926,7 +2083,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Digital Transactions (%) \u2014 tracked monthly vs target"
+      "description": "Digital Transactions (%) \u2014 tracked monthly vs target",
+      "source": "digital_channels"
     },
     {
       "id": "K013",
@@ -1937,7 +2095,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Branch Daily Log Completion \u2014 tracked monthly vs target"
+      "description": "Branch Daily Log Completion \u2014 tracked monthly vs target",
+      "source": "branch_log"
     },
     {
       "id": "K014",
@@ -1948,7 +2107,8 @@
       "direction": "higher",
       "cbk_ref": "CBK AML",
       "active": true,
-      "description": "AML/CFT Compliance Score \u2014 tracked monthly vs target"
+      "description": "AML/CFT Compliance Score \u2014 tracked monthly vs target",
+      "source": "aml_alerts"
     },
     {
       "id": "K015",
@@ -1959,7 +2119,8 @@
       "direction": "higher",
       "cbk_ref": "CBK",
       "active": true,
-      "description": "CBK Returns Filed on Time \u2014 tracked monthly vs target"
+      "description": "CBK Returns Filed on Time \u2014 tracked monthly vs target",
+      "source": "compliance"
     },
     {
       "id": "K016",
@@ -1970,7 +2131,8 @@
       "direction": "higher",
       "cbk_ref": "CBK MANDATORY",
       "active": true,
-      "description": "Training Hours Completed \u2014 tracked monthly vs target"
+      "description": "Training Hours Completed \u2014 tracked monthly vs target",
+      "source": "lms"
     },
     {
       "id": "K017",
@@ -1981,7 +2143,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "BSC Score Previous Quarter \u2014 tracked monthly vs target"
+      "description": "BSC Score Previous Quarter \u2014 tracked monthly vs target",
+      "source": "bsc_scores"
     },
     {
       "id": "K018",
@@ -1992,7 +2155,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Staff Retention Rate (%) \u2014 tracked monthly vs target"
+      "description": "Staff Retention Rate (%) \u2014 tracked monthly vs target",
+      "source": "hr"
     },
     {
       "id": "K019",
@@ -2003,7 +2167,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "360 Feedback Score \u2014 tracked monthly vs target"
+      "description": "360 Feedback Score \u2014 tracked monthly vs target",
+      "source": "360_feedback"
     },
     {
       "id": "K020",
@@ -2014,7 +2179,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Pipeline Conversion Rate (%) \u2014 tracked monthly vs target"
+      "description": "Pipeline Conversion Rate (%) \u2014 tracked monthly vs target",
+      "source": "pipeline"
     },
     {
       "id": "K021",
@@ -2025,7 +2191,8 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Cost-to-Income Ratio (%) \u2014 tracked monthly vs target"
+      "description": "Cost-to-Income Ratio (%) \u2014 tracked monthly vs target",
+      "source": "management_accounts"
     },
     {
       "id": "K022",
@@ -2036,7 +2203,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Trade Finance Revenue (KES M) \u2014 tracked monthly vs target"
+      "description": "Trade Finance Revenue (KES M) \u2014 tracked monthly vs target",
+      "source": "trade_finance"
     },
     {
       "id": "K023",
@@ -2047,7 +2215,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Bancassurance Premium (KES M) \u2014 tracked monthly vs target"
+      "description": "Bancassurance Premium (KES M) \u2014 tracked monthly vs target",
+      "source": "bancassurance"
     },
     {
       "id": "K024",
@@ -2058,7 +2227,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Digital Channel Adoption (%) \u2014 tracked monthly vs target"
+      "description": "Digital Channel Adoption (%) \u2014 tracked monthly vs target",
+      "source": "digital_channels"
     },
     {
       "id": "K025",
@@ -2069,7 +2239,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Agent Network Uptime (%) \u2014 tracked monthly vs target"
+      "description": "Agent Network Uptime (%) \u2014 tracked monthly vs target",
+      "source": "agency_banking"
     },
     {
       "id": "K026",
@@ -2080,7 +2251,8 @@
       "direction": "higher",
       "cbk_ref": "CBK ICT",
       "active": true,
-      "description": "Patch Compliance (%) \u2014 tracked monthly vs target"
+      "description": "Patch Compliance (%) \u2014 tracked monthly vs target",
+      "source": "cybersecurity"
     },
     {
       "id": "K027",
@@ -2091,7 +2263,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Recovery Rate \u2014 Collections (%) \u2014 tracked monthly vs target"
+      "description": "Recovery Rate \u2014 Collections (%) \u2014 tracked monthly vs target",
+      "source": "debt_recovery"
     },
     {
       "id": "K028",
@@ -2102,7 +2275,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Collateral Review Completion (%) \u2014 tracked monthly vs target"
+      "description": "Collateral Review Completion (%) \u2014 tracked monthly vs target",
+      "source": "collateral"
     },
     {
       "id": "K029",
@@ -2113,7 +2287,8 @@
       "direction": "higher",
       "cbk_ref": "IFRS 9",
       "active": true,
-      "description": "IFRS 9 Provision Accuracy (%) \u2014 tracked monthly vs target"
+      "description": "IFRS 9 Provision Accuracy (%) \u2014 tracked monthly vs target",
+      "source": "ifrs9"
     },
     {
       "id": "K030",
@@ -2124,7 +2299,8 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Headcount vs Budget \u2014 tracked monthly vs target"
+      "description": "Headcount vs Budget \u2014 tracked monthly vs target",
+      "source": "hr"
     },
     {
       "id": "K031",
@@ -2135,7 +2311,8 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Average Handle Time \u2014 CC (sec) \u2014 tracked monthly vs target"
+      "description": "Average Handle Time \u2014 CC (sec) \u2014 tracked monthly vs target",
+      "source": "contact_centre"
     },
     {
       "id": "K032",
@@ -2146,7 +2323,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "First Call Resolution Rate (%) \u2014 tracked monthly vs target"
+      "description": "First Call Resolution Rate (%) \u2014 tracked monthly vs target",
+      "source": "contact_centre"
     },
     {
       "id": "K033",
@@ -2157,7 +2335,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "EWS Case Resolution Rate (%) \u2014 tracked monthly vs target"
+      "description": "EWS Case Resolution Rate (%) \u2014 tracked monthly vs target",
+      "source": "ews_cases"
     },
     {
       "id": "K034",
@@ -2168,7 +2347,8 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Budget Achievement \u2014 OpEx (%) \u2014 tracked monthly vs target"
+      "description": "Budget Achievement \u2014 OpEx (%) \u2014 tracked monthly vs target",
+      "source": "budget"
     },
     {
       "id": "K035",
@@ -2179,7 +2359,8 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Employee Net Promoter Score \u2014 tracked monthly vs target"
+      "description": "Employee Net Promoter Score \u2014 tracked monthly vs target",
+      "source": "hr"
     },
     {
       "id": "K036",
@@ -2389,6 +2570,193 @@
       "source": "agent_fraud",
       "description": "Number of agent fraud alerts investigated and cleared",
       "auto_calc": "fraud_alerts_cleared_count"
+    },
+    {
+      "id": "K055",
+      "name": "Settlement Fail Rate (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "lower_better",
+      "source": "clearing",
+      "auto_calc": "clearing_fail_rate",
+      "description": "% of clearing items that failed settlement"
+    },
+    {
+      "id": "K056",
+      "name": "Same-day Settlement Rate (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "clearing",
+      "auto_calc": "same_day_settlement_pct",
+      "description": "% of items settled same value date"
+    },
+    {
+      "id": "K057",
+      "name": "Reconciliation Completion (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "clearing",
+      "auto_calc": "recon_completion_pct",
+      "description": "% of clearing items fully reconciled"
+    },
+    {
+      "id": "K058",
+      "name": "Consent Capture Rate (%)",
+      "pillar": "Customer Focus",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "consent",
+      "auto_calc": "consent_capture_pct",
+      "description": "% of customers with at least one active consent"
+    },
+    {
+      "id": "K059",
+      "name": "Expired Consents Renewed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "consent",
+      "auto_calc": "consent_renewal_pct",
+      "description": "% of expiring consents renewed before expiry"
+    },
+    {
+      "id": "K060",
+      "name": "Retailer Finance Portfolio (KES M)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "KES M",
+      "direction": "higher_better",
+      "source": "retailer_finance",
+      "auto_calc": "rf_portfolio_m",
+      "description": "Total outstanding retailer finance portfolio"
+    },
+    {
+      "id": "K061",
+      "name": "LPO Turnaround Time (days)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "days",
+      "direction": "lower_better",
+      "source": "retailer_finance",
+      "auto_calc": "rf_tat_days",
+      "description": "Average days from LPO receipt to disbursement"
+    },
+    {
+      "id": "K062",
+      "name": "Retailer Finance NPL (%)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "lower_better",
+      "source": "retailer_finance",
+      "auto_calc": "rf_npl_pct",
+      "description": "NPL ratio on retailer finance portfolio"
+    },
+    {
+      "id": "K063",
+      "name": "Bid Bond Revenue (KES M)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "KES M",
+      "direction": "higher_better",
+      "source": "bid_bonds",
+      "auto_calc": "bid_bond_revenue_m",
+      "description": "Total commission earned from bid bonds and guarantees"
+    },
+    {
+      "id": "K064",
+      "name": "Bonds Issued (count)",
+      "pillar": "Customer Focus",
+      "weight": 0.08,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "bid_bonds",
+      "auto_calc": "bonds_issued_count",
+      "description": "Number of bid bonds and guarantees issued in period"
+    },
+    {
+      "id": "K065",
+      "name": "Bond Call Rate (%)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "lower_better",
+      "source": "bid_bonds",
+      "auto_calc": "bond_call_rate_pct",
+      "description": "% of bonds called by beneficiary"
+    },
+    {
+      "id": "K066",
+      "name": "System Uptime (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "observability",
+      "auto_calc": "system_uptime_pct",
+      "description": "Average uptime across all critical systems"
+    },
+    {
+      "id": "K067",
+      "name": "Critical Incidents (count)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "count",
+      "direction": "lower_better",
+      "source": "observability",
+      "auto_calc": "critical_incidents_count",
+      "description": "Number of P1/P2 incidents in period"
+    },
+    {
+      "id": "K068",
+      "name": "Mean Time to Resolve (hrs)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "hours",
+      "direction": "lower_better",
+      "source": "observability",
+      "auto_calc": "mttr_hours",
+      "description": "Average time to resolve critical system incidents"
+    },
+    {
+      "id": "K069",
+      "name": "Digital Channel Adoption (%)",
+      "pillar": "Customer Focus",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "channels",
+      "auto_calc": "digital_adoption_pct",
+      "description": "% of customers using at least one digital channel"
+    },
+    {
+      "id": "K070",
+      "name": "Channel Uptime (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "channels",
+      "auto_calc": "channel_uptime_pct",
+      "description": "Average uptime across all customer-facing channels"
+    },
+    {
+      "id": "K071",
+      "name": "Digital Transaction Growth (%)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "channels",
+      "auto_calc": "digital_txn_growth_pct",
+      "description": "YoY growth in digital transaction volumes"
     }
   ]
 }

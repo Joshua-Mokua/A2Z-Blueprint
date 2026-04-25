@@ -850,6 +850,7 @@ _comm_grp = _dg([
     _pg("pages/57_deal_room.py",      "Deal Room",            "🤝", "deal_room"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
+    _pg("pages/70_retailer_finance.py", "Retailer Finance",  "🛒", "retailer_finance"),
 ])
 
 # Credit
@@ -910,6 +911,7 @@ _risk_grp = _dg([
     _pg("pages/55_aml.py",            "AML Monitoring",       "🔍", "aml_monitoring"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
+    _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
 ])
 
 # Legal
@@ -933,6 +935,8 @@ _ops_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
     _pg("pages/62_p2p.py",              "Procure-to-Pay",       "🛒", "p2p"),
     _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
+    _pg("pages/68_clearing.py",         "Clearing",          "🏦", "clearing"),
+    _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
 ])
 
 # People & HR
@@ -958,6 +962,7 @@ _it_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
     _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
+    _pg("pages/72_observability.py",    "Observability",     "📡", "observability"),
 ])
 
 # Bancassurance / Marketing / Misc
@@ -1027,6 +1032,8 @@ _tf_grp = _dg([
     _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
     _pg("pages/57_deal_room.py",      "Deal Room",            "🤝", "deal_room"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+    _pg("pages/70_retailer_finance.py", "Retailer Finance",  "🛒", "retailer_finance"),
+    _pg("pages/71_bid_bond.py",         "Bid Bond & Gtees",  "📜", "bid_bond"),
 ])
 
 # Digital Financial Services
@@ -1036,6 +1043,7 @@ _dfs_grp = _dg([
     _pg("pages/15_cbs.py",              "CBS Explorer",       "🏦", "cbs"),
     _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+    _pg("pages/73_channels.py",         "Channels",          "📲", "channels_management"),
 ])
 
 # Contact Centre

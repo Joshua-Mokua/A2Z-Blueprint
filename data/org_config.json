@@ -2800,6 +2800,54 @@
       "active": true,
       "universal": false,
       "description": "Event tracking, ROI, penetration \u2014 tab within Partnerships module"
+    },
+    {
+      "key": "clearing",
+      "name": "Clearing & Settlement",
+      "page": "68_clearing.py",
+      "icon": "\ud83c\udfe6",
+      "active": true,
+      "dept": "Operations"
+    },
+    {
+      "key": "consent_management",
+      "name": "Consent Management",
+      "page": "69_consent.py",
+      "icon": "\ud83d\udd0f",
+      "active": true,
+      "dept": "Compliance"
+    },
+    {
+      "key": "retailer_finance",
+      "name": "Retailer Finance",
+      "page": "70_retailer_finance.py",
+      "icon": "\ud83d\uded2",
+      "active": true,
+      "dept": "Commercial & Corporate"
+    },
+    {
+      "key": "bid_bond",
+      "name": "Bid Bond & Guarantees",
+      "page": "71_bid_bond.py",
+      "icon": "\ud83d\udcdc",
+      "active": true,
+      "dept": "Trade Finance"
+    },
+    {
+      "key": "observability",
+      "name": "System Observability",
+      "page": "72_observability.py",
+      "icon": "\ud83d\udce1",
+      "active": true,
+      "dept": "IT & Digital"
+    },
+    {
+      "key": "channels_management",
+      "name": "Channels Management",
+      "page": "73_channels.py",
+      "icon": "\ud83d\udcf2",
+      "active": true,
+      "dept": "Digital Financial Services"
     }
   ],
   "dept_module_assignments": {
@@ -2841,7 +2889,8 @@
       "projects",
       "deal_room",
       "partnerships",
-      "export"
+      "export",
+      "retailer_finance"
     ],
     "trade_fin": [
       "perform",
@@ -2875,7 +2924,9 @@
       "ifrs9",
       "statement_analyzer",
       "projects",
-      "export"
+      "export",
+      "retailer_finance",
+      "bid_bond"
     ],
     "risk_comp": [
       "perform",
@@ -2890,7 +2941,8 @@
       "rcsa",
       "aml",
       "fraud_detection",
-      "export"
+      "export",
+      "consent_management"
     ],
     "legal": [
       "perform",
@@ -2898,7 +2950,8 @@
       "edms",
       "projects",
       "contracts",
-      "compliance"
+      "compliance",
+      "consent_management"
     ],
     "treasury": [
       "perform",
@@ -2923,7 +2976,8 @@
       "export",
       "projects",
       "mgmt_accounts",
-      "ftp"
+      "ftp",
+      "clearing"
     ],
     "bi": [
       "perform",
@@ -2939,7 +2993,9 @@
       "cbs",
       "campaigns",
       "projects",
-      "export"
+      "export",
+      "channels_management",
+      "observability"
     ],
     "contact": [
       "perform",
@@ -2964,7 +3020,9 @@
       "export",
       "projects",
       "p2p",
-      "assets"
+      "assets",
+      "clearing",
+      "consent_management"
     ],
     "marketing": [
       "perform",
@@ -3001,7 +3059,9 @@
       "cab",
       "assets",
       "contracts",
-      "cybersecurity"
+      "cybersecurity",
+      "observability",
+      "channels_management"
     ],
     "cyber": [
       "perform",
@@ -3060,7 +3120,13 @@
       "campaigns",
       "export",
       "integrate",
-      "analytics"
+      "analytics",
+      "clearing",
+      "consent_management",
+      "retailer_finance",
+      "bid_bond",
+      "observability",
+      "channels_management"
     ],
     "agn": [
       "perform",
@@ -3084,7 +3150,9 @@
       "pipeline",
       "deal_room",
       "projects",
-      "export"
+      "export",
+      "bid_bond",
+      "retailer_finance"
     ]
   },
   "thresholds": {
