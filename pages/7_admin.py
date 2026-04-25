@@ -2402,7 +2402,7 @@ with tabs[8]:
         st.markdown("**Assign KPIs to roles.** Configure one role, then clone to similar roles.")
         _ss_roles = sorted(DEFAULT_ROLE_KPIS.keys())
         if len(st.session_state.get("staff_scores",pd.DataFrame())):
-            _sr = st.session_state["staff_scores"]["Role"].dropna().unique().tolist()
+            _sr = st.session_state.get("staff_scores", {})["Role"].dropna().unique().tolist()
             if _sr: _ss_roles = sorted(set(_ss_roles + _sr))
 
         _sel_role = st.selectbox("Select role to configure", _ss_roles, key="kl_role_sel")

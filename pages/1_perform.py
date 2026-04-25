@@ -693,10 +693,10 @@ def render_bsc_scorecard(staff_df, df_kpi):
             pct = round((tgt / act * 100 if _is_reverse else act / tgt * 100), 1) if tgt and act else 0.0
             sc  = _real_bsc_score(pct) if _targets_live else None
         elif _targets_live and tgt:
-            pct = round((tgt / act * 100 if _is_reverse else act / tgt * 100), 1) if tgt else 0.0
+            pct = round((tgt / act * 100 if _is_reverse else act / tgt * 100), 1) if (tgt and act) else 0.0
             sc  = _real_bsc_score(pct)
         elif tgt:
-            pct = round((tgt / act * 100 if _is_reverse else act / tgt * 100), 1) if tgt else 0.0
+            pct = round((tgt / act * 100 if _is_reverse else act / tgt * 100), 1) if (tgt and act) else 0.0
             sc  = None  # cascaded but not yet confirmed
         else:
             sc  = None
@@ -1292,7 +1292,7 @@ with tabs[3]:
                          use_container_width=True, hide_index=True)
             done  = sum(1 for r in val_rows if '⏳' not in r['Status'])
             total = len(val_rows)
-            st.progress(done/total if total else 0, text=f"Validated: {done}/{total}")
+            st.progress(done/total if (total and done is not None) else 0, text=f"Validated: {done}/{total}")
 
 # ════════════════════════════════════════════════════════════════
 # TAB 5 — ANALYTICS

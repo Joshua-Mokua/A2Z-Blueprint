@@ -393,7 +393,7 @@ with sbu_tabs[2]:
 
     for region in REGIONS:
         reg_branches = view_pnl[
-            (view_pnl['Region'] == region) & (view_pnl['Role'].isin(get_org_roles('branch_staff') or ['Branch Manager']))]
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin(get_org_roles() or ['Branch Manager']))]
         reg_head = view_pnl[
             (view_pnl['Region'] == region) & (view_pnl['Role'].isin([r for r in (get_org_roles() or []) if 'area' in r.lower() or 'regional' in r.lower() or 'head' in r.lower()] or ['Regional Head','Area Manager']))]
 
@@ -454,7 +454,7 @@ with sbu_tabs[3]:
 
     at_risk = view_pnl[
         (view_pnl['status'].isin(['Loss-making','Below target'])) &
-        (view_pnl['Role'].isin(get_org_roles('branch_staff') or ['Branch Manager']))
+        (view_pnl['Role'].isin(get_org_roles() or ['Branch Manager']))
     ].sort_values(f'{PNL_PROFIT_KPI}_act')
 
     if len(at_risk) == 0:
@@ -616,7 +616,7 @@ with sbu_tabs[4]:
             st.session_state['sbu_action_plans'] = json.loads(_ap_raw)
         except:
             st.session_state['sbu_action_plans'] = {}
-    action_plans = st.session_state['sbu_action_plans']
+    action_plans = st.session_state.get('sbu_action_plans', {})
 
     def _save_action_plans():
         """Persist action plans to disk."""

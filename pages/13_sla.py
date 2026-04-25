@@ -196,7 +196,7 @@ class SLAManager:
             return 1.0, 0, 0
         total    = len(resolved)
         breached = sum(1 for t in resolved if t.get("breached"))
-        score    = round((total-breached)/total, 4)
+        score    = round((total-breached)/total, 4) if total else 0.0
         return score, total, breached
 
     def get_all(self):
@@ -235,7 +235,8 @@ class SLAManager:
 # Initialise
 if "sla_manager" not in st.session_state:
     st.session_state["sla_manager"] = SLAManager()
-slm = st.session_state["sla_manager"]
+slm = st.session_state.get("sla_manager")
+if slm is None: st.info("SLA data loading..."); st.stop()
 
 # ── HEADER ───────────────────────────────────────────────────────────
 

@@ -545,7 +545,7 @@ if _tab_visible_bank_targets:
         tl_c1, tl_c2 = st.columns(2)
         cascade_end = tl_c1.date_input(
             "🏁 Full bank cascade must complete by",
-            value=(_dt._safe_date(existing_tl["cascade_end_date"])
+            value=(_safe_date(existing_tl["cascade_end_date"])
                    if existing_tl else today + _dt.timedelta(days=30)),
             min_value=today,
             key="tl_end",
@@ -566,9 +566,9 @@ if _tab_visible_bank_targets:
 
         for lvl in mgr_levels:
             ex = existing_levels.get(lvl,{})
-            default_conf = (_dt._safe_date(ex["confirm_by"])
+            default_conf = (_safe_date(ex["confirm_by"])
                             if ex.get("confirm_by") else today+_dt.timedelta(days=5))
-            default_casc = (_dt._safe_date(ex["cascade_by"])
+            default_casc = (_safe_date(ex["cascade_by"])
                             if ex.get("cascade_by") else today+_dt.timedelta(days=12))
             lc1,lc2,lc3 = st.columns([2,1,1])
             lc1.markdown(f"<div style='padding:8px 0;font-size:12px;font-weight:600'>{lvl}</div>",
@@ -2081,7 +2081,7 @@ if _tab_visible_set_targets:
         # ── PER-GROUP SAVE — rendered after all group tables/inputs ─
         today_d = _dt.date.today()
         tl_now  = casc.get_global_timeline(alloc_year)
-        max_d   = (_dt._safe_date(tl_now["cascade_end_date"])
+        max_d   = (_safe_date(tl_now["cascade_end_date"])
                    if tl_now else today_d+_dt.timedelta(days=90))
 
         for grp_name_sv, grp_df_sv in rep_groups:
@@ -2292,8 +2292,8 @@ if _tab_visible_my_targets:
     my_dl = casc.get_cascade_deadline(my_code, period, my_name_l)
     if my_dl:
         today_d  = _dt.date.today()
-        conf_due = _dt._safe_date(my_dl["confirm_by"])
-        casc_due = _dt._safe_date(my_dl["cascade_by"])
+        conf_due = _safe_date(my_dl["confirm_by"])
+        casc_due = _safe_date(my_dl["cascade_by"])
         confirmed= my_dl.get("confirmed",False)
         cascaded = my_dl.get("cascaded",False)
         dl_score = casc.deadline_compliance_score(my_code, period)
@@ -2584,10 +2584,10 @@ if _tab_visible_my_targets:
                     # Others: only when locked
                     if is_fixed and tgt:
                         sc  = float(pd.to_numeric(r.get("Score",0),errors="coerce") or 0)
-                        pct = round(act/tgt*100,1)
+                        pct = round(act/tgt*100,1) if tgt else 0.0
                     elif locked_me and tgt:
                         sc  = float(pd.to_numeric(r.get("Score",0),errors="coerce") or 0)
-                        pct = round(act/tgt*100,1) if tgt else None
+                        pct = round(act/tgt*100,1) if tgt else 0.0 if tgt else None
                     else:
                         sc  = None
                         pct = None

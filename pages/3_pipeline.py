@@ -12,6 +12,7 @@ from pages._access import require_access, get_visible_staff
 require_access("pipeline")
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+lam = LoanApplicationManager()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
 df_proc      = st.session_state.get("df_processed", pd.DataFrame())
 

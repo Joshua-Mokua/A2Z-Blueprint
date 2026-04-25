@@ -593,8 +593,8 @@ class CIMSManager:
 
         total    = len(resolved)
         breached = sum(1 for t in resolved if t.get("breached"))
-        score    = round((total - breached) / total, 4)
-        avg_tat  = round(sum(t.get("tat_hours", 0) or 0 for t in resolved) / total, 2)
+        score    = round((total - breached) / total, 4) if total else 0.0
+        avg_tat  = round(sum(t.get("tat_hours", 0) or 0 for t in resolved) / max(total, 1), 2)
 
         by_type = {}
         by_pri  = {}
@@ -689,7 +689,8 @@ class CIMSManager:
 # ── Initialise ───────────────────────────────────────────────────────
 if "cims_manager" not in st.session_state:
     st.session_state["cims_manager"] = CIMSManager()
-cims = st.session_state["cims_manager"]
+cims = st.session_state.get("cims_manager")
+if cims is None: st.info("CIMS loading..."); st.stop()
 
 role_low  = str(ud.get("role","")).lower()
 is_admin  = "admin" in role_low or ud.get("can_view_all", False)

@@ -223,7 +223,7 @@ if st.button("🔍 Analyse Statement", type="primary", disabled=not can_go, key=
 
 # ── Display results ──────────────────────────────────────────────────
 if "sa_result" in st.session_state:
-    r    = st.session_state["sa_result"]
+    r    = st.session_state.get("sa_result")
     inc  = r.get("income_analysis",{})
     exp  = r.get("expenditure_analysis",{})
     obs  = r.get("obligations",{})

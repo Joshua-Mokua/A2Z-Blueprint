@@ -168,7 +168,8 @@ class BranchLogManager:
 
 if "branch_log_manager" not in st.session_state:
     st.session_state["branch_log_manager"] = BranchLogManager()
-blm = st.session_state["branch_log_manager"]
+blm = st.session_state.get("branch_log_manager")
+if blm is None: st.info("Branch log loading..."); st.stop()
 
 role_low  = str(ud.get("role","")).lower()
 my_unit   = ud.get("unit","")

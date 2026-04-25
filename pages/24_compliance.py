@@ -203,7 +203,7 @@ with tabs[3]:
     from collections import Counter
     if visible:
         total = len(visible)
-        cleared_pct = sum(1 for c in visible if c["status"]=="cleared")/total*100
+        cleared_pct = (sum(1 for c in visible if c["status"]=="cleared")/total*100) if total else 0.0
         m1,m2,m3,m4 = st.columns(4)
         m1.metric("Total Cases",    total)
         m2.metric("Clearance Rate", f"{cleared_pct:.1f}%")
@@ -215,7 +215,7 @@ with tabs[3]:
         flag_counts = Counter(c["flag_type"] for c in visible)
         st.markdown("**Cases by flag type:**")
         for flag, cnt in flag_counts.most_common():
-            pct = cnt/total*100
+            pct = cnt/total*100 if total else 0.0
             cleared_flag = sum(1 for c in visible
                                if c["flag_type"]==flag and c["status"]=="cleared")
             st.markdown(

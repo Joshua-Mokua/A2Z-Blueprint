@@ -29,7 +29,13 @@ def _load():
     p = DATA/"aml_alerts.json"
     return json.loads(p.read_text()) if p.exists() else []
 
-alerts    = _load()
+_raw_alerts = _load()
+# Normalise Decimal types from PostgreSQL
+from decimal import Decimal as _D
+alerts = []
+for _a in _raw_alerts:
+    _a2 = {k: float(v) if isinstance(v, _D) else v for k, v in _a.items()}
+    alerts.append(_a2)
 HIGH_THR  = cfg("aml_high_risk_score", 70)
 CASH_THR  = cfg("aml_cash_threshold_m", 1.0)
 

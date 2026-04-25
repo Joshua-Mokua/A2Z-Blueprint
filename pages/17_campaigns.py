@@ -132,7 +132,8 @@ class CampaignManager:
 
 if "campaign_manager" not in st.session_state:
     st.session_state["campaign_manager"] = CampaignManager()
-cpm = st.session_state["campaign_manager"]
+cpm = st.session_state.get("campaign_manager")
+if cpm is None: st.info("Campaign data loading..."); st.stop()
 
 
 

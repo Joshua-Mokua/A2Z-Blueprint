@@ -12,6 +12,7 @@ require_access("credit_analysis")
 
 DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()
+lam = LoanApplicationManager()
 
 @st.cache_data(ttl=60, show_spinner=False)
 def _load():
@@ -343,7 +344,7 @@ with tabs[-1]:  # AI Credit Memo
     st.markdown("**AI Credit Memo Generator** — one-click draft from analysis data")
     st.caption("Based on the selected application's data, Claude generates a professional credit memo draft.")
     if "view_app" in st.session_state and st.session_state.get("view_app"):
-        sel_a = st.session_state["view_app"]
+        sel_a = st.session_state.get("view_app")
         if st.button("🤖 Generate credit memo draft", key="ca_memo_gen", type="primary"):
             with st.spinner("Drafting credit memo…"):
                 try:
@@ -364,7 +365,7 @@ with tabs[-1]:  # AI Credit Memo
                     st.error(f"Could not generate memo: {str(_e)[:80]}")
         if "ca_memo_text" in st.session_state:
             st.markdown("**Draft Credit Memo:**")
-            st.markdown(st.session_state["ca_memo_text"])
+            st.markdown(st.session_state.get("ca_memo_text",""))
             st.download_button("📥 Download memo", data=st.session_state["ca_memo_text"].encode(),
                                 file_name="credit_memo_draft.txt", key="ca_memo_dl")
     else:
