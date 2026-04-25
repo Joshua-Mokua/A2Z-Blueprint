@@ -24,7 +24,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0002",
@@ -51,7 +54,10 @@
     "repaid_kes": 20738718.0,
     "outstanding_kes": 5033888.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lucy023",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0003",
@@ -78,7 +84,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 9,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lorna028",
+    "anchor_name": "Nation Media",
+    "new_buyer": true
   },
   {
     "id": "RF0004",
@@ -105,7 +114,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "philip025",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0005",
@@ -132,7 +144,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lucy023",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0006",
@@ -159,7 +174,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 21,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0007",
@@ -186,7 +204,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 22,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0008",
@@ -213,7 +234,10 @@
     "repaid_kes": 5843973.0,
     "outstanding_kes": 27810.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "zachary024",
+    "anchor_name": "EABL",
+    "new_buyer": true
   },
   {
     "id": "RF0009",
@@ -240,7 +264,10 @@
     "repaid_kes": 2052793.0,
     "outstanding_kes": 638705.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "caleb022",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0010",
@@ -267,7 +294,10 @@
     "repaid_kes": 5030010.0,
     "outstanding_kes": 1644501.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "helena018",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0011",
@@ -294,7 +324,10 @@
     "repaid_kes": 24866220.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stanley030",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": true
   },
   {
     "id": "RF0012",
@@ -321,7 +354,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0013",
@@ -348,7 +384,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 21187570.7,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stanley030",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0014",
@@ -375,7 +414,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 41783809.74,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lilian020",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0015",
@@ -402,7 +444,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lorna028",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": true
   },
   {
     "id": "RF0016",
@@ -429,7 +474,10 @@
     "repaid_kes": 35123109.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0017",
@@ -456,7 +504,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0018",
@@ -483,7 +534,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "philip025",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0019",
@@ -510,7 +564,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0020",
@@ -537,7 +594,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "caleb022",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0021",
@@ -564,7 +624,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 19,
-    "notes": ""
+    "notes": "",
+    "rm_username": "herbert031",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0022",
@@ -591,7 +654,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 12286565.02,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lucy023",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0023",
@@ -618,7 +684,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 22599292.9,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "zachary024",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0024",
@@ -645,7 +714,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 20574829.06,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "Safaricom",
+    "new_buyer": true
   },
   {
     "id": "RF0025",
@@ -672,7 +744,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "Safaricom",
+    "new_buyer": true
   },
   {
     "id": "RF0026",
@@ -699,7 +774,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lilian020",
+    "anchor_name": "Safaricom",
+    "new_buyer": true
   },
   {
     "id": "RF0027",
@@ -726,7 +804,10 @@
     "repaid_kes": 4970385.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "wendy019",
+    "anchor_name": "Safaricom",
+    "new_buyer": true
   },
   {
     "id": "RF0028",
@@ -753,7 +834,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0029",
@@ -780,7 +864,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "elijah021",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0030",
@@ -807,7 +894,10 @@
     "repaid_kes": 1729617.0,
     "outstanding_kes": 20600984.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lorna028",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0031",
@@ -834,7 +924,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 15,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lilian020",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0032",
@@ -861,7 +954,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0033",
@@ -888,7 +984,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "Nation Media",
+    "new_buyer": true
   },
   {
     "id": "RF0034",
@@ -915,7 +1014,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0035",
@@ -942,7 +1044,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "wendy019",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0036",
@@ -969,7 +1074,10 @@
     "repaid_kes": 9992637.0,
     "outstanding_kes": 3769248.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stanley030",
+    "anchor_name": "Safaricom",
+    "new_buyer": true
   },
   {
     "id": "RF0037",
@@ -996,7 +1104,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0038",
@@ -1023,7 +1134,10 @@
     "repaid_kes": 17711443.0,
     "outstanding_kes": 8462593.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "zachary024",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0039",
@@ -1050,7 +1164,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "philip025",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0040",
@@ -1077,7 +1194,10 @@
     "repaid_kes": 25149360.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0041",
@@ -1104,7 +1224,10 @@
     "repaid_kes": 2988234.0,
     "outstanding_kes": 1968631.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lorna028",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0042",
@@ -1131,7 +1254,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 27848663.93,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "EABL",
+    "new_buyer": true
   },
   {
     "id": "RF0043",
@@ -1158,7 +1284,10 @@
     "repaid_kes": 1481296.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0044",
@@ -1185,7 +1314,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "Nation Media",
+    "new_buyer": true
   },
   {
     "id": "RF0045",
@@ -1212,7 +1344,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "herbert031",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0046",
@@ -1239,7 +1374,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 44375687.14,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lilian020",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0047",
@@ -1266,7 +1404,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "stella017",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0048",
@@ -1293,7 +1434,10 @@
     "repaid_kes": 7765432.0,
     "outstanding_kes": 4488178.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "keith029",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0049",
@@ -1320,7 +1464,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 1,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0050",
@@ -1347,7 +1494,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 43996901.64,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "zachary024",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0051",
@@ -1374,7 +1524,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 44649258.29,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "philip025",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0052",
@@ -1401,7 +1554,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lucy023",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0053",
@@ -1428,7 +1584,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "caleb022",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": true
   },
   {
     "id": "RF0054",
@@ -1455,7 +1614,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "jasper026",
+    "anchor_name": "EABL",
+    "new_buyer": true
   },
   {
     "id": "RF0055",
@@ -1482,7 +1644,10 @@
     "repaid_kes": 3512073.0,
     "outstanding_kes": 2939422.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "helena018",
+    "anchor_name": "Safaricom",
+    "new_buyer": false
   },
   {
     "id": "RF0056",
@@ -1509,7 +1674,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": true
   },
   {
     "id": "RF0057",
@@ -1536,7 +1704,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "caleb022",
+    "anchor_name": "Nation Media",
+    "new_buyer": false
   },
   {
     "id": "RF0058",
@@ -1563,7 +1734,10 @@
     "repaid_kes": 24138126.0,
     "outstanding_kes": 9644601.0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "lucy023",
+    "anchor_name": "BAT Kenya",
+    "new_buyer": false
   },
   {
     "id": "RF0059",
@@ -1590,7 +1764,10 @@
     "repaid_kes": 0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "kurt027",
+    "anchor_name": "EABL",
+    "new_buyer": false
   },
   {
     "id": "RF0060",
@@ -1617,6 +1794,9 @@
     "repaid_kes": 7652820.0,
     "outstanding_kes": 0,
     "dpd": 0,
-    "notes": ""
+    "notes": "",
+    "rm_username": "elijah021",
+    "anchor_name": "EABL",
+    "new_buyer": false
   }
 ]

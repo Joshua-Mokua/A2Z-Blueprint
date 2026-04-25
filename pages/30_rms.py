@@ -12,6 +12,14 @@ from utils.core import audit_log
 from pages._access import require_access
 
 require_access("rms")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -87,6 +95,7 @@ with tabs[1]:
                             if rec["id"]==r["id"]: rec["status"]="Under Investigation"; rec["assigned_to"]=name
                         (DATA/"rms_reconciliations.json").write_text(json.dumps(recs,indent=2))
                         audit_log("RMS_UPDATE", name, "Reconciliation updated")
+                        _bsc_trigger(uname, "K057")
                         st.cache_data.clear(); st.success("Marked Under Investigation"); st.rerun()
                     if act2.button("✅ Mark Matched",key=f"rm_{r['id']}"):
                         recs=json.loads((DATA/"rms_reconciliations.json").read_text())

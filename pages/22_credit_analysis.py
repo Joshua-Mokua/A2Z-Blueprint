@@ -10,6 +10,13 @@ from utils.core import LoanApplicationManager, audit_log
 
 require_access("credit_analysis")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()
 lam = LoanApplicationManager()
@@ -128,14 +135,17 @@ with tabs[0]:
                 if b1.button("✅ Approve", key=f"apr_{app['id']}", type="primary"):
                     lam.record_decision(app['id'], "approved", role)
                     audit_log("LMS_APPROVED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear(); st.success(f"Approved: {app['id']}"); st.rerun()
                 if b2.button("↩️ Return for rework", key=f"ret_{app['id']}"):
                     lam.record_decision(app['id'], "returned", role)
                     audit_log("LMS_RETURNED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear(); st.warning(f"Returned: {app['id']}"); st.rerun()
                 if b3.button("❌ Decline", key=f"dec_{app['id']}"):
                     lam.record_decision(app['id'], "declined", role)
                     audit_log("LMS_DECLINED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear(); st.error(f"Declined: {app['id']}"); st.rerun()
 
 # ────────────────────────────────────────────────────────────────────
@@ -223,6 +233,7 @@ with tabs[1]:
                                         comments=comm)
                     audit_log("LMS_DECISION", uname,
                               f"{app_id}|{rec}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear()
                     st.success(f"✅ Decision recorded: {rec} for {app_id}")
                     st.rerun()
@@ -333,6 +344,7 @@ with tabs[4]:
                              disabled=(sel_analyst=="Select analyst")):
                     lam.submit_to_credit(app['id'], analyst_name=sel_analyst)
                     audit_log("LMS_ASSIGNED", uname, f"{app['id']}|{sel_analyst}")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear()
                     st.success(f"✅ {app['id']} assigned to {sel_analyst}")
                     st.rerun()

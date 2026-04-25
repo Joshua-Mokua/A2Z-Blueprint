@@ -10,6 +10,14 @@ from pages._access import require_access
 
 require_access("ra")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 DATA  = Path(__file__).parent.parent / "data"
 
 um, ud, uname, *_rest = load_shared_state()[:12]

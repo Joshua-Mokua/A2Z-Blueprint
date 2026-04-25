@@ -2848,6 +2848,102 @@
       "icon": "\ud83d\udcf2",
       "active": true,
       "dept": "Digital Financial Services"
+    },
+    {
+      "key": "cbk_returns",
+      "name": "CBK Returns Centre",
+      "page": "74_cbk_returns.py",
+      "icon": "\ud83d\udcca",
+      "active": true,
+      "dept": "Compliance"
+    },
+    {
+      "key": "data_protection",
+      "name": "Data Protection",
+      "page": "75_data_protection.py",
+      "icon": "\ud83d\udd12",
+      "active": true,
+      "dept": "Compliance"
+    },
+    {
+      "key": "sanctions_screening",
+      "name": "Sanctions Screening",
+      "page": "76_sanctions.py",
+      "icon": "\ud83d\udea8",
+      "active": true,
+      "dept": "Compliance"
+    },
+    {
+      "key": "regulatory_capital",
+      "name": "Capital & Liquidity",
+      "page": "77_capital.py",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "active": true,
+      "dept": "Treasury"
+    },
+    {
+      "key": "customer_onboarding",
+      "name": "Customer Onboarding",
+      "page": "78_onboarding.py",
+      "icon": "\ud83c\udfaf",
+      "active": true,
+      "dept": "Retail Banking"
+    },
+    {
+      "key": "card_management",
+      "name": "Card Management",
+      "page": "79_cards.py",
+      "icon": "\ud83d\udcb3",
+      "active": true,
+      "dept": "Retail Banking"
+    },
+    {
+      "key": "merchant_acquiring",
+      "name": "Merchant Acquiring",
+      "page": "80_merchant.py",
+      "icon": "\ud83c\udfea",
+      "active": true,
+      "dept": "Commercial & Corporate"
+    },
+    {
+      "key": "alm_liquidity",
+      "name": "ALM & Liquidity",
+      "page": "81_alm.py",
+      "icon": "\ud83d\udca7",
+      "active": true,
+      "dept": "Treasury"
+    },
+    {
+      "key": "operational_risk",
+      "name": "Operational Risk",
+      "page": "82_oprisk.py",
+      "icon": "\u26a0\ufe0f",
+      "active": true,
+      "dept": "Risk & Compliance"
+    },
+    {
+      "key": "strategic_initiatives",
+      "name": "Strategic Initiatives",
+      "page": "83_strategy.py",
+      "icon": "\ud83c\udfaf",
+      "active": true,
+      "dept": "Executive"
+    },
+    {
+      "key": "board_papers",
+      "name": "Board Pack & Papers",
+      "page": "84_board.py",
+      "icon": "\ud83d\udccb",
+      "active": true,
+      "dept": "Executive"
+    },
+    {
+      "key": "esg_climate",
+      "name": "ESG & Climate Risk",
+      "page": "85_esg.py",
+      "icon": "\ud83c\udf31",
+      "active": true,
+      "dept": "Risk & Compliance"
     }
   ],
   "dept_module_assignments": {

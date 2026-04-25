@@ -13,6 +13,14 @@ from pages._access import require_access
 import requests, re
 
 require_access("customer360")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]

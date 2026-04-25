@@ -515,5 +515,425 @@
       "_ops_grp",
       "_exec_grp"
     ]
+  },
+  "cbk_returns": {
+    "hardcoded": {
+      "total_returns": 47,
+      "frequencies": [
+        "Daily",
+        "Monthly",
+        "Quarterly",
+        "Annual"
+      ],
+      "regulator": "Central Bank of Kenya",
+      "submission_portal": "CBK FSP Portal",
+      "penalty_per_late_return_kes": 50000
+    },
+    "configurable": {
+      "early_warning_days": 7,
+      "escalation_email": "compliance@ecobank.co.ke",
+      "preparer_review_days": 3,
+      "approver_review_days": 2,
+      "minimum_accuracy_pct": 95,
+      "auto_remind_preparers": true
+    },
+    "bsc_kpis": [
+      "K072",
+      "K073",
+      "K074"
+    ],
+    "dept": "Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_finance_grp",
+      "_exec_grp"
+    ]
+  },
+  "data_protection": {
+    "hardcoded": {
+      "regulator": "Office of the Data Protection Commissioner (ODPC)",
+      "law": "Data Protection Act 2019 (Kenya)",
+      "breach_notification_window_hours": 72,
+      "max_penalty_kes": 5000000,
+      "max_penalty_pct_turnover": 1,
+      "principles": [
+        "Lawfulness",
+        "Purpose Limitation",
+        "Data Minimisation",
+        "Accuracy",
+        "Storage Limitation",
+        "Integrity",
+        "Confidentiality"
+      ]
+    },
+    "configurable": {
+      "dpia_target_days": 30,
+      "ropa_review_frequency_months": 12,
+      "training_frequency_months": 6,
+      "alert_email": "dpo@ecobank.co.ke",
+      "auto_dpia_required_threshold": "High Risk"
+    },
+    "bsc_kpis": [
+      "K075",
+      "K076",
+      "K077"
+    ],
+    "dept": "Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_legal_grp",
+      "_exec_grp"
+    ]
+  },
+  "sanctions_screening": {
+    "hardcoded": {
+      "watchlists_required": [
+        "OFAC",
+        "UN Security Council",
+        "EU Consolidated",
+        "CBK",
+        "HMT (UK)"
+      ],
+      "screening_frequency": "Daily + Real-time",
+      "match_review_window_hours": 24,
+      "regulator": "Central Bank of Kenya"
+    },
+    "configurable": {
+      "match_score_threshold": 75,
+      "auto_block_threshold": 95,
+      "alert_email": "sanctions@ecobank.co.ke",
+      "review_team": "Compliance",
+      "false_positive_target_pct": 90
+    },
+    "bsc_kpis": [
+      "K078",
+      "K079"
+    ],
+    "dept": "Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_exec_grp"
+    ]
+  },
+  "regulatory_capital": {
+    "hardcoded": {
+      "regulator": "Central Bank of Kenya",
+      "framework": "Basel III + CBK Prudential Guidelines",
+      "tier1_minimum_pct": 10.5,
+      "total_capital_minimum_pct": 14.5,
+      "leverage_minimum_pct": 4.5,
+      "lcr_minimum_pct": 100,
+      "nsfr_minimum_pct": 100,
+      "calculation_frequency": "Daily"
+    },
+    "configurable": {
+      "tier1_warning_pct": 12.0,
+      "total_capital_warning_pct": 16.0,
+      "lcr_warning_pct": 110,
+      "nsfr_warning_pct": 110,
+      "alco_review_frequency_days": 7,
+      "stress_test_frequency_months": 3,
+      "buffer_target_pct": 2.0
+    },
+    "bsc_kpis": [
+      "K080",
+      "K081",
+      "K082",
+      "K083"
+    ],
+    "dept": "Treasury",
+    "nav_groups": [
+      "_treasury_grp",
+      "_finance_grp",
+      "_risk_grp",
+      "_exec_grp"
+    ]
+  },
+  "customer_onboarding": {
+    "hardcoded": {
+      "stages": [
+        "Application Started",
+        "ID Verified",
+        "KYC Completed",
+        "Account Approved",
+        "Account Funded",
+        "First Transaction",
+        "Active Customer"
+      ],
+      "ekyc_required": true,
+      "amlcft_screening_required": true,
+      "channels_supported": [
+        "Mobile App",
+        "Web Portal",
+        "Branch",
+        "Agent",
+        "Call Centre",
+        "WhatsApp"
+      ]
+    },
+    "configurable": {
+      "tat_target_hours": 24,
+      "completion_target_pct": 70,
+      "first_login_target_pct": 80,
+      "abandonment_alert_pct": 30,
+      "rm_assignment_threshold_kes": 500000,
+      "video_kyc_enabled": true,
+      "auto_account_funding_enabled": true
+    },
+    "bsc_kpis": [
+      "K084",
+      "K085",
+      "K086"
+    ],
+    "dept": "Retail Banking",
+    "nav_groups": [
+      "_retail_grp",
+      "_dfs_grp",
+      "_ops_grp",
+      "_exec_grp"
+    ]
+  },
+  "card_management": {
+    "hardcoded": {
+      "card_brands": [
+        "Visa",
+        "MasterCard"
+      ],
+      "card_types": [
+        "Debit",
+        "Credit",
+        "Prepaid",
+        "Business",
+        "Premium"
+      ],
+      "dispute_sla_days": 7,
+      "fraud_reporting_window_hours": 24,
+      "pci_dss_compliant": true
+    },
+    "configurable": {
+      "activation_window_days": 14,
+      "dispute_resolution_target_pct": 95,
+      "fraud_loss_threshold_pct": 0.05,
+      "card_centre_email": "cards@ecobank.co.ke",
+      "auto_block_suspicious": true,
+      "monthly_fee_review_months": 12
+    },
+    "bsc_kpis": [
+      "K087",
+      "K088",
+      "K089",
+      "K090"
+    ],
+    "dept": "Retail Banking",
+    "nav_groups": [
+      "_retail_grp",
+      "_ops_grp",
+      "_exec_grp"
+    ]
+  },
+  "merchant_acquiring": {
+    "hardcoded": {
+      "regulator": "Central Bank of Kenya",
+      "card_schemes": [
+        "Visa",
+        "MasterCard"
+      ],
+      "settlement_currency": "KES",
+      "minimum_kyc_required": true
+    },
+    "configurable": {
+      "tat_target_days": 7,
+      "mdr_floor_pct": 0.5,
+      "mdr_ceiling_pct": 3.0,
+      "settlement_t_plus": 1,
+      "min_monthly_volume_for_tier_review": 500,
+      "complaint_threshold_per_merchant": 5,
+      "chargeback_threshold_per_merchant": 3
+    },
+    "bsc_kpis": [
+      "K091",
+      "K092",
+      "K093"
+    ],
+    "dept": "Commercial & Corporate",
+    "nav_groups": [
+      "_comm_grp",
+      "_dfs_grp",
+      "_retail_grp",
+      "_exec_grp"
+    ]
+  },
+  "alm_liquidity": {
+    "hardcoded": {
+      "tenor_buckets": [
+        "Sight",
+        "1-7d",
+        "8-30d",
+        "1-3m",
+        "3-6m",
+        "6-12m",
+        "1-3y",
+        "3-5y",
+        "5y+"
+      ],
+      "alco_minimum_attendance_pct": 75,
+      "regulator": "Central Bank of Kenya",
+      "framework": "Basel III + CBK Prudential"
+    },
+    "configurable": {
+      "alco_meeting_frequency_days": 7,
+      "concentration_alert_pct": 25,
+      "stress_test_frequency_months": 3,
+      "contingency_plan_test_frequency_months": 6,
+      "liquidity_buffer_target_kes_b": 30,
+      "papers_circulation_days": 3
+    },
+    "bsc_kpis": [
+      "K094",
+      "K095",
+      "K096",
+      "K097"
+    ],
+    "dept": "Treasury",
+    "nav_groups": [
+      "_treasury_grp",
+      "_risk_grp",
+      "_finance_grp",
+      "_exec_grp"
+    ]
+  },
+  "operational_risk": {
+    "hardcoded": {
+      "framework": "Basel II/III + CBK Risk Based Supervision",
+      "categories": [
+        "Internal Fraud",
+        "External Fraud",
+        "Employment Practices",
+        "Clients/Products",
+        "Damage to Assets",
+        "Business Disruption",
+        "Execution Failures"
+      ],
+      "regulatory_threshold_kes": 1000000,
+      "near_miss_capture_required": true
+    },
+    "configurable": {
+      "loss_event_target_count": 100,
+      "near_miss_target_count": 200,
+      "investigation_target_days": 14,
+      "lessons_learned_required": true,
+      "loss_threshold_for_committee_kes": 500000,
+      "auto_link_to_rcsa": true
+    },
+    "bsc_kpis": [
+      "K098",
+      "K099",
+      "K100"
+    ],
+    "dept": "Risk & Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_audit_grp",
+      "_exec_grp"
+    ]
+  },
+  "strategic_initiatives": {
+    "hardcoded": {
+      "rag_levels": [
+        "Green",
+        "Amber",
+        "Red"
+      ],
+      "review_required_frequency_days": 30
+    },
+    "configurable": {
+      "pillars": [
+        "Customer Experience",
+        "Operational Excellence",
+        "Financial Performance",
+        "People & Culture",
+        "Digital Transformation",
+        "Risk & Compliance"
+      ],
+      "amber_threshold_completion_pct": 70,
+      "red_threshold_completion_pct": 40,
+      "executive_review_frequency_days": 30,
+      "alert_email": "strategy@ecobank.co.ke"
+    },
+    "bsc_kpis": [
+      "K101",
+      "K102",
+      "K103"
+    ],
+    "dept": "Executive",
+    "nav_groups": [
+      "_exec_grp"
+    ]
+  },
+  "board_papers": {
+    "hardcoded": {
+      "committees": [
+        "Main Board",
+        "Board Audit Committee",
+        "Board Risk Committee",
+        "Board Credit Committee",
+        "Board Nomination Committee",
+        "Board IT Committee",
+        "Board Compensation Committee",
+        "ALCO"
+      ],
+      "minimum_circulation_days": 7,
+      "regulator": "CBK Corporate Governance Guidelines"
+    },
+    "configurable": {
+      "deadline_buffer_days": 7,
+      "review_target_days": 3,
+      "action_item_target_days": 30,
+      "minimum_quorum_pct": 67,
+      "alert_email": "company.secretary@ecobank.co.ke"
+    },
+    "bsc_kpis": [
+      "K104",
+      "K105"
+    ],
+    "dept": "Executive",
+    "nav_groups": [
+      "_exec_grp",
+      "_legal_grp",
+      "_audit_grp"
+    ]
+  },
+  "esg_climate": {
+    "hardcoded": {
+      "regulator": "CBK Climate Risk Guidance 2023",
+      "esg_pillars": [
+        "Environmental",
+        "Social",
+        "Governance"
+      ],
+      "climate_risk_types": [
+        "Physical Risk",
+        "Transition Risk",
+        "Liability Risk"
+      ]
+    },
+    "configurable": {
+      "green_loan_target_pct": 15,
+      "esg_score_target": 75,
+      "climate_assessment_frequency_months": 12,
+      "csr_budget_target_pct": 1,
+      "tree_planting_annual_target": 100000,
+      "alert_email": "sustainability@ecobank.co.ke"
+    },
+    "bsc_kpis": [
+      "K106",
+      "K107",
+      "K108"
+    ],
+    "dept": "Risk & Compliance",
+    "nav_groups": [
+      "_risk_grp",
+      "_exec_grp"
+    ]
   }
 }

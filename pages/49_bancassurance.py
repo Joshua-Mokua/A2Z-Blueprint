@@ -13,6 +13,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("bancassurance_mgmt")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -77,6 +85,7 @@ with tabs[1]:
     _render(renewals)
     if renewals and st.button("📧 Send renewal reminders",key="bnc_renew",type="primary"):
         audit_log("BNC_RENEWAL_REMINDERS",uname,f"{len(renewals)} renewal reminders sent")
+        _bsc_trigger(uname, "K023")
         st.success(f"✅ {len(renewals)} renewal reminder notifications queued")
 
 with tabs[2]:

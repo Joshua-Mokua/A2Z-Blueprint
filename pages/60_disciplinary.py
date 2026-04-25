@@ -11,6 +11,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("disciplinary")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -96,5 +104,6 @@ with tabs[3]:
             })
             (DATA/"disciplinary_register.json").write_text(json.dumps(all_c, indent=2))
             audit_log("DISC_CASE_OPENED", uname, f"DISC{len(all_c):04d}: {_off}")
+            _bsc_trigger(uname, "K018")
             st.cache_data.clear(); st.success("✅ Case opened"); st.rerun()
         else: st.error("Staff name and description required.")

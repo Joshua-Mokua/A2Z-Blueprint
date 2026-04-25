@@ -10,6 +10,13 @@ from utils.core import LoanApplicationManager, audit_log, requires_dual_approval
 
 require_access("loan_applications")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()
 
@@ -208,6 +215,7 @@ with tabs[0]:
                         lam.save()
                         audit_log("LMS_LOCATION_PINNED", uname,
                                   f"{app['id']}|{_map_lat},{_map_lng}")
+                        _bsc_trigger(uname, "K045")
                         st.cache_data.clear()
                         st.success(f"✅ Location saved")
                         st.rerun()
@@ -378,6 +386,7 @@ with tabs[3]:
                              type="primary"):
                     lam.submit_to_credit(app['id'])
                     audit_log("LMS_SUBMITTED_TO_CREDIT", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K045")
                     st.cache_data.clear()
                     st.success(f"✅ {app['id']} submitted to Credit Analysis queue")
                     st.rerun()
@@ -425,6 +434,7 @@ if len(tabs) > 4:
                     lam.save()
                     audit_log("LMS_BULK_ASSIGNED", uname,
                               f"{_assigned_n} apps → {_sel_analyst_bulk}")
+                    _bsc_trigger(uname, "K045")
                     st.cache_data.clear()
                     st.success(f"✅ {_assigned_n} applications assigned to {_sel_analyst_bulk}")
                     st.rerun()

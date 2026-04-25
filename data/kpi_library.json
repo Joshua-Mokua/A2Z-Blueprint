@@ -103,7 +103,10 @@
       "DIGITAL_ACT",
       "TRANSACTIONS",
       "COMPLIANCE",
-      "DILIGENCE"
+      "DILIGENCE",
+      "K001",
+      "K002",
+      "K085"
     ],
     "Director Commercial Banking": [
       "LOAN_GROWTH",
@@ -113,7 +116,11 @@
       "NPL_RATIO",
       "PAR",
       "NEW_CUST",
-      "DILIGENCE"
+      "DILIGENCE",
+      "K001",
+      "K003",
+      "K022",
+      "K041"
     ],
     "Regional Head": [
       "DEP_GROWTH",
@@ -296,7 +303,11 @@
       "NPL_RATIO",
       "NEW_CUST",
       "COMPLIANCE",
-      "DILIGENCE"
+      "DILIGENCE",
+      "K060",
+      "K062",
+      "K001",
+      "K002"
     ],
     "Senior Branch Manager": [
       "PBT",
@@ -584,7 +595,9 @@
       "K016",
       "K017",
       "K019",
-      "K035"
+      "K035",
+      "K080",
+      "K081"
     ],
     "Chief Human Resource Officer": [
       "K018",
@@ -604,7 +617,11 @@
       "K021",
       "K016",
       "K019",
-      "K035"
+      "K035",
+      "K066",
+      "K067",
+      "K068",
+      "K070"
     ],
     "Chief Operating Officer": [
       "K010",
@@ -614,7 +631,11 @@
       "K012",
       "K026",
       "K016",
-      "K019"
+      "K019",
+      "K039",
+      "K055",
+      "K056",
+      "K057"
     ],
     "Chief Retail Banking Officer": [
       "K001",
@@ -637,7 +658,9 @@
       "K021",
       "K016",
       "K019",
-      "K035"
+      "K035",
+      "K049",
+      "K047"
     ],
     "Company Secretary and Chief Legal Officer": [
       "LEGAL_SLA_DOCS",
@@ -825,7 +848,10 @@
       "K015",
       "K016",
       "K019",
-      "K035"
+      "K035",
+      "K080",
+      "K081",
+      "K082"
     ],
     "Head, Customer Experience": [
       "K031",
@@ -931,7 +957,12 @@
       "K004",
       "K028",
       "K016",
-      "K019"
+      "K019",
+      "K098",
+      "K099",
+      "K100",
+      "K047",
+      "K017"
     ],
     "Relationship Manager - Agribusiness": [
       "K001",
@@ -1436,7 +1467,8 @@
       "K063",
       "K064",
       "K045",
-      "K017"
+      "K017",
+      "K065"
     ],
     "Trade Finance Operations Officer": [
       "K022",
@@ -1532,7 +1564,10 @@
       "K036",
       "K037",
       "K016",
-      "K017"
+      "K017",
+      "K066",
+      "K067",
+      "K068"
     ],
     "Systems Administrator": [
       "K026",
@@ -1540,7 +1575,10 @@
       "K040",
       "K036",
       "K016",
-      "K017"
+      "K017",
+      "K066",
+      "K067",
+      "K068"
     ],
     "IT Support Officer": [
       "K039",
@@ -1614,7 +1652,9 @@
       "K049",
       "K050",
       "K036",
-      "K017"
+      "K017",
+      "K058",
+      "K059"
     ],
     "AML Officer": [
       "K049",
@@ -1659,7 +1699,10 @@
       "K051",
       "K036",
       "K037",
-      "K017"
+      "K017",
+      "K055",
+      "K056",
+      "K057"
     ],
     "Facilities Manager": [
       "K051",
@@ -1769,7 +1812,10 @@
       "K014",
       "K015",
       "K036",
-      "K017"
+      "K017",
+      "K075",
+      "K076",
+      "K077"
     ],
     "Compliance Manager": [
       "K058",
@@ -1794,7 +1840,8 @@
       "K061",
       "K045",
       "K041",
-      "K017"
+      "K017",
+      "K062"
     ],
     "Supply Chain Finance RM": [
       "K060",
@@ -1878,6 +1925,266 @@
       "K039",
       "K069",
       "K036",
+      "K017"
+    ],
+    "Nostro Officer": [
+      "K056",
+      "K055",
+      "K057"
+    ],
+    "Head of SME": [
+      "K060",
+      "K061",
+      "K062",
+      "K001"
+    ],
+    "SME Relationship Manager": [
+      "K060",
+      "K062",
+      "K001",
+      "K002"
+    ],
+    "Supply Chain Finance Officer": [
+      "K060",
+      "K061",
+      "K062"
+    ],
+    "Head of Trade Finance": [
+      "K063",
+      "K064",
+      "K065",
+      "K022"
+    ],
+    "Service Desk Manager": [
+      "K067",
+      "K068",
+      "K039"
+    ],
+    "Infrastructure Manager": [
+      "K066",
+      "K067",
+      "K068"
+    ],
+    "Head of Digital Banking": [
+      "K069",
+      "K070",
+      "K071",
+      "K024"
+    ],
+    "Mobile Banking Officer": [
+      "K069",
+      "K070",
+      "K071"
+    ],
+    "Digital Financial Services Officer": [
+      "K069",
+      "K070",
+      "K071",
+      "K024"
+    ],
+    "Head of Compliance": [
+      "K072",
+      "K073",
+      "K074",
+      "K076",
+      "K078",
+      "K014",
+      "K049",
+      "K017"
+    ],
+    "CBK Returns Officer": [
+      "K072",
+      "K073",
+      "K074",
+      "K015",
+      "K017"
+    ],
+    "Regulatory Reporting Manager": [
+      "K072",
+      "K073",
+      "K074",
+      "K080",
+      "K081",
+      "K017"
+    ],
+    "DPO Analyst": [
+      "K075",
+      "K076",
+      "K077",
+      "K017"
+    ],
+    "Sanctions Officer": [
+      "K078",
+      "K079",
+      "K049",
+      "K014",
+      "K017"
+    ],
+    "Head of Risk": [
+      "K080",
+      "K081",
+      "K082",
+      "K083",
+      "K094",
+      "K096",
+      "K098",
+      "K017"
+    ],
+    "Treasury Manager": [
+      "K080",
+      "K081",
+      "K082",
+      "K094",
+      "K095",
+      "K097",
+      "K017"
+    ],
+    "ALCO Secretary": [
+      "K081",
+      "K082",
+      "K094",
+      "K095",
+      "K097",
+      "K104",
+      "K017"
+    ],
+    "Head of Retail Banking": [
+      "K001",
+      "K002",
+      "K084",
+      "K085",
+      "K086",
+      "K087",
+      "K088",
+      "K017"
+    ],
+    "Onboarding Manager": [
+      "K084",
+      "K085",
+      "K086",
+      "K039",
+      "K017"
+    ],
+    "Onboarding Officer": [
+      "K084",
+      "K085",
+      "K086",
+      "K017"
+    ],
+    "Card Centre Manager": [
+      "K087",
+      "K088",
+      "K089",
+      "K090",
+      "K017",
+      "K036"
+    ],
+    "Card Operations Officer": [
+      "K087",
+      "K088",
+      "K089",
+      "K039",
+      "K017"
+    ],
+    "Merchant Acquiring Manager": [
+      "K091",
+      "K092",
+      "K093",
+      "K042",
+      "K017"
+    ],
+    "Merchant Officer": [
+      "K091",
+      "K092",
+      "K093",
+      "K041",
+      "K017"
+    ],
+    "ALM Officer": [
+      "K094",
+      "K095",
+      "K096",
+      "K097",
+      "K017"
+    ],
+    "Operational Risk Officer": [
+      "K098",
+      "K099",
+      "K100",
+      "K017"
+    ],
+    "Head of Strategy": [
+      "K101",
+      "K102",
+      "K103",
+      "K005",
+      "K017",
+      "K036"
+    ],
+    "Strategy Officer": [
+      "K101",
+      "K102",
+      "K103",
+      "K036",
+      "K017"
+    ],
+    "Company Secretary": [
+      "K104",
+      "K105",
+      "K015",
+      "K017"
+    ],
+    "Board Secretary": [
+      "K104",
+      "K105",
+      "K039",
+      "K017"
+    ],
+    "Sustainability Manager": [
+      "K106",
+      "K107",
+      "K108",
+      "K043",
+      "K017"
+    ],
+    "ESG Officer": [
+      "K106",
+      "K107",
+      "K108",
+      "K017"
+    ],
+    "Climate Risk Officer": [
+      "K107",
+      "K106",
+      "K014",
+      "K017"
+    ],
+    "Chief Compliance Officer": [
+      "K014",
+      "K049",
+      "K072",
+      "K073",
+      "K076",
+      "K078",
+      "K017"
+    ],
+    "Director Risk": [
+      "K014",
+      "K049",
+      "K080",
+      "K081",
+      "K096",
+      "K098",
+      "K107",
+      "K017"
+    ],
+    "Director IT": [
+      "K026",
+      "K066",
+      "K067",
+      "K068",
+      "K070",
+      "K069",
       "K017"
     ]
   },
@@ -2757,6 +3064,413 @@
       "source": "channels",
       "auto_calc": "digital_txn_growth_pct",
       "description": "YoY growth in digital transaction volumes"
+    },
+    {
+      "id": "K072",
+      "name": "CBK Returns Filed On Time (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "cbk_returns",
+      "auto_calc": "cbk_on_time_pct",
+      "description": "% of CBK returns submitted by deadline"
+    },
+    {
+      "id": "K073",
+      "name": "CBK Returns Accuracy (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "cbk_returns",
+      "auto_calc": "cbk_accuracy_pct",
+      "description": "Average accuracy score of CBK returns submitted"
+    },
+    {
+      "id": "K074",
+      "name": "Regulatory Findings Closed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "cbk_returns",
+      "auto_calc": "reg_findings_closed_pct",
+      "description": "% of CBK regulatory findings closed within deadline"
+    },
+    {
+      "id": "K075",
+      "name": "DPIAs Completed On Time (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "dpo_register",
+      "auto_calc": "dpia_on_time_pct",
+      "description": "% of DPIAs completed by target date"
+    },
+    {
+      "id": "K076",
+      "name": "Breaches Reported Within 72hrs (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "dpo_register",
+      "auto_calc": "breach_72h_pct",
+      "description": "% of data breaches reported to ODPC within 72 hours"
+    },
+    {
+      "id": "K077",
+      "name": "ROPA Records Up-to-date (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "dpo_register",
+      "auto_calc": "ropa_current_pct",
+      "description": "% of ROPA records reviewed within last 12 months"
+    },
+    {
+      "id": "K078",
+      "name": "Sanctions Hits Cleared Within SLA (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "sanctions_register",
+      "auto_calc": "sanctions_sla_pct",
+      "description": "% of sanctions hits reviewed and cleared within 24 hours"
+    },
+    {
+      "id": "K079",
+      "name": "Sanctions Lists Refresh Frequency",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "days",
+      "direction": "lower_better",
+      "source": "sanctions_register",
+      "auto_calc": "sanctions_refresh_days",
+      "description": "Days between sanctions list refreshes"
+    },
+    {
+      "id": "K080",
+      "name": "Capital Adequacy Ratio (%)",
+      "pillar": "Financial",
+      "weight": 0.12,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "capital_liquidity",
+      "auto_calc": "car_pct",
+      "description": "Total capital adequacy ratio vs CBK 14.5% minimum"
+    },
+    {
+      "id": "K081",
+      "name": "Liquidity Coverage Ratio (%)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "capital_liquidity",
+      "auto_calc": "lcr_pct",
+      "description": "LCR vs CBK 100% minimum"
+    },
+    {
+      "id": "K082",
+      "name": "Net Stable Funding Ratio (%)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "capital_liquidity",
+      "auto_calc": "nsfr_pct",
+      "description": "NSFR vs CBK 100% minimum"
+    },
+    {
+      "id": "K083",
+      "name": "Tier 1 Capital Ratio (%)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "capital_liquidity",
+      "auto_calc": "tier1_pct",
+      "description": "Tier 1 ratio vs CBK 10.5% minimum"
+    },
+    {
+      "id": "K084",
+      "name": "Account Opening TAT (hours)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "hours",
+      "direction": "lower_better",
+      "source": "customer_onboarding",
+      "auto_calc": "onboarding_tat_hours",
+      "description": "Average hours from application start to account active"
+    },
+    {
+      "id": "K085",
+      "name": "Onboarding Completion Rate (%)",
+      "pillar": "Customer Focus",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "customer_onboarding",
+      "auto_calc": "onboarding_completion_pct",
+      "description": "% of started applications that reach Active Customer stage"
+    },
+    {
+      "id": "K086",
+      "name": "First Login Within 7 Days (%)",
+      "pillar": "Customer Focus",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "customer_onboarding",
+      "auto_calc": "first_login_7d_pct",
+      "description": "% of new customers who log in within 7 days of activation"
+    },
+    {
+      "id": "K087",
+      "name": "Cards Activated (count)",
+      "pillar": "Customer Focus",
+      "weight": 0.08,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "card_management",
+      "auto_calc": "cards_activated",
+      "description": "Number of cards activated in period"
+    },
+    {
+      "id": "K088",
+      "name": "Card Spend (KES M)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "KES M",
+      "direction": "higher_better",
+      "source": "card_management",
+      "auto_calc": "card_spend_m",
+      "description": "Total card spend volume in period"
+    },
+    {
+      "id": "K089",
+      "name": "Card Disputes Resolved Within SLA (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "card_management",
+      "auto_calc": "card_dispute_sla_pct",
+      "description": "% of card disputes resolved within 7 days"
+    },
+    {
+      "id": "K090",
+      "name": "Card Fraud Loss (%)",
+      "pillar": "Financial",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "lower_better",
+      "source": "card_management",
+      "auto_calc": "card_fraud_loss_pct",
+      "description": "Card fraud losses as % of card spend"
+    },
+    {
+      "id": "K091",
+      "name": "Active POS Merchants",
+      "pillar": "Customer Focus",
+      "weight": 0.08,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "merchant_acquiring",
+      "auto_calc": "active_merchants",
+      "description": "Number of merchants with active POS terminals"
+    },
+    {
+      "id": "K092",
+      "name": "Merchant Acquiring Revenue (KES M)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "KES M",
+      "direction": "higher_better",
+      "source": "merchant_acquiring",
+      "auto_calc": "merchant_revenue_m",
+      "description": "YTD merchant acquiring fee revenue"
+    },
+    {
+      "id": "K093",
+      "name": "Merchant Onboarding TAT (days)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "days",
+      "direction": "lower_better",
+      "source": "merchant_acquiring",
+      "auto_calc": "merchant_tat_days",
+      "description": "Average days from application to active terminal"
+    },
+    {
+      "id": "K094",
+      "name": "Daily Liquidity Buffer (KES B)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "KES B",
+      "direction": "higher_better",
+      "source": "alm_liquidity",
+      "auto_calc": "liquidity_buffer_b",
+      "description": "Liquid assets above LCR minimum"
+    },
+    {
+      "id": "K095",
+      "name": "Funding Concentration Ratio (%)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "lower_better",
+      "source": "alm_liquidity",
+      "auto_calc": "funding_concentration_pct",
+      "description": "Top funding source as % of total"
+    },
+    {
+      "id": "K096",
+      "name": "Stress Test Coverage (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "alm_liquidity",
+      "auto_calc": "stress_test_coverage_pct",
+      "description": "% of risk areas covered by stress tests"
+    },
+    {
+      "id": "K097",
+      "name": "ALCO Action Items Closed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "alm_liquidity",
+      "auto_calc": "alco_actions_closed_pct",
+      "description": "% of ALCO action items closed within deadline"
+    },
+    {
+      "id": "K098",
+      "name": "OpRisk Net Losses (KES M)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "KES M",
+      "direction": "lower_better",
+      "source": "op_risk_losses",
+      "auto_calc": "oprisk_net_losses_m",
+      "description": "Net operational risk losses YTD"
+    },
+    {
+      "id": "K099",
+      "name": "Loss Events Reported (count)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "op_risk_losses",
+      "auto_calc": "loss_events_count",
+      "description": "Number of OpRisk events reported (higher = better culture)"
+    },
+    {
+      "id": "K100",
+      "name": "Near-misses Captured (count)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "op_risk_losses",
+      "auto_calc": "near_miss_count",
+      "description": "Number of near-misses captured (proactive risk culture)"
+    },
+    {
+      "id": "K101",
+      "name": "Strategic Initiatives On Track (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "strategic_initiatives",
+      "auto_calc": "strat_init_on_track_pct",
+      "description": "% of strategic initiatives at Green or On Track status"
+    },
+    {
+      "id": "K102",
+      "name": "Strategy Execution Score",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "score",
+      "direction": "higher_better",
+      "source": "strategic_initiatives",
+      "auto_calc": "strategy_exec_score",
+      "description": "Weighted score of strategic initiative completion"
+    },
+    {
+      "id": "K103",
+      "name": "Initiative ROI vs Plan (%)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "strategic_initiatives",
+      "auto_calc": "init_roi_vs_plan_pct",
+      "description": "Actual ROI vs planned ROI for completed initiatives"
+    },
+    {
+      "id": "K104",
+      "name": "Board Papers Submitted On Time (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "board_papers",
+      "auto_calc": "board_papers_on_time_pct",
+      "description": "% of board papers submitted by deadline"
+    },
+    {
+      "id": "K105",
+      "name": "Board Action Items Closed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "board_papers",
+      "auto_calc": "board_actions_closed_pct",
+      "description": "% of board action items closed within deadline"
+    },
+    {
+      "id": "K106",
+      "name": "Green Loan Portfolio (KES M)",
+      "pillar": "Financial",
+      "weight": 0.08,
+      "unit": "KES M",
+      "direction": "higher_better",
+      "source": "esg_climate",
+      "auto_calc": "green_loans_m",
+      "description": "Total outstanding green/sustainable lending"
+    },
+    {
+      "id": "K107",
+      "name": "Climate Risk Assessments Completed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "esg_climate",
+      "auto_calc": "climate_assess_pct",
+      "description": "% of portfolio segments with completed climate risk assessment"
+    },
+    {
+      "id": "K108",
+      "name": "ESG Overall Score",
+      "pillar": "Customer Focus",
+      "weight": 0.05,
+      "unit": "score",
+      "direction": "higher_better",
+      "source": "esg_climate",
+      "auto_calc": "esg_score",
+      "description": "Bank's overall ESG score (out of 100)"
     }
   ]
 }

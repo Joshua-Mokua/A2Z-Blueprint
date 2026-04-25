@@ -20,6 +20,13 @@ def _safe_date(s, fallback=None):
 
 require_access("sbu")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
@@ -599,6 +606,7 @@ with sbu_tabs[3]:
                         'created_by':       uname,
                     })
                     audit_log("TURNAROUND_INIT", uname, f"{new_id}:{branch['Unit']}")
+                    _bsc_trigger(uname, "K005")
                     st.success(f"Initiative {new_id} created in Execute module!")
 
 # ════════════════════════════════════════════════════════════════
@@ -680,6 +688,7 @@ with sbu_tabs[4]:
                 })
                 st.session_state['sbu_action_plans'] = action_plans
                 audit_log("ACTION_CREATED", uname, f"{sel_branch}:{action_text[:40]}")
+                _bsc_trigger(uname, "K005")
                 st.success("Action item added — owner must accept before work begins.")
                 st.cache_data.clear()
                 st.rerun()
@@ -753,6 +762,7 @@ with sbu_tabs[4]:
                         action_plans[sel_branch][ai]['accepted_at'] = str(date.today())
                         st.session_state['sbu_action_plans'] = action_plans
                         audit_log("ACTION_ACCEPTED", uname, f"{sel_branch}:{action['id']}")
+                        _bsc_trigger(uname, "K005")
                         st.success("Action accepted — you are now accountable for delivery.")
                         st.cache_data.clear()
                         st.rerun()
@@ -783,6 +793,7 @@ with sbu_tabs[4]:
                         st.session_state['sbu_action_plans'] = action_plans
                         audit_log("ACTION_UPDATED", uname,
                                   f"{sel_branch}:{action['id']}:{new_status}")
+                        _bsc_trigger(uname, "K005")
                         st.success("Updated!"); st.rerun()
 
                 # Notes history

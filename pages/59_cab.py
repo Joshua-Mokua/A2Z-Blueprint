@@ -11,6 +11,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("cab")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -105,6 +113,7 @@ with tabs[3]:
                 })
                 (DATA/"cab_register.json").write_text(json.dumps(all_c, indent=2))
                 audit_log("CAB_CHANGE_RAISED", uname, f"{_ctype}: {_title[:60]}")
+                _bsc_trigger(uname, "K036")
                 st.cache_data.clear(); st.success("✅ Change request submitted"); st.rerun()
             else: st.error("Title required.")
     else:
@@ -123,6 +132,7 @@ with tabs[4]:
                         if c2["id"]==c["id"]: c2["post_impl_review"]=True; c2["pir_outcome"]=outcome
                     (DATA/"cab_register.json").write_text(json.dumps(all_c, indent=2))
                     audit_log("CAB_PIR_RECORDED", uname, f"{c['id']}: {outcome}")
+                    _bsc_trigger(uname, "K036")
                     st.cache_data.clear(); st.success("✅ PIR recorded"); st.rerun()
     else:
         st.success("✅ All completed changes have PIRs on file.")

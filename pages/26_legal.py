@@ -11,6 +11,13 @@ from utils.core import audit_log, requires_dual_approval, submit_for_approval
 
 require_access("legal")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()
 
@@ -237,6 +244,7 @@ with tabs[0]:
                         json.dumps(all_matters, indent=2))
                     audit_log("LEGAL_STEP_ADVANCED", uname,
                               f"{m['id']}|{m['next_step']}|{m['client_name']}")
+                    _bsc_trigger(uname, "K039")
                     st.cache_data.clear()
                     st.success(f"✅ Advanced: {m['next_step']}")
                     st.rerun()
@@ -267,6 +275,7 @@ with tabs[0]:
                             __import__("json").dumps(_all_m, indent=2))
                         audit_log("LEGAL_FEE_RECORDED", uname,
                                   f"{m['id']}|KES {_new_fee:,.0f}")
+                        _bsc_trigger(uname, "K039")
                         st.cache_data.clear()
                         st.success(f"✅ Fee KES {_new_fee:,.0f} recorded")
                         st.rerun()
@@ -286,6 +295,7 @@ with tabs[0]:
                         __import__("json").dumps(_all_m, indent=2))
                     audit_log("LEGAL_ESCALATED_CCO", uname,
                               f"{m['id']}|{m['client_name']}|escalated to CCO")
+                    _bsc_trigger(uname, "K039")
                     st.cache_data.clear()
                     st.warning(f"⚠️ {m['id']} escalated to CCO — matter put on hold")
                     st.rerun()
@@ -597,6 +607,7 @@ with tabs[7]:
             (DATA/"legal_matters.json").write_text(json.dumps(all_m, indent=2))
             audit_log("LEGAL_MATTER_OPENED", uname,
                       f"{new_id}|{mt_sel}|{client}")
+            _bsc_trigger(uname, "K039")
             st.cache_data.clear()
             st.success(f"✅ Matter {new_id} opened — SLA: {sla_d} days")
             st.rerun()

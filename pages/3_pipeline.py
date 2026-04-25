@@ -11,6 +11,13 @@ from pages._shared import load_shared_state, get_user_proposition, get_propositi
 from pages._access import require_access, get_visible_staff
 require_access("pipeline")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 lam = LoanApplicationManager()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
@@ -557,6 +564,7 @@ with tabs[0]:
                                     "referral_note":_ref_note,"is_ntb":False,
                                 })
                                 audit_log("DEAL_REFERRED", uname, f"{acc_num}→{_ref_to}")
+                                _bsc_trigger(uname, "K041")
                                 st.success(f"✅ Referred to {_ref_to}")
                                 st.cache_data.clear()
                                 st.rerun()
@@ -948,6 +956,7 @@ with tabs[0]:
                 did = pm.add_deal(_data)
                 audit_log("DEAL_ADDED" if _add else "DEAL_DRAFTED", uname,
                           f"{did}|{client_name}|{deal_value}")
+                _bsc_trigger(uname, "K041")
 
                 # Create linked pipeline deals for products of interest (account pipeline only)
                 if _add and _is_account_pip and _interest_prods:
@@ -969,6 +978,7 @@ with tabs[0]:
                             "draft": False,
                         })
                         audit_log("LINKED_DEAL_CREATED", uname, f"{_ip_did}|{_ip}|linked:{did}")
+                        _bsc_trigger(uname, "K041")
                 st.session_state["_deal_form_n"] = st.session_state.get("_deal_form_n",0)+1
                 st.session_state["_form_n"]      = st.session_state.get("_form_n",0)+1
                 # Clear persisted form values on success
@@ -1218,6 +1228,7 @@ onmouseout="this.style.boxShadow='none'">
                                     "next_action":_nna,"next_action_date":str(_nnd)},uname)
                             _who = "owner" if _is_owner else "backup"
                             audit_log("DEAL_UPDATED",uname,f"{_sd['id']}|{_who}")
+                            _bsc_trigger(uname, "K041")
                             # LMS handoff — create application record when deal enters credit stages
                             _LMS_STAGES = {"Credit Review","Approval","Bank Approval",
                                            "Credit Committee","Documentation","Vetting","Disbursed"}
@@ -1263,6 +1274,7 @@ onmouseout="this.style.boxShadow='none'">
                                         _lam.save()
                                         audit_log("LMS_APPLICATION_CREATED", uname,
                                                   f"{_sd['id']}|{_sd.get('client_name','')}|pipeline→credit")
+                                        _bsc_trigger(uname, "K041")
                                 except Exception:
                                     pass
                             st.toast("✅ Updated"); st.rerun()
@@ -1288,9 +1300,11 @@ onmouseout="this.style.boxShadow='none'">
                     if _ca1.button("✅ Approve cancel", key=f"cap_{_cr['id']}", type="primary"):
                         pm.approve_cancel(_cr["id"],uname,True,_cn)
                         audit_log("CANCEL_APPROVED",uname,_cr["id"]); st.toast("Cancelled"); st.rerun()
+                        _bsc_trigger(uname, "K041")
                     if _ca2.button("❌ Reject", key=f"crj_{_cr['id']}"):
                         pm.approve_cancel(_cr["id"],uname,False,_cn)
                         audit_log("CANCEL_REJECTED",uname,_cr["id"]); st.toast("Rejected"); st.rerun()
+                        _bsc_trigger(uname, "K041")
 
         if _val_q:
             st.markdown("---")
@@ -1308,9 +1322,11 @@ onmouseout="this.style.boxShadow='none'">
                     if _vb1.button("✅ Validate — include in forecast", key=f"vok_{_vd['id']}", type="primary"):
                         pm.validate_deal(_vd["id"],uname,True,_vn)
                         audit_log("DEAL_VALIDATED",uname,_vd["id"]); st.toast("✅ Validated"); st.rerun()
+                        _bsc_trigger(uname, "K041")
                     if _vb2.button("⚠️ Query — return to owner", key=f"vqy_{_vd['id']}"):
                         pm.validate_deal(_vd["id"],uname,False,_vn)
                         audit_log("DEAL_QUERIED",uname,_vd["id"]); st.toast("Queried"); st.rerun()
+                        _bsc_trigger(uname, "K041")
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 3 — MY ACTIONS
@@ -1345,12 +1361,14 @@ with tabs[2]:
                             "next_action_date":str(_dnd_edit),"draft":False
                         }, uname)
                         audit_log("DRAFT_COMPLETED",uname,_dr["id"])
+                        _bsc_trigger(uname, "K041")
                         st.toast("✅ Deal published!"); st.rerun()
                     else:
                         st.error("Value and next action are required to publish.")
                 if _d2.button("🗑️ Discard draft", key=f"drd_{_dr['id']}"):
                     pm.delete_deal(_dr["id"], uname)
                     audit_log("DRAFT_DISCARDED",uname,_dr["id"]); st.rerun()
+                    _bsc_trigger(uname, "K041")
 
     # ── Deals I'm backing up ─────────────────────────────────────────
     _my_backup_deals = [d for d in all_deals
@@ -1427,6 +1445,7 @@ with tabs[2]:
                     if _creason.strip():
                         pm.delete_deal(_cd["id"], uname)
                         audit_log("DEAL_DELETED",uname,f"{_cd['id']}|{_creason}"); st.toast("Deleted"); st.rerun()
+                        _bsc_trigger(uname, "K041")
                     else: st.error("Reason required.")
             else:
                 st.warning(f"Deal is at **{_cd['stage']}** — manager approval needed to cancel.")
@@ -1434,6 +1453,7 @@ with tabs[2]:
                     if _creason.strip():
                         pm.request_cancel(_cd["id"], uname, _creason)
                         audit_log("CANCEL_REQUESTED",uname,f"{_cd['id']}|{_creason}"); st.success("Request sent."); st.rerun()
+                        _bsc_trigger(uname, "K041")
                     else: st.error("Reason required.")
 
     # ── Log activity ──────────────────────────────────────────────────
@@ -1461,6 +1481,7 @@ with tabs[2]:
                         "next_action":_anxt,"next_action_date":str(_anxtdt)})
                     pm.update_deal(_did,{"next_action":_anxt,"next_action_date":str(_anxtdt)},uname)
                     audit_log("ACTIVITY_LOGGED",uname,f"{_did}|{_atype}"); st.success("✅ Logged"); st.rerun()
+                    _bsc_trigger(uname, "K041")
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 4 — ANALYTICS

@@ -1,0 +1,63 @@
+{
+  "bond_types": [
+    {
+      "id": "BID",
+      "name": "Bid Bond",
+      "commission_pct": 0.5,
+      "max_tenor_days": 180,
+      "cbk_reportable": false,
+      "active": true
+    },
+    {
+      "id": "PERF",
+      "name": "Performance Bond",
+      "commission_pct": 1.0,
+      "max_tenor_days": 365,
+      "cbk_reportable": true,
+      "active": true
+    },
+    {
+      "id": "APG",
+      "name": "Advance Payment Guarantee",
+      "commission_pct": 1.5,
+      "max_tenor_days": 365,
+      "cbk_reportable": true,
+      "active": true
+    },
+    {
+      "id": "PAY",
+      "name": "Payment Guarantee",
+      "commission_pct": 0.75,
+      "max_tenor_days": 180,
+      "cbk_reportable": true,
+      "active": true
+    },
+    {
+      "id": "CUST",
+      "name": "Customs Bond",
+      "commission_pct": 0.5,
+      "max_tenor_days": 365,
+      "cbk_reportable": false,
+      "active": true
+    },
+    {
+      "id": "RENTAL",
+      "name": "Rental Guarantee",
+      "commission_pct": 1.0,
+      "max_tenor_days": 730,
+      "cbk_reportable": false,
+      "active": true
+    }
+  ],
+  "approved_beneficiaries": [
+    "Government of Kenya",
+    "KRA",
+    "KEBS",
+    "KeNHA",
+    "KPLC",
+    "Nairobi City County",
+    "KPA"
+  ],
+  "cbk_report_threshold_kes": 10000000,
+  "max_single_exposure_m": 500.0
+}

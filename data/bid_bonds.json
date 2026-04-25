@@ -22,7 +22,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 1"
   },
   {
     "id": "BB0002",
@@ -47,7 +50,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 2"
   },
   {
     "id": "BB0003",
@@ -72,7 +78,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ulrich173",
+    "cbk_reportable": false,
+    "principal": "Client 3"
   },
   {
     "id": "BB0004",
@@ -97,7 +106,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "gloria172",
+    "cbk_reportable": false,
+    "principal": "Client 4"
   },
   {
     "id": "BB0005",
@@ -122,7 +134,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "frank044",
+    "cbk_reportable": false,
+    "principal": "Client 5"
   },
   {
     "id": "BB0006",
@@ -147,7 +162,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "georgina041",
+    "cbk_reportable": false,
+    "principal": "Client 6"
   },
   {
     "id": "BB0007",
@@ -172,7 +190,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 7"
   },
   {
     "id": "BB0008",
@@ -197,7 +218,10 @@
     "called": false,
     "called_amount": 161423323.0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "frank044",
+    "cbk_reportable": false,
+    "principal": "Client 8"
   },
   {
     "id": "BB0009",
@@ -222,7 +246,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "frank044",
+    "cbk_reportable": false,
+    "principal": "Client 9"
   },
   {
     "id": "BB0010",
@@ -247,7 +274,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 10"
   },
   {
     "id": "BB0011",
@@ -272,7 +302,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 11"
   },
   {
     "id": "BB0012",
@@ -297,7 +330,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 12"
   },
   {
     "id": "BB0013",
@@ -322,7 +358,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "bernard042",
+    "cbk_reportable": false,
+    "principal": "Client 13"
   },
   {
     "id": "BB0014",
@@ -347,7 +386,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tobias174",
+    "cbk_reportable": false,
+    "principal": "Client 14"
   },
   {
     "id": "BB0015",
@@ -372,7 +414,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 15"
   },
   {
     "id": "BB0016",
@@ -397,7 +442,10 @@
     "called": false,
     "called_amount": 341411301.0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 16"
   },
   {
     "id": "BB0017",
@@ -422,7 +470,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ulrich173",
+    "cbk_reportable": false,
+    "principal": "Client 17"
   },
   {
     "id": "BB0018",
@@ -447,7 +498,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 18"
   },
   {
     "id": "BB0019",
@@ -472,7 +526,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "frank044",
+    "cbk_reportable": false,
+    "principal": "Client 19"
   },
   {
     "id": "BB0020",
@@ -497,7 +554,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ulrich173",
+    "cbk_reportable": false,
+    "principal": "Client 20"
   },
   {
     "id": "BB0021",
@@ -522,7 +582,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 21"
   },
   {
     "id": "BB0022",
@@ -547,7 +610,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "georgina041",
+    "cbk_reportable": false,
+    "principal": "Client 22"
   },
   {
     "id": "BB0023",
@@ -572,7 +638,10 @@
     "called": true,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 23"
   },
   {
     "id": "BB0024",
@@ -597,7 +666,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "bernard042",
+    "cbk_reportable": false,
+    "principal": "Client 24"
   },
   {
     "id": "BB0025",
@@ -622,7 +694,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "norman043",
+    "cbk_reportable": false,
+    "principal": "Client 25"
   },
   {
     "id": "BB0026",
@@ -647,7 +722,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tobias174",
+    "cbk_reportable": false,
+    "principal": "Client 26"
   },
   {
     "id": "BB0027",
@@ -672,7 +750,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 27"
   },
   {
     "id": "BB0028",
@@ -697,7 +778,10 @@
     "called": true,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 28"
   },
   {
     "id": "BB0029",
@@ -722,7 +806,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 29"
   },
   {
     "id": "BB0030",
@@ -747,7 +834,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ulrich173",
+    "cbk_reportable": false,
+    "principal": "Client 30"
   },
   {
     "id": "BB0031",
@@ -772,7 +862,10 @@
     "called": true,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 31"
   },
   {
     "id": "BB0032",
@@ -797,7 +890,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tobias174",
+    "cbk_reportable": false,
+    "principal": "Client 32"
   },
   {
     "id": "BB0033",
@@ -822,7 +918,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 33"
   },
   {
     "id": "BB0034",
@@ -847,7 +946,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "kevin040",
+    "cbk_reportable": false,
+    "principal": "Client 34"
   },
   {
     "id": "BB0035",
@@ -872,7 +974,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "bernard042",
+    "cbk_reportable": false,
+    "principal": "Client 35"
   },
   {
     "id": "BB0036",
@@ -897,7 +1002,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "gloria172",
+    "cbk_reportable": false,
+    "principal": "Client 36"
   },
   {
     "id": "BB0037",
@@ -922,7 +1030,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "norman043",
+    "cbk_reportable": false,
+    "principal": "Client 37"
   },
   {
     "id": "BB0038",
@@ -947,7 +1058,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "bernard042",
+    "cbk_reportable": false,
+    "principal": "Client 38"
   },
   {
     "id": "BB0039",
@@ -972,7 +1086,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 39"
   },
   {
     "id": "BB0040",
@@ -997,7 +1114,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 40"
   },
   {
     "id": "BB0041",
@@ -1022,7 +1142,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 41"
   },
   {
     "id": "BB0042",
@@ -1047,7 +1170,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tobias174",
+    "cbk_reportable": false,
+    "principal": "Client 42"
   },
   {
     "id": "BB0043",
@@ -1072,7 +1198,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "georgina041",
+    "cbk_reportable": false,
+    "principal": "Client 43"
   },
   {
     "id": "BB0044",
@@ -1097,7 +1226,10 @@
     "called": true,
     "called_amount": 0,
     "extended_count": 1,
-    "notes": ""
+    "notes": "",
+    "officer_username": "bernard042",
+    "cbk_reportable": false,
+    "principal": "Client 44"
   },
   {
     "id": "BB0045",
@@ -1122,7 +1254,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tobias174",
+    "cbk_reportable": false,
+    "principal": "Client 45"
   },
   {
     "id": "BB0046",
@@ -1147,7 +1282,10 @@
     "called": true,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "norman043",
+    "cbk_reportable": false,
+    "principal": "Client 46"
   },
   {
     "id": "BB0047",
@@ -1172,7 +1310,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "gloria172",
+    "cbk_reportable": false,
+    "principal": "Client 47"
   },
   {
     "id": "BB0048",
@@ -1197,7 +1338,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 3,
-    "notes": ""
+    "notes": "",
+    "officer_username": "gloria172",
+    "cbk_reportable": false,
+    "principal": "Client 48"
   },
   {
     "id": "BB0049",
@@ -1222,7 +1366,10 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "tina175",
+    "cbk_reportable": false,
+    "principal": "Client 49"
   },
   {
     "id": "BB0050",
@@ -1247,6 +1394,9 @@
     "called": false,
     "called_amount": 0,
     "extended_count": 2,
-    "notes": ""
+    "notes": "",
+    "officer_username": "richard171",
+    "cbk_reportable": false,
+    "principal": "Client 50"
   }
 ]

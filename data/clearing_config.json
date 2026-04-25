@@ -1,0 +1,75 @@
+{
+  "clearing_windows": [
+    {
+      "id": "RTGS",
+      "name": "RTGS",
+      "open": "08:00",
+      "close": "15:30",
+      "currency": "KES",
+      "active": true
+    },
+    {
+      "id": "KEPSS",
+      "name": "KEPSS",
+      "open": "08:00",
+      "close": "17:00",
+      "currency": "KES",
+      "active": true
+    },
+    {
+      "id": "EFT",
+      "name": "EFT",
+      "open": "00:00",
+      "close": "23:59",
+      "currency": "KES",
+      "active": true
+    },
+    {
+      "id": "CHQKE",
+      "name": "Cheque Clearing",
+      "open": "08:00",
+      "close": "12:00",
+      "currency": "KES",
+      "active": true
+    },
+    {
+      "id": "SWIFT",
+      "name": "SWIFT",
+      "open": "08:00",
+      "close": "16:00",
+      "currency": "USD/EUR/GBP",
+      "active": true
+    }
+  ],
+  "nostro_accounts": [
+    {
+      "id": "USD001",
+      "bank": "Standard Chartered NY",
+      "currency": "USD",
+      "threshold_m": 5.0,
+      "active": true
+    },
+    {
+      "id": "EUR001",
+      "bank": "Deutsche Bank Frankfurt",
+      "currency": "EUR",
+      "threshold_m": 2.0,
+      "active": true
+    },
+    {
+      "id": "GBP001",
+      "bank": "Barclays London",
+      "currency": "GBP",
+      "threshold_m": 1.0,
+      "active": true
+    }
+  ],
+  "exception_threshold_pct": 2.0,
+  "settlement_tat_minutes": {
+    "RTGS": 30,
+    "KEPSS": 60,
+    "EFT": 240,
+    "CHQKE": 1440,
+    "SWIFT": 480
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "systems": [
+    {
+      "id": "CORE_BANKING",
+      "name": "Core Banking (FlexCube)",
+      "tier": 1,
+      "uptime_target": 99.9,
+      "active": true
+    },
+    {
+      "id": "MOBILE",
+      "name": "Mobile Banking App",
+      "tier": 1,
+      "uptime_target": 99.5,
+      "active": true
+    },
+    {
+      "id": "INTERNET_BANKING",
+      "name": "Internet Banking",
+      "tier": 1,
+      "uptime_target": 99.5,
+      "active": true
+    },
+    {
+      "id": "ATM",
+      "name": "ATM Network",
+      "tier": 1,
+      "uptime_target": 98.0,
+      "active": true
+    },
+    {
+      "id": "PAYMENTS",
+      "name": "Payments Gateway",
+      "tier": 1,
+      "uptime_target": 99.9,
+      "active": true
+    },
+    {
+      "id": "API_GATEWAY",
+      "name": "API Gateway",
+      "tier": 2,
+      "uptime_target": 99.5,
+      "active": true
+    },
+    {
+      "id": "DATA_CENTER",
+      "name": "Primary Data Centre",
+      "tier": 1,
+      "uptime_target": 99.99,
+      "active": true
+    },
+    {
+      "id": "DR_SITE",
+      "name": "DR Site",
+      "tier": 2,
+      "uptime_target": 99.5,
+      "active": true
+    },
+    {
+      "id": "EMAIL",
+      "name": "Email & Collaboration",
+      "tier": 3,
+      "uptime_target": 99.0,
+      "active": true
+    },
+    {
+      "id": "ERP",
+      "name": "HR/Finance ERP",
+      "tier": 3,
+      "uptime_target": 98.0,
+      "active": true
+    }
+  ],
+  "incident_sla_minutes": {
+    "P1": 30,
+    "P2": 120,
+    "P3": 480,
+    "P4": 1440
+  },
+  "escalation_path": [
+    "Service Desk",
+    "IT Manager",
+    "Head of IT",
+    "CTO"
+  ],
+  "alert_channels": [
+    "Email",
+    "SMS",
+    "WhatsApp",
+    "PagerDuty"
+  ]
+}

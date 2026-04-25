@@ -13,6 +13,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("asset_management")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -152,6 +160,7 @@ with tabs[4]:
                 })
                 (DATA/"asset_register.json").write_text(json.dumps(all_a,indent=2))
                 audit_log("ASSET_ADDED",uname,f"{_name}: KES {_cost:,.0f}")
+                _bsc_trigger(uname, "K051")
                 st.cache_data.clear(); st.success("✅ Asset added"); st.rerun()
     else: st.info("Asset addition available to Procurement team.")
 
@@ -175,5 +184,6 @@ with tabs[5]:
                     a["notes"]=f"Disposed {today}: {disp_reason}, salvage KES {disp_val:,.0f}"
             (DATA/"asset_register.json").write_text(json.dumps(all_a,indent=2))
             audit_log("ASSET_DISPOSED",uname,f"{disp_id}: {disp_reason}")
+            _bsc_trigger(uname, "K051")
             st.cache_data.clear(); st.success("✅ Disposal recorded"); st.rerun()
     else: st.info("Disposal recording available to Procurement and Finance teams.")

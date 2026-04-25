@@ -13,6 +13,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("pip")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -79,6 +87,7 @@ def _render_pips(pip_list):
                             if new_notes: pip["notes"]=new_notes
                     (DATA/"pip_cases.json").write_text(json.dumps(all_p,indent=2))
                     audit_log("PIP_UPDATED",uname,f"{p['id']} → {new_status}")
+                    _bsc_trigger(uname, "K016")
                     st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
 
 with tabs[0]: _render_pips([p for p in pips if p["status"]=="Active"])
@@ -111,6 +120,7 @@ with tabs[2]:
                     "check_in_dates":[str(review_date),str(end_date)]})
                 (DATA/"pip_cases.json").write_text(json.dumps(all_p,indent=2))
                 audit_log("PIP_INITIATED",uname,f"{new_id} for {sel_v['name']}")
+                _bsc_trigger(uname, "K016")
                 st.cache_data.clear(); st.success(f"✅ PIP {new_id} initiated"); st.rerun()
         else:
             st.success("✅ No staff currently with BSC below 2.5.")

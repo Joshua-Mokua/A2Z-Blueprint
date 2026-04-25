@@ -834,6 +834,8 @@ _retail_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
     _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
+    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
+    _pg("pages/79_cards.py",          "Cards",              "💳", "card_management"),
 ])
 
 # Commercial & Corporate
@@ -851,6 +853,7 @@ _comm_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
     _pg("pages/70_retailer_finance.py", "Retailer Finance",  "🛒", "retailer_finance"),
+    _pg("pages/80_merchant.py",       "Merchant Acquiring", "🏪", "merchant_acquiring"),
 ])
 
 # Credit
@@ -877,6 +880,8 @@ _treasury_grp = _dg([
     _pg("pages/53_irrbb.py",          "IRRBB Dashboard",      "📉", "irrbb"),
     _pg("pages/56_ftp.py",            "Transfer Pricing",     "💱", "transfer_pricing"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
+    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
+    _pg("pages/81_alm.py",            "ALM & Liquidity",    "💧", "alm_liquidity"),
 ])
 
 # Finance
@@ -895,6 +900,8 @@ _finance_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/62_p2p.py",             "Procure-to-Pay",       "🛒", "p2p"),
     _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
+    _pg("pages/74_cbk_returns.py",    "CBK Returns",        "📊", "cbk_returns"),
+    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
 ])
 
 # Risk & Compliance
@@ -912,6 +919,13 @@ _risk_grp = _dg([
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
     _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
+    _pg("pages/74_cbk_returns.py",    "CBK Returns",        "📊", "cbk_returns"),
+    _pg("pages/75_data_protection.py","Data Protection",    "🔒", "data_protection"),
+    _pg("pages/76_sanctions.py",      "Sanctions",          "🚨", "sanctions_screening"),
+    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
+    _pg("pages/81_alm.py",            "ALM & Liquidity",    "💧", "alm_liquidity"),
+    _pg("pages/82_oprisk.py",         "Op Risk Losses",     "⚠️", "operational_risk"),
+    _pg("pages/85_esg.py",            "ESG & Climate",      "🌱", "esg_climate"),
 ])
 
 # Legal
@@ -922,6 +936,8 @@ _legal_grp = _dg([
     _pg("pages/24_compliance.py",       "Compliance",         "🛡️", "compliance"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
 _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
+    _pg("pages/75_data_protection.py","Data Protection",    "🔒", "data_protection"),
+    _pg("pages/84_board.py",          "Board Papers",       "📋", "board_papers"),
 ])
 
 # Operations
@@ -937,6 +953,8 @@ _ops_grp = _dg([
     _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
     _pg("pages/68_clearing.py",         "Clearing",          "🏦", "clearing"),
     _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
+    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
+    _pg("pages/79_cards.py",          "Cards",              "💳", "card_management"),
 ])
 
 # People & HR
@@ -987,6 +1005,7 @@ _audit_grp = _dg([
     _pg("pages/65_contracts.py",        "Contracts Register",   "📄", "contracts"),
 _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
     _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
+    _pg("pages/82_oprisk.py",         "Op Risk Losses",     "⚠️", "operational_risk"),
 ])
 
 # Executive
@@ -1020,6 +1039,9 @@ _pg("pages/62_p2p.py",             "Procure-to-Pay",       "🛒", "p2p"),
     _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
 _pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
     _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
+    _pg("pages/83_strategy.py",       "Strategic Init.",    "🎯", "strategic_initiatives"),
+    _pg("pages/84_board.py",          "Board Papers",       "📋", "board_papers"),
+    _pg("pages/85_esg.py",            "ESG & Climate",      "🌱", "esg_climate"),
 ])
 
 
@@ -1044,6 +1066,8 @@ _dfs_grp = _dg([
     _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
     _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
     _pg("pages/73_channels.py",         "Channels",          "📲", "channels_management"),
+    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
+    _pg("pages/80_merchant.py",       "Merchant Acquiring", "🏪", "merchant_acquiring"),
 ])
 
 # Contact Centre

@@ -12,6 +12,14 @@ from utils.core import audit_log, requires_dual_approval, submit_for_approval
 from pages._access import require_access
 
 require_access("revenue_assurance")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -87,6 +95,7 @@ with tabs[1]:
                             if rec["id"]==r["id"]: rec["status"]="Under Investigation"
                         (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
                         audit_log("RA_UPDATE", name, "Revenue assurance updated")
+                        _bsc_trigger(uname, "K003")
                         st.cache_data.clear(); st.success("Marked Under Investigation"); st.rerun()
                     if a2.button("✅ Mark Recovered",key=f"rec_{r['id']}"):
                         recs=json.loads((DATA/"revenue_assurance.json").read_text())
@@ -94,6 +103,7 @@ with tabs[1]:
                             if rec["id"]==r["id"]: rec["status"]="Recovered"; rec["recovered"]=True; rec["recovered_amount"]=rec["amount"]
                         (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
                         audit_log("RA_UPDATE", name, "Revenue assurance updated")
+                        _bsc_trigger(uname, "K003")
                         st.cache_data.clear(); st.success("✅ Recovered"); st.rerun()
 
 with tabs[2]:
@@ -114,6 +124,7 @@ with tabs[2]:
                     rec["status"]="Approved"; rec["authorised_by"]=name; n+=1
             (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
             audit_log("RA_BATCH_APPROVE",uname,f"Month-end batch approve {n} waivers")
+            _bsc_trigger(uname, "K003")
             st.cache_data.clear(); st.success(f"✅ {n} waivers approved (month-end batch)"); st.rerun()
     if not pend_w: st.success("✅ No waivers pending approval.")
     else:
@@ -131,6 +142,7 @@ with tabs[2]:
                             if rec["id"]==r["id"]: rec["status"]="Approved"; rec["authorised_by"]=name
                         (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
                         audit_log("RA_UPDATE", name, "Revenue assurance updated")
+                        _bsc_trigger(uname, "K003")
                         st.cache_data.clear(); st.success("✅ Approved"); st.rerun()
                     if wa2.button("❌ Reject",key=f"wrej_{r['id']}"):
                         recs=json.loads((DATA/"revenue_assurance.json").read_text())
@@ -138,6 +150,7 @@ with tabs[2]:
                             if rec["id"]==r["id"]: rec["status"]="Rejected"
                         (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
                         audit_log("RA_UPDATE", name, "Revenue assurance updated")
+                        _bsc_trigger(uname, "K003")
                         st.cache_data.clear(); st.success("Rejected"); st.rerun()
 
 with tabs[3]:
@@ -181,4 +194,5 @@ with tabs[4]:
                     "recovered":False,"recovered_amount":0,"authorised_by":"","notes":"","last_updated":str(today)})
                 (DATA/"revenue_assurance.json").write_text(json.dumps(recs,indent=2))
                 audit_log("RA_UPDATE", name, "Revenue assurance updated")
+                _bsc_trigger(uname, "K003")
                 st.cache_data.clear(); st.success("✅ Logged"); st.rerun()

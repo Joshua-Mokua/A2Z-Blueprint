@@ -1,0 +1,43 @@
+{
+  "consent_types": [
+    {
+      "id": "MARKETING",
+      "name": "Marketing Communications",
+      "duration_days": 365,
+      "active": true
+    },
+    {
+      "id": "DATA_SHARE",
+      "name": "Data Sharing with Partners",
+      "duration_days": 365,
+      "active": true
+    },
+    {
+      "id": "CREDIT_REF",
+      "name": "Credit Reference Bureau",
+      "duration_days": 1095,
+      "active": true
+    },
+    {
+      "id": "DIGITAL",
+      "name": "Digital Banking Enrolment",
+      "duration_days": 730,
+      "active": true
+    },
+    {
+      "id": "INSURANCE",
+      "name": "Bancassurance Products",
+      "duration_days": 365,
+      "active": true
+    }
+  ],
+  "collection_channels": [
+    "Branch",
+    "Mobile App",
+    "Online Banking",
+    "USSD",
+    "Call Centre",
+    "Agent"
+  ],
+  "renewal_notice_days": 30
+}

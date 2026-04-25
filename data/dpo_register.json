@@ -1,0 +1,969 @@
+[
+  {
+    "id": "DPIA0001",
+    "type": "DPIA",
+    "subject": "Biometric Authentication",
+    "risk_level": "Low",
+    "data_categories": [
+      "Financial",
+      "Sensitive",
+      "Biometric"
+    ],
+    "status": "Approved",
+    "started_date": "2026-03-14",
+    "due_date": "",
+    "completed_date": "2026-04-22",
+    "on_time": true,
+    "dpo_reviewer": "dpo397",
+    "department": "HR",
+    "mitigation_actions": 8,
+    "actions_closed": 0,
+    "ico_consultation_required": true
+  },
+  {
+    "id": "DPIA0002",
+    "type": "DPIA",
+    "subject": "Card Tokenisation",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Biometric"
+    ],
+    "status": "Approved",
+    "started_date": "2026-01-10",
+    "due_date": "",
+    "completed_date": "2026-04-24",
+    "on_time": true,
+    "dpo_reviewer": "dpo172",
+    "department": "Digital",
+    "mitigation_actions": 3,
+    "actions_closed": 8,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0003",
+    "type": "DPIA",
+    "subject": "HR Analytics Tool",
+    "risk_level": "High",
+    "data_categories": [
+      "Financial",
+      "Biometric",
+      "Location"
+    ],
+    "status": "Approved",
+    "started_date": "2025-12-30",
+    "due_date": "",
+    "completed_date": "2026-04-11",
+    "on_time": true,
+    "dpo_reviewer": "dpo357",
+    "department": "Marketing",
+    "mitigation_actions": 3,
+    "actions_closed": 2,
+    "ico_consultation_required": true
+  },
+  {
+    "id": "DPIA0004",
+    "type": "DPIA",
+    "subject": "Investment Platform",
+    "risk_level": "High",
+    "data_categories": [
+      "Financial",
+      "Location"
+    ],
+    "status": "Approved",
+    "started_date": "2025-12-19",
+    "due_date": "",
+    "completed_date": "2026-04-15",
+    "on_time": false,
+    "dpo_reviewer": "dpo299",
+    "department": "Marketing",
+    "mitigation_actions": 7,
+    "actions_closed": 1,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0005",
+    "type": "DPIA",
+    "subject": "Marketing Database",
+    "risk_level": "High",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Approved",
+    "started_date": "2025-11-29",
+    "due_date": "",
+    "completed_date": "2026-04-03",
+    "on_time": true,
+    "dpo_reviewer": "dpo916",
+    "department": "HR",
+    "mitigation_actions": 1,
+    "actions_closed": 8,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0006",
+    "type": "DPIA",
+    "subject": "Marketing Database",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "status": "In Progress",
+    "started_date": "2025-12-07",
+    "due_date": "2026-05-03",
+    "completed_date": "",
+    "on_time": false,
+    "dpo_reviewer": "dpo402",
+    "department": "HR",
+    "mitigation_actions": 4,
+    "actions_closed": 3,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0007",
+    "type": "DPIA",
+    "subject": "CRM Implementation",
+    "risk_level": "Low",
+    "data_categories": [
+      "Biometric"
+    ],
+    "status": "Approved",
+    "started_date": "2026-04-09",
+    "due_date": "",
+    "completed_date": "2026-04-01",
+    "on_time": true,
+    "dpo_reviewer": "dpo184",
+    "department": "Marketing",
+    "mitigation_actions": 0,
+    "actions_closed": 2,
+    "ico_consultation_required": true
+  },
+  {
+    "id": "DPIA0008",
+    "type": "DPIA",
+    "subject": "Marketing Database",
+    "risk_level": "Low",
+    "data_categories": [
+      "Biometric",
+      "Sensitive"
+    ],
+    "status": "Approved",
+    "started_date": "2026-03-19",
+    "due_date": "",
+    "completed_date": "2026-04-10",
+    "on_time": true,
+    "dpo_reviewer": "dpo120",
+    "department": "Digital",
+    "mitigation_actions": 3,
+    "actions_closed": 4,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0009",
+    "type": "DPIA",
+    "subject": "Card Tokenisation",
+    "risk_level": "High",
+    "data_categories": [
+      "Financial",
+      "Location"
+    ],
+    "status": "Approved",
+    "started_date": "2026-01-14",
+    "due_date": "",
+    "completed_date": "2026-04-24",
+    "on_time": true,
+    "dpo_reviewer": "dpo525",
+    "department": "Operations",
+    "mitigation_actions": 1,
+    "actions_closed": 1,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0010",
+    "type": "DPIA",
+    "subject": "Open API Platform",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Personal",
+      "Sensitive"
+    ],
+    "status": "Approved",
+    "started_date": "2025-11-05",
+    "due_date": "",
+    "completed_date": "2026-04-16",
+    "on_time": false,
+    "dpo_reviewer": "dpo809",
+    "department": "Operations",
+    "mitigation_actions": 2,
+    "actions_closed": 2,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0011",
+    "type": "DPIA",
+    "subject": "CRM Implementation",
+    "risk_level": "Low",
+    "data_categories": [
+      "Biometric",
+      "Personal",
+      "Sensitive"
+    ],
+    "status": "Approved",
+    "started_date": "2026-04-02",
+    "due_date": "",
+    "completed_date": "2026-04-11",
+    "on_time": false,
+    "dpo_reviewer": "dpo851",
+    "department": "Digital",
+    "mitigation_actions": 4,
+    "actions_closed": 3,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0012",
+    "type": "DPIA",
+    "subject": "Biometric Authentication",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Sensitive",
+      "Biometric",
+      "Personal"
+    ],
+    "status": "In Progress",
+    "started_date": "2026-02-07",
+    "due_date": "2026-06-23",
+    "completed_date": "",
+    "on_time": false,
+    "dpo_reviewer": "dpo535",
+    "department": "IT",
+    "mitigation_actions": 7,
+    "actions_closed": 3,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0013",
+    "type": "DPIA",
+    "subject": "Customer Analytics Platform",
+    "risk_level": "Low",
+    "data_categories": [
+      "Financial",
+      "Biometric",
+      "Personal"
+    ],
+    "status": "Approved",
+    "started_date": "2025-11-13",
+    "due_date": "",
+    "completed_date": "2026-03-29",
+    "on_time": true,
+    "dpo_reviewer": "dpo779",
+    "department": "Operations",
+    "mitigation_actions": 5,
+    "actions_closed": 7,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0014",
+    "type": "DPIA",
+    "subject": "Card Tokenisation",
+    "risk_level": "High",
+    "data_categories": [
+      "Financial",
+      "Biometric",
+      "Personal"
+    ],
+    "status": "Approved",
+    "started_date": "2026-01-25",
+    "due_date": "",
+    "completed_date": "2026-04-17",
+    "on_time": true,
+    "dpo_reviewer": "dpo873",
+    "department": "Operations",
+    "mitigation_actions": 7,
+    "actions_closed": 7,
+    "ico_consultation_required": true
+  },
+  {
+    "id": "DPIA0015",
+    "type": "DPIA",
+    "subject": "HR Analytics Tool",
+    "risk_level": "High",
+    "data_categories": [
+      "Financial",
+      "Personal"
+    ],
+    "status": "Under Review",
+    "started_date": "2026-02-25",
+    "due_date": "2026-07-12",
+    "completed_date": "",
+    "on_time": false,
+    "dpo_reviewer": "dpo930",
+    "department": "HR",
+    "mitigation_actions": 3,
+    "actions_closed": 2,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0016",
+    "type": "DPIA",
+    "subject": "Card Tokenisation",
+    "risk_level": "Low",
+    "data_categories": [
+      "Biometric",
+      "Financial"
+    ],
+    "status": "In Progress",
+    "started_date": "2026-02-28",
+    "due_date": "2026-07-20",
+    "completed_date": "",
+    "on_time": false,
+    "dpo_reviewer": "dpo238",
+    "department": "IT",
+    "mitigation_actions": 5,
+    "actions_closed": 7,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0017",
+    "type": "DPIA",
+    "subject": "Card Tokenisation",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Personal",
+      "Location"
+    ],
+    "status": "Approved",
+    "started_date": "2026-04-09",
+    "due_date": "",
+    "completed_date": "2026-04-11",
+    "on_time": false,
+    "dpo_reviewer": "dpo445",
+    "department": "Digital",
+    "mitigation_actions": 2,
+    "actions_closed": 2,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0018",
+    "type": "DPIA",
+    "subject": "Open API Platform",
+    "risk_level": "High",
+    "data_categories": [
+      "Personal",
+      "Location",
+      "Biometric"
+    ],
+    "status": "Approved",
+    "started_date": "2026-03-08",
+    "due_date": "",
+    "completed_date": "2026-04-20",
+    "on_time": true,
+    "dpo_reviewer": "dpo901",
+    "department": "HR",
+    "mitigation_actions": 0,
+    "actions_closed": 1,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0019",
+    "type": "DPIA",
+    "subject": "Marketing Database",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Sensitive",
+      "Financial"
+    ],
+    "status": "Approved",
+    "started_date": "2026-04-24",
+    "due_date": "",
+    "completed_date": "2026-04-16",
+    "on_time": true,
+    "dpo_reviewer": "dpo552",
+    "department": "Marketing",
+    "mitigation_actions": 6,
+    "actions_closed": 3,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "DPIA0020",
+    "type": "DPIA",
+    "subject": "Biometric Authentication",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Financial",
+      "Sensitive"
+    ],
+    "status": "Approved",
+    "started_date": "2026-04-15",
+    "due_date": "",
+    "completed_date": "2026-04-14",
+    "on_time": true,
+    "dpo_reviewer": "dpo262",
+    "department": "Digital",
+    "mitigation_actions": 7,
+    "actions_closed": 7,
+    "ico_consultation_required": false
+  },
+  {
+    "id": "BREACH0001",
+    "type": "Breach",
+    "subject": "Third-party Breach",
+    "risk_level": "Low",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Closed",
+    "started_date": "2026-04-21",
+    "completed_date": "2026-05-06",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 49214,
+    "root_cause": "Phishing",
+    "remediation_taken": 5,
+    "fines_paid_kes": 0,
+    "department": "Customer Service",
+    "dpo_reviewer": "dpo620"
+  },
+  {
+    "id": "BREACH0002",
+    "type": "Breach",
+    "subject": "Phishing Compromise",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Financial"
+    ],
+    "status": "Contained",
+    "started_date": "2026-03-03",
+    "completed_date": "2026-03-18",
+    "reported_to_odpc": false,
+    "reported_within_72h": false,
+    "affected_records": 37052,
+    "root_cause": "Human Error",
+    "remediation_taken": 4,
+    "fines_paid_kes": 0,
+    "department": "IT",
+    "dpo_reviewer": "dpo246"
+  },
+  {
+    "id": "BREACH0003",
+    "type": "Breach",
+    "subject": "System Breach",
+    "risk_level": "High",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Closed",
+    "started_date": "2026-02-25",
+    "completed_date": "2026-03-18",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 11601,
+    "root_cause": "Phishing",
+    "remediation_taken": 2,
+    "fines_paid_kes": 0,
+    "department": "Operations",
+    "dpo_reviewer": "dpo602"
+  },
+  {
+    "id": "BREACH0004",
+    "type": "Breach",
+    "subject": "Data Loss",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Investigating",
+    "started_date": "2025-10-29",
+    "completed_date": "2025-11-05",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 47901,
+    "root_cause": "Phishing",
+    "remediation_taken": 3,
+    "fines_paid_kes": 0,
+    "department": "IT",
+    "dpo_reviewer": "dpo109"
+  },
+  {
+    "id": "BREACH0005",
+    "type": "Breach",
+    "subject": "Data Loss",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Investigating",
+    "started_date": "2026-01-13",
+    "completed_date": "2026-02-11",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 41425,
+    "root_cause": "Phishing",
+    "remediation_taken": 2,
+    "fines_paid_kes": 0,
+    "department": "Customer Service",
+    "dpo_reviewer": "dpo224"
+  },
+  {
+    "id": "BREACH0006",
+    "type": "Breach",
+    "subject": "Cyber Attack",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Personal",
+      "Financial"
+    ],
+    "status": "Closed",
+    "started_date": "2026-01-18",
+    "completed_date": "2026-01-29",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 46429,
+    "root_cause": "Unauthorised Access",
+    "remediation_taken": 5,
+    "fines_paid_kes": 0,
+    "department": "Operations",
+    "dpo_reviewer": "dpo637"
+  },
+  {
+    "id": "BREACH0007",
+    "type": "Breach",
+    "subject": "Third-party Breach",
+    "risk_level": "Low",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "status": "Closed",
+    "started_date": "2025-11-29",
+    "completed_date": "2025-12-24",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 47742,
+    "root_cause": "Phishing",
+    "remediation_taken": 5,
+    "fines_paid_kes": 0,
+    "department": "Operations",
+    "dpo_reviewer": "dpo230"
+  },
+  {
+    "id": "BREACH0008",
+    "type": "Breach",
+    "subject": "Internal Misuse",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Personal",
+      "Sensitive"
+    ],
+    "status": "Investigating",
+    "started_date": "2025-12-24",
+    "completed_date": "2026-01-09",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 4878,
+    "root_cause": "Human Error",
+    "remediation_taken": 2,
+    "fines_paid_kes": 0,
+    "department": "Operations",
+    "dpo_reviewer": "dpo567"
+  },
+  {
+    "id": "BREACH0009",
+    "type": "Breach",
+    "subject": "Internal Misuse",
+    "risk_level": "Medium",
+    "data_categories": [
+      "Personal",
+      "Financial"
+    ],
+    "status": "Closed",
+    "started_date": "2026-03-31",
+    "completed_date": "2026-04-25",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 13960,
+    "root_cause": "Human Error",
+    "remediation_taken": 2,
+    "fines_paid_kes": 0,
+    "department": "Customer Service",
+    "dpo_reviewer": "dpo273"
+  },
+  {
+    "id": "BREACH0010",
+    "type": "Breach",
+    "subject": "Cyber Attack",
+    "risk_level": "Low",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "status": "Closed",
+    "started_date": "2026-02-18",
+    "completed_date": "2026-03-06",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 18968,
+    "root_cause": "Third Party",
+    "remediation_taken": 1,
+    "fines_paid_kes": 3305806,
+    "department": "Customer Service",
+    "dpo_reviewer": "dpo826"
+  },
+  {
+    "id": "BREACH0011",
+    "type": "Breach",
+    "subject": "Phishing Compromise",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Financial",
+      "Personal"
+    ],
+    "status": "Closed",
+    "started_date": "2026-01-27",
+    "completed_date": "2026-01-31",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 47823,
+    "root_cause": "Human Error",
+    "remediation_taken": 2,
+    "fines_paid_kes": 0,
+    "department": "IT",
+    "dpo_reviewer": "dpo755"
+  },
+  {
+    "id": "BREACH0012",
+    "type": "Breach",
+    "subject": "Cyber Attack",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "status": "Closed",
+    "started_date": "2026-03-02",
+    "completed_date": "2026-03-31",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 18899,
+    "root_cause": "Third Party",
+    "remediation_taken": 4,
+    "fines_paid_kes": 0,
+    "department": "Customer Service",
+    "dpo_reviewer": "dpo786"
+  },
+  {
+    "id": "BREACH0013",
+    "type": "Breach",
+    "subject": "Unauthorised Access",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Financial"
+    ],
+    "status": "Investigating",
+    "started_date": "2026-02-09",
+    "completed_date": "2026-02-26",
+    "reported_to_odpc": false,
+    "reported_within_72h": false,
+    "affected_records": 37943,
+    "root_cause": "System Vulnerability",
+    "remediation_taken": 1,
+    "fines_paid_kes": 0,
+    "department": "Operations",
+    "dpo_reviewer": "dpo742"
+  },
+  {
+    "id": "BREACH0014",
+    "type": "Breach",
+    "subject": "Data Loss",
+    "risk_level": "Low",
+    "data_categories": [
+      "Financial"
+    ],
+    "status": "Closed",
+    "started_date": "2026-01-04",
+    "completed_date": "2026-02-03",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 22902,
+    "root_cause": "Human Error",
+    "remediation_taken": 5,
+    "fines_paid_kes": 0,
+    "department": "IT",
+    "dpo_reviewer": "dpo314"
+  },
+  {
+    "id": "BREACH0015",
+    "type": "Breach",
+    "subject": "Unauthorised Access",
+    "risk_level": "Critical",
+    "data_categories": [
+      "Personal"
+    ],
+    "status": "Contained",
+    "started_date": "2026-01-07",
+    "completed_date": "2026-02-05",
+    "reported_to_odpc": true,
+    "reported_within_72h": true,
+    "affected_records": 6935,
+    "root_cause": "Third Party",
+    "remediation_taken": 4,
+    "fines_paid_kes": 4858674,
+    "department": "Operations",
+    "dpo_reviewer": "dpo979"
+  },
+  {
+    "id": "ROPA0001",
+    "type": "ROPA",
+    "subject": "Customer Onboarding",
+    "data_categories": [
+      "Personal",
+      "Sensitive",
+      "Financial"
+    ],
+    "legal_basis": "Legal Obligation",
+    "retention_period_years": 3,
+    "data_subjects": "Customers",
+    "data_processors": [
+      "CRB",
+      "AWS"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-07-13",
+    "next_review": "2026-07-15",
+    "owner": "dpo241",
+    "department": "IT",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0002",
+    "type": "ROPA",
+    "subject": "Loan Processing",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "legal_basis": "Legal Obligation",
+    "retention_period_years": 10,
+    "data_subjects": "Employees",
+    "data_processors": [
+      "Microsoft"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-12-07",
+    "next_review": "2026-12-24",
+    "owner": "dpo102",
+    "department": "Operations",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0003",
+    "type": "ROPA",
+    "subject": "Marketing Campaigns",
+    "data_categories": [
+      "Financial",
+      "Sensitive",
+      "Personal"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 5,
+    "data_subjects": "Vendors",
+    "data_processors": [
+      "CRB",
+      "Safaricom"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-10-14",
+    "next_review": "2026-06-16",
+    "owner": "dpo902",
+    "department": "Operations",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0004",
+    "type": "ROPA",
+    "subject": "HR Records",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "legal_basis": "Legal Obligation",
+    "retention_period_years": 7,
+    "data_subjects": "Vendors",
+    "data_processors": [
+      "Safaricom",
+      "Internal"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-10-31",
+    "next_review": "2026-07-15",
+    "owner": "dpo682",
+    "department": "Operations",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0005",
+    "type": "ROPA",
+    "subject": "Vendor Management",
+    "data_categories": [
+      "Financial",
+      "Personal",
+      "Sensitive"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 5,
+    "data_subjects": "Prospects",
+    "data_processors": [
+      "CRB",
+      "Internal"
+    ],
+    "cross_border": false,
+    "last_reviewed": "2025-09-18",
+    "next_review": "2027-03-26",
+    "owner": "dpo638",
+    "department": "IT",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0006",
+    "type": "ROPA",
+    "subject": "Customer Service Calls",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 1,
+    "data_subjects": "Customers",
+    "data_processors": [
+      "Microsoft"
+    ],
+    "cross_border": false,
+    "last_reviewed": "2025-12-07",
+    "next_review": "2027-04-12",
+    "owner": "dpo862",
+    "department": "HR",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0007",
+    "type": "ROPA",
+    "subject": "Mobile Banking Usage",
+    "data_categories": [
+      "Biometric",
+      "Sensitive",
+      "Financial"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 5,
+    "data_subjects": "Vendors",
+    "data_processors": [
+      "Microsoft"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-11-17",
+    "next_review": "2027-02-19",
+    "owner": "dpo778",
+    "department": "HR",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0008",
+    "type": "ROPA",
+    "subject": "Card Transaction Processing",
+    "data_categories": [
+      "Personal",
+      "Biometric",
+      "Sensitive"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 7,
+    "data_subjects": "Customers",
+    "data_processors": [
+      "Microsoft",
+      "Safaricom"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-05-13",
+    "next_review": "2026-10-11",
+    "owner": "dpo647",
+    "department": "HR",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0009",
+    "type": "ROPA",
+    "subject": "Cross-border Payments",
+    "data_categories": [
+      "Biometric",
+      "Personal"
+    ],
+    "legal_basis": "Legitimate Interest",
+    "retention_period_years": 3,
+    "data_subjects": "Prospects",
+    "data_processors": [
+      "AWS",
+      "Internal"
+    ],
+    "cross_border": false,
+    "last_reviewed": "2025-10-12",
+    "next_review": "2026-09-20",
+    "owner": "dpo876",
+    "department": "Compliance",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0010",
+    "type": "ROPA",
+    "subject": "Internal Investigations",
+    "data_categories": [
+      "Sensitive"
+    ],
+    "legal_basis": "Legitimate Interest",
+    "retention_period_years": 3,
+    "data_subjects": "Customers",
+    "data_processors": [
+      "Internal"
+    ],
+    "cross_border": true,
+    "last_reviewed": "2025-08-18",
+    "next_review": "2026-10-20",
+    "owner": "dpo920",
+    "department": "Operations",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0011",
+    "type": "ROPA",
+    "subject": "Audit Logs",
+    "data_categories": [
+      "Biometric",
+      "Sensitive",
+      "Financial"
+    ],
+    "legal_basis": "Legal Obligation",
+    "retention_period_years": 7,
+    "data_subjects": "Vendors",
+    "data_processors": [
+      "Safaricom"
+    ],
+    "cross_border": false,
+    "last_reviewed": "2025-07-20",
+    "next_review": "2026-08-04",
+    "owner": "dpo198",
+    "department": "Compliance",
+    "status": "Active"
+  },
+  {
+    "id": "ROPA0012",
+    "type": "ROPA",
+    "subject": "Backup Storage",
+    "data_categories": [
+      "Biometric",
+      "Sensitive"
+    ],
+    "legal_basis": "Consent",
+    "retention_period_years": 10,
+    "data_subjects": "Customers",
+    "data_processors": [
+      "CRB"
+    ],
+    "cross_border": false,
+    "last_reviewed": "2025-11-17",
+    "next_review": "2027-03-05",
+    "owner": "dpo858",
+    "department": "Marketing",
+    "status": "Active"
+  }
+]

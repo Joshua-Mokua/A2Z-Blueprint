@@ -13,6 +13,13 @@ from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
 require_access("execute")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 
 # Load session state
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
@@ -50,6 +57,7 @@ if my_actions:
                 if st.button(f"Confirm", key=f"ms_{act['init_id']}_{act['ms_id']}"):
                     em.confirm_milestone(act['init_id'], act['ms_id'], uname)
                     audit_log("MS_CONFIRMED", uname, f"{act['init_id']}:{act['ms_id']}")
+                    _bsc_trigger(uname, "K036")
                     st.success("Milestone confirmed!")
                     st.cache_data.clear()
                     st.rerun()
@@ -232,10 +240,12 @@ with ex_tabs[1]:
                             if ap1.button("✅ Approve", key=f"appr_{init['id']}"):
                                 ok, msg = em.approve_gate(init['id'], my_role_key, uname, True, appr_note)
                                 audit_log("GATE_APPROVED", uname, f"{init['id']}:{pending_g}")
+                                _bsc_trigger(uname, "K036")
                                 st.success(msg); st.rerun()
                             if ap2.button("❌ Reject", key=f"rejt_{init['id']}"):
                                 ok, msg = em.approve_gate(init['id'], my_role_key, uname, False, appr_note)
                                 audit_log("GATE_REJECTED", uname, f"{init['id']}:{pending_g}")
+                                _bsc_trigger(uname, "K036")
                                 st.error(msg); st.rerun()
 
                 # Gate submission button
@@ -262,6 +272,7 @@ with ex_tabs[1]:
                                           type="primary"):
                                 ok, msg = em.submit_for_gate(init['id'], next_gate, uname, sub_note)
                                 audit_log("GATE_SUBMITTED", uname, f"{init['id']}→{next_gate}")
+                                _bsc_trigger(uname, "K036")
                                 st.success(msg); st.rerun()
                         else:
                             st.warning(block_reason)
@@ -352,6 +363,7 @@ with ex_tabs[1]:
                                                     'depends_on_description': _dep_desc,
                                                 })
                                                 audit_log("MS_ADDED", uname, f"{init['id']}:{_ms_name}")
+                                                _bsc_trigger(uname, "K036")
                                                 st.success(f"Milestone '{_ms_name}' added!")
                                                 st.cache_data.clear()
                                                 st.rerun()
@@ -437,6 +449,7 @@ with ex_tabs[1]:
                                             audit_log("MS_UPDATED", uname,
                                                 f"{init['id']}:{ms['id']}:{new_ms_st}"
                                                 + (f":{delay_cat}" if delay_cat else ""))
+                                            _bsc_trigger(uname, "K036")
                                             st.cache_data.clear()
                                             st.rerun()
 
@@ -450,6 +463,7 @@ with ex_tabs[1]:
                                                 em.raise_blocker(init['id'], ms['id'], blocker_text, uname)
                                                 audit_log("BLOCKER_RAISED", uname,
                                                     f"{init['id']}:{ms['id']}:{blocker_text}")
+                                                _bsc_trigger(uname, "K036")
                                                 st.warning(f"Blocker raised — escalated to Lead")
                                                 st.cache_data.clear()
                                                 st.rerun()
@@ -616,6 +630,7 @@ with ex_tabs[2]:
                     'created_by': uname,
                 })
                 audit_log("INITIATIVE_CREATED", uname, f"{new_id}:{init_name}")
+                _bsc_trigger(uname, "K036")
                 st.success(f"✅ Initiative **{new_id}** created at G0. Submit to G1 when ready.")
                 st.cache_data.clear()
                 st.rerun()
@@ -703,6 +718,7 @@ with ex_tabs[2]:
                                         })
                         em._save_initiatives()
                         audit_log("CROSS_WS_SUPPORT", uname, f"{_cb['initiative_id']}:{_cb['id']}")
+                        _bsc_trigger(uname, "K036")
                         st.success("Support confirmed — IO notified.")
                         st.cache_data.clear()
                         st.rerun()
@@ -787,6 +803,7 @@ with ex_tabs[3]:
                             em._save_ideas()
                             break
                     audit_log("IDEA_ADOPTED", uname, f"{idea['id']}→{new_id}")
+                    _bsc_trigger(uname, "K036")
                     st.success(f"Adopted as {new_id}!"); st.rerun()
 
 # ════════════════════════════════════════════════════════════════
@@ -873,6 +890,7 @@ with ex_tabs[4]:
                                 _saved_ws[_ws_id]['cross_functional_pool'] = _cur_pool
                                 _ws_file.write_text(json.dumps(_saved_ws, indent=2))
                                 audit_log("WS_CF_ADDED", uname, f"{_ws_id}:{_cf_user}")
+                                _bsc_trigger(uname, "K036")
                                 st.success("Added"); st.rerun()
 
             # Initiative gate summary
@@ -921,6 +939,7 @@ with ex_tabs[5]:
                     if st.form_submit_button("Record impact", type="primary"):
                         em.record_impact(init_id_it, imp_month, imp_kpi, imp_target, imp_actual, imp_note)
                         audit_log("IMPACT_LOGGED", uname, f"{init_id_it}:{imp_month}:{imp_kpi}")
+                        _bsc_trigger(uname, "K036")
                         st.success("Impact recorded!"); st.rerun()
 
                 # Impact history
@@ -958,6 +977,7 @@ with ex_tabs[5]:
                             ok, msg = em.submit_for_gate(init_id_it, 'G5', uname,
                                 f"Impact consistent over {consistent_months} months")
                             audit_log("GATE_SUBMITTED", uname, f"{init_id_it}→G5")
+                            _bsc_trigger(uname, "K036")
                             st.success(msg); st.rerun()
                     elif consistent_months < 3:
                         st.info(f"Impact tracked for {consistent_months} month(s). Minimum 3 months required before G5 submission.")
@@ -1226,6 +1246,7 @@ with ex_tabs[6]:
                                 audit_log("MS_UPDATED_BY_OWNER", uname,
                                     f"{ms['initiative_id']}:{ms['id']}:{new_st}"
                                     + (f":{delay_cat}" if delay_cat else ""))
+                                _bsc_trigger(uname, "K036")
                                 st.success("Updated!")
                                 st.cache_data.clear()
                                 st.rerun()
@@ -1369,6 +1390,7 @@ with ex_tabs[7]:
                             'depends_on_description': _mc_dep_desc,
                         })
                         audit_log("MS_ADDED_TAB", uname, f"{_mi_id}:{_mc_name}")
+                        _bsc_trigger(uname, "K036")
                         st.success(f"✅ Milestone {_new_ms_id} added to {_mi_id}!")
                         st.cache_data.clear()
                         st.rerun()

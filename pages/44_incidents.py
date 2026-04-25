@@ -12,6 +12,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("incidents")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -97,6 +105,7 @@ with tabs[2]:
                            "root_cause":"","cbk_reportable":inc_cbk,"sla_breached":False,"description":inc_desc})
             (DATA/"incidents.json").write_text(json.dumps(all_i,indent=2))
             audit_log("INCIDENT_LOGGED",uname,f"{new_id} {inc_pri}: {inc_title[:40]}")
+            _bsc_trigger(uname, "K067")
             st.cache_data.clear(); st.success(f"✅ Incident {new_id} logged"); st.rerun()
         else: st.error("Title is required")
 

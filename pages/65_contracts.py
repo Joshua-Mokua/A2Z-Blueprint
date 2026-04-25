@@ -12,6 +12,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("contracts")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -82,6 +90,7 @@ with tabs[1]:
                             if c2["id"]==c["id"]: c2["status"]="Under Review"
                         (DATA/"contracts.json").write_text(json.dumps(all_c,indent=2))
                         audit_log("CONTRACT_RENEWAL_INITIATED",uname,c["id"])
+                        _bsc_trigger(uname, "K039")
                         st.cache_data.clear(); st.success("✅ Renewal initiated"); st.rerun()
     else:
         st.success("✅ No contracts expiring or expired")
@@ -122,6 +131,7 @@ with tabs[2]:
                 })
                 (DATA/"contracts.json").write_text(json.dumps(all_c,indent=2))
                 audit_log("CONTRACT_ADDED",uname,f"{_ctitle}: KES {_cval:,.0f}")
+                _bsc_trigger(uname, "K039")
                 st.cache_data.clear(); st.success("✅ Contract saved"); st.rerun()
     else: st.info("Contract management available to Procurement and Legal teams.")
 

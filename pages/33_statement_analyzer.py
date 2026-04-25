@@ -14,6 +14,14 @@ from utils.core import audit_log
 from pages._access import require_access
 
 require_access("statement_analyzer")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 
@@ -431,6 +439,7 @@ if "sa_result" in st.session_state:
                 if saved:
                     (DATA/"loan_applications.json").write_text(json.dumps(all_apps2,indent=2))
                     audit_log("SA_SAVE", name, "Data saved")
+                    _bsc_trigger(uname, "K046")
                     st.cache_data.clear(); st.success(f"✅ Saved to {app_id}"); st.rerun()
                 else:
                     st.error(f"Application {app_id} not found")

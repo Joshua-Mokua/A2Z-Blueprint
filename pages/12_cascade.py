@@ -21,6 +21,13 @@ def _safe_date(s, fallback=None):
 
 require_access("cascade")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 
 try:
     from utils.core import suggest_target, get_bank_growth_trajectory
@@ -584,6 +591,7 @@ if _tab_visible_bank_targets:
         if st.button("💾 Save master cascade timeline", type="primary"):
             casc.set_global_timeline(period, str(cascade_end), levels_cfg, uname)
             audit_log("CASCADE_TIMELINE", uname, f"{period}|end:{cascade_end}")
+            _bsc_trigger(uname, "K017")
             st.toast(f"✅ Master timeline set — cascade ends {cascade_end}", icon="⏰")
             st.cache_data.clear()
             st.rerun()
@@ -711,6 +719,7 @@ if _tab_visible_bank_targets:
             if ic[7].button("💾", key=f"sv_{kpi}_{t_period}", help="Save target"):
                 casc.set_bank_target(kpi, t_period, float(new_tgt), float(new_buf))
                 audit_log("BANK_TARGET", uname, f"{kpi}|{t_period}|{new_tgt}")
+                _bsc_trigger(uname, "K017")
                 st.toast(f"✅ {kpi}: {fmt_v(new_tgt,kpi)}", icon="✅")
                 st.cache_data.clear()
                 st.rerun()
@@ -990,6 +999,7 @@ if _tab_visible_fixed_kpis:
                     saved_vals += 1
             audit_log("FIXED_KPIS", uname,
                       f"{fix_period}:{len(new_fixed)} fixed, {saved_vals} values")
+            _bsc_trigger(uname, "K017")
             # Reload cascade manager so new values are visible immediately
             try:
                 from utils.core import CascadeManager as _CM
@@ -1117,6 +1127,7 @@ if _tab_visible_set_targets:
                 audit_log("BULK_LOCK_TARGETS", uname, alloc_year,
                            module="cascade",
                            detail=f"{my_code}|bulk_locked {_bulk_locked} direct reports")
+                _bsc_trigger(uname, "K017")
                 st.cache_data.clear()
                 st.success(f"✅ Locked targets for {_bulk_locked} direct report(s)")
                 st.rerun()
@@ -2150,6 +2161,7 @@ if _tab_visible_set_targets:
                         casc.set_cascade_deadline(_dr_sc_sv, alloc_year,
                             str(sv_conf), str(sv_casc), uname)
                         audit_log("CASCADE_ALLOC", uname, f"{_dr_nm_sv}|{alloc_year}")
+                        _bsc_trigger(uname, "K017")
                     st.toast(f"✅ Cascaded to {_n_sv} in {_lbl_sv}", icon="✅")
                     st.cache_data.clear()
                     st.rerun()
@@ -2226,6 +2238,7 @@ if _tab_visible_set_targets:
                     saved_people += 1
                     audit_log("CASCADE_ALLOC", uname,
                               f"{dr_nm}|{alloc_year}|{saved_kpis}KPIs")
+                    _bsc_trigger(uname, "K017")
                 # Clear inputs
                 for k in list(st.session_state.keys()):
                     if k.startswith("v_") and k.endswith(f"_{alloc_year}"):
@@ -2371,6 +2384,7 @@ if _tab_visible_my_targets:
                 audit_log("TARGET_ACCEPTED_LOCKED", uname, period,
                           module="cascade",
                           detail=f"{my_code}|{period}|accepted+locked")
+                _bsc_trigger(uname, "K017")
                 # Clear BSC cache so scorecard reloads with new targets
                 for _ck in ["df_processed","staff_scores","filtered_staff",
                              "_cbs_loaded_file","_cbs_mtime"]:
@@ -2386,6 +2400,7 @@ if _tab_visible_my_targets:
                 audit_log("TARGETS_LOCKED", uname, period,
                           module="cascade",
                           detail=f"{my_code}|{period}|locked")
+                _bsc_trigger(uname, "K017")
                 # Clear BSC cache so scorecard reloads with updated targets immediately
                 for _ck in ["df_processed","staff_scores","filtered_staff",
                              "_cbs_loaded_file","_cbs_mtime"]:
@@ -2409,6 +2424,7 @@ if _tab_visible_my_targets:
                     pass
                 audit_log("CASCADE_DONE", uname, period,
                           module="cascade", detail=f"{my_code}|{period}")
+                _bsc_trigger(uname, "K017")
                 for _ck in ["df_processed","staff_scores","filtered_staff",
                              "_cbs_loaded_file"]:
                     st.session_state.pop(_ck, None)
@@ -2480,6 +2496,7 @@ if _tab_visible_my_targets:
                                         rr_reason, rr_target)
                     audit_log("REVIEW_REQUEST", uname,
                               f"{period}|{rr_kpi}|proposed:{rr_target}")
+                    _bsc_trigger(uname, "K017")
                     st.toast("✅ Review request sent to your manager", icon="📨")
                     st.cache_data.clear()
                     st.rerun()
@@ -2895,6 +2912,7 @@ if _tab_visible_review_requests:
                                 casc.resolve_review(rr["id"], decision, response, uname)
                                 audit_log("REVIEW_RESOLVED", uname,
                                           f"{rr['id']}|{decision}")
+                                _bsc_trigger(uname, "K017")
                                 st.toast(f"✅ Review {decision.lower()} for {rr['staff_name']}", icon="✅")
                                 st.cache_data.clear()
                                 st.rerun()

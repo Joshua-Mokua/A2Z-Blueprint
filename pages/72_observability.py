@@ -1,14 +1,14 @@
 """pages/72_observability.py — System Observability & Monitoring.
-Dept: IT & Digital | KPIs: K066 K067 K068 | BSC: Auto-scored
-Hardcoded: CBK critical systems list, alert levels (OK/WARN/CRIT)
-Configurable: SLA targets, monitoring systems, alert thresholds, MTTR target
+Real-time system health, incident management, SLA tracking, alert management.
+Configurable: monitored systems, SLA thresholds, escalation paths.
+BSC: K066 (uptime), K067 (incident SLA), K068 (MTTR).
+Department: IT. Roles: IT Manager, Systems Administrator, Service Desk Manager.
 """
-import streamlit as st
-import pandas as pd
-import json
+import streamlit as st, pandas as pd, json
 from pathlib import Path
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from collections import defaultdict
+from decimal import Decimal
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
@@ -17,183 +17,179 @@ require_access("observability")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
-role     = str(ud.get("role","")).lower()
-is_admin = ud.get("is_admin", False)
-is_it    = any(x in role for x in ("it","tech","digital","system","infrastructure","devops","operation","manager","head","director"))
+role = str(ud.get("role","")).lower()
+is_admin = ud.get("is_admin",False)
+is_it    = any(x in role for x in ("it","system","infrastructure","devops","service desk","head","director","technology"))
 
-CBK_CRITICAL = ["Core Banking (FlexCube)","Mobile Banking App","RTGS Gateway","ATM Network","SWIFT Interface","Card Management System"]
-ALERT_LEVELS = ["OK","WARN","CRIT"]
-
-def _bsc_trigger(username, kpi=""):
+def _bsc_trigger(u,k=""):
     try:
-        from utils.core import update_bsc_from_modules as _ubm
-        _ubm(username)
-    except Exception:
-        pass
+        from utils.core import update_bsc_from_modules as _u; _u(u)
+    except: pass
 
 @st.cache_data(ttl=15)
 def _load():
     p = DATA/"observability_metrics.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    raw = json.loads(p.read_text()) if p.exists() else []
+    for r in raw:
+        for k,v in r.items():
+            if isinstance(v,Decimal): r[k]=float(v)
+    return raw
 
 @st.cache_data(ttl=60)
 def _cfg():
-    mc = DATA/"module_config.json"
-    if not mc.exists(): return {}
-    return json.loads(mc.read_text(encoding="utf-8")).get("observability",{})
+    p = DATA/"observability_config.json"
+    if p.exists(): return json.loads(p.read_text())
+    return {
+        "systems":[
+            {"id":"CORE_BANKING","name":"Core Banking (FlexCube)","tier":1,"uptime_target":99.9,"active":True},
+            {"id":"MOBILE","name":"Mobile Banking App","tier":1,"uptime_target":99.5,"active":True},
+            {"id":"INTERNET_BANKING","name":"Internet Banking","tier":1,"uptime_target":99.5,"active":True},
+            {"id":"ATM","name":"ATM Network","tier":1,"uptime_target":98.0,"active":True},
+            {"id":"PAYMENTS","name":"Payments Gateway (RTGS/EFT)","tier":1,"uptime_target":99.9,"active":True},
+            {"id":"API_GATEWAY","name":"API Gateway","tier":2,"uptime_target":99.5,"active":True},
+            {"id":"DATA_CENTER","name":"Primary Data Centre","tier":1,"uptime_target":99.99,"active":True},
+            {"id":"DR_SITE","name":"DR Site","tier":2,"uptime_target":99.5,"active":True},
+            {"id":"EMAIL","name":"Email & Collaboration","tier":3,"uptime_target":99.0,"active":True},
+            {"id":"ERP","name":"HR/Finance ERP","tier":3,"uptime_target":98.0,"active":True},
+        ],
+        "incident_sla_minutes":{"P1":30,"P2":120,"P3":480,"P4":1440},
+        "escalation_path":["Service Desk","IT Manager","Head of IT","CTO"],
+        "alert_channels":["Email","SMS","WhatsApp","PagerDuty"],
+    }
 
-def _save(data):
-    (DATA/"observability_metrics.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
+def _save(recs): (DATA/"observability_metrics.json").write_text(json.dumps(recs,indent=2)); st.cache_data.clear()
 
-records  = _load()
-cfg_c    = _cfg()
-conf_cfg = cfg_c.get("configurable",{})
-sla_target  = conf_cfg.get("sla_uptime_target_pct",99.5)
-mttr_target = conf_cfg.get("mttr_target_hours",4.0)
-inc_target  = conf_cfg.get("incident_target_count",5)
-mon_systems = conf_cfg.get("monitoring_systems",[])
+metrics = _load(); cfg = _cfg()
+systems_cfg = {s["id"]:s for s in cfg["systems"]}
 
-crit_m    = [r for r in records if r.get("status")=="CRIT"]
-warn_m    = [r for r in records if r.get("status")=="WARN"]
-ok_m      = [r for r in records if r.get("status")=="OK"]
-avg_uptime= round(sum(r.get("uptime_30d_pct",0) for r in records)/max(len(records),1),2)
-total_inc = sum(r.get("incidents_30d",0) for r in records)
-cbk_crit  = [r for r in crit_m if r.get("system","") in CBK_CRITICAL]
+incidents = [m for m in metrics if m.get("type")=="Incident"]
+active_inc = [i for i in incidents if i.get("status") not in ("Resolved","Closed")]
+p1_active  = [i for i in active_inc if i.get("priority")=="P1"]
+avg_uptime = sum(float(m.get("uptime_pct",0) or 0) for m in metrics if m.get("type")=="Uptime")/max(sum(1 for m in metrics if m.get("type")=="Uptime"),1)
+sla_met    = sum(1 for i in incidents if i.get("sla_met"))
+mttr_vals  = [float(i.get("resolution_mins",0) or 0) for i in incidents if i.get("resolution_mins")]
+avg_mttr   = round(sum(mttr_vals)/max(len(mttr_vals),1),0)
 
-st.markdown(
-    "<div style='padding:16px 0 4px'>"
-    "<span style='font-size:22px;font-weight:800'>📡 System Observability</span>"
-    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
-    "IT & Digital · K066 · K067 · K068</span></div>",
-    unsafe_allow_html=True)
-
-if cbk_crit:
-    st.error(f"🔴 CRITICAL: {len(cbk_crit)} CBK-critical system(s) down — escalate to IT Manager and CEO immediately")
-elif crit_m:
-    st.error(f"🔴 {len(crit_m)} system(s) CRITICAL")
-if warn_m:
-    st.warning(f"🟡 {len(warn_m)} system(s) WARNING")
-if avg_uptime < sla_target:
-    st.error(f"🔴 Average uptime {avg_uptime}% below SLA target {sla_target}%")
+st.markdown("<div style='padding:16px 0 4px'><span style='font-size:22px;font-weight:800'>🖥️ System Observability</span><span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>Real-time health · Incidents · SLA · Uptime · MTTR</span></div>",unsafe_allow_html=True)
+if p1_active: st.error(f"🔴 {len(p1_active)} P1 INCIDENT(S) ACTIVE — immediate response required")
+elif active_inc: st.warning(f"⚠️ {len(active_inc)} active incident(s)")
 
 m1,m2,m3,m4,m5,m6 = st.columns(6)
-m1.metric("Systems",          len(set(r.get("system","") for r in records)))
-m2.metric("🔴 Critical",      len(crit_m),  delta_color="inverse" if crit_m else "off")
-m3.metric("🟡 Warning",       len(warn_m),  delta_color="inverse" if warn_m else "off")
-m4.metric("🟢 OK",            len(ok_m))
-m5.metric("Avg uptime (30d)", f"{avg_uptime:.2f}%", delta_color="off" if avg_uptime>=sla_target else "inverse")
-m6.metric("Incidents (30d)",  total_inc,    delta_color="inverse" if total_inc>inc_target else "off")
+m1.metric("Avg uptime",f"{avg_uptime:.2f}%",delta_color="normal" if avg_uptime>=99.5 else "inverse")
+m2.metric("Active incidents",len(active_inc),delta_color="inverse" if active_inc else "normal")
+m3.metric("P1 incidents",len(p1_active),delta_color="inverse" if p1_active else "normal")
+m4.metric("Incident SLA met",f"{sla_met/max(len(incidents),1)*100:.0f}%")
+m5.metric("MTTR",f"{avg_mttr:.0f} mins")
+m6.metric("Total incidents",len(incidents))
 
-tabs = st.tabs(["🖥️ Live Dashboard","🚨 Active Alerts","📊 System Health","📝 Incident Log","⚙️ Config","📈 BSC"])
+tabs = st.tabs(["🖥️ System Health","🚨 Active Incidents","📊 Analytics","📝 Log Incident","⚙️ Config","🎯 BSC"])
 
 with tabs[0]:
-    systems = sorted(set(r.get("system","") for r in records))
-    for sys_name in systems:
-        sys_metrics = [r for r in records if r.get("system","")==sys_name]
-        sys_status  = "🔴 CRITICAL" if any(r.get("status")=="CRIT" for r in sys_metrics) else                       "🟡 WARNING"  if any(r.get("status")=="WARN" for r in sys_metrics) else "🟢 OK"
-        is_cbk_crit = sys_name in CBK_CRITICAL
-        cbk_badge   = " 🏦 CBK Critical" if is_cbk_crit else ""
-        with st.expander(f"{sys_status}{cbk_badge} — {sys_name}", expanded=any(r.get("status")!="OK" for r in sys_metrics)):
-            uptime = round(sum(r.get("uptime_30d_pct",0) for r in sys_metrics)/max(len(sys_metrics),1),2)
-            inc    = sum(r.get("incidents_30d",0) for r in sys_metrics)
-            c0,c1,c2,c3 = st.columns(4)
-            c0.metric("Uptime (30d)", f"{uptime:.2f}%", delta_color="off" if uptime>=sla_target else "inverse")
-            c0.metric("Incidents",    inc,              delta_color="off")
-            for j, m in enumerate(sys_metrics[:3], 1):
-                col = [c1,c2,c3][j-1]
-                status_icon = "🔴" if m.get("status")=="CRIT" else "🟡" if m.get("status")=="WARN" else "🟢"
-                col.metric(f"{status_icon} {m.get('metric','')}",
-                           f"{m.get('current_value',0):.1f}{m.get('unit','')}",
-                           delta=f"Threshold: {m.get('threshold_crit',0):.1f}")
+    st.markdown("**Live system status — all monitored systems:**")
+    sys_data = {}
+    for m in metrics:
+        if m.get("type")=="Uptime": sys_data[m.get("system_id","")] = m
+    rows=[]
+    for s in cfg["systems"]:
+        m = sys_data.get(s["id"],{})
+        uptime = float(m.get("uptime_pct",100) or 100)
+        target = s.get("uptime_target",99.5)
+        ok = uptime >= target
+        rows.append({"Tier":s["tier"],"System":s["name"],"Uptime":f"{uptime:.2f}%","Target":f"{target:.1f}%","Status":"🟢 Healthy" if ok else "🔴 Below SLA","Last updated":m.get("recorded_at","—")[:16] if m else "—"})
+    st.dataframe(pd.DataFrame(sorted(rows,key=lambda x:x["Tier"])),use_container_width=True,hide_index=True)
+    st.caption(f"Monitoring {len(cfg['systems'])} systems | Updated every 15 seconds")
 
 with tabs[1]:
-    all_alerts = crit_m + warn_m
-    if all_alerts:
-        rows=[{"System":r.get("system",""),"Metric":r.get("metric",""),
-                "Value":f"{r.get('current_value',0):.1f}{r.get('unit','')}",
-                "WARN threshold":f"{r.get('threshold_warn',0):.1f}",
-                "CRIT threshold":f"{r.get('threshold_crit',0):.1f}",
-                "Status":r.get("status",""),"Team":r.get("owner_team","")[:20],
-                "CBK":"🏦" if r.get("system","") in CBK_CRITICAL else ""} for r in all_alerts]
-        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
-        if is_it or is_admin:
-            c1,c2 = st.columns(2)
-            if c1.button("✅ Acknowledge all alerts",key="obs_ack",type="primary"):
-                audit_log("OBS_ALERTS_ACK",uname,f"{len(all_alerts)} alerts acknowledged")
-                _bsc_trigger(uname,"K067")
-                st.success(f"✅ {len(all_alerts)} alerts acknowledged — teams notified")
-            if c2.button("📧 Escalate critical to management",key="obs_esc"):
-                audit_log("OBS_ESCALATED",uname,f"{len(crit_m)} critical escalated")
-                st.success("✅ Escalation sent to IT Manager and Operations Director")
-    else:
-        st.success("✅ All systems operational — no active alerts.")
+    if active_inc:
+        for inc in sorted(active_inc,key=lambda x:x.get("priority","P4")):
+            p=inc.get("priority","P4"); col={"P1":"🔴","P2":"🟠","P3":"🟡","P4":"⚪"}.get(p,"⚪")
+            with st.expander(f"{col} {inc.get('id','')} — {inc.get('title','')[:40]} [{p}]"):
+                c1,c2,c3 = st.columns(3)
+                c1.markdown(f"**System:** {inc.get('system_id','')}")
+                c2.markdown(f"**Opened:** {inc.get('opened_at','')[:16]}")
+                c3.markdown(f"**Assigned:** {inc.get('assigned_to','—')}")
+                st.markdown(f"**Description:** {inc.get('description','')}")
+                sla_mins = cfg["incident_sla_minutes"].get(p,480)
+                st.info(f"SLA: {sla_mins} mins | Escalation: {' → '.join(cfg['escalation_path'])}")
+                update = st.text_area("Status update",key=f"inc_upd_{inc['id']}")
+                status_new = st.selectbox("Update status",["Active","Investigating","Resolved","Closed"],key=f"inc_stat_{inc['id']}")
+                if st.button("💾 Update",key=f"inc_save_{inc['id']}",type="primary"):
+                    all_m = _load()
+                    for m2 in all_m:
+                        if m2.get("id")==inc["id"]:
+                            m2["status"]=status_new; m2["last_update"]=update; m2["updated_by"]=uname
+                            if status_new in ("Resolved","Closed"):
+                                m2["resolved_at"]=str(datetime.now())[:16]
+                                try:
+                                    opened = datetime.fromisoformat(m2.get("opened_at",""))
+                                    resolved = datetime.now()
+                                    m2["resolution_mins"]=int((resolved-opened).total_seconds()/60)
+                                    m2["sla_met"]=m2["resolution_mins"]<=sla_mins
+                                except: pass
+                            break
+                    _save(all_m); audit_log("INCIDENT_UPDATED",uname,f"{inc['id']}: {status_new}")
+                    if status_new in ("Resolved","Closed"): _bsc_trigger(uname,"K067")
+                    st.success("✅ Updated"); st.rerun()
+    else: st.success("✅ No active incidents")
 
 with tabs[2]:
-    rows=[]
-    for sys_name in systems:
-        sys_m = [r for r in records if r.get("system","")==sys_name]
-        avg_up = round(sum(r.get("uptime_30d_pct",0) for r in sys_m)/max(len(sys_m),1),2)
-        inc    = sum(r.get("incidents_30d",0) for r in sys_m)
-        status = "🔴 CRIT" if any(r.get("status")=="CRIT" for r in sys_m) else                  "🟡 WARN" if any(r.get("status")=="WARN" for r in sys_m) else "🟢 OK"
-        rows.append({"System":sys_name[:30],"Status":status,"Uptime(30d)":f"{avg_up:.2f}%",
-                      "SLA Target":f"{sla_target}%","SLA Met":"✅" if avg_up>=sla_target else "❌",
-                      "Incidents":inc,"CBK Critical":"🏦" if sys_name in CBK_CRITICAL else ""})
-    st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
-    sla_met = sum(1 for r in rows if r["SLA Met"]=="✅")
-    st.caption(f"SLA compliance: {sla_met}/{len(rows)} systems | Average uptime: {avg_uptime:.2f}%")
+    c1,c2 = st.columns(2)
+    with c1:
+        st.markdown("**Incidents by priority:**")
+        by_p = defaultdict(lambda:{"count":0,"resolved":0,"sla_met":0,"total_mins":0})
+        for i in incidents:
+            p=i.get("priority","P4"); by_p[p]["count"]+=1
+            if i.get("status") in ("Resolved","Closed"): by_p[p]["resolved"]+=1
+            if i.get("sla_met"): by_p[p]["sla_met"]+=1
+            by_p[p]["total_mins"]+=float(i.get("resolution_mins",0) or 0)
+        p_rows=[{"Priority":p,"Total":v["count"],"Resolved":v["resolved"],"SLA Met":v["sla_met"],"Avg MTTR":f"{v['total_mins']/max(v['resolved'],1):.0f}m"}for p,v in sorted(by_p.items())]
+        st.dataframe(pd.DataFrame(p_rows),use_container_width=True,hide_index=True)
+    with c2:
+        st.markdown("**Uptime by system tier:**")
+        tier_uptime = defaultdict(list)
+        for m in metrics:
+            if m.get("type")=="Uptime":
+                sys = systems_cfg.get(m.get("system_id",""),{})
+                tier_uptime[sys.get("tier",3)].append(float(m.get("uptime_pct",0) or 0))
+        tier_rows=[{"Tier":f"Tier {t}","Systems":len(vals),"Avg Uptime":f"{sum(vals)/len(vals):.2f}%","Min":f"{min(vals):.2f}%"}for t,vals in sorted(tier_uptime.items())]
+        st.dataframe(pd.DataFrame(tier_rows),use_container_width=True,hide_index=True)
 
 with tabs[3]:
-    st.markdown("**Log a new incident:**")
     if is_it or is_admin:
-        r1,r2 = st.columns(2)
-        sys_sel = r1.selectbox("System",systems,key="obs_inc_sys")
-        severity= r2.selectbox("Severity",["P1 — Critical","P2 — Major","P3 — Minor"],key="obs_inc_sev")
-        desc_   = st.text_area("Description *",key="obs_inc_desc")
-        if st.button("📝 Log incident",key="obs_inc_log",type="primary"):
-            if desc_.strip():
+        sys_opts = [s["id"] for s in cfg["systems"] if s.get("active")]
+        c1,c2 = st.columns(2)
+        _title = st.text_input("Incident title *",key="obs_ntitle")
+        _sys   = c1.selectbox("Affected system",sys_opts,key="obs_nsys")
+        _prio  = c2.selectbox("Priority",["P1","P2","P3","P4"],key="obs_nprio")
+        _desc  = st.text_area("Description",key="obs_ndesc")
+        _assign= st.text_input("Assign to (username)",value=uname,key="obs_nassign")
+        if st.button("🚨 Log incident",key="obs_nlog",type="primary"):
+            if _title.strip():
                 all_m = _load()
-                for m in all_m:
-                    if m.get("system","")==sys_sel:
-                        m["incidents_30d"] = m.get("incidents_30d",0)+1
-                        if "P1" in severity or "P2" in severity: m["status"]="CRIT"
-                        break
-                _save(all_m)
-                audit_log("OBS_INCIDENT_LOGGED",uname,f"{sys_sel}: {severity}")
-                _bsc_trigger(uname,"K067")
+                all_m.append({"id":f"INC{len(all_m)+1:05d}","type":"Incident","title":_title.strip(),"system_id":_sys,"priority":_prio,"description":_desc,"status":"Active","opened_at":datetime.now().isoformat()[:16],"assigned_to":_assign,"resolved_at":"","resolution_mins":0,"sla_met":False,"last_update":"","updated_by":"","logged_by":uname,"created_at":str(today)})
+                _save(all_m); audit_log("INCIDENT_LOGGED",uname,f"{_prio}: {_title[:40]}")
                 st.success("✅ Incident logged"); st.rerun()
+            else: st.error("Title required")
+    else: st.info("Incident logging for IT team.")
 
 with tabs[4]:
-    if is_admin:
-        st.info("ℹ️ Hardcoded: CBK critical systems list, alert levels (OK/WARN/CRIT)")
-        mc = json.loads((DATA/"module_config.json").read_text())
-        cfg_m = mc.get("observability",{}).get("configurable",{})
-        c1,c2,c3 = st.columns(3)
-        new_sla   = c1.number_input("SLA uptime target (%)",90.0,100.0,float(cfg_m.get("sla_uptime_target_pct",99.5)),0.1,key="obs_cfg_sla")
-        new_mttr  = c2.number_input("MTTR target (hrs)",1.0,24.0,float(cfg_m.get("mttr_target_hours",4.0)),0.5,key="obs_cfg_mttr")
-        new_inc   = c3.number_input("Incident count target",1,50,int(cfg_m.get("incident_target_count",5)),key="obs_cfg_inc")
-        new_email = st.text_input("Alert email",cfg_m.get("alert_email",""),key="obs_cfg_email")
-        new_check = st.number_input("Check interval (minutes)",1,60,int(cfg_m.get("check_interval_minutes",5)),key="obs_cfg_check")
-        st.markdown("**Monitored systems:**")
-        for ms in cfg_m.get("monitoring_systems",[]):
-            c1,c2,c3 = st.columns([3,2,1])
-            c1.markdown(f"**{ms.get('name','')}**")
-            c2.markdown(f"Team: {ms.get('team','')}")
-            c3.markdown("🏦 CBK" if ms.get("critical") else "")
-        if st.button("💾 Save observability config",key="obs_cfg_save",type="primary"):
-            cfg_m.update({"sla_uptime_target_pct":new_sla,"mttr_target_hours":new_mttr,
-                          "incident_target_count":new_inc,"alert_email":new_email,"check_interval_minutes":new_check})
-            mc["observability"]["configurable"]=cfg_m; (DATA/"module_config.json").write_text(json.dumps(mc,indent=2))
-            audit_log("OBS_CFG_SAVED",uname,"Config updated"); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
-    else:
-        st.info("Configuration available to Admin only.")
+    if is_admin or is_it:
+        st.markdown("**Monitored systems — SLA targets configurable:**")
+        for s in cfg["systems"]:
+            c1,c2,c3,c4 = st.columns([4,2,1,1])
+            c1.markdown(f"**{s['name']}** (Tier {s['tier']})")
+            new_target = c2.number_input("Uptime target %",90.0,100.0,float(s.get("uptime_target",99.5)),0.1,key=f"obs_tgt_{s['id']}")
+            s["uptime_target"]=new_target
+            s["active"]=c4.checkbox("Active",value=s.get("active",True),key=f"obs_act_{s['id']}")
+        if st.button("💾 Save config",key="obs_cfg_save",type="primary"):
+            (DATA/"observability_config.json").write_text(json.dumps(cfg,indent=2))
+            st.cache_data.clear(); audit_log("OBS_CFG_SAVED",uname,""); st.success("✅"); st.rerun()
+    else: st.info("Config for IT management.")
 
 with tabs[5]:
-    bsc_rows=[
-        {"KPI":"K066 — System Uptime","Target":f"> {sla_target}%","Actual":f"{avg_uptime:.2f}%","Status":"🟢" if avg_uptime>=sla_target else "🔴","Weight":"10%"},
-        {"KPI":"K067 — Critical Incidents","Target":f"< {inc_target}","Actual":str(len(crit_m)),"Status":"🟢" if len(crit_m)<inc_target else "🔴","Weight":"8%"},
-        {"KPI":"K068 — MTTR","Target":f"< {mttr_target}hrs","Actual":"2.5hrs (est)","Status":"🟢","Weight":"8%"},
-    ]
-    st.dataframe(pd.DataFrame(bsc_rows),use_container_width=True,hide_index=True)
-    if st.button("🔄 Refresh BSC",key="obs_bsc",type="primary"):
-        _bsc_trigger(uname,"K066"); st.success("✅ BSC updated"); st.rerun()
+    st.markdown("**System Observability BSC KPIs:**")
+    st.metric("K066 — System Uptime",f"{avg_uptime:.2f}%","Target 99.5%",delta_color="normal" if avg_uptime>=99.5 else "inverse")
+    sla_pct = round(sla_met/max(len(incidents),1)*100,1)
+    st.metric("K067 — Incident SLA Met",f"{sla_pct:.0f}%","Target 90%",delta_color="normal" if sla_pct>=90 else "inverse")
+    st.metric("K068 — MTTR",f"{avg_mttr:.0f} mins","Target ≤60 mins",delta_color="normal" if avg_mttr<=60 else "inverse")
+    if st.button("🔄 Refresh BSC",key="obs_bsc_ref"): _bsc_trigger(uname,"observability"); st.success("✅"); st.rerun()

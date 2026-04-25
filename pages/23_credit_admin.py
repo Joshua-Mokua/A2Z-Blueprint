@@ -12,6 +12,14 @@ from pages._access import require_access
 from utils.core import audit_log
 
 require_access("credit_admin")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -74,6 +82,7 @@ with tabs[1]:
         st.dataframe(pd.DataFrame(r_rows), use_container_width=True, hide_index=True)
         if (is_credit or is_admin) and st.button("📧 Notify Operations — Disbursement Queue", key="ca_notify", type="primary"):
             audit_log("CA_DISBURSAL_NOTIF", uname, f"{len(ready)} cases notified for disbursement")
+            _bsc_trigger(uname, "K028")
             st.success(f"✅ Operations notified — {len(ready)} cases ready for disbursement")
     else:
         st.info("No cases currently cleared for disbursement.")

@@ -1,0 +1,53 @@
+{
+  "facility_types": [
+    {
+      "id": "DIST",
+      "name": "Distributor Finance",
+      "max_tenor_days": 90,
+      "active": true
+    },
+    {
+      "id": "BUYER",
+      "name": "Approved Buyer Programme",
+      "max_tenor_days": 60,
+      "active": true
+    },
+    {
+      "id": "INVOICE",
+      "name": "Invoice Discounting",
+      "max_tenor_days": 120,
+      "active": true
+    },
+    {
+      "id": "LPO",
+      "name": "LPO Financing",
+      "max_tenor_days": 30,
+      "active": true
+    },
+    {
+      "id": "AGRI",
+      "name": "Agri-Finance",
+      "max_tenor_days": 180,
+      "active": true
+    }
+  ],
+  "supply_chains": [
+    "FMCG",
+    "Petroleum",
+    "Agriculture",
+    "Construction",
+    "Healthcare",
+    "Pharmaceuticals",
+    "Telecoms"
+  ],
+  "approved_anchors": [
+    "Safaricom",
+    "EABL",
+    "BAT Kenya",
+    "Nation Media",
+    "KCB Group",
+    "Equity Group"
+  ],
+  "npl_threshold_pct": 3.0,
+  "max_single_buyer_pct": 25.0
+}

@@ -17,7 +17,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": ""
   },
   {
     "id": "CLR00002",
@@ -37,7 +41,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "charles149",
+    "exception_reason": ""
   },
   {
     "id": "CLR00003",
@@ -57,7 +65,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": "Duplicate reference"
   },
   {
     "id": "CLR00004",
@@ -77,7 +89,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00005",
@@ -97,7 +113,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00006",
@@ -117,7 +137,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00007",
@@ -137,7 +161,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "martin146",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00008",
@@ -157,7 +185,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "martin146",
+    "settlement_tat_met": false,
+    "reconciled_by": "martin146",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00009",
@@ -177,7 +209,11 @@
     "reconciled": false,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00010",
@@ -197,7 +233,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "aaron143",
+    "settlement_tat_met": true,
+    "reconciled_by": "aaron143",
+    "exception_reason": "Duplicate reference"
   },
   {
     "id": "CLR00011",
@@ -217,7 +257,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "agnes148",
+    "settlement_tat_met": true,
+    "reconciled_by": "agnes148",
+    "exception_reason": ""
   },
   {
     "id": "CLR00012",
@@ -237,7 +281,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00013",
@@ -257,7 +305,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 55.69,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "charles149",
+    "exception_reason": ""
   },
   {
     "id": "CLR00014",
@@ -277,7 +329,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 46.9,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00015",
@@ -297,7 +353,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00016",
@@ -317,7 +377,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00017",
@@ -337,7 +401,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "agnes148",
+    "settlement_tat_met": true,
+    "reconciled_by": "agnes148",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00018",
@@ -357,7 +425,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00019",
@@ -377,7 +449,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00020",
@@ -397,7 +473,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers114",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers114",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00021",
@@ -417,7 +497,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00022",
@@ -437,7 +521,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "quinn142",
+    "settlement_tat_met": true,
+    "reconciled_by": "quinn142",
+    "exception_reason": ""
   },
   {
     "id": "CLR00023",
@@ -457,7 +545,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "martin146",
+    "settlement_tat_met": true,
+    "reconciled_by": "martin146",
+    "exception_reason": ""
   },
   {
     "id": "CLR00024",
@@ -477,7 +569,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "miriam153",
+    "settlement_tat_met": true,
+    "reconciled_by": "miriam153",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00025",
@@ -497,7 +593,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00026",
@@ -517,7 +617,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00027",
@@ -537,7 +641,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "aaron143",
+    "settlement_tat_met": true,
+    "reconciled_by": "aaron143",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00028",
@@ -557,7 +665,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00029",
@@ -577,7 +689,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00030",
@@ -597,7 +713,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers114",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers114",
+    "exception_reason": ""
   },
   {
     "id": "CLR00031",
@@ -617,7 +737,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers114",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers114",
+    "exception_reason": "Duplicate reference"
   },
   {
     "id": "CLR00032",
@@ -637,7 +761,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00033",
@@ -657,7 +785,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": false,
+    "reconciled_by": "",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00034",
@@ -677,7 +809,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "jane150",
+    "settlement_tat_met": true,
+    "reconciled_by": "jane150",
+    "exception_reason": ""
   },
   {
     "id": "CLR00035",
@@ -697,7 +833,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": ""
   },
   {
     "id": "CLR00036",
@@ -717,7 +857,11 @@
     "reconciled": false,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00037",
@@ -737,7 +881,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "agnes148",
+    "settlement_tat_met": true,
+    "reconciled_by": "agnes148",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00038",
@@ -757,7 +905,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "jane150",
+    "settlement_tat_met": true,
+    "reconciled_by": "jane150",
+    "exception_reason": ""
   },
   {
     "id": "CLR00039",
@@ -777,7 +929,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00040",
@@ -797,7 +953,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": ""
   },
   {
     "id": "CLR00041",
@@ -817,7 +977,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "miriam153",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00042",
@@ -837,7 +1001,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "jane150",
+    "settlement_tat_met": true,
+    "reconciled_by": "jane150",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00043",
@@ -857,7 +1025,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "agnes148",
+    "settlement_tat_met": true,
+    "reconciled_by": "agnes148",
+    "exception_reason": "Duplicate reference"
   },
   {
     "id": "CLR00044",
@@ -877,7 +1049,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00045",
@@ -897,7 +1073,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00046",
@@ -917,7 +1097,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00047",
@@ -937,7 +1121,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00048",
@@ -957,7 +1145,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00049",
@@ -977,7 +1169,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 38.44,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00050",
@@ -997,7 +1193,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "jane150",
+    "settlement_tat_met": true,
+    "reconciled_by": "jane150",
+    "exception_reason": ""
   },
   {
     "id": "CLR00051",
@@ -1017,7 +1217,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00052",
@@ -1037,7 +1241,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 48.29,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00053",
@@ -1057,7 +1265,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00054",
@@ -1077,7 +1289,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00055",
@@ -1097,7 +1313,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00056",
@@ -1117,7 +1337,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers114",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00057",
@@ -1137,7 +1361,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00058",
@@ -1157,7 +1385,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00059",
@@ -1177,7 +1409,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers145",
+    "exception_reason": ""
   },
   {
     "id": "CLR00060",
@@ -1197,7 +1433,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00061",
@@ -1217,7 +1457,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00062",
@@ -1237,7 +1481,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": false,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00063",
@@ -1257,7 +1505,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "jane150",
+    "settlement_tat_met": true,
+    "reconciled_by": "jane150",
+    "exception_reason": ""
   },
   {
     "id": "CLR00064",
@@ -1277,7 +1529,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00065",
@@ -1297,7 +1553,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": ""
   },
   {
     "id": "CLR00066",
@@ -1317,7 +1577,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "quinn142",
+    "settlement_tat_met": false,
+    "reconciled_by": "quinn142",
+    "exception_reason": ""
   },
   {
     "id": "CLR00067",
@@ -1337,7 +1601,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00068",
@@ -1357,7 +1625,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "quinn142",
+    "settlement_tat_met": true,
+    "reconciled_by": "quinn142",
+    "exception_reason": ""
   },
   {
     "id": "CLR00069",
@@ -1377,7 +1649,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "miriam153",
+    "settlement_tat_met": true,
+    "reconciled_by": "miriam153",
+    "exception_reason": ""
   },
   {
     "id": "CLR00070",
@@ -1397,7 +1673,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "elizabeth113",
+    "settlement_tat_met": true,
+    "reconciled_by": "elizabeth113",
+    "exception_reason": ""
   },
   {
     "id": "CLR00071",
@@ -1417,7 +1697,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": "Duplicate reference"
   },
   {
     "id": "CLR00072",
@@ -1437,7 +1721,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "aaron143",
+    "settlement_tat_met": true,
+    "reconciled_by": "aaron143",
+    "exception_reason": ""
   },
   {
     "id": "CLR00073",
@@ -1457,7 +1745,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": true,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00074",
@@ -1477,7 +1769,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": ""
   },
   {
     "id": "CLR00075",
@@ -1497,7 +1793,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 54.49,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00076",
@@ -1517,7 +1817,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "charles149",
+    "exception_reason": ""
   },
   {
     "id": "CLR00077",
@@ -1537,7 +1841,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "quinn142",
+    "settlement_tat_met": true,
+    "reconciled_by": "quinn142",
+    "exception_reason": ""
   },
   {
     "id": "CLR00078",
@@ -1557,7 +1865,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00079",
@@ -1577,7 +1889,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00080",
@@ -1597,7 +1913,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00081",
@@ -1617,7 +1937,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00082",
@@ -1637,7 +1961,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00083",
@@ -1657,7 +1985,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "agnes148",
+    "settlement_tat_met": true,
+    "reconciled_by": "agnes148",
+    "exception_reason": ""
   },
   {
     "id": "CLR00084",
@@ -1677,7 +2009,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": ""
   },
   {
     "id": "CLR00085",
@@ -1697,7 +2033,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00086",
@@ -1717,7 +2057,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": false,
+    "reconciled_by": "dennis111",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00087",
@@ -1737,7 +2081,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": false,
+    "reconciled_by": "rodgers145",
+    "exception_reason": ""
   },
   {
     "id": "CLR00088",
@@ -1757,7 +2105,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "geoffrey054",
+    "settlement_tat_met": false,
+    "reconciled_by": "geoffrey054",
+    "exception_reason": ""
   },
   {
     "id": "CLR00089",
@@ -1777,7 +2129,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00090",
@@ -1797,7 +2153,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00091",
@@ -1817,7 +2177,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "charles149",
+    "exception_reason": ""
   },
   {
     "id": "CLR00092",
@@ -1837,7 +2201,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": ""
   },
   {
     "id": "CLR00093",
@@ -1857,7 +2225,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": false,
+    "reconciled_by": "edith144",
+    "exception_reason": ""
   },
   {
     "id": "CLR00094",
@@ -1877,7 +2249,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "ishmael151",
+    "exception_reason": ""
   },
   {
     "id": "CLR00095",
@@ -1897,7 +2273,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "charles149",
+    "exception_reason": ""
   },
   {
     "id": "CLR00096",
@@ -1917,7 +2297,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 45.87,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00097",
@@ -1937,7 +2321,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00098",
@@ -1957,7 +2345,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 56.16,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": ""
   },
   {
     "id": "CLR00099",
@@ -1977,7 +2369,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00100",
@@ -1997,7 +2393,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": true,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00101",
@@ -2017,7 +2417,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00102",
@@ -2037,7 +2441,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": "Invalid account"
   },
   {
     "id": "CLR00103",
@@ -2057,7 +2465,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "nicholas112",
+    "settlement_tat_met": false,
+    "reconciled_by": "nicholas112",
+    "exception_reason": ""
   },
   {
     "id": "CLR00104",
@@ -2077,7 +2489,11 @@
     "reconciled": false,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "charles149",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00105",
@@ -2097,7 +2513,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers145",
+    "exception_reason": ""
   },
   {
     "id": "CLR00106",
@@ -2117,7 +2537,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "martin146",
+    "settlement_tat_met": true,
+    "reconciled_by": "martin146",
+    "exception_reason": ""
   },
   {
     "id": "CLR00107",
@@ -2137,7 +2561,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00108",
@@ -2157,7 +2585,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": ""
   },
   {
     "id": "CLR00109",
@@ -2177,7 +2609,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "rodgers145",
+    "settlement_tat_met": true,
+    "reconciled_by": "rodgers145",
+    "exception_reason": ""
   },
   {
     "id": "CLR00110",
@@ -2197,7 +2633,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ishmael151",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00111",
@@ -2217,7 +2657,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "ibrahim147",
+    "settlement_tat_met": true,
+    "reconciled_by": "ibrahim147",
+    "exception_reason": ""
   },
   {
     "id": "CLR00112",
@@ -2237,7 +2681,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": ""
   },
   {
     "id": "CLR00113",
@@ -2257,7 +2705,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "dennis111",
+    "settlement_tat_met": true,
+    "reconciled_by": "dennis111",
+    "exception_reason": ""
   },
   {
     "id": "CLR00114",
@@ -2277,7 +2729,11 @@
     "reconciled": false,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "quinn142",
+    "settlement_tat_met": true,
+    "reconciled_by": "",
+    "exception_reason": ""
   },
   {
     "id": "CLR00115",
@@ -2297,7 +2753,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": false,
+    "reconciled_by": "hannah154",
+    "exception_reason": ""
   },
   {
     "id": "CLR00116",
@@ -2317,7 +2777,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-23",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "edith144",
+    "settlement_tat_met": true,
+    "reconciled_by": "edith144",
+    "exception_reason": ""
   },
   {
     "id": "CLR00117",
@@ -2337,7 +2801,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "lilian152",
+    "settlement_tat_met": true,
+    "reconciled_by": "lilian152",
+    "exception_reason": ""
   },
   {
     "id": "CLR00118",
@@ -2357,7 +2825,11 @@
     "reconciled": true,
     "reconciled_at": "",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "daisy155",
+    "settlement_tat_met": true,
+    "reconciled_by": "daisy155",
+    "exception_reason": "Insufficient funds"
   },
   {
     "id": "CLR00119",
@@ -2377,7 +2849,11 @@
     "reconciled": true,
     "reconciled_at": "2026-04-24",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "hannah154",
+    "settlement_tat_met": true,
+    "reconciled_by": "hannah154",
+    "exception_reason": "Format error"
   },
   {
     "id": "CLR00120",
@@ -2397,6 +2873,10 @@
     "reconciled": true,
     "reconciled_at": "2026-04-22",
     "discrepancy_kes": 0,
-    "notes": ""
+    "notes": "",
+    "officer_username": "aaron143",
+    "settlement_tat_met": true,
+    "reconciled_by": "aaron143",
+    "exception_reason": ""
   }
 ]

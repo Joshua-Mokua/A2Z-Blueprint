@@ -6250,6 +6250,109 @@ def compute_operational_kpi_actuals(username: str, period: str = "2026") -> dict
             }
     except Exception: pass
 
+    # ── K055-K057: Clearing & Settlement ─────────────────────────
+    try:
+        clearing = _load("clearing_records.json")
+        my_clearing = [c for c in clearing if c.get("officer_username") == username
+                       or c.get("created_by") == username]
+        if my_clearing:
+            total = len(my_clearing)
+            exceptions = sum(1 for c in my_clearing if c.get("status") in ("Failed","Rejected","Exception"))
+            reconciled = sum(1 for c in my_clearing if c.get("reconciled"))
+            settled_tat = sum(1 for c in my_clearing if c.get("settlement_tat_met"))
+            actuals["K055"] = {"actual": round(exceptions/max(total,1)*100,1),
+                               "source":"clearing","detail":f"{exceptions}/{total} exceptions"}
+            actuals["K056"] = {"actual": round(reconciled/max(total,1)*100,1),
+                               "source":"clearing","detail":f"{reconciled}/{total} reconciled"}
+            actuals["K057"] = {"actual": round(settled_tat/max(total,1)*100,1),
+                               "source":"clearing","detail":f"{settled_tat}/{total} within TAT"}
+    except Exception: pass
+
+    # ── K058-K059: Consent Management ────────────────────────────
+    try:
+        consent = _load("consent_register.json")
+        my_consent = [c for c in consent if c.get("recorded_by") == username]
+        total_cust = len(set(c.get("customer_id","") for c in consent))
+        valid = sum(1 for c in consent if c.get("status") == "Active")
+        renewals = sum(1 for c in my_consent if c.get("action") == "Renewed")
+        actuals["K058"] = {"actual": round(valid/max(total_cust,1)*100,1),
+                           "source":"consent","detail":f"{valid}/{total_cust} customers with valid consent"}
+        actuals["K059"] = {"actual": float(renewals),"source":"consent",
+                           "detail":f"{renewals} consent renewals processed"}
+    except Exception: pass
+
+    # ── K060-K062: Retailer Finance ───────────────────────────────
+    try:
+        rf = _load("retailer_finance.json")
+        my_rf = [r for r in rf if r.get("rm_username") == username
+                 or r.get("created_by") == username]
+        if my_rf:
+            total_disb = sum(_safe_float(r.get("disbursed_m",0)) for r in my_rf)
+            npl_count  = sum(1 for r in my_rf if _safe_float(r.get("dpd",0))>=90)
+            buyers     = sum(1 for r in my_rf if r.get("status")=="Active" and r.get("new_buyer"))
+            actuals["K060"] = {"actual":round(total_disb,1),"source":"retailer_finance",
+                               "detail":f"KES {total_disb:.1f}M disbursed"}
+            actuals["K061"] = {"actual":round(npl_count/max(len(my_rf),1)*100,1),
+                               "source":"retailer_finance","detail":f"{npl_count}/{len(my_rf)} NPL"}
+            actuals["K062"] = {"actual":float(buyers),"source":"retailer_finance",
+                               "detail":f"{buyers} new buyers onboarded"}
+    except Exception: pass
+
+    # ── K063-K065: Bid Bond & Guarantees ─────────────────────────
+    try:
+        bonds = _load("bid_bonds.json")
+        my_bonds = [b for b in bonds if b.get("officer_username") == username
+                    or b.get("created_by") == username]
+        if my_bonds:
+            issued = len(my_bonds)
+            commission = sum(_safe_float(b.get("commission_kes",0)) for b in my_bonds)/1e6
+            managed = sum(1 for b in my_bonds
+                         if b.get("status") in ("Expired","Returned","Renewed") or
+                            (_date.today().isoformat() < b.get("expiry_date","")))
+            actuals["K063"] = {"actual":float(issued),"source":"bid_bond",
+                               "detail":f"{issued} bonds issued"}
+            actuals["K064"] = {"actual":round(commission,2),"source":"bid_bond",
+                               "detail":f"KES {commission:.1f}M commission"}
+            actuals["K065"] = {"actual":round(managed/max(issued,1)*100,1),
+                               "source":"bid_bond","detail":f"{managed}/{issued} managed proactively"}
+    except Exception: pass
+
+    # ── K066-K068: System Observability ──────────────────────────
+    try:
+        obs = _load("observability_metrics.json")
+        my_obs = [o for o in obs if o.get("owner_username") == username
+                  or o.get("assigned_to") == username]
+        if obs:  # Bank-wide metrics — use all for IT staff
+            uptime = sum(_safe_float(o.get("uptime_pct",0)) for o in obs)/max(len(obs),1)
+            incidents = [o for o in obs if o.get("type") == "Incident"]
+            sla_met = sum(1 for i in incidents if i.get("sla_met"))
+            mttr_vals = [_safe_float(i.get("resolution_mins",0)) for i in incidents if i.get("resolution_mins")]
+            mttr = sum(mttr_vals)/max(len(mttr_vals),1) if mttr_vals else 0
+            actuals["K066"] = {"actual":round(uptime,2),"source":"observability",
+                               "detail":f"Average uptime across {len(obs)} systems"}
+            actuals["K067"] = {"actual":round(sla_met/max(len(incidents),1)*100,1),
+                               "source":"observability","detail":f"{sla_met}/{len(incidents)} incidents within SLA"}
+            actuals["K068"] = {"actual":round(mttr,0),"source":"observability",
+                               "detail":f"Average {mttr:.0f} mins to resolve"}
+    except Exception: pass
+
+    # ── K069-K071: Channels Management ───────────────────────────
+    try:
+        channels = _load("channels_data.json")
+        if channels:
+            mobile = next((c for c in channels if "mobile" in c.get("channel","").lower()), {})
+            digital_txn = [c for c in channels if c.get("type") == "Transaction"]
+            successful  = sum(1 for c in digital_txn if c.get("success"))
+            adoption = [c for c in channels if c.get("metric") == "adoption"]
+            actuals["K069"] = {"actual":_safe_float(mobile.get("uptime_pct",99.0)),
+                               "source":"channels","detail":"Mobile banking uptime"}
+            actuals["K070"] = {"actual":round(successful/max(len(digital_txn),1)*100,1),
+                               "source":"channels","detail":f"{successful}/{len(digital_txn)} txns successful"}
+            adopt_rate = _safe_float(next((c.get("value",40) for c in adoption),40))
+            actuals["K071"] = {"actual":adopt_rate,"source":"channels",
+                               "detail":f"{adopt_rate:.0f}% customers on digital channels"}
+    except Exception: pass
+
     return actuals
 
 

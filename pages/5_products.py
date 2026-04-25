@@ -15,6 +15,14 @@ from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
 require_access("products")
 
+def _bsc_trigger(username: str, kpi: str = ""):
+    """Non-blocking BSC update — called after every save action."""
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_products():
     p = Path(__file__).parent.parent / "data" / "products.json"
@@ -142,6 +150,7 @@ with pt1:
                         prod_m.update_product(prod["id"],
                             {"lifecycle_stage": new_st_p, "health": new_hlth}, uname)
                         audit_log("PRODUCT_UPDATED", uname, f"{prod['id']}:{new_st_p}")
+                        _bsc_trigger(uname, "K009")
                         st.rerun()
 
                 # Notes
@@ -210,6 +219,7 @@ with pt2:
                 if linked_init:
                     prod_m.link_to_initiative(new_prod_id, linked_init[0])
                 audit_log("PRODUCT_CREATED", uname, f"{new_prod_id}:{p_name}")
+                _bsc_trigger(uname, "K009")
                 st.success(f"Product {new_prod_id} registered!")
                 st.rerun()
 
