@@ -3089,7 +3089,8 @@
       "sbu",
       "opex",
       "export",
-      "projects"
+      "projects",
+      "flexcube_integration"
     ],
     "dfs": [
       "perform",
@@ -3099,7 +3100,8 @@
       "projects",
       "export",
       "channels_management",
-      "observability"
+      "observability",
+      "flexcube_integration"
     ],
     "contact": [
       "perform",
@@ -3126,7 +3128,8 @@
       "p2p",
       "assets",
       "clearing",
-      "consent_management"
+      "consent_management",
+      "flexcube_integration"
     ],
     "marketing": [
       "perform",
@@ -3165,7 +3168,8 @@
       "contracts",
       "cybersecurity",
       "observability",
-      "channels_management"
+      "channels_management",
+      "flexcube_integration"
     ],
     "cyber": [
       "perform",
@@ -3173,7 +3177,8 @@
       "incidents",
       "edms",
       "projects",
-      "cab"
+      "cab",
+      "flexcube_integration"
     ],
     "audit": [
       "perform",
@@ -3198,7 +3203,8 @@
       "assets",
       "vendors",
       "contracts",
-      "projects"
+      "projects",
+      "flexcube_integration"
     ],
     "exec": [
       "perform",
@@ -3230,7 +3236,8 @@
       "retailer_finance",
       "bid_bond",
       "observability",
-      "channels_management"
+      "channels_management",
+      "flexcube_integration"
     ],
     "agn": [
       "perform",
@@ -3443,5 +3450,70 @@
     "Customer Focus": 0.25,
     "Operational Excellence": 0.25,
     "People & Learning": 0.1
+  },
+  "role_module_assignments": {
+    "Managing Director": [
+      "flexcube_integration"
+    ],
+    "Chief Executive Officer": [
+      "flexcube_integration"
+    ],
+    "Chief Information Officer": [
+      "flexcube_integration"
+    ],
+    "Chief Operating Officer": [
+      "flexcube_integration"
+    ],
+    "Chief Risk Officer": [
+      "flexcube_integration"
+    ],
+    "Director IT": [
+      "flexcube_integration"
+    ],
+    "Director Operations": [
+      "flexcube_integration"
+    ],
+    "Head Of IT": [
+      "flexcube_integration"
+    ],
+    "Head of IT": [
+      "flexcube_integration"
+    ],
+    "Head of Operations": [
+      "flexcube_integration"
+    ],
+    "Head Of Operations": [
+      "flexcube_integration"
+    ],
+    "IT Operations Manager": [
+      "flexcube_integration"
+    ],
+    "Integration Engineer": [
+      "flexcube_integration"
+    ],
+    "FLEXCUBE Administrator": [
+      "flexcube_integration"
+    ],
+    "Application Support Lead": [
+      "flexcube_integration"
+    ],
+    "DevOps Engineer": [
+      "flexcube_integration"
+    ],
+    "API Manager": [
+      "flexcube_integration"
+    ],
+    "Head of Digital Banking": [
+      "flexcube_integration"
+    ],
+    "Cybersecurity Manager": [
+      "flexcube_integration"
+    ],
+    "Head of Cybersecurity": [
+      "flexcube_integration"
+    ],
+    "System Administrator": [
+      "flexcube_integration"
+    ]
   }
 }
