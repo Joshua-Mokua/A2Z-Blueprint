@@ -505,7 +505,7 @@ with cm_tabs[6]:
     st.markdown("**IFRS 9 Expected Credit Loss (ECL) Provisions** — staging and provision tracking.")
     import pandas as _pd_ifrs
 
-    _accounts = load_cm()
+    _accounts = load_cm().get("watchlist", [])
     _ifrs_data = []
     for _a in _accounts[:500]:  # cap for performance
         _npl_d = int(_a.get("npl_days",0) or 0)

@@ -395,7 +395,7 @@ with sbu_tabs[2]:
         reg_branches = view_pnl[
             (view_pnl['Region'] == region) & (view_pnl['Role'].isin(get_org_roles() or ['Branch Manager']))]
         reg_head = view_pnl[
-            (view_pnl['Region'] == region) & (view_pnl['Role'].isin([r for r in (get_org_roles() or []) if 'area' in r.lower() or 'regional' in r.lower() or 'head' in r.lower()] or ['Regional Head','Area Manager']))]
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin([r for r in [str(x) for x in (get_org_roles() or [])] if 'area' in r.lower() or 'regional' in r.lower() or 'head' in r.lower()] or ['Regional Head','Area Manager']))]
 
         if len(reg_branches) == 0: continue
 

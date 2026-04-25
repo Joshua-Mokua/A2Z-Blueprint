@@ -166,6 +166,10 @@ class BranchLogManager:
                 totals[k] = sum(float(l.get(k,0) or 0) for l in validated)
         return totals
 
+    def get_all(self):
+        """Return all branch log entries."""
+        return list(self.logs)
+
 if "branch_log_manager" not in st.session_state:
     st.session_state["branch_log_manager"] = BranchLogManager()
 blm = st.session_state.get("branch_log_manager")

@@ -1990,7 +1990,7 @@ with st.expander("🏆 RM Pipeline League Table", expanded=False):
     import pandas as _pd_lt
     from collections import defaultdict as _dd_lt
     _rm_totals = _dd_lt(lambda: {"deals":0,"value":0,"won":0,"won_val":0,"win_pct":0})
-    for d in pipe:
+    for d in all_deals:
         rm = d.get("rm_name","") or d.get("rm","") or "Unknown"
         _rm_totals[rm]["deals"] += 1
         _rm_totals[rm]["value"] += float(d.get("amount",0))

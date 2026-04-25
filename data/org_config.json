@@ -2822,7 +2822,8 @@
       "statement_analyzer",
       "projects",
       "partnerships",
-      "fraud_detection"
+      "fraud_detection",
+      "export"
     ],
     "commercial": [
       "perform",
@@ -2839,7 +2840,8 @@
       "statement_analyzer",
       "projects",
       "deal_room",
-      "partnerships"
+      "partnerships",
+      "export"
     ],
     "trade_fin": [
       "perform",
@@ -2848,7 +2850,8 @@
       "pipeline",
       "cims",
       "projects",
-      "deal_room"
+      "deal_room",
+      "export"
     ],
     "diaspora": [
       "perform",
@@ -2857,7 +2860,8 @@
       "cims",
       "commission",
       "customer360",
-      "projects"
+      "projects",
+      "export"
     ],
     "credit": [
       "perform",
@@ -2870,7 +2874,8 @@
       "collateral",
       "ifrs9",
       "statement_analyzer",
-      "projects"
+      "projects",
+      "export"
     ],
     "risk_comp": [
       "perform",
@@ -2883,26 +2888,28 @@
       "ifrs9",
       "projects",
       "rcsa",
-      "aml_monitoring",
-      "fraud_detection"
+      "aml",
+      "fraud_detection",
+      "export"
     ],
     "legal": [
       "perform",
       "legal",
       "edms",
-      "compliance",
       "projects",
-      "contracts"
+      "contracts",
+      "compliance"
     ],
     "treasury": [
       "perform",
       "treasury",
       "ifrs9",
       "stress_testing",
-      "ra",
+      "analytics",
       "projects",
       "irrbb",
-      "transfer_pricing"
+      "ftp",
+      "export"
     ],
     "finance": [
       "perform",
@@ -2910,15 +2917,13 @@
       "opex",
       "revenue_assurance",
       "rms",
-      "ra",
+      "analytics",
       "ifrs9",
       "budget",
       "export",
       "projects",
       "mgmt_accounts",
-      "transfer_pricing",
-      "p2p",
-      "asset_management"
+      "ftp"
     ],
     "bi": [
       "perform",
@@ -2932,9 +2937,9 @@
       "perform",
       "digital_channels",
       "cbs",
-      "customer360",
       "campaigns",
-      "projects"
+      "projects",
+      "export"
     ],
     "contact": [
       "perform",
@@ -2951,7 +2956,7 @@
     ],
     "ops": [
       "perform",
-      "rms",
+      "reconciliation",
       "cims",
       "edms",
       "approvals",
@@ -2959,8 +2964,7 @@
       "export",
       "projects",
       "p2p",
-      "asset_management",
-      "fraud_detection"
+      "assets"
     ],
     "marketing": [
       "perform",
@@ -2972,11 +2976,11 @@
     ],
     "bnc": [
       "perform",
-      "bancassurance_mgmt",
+      "bancassurance",
+      "nps",
       "campaigns",
-      "pipeline",
-      "propositions",
-      "projects"
+      "projects",
+      "export"
     ],
     "hr": [
       "perform",
@@ -2992,12 +2996,12 @@
     "it": [
       "perform",
       "cbs",
-      "incidents",
       "export",
       "projects",
       "cab",
-      "asset_management",
-      "contracts"
+      "assets",
+      "contracts",
+      "cybersecurity"
     ],
     "cyber": [
       "perform",
@@ -3009,78 +3013,78 @@
     ],
     "audit": [
       "perform",
-      "ra",
+      "analytics",
       "compliance",
       "credit_monitoring",
       "ifrs9",
       "projects",
       "rcsa",
-      "aml_monitoring",
+      "aml",
       "mgmt_accounts",
       "p2p",
-      "asset_management",
-      "vendor_management",
-      "contracts",
-      "partnerships",
-      "fraud_detection"
+      "assets",
+      "vendors",
+      "contracts"
     ],
     "support": [
       "perform",
       "edms",
       "approvals",
-      "projects",
       "p2p",
-      "asset_management",
-      "vendor_management",
-      "contracts"
+      "assets",
+      "vendors",
+      "contracts",
+      "projects"
     ],
     "exec": [
       "perform",
-      "integrate",
-      "ra",
-      "sbu",
-      "opex",
-      "competitor",
-      "stress_testing",
-      "people",
       "cascade",
       "pipeline",
       "loan_applications",
-      "treasury",
-      "compliance",
       "credit_monitoring",
-      "ifrs9",
-      "revenue_assurance",
-      "customer360",
-      "export",
-      "trade_finance",
-      "budget",
-      "bancassurance_mgmt",
-      "digital_channels",
-      "contact_centre",
-      "agency_banking",
-      "cybersecurity",
-      "incidents",
-      "nps",
-      "crosssell",
-      "collateral",
       "ews",
-      "lms",
-      "pip",
-      "projects",
-      "mgmt_accounts",
-      "irrbb",
+      "aml",
+      "compliance",
       "rcsa",
+      "irrbb",
+      "ftp",
+      "mgmt_accounts",
       "workforce",
-      "p2p",
-      "asset_management",
-      "vendor_management",
-      "contracts",
+      "disciplinary",
+      "projects",
       "partnerships",
-      "fraud_detection"
+      "fraud_detection",
+      "deal_room",
+      "cims",
+      "sla",
+      "campaigns",
+      "export",
+      "integrate",
+      "analytics"
     ],
     "agn": [
+      "perform",
+      "agency_banking",
+      "digital_channels",
+      "projects",
       "fraud_detection"
+    ],
+    "cc": [
+      "perform",
+      "contact_centre",
+      "nps",
+      "cims",
+      "sla",
+      "projects",
+      "export"
+    ],
+    "tf": [
+      "perform",
+      "trade_finance",
+      "pipeline",
+      "deal_room",
+      "projects",
+      "export"
     ]
   },
   "thresholds": {

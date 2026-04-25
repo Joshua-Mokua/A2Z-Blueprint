@@ -1003,7 +1003,12 @@
       "K015",
       "K028",
       "K016",
-      "K019"
+      "K019",
+      "K047",
+      "K049",
+      "K036",
+      "K037",
+      "K017"
     ],
     "Senior Manager -Credit Analysis": [
       "CREDIT_APPROVAL_RATE",
@@ -1206,7 +1211,12 @@
       "CREDIT_TAT_EXPRESS",
       "INIT_COUNT",
       "CREDIT_REWORK_RATE",
-      "CREDIT_APPROVAL_RATE"
+      "CREDIT_APPROVAL_RATE",
+      "K046",
+      "K045",
+      "K028",
+      "K047",
+      "K036"
     ],
     "Cyber Security SOC Analyst": [
       "K026",
@@ -1265,26 +1275,42 @@
       "K015",
       "K010",
       "K016",
-      "K019"
+      "K019",
+      "K036",
+      "K037",
+      "K039",
+      "K017"
     ],
     "Legal Officer": [
       "K014",
       "K015",
       "K016",
-      "K019"
+      "K019",
+      "K039",
+      "K040",
+      "K036",
+      "K017"
     ],
     "Marketing Officer": [
       "K007",
       "K009",
       "K006",
       "K016",
-      "K019"
+      "K019",
+      "K043",
+      "K044",
+      "K036",
+      "K017"
     ],
     "Operations Officer": [
       "K010",
       "K013",
       "K016",
-      "K019"
+      "K019",
+      "K039",
+      "K040",
+      "K036",
+      "K017"
     ],
     "Operations Supervisor-DFS": [
       "K025",
@@ -1305,13 +1331,22 @@
       "K010",
       "K013",
       "K016",
-      "K019"
+      "K019",
+      "K051",
+      "K052",
+      "K039",
+      "K036",
+      "K017"
     ],
     "Reconciliation Officer": [
       "K010",
       "K013",
       "K016",
-      "K019"
+      "K019",
+      "K039",
+      "K040",
+      "K015",
+      "K017"
     ],
     "Reconciliation Supervisor": [
       "K010",
@@ -1456,7 +1491,10 @@
       "K006",
       "K012",
       "K016",
-      "K019"
+      "K019",
+      "K054",
+      "K039",
+      "K017"
     ],
     "Senior Contact Centre Officer": [
       "K031",
@@ -1473,6 +1511,228 @@
       "K015",
       "K016",
       "K019"
+    ],
+    "IT Manager": [
+      "K026",
+      "K039",
+      "K040",
+      "K036",
+      "K037",
+      "K016",
+      "K017"
+    ],
+    "Systems Administrator": [
+      "K026",
+      "K039",
+      "K040",
+      "K036",
+      "K016",
+      "K017"
+    ],
+    "IT Support Officer": [
+      "K039",
+      "K040",
+      "K026",
+      "K016",
+      "K017"
+    ],
+    "Software Developer": [
+      "K036",
+      "K037",
+      "K039",
+      "K040",
+      "K016",
+      "K017"
+    ],
+    "HR Manager": [
+      "K030",
+      "K018",
+      "K016",
+      "K035",
+      "K036",
+      "K037",
+      "K017"
+    ],
+    "HR Officer": [
+      "K030",
+      "K018",
+      "K016",
+      "K035",
+      "K017"
+    ],
+    "Learning & Development Officer": [
+      "K016",
+      "K035",
+      "K036",
+      "K017"
+    ],
+    "Recruitment Officer": [
+      "K030",
+      "K018",
+      "K016",
+      "K017"
+    ],
+    "Finance Manager": [
+      "K021",
+      "K034",
+      "K005",
+      "K036",
+      "K037",
+      "K015",
+      "K017"
+    ],
+    "Management Accountant": [
+      "K021",
+      "K034",
+      "K005",
+      "K036",
+      "K017"
+    ],
+    "Budget Analyst": [
+      "K034",
+      "K021",
+      "K036",
+      "K016",
+      "K017"
+    ],
+    "Compliance Officer": [
+      "K014",
+      "K015",
+      "K049",
+      "K050",
+      "K036",
+      "K017"
+    ],
+    "AML Officer": [
+      "K049",
+      "K050",
+      "K014",
+      "K036",
+      "K017"
+    ],
+    "RCSA Officer": [
+      "K014",
+      "K028",
+      "K036",
+      "K017"
+    ],
+    "Credit Manager": [
+      "K045",
+      "K046",
+      "K027",
+      "K004",
+      "K036",
+      "K037",
+      "K017"
+    ],
+    "Credit Administration Officer": [
+      "K045",
+      "K028",
+      "K046",
+      "K036",
+      "K017"
+    ],
+    "Debt Recovery Officer": [
+      "K027",
+      "K047",
+      "K036",
+      "K016",
+      "K017"
+    ],
+    "Operations Manager": [
+      "K010",
+      "K039",
+      "K040",
+      "K051",
+      "K036",
+      "K037",
+      "K017"
+    ],
+    "Facilities Manager": [
+      "K051",
+      "K052",
+      "K036",
+      "K017"
+    ],
+    "Vendor Management Officer": [
+      "K052",
+      "K051",
+      "K039",
+      "K017"
+    ],
+    "Project Manager": [
+      "K036",
+      "K037",
+      "K038",
+      "K039",
+      "K040",
+      "K016",
+      "K017"
+    ],
+    "Project Officer": [
+      "K037",
+      "K038",
+      "K039",
+      "K036",
+      "K017"
+    ],
+    "Legal Manager": [
+      "K039",
+      "K040",
+      "K036",
+      "K015",
+      "K017"
+    ],
+    "Marketing Manager": [
+      "K006",
+      "K043",
+      "K044",
+      "K036",
+      "K037",
+      "K017"
+    ],
+    "Agency Banking Manager": [
+      "K025",
+      "K054",
+      "K006",
+      "K036",
+      "K017"
+    ],
+    "Senior Internal Auditor": [
+      "K014",
+      "K015",
+      "K036",
+      "K037",
+      "K039",
+      "K017"
+    ],
+    "Chief Internal Auditor": [
+      "K014",
+      "K015",
+      "K036",
+      "K037",
+      "K038",
+      "K017"
+    ],
+    "Digital Banking Officer": [
+      "K024",
+      "K012",
+      "K039",
+      "K036",
+      "K017"
+    ],
+    "Product Manager": [
+      "K036",
+      "K041",
+      "K042",
+      "K039",
+      "K017"
+    ],
+    "Innovation Officer": [
+      "K036",
+      "K037",
+      "K039",
+      "K017"
     ]
   },
   "pillar_weights": {
@@ -1920,6 +2180,215 @@
       "cbk_ref": "",
       "active": true,
       "description": "Employee Net Promoter Score \u2014 tracked monthly vs target"
+    },
+    {
+      "id": "K036",
+      "name": "Projects On-Time Delivery (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "projects",
+      "description": "% of assigned projects delivered on or before planned end date",
+      "auto_calc": "projects_on_time_pct"
+    },
+    {
+      "id": "K037",
+      "name": "Milestones Completed (count)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "projects",
+      "description": "Number of project milestones completed by owner",
+      "auto_calc": "milestones_completed_count"
+    },
+    {
+      "id": "K038",
+      "name": "Project Budget Adherence (%)",
+      "pillar": "Financial",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "projects",
+      "description": "% of projects within budget",
+      "auto_calc": "projects_within_budget_pct"
+    },
+    {
+      "id": "K039",
+      "name": "Tickets Resolved Within SLA (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "sla_tickets",
+      "description": "% of assigned CIMS tickets resolved within SLA TAT",
+      "auto_calc": "tickets_sla_pct"
+    },
+    {
+      "id": "K040",
+      "name": "Open Ticket Age (avg days)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "days",
+      "direction": "lower_better",
+      "source": "sla_tickets",
+      "description": "Average age of open tickets assigned to staff member",
+      "auto_calc": "avg_open_ticket_days"
+    },
+    {
+      "id": "K041",
+      "name": "Pipeline Deals Progressed",
+      "pillar": "Customer Focus",
+      "weight": 0.1,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "pipeline",
+      "description": "Number of deals advanced to next stage this period",
+      "auto_calc": "pipeline_deals_progressed"
+    },
+    {
+      "id": "K042",
+      "name": "Deal Win Rate (%)",
+      "pillar": "Financial",
+      "weight": 0.1,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "pipeline",
+      "description": "% of deals in pipeline that closed won",
+      "auto_calc": "pipeline_win_rate_pct"
+    },
+    {
+      "id": "K043",
+      "name": "MOU Activations",
+      "pillar": "Customer Focus",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "partnerships",
+      "description": "Number of MOU activations and referrals generated",
+      "auto_calc": "mou_activations_count"
+    },
+    {
+      "id": "K044",
+      "name": "Referral Conversion Rate (%)",
+      "pillar": "Customer Focus",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "referrals",
+      "description": "% of referrals logged that converted to customers",
+      "auto_calc": "referral_conversion_pct"
+    },
+    {
+      "id": "K045",
+      "name": "Loan TAT Compliance (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "loan_applications",
+      "description": "% of loan applications processed within target TAT",
+      "auto_calc": "loan_tat_pct"
+    },
+    {
+      "id": "K046",
+      "name": "Credit Analysis Completeness (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "loan_applications",
+      "description": "Average completeness score of credit applications processed",
+      "auto_calc": "loan_completeness_pct"
+    },
+    {
+      "id": "K047",
+      "name": "EWS Cases Resolved (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "ews_cases",
+      "description": "% of assigned EWS cases resolved or upgraded",
+      "auto_calc": "ews_resolution_pct"
+    },
+    {
+      "id": "K048",
+      "name": "Collateral Review Completion (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "collateral",
+      "description": "% of collateral reviews completed on time",
+      "auto_calc": "collateral_review_pct"
+    },
+    {
+      "id": "K049",
+      "name": "AML Cases Closed (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "aml_alerts",
+      "description": "% of assigned AML alerts investigated and closed",
+      "auto_calc": "aml_cases_closed_pct"
+    },
+    {
+      "id": "K050",
+      "name": "STRs Filed on Time",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "aml_alerts",
+      "description": "Number of STRs filed within regulatory timeline",
+      "auto_calc": "strs_filed_count"
+    },
+    {
+      "id": "K051",
+      "name": "PRs Processed Within TAT (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "purchase_requests",
+      "description": "% of purchase requests approved/processed within target days",
+      "auto_calc": "pr_tat_pct"
+    },
+    {
+      "id": "K052",
+      "name": "Vendor Compliance Rate (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "vendors",
+      "description": "% of active vendors with valid KRA and insurance compliance",
+      "auto_calc": "vendor_compliance_pct"
+    },
+    {
+      "id": "K053",
+      "name": "Daily Log Submission Rate (%)",
+      "pillar": "Operational Excellence",
+      "weight": 0.08,
+      "unit": "%",
+      "direction": "higher_better",
+      "source": "branch_log",
+      "description": "% of working days with branch log submitted on time",
+      "auto_calc": "branch_log_submission_pct"
+    },
+    {
+      "id": "K054",
+      "name": "Agent Fraud Alerts Cleared",
+      "pillar": "Operational Excellence",
+      "weight": 0.05,
+      "unit": "count",
+      "direction": "higher_better",
+      "source": "agent_fraud",
+      "description": "Number of agent fraud alerts investigated and cleared",
+      "auto_calc": "fraud_alerts_cleared_count"
     }
   ]
 }

@@ -316,6 +316,9 @@ with tabs[5]:
                             key="ifrs9_dl")
 
 with tabs[6]:
+    # Ensure ifrs_sum is available
+    if "ifrs_sum" not in dir():
+        ifrs_sum = {}
     st.markdown("**ECL Roll-forward Statement — month-end movement in provisions:**")
     st.caption("Required by IFRS 7 for disclosure. Shows how the ECL balance moved during the period.")
     

@@ -7,7 +7,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from datetime import date
-from collections import Counter
+from collections import Counter, defaultdict
 from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access

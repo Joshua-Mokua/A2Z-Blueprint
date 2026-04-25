@@ -1,5 +1,6 @@
 """pages/16_commission.py — DSO Commission Model & Pipeline Rankings."""
 import streamlit as st
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -13,7 +14,11 @@ except: _gfy = lambda: _gfy()
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
 require_access("commission")
+DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+role     = str(ud.get("role", "")).lower()
+is_admin = ud.get("is_admin", False)
+sc       = str(ud.get("staff_code", ""))
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
 df_proc      = st.session_state.get("df_processed", pd.DataFrame())
 

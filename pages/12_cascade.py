@@ -12,7 +12,7 @@ from pages._access import require_access, get_my_scope, tab_visible
 def _safe_date(s, fallback=None):
     """Safe date parsing — returns fallback on invalid/None input."""
     try:
-        from datetime import date as _d
+        from datetime import date as _d, timedelta
         return _d.fromisoformat(str(s)) if s else (fallback or _d.today())
     except Exception:
         from datetime import date as _d

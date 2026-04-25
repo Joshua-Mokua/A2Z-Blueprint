@@ -3,6 +3,7 @@ Full commercial relationship management: MOUs, referrals, events, beyond banking
 All categories configurable via Admin. Targets, penetration and ROI tracked per initiative.
 """
 import streamlit as st
+import random
 import pandas as pd
 import json
 from pathlib import Path
@@ -438,10 +439,6 @@ with tabs[2]:
 # ══════════════════════════════════════════════════════════════════
 with tabs[3]:
     st.markdown("**Beyond banking products — cross-sell and commission tracking:**")
-    bb_rows = [{"Product":p["name"],"Icon":p["icon"],"Partner":p["partner"],
-                 "Commission %":p["commission_pct"],
-                 "Annual Target (KES M)":round(random.uniform(1,50),1) if True else 0}
-                for p in bb_products]
     import random; random.seed(42)
     bb_rows = [{"Product":p["name"],"Partner":p["partner"],
                  "Commission %":p["commission_pct"],

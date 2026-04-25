@@ -2920,9 +2920,11 @@ class CascadeManager:
         for key, entry in self.cascade.items():
             if not key.startswith("deadline|"): continue
             if entry.get("period") != period: continue
-            sc = entry["from_code"]
-            conf_due = datetime.fromisoformat(entry["confirm_by"]).date()
-            casc_due = datetime.fromisoformat(entry["cascade_by"]).date()
+            sc = entry.get("from_code", entry.get("staff_code", ""))
+            _cby = entry.get("confirm_by") or entry.get("locked_at", "")
+            conf_due = datetime.fromisoformat(_cby[:10]).date() if _cby else (datetime.now() + timedelta(days=30)).date()
+            _dby = entry.get("cascade_by") or entry.get("locked_at", "")
+            casc_due = datetime.fromisoformat(_dby[:10]).date() if _dby else (datetime.now() + timedelta(days=14)).date()
             result.append({
                 "staff_code":   sc,
                 "confirm_by":   str(conf_due),
@@ -5947,3 +5949,439 @@ def get_pipeline_summary_cached():
     except Exception:
         pass
     return []
+
+# ══════════════════════════════════════════════════════════════════
+# BSC AUTO-SCORE ENGINE
+# Reads from all operational modules and auto-computes KPI actuals
+# for head office and operational staff
+# ══════════════════════════════════════════════════════════════════
+
+def compute_operational_kpi_actuals(username: str, period: str = "2026") -> dict:
+    """
+    Compute KPI actuals for a staff member from all operational modules.
+    Returns dict of {kpi_id: {"actual": float, "source": str, "detail": str}}
+    
+    Called by the BSC page and by the nightly score refresh.
+    """
+    import json
+    from pathlib import Path as _Path
+    from datetime import date as _date, timedelta as _td
+    from decimal import Decimal as _D
+
+    DATA = _Path(__file__).parent.parent / "data"
+    today = _date.today()
+    actuals = {}
+
+    def _safe_float(v):
+        try:
+            if isinstance(v, _D): return float(v)
+            return float(v) if v is not None else 0.0
+        except: return 0.0
+
+    def _load(fname):
+        p = DATA / fname
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+
+    # ── K036: Projects On-Time Delivery (%) ──────────────────────
+    # ── K037: Milestones Completed (count) ───────────────────────
+    # ── K038: Project Budget Adherence (%) ───────────────────────
+    try:
+        projects = _load("projects.json")
+        if not isinstance(projects, list):
+            projects = projects.get("projects", [])
+        
+        # Filter to projects where this user is PM or milestone/action owner
+        my_projects = [p for p in projects
+                       if p.get("owner_username") == username
+                       or p.get("project_manager","").lower() in username.lower()]
+        
+        # Milestones owned by this user
+        my_milestones = []
+        for proj in projects:
+            for ms in proj.get("milestones", []):
+                if ms.get("owner_username") == username:
+                    my_milestones.append(ms)
+        
+        # K037: Milestones completed
+        ms_done = sum(1 for ms in my_milestones if ms.get("status") == "Complete")
+        actuals["K037"] = {
+            "actual": float(ms_done),
+            "source": "projects",
+            "detail": f"{ms_done} milestones completed out of {len(my_milestones)} assigned"
+        }
+        
+        # K036: On-time delivery
+        if my_projects:
+            completed = [p for p in my_projects if p.get("status") in ("Completed","Closed")]
+            on_time   = [p for p in completed
+                         if p.get("actual_end_date","") and p.get("planned_end_date","")
+                         and p.get("actual_end_date","") <= p.get("planned_end_date","")]
+            pct = round(len(on_time)/max(len(completed),1)*100, 1)
+            actuals["K036"] = {
+                "actual": pct,
+                "source": "projects",
+                "detail": f"{len(on_time)}/{len(completed)} projects delivered on time"
+            }
+        
+        # K038: Budget adherence
+        if my_projects:
+            within_budget = [p for p in my_projects
+                            if _safe_float(p.get("spent_m",0)) <= _safe_float(p.get("budget_m",1))]
+            pct = round(len(within_budget)/max(len(my_projects),1)*100, 1)
+            actuals["K038"] = {
+                "actual": pct,
+                "source": "projects",
+                "detail": f"{len(within_budget)}/{len(my_projects)} projects within budget"
+            }
+        
+        # Action items
+        my_actions = []
+        for proj in projects:
+            for act in proj.get("action_items", []):
+                if act.get("owner_username") == username:
+                    my_actions.append(act)
+        if my_actions:
+            closed = sum(1 for a in my_actions if a.get("status") == "Closed")
+            actuals["_action_items"] = {
+                "actual": round(closed/max(len(my_actions),1)*100, 1),
+                "source": "projects",
+                "detail": f"{closed}/{len(my_actions)} action items closed"
+            }
+    except Exception as _e:
+        pass
+
+    # ── K039: Tickets Resolved Within SLA (%) ────────────────────
+    # ── K040: Open Ticket Age (avg days) ─────────────────────────
+    try:
+        tickets_raw = _load("cims_tickets.json")
+        tickets = tickets_raw if isinstance(tickets_raw, list) else tickets_raw.get("tickets", [])
+        my_tickets = [t for t in tickets if t.get("assigned_to","") == username
+                      or t.get("owner","") == username]
+        
+        if my_tickets:
+            resolved = [t for t in my_tickets if t.get("status","") in ("Resolved","Closed")]
+            sla_met   = [t for t in resolved if t.get("sla_status","") in ("Met","On Time","")]
+            sla_pct   = round(len(sla_met)/max(len(resolved),1)*100, 1)
+            actuals["K039"] = {
+                "actual": sla_pct,
+                "source": "sla_tickets",
+                "detail": f"{len(sla_met)}/{len(resolved)} tickets resolved within SLA"
+            }
+            
+            open_t = [t for t in my_tickets if t.get("status","") == "Open"]
+            if open_t:
+                ages = []
+                for t in open_t:
+                    try:
+                        created = _date.fromisoformat(str(t.get("created_at",""))[:10])
+                        ages.append((today - created).days)
+                    except: ages.append(0)
+                avg_age = round(sum(ages)/max(len(ages),1), 1)
+                actuals["K040"] = {
+                    "actual": avg_age,
+                    "source": "sla_tickets",
+                    "detail": f"Average {avg_age} days for {len(open_t)} open tickets"
+                }
+    except Exception: pass
+
+    # ── K041: Pipeline Deals Progressed ──────────────────────────
+    # ── K042: Deal Win Rate (%) ───────────────────────────────────
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("pipeline_deals"):
+            deals = _db.fetch_all(
+                "SELECT * FROM pipeline_deals WHERE staff_code = %s",
+                (str(username),)
+            )
+        else:
+            raw = _load("pipeline.json")
+            deals = raw if isinstance(raw, list) else raw.get("deals", [])
+            deals = [d for d in deals if d.get("staff_code","") == username
+                     or d.get("rm_code","") == username]
+        
+        if deals:
+            won   = [d for d in deals if d.get("stage","") == "Closed Won"]
+            lost  = [d for d in deals if d.get("stage","") == "Closed Lost"]
+            closed = won + lost
+            win_rate = round(len(won)/max(len(closed),1)*100, 1)
+            actuals["K041"] = {
+                "actual": float(len(deals)),
+                "source": "pipeline",
+                "detail": f"{len(deals)} deals in pipeline, {len(won)} won"
+            }
+            actuals["K042"] = {
+                "actual": win_rate,
+                "source": "pipeline",
+                "detail": f"{len(won)}/{len(closed)} deals closed won"
+            }
+    except Exception: pass
+
+    # ── K043: MOU Activations ─────────────────────────────────────
+    # ── K044: Referral Conversion Rate (%) ───────────────────────
+    try:
+        mous = _load("partnerships_mous.json")
+        my_mous = [m for m in mous if m.get("relationship_manager","") == username]
+        total_activations = sum(m.get("activations_ytd",0) for m in my_mous)
+        actuals["K043"] = {
+            "actual": float(total_activations),
+            "source": "partnerships",
+            "detail": f"{total_activations} MOU activations from {len(my_mous)} MOUs"
+        }
+        
+        refs = _load("referrals.json")
+        my_refs = [r for r in refs if r.get("rm_assigned","") == username
+                   or r.get("referrer_code","") == username]
+        if my_refs:
+            converted = sum(1 for r in my_refs if r.get("converted"))
+            conv_rate = round(converted/max(len(my_refs),1)*100, 1)
+            actuals["K044"] = {
+                "actual": conv_rate,
+                "source": "referrals",
+                "detail": f"{converted}/{len(my_refs)} referrals converted"
+            }
+    except Exception: pass
+
+    # ── K045: Loan TAT Compliance (%) ────────────────────────────
+    # ── K046: Credit Analysis Completeness (%) ───────────────────
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("loan_applications"):
+            loans = _db.fetch_all(
+                "SELECT * FROM loan_applications WHERE rm_code = %s OR analyst = %s",
+                (username, username)
+            )
+        else:
+            raw = _load("loan_applications.json")
+            loans = [l for l in (raw if isinstance(raw,list) else [])
+                     if l.get("rm_code","") == username or l.get("analyst","") == username]
+        
+        if loans:
+            with_tat = [l for l in loans if l.get("tat_days") and l.get("sla_target_days")]
+            tat_met  = [l for l in with_tat
+                        if _safe_float(l.get("tat_days",999)) <= _safe_float(l.get("sla_target_days",1))]
+            tat_pct  = round(len(tat_met)/max(len(with_tat),1)*100, 1)
+            actuals["K045"] = {
+                "actual": tat_pct,
+                "source": "loan_applications",
+                "detail": f"{len(tat_met)}/{len(with_tat)} loans within TAT"
+            }
+            completeness = [_safe_float(l.get("completeness_score",0)) for l in loans if l.get("completeness_score")]
+            if completeness:
+                avg_comp = round(sum(completeness)/len(completeness), 1)
+                actuals["K046"] = {
+                    "actual": avg_comp,
+                    "source": "loan_applications",
+                    "detail": f"Average {avg_comp}% completeness on {len(completeness)} applications"
+                }
+    except Exception: pass
+
+    # ── K047: EWS Cases Resolved (%) ─────────────────────────────
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("ews_cases"):
+            ews = _db.fetch_all("SELECT * FROM ews_cases WHERE rm_code = %s", (username,))
+        else:
+            ews = [e for e in _load("ews_cases.json") if e.get("rm_code","") == username]
+        
+        if ews:
+            resolved = [e for e in ews if e.get("stage","") in ("Resolved","Upgraded","Closed")]
+            res_pct  = round(len(resolved)/max(len(ews),1)*100, 1)
+            actuals["K047"] = {
+                "actual": res_pct,
+                "source": "ews_cases",
+                "detail": f"{len(resolved)}/{len(ews)} EWS cases resolved"
+            }
+    except Exception: pass
+
+    # ── K049: AML Cases Closed (%) ───────────────────────────────
+    # ── K050: STRs Filed ─────────────────────────────────────────
+    try:
+        from utils.db import db as _db
+        if _db.table_uses_db("aml_alerts"):
+            aml = _db.fetch_all("SELECT * FROM aml_alerts WHERE assigned_to ILIKE %s",
+                               (f"%{username}%",))
+        else:
+            aml = [a for a in _load("aml_alerts.json")
+                   if username in str(a.get("assigned_to",""))]
+        
+        if aml:
+            closed = [a for a in aml if a.get("status","") in ("Cleared","Closed","Referred to FRC")]
+            closed_pct = round(len(closed)/max(len(aml),1)*100, 1)
+            strs = sum(1 for a in aml if a.get("str_filed"))
+            actuals["K049"] = {
+                "actual": closed_pct,
+                "source": "aml_alerts",
+                "detail": f"{len(closed)}/{len(aml)} AML alerts closed"
+            }
+            actuals["K050"] = {
+                "actual": float(strs),
+                "source": "aml_alerts",
+                "detail": f"{strs} STRs filed"
+            }
+    except Exception: pass
+
+    # ── K051: PRs Processed Within TAT (%) ───────────────────────
+    try:
+        prs = _load("purchase_requests.json")
+        my_prs = [r for r in prs if r.get("requested_by","") == username
+                  or r.get("approved_by","") == username]
+        if my_prs:
+            approved = [r for r in my_prs if r.get("status","") in ("Approved","Ordered","Paid")]
+            actuals["K051"] = {
+                "actual": round(len(approved)/max(len(my_prs),1)*100, 1),
+                "source": "purchase_requests",
+                "detail": f"{len(approved)}/{len(my_prs)} PRs approved"
+            }
+    except Exception: pass
+
+    # ── K053: Branch Log Submission Rate (%) ─────────────────────
+    try:
+        branch_logs = _load("branch_logs.json")
+        if isinstance(branch_logs, dict):
+            branch_logs = list(branch_logs.values())
+        my_logs = [l for l in branch_logs if l.get("submitted_by","") == username]
+        if my_logs:
+            submitted = [l for l in my_logs if l.get("status","") in ("Submitted","Validated")]
+            pct = round(len(submitted)/max(len(my_logs),1)*100, 1)
+            actuals["K053"] = {
+                "actual": pct,
+                "source": "branch_log",
+                "detail": f"{len(submitted)}/{len(my_logs)} logs submitted on time"
+            }
+    except Exception: pass
+
+    return actuals
+
+
+def update_bsc_from_modules(username: str, period: str = "Feb 2026") -> dict:
+    """
+    Update a staff member's BSC KPI scores from operational modules.
+    Returns updated score dict. Call this when a staff member completes work.
+    
+    Used by:
+    - Project module (milestone completed)
+    - SLA/CIMS module (ticket closed)
+    - Pipeline module (deal won/lost)
+    - Loan Applications (application processed)
+    - EWS (case resolved)
+    - AML (alert closed)
+    - Branch Log (log submitted)
+    """
+    import json
+    from pathlib import Path as _Path
+    
+    DATA = _Path(__file__).parent.parent / "data"
+    scores_file = DATA / "feb_2026_staff_scores.json"
+    
+    if not scores_file.exists():
+        return {}
+    
+    scores = json.loads(scores_file.read_text(encoding="utf-8"))
+    if username not in scores:
+        return {}
+    
+    user_score = scores[username]
+    kpi_lib_data = json.loads((DATA / "kpi_library.json").read_text(encoding="utf-8"))
+    role_kpis_map = kpi_lib_data.get("role_kpis", {})
+    all_kpis = {k["id"]: k for k in kpi_lib_data.get("kpis", [])}
+    
+    # Get this user's KPIs
+    role = user_score.get("role", "")
+    user_role_kpis = role_kpis_map.get(role, [])
+    
+    if not user_role_kpis:
+        return user_score
+    
+    # Compute actuals from modules
+    actuals = compute_operational_kpi_actuals(username, period[:4])
+    
+    if not actuals:
+        return user_score
+    
+    # Update kpi_scores with new actuals
+    kpi_scores = user_score.get("kpi_scores", {})
+    updated_kpis = []
+    
+    for kpi_id in user_role_kpis:
+        if kpi_id not in actuals:
+            continue
+        
+        kpi_def = all_kpis.get(kpi_id, {})
+        actual  = actuals[kpi_id].get("actual", 0)
+        
+        # Get target from BSC targets (if set) or use default
+        existing = kpi_scores.get(kpi_id, {})
+        target   = existing.get("target", _get_default_target(kpi_id, kpi_def))
+        
+        if not target:
+            continue
+        
+        # Compute achievement %
+        direction = kpi_def.get("direction", "higher_better")
+        if direction == "lower_better" and target > 0:
+            ach_pct = round(target / max(actual, 0.001) * 100, 1)
+        elif target > 0:
+            ach_pct = round(actual / target * 100, 1)
+        else:
+            ach_pct = 0.0
+        
+        # Score 1-5
+        score = (5.0 if ach_pct >= 120 else
+                 4.5 if ach_pct >= 110 else
+                 4.0 if ach_pct >= 100 else
+                 3.5 if ach_pct >= 90  else
+                 3.0 if ach_pct >= 80  else
+                 2.5 if ach_pct >= 70  else
+                 2.0 if ach_pct >= 60  else
+                 1.5 if ach_pct >= 50  else 1.0)
+        
+        kpi_scores[kpi_id] = {
+            **existing,
+            "actual":       actual,
+            "target":       target,
+            "achievement_pct": ach_pct,
+            "score":        score,
+            "source":       actuals[kpi_id].get("source", "module"),
+            "detail":       actuals[kpi_id].get("detail", ""),
+            "auto_updated": True,
+        }
+        updated_kpis.append(kpi_id)
+    
+    if updated_kpis:
+        user_score["kpi_scores"] = kpi_scores
+        # Recompute final score
+        weights = [all_kpis.get(k,{}).get("weight",0.05) for k in user_role_kpis if k in kpi_scores]
+        scores_list = [kpi_scores[k].get("score",3.0) for k in user_role_kpis if k in kpi_scores]
+        if weights and scores_list:
+            total_w = sum(weights)
+            if total_w > 0:
+                weighted = sum(s*w for s,w in zip(scores_list, weights))
+                user_score["final_score"] = round(min(weighted/total_w, 5.0), 2)
+        
+        scores[username] = user_score
+        scores_file.write_text(json.dumps(scores, indent=2))
+    
+    return user_score
+
+
+def _get_default_target(kpi_id: str, kpi_def: dict) -> float:
+    """Default targets for operational KPIs when no cascade target is set."""
+    defaults = {
+        "K036": 80.0,   # 80% on-time delivery
+        "K037": 5.0,    # 5 milestones per period
+        "K038": 90.0,   # 90% within budget
+        "K039": 85.0,   # 85% tickets within SLA
+        "K040": 7.0,    # 7 days avg open ticket age
+        "K041": 10.0,   # 10 deals progressed
+        "K042": 40.0,   # 40% win rate
+        "K043": 5.0,    # 5 MOU activations
+        "K044": 50.0,   # 50% referral conversion
+        "K045": 80.0,   # 80% loan TAT compliance
+        "K046": 85.0,   # 85% completeness
+        "K047": 75.0,   # 75% EWS resolution
+        "K049": 80.0,   # 80% AML cases closed
+        "K050": 2.0,    # 2 STRs filed
+        "K051": 85.0,   # 85% PRs within TAT
+        "K053": 90.0,   # 90% log submission rate
+    }
+    return defaults.get(kpi_id, kpi_def.get("default_target", 80.0))

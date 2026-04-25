@@ -24,27 +24,85 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-11",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "gregory005",
+        "id": "PRJ0001_MS_6895",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-07",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0001_MS_1813",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-13",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0001_MS_2941",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-06",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0001_MS_1384",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-07",
-    "notes": ""
+    "notes": "",
+    "owner_username": "gregory005",
+    "action_items": [
+      {
+        "id": "PRJ0001_ACT01",
+        "description": "Issue: Action item 1",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "emmanuel003",
+        "due_date": "2026-04-12",
+        "status": "Closed",
+        "created_by": "gregory005",
+        "created_date": "2026-04-19",
+        "closed_date": "2026-04-12",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0001_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "william001",
+        "due_date": "2026-06-13",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-04",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0001_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "william001",
+        "due_date": "2026-06-11",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-01",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0002",
@@ -71,27 +129,71 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-14",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "wendy019",
+        "id": "PRJ0002_MS_5420",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-26",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "wendy019",
+        "id": "PRJ0002_MS_8241",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-15",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "wendy019",
+        "id": "PRJ0002_MS_3666",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-19",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "wendy019",
+        "id": "PRJ0002_MS_3271",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-10",
-    "notes": ""
+    "notes": "",
+    "owner_username": "wendy019",
+    "action_items": [
+      {
+        "id": "PRJ0002_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "stanley030",
+        "due_date": "2026-04-12",
+        "status": "Closed",
+        "created_by": "wendy019",
+        "created_date": "2026-03-28",
+        "closed_date": "2026-04-12",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0002_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "ann037",
+        "due_date": "2026-04-23",
+        "status": "Overdue",
+        "created_by": "wendy019",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0003",
@@ -118,37 +220,143 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-15",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_4401",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-08",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_4957",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-17",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_8437",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-14",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_5655",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-20",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_7403",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-12",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "miriam038",
+        "id": "PRJ0003_MS_5843",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-20",
-    "notes": ""
+    "notes": "",
+    "owner_username": "miriam038",
+    "action_items": [
+      {
+        "id": "PRJ0003_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "oliver034",
+        "due_date": "2026-04-18",
+        "status": "Overdue",
+        "created_by": "miriam038",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0003_ACT02",
+        "description": "Follow-up: Action item 2",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "emmanuel003",
+        "due_date": "2026-06-12",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0003_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "philip025",
+        "due_date": "2026-04-22",
+        "status": "Closed",
+        "created_by": "miriam038",
+        "created_date": "2026-04-07",
+        "closed_date": "2026-04-22",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0003_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "lorna028",
+        "due_date": "2026-06-02",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0003_ACT05",
+        "description": "Risk: Action item 5",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "michael036",
+        "due_date": "2026-05-04",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0003_ACT06",
+        "description": "Approval: Action item 6",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "festus007",
+        "due_date": "2026-04-17",
+        "status": "Overdue",
+        "created_by": "miriam038",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0004",
@@ -175,27 +383,87 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-09",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "caleb006",
+        "id": "PRJ0004_MS_1087",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-03",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "caleb006",
+        "id": "PRJ0004_MS_7349",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-17",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "caleb006",
+        "id": "PRJ0004_MS_2119",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-07",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "caleb006",
+        "id": "PRJ0004_MS_4255",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-17",
-    "notes": ""
+    "notes": "",
+    "owner_username": "caleb006",
+    "action_items": [
+      {
+        "id": "PRJ0004_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "elijah021",
+        "due_date": "2026-05-17",
+        "status": "Open",
+        "created_by": "caleb006",
+        "created_date": "2026-04-07",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0004_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "william011",
+        "due_date": "2026-04-25",
+        "status": "Open",
+        "created_by": "caleb006",
+        "created_date": "2026-04-10",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0004_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "helena018",
+        "due_date": "2026-06-01",
+        "status": "Open",
+        "created_by": "caleb006",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "cab"
+    ]
   },
   {
     "id": "PRJ0005",
@@ -222,27 +490,113 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-10",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "beatrice002",
+        "id": "PRJ0005_MS_1407",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-25",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "beatrice002",
+        "id": "PRJ0005_MS_8978",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-29",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "beatrice002",
+        "id": "PRJ0005_MS_7724",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-06-30",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "beatrice002",
+        "id": "PRJ0005_MS_3861",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "beatrice002",
+    "action_items": [
+      {
+        "id": "PRJ0005_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "kurt027",
+        "due_date": "2026-05-16",
+        "status": "Open",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-28",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0005_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "kevin040",
+        "due_date": "2026-06-24",
+        "status": "Open",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0005_ACT03",
+        "description": "Risk: Action item 3",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "stanley030",
+        "due_date": "2026-04-12",
+        "status": "Overdue",
+        "created_by": "beatrice002",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0005_ACT04",
+        "description": "Decision: Action item 4",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "zipporah014",
+        "due_date": "2026-04-22",
+        "status": "Overdue",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0005_ACT05",
+        "description": "Issue: Action item 5",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "zipporah014",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "beatrice002",
+        "created_date": "2026-04-23",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0006",
@@ -269,32 +623,135 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-21",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "william001",
+        "id": "PRJ0006_MS_7434",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-29",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "william001",
+        "id": "PRJ0006_MS_5623",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "william001",
+        "id": "PRJ0006_MS_7498",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-08",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "william001",
+        "id": "PRJ0006_MS_6264",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-29",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "william001",
+        "id": "PRJ0006_MS_2937",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-11",
-    "notes": ""
+    "notes": "",
+    "owner_username": "william001",
+    "action_items": [
+      {
+        "id": "PRJ0006_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "charles035",
+        "due_date": "2026-05-22",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-03-29",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0006_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "miriam038",
+        "due_date": "2026-06-02",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0006_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "yasmin004",
+        "due_date": "2026-05-17",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-03-29",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0006_ACT04",
+        "description": "Approval: Action item 4",
+        "category": "Issue",
+        "priority": "High",
+        "owner_username": "isabella010",
+        "due_date": "2026-06-06",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0006_ACT05",
+        "description": "Approval: Action item 5",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "zachary024",
+        "due_date": "2026-06-01",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0006_ACT06",
+        "description": "Approval: Action item 6",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "mildred033",
+        "due_date": "2026-04-30",
+        "status": "Open",
+        "created_by": "william001",
+        "created_date": "2026-04-19",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0007",
@@ -321,32 +778,107 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-02",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "elijah021",
+        "id": "PRJ0007_MS_1639",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-28",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "elijah021",
+        "id": "PRJ0007_MS_9859",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "elijah021",
+        "id": "PRJ0007_MS_4593",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-08",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0007_MS_8240",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-20",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0007_MS_9075",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-17",
-    "notes": ""
+    "notes": "",
+    "owner_username": "elijah021",
+    "action_items": [
+      {
+        "id": "PRJ0007_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "gregory005",
+        "due_date": "2026-04-22",
+        "status": "Overdue",
+        "created_by": "elijah021",
+        "created_date": "2026-04-12",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0007_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "mildred033",
+        "due_date": "2026-06-22",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0007_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "michael009",
+        "due_date": "2026-04-25",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-18",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0007_ACT04",
+        "description": "Issue: Action item 4",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "stella004",
+        "due_date": "2026-05-27",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-03",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0008",
@@ -373,32 +905,137 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-01",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0008_MS_2353",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-05",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0008_MS_8415",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-19",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0008_MS_7571",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-14",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "elijah021",
+        "id": "PRJ0008_MS_8958",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-30",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0008_MS_6030",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-08",
-    "notes": ""
+    "notes": "",
+    "owner_username": "elijah021",
+    "action_items": [
+      {
+        "id": "PRJ0008_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "william011",
+        "due_date": "2026-04-16",
+        "status": "Overdue",
+        "created_by": "elijah021",
+        "created_date": "2026-04-19",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0008_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "fatuma015",
+        "due_date": "2026-04-30",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0008_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "kurt027",
+        "due_date": "2026-06-22",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-18",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0008_ACT04",
+        "description": "Approval: Action item 4",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "herbert031",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-03-29",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0008_ACT05",
+        "description": "Review: Action item 5",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "lorna013",
+        "due_date": "2026-06-01",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0008_ACT06",
+        "description": "Review: Action item 6",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "obed016",
+        "due_date": "2026-05-27",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "rcsa"
+    ]
   },
   {
     "id": "PRJ0009",
@@ -425,22 +1062,91 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-18",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "grace008",
+        "id": "PRJ0009_MS_2909",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-08",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "grace008",
+        "id": "PRJ0009_MS_7968",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-19",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "grace008",
+        "id": "PRJ0009_MS_5873",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-13",
-    "notes": ""
+    "notes": "",
+    "owner_username": "grace008",
+    "action_items": [
+      {
+        "id": "PRJ0009_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "tina012",
+        "due_date": "2026-05-02",
+        "status": "Open",
+        "created_by": "grace008",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0009_ACT02",
+        "description": "Follow-up: Action item 2",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "kevin040",
+        "due_date": "2026-05-19",
+        "status": "Open",
+        "created_by": "grace008",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0009_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "zachary024",
+        "due_date": "2026-04-29",
+        "status": "Open",
+        "created_by": "grace008",
+        "created_date": "2026-04-19",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0009_ACT04",
+        "description": "Follow-up: Action item 4",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "emmanuel003",
+        "due_date": "2026-05-28",
+        "status": "Open",
+        "created_by": "grace008",
+        "created_date": "2026-04-08",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0010",
@@ -467,27 +1173,129 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-05",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "lorna032",
+        "id": "PRJ0010_MS_7027",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-31",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "lorna032",
+        "id": "PRJ0010_MS_8335",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-21",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "lorna032",
+        "id": "PRJ0010_MS_9918",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-15",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "lorna032",
+        "id": "PRJ0010_MS_9581",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "lorna032",
+    "action_items": [
+      {
+        "id": "PRJ0010_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "fatuma015",
+        "due_date": "2026-06-05",
+        "status": "Open",
+        "created_by": "lorna032",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0010_ACT02",
+        "description": "Decision: Action item 2",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "mary006",
+        "due_date": "2026-04-12",
+        "status": "Overdue",
+        "created_by": "lorna032",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0010_ACT03",
+        "description": "Risk: Action item 3",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "zipporah014",
+        "due_date": "2026-04-15",
+        "status": "Closed",
+        "created_by": "lorna032",
+        "created_date": "2026-03-26",
+        "closed_date": "2026-04-15",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0010_ACT04",
+        "description": "Issue: Action item 4",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "mildred033",
+        "due_date": "2026-06-16",
+        "status": "Open",
+        "created_by": "lorna032",
+        "created_date": "2026-04-23",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0010_ACT05",
+        "description": "Risk: Action item 5",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "isabella010",
+        "due_date": "2026-06-19",
+        "status": "Open",
+        "created_by": "lorna032",
+        "created_date": "2026-04-20",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0010_ACT06",
+        "description": "Follow-up: Action item 6",
+        "category": "Issue",
+        "priority": "High",
+        "owner_username": "mark010",
+        "due_date": "2026-06-08",
+        "status": "Open",
+        "created_by": "lorna032",
+        "created_date": "2026-04-12",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0011",
@@ -514,37 +1322,89 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-06",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_6084",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-04",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_4087",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-28",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_2804",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-04",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_4865",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-02",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_2184",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-12",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0011_MS_7711",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-16",
-    "notes": ""
+    "notes": "",
+    "owner_username": "elijah021",
+    "action_items": [
+      {
+        "id": "PRJ0011_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "tina012",
+        "due_date": "2026-06-05",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0011_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "lilian020",
+        "due_date": "2026-04-12",
+        "status": "Overdue",
+        "created_by": "elijah021",
+        "created_date": "2026-04-06",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0012",
@@ -571,27 +1431,101 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-12",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "irene003",
+        "id": "PRJ0012_MS_4975",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-09",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "irene003",
+        "id": "PRJ0012_MS_1977",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-15",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "irene003",
+        "id": "PRJ0012_MS_7842",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-04",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "irene003",
+        "id": "PRJ0012_MS_2897",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-14",
-    "notes": ""
+    "notes": "",
+    "owner_username": "irene003",
+    "action_items": [
+      {
+        "id": "PRJ0012_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "caleb006",
+        "due_date": "2026-05-14",
+        "status": "Open",
+        "created_by": "irene003",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0012_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "lorna028",
+        "due_date": "2026-04-23",
+        "status": "Overdue",
+        "created_by": "irene003",
+        "created_date": "2026-03-29",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0012_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "william001",
+        "due_date": "2026-06-16",
+        "status": "Open",
+        "created_by": "irene003",
+        "created_date": "2026-04-07",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0012_ACT04",
+        "description": "Issue: Action item 4",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "irene003",
+        "due_date": "2026-05-15",
+        "status": "Open",
+        "created_by": "irene003",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "cab"
+    ]
   },
   {
     "id": "PRJ0013",
@@ -618,27 +1552,99 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-03",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "fatuma015",
+        "id": "PRJ0013_MS_8317",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-06",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "fatuma015",
+        "id": "PRJ0013_MS_6106",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-10",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "fatuma015",
+        "id": "PRJ0013_MS_9413",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-04",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "fatuma015",
+        "id": "PRJ0013_MS_9683",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-09",
-    "notes": ""
+    "notes": "",
+    "owner_username": "fatuma015",
+    "action_items": [
+      {
+        "id": "PRJ0013_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "mildred033",
+        "due_date": "2026-04-11",
+        "status": "Closed",
+        "created_by": "fatuma015",
+        "created_date": "2026-04-08",
+        "closed_date": "2026-04-11",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0013_ACT02",
+        "description": "Follow-up: Action item 2",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "stanley030",
+        "due_date": "2026-05-23",
+        "status": "Open",
+        "created_by": "fatuma015",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0013_ACT03",
+        "description": "Risk: Action item 3",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "yasmin004",
+        "due_date": "2026-04-25",
+        "status": "Open",
+        "created_by": "fatuma015",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0013_ACT04",
+        "description": "Follow-up: Action item 4",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "lorna013",
+        "due_date": "2026-06-10",
+        "status": "Open",
+        "created_by": "fatuma015",
+        "created_date": "2026-03-27",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0014",
@@ -665,32 +1671,93 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-21",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "zachary024",
+        "id": "PRJ0014_MS_5671",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-22",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "zachary024",
+        "id": "PRJ0014_MS_4994",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-26",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "zachary024",
+        "id": "PRJ0014_MS_3224",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-06",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "zachary024",
+        "id": "PRJ0014_MS_7343",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-01",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "zachary024",
+        "id": "PRJ0014_MS_8096",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-10",
-    "notes": ""
+    "notes": "",
+    "owner_username": "zachary024",
+    "action_items": [
+      {
+        "id": "PRJ0014_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "william001",
+        "due_date": "2026-04-13",
+        "status": "Closed",
+        "created_by": "zachary024",
+        "created_date": "2026-04-09",
+        "closed_date": "2026-04-13",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0014_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "william011",
+        "due_date": "2026-06-03",
+        "status": "Open",
+        "created_by": "zachary024",
+        "created_date": "2026-03-28",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0014_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "mark010",
+        "due_date": "2026-05-03",
+        "status": "Open",
+        "created_by": "zachary024",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0015",
@@ -717,32 +1784,123 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-15",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "ann037",
+        "id": "PRJ0015_MS_6177",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-05",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "ann037",
+        "id": "PRJ0015_MS_5261",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-21",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "ann037",
+        "id": "PRJ0015_MS_7852",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-03",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "ann037",
+        "id": "PRJ0015_MS_2854",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-21",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "ann037",
+        "id": "PRJ0015_MS_7538",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-15",
-    "notes": ""
+    "notes": "",
+    "owner_username": "ann037",
+    "action_items": [
+      {
+        "id": "PRJ0015_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "keith029",
+        "due_date": "2026-05-03",
+        "status": "Open",
+        "created_by": "ann037",
+        "created_date": "2026-04-04",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0015_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "yasmin004",
+        "due_date": "2026-06-05",
+        "status": "Open",
+        "created_by": "ann037",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0015_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "yasmin004",
+        "due_date": "2026-04-13",
+        "status": "Overdue",
+        "created_by": "ann037",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0015_ACT04",
+        "description": "Follow-up: Action item 4",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "michael036",
+        "due_date": "2026-05-11",
+        "status": "Open",
+        "created_by": "ann037",
+        "created_date": "2026-03-27",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0015_ACT05",
+        "description": "Risk: Action item 5",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "lilian009",
+        "due_date": "2026-05-05",
+        "status": "Open",
+        "created_by": "ann037",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0016",
@@ -769,32 +1927,107 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-16",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "mildred033",
+        "id": "PRJ0016_MS_2631",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-06",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "mildred033",
+        "id": "PRJ0016_MS_7399",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-19",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "mildred033",
+        "id": "PRJ0016_MS_6512",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-15",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mildred033",
+        "id": "PRJ0016_MS_4105",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-20",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "mildred033",
+        "id": "PRJ0016_MS_1289",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-13",
-    "notes": ""
+    "notes": "",
+    "owner_username": "mildred033",
+    "action_items": [
+      {
+        "id": "PRJ0016_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "stella017",
+        "due_date": "2026-06-24",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0016_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "grace008",
+        "due_date": "2026-04-25",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0016_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "fatuma015",
+        "due_date": "2026-06-12",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-08",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0016_ACT04",
+        "description": "Decision: Action item 4",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "florence039",
+        "due_date": "2026-05-15",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0017",
@@ -821,22 +2054,93 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-20",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "charles035",
+        "id": "PRJ0017_MS_6688",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-21",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "charles035",
+        "id": "PRJ0017_MS_2303",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "charles035",
+        "id": "PRJ0017_MS_4607",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "charles035",
+    "action_items": [
+      {
+        "id": "PRJ0017_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "ann037",
+        "due_date": "2026-06-05",
+        "status": "Open",
+        "created_by": "charles035",
+        "created_date": "2026-04-03",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0017_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "lorna028",
+        "due_date": "2026-04-28",
+        "status": "Open",
+        "created_by": "charles035",
+        "created_date": "2026-04-19",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0017_ACT03",
+        "description": "Risk: Action item 3",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "fatuma015",
+        "due_date": "2026-05-11",
+        "status": "Open",
+        "created_by": "charles035",
+        "created_date": "2026-04-07",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0017_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "caleb022",
+        "due_date": "2026-05-16",
+        "status": "Open",
+        "created_by": "charles035",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "rcsa"
+    ]
   },
   {
     "id": "PRJ0018",
@@ -863,37 +2167,101 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-09",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_1237",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-07",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_3064",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-11",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_1762",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-09",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_7358",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-02",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_3450",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-20",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "michael036",
+        "id": "PRJ0018_MS_1429",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-11",
-    "notes": ""
+    "notes": "",
+    "owner_username": "michael036",
+    "action_items": [
+      {
+        "id": "PRJ0018_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "mildred033",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "michael036",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0018_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "lucy023",
+        "due_date": "2026-06-08",
+        "status": "Open",
+        "created_by": "michael036",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0018_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "keith029",
+        "due_date": "2026-05-14",
+        "status": "Open",
+        "created_by": "michael036",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0019",
@@ -920,37 +2288,87 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-13",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_9069",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-29",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_8787",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_2706",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-01",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_9028",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-04",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_1891",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-26",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "veronica001",
+        "id": "PRJ0019_MS_8755",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "veronica001",
+    "action_items": [
+      {
+        "id": "PRJ0019_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "stella017",
+        "due_date": "2026-06-11",
+        "status": "Open",
+        "created_by": "veronica001",
+        "created_date": "2026-04-01",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0019_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "festus007",
+        "due_date": "2026-05-17",
+        "status": "Open",
+        "created_by": "veronica001",
+        "created_date": "2026-04-18",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0020",
@@ -977,37 +2395,145 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-16",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_9609",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-04",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_6114",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_9655",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-08",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_3234",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-04",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_8492",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-13",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "brenda007",
+        "id": "PRJ0020_MS_9586",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-12",
-    "notes": ""
+    "notes": "",
+    "owner_username": "brenda007",
+    "action_items": [
+      {
+        "id": "PRJ0020_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "caleb006",
+        "due_date": "2026-04-20",
+        "status": "Closed",
+        "created_by": "brenda007",
+        "created_date": "2026-04-18",
+        "closed_date": "2026-04-20",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0020_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "ann037",
+        "due_date": "2026-05-31",
+        "status": "Open",
+        "created_by": "brenda007",
+        "created_date": "2026-04-10",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0020_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "nicholas002",
+        "due_date": "2026-06-13",
+        "status": "Open",
+        "created_by": "brenda007",
+        "created_date": "2026-04-08",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0020_ACT04",
+        "description": "Decision: Action item 4",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "mary006",
+        "due_date": "2026-06-18",
+        "status": "Open",
+        "created_by": "brenda007",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0020_ACT05",
+        "description": "Decision: Action item 5",
+        "category": "Risk",
+        "priority": "Medium",
+        "owner_username": "fatuma015",
+        "due_date": "2026-05-12",
+        "status": "Open",
+        "created_by": "brenda007",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0020_ACT06",
+        "description": "Decision: Action item 6",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "mary006",
+        "due_date": "2026-06-23",
+        "status": "Open",
+        "created_by": "brenda007",
+        "created_date": "2026-04-08",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0021",
@@ -1034,32 +2560,137 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-12",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "miriam038",
+        "id": "PRJ0021_MS_6987",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-06",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "miriam038",
+        "id": "PRJ0021_MS_2665",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-26",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "miriam038",
+        "id": "PRJ0021_MS_8112",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-06-30",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "miriam038",
+        "id": "PRJ0021_MS_1704",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-22",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "miriam038",
+        "id": "PRJ0021_MS_3927",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-10",
-    "notes": ""
+    "notes": "",
+    "owner_username": "miriam038",
+    "action_items": [
+      {
+        "id": "PRJ0021_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "caleb006",
+        "due_date": "2026-04-29",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0021_ACT02",
+        "description": "Follow-up: Action item 2",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "wendy019",
+        "due_date": "2026-06-07",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0021_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "stella004",
+        "due_date": "2026-05-11",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-04",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0021_ACT04",
+        "description": "Issue: Action item 4",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "jasper026",
+        "due_date": "2026-04-16",
+        "status": "Closed",
+        "created_by": "miriam038",
+        "created_date": "2026-03-27",
+        "closed_date": "2026-04-16",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0021_ACT05",
+        "description": "Follow-up: Action item 5",
+        "category": "Issue",
+        "priority": "High",
+        "owner_username": "ann037",
+        "due_date": "2026-05-05",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-10",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0021_ACT06",
+        "description": "Follow-up: Action item 6",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "zipporah014",
+        "due_date": "2026-05-15",
+        "status": "Open",
+        "created_by": "miriam038",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0022",
@@ -1086,22 +2717,77 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-04",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "beatrice002",
+        "id": "PRJ0022_MS_4127",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-25",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "beatrice002",
+        "id": "PRJ0022_MS_4791",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-17",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "beatrice002",
+        "id": "PRJ0022_MS_6995",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-08",
-    "notes": ""
+    "notes": "",
+    "owner_username": "beatrice002",
+    "action_items": [
+      {
+        "id": "PRJ0022_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "lorna032",
+        "due_date": "2026-06-10",
+        "status": "Open",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-27",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0022_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "mark010",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0022_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "emmanuel003",
+        "due_date": "2026-04-23",
+        "status": "Overdue",
+        "created_by": "beatrice002",
+        "created_date": "2026-03-28",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0023",
@@ -1128,37 +2814,101 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-14",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_3000",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-01",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_2850",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-21",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_9360",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-13",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_6405",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-04",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_3919",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-17",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "nicholas002",
+        "id": "PRJ0023_MS_3787",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-20",
-    "notes": ""
+    "notes": "",
+    "owner_username": "nicholas002",
+    "action_items": [
+      {
+        "id": "PRJ0023_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "kurt027",
+        "due_date": "2026-06-04",
+        "status": "Open",
+        "created_by": "nicholas002",
+        "created_date": "2026-04-03",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0023_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Risk",
+        "priority": "Medium",
+        "owner_username": "brenda007",
+        "due_date": "2026-06-17",
+        "status": "Open",
+        "created_by": "nicholas002",
+        "created_date": "2026-04-06",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0023_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "zachary024",
+        "due_date": "2026-06-23",
+        "status": "Open",
+        "created_by": "nicholas002",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0024",
@@ -1185,37 +2935,103 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-11",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_1289",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-28",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_5263",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-29",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_4334",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-04",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_9393",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-07",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_5531",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-24",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "zachary024",
+        "id": "PRJ0024_MS_8283",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-14",
-    "notes": ""
+    "notes": "",
+    "owner_username": "zachary024",
+    "action_items": [
+      {
+        "id": "PRJ0024_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "miriam038",
+        "due_date": "2026-05-28",
+        "status": "Open",
+        "created_by": "zachary024",
+        "created_date": "2026-04-01",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0024_ACT02",
+        "description": "Review: Action item 2",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "helena018",
+        "due_date": "2026-05-25",
+        "status": "Open",
+        "created_by": "zachary024",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0024_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "caleb006",
+        "due_date": "2026-05-12",
+        "status": "Open",
+        "created_by": "zachary024",
+        "created_date": "2026-04-16",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0025",
@@ -1242,22 +3058,121 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-04",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "jasper026",
+        "id": "PRJ0025_MS_8094",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-26",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "jasper026",
+        "id": "PRJ0025_MS_6562",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-24",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "jasper026",
+        "id": "PRJ0025_MS_3259",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-08",
-    "notes": ""
+    "notes": "",
+    "owner_username": "jasper026",
+    "action_items": [
+      {
+        "id": "PRJ0025_ACT01",
+        "description": "Issue: Action item 1",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "philip025",
+        "due_date": "2026-06-03",
+        "status": "Open",
+        "created_by": "jasper026",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0025_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Issue",
+        "priority": "High",
+        "owner_username": "elijah021",
+        "due_date": "2026-05-29",
+        "status": "Open",
+        "created_by": "jasper026",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0025_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "charles035",
+        "due_date": "2026-04-24",
+        "status": "Closed",
+        "created_by": "jasper026",
+        "created_date": "2026-03-28",
+        "closed_date": "2026-04-24",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0025_ACT04",
+        "description": "Review: Action item 4",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "stanley030",
+        "due_date": "2026-04-15",
+        "status": "Closed",
+        "created_by": "jasper026",
+        "created_date": "2026-04-18",
+        "closed_date": "2026-04-15",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0025_ACT05",
+        "description": "Decision: Action item 5",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "wendy019",
+        "due_date": "2026-05-16",
+        "status": "Open",
+        "created_by": "jasper026",
+        "created_date": "2026-03-27",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0025_ACT06",
+        "description": "Decision: Action item 6",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "herbert031",
+        "due_date": "2026-06-06",
+        "status": "Open",
+        "created_by": "jasper026",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "rcsa"
+    ]
   },
   {
     "id": "PRJ0026",
@@ -1284,22 +3199,91 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-20",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "mary006",
+        "id": "PRJ0026_MS_5159",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-05",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "mary006",
+        "id": "PRJ0026_MS_6076",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-25",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mary006",
+        "id": "PRJ0026_MS_7037",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-08",
-    "notes": ""
+    "notes": "",
+    "owner_username": "mary006",
+    "action_items": [
+      {
+        "id": "PRJ0026_ACT01",
+        "description": "Issue: Action item 1",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "irene003",
+        "due_date": "2026-05-13",
+        "status": "Open",
+        "created_by": "mary006",
+        "created_date": "2026-04-18",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0026_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "yasmin004",
+        "due_date": "2026-05-26",
+        "status": "Open",
+        "created_by": "mary006",
+        "created_date": "2026-04-06",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0026_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "stanley030",
+        "due_date": "2026-06-20",
+        "status": "Open",
+        "created_by": "mary006",
+        "created_date": "2026-04-19",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0026_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "stella004",
+        "due_date": "2026-04-14",
+        "status": "Overdue",
+        "created_by": "mary006",
+        "created_date": "2026-03-27",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0027",
@@ -1326,27 +3310,73 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-18",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "stella017",
+        "id": "PRJ0027_MS_3088",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-03",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "stella017",
+        "id": "PRJ0027_MS_9701",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-23",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "stella017",
+        "id": "PRJ0027_MS_3854",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-09",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "stella017",
+        "id": "PRJ0027_MS_3247",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-15",
-    "notes": ""
+    "notes": "",
+    "owner_username": "stella017",
+    "action_items": [
+      {
+        "id": "PRJ0027_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "ann037",
+        "due_date": "2026-04-20",
+        "status": "Closed",
+        "created_by": "stella017",
+        "created_date": "2026-04-18",
+        "closed_date": "2026-04-20",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0027_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Review",
+        "priority": "Low",
+        "owner_username": "oliver034",
+        "due_date": "2026-05-04",
+        "status": "Open",
+        "created_by": "stella017",
+        "created_date": "2026-04-16",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "budget"
+    ]
   },
   {
     "id": "PRJ0028",
@@ -1373,37 +3403,143 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-01",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_8412",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-25",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_4469",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-19",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_6398",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-10",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_3353",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-09",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_6997",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-17",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "mildred033",
+        "id": "PRJ0028_MS_9619",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-07",
-    "notes": ""
+    "notes": "",
+    "owner_username": "mildred033",
+    "action_items": [
+      {
+        "id": "PRJ0028_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "emmanuel003",
+        "due_date": "2026-05-15",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0028_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Risk",
+        "priority": "Medium",
+        "owner_username": "michael036",
+        "due_date": "2026-05-27",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-01",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0028_ACT03",
+        "description": "Risk: Action item 3",
+        "category": "Follow-up",
+        "priority": "Low",
+        "owner_username": "herbert031",
+        "due_date": "2026-05-10",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-16",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0028_ACT04",
+        "description": "Approval: Action item 4",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "wendy019",
+        "due_date": "2026-05-03",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0028_ACT05",
+        "description": "Issue: Action item 5",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "mary006",
+        "due_date": "2026-06-20",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0028_ACT06",
+        "description": "Approval: Action item 6",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "obed016",
+        "due_date": "2026-05-13",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0029",
@@ -1430,37 +3566,89 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-09",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_2664",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-04",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_8063",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-23",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_5848",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-06-30",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_4788",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-08",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_2003",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-09",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "michael036",
+        "id": "PRJ0029_MS_2659",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "michael036",
+    "action_items": [
+      {
+        "id": "PRJ0029_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "veronica001",
+        "due_date": "2026-06-09",
+        "status": "Open",
+        "created_by": "michael036",
+        "created_date": "2026-04-04",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0029_ACT02",
+        "description": "Follow-up: Action item 2",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "william001",
+        "due_date": "2026-06-08",
+        "status": "Open",
+        "created_by": "michael036",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "rcsa"
+    ]
   },
   {
     "id": "PRJ0030",
@@ -1487,27 +3675,85 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-20",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "caleb022",
+        "id": "PRJ0030_MS_5383",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-25",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "caleb022",
+        "id": "PRJ0030_MS_2343",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-30",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "caleb022",
+        "id": "PRJ0030_MS_6054",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-14",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "caleb022",
+        "id": "PRJ0030_MS_1968",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-15",
-    "notes": ""
+    "notes": "",
+    "owner_username": "caleb022",
+    "action_items": [
+      {
+        "id": "PRJ0030_ACT01",
+        "description": "Issue: Action item 1",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "florence039",
+        "due_date": "2026-05-14",
+        "status": "Open",
+        "created_by": "caleb022",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0030_ACT02",
+        "description": "Decision: Action item 2",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "charles035",
+        "due_date": "2026-05-25",
+        "status": "Open",
+        "created_by": "caleb022",
+        "created_date": "2026-03-29",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0030_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "grace008",
+        "due_date": "2026-06-04",
+        "status": "Open",
+        "created_by": "caleb022",
+        "created_date": "2026-04-21",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0031",
@@ -1534,37 +3780,143 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-17",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_3624",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-24",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_6089",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-26",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_3563",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-13",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_2920",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-31",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_5389",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-13",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "gregory005",
+        "id": "PRJ0031_MS_3088",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-19",
-    "notes": ""
+    "notes": "",
+    "owner_username": "gregory005",
+    "action_items": [
+      {
+        "id": "PRJ0031_ACT01",
+        "description": "Review: Action item 1",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "lorna032",
+        "due_date": "2026-05-09",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-10",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0031_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "michael009",
+        "due_date": "2026-06-20",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-03",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0031_ACT03",
+        "description": "Review: Action item 3",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "obed016",
+        "due_date": "2026-05-06",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0031_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "lilian009",
+        "due_date": "2026-05-15",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0031_ACT05",
+        "description": "Risk: Action item 5",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "kevin040",
+        "due_date": "2026-05-12",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-16",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0031_ACT06",
+        "description": "Approval: Action item 6",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "gregory005",
+        "due_date": "2026-05-26",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-05",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0032",
@@ -1591,32 +3943,109 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-19",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0032_MS_2789",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-22",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0032_MS_8510",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0032_MS_3614",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-20",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0032_MS_5220",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-25",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "elijah021",
+        "id": "PRJ0032_MS_2136",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-19",
-    "notes": ""
+    "notes": "",
+    "owner_username": "elijah021",
+    "action_items": [
+      {
+        "id": "PRJ0032_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "florence039",
+        "due_date": "2026-04-30",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0032_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "wendy019",
+        "due_date": "2026-05-31",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0032_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "beatrice002",
+        "due_date": "2026-06-23",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-06",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0032_ACT04",
+        "description": "Approval: Action item 4",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "herbert031",
+        "due_date": "2026-06-23",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-03",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "cab"
+    ]
   },
   {
     "id": "PRJ0033",
@@ -1643,27 +4072,127 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-04",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "isabella010",
+        "id": "PRJ0033_MS_1481",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-22",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "isabella010",
+        "id": "PRJ0033_MS_6776",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-21",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "isabella010",
+        "id": "PRJ0033_MS_8242",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-20",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "isabella010",
+        "id": "PRJ0033_MS_6656",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-17",
-    "notes": ""
+    "notes": "",
+    "owner_username": "isabella010",
+    "action_items": [
+      {
+        "id": "PRJ0033_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "elijah021",
+        "due_date": "2026-04-14",
+        "status": "Closed",
+        "created_by": "isabella010",
+        "created_date": "2026-04-14",
+        "closed_date": "2026-04-14",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0033_ACT02",
+        "description": "Risk: Action item 2",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "kevin040",
+        "due_date": "2026-06-06",
+        "status": "Open",
+        "created_by": "isabella010",
+        "created_date": "2026-04-09",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0033_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "keith029",
+        "due_date": "2026-05-04",
+        "status": "Open",
+        "created_by": "isabella010",
+        "created_date": "2026-04-23",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0033_ACT04",
+        "description": "Review: Action item 4",
+        "category": "Issue",
+        "priority": "Medium",
+        "owner_username": "stanley030",
+        "due_date": "2026-05-22",
+        "status": "Open",
+        "created_by": "isabella010",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0033_ACT05",
+        "description": "Approval: Action item 5",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "mark010",
+        "due_date": "2026-05-24",
+        "status": "Open",
+        "created_by": "isabella010",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0033_ACT06",
+        "description": "Follow-up: Action item 6",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "obed016",
+        "due_date": "2026-04-24",
+        "status": "Overdue",
+        "created_by": "isabella010",
+        "created_date": "2026-04-12",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0034",
@@ -1690,27 +4219,99 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-05",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "elijah021",
+        "id": "PRJ0034_MS_9355",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-05",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "elijah021",
+        "id": "PRJ0034_MS_2748",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-10",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "elijah021",
+        "id": "PRJ0034_MS_6481",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-03",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "elijah021",
+        "id": "PRJ0034_MS_1608",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-07",
-    "notes": ""
+    "notes": "",
+    "owner_username": "elijah021",
+    "action_items": [
+      {
+        "id": "PRJ0034_ACT01",
+        "description": "Issue: Action item 1",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "mary006",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0034_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Risk",
+        "priority": "High",
+        "owner_username": "mary006",
+        "due_date": "2026-06-18",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-13",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0034_ACT03",
+        "description": "Decision: Action item 3",
+        "category": "Review",
+        "priority": "High",
+        "owner_username": "festus007",
+        "due_date": "2026-06-20",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-03-31",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0034_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Approval",
+        "priority": "Medium",
+        "owner_username": "obed016",
+        "due_date": "2026-05-11",
+        "status": "Open",
+        "created_by": "elijah021",
+        "created_date": "2026-04-24",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0035",
@@ -1737,32 +4338,81 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-10",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "oliver034",
+        "id": "PRJ0035_MS_9894",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-23",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "oliver034",
+        "id": "PRJ0035_MS_7332",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-16",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "oliver034",
+        "id": "PRJ0035_MS_4544",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-07",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "oliver034",
+        "id": "PRJ0035_MS_7961",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-03",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "oliver034",
+        "id": "PRJ0035_MS_5692",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-14",
-    "notes": ""
+    "notes": "",
+    "owner_username": "oliver034",
+    "action_items": [
+      {
+        "id": "PRJ0035_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "yasmin004",
+        "due_date": "2026-05-29",
+        "status": "Open",
+        "created_by": "oliver034",
+        "created_date": "2026-04-08",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0035_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "gregory005",
+        "due_date": "2026-04-23",
+        "status": "Overdue",
+        "created_by": "oliver034",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "cab"
+    ]
   },
   {
     "id": "PRJ0036",
@@ -1789,37 +4439,101 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-03",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_4549",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-22",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_7573",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-13",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_6003",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-04",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_9865",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-29",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_3408",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-20",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "stella004",
+        "id": "PRJ0036_MS_6033",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-21",
-    "notes": ""
+    "notes": "",
+    "owner_username": "stella004",
+    "action_items": [
+      {
+        "id": "PRJ0036_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "lorna013",
+        "due_date": "2026-06-05",
+        "status": "Open",
+        "created_by": "stella004",
+        "created_date": "2026-04-23",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0036_ACT02",
+        "description": "Issue: Action item 2",
+        "category": "Risk",
+        "priority": "Low",
+        "owner_username": "stella017",
+        "due_date": "2026-06-17",
+        "status": "Open",
+        "created_by": "stella004",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0036_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "herbert031",
+        "due_date": "2026-05-31",
+        "status": "Open",
+        "created_by": "stella004",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0037",
@@ -1846,22 +4560,105 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-06",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mildred033",
+        "id": "PRJ0037_MS_2070",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-07",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "mildred033",
+        "id": "PRJ0037_MS_2153",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-19",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "mildred033",
+        "id": "PRJ0037_MS_8703",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-20",
-    "notes": ""
+    "notes": "",
+    "owner_username": "mildred033",
+    "action_items": [
+      {
+        "id": "PRJ0037_ACT01",
+        "description": "Approval: Action item 1",
+        "category": "Approval",
+        "priority": "High",
+        "owner_username": "florence039",
+        "due_date": "2026-05-19",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0037_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "mark010",
+        "due_date": "2026-05-07",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-14",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0037_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Approval",
+        "priority": "Low",
+        "owner_username": "oliver034",
+        "due_date": "2026-05-06",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-23",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0037_ACT04",
+        "description": "Risk: Action item 4",
+        "category": "Follow-up",
+        "priority": "Medium",
+        "owner_username": "keith029",
+        "due_date": "2026-06-10",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-20",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0037_ACT05",
+        "description": "Issue: Action item 5",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "lorna028",
+        "due_date": "2026-06-18",
+        "status": "Open",
+        "created_by": "mildred033",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0038",
@@ -1888,37 +4685,103 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-21",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_5934",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-31",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_7853",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-21",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_9709",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-10",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_6498",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-08-01",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_5326",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 6",
         "due": "2026-08-29",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "keith029",
+        "id": "PRJ0038_MS_4685",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-19",
-    "notes": ""
+    "notes": "",
+    "owner_username": "keith029",
+    "action_items": [
+      {
+        "id": "PRJ0038_ACT01",
+        "description": "Decision: Action item 1",
+        "category": "Issue",
+        "priority": "Low",
+        "owner_username": "irene003",
+        "due_date": "2026-05-09",
+        "status": "Open",
+        "created_by": "keith029",
+        "created_date": "2026-04-01",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0038_ACT02",
+        "description": "Approval: Action item 2",
+        "category": "Follow-up",
+        "priority": "High",
+        "owner_username": "nicholas002",
+        "due_date": "2026-05-06",
+        "status": "Open",
+        "created_by": "keith029",
+        "created_date": "2026-04-22",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0038_ACT03",
+        "description": "Approval: Action item 3",
+        "category": "Decision",
+        "priority": "Medium",
+        "owner_username": "kevin040",
+        "due_date": "2026-04-27",
+        "status": "Open",
+        "created_by": "keith029",
+        "created_date": "2026-03-26",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": [
+      "cab"
+    ]
   },
   {
     "id": "PRJ0039",
@@ -1945,32 +4808,135 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-08",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "gregory005",
+        "id": "PRJ0039_MS_3697",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-05-28",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "gregory005",
+        "id": "PRJ0039_MS_3473",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-27",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "gregory005",
+        "id": "PRJ0039_MS_2875",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-02",
-        "status": "In Progress"
+        "status": "In Progress",
+        "owner_username": "gregory005",
+        "id": "PRJ0039_MS_8890",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-22",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "gregory005",
+        "id": "PRJ0039_MS_3712",
+        "bsc_scored": true
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-07",
-    "notes": ""
+    "notes": "",
+    "owner_username": "gregory005",
+    "action_items": [
+      {
+        "id": "PRJ0039_ACT01",
+        "description": "Follow-up: Action item 1",
+        "category": "Issue",
+        "priority": "High",
+        "owner_username": "caleb022",
+        "due_date": "2026-05-31",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0039_ACT02",
+        "description": "Decision: Action item 2",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "oliver034",
+        "due_date": "2026-04-13",
+        "status": "Closed",
+        "created_by": "gregory005",
+        "created_date": "2026-04-14",
+        "closed_date": "2026-04-13",
+        "bsc_scored": true,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0039_ACT03",
+        "description": "Follow-up: Action item 3",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "kevin040",
+        "due_date": "2026-06-12",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0039_ACT04",
+        "description": "Approval: Action item 4",
+        "category": "Risk",
+        "priority": "Medium",
+        "owner_username": "caleb006",
+        "due_date": "2026-04-13",
+        "status": "Overdue",
+        "created_by": "gregory005",
+        "created_date": "2026-04-17",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0039_ACT05",
+        "description": "Follow-up: Action item 5",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "charles035",
+        "due_date": "2026-06-21",
+        "status": "Open",
+        "created_by": "gregory005",
+        "created_date": "2026-04-04",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0039_ACT06",
+        "description": "Risk: Action item 6",
+        "category": "Review",
+        "priority": "Medium",
+        "owner_username": "kurt027",
+        "due_date": "2026-04-24",
+        "status": "Overdue",
+        "created_by": "gregory005",
+        "created_date": "2026-04-02",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   },
   {
     "id": "PRJ0040",
@@ -1997,31 +4963,78 @@
       {
         "name": "Milestone 1",
         "due": "2026-05-02",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "helena018",
+        "id": "PRJ0040_MS_8396",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 2",
         "due": "2026-06-03",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "helena018",
+        "id": "PRJ0040_MS_6113",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 3",
         "due": "2026-06-10",
-        "status": "Not Started"
+        "status": "Not Started",
+        "owner_username": "helena018",
+        "id": "PRJ0040_MS_4522",
+        "bsc_scored": false
       },
       {
         "name": "Milestone 4",
         "due": "2026-07-01",
-        "status": "Complete"
+        "status": "Complete",
+        "owner_username": "helena018",
+        "id": "PRJ0040_MS_4095",
+        "bsc_scored": true
       },
       {
         "name": "Milestone 5",
         "due": "2026-07-22",
-        "status": "Overdue"
+        "status": "Overdue",
+        "owner_username": "helena018",
+        "id": "PRJ0040_MS_3111",
+        "bsc_scored": false
       }
     ],
     "stakeholders": [],
     "last_updated": "2026-04-11",
-    "notes": ""
+    "notes": "",
+    "owner_username": "helena018",
+    "action_items": [
+      {
+        "id": "PRJ0040_ACT01",
+        "description": "Risk: Action item 1",
+        "category": "Decision",
+        "priority": "High",
+        "owner_username": "irene003",
+        "due_date": "2026-05-25",
+        "status": "Open",
+        "created_by": "helena018",
+        "created_date": "2026-04-11",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      },
+      {
+        "id": "PRJ0040_ACT02",
+        "description": "Decision: Action item 2",
+        "category": "Decision",
+        "priority": "Low",
+        "owner_username": "lorna032",
+        "due_date": "2026-05-28",
+        "status": "Open",
+        "created_by": "helena018",
+        "created_date": "2026-03-30",
+        "closed_date": "",
+        "bsc_scored": false,
+        "notes": ""
+      }
+    ],
+    "linked_modules": []
   }
 ]

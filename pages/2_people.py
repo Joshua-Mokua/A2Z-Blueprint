@@ -1,5 +1,6 @@
 """pages/2_people.py — People & HR Intelligence Module."""
 import streamlit as st
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -20,6 +21,7 @@ def _safe_date(s, fallback=None):
 
 
 require_access("people")
+DATA = Path(__file__).parent.parent / "data"
 
 
 # Fallbacks in case core.py hasn't been updated yet on this machine

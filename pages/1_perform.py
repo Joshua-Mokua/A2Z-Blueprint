@@ -41,7 +41,26 @@ if len(staff_scores) == 0:
         f"Use the file uploader in the sidebar to load the Excel file.</div>"
         f"</div>",
         unsafe_allow_html=True)
-    st.stop()
+    
+# ── BSC Auto-refresh from modules ────────────────────────────────────────────
+with st.expander("🔄 Auto-refresh BSC from operational modules", expanded=False):
+    st.markdown(
+        "Your BSC scores for operational KPIs (projects, tickets, loans, AML, EWS) "
+        "are updated automatically when you complete work. Click to force a refresh."
+    )
+    if st.button("🔄 Refresh BSC from all modules", key="bsc_auto_refresh_main", type="primary"):
+        with st.spinner("Computing scores from all modules..."):
+            try:
+                from utils.core import update_bsc_from_modules as _ubm
+                _result = _ubm(uname)
+                st.success(f"✅ BSC updated — final score: {_result.get('final_score','—')}/5.0")
+                st.cache_data.clear()
+                st.rerun()
+            except Exception as _e:
+                st.error(f"Error: {_e}")
+
+
+st.stop()
 
 # Safe access helpers
 _has_role  = "Role" in filtered.columns
