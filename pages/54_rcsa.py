@@ -12,6 +12,15 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+        audit_log("BSC_AUTO_UPDATE", username, f"Module action: {kpi}")
+    except Exception:
+        pass
+
+
 require_access("rcsa")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
@@ -120,6 +129,7 @@ with tabs[4]:
                                "action_required":_eff!="Adequate","kri":"","kri_value":0,"kri_threshold":0,"kri_breached":False,"notes":""})
                 (DATA/"rcsa_register.json").write_text(json.dumps(all_r,indent=2))
                 audit_log("RCSA_RISK_ADDED",uname,f"{_cat}: {_desc[:60]}")
+                _bsc_trigger(uname, "K014")
                 st.cache_data.clear(); st.success("✅ Risk added"); st.rerun()
             else: st.error("Description required.")
     else: st.info("Risk Register editing available to Risk & Compliance team.")

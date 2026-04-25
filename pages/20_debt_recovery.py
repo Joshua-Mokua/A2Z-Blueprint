@@ -21,6 +21,14 @@ def _safe_date(s, fallback=None):
 
 require_access("debt_recovery")
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
+
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
 DATA  = Path(__file__).parent.parent / "data"

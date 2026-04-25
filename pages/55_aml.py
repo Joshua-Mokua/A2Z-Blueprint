@@ -12,6 +12,15 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+        audit_log("BSC_AUTO_UPDATE", username, f"Module action: {kpi}")
+    except Exception:
+        pass
+
+
 require_access("aml_monitoring")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
@@ -84,6 +93,7 @@ def _render(alert_list, show_update=True):
                     if notes: a["notes"]=notes; a["updated_at"]=str(today)
             (DATA/"aml_alerts.json").write_text(json.dumps(all_a,indent=2))
             audit_log("AML_ALERT_UPDATED",uname,f"{sel}: {new_status}")
+            _bsc_trigger(uname, "K049")
             st.cache_data.clear(); st.success("✅ Updated"); st.rerun()
 
 with tabs[0]: _render(high_risk)

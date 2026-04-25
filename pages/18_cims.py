@@ -10,6 +10,14 @@ from pages._shared import load_shared_state, safe_html
 from pages._access import require_access, get_my_scope
 require_access("cims")
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
+
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())

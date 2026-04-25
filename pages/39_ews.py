@@ -13,6 +13,15 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+        audit_log("BSC_AUTO_UPDATE", username, f"Module action: {kpi}")
+    except Exception:
+        pass
+
+
 require_access("ews")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
@@ -77,6 +86,7 @@ def _render_cases(case_list, show_action=True):
                     if c["id"]==_sel_id: c["notes"]=_new_action; c["last_reviewed"]=str(today)
                 (DATA/"ews_cases.json").write_text(json.dumps(all_c,indent=2))
                 audit_log("EWS_UPDATED",uname,f"{_sel_id}: {_new_action[:60]}")
+                _bsc_trigger(uname, "K047")
                 st.cache_data.clear(); st.success("✅ Updated"); st.rerun()
 
 with tabs[0]: _render_cases([c for c in cases if c["stage"]=="Red"])
@@ -102,6 +112,7 @@ with tabs[3]:
                            "status":"Active","notes":_notes})
             (DATA/"ews_cases.json").write_text(json.dumps(all_c,indent=2))
             audit_log("EWS_RAISED",uname,f"{new_id} stage={_stage}")
+            _bsc_trigger(uname, "K047")
             st.cache_data.clear(); st.success(f"✅ Alert {new_id} raised"); st.rerun()
         else: st.error("Account number and at least one trigger are required")
 

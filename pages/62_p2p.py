@@ -13,6 +13,15 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
 
+def _bsc_trigger(username, kpi=""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+        audit_log("BSC_AUTO_UPDATE", username, f"Module action: {kpi}")
+    except Exception:
+        pass
+
+
 require_access("p2p")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
@@ -102,6 +111,7 @@ with tabs[0]:
                         p["status"]="Approved"; p["approved_by"]=uname; p["approval_date"]=str(today)
                 (DATA/"purchase_requests.json").write_text(json.dumps(all_p,indent=2))
                 audit_log("PR_APPROVED", uname, sel_pr)
+                _bsc_trigger(uname, "K051")
                 st.cache_data.clear(); st.success("✅ PR Approved"); st.rerun()
             if c2.button("❌ Reject", key="p2p_rej"):
                 all_p = json.loads((DATA/"purchase_requests.json").read_text())
@@ -109,6 +119,7 @@ with tabs[0]:
                     if p["id"]==sel_pr: p["status"]="Rejected"
                 (DATA/"purchase_requests.json").write_text(json.dumps(all_p,indent=2))
                 audit_log("PR_REJECTED", uname, sel_pr)
+                _bsc_trigger(uname, "K051")
                 st.cache_data.clear(); st.success("PR rejected"); st.rerun()
         else:
             st.success("✅ No PRs pending approval")
@@ -212,6 +223,7 @@ with tabs[4]:
             })
             (DATA/"purchase_requests.json").write_text(json.dumps(all_p,indent=2))
             audit_log("PR_RAISED",uname,f"{new_id}: {_title[:60]}")
+            _bsc_trigger(uname, "K051")
             st.cache_data.clear(); st.success(f"✅ PR {new_id} submitted for approval"); st.rerun()
         else: st.error("Title and justification required")
 
