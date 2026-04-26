@@ -45,6 +45,9 @@ MODULE_META = {
     "board_papers":          {"icon":"📋","name":"Board Pack & Papers",        "page":"84_board.py",           "dept":"Executive",             "kpis":["K104","K105"]},
     "esg_climate":           {"icon":"🌱","name":"ESG & Climate Risk",         "page":"85_esg.py",             "dept":"Risk & Compliance",     "kpis":["K106","K107","K108"]},
 
+    # Benchmarking
+    "benchmarking":          {"icon":"🏆","name":"Tier-1 Bank Benchmarking",  "page":"87_benchmarking.py",   "dept":"Strategy",              "kpis":["K112","K113"]},
+
     # FLEXCUBE
     "flexcube_integration":  {"icon":"🔌","name":"FLEXCUBE Integration",       "page":"86_flexcube.py",        "dept":"IT & Digital",          "kpis":["K109","K110","K111"]},
 }
@@ -55,6 +58,7 @@ PHASES = {
     "🚨 Phase 1 — Regulatory Critical":   ["cbk_returns","data_protection","sanctions_screening","regulatory_capital"],
     "💼 Phase 2 — Business Critical":     ["customer_onboarding","card_management","merchant_acquiring","alm_liquidity","operational_risk"],
     "🎯 Phase 3 — Strategic":             ["strategic_initiatives","board_papers","esg_climate"],
+    "🏆 Benchmarking":                    ["benchmarking"],
     "🔌 FLEXCUBE Integration":            ["flexcube_integration"],
 }
 

@@ -5207,6 +5207,12 @@ MODULE_ACCESS = {
                                                               "Chief Operations Officer","Chief Risk Officer",
                                                               "Head Of Digital Innovation","Head Of Internal Audit",
                                                               "Director Retail Banking","Director Commercial Banking"]},
+
+    # ── Tier-1 Benchmarking ─────────────────────────────────────────
+    "benchmarking":          {"min": "team",  "roles_all": ["Admin","Managing Director","Chief Finance Officer",
+                                                              "Chief Risk Officer","Head Of Strategy",
+                                                              "Director Retail Banking","Director Commercial Banking",
+                                                              "Chief Operations Officer","Head Of Internal Audit"]},
 }
 
 

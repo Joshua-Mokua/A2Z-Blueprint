@@ -5,6 +5,8 @@ from pages._admin_sprint import render_sprint_config
 from pages._admin_module_config import render_module_config_centre
 from pages._admin_postgres import render_postgres_centre
 from pages._admin_reconciliation import render_recon_centre
+from pages._admin_etl import render_etl_centre
+from pages._admin_cutover import render_cutover_centre
 from pages._admin_org import (
     render_dept_manager, render_branch_manager,
     render_module_assignment, render_roles_manager,
@@ -82,6 +84,8 @@ tabs = st.tabs([
     "🔧 Module Config Centre",
     "🗄️ PostgreSQL Migration",
     "🔍 Reconciliation",
+    "🔄 ETL Centre",
+    "🚀 Cutover",
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -3707,6 +3711,8 @@ if is_admin:
     render_module_config_centre(tabs[26], uname, is_admin)
     render_postgres_centre(tabs[27], uname, is_admin)
     render_recon_centre(tabs[28], uname, is_admin)
+    render_etl_centre(tabs[29], uname, is_admin)
+    render_cutover_centre(tabs[30], uname, is_admin)
 
 # ── IP Protection & System Fingerprint ───────────────────────────
 if is_admin:

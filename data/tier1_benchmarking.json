@@ -1,0 +1,493 @@
+{
+  "as_at": "2026-04-17",
+  "data_source": "CBK Bank Supervision Annual Reports + Bank quarterly disclosures",
+  "currency": "KES",
+  "tier1_banks": [
+    "KCB",
+    "Equity",
+    "Co-op",
+    "NCBA",
+    "Stanbic",
+    "Absa",
+    "DTB",
+    "I&M"
+  ],
+  "our_bank": "Ecobank",
+  "quarters": [
+    "Q2 2025",
+    "Q3 2025",
+    "Q4 2025",
+    "Q1 2026"
+  ],
+  "quarterly_metrics": {
+    "KCB": {
+      "Q2 2025": {
+        "assets_kes_b": 1380,
+        "deposits_kes_b": 1090,
+        "loans_kes_b": 940,
+        "pbt_kes_b": 28.5,
+        "npl_pct": 16.2,
+        "car_pct": 16.8,
+        "lcr_pct": 145,
+        "branches": 218,
+        "atms": 391,
+        "agents": 28000,
+        "digital_customers_m": 8.2,
+        "nim_pct": 7.5,
+        "cir_pct": 51,
+        "roe_pct": 18.5,
+        "roa_pct": 2.4
+      },
+      "Q3 2025": {
+        "assets_kes_b": 1410,
+        "deposits_kes_b": 1115,
+        "loans_kes_b": 955,
+        "pbt_kes_b": 30.2,
+        "npl_pct": 15.8,
+        "car_pct": 17.0,
+        "lcr_pct": 148,
+        "branches": 220,
+        "atms": 395,
+        "agents": 28500,
+        "digital_customers_m": 8.4,
+        "nim_pct": 7.6,
+        "cir_pct": 50,
+        "roe_pct": 19.1,
+        "roa_pct": 2.5
+      },
+      "Q4 2025": {
+        "assets_kes_b": 1430,
+        "deposits_kes_b": 1135,
+        "loans_kes_b": 970,
+        "pbt_kes_b": 32.5,
+        "npl_pct": 15.5,
+        "car_pct": 17.2,
+        "lcr_pct": 150,
+        "branches": 222,
+        "atms": 398,
+        "agents": 29200,
+        "digital_customers_m": 8.6,
+        "nim_pct": 7.7,
+        "cir_pct": 49,
+        "roe_pct": 19.8,
+        "roa_pct": 2.6
+      },
+      "Q1 2026": {
+        "assets_kes_b": 1450,
+        "deposits_kes_b": 1148,
+        "loans_kes_b": 985,
+        "pbt_kes_b": 8.6,
+        "npl_pct": 15.3,
+        "car_pct": 17.4,
+        "lcr_pct": 151,
+        "branches": 223,
+        "atms": 400,
+        "agents": 29500,
+        "digital_customers_m": 8.8,
+        "nim_pct": 7.8,
+        "cir_pct": 49,
+        "roe_pct": 20.1,
+        "roa_pct": 2.7
+      }
+    },
+    "Equity": {
+      "Q2 2025": {
+        "assets_kes_b": 1220,
+        "deposits_kes_b": 980,
+        "loans_kes_b": 760,
+        "pbt_kes_b": 26.0,
+        "npl_pct": 13.5,
+        "car_pct": 17.5,
+        "lcr_pct": 152,
+        "branches": 198,
+        "atms": 365,
+        "agents": 56000,
+        "digital_customers_m": 14.5,
+        "nim_pct": 8.2,
+        "cir_pct": 47,
+        "roe_pct": 22.1,
+        "roa_pct": 2.8
+      },
+      "Q3 2025": {
+        "assets_kes_b": 1245,
+        "deposits_kes_b": 1000,
+        "loans_kes_b": 775,
+        "pbt_kes_b": 28.5,
+        "npl_pct": 13.2,
+        "car_pct": 17.7,
+        "lcr_pct": 154,
+        "branches": 200,
+        "atms": 370,
+        "agents": 57500,
+        "digital_customers_m": 14.9,
+        "nim_pct": 8.3,
+        "cir_pct": 46,
+        "roe_pct": 22.5,
+        "roa_pct": 2.9
+      },
+      "Q4 2025": {
+        "assets_kes_b": 1265,
+        "deposits_kes_b": 1015,
+        "loans_kes_b": 790,
+        "pbt_kes_b": 30.5,
+        "npl_pct": 12.9,
+        "car_pct": 17.9,
+        "lcr_pct": 156,
+        "branches": 202,
+        "atms": 375,
+        "agents": 59000,
+        "digital_customers_m": 15.2,
+        "nim_pct": 8.4,
+        "cir_pct": 45,
+        "roe_pct": 22.9,
+        "roa_pct": 3.0
+      },
+      "Q1 2026": {
+        "assets_kes_b": 1280,
+        "deposits_kes_b": 1025,
+        "loans_kes_b": 800,
+        "pbt_kes_b": 8.0,
+        "npl_pct": 12.7,
+        "car_pct": 18.0,
+        "lcr_pct": 157,
+        "branches": 203,
+        "atms": 378,
+        "agents": 60000,
+        "digital_customers_m": 15.5,
+        "nim_pct": 8.5,
+        "cir_pct": 45,
+        "roe_pct": 23.0,
+        "roa_pct": 3.1
+      }
+    },
+    "Co-op": {
+      "Q2 2025": {
+        "assets_kes_b": 650,
+        "deposits_kes_b": 520,
+        "loans_kes_b": 420,
+        "pbt_kes_b": 15.5,
+        "npl_pct": 14.8,
+        "car_pct": 16.2,
+        "lcr_pct": 142,
+        "branches": 188,
+        "atms": 215,
+        "agents": 13000,
+        "digital_customers_m": 5.8,
+        "nim_pct": 7.0,
+        "cir_pct": 53,
+        "roe_pct": 18.2,
+        "roa_pct": 2.4
+      },
+      "Q3 2025": {
+        "assets_kes_b": 665,
+        "deposits_kes_b": 530,
+        "loans_kes_b": 430,
+        "pbt_kes_b": 16.8,
+        "npl_pct": 14.5,
+        "car_pct": 16.4,
+        "lcr_pct": 144,
+        "branches": 190,
+        "atms": 218,
+        "agents": 13500,
+        "digital_customers_m": 6.0,
+        "nim_pct": 7.1,
+        "cir_pct": 52,
+        "roe_pct": 18.5,
+        "roa_pct": 2.5
+      },
+      "Q4 2025": {
+        "assets_kes_b": 675,
+        "deposits_kes_b": 540,
+        "loans_kes_b": 438,
+        "pbt_kes_b": 18.0,
+        "npl_pct": 14.2,
+        "car_pct": 16.6,
+        "lcr_pct": 146,
+        "branches": 191,
+        "atms": 220,
+        "agents": 14000,
+        "digital_customers_m": 6.2,
+        "nim_pct": 7.2,
+        "cir_pct": 51,
+        "roe_pct": 18.8,
+        "roa_pct": 2.6
+      },
+      "Q1 2026": {
+        "assets_kes_b": 680,
+        "deposits_kes_b": 545,
+        "loans_kes_b": 442,
+        "pbt_kes_b": 4.8,
+        "npl_pct": 14.0,
+        "car_pct": 16.7,
+        "lcr_pct": 147,
+        "branches": 192,
+        "atms": 221,
+        "agents": 14200,
+        "digital_customers_m": 6.3,
+        "nim_pct": 7.3,
+        "cir_pct": 51,
+        "roe_pct": 19.0,
+        "roa_pct": 2.7
+      }
+    },
+    "NCBA": {
+      "Q2 2025": {
+        "assets_kes_b": 495,
+        "deposits_kes_b": 395,
+        "loans_kes_b": 285,
+        "pbt_kes_b": 11.8,
+        "npl_pct": 13.0,
+        "car_pct": 18.1,
+        "lcr_pct": 158,
+        "branches": 89,
+        "atms": 121,
+        "agents": 4500,
+        "digital_customers_m": 4.2,
+        "nim_pct": 6.8,
+        "cir_pct": 48,
+        "roe_pct": 17.5,
+        "roa_pct": 2.2
+      },
+      "Q3 2025": {
+        "assets_kes_b": 505,
+        "deposits_kes_b": 405,
+        "loans_kes_b": 290,
+        "pbt_kes_b": 12.5,
+        "npl_pct": 12.8,
+        "car_pct": 18.3,
+        "lcr_pct": 160,
+        "branches": 90,
+        "atms": 123,
+        "agents": 4700,
+        "digital_customers_m": 4.3,
+        "nim_pct": 6.9,
+        "cir_pct": 47,
+        "roe_pct": 17.8,
+        "roa_pct": 2.3
+      },
+      "Q4 2025": {
+        "assets_kes_b": 515,
+        "deposits_kes_b": 412,
+        "loans_kes_b": 295,
+        "pbt_kes_b": 13.5,
+        "npl_pct": 12.5,
+        "car_pct": 18.5,
+        "lcr_pct": 162,
+        "branches": 91,
+        "atms": 124,
+        "agents": 4900,
+        "digital_customers_m": 4.4,
+        "nim_pct": 7.0,
+        "cir_pct": 47,
+        "roe_pct": 18.0,
+        "roa_pct": 2.3
+      },
+      "Q1 2026": {
+        "assets_kes_b": 520,
+        "deposits_kes_b": 415,
+        "loans_kes_b": 298,
+        "pbt_kes_b": 3.6,
+        "npl_pct": 12.4,
+        "car_pct": 18.6,
+        "lcr_pct": 163,
+        "branches": 91,
+        "atms": 125,
+        "agents": 5000,
+        "digital_customers_m": 4.5,
+        "nim_pct": 7.1,
+        "cir_pct": 46,
+        "roe_pct": 18.2,
+        "roa_pct": 2.4
+      }
+    },
+    "Ecobank": {
+      "Q2 2025": {
+        "assets_kes_b": 178,
+        "deposits_kes_b": 142,
+        "loans_kes_b": 95,
+        "pbt_kes_b": 3.2,
+        "npl_pct": 11.8,
+        "car_pct": 18.5,
+        "lcr_pct": 165,
+        "branches": 35,
+        "atms": 42,
+        "agents": 2200,
+        "digital_customers_m": 0.45,
+        "nim_pct": 6.5,
+        "cir_pct": 56,
+        "roe_pct": 14.5,
+        "roa_pct": 1.9
+      },
+      "Q3 2025": {
+        "assets_kes_b": 182,
+        "deposits_kes_b": 145,
+        "loans_kes_b": 98,
+        "pbt_kes_b": 3.5,
+        "npl_pct": 11.5,
+        "car_pct": 18.7,
+        "lcr_pct": 167,
+        "branches": 35,
+        "atms": 43,
+        "agents": 2350,
+        "digital_customers_m": 0.48,
+        "nim_pct": 6.6,
+        "cir_pct": 55,
+        "roe_pct": 14.8,
+        "roa_pct": 2.0
+      },
+      "Q4 2025": {
+        "assets_kes_b": 188,
+        "deposits_kes_b": 150,
+        "loans_kes_b": 102,
+        "pbt_kes_b": 3.8,
+        "npl_pct": 11.2,
+        "car_pct": 18.9,
+        "lcr_pct": 169,
+        "branches": 35,
+        "atms": 43,
+        "agents": 2500,
+        "digital_customers_m": 0.5,
+        "nim_pct": 6.7,
+        "cir_pct": 54,
+        "roe_pct": 15.1,
+        "roa_pct": 2.0
+      },
+      "Q1 2026": {
+        "assets_kes_b": 195,
+        "deposits_kes_b": 156,
+        "loans_kes_b": 105,
+        "pbt_kes_b": 1.0,
+        "npl_pct": 11.1,
+        "car_pct": 19.0,
+        "lcr_pct": 170,
+        "branches": 35,
+        "atms": 43,
+        "agents": 2600,
+        "digital_customers_m": 0.52,
+        "nim_pct": 6.8,
+        "cir_pct": 54,
+        "roe_pct": 15.3,
+        "roa_pct": 2.1
+      }
+    }
+  },
+  "metric_metadata": {
+    "assets_kes_b": {
+      "label": "Total Assets (KES Bn)",
+      "higher_better": true,
+      "category": "Size"
+    },
+    "deposits_kes_b": {
+      "label": "Deposits (KES Bn)",
+      "higher_better": true,
+      "category": "Size"
+    },
+    "loans_kes_b": {
+      "label": "Loans (KES Bn)",
+      "higher_better": true,
+      "category": "Size"
+    },
+    "pbt_kes_b": {
+      "label": "PBT (KES Bn, quarter)",
+      "higher_better": true,
+      "category": "Profitability"
+    },
+    "npl_pct": {
+      "label": "NPL Ratio (%)",
+      "higher_better": false,
+      "category": "Asset Quality"
+    },
+    "car_pct": {
+      "label": "Capital Adequacy (%)",
+      "higher_better": true,
+      "category": "Capital"
+    },
+    "lcr_pct": {
+      "label": "LCR (%)",
+      "higher_better": true,
+      "category": "Liquidity"
+    },
+    "branches": {
+      "label": "Branches",
+      "higher_better": true,
+      "category": "Distribution"
+    },
+    "atms": {
+      "label": "ATMs",
+      "higher_better": true,
+      "category": "Distribution"
+    },
+    "agents": {
+      "label": "Agents",
+      "higher_better": true,
+      "category": "Distribution"
+    },
+    "digital_customers_m": {
+      "label": "Digital Customers (Mn)",
+      "higher_better": true,
+      "category": "Digital"
+    },
+    "nim_pct": {
+      "label": "Net Interest Margin (%)",
+      "higher_better": true,
+      "category": "Profitability"
+    },
+    "cir_pct": {
+      "label": "Cost-Income Ratio (%)",
+      "higher_better": false,
+      "category": "Efficiency"
+    },
+    "roe_pct": {
+      "label": "Return on Equity (%)",
+      "higher_better": true,
+      "category": "Profitability"
+    },
+    "roa_pct": {
+      "label": "Return on Assets (%)",
+      "higher_better": true,
+      "category": "Profitability"
+    }
+  },
+  "strategic_themes": [
+    {
+      "theme": "Digital scale gap",
+      "leader": "Equity",
+      "leader_value": "15.5M digital customers",
+      "our_value": "0.52M",
+      "gap_pct": 96.6,
+      "implication": "Ecobank captures <0.4% of the addressable digital customer base. Catching up to even Co-op (6.3M) would require 12x growth \u2014 likely via acquisition/partnership rather than organic."
+    },
+    {
+      "theme": "Asset quality lead",
+      "leader": "Ecobank",
+      "leader_value": "11.1% NPL",
+      "our_value": "11.1%",
+      "gap_pct": 0,
+      "implication": "Ecobank has the lowest NPL ratio in the Tier-1 group. This is a credible differentiator with corporate clients seeking conservative lending partners."
+    },
+    {
+      "theme": "Branch network gap",
+      "leader": "KCB",
+      "leader_value": "223 branches",
+      "our_value": "35",
+      "gap_pct": 84.3,
+      "implication": "Branch presence is 6x smaller than KCB. The strategic question is whether to compete on branches (capital-heavy) or pivot to digital-only \u2014 agency banking has 2,600 agents which is meaningful but still 23x smaller than Equity's 60,000."
+    },
+    {
+      "theme": "Profitability ratio strength",
+      "leader": "Equity",
+      "leader_value": "23.0% ROE",
+      "our_value": "15.3%",
+      "gap_pct": 33.5,
+      "implication": "ROE gap of 7.7 percentage points vs market leader. Driving this gap closure requires either margin expansion (NIM is already 6.8%, capacity exists) or improved capital deployment (CAR at 19.0% suggests excess capital."
+    },
+    {
+      "theme": "Cost efficiency improvement runway",
+      "leader": "Equity",
+      "leader_value": "45% CIR",
+      "our_value": "54%",
+      "gap_pct": 16.7,
+      "implication": "CIR of 54% is 9pp behind Equity. Each 1pp improvement on KES 11.5B revenue \u2248 KES 115M annual savings. Targeting 49% by 2027 (KCB's level) would deliver KES 575M annual value."
+    }
+  ]
+}

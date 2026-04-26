@@ -989,5 +989,45 @@
       "_it_grp",
       "_exec_grp"
     ]
+  },
+  "benchmarking": {
+    "hardcoded": {
+      "data_source": "CBK Bank Supervision Annual Report",
+      "tier1_definition": "CBK Tier-1 = >5% market share by deposits",
+      "peer_set": [
+        "KCB",
+        "Equity",
+        "Co-op",
+        "NCBA",
+        "Stanbic",
+        "Absa",
+        "DTB",
+        "I&M"
+      ],
+      "metric_count": 15,
+      "categories": [
+        "Size",
+        "Profitability",
+        "Asset Quality",
+        "Capital",
+        "Liquidity",
+        "Distribution",
+        "Digital",
+        "Efficiency"
+      ]
+    },
+    "configurable": {
+      "refresh_frequency_days": 90,
+      "alert_threshold_gap_pct": 30,
+      "highlight_our_bank": true,
+      "show_full_peer_set": false,
+      "report_owner": "Head of Strategy",
+      "review_cadence": "Quarterly"
+    },
+    "bsc_kpis": [
+      "K112",
+      "K113"
+    ],
+    "dept": "Strategy"
   }
 }
