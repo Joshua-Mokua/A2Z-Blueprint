@@ -14,6 +14,9 @@ import json
 from pathlib import Path
 from datetime import datetime
 from utils.core import audit_log
+from utils.admin_registry import get_modules_by_category, get_registered_modules, CATEGORIES
+from pages._admin_module_renderer import render_module_config_form
+import pages._admin_module_specs  # triggers registration on import
 
 DATA = Path(__file__).parent.parent / "data"
 
@@ -171,155 +174,217 @@ def _render_configurable_field(field_name, field_value, key_prefix):
 def render_module_config_centre(tab, uname: str, is_admin: bool):
     """Main render function — called from pages/7_admin.py."""
     with tab:
-        if not is_admin:
-            st.warning("🔒 Module Configuration Centre is admin-only.")
-            return
+        # ── Sub-tabs: governance vs registered configs ──────────
+        sub_tabs = st.tabs([
+            "📋 Module governance (regulatory)",
+            "⚙️ Module configs (registered)",
+        ])
+        with sub_tabs[0]:
+            if not is_admin:
+                st.warning("🔒 Module Configuration Centre is admin-only.")
+                return
 
-        st.markdown(
-            "<div style='padding:16px 0 4px'>"
-            "<span style='font-size:22px;font-weight:800'>🔧 Module Configuration Centre</span>"
-            "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
-            "Govern all 19 modules from one place</span></div>",
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                "<div style='padding:16px 0 4px'>"
+                "<span style='font-size:22px;font-weight:800'>🔧 Module Configuration Centre</span>"
+                "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+                "Govern all 19 modules from one place</span></div>",
+                unsafe_allow_html=True,
+            )
 
-        cfg = _load_config()
+            cfg = _load_config()
 
-        # ── Summary metrics ───────────────────────────────────────
-        n_modules     = len(cfg)
-        n_hardcoded   = sum(len(v.get("hardcoded",{}))    for v in cfg.values())
-        n_configurable= sum(len(v.get("configurable",{})) for v in cfg.values())
-        all_kpis = set()
-        for k, m in MODULE_META.items():
-            for kpi in m.get("kpis",[]): all_kpis.add(kpi)
+            # ── Summary metrics ───────────────────────────────────────
+            n_modules     = len(cfg)
+            n_hardcoded   = sum(len(v.get("hardcoded",{}))    for v in cfg.values())
+            n_configurable= sum(len(v.get("configurable",{})) for v in cfg.values())
+            all_kpis = set()
+            for k, m in MODULE_META.items():
+                for kpi in m.get("kpis",[]): all_kpis.add(kpi)
 
-        m1,m2,m3,m4 = st.columns(4)
-        m1.metric("Modules governed",      n_modules)
-        m2.metric("Hardcoded settings",    n_hardcoded, help="CBK-mandated or vendor-fixed — cannot be edited")
-        m3.metric("Configurable settings", n_configurable, help="Bank-specific thresholds — editable here")
-        m4.metric("KPIs covered",          len(all_kpis))
+            m1,m2,m3,m4 = st.columns(4)
+            m1.metric("Modules governed",      n_modules)
+            m2.metric("Hardcoded settings",    n_hardcoded, help="CBK-mandated or vendor-fixed — cannot be edited")
+            m3.metric("Configurable settings", n_configurable, help="Bank-specific thresholds — editable here")
+            m4.metric("KPIs covered",          len(all_kpis))
 
-        st.caption(
-            "ℹ️ **Hardcoded** items reflect CBK Prudential Guidelines, Basel III, "
-            "Data Protection Act 2019, ISO 20022 standards, or Oracle FLEXCUBE specifications. "
-            "They cannot be changed because doing so would breach regulation or void vendor warranty. "
-            "**Configurable** items are bank-specific operational thresholds that the admin can tune."
-        )
-        st.markdown("---")
+            st.caption(
+                "ℹ️ **Hardcoded** items reflect CBK Prudential Guidelines, Basel III, "
+                "Data Protection Act 2019, ISO 20022 standards, or Oracle FLEXCUBE specifications. "
+                "They cannot be changed because doing so would breach regulation or void vendor warranty. "
+                "**Configurable** items are bank-specific operational thresholds that the admin can tune."
+            )
+            st.markdown("---")
 
-        # ── Search filter ─────────────────────────────────────────
-        search = st.text_input("🔎 Filter modules (by name, dept, or KPI)", "", key="mc_search")
-        search_lower = search.lower().strip()
+            # ── Search filter ─────────────────────────────────────────
+            search = st.text_input("🔎 Filter modules (by name, dept, or KPI)", "", key="mc_search")
+            search_lower = search.lower().strip()
 
-        def _matches_search(mod_key):
-            if not search_lower: return True
-            meta = MODULE_META.get(mod_key, {})
-            haystack = " ".join([
-                mod_key,
-                meta.get("name",""),
-                meta.get("dept",""),
-                " ".join(meta.get("kpis",[])),
-            ]).lower()
-            return search_lower in haystack
+            def _matches_search(mod_key):
+                if not search_lower: return True
+                meta = MODULE_META.get(mod_key, {})
+                haystack = " ".join([
+                    mod_key,
+                    meta.get("name",""),
+                    meta.get("dept",""),
+                    " ".join(meta.get("kpis",[])),
+                ]).lower()
+                return search_lower in haystack
 
-        # ── Phase-grouped sections ────────────────────────────────
-        for phase_label, mod_keys in PHASES.items():
-            visible_mods = [k for k in mod_keys if k in cfg and _matches_search(k)]
-            if not visible_mods: continue
+            # ── Phase-grouped sections ────────────────────────────────
+            for phase_label, mod_keys in PHASES.items():
+                visible_mods = [k for k in mod_keys if k in cfg and _matches_search(k)]
+                if not visible_mods: continue
 
-            with st.expander(f"{phase_label} ({len(visible_mods)} modules)", expanded=("Phase 1" in phase_label or "FLEXCUBE" in phase_label)):
-                for mod_key in visible_mods:
-                    meta     = MODULE_META.get(mod_key, {})
-                    mod_cfg  = cfg.get(mod_key, {})
-                    hardcoded     = mod_cfg.get("hardcoded",     {})
-                    configurable  = mod_cfg.get("configurable", {})
-                    bsc_kpis      = mod_cfg.get("bsc_kpis", meta.get("kpis",[]))
+                with st.expander(f"{phase_label} ({len(visible_mods)} modules)", expanded=("Phase 1" in phase_label or "FLEXCUBE" in phase_label)):
+                    for mod_key in visible_mods:
+                        meta     = MODULE_META.get(mod_key, {})
+                        mod_cfg  = cfg.get(mod_key, {})
+                        hardcoded     = mod_cfg.get("hardcoded",     {})
+                        configurable  = mod_cfg.get("configurable", {})
+                        bsc_kpis      = mod_cfg.get("bsc_kpis", meta.get("kpis",[]))
 
-                    # Module header — built piece by piece to avoid f-string newline issues
-                    icon = meta.get("icon","📁")
-                    nm   = meta.get("name", mod_key)
-                    dept = meta.get("dept","—")
-                    page = meta.get("page","—")
+                        # Module header — built piece by piece to avoid f-string newline issues
+                        icon = meta.get("icon","📁")
+                        nm   = meta.get("name", mod_key)
+                        dept = meta.get("dept","—")
+                        page = meta.get("page","—")
 
-                    header_html = (
-                        f"### {icon} {nm}"
-                        + chr(10)
-                        + f"<small>"
-                        + f"<b>Module key:</b> <code>{mod_key}</code> &nbsp;·&nbsp; "
-                        + f"<b>Page:</b> <code>{page}</code> &nbsp;·&nbsp; "
-                        + f"<b>Department:</b> {dept} &nbsp;·&nbsp; "
-                        + f"<b>Drives KPIs:</b> {', '.join(bsc_kpis) if bsc_kpis else '—'}"
-                        + f"</small>"
+                        header_html = (
+                            f"### {icon} {nm}"
+                            + chr(10)
+                            + f"<small>"
+                            + f"<b>Module key:</b> <code>{mod_key}</code> &nbsp;·&nbsp; "
+                            + f"<b>Page:</b> <code>{page}</code> &nbsp;·&nbsp; "
+                            + f"<b>Department:</b> {dept} &nbsp;·&nbsp; "
+                            + f"<b>Drives KPIs:</b> {', '.join(bsc_kpis) if bsc_kpis else '—'}"
+                            + f"</small>"
+                        )
+                        st.markdown(header_html, unsafe_allow_html=True)
+
+                        col1, col2 = st.columns([1,1])
+
+                        # ── Hardcoded (read-only) ──────────────────────
+                        with col1:
+                            st.markdown("**🔒 Hardcoded (read-only)**")
+                            if hardcoded:
+                                hc_rows = [
+                                    {"Setting": k.replace("_"," ").title(),
+                                     "Value":   _format_value_for_display(v)[:80]}
+                                    for k, v in hardcoded.items()
+                                ]
+                                st.dataframe(pd.DataFrame(hc_rows), use_container_width=True, hide_index=True, height=min(35*(len(hc_rows)+1)+3, 250))
+                                st.caption(f"{len(hardcoded)} regulatory/vendor-fixed settings")
+                            else:
+                                st.caption("No hardcoded settings.")
+
+                        # ── Configurable (editable) ────────────────────
+                        with col2:
+                            st.markdown("**⚙️ Configurable**")
+                            if configurable:
+                                updated = {}
+                                for field_name, field_value in configurable.items():
+                                    new_val = _render_configurable_field(
+                                        field_name, field_value,
+                                        key_prefix=f"mc_{mod_key}",
+                                    )
+                                    updated[field_name] = new_val
+
+                                save_col1, save_col2 = st.columns([1,3])
+                                if save_col1.button("💾 Save", key=f"mc_save_{mod_key}", type="primary"):
+                                    changes = {k: (configurable[k], updated[k])
+                                               for k in updated if updated[k] != configurable.get(k)}
+                                    if changes:
+                                        cfg[mod_key]["configurable"] = updated
+                                        cfg[mod_key]["last_updated"]  = datetime.utcnow().isoformat() + "Z"
+                                        cfg[mod_key]["last_updated_by"]= uname
+                                        _save_config(cfg)
+                                        audit_log("MODULE_CONFIG_UPDATED", uname,
+                                                 f"{mod_key}: {len(changes)} field(s) changed: " + ", ".join(changes.keys()))
+                                        st.cache_data.clear()
+                                        save_col2.success(f"✅ Saved {len(changes)} change(s)")
+                                        st.rerun()
+                                    else:
+                                        save_col2.info("No changes to save.")
+                            else:
+                                st.caption("No configurable settings.")
+
+                        if mod_cfg.get("last_updated"):
+                            st.caption(f"Last updated: {mod_cfg['last_updated'][:19]} by {mod_cfg.get('last_updated_by','—')}")
+
+                        st.markdown("---")
+
+            # ── Audit / Export footer ─────────────────────────────────
+            st.markdown("### 📋 Configuration Export & Audit")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("📥 Download full config as JSON", key="mc_export"):
+                    json_str = json.dumps(cfg, indent=2)
+                    st.download_button(
+                        label="⬇️ Click to download module_config.json",
+                        data=json_str,
+                        file_name=f"module_config_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json",
+                        mime="application/json",
+                        key="mc_dl",
                     )
-                    st.markdown(header_html, unsafe_allow_html=True)
+            with c2:
+                st.caption(
+                    f"Configuration last loaded at {datetime.now().strftime('%Y-%m-%d %H:%M')}. "
+                    f"All changes are audited in the Audit Log tab."
+                )
+        with sub_tabs[1]:
+            _render_registered_configs(uname)
 
-                    col1, col2 = st.columns([1,1])
+def _render_registered_configs(uname: str) -> None:
+    """Render the registered module configs from the admin registry."""
+    by_category = get_modules_by_category()
 
-                    # ── Hardcoded (read-only) ──────────────────────
-                    with col1:
-                        st.markdown("**🔒 Hardcoded (read-only)**")
-                        if hardcoded:
-                            hc_rows = [
-                                {"Setting": k.replace("_"," ").title(),
-                                 "Value":   _format_value_for_display(v)[:80]}
-                                for k, v in hardcoded.items()
-                            ]
-                            st.dataframe(pd.DataFrame(hc_rows), use_container_width=True, hide_index=True, height=min(35*(len(hc_rows)+1)+3, 250))
-                            st.caption(f"{len(hardcoded)} regulatory/vendor-fixed settings")
-                        else:
-                            st.caption("No hardcoded settings.")
+    if not by_category:
+        st.info("No modules registered. Add specs in pages/_admin_module_specs.py.")
+        return
 
-                    # ── Configurable (editable) ────────────────────
-                    with col2:
-                        st.markdown("**⚙️ Configurable**")
-                        if configurable:
-                            updated = {}
-                            for field_name, field_value in configurable.items():
-                                new_val = _render_configurable_field(
-                                    field_name, field_value,
-                                    key_prefix=f"mc_{mod_key}",
-                                )
-                                updated[field_name] = new_val
+    # Summary metrics
+    all_modules = get_registered_modules()
+    n_total = len(all_modules)
+    n_categories = len(by_category)
+    n_sections = sum(len(m.get("tabs", [])) for m in all_modules.values())
 
-                            save_col1, save_col2 = st.columns([1,3])
-                            if save_col1.button("💾 Save", key=f"mc_save_{mod_key}", type="primary"):
-                                changes = {k: (configurable[k], updated[k])
-                                           for k in updated if updated[k] != configurable.get(k)}
-                                if changes:
-                                    cfg[mod_key]["configurable"] = updated
-                                    cfg[mod_key]["last_updated"]  = datetime.utcnow().isoformat() + "Z"
-                                    cfg[mod_key]["last_updated_by"]= uname
-                                    _save_config(cfg)
-                                    audit_log("MODULE_CONFIG_UPDATED", uname,
-                                             f"{mod_key}: {len(changes)} field(s) changed: " + ", ".join(changes.keys()))
-                                    st.cache_data.clear()
-                                    save_col2.success(f"✅ Saved {len(changes)} change(s)")
-                                    st.rerun()
-                                else:
-                                    save_col2.info("No changes to save.")
-                        else:
-                            st.caption("No configurable settings.")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Registered modules",   n_total)
+    m2.metric("Categories",           n_categories)
+    m3.metric("Total config sections", n_sections)
 
-                    if mod_cfg.get("last_updated"):
-                        st.caption(f"Last updated: {mod_cfg['last_updated'][:19]} by {mod_cfg.get('last_updated_by','—')}")
+    st.caption(
+        "These modules use the plug-in pattern: register a spec in "
+        "`pages/_admin_module_specs.py` and the form renders automatically. "
+        "See `docs/ADMIN_CONVENTIONS.md` for the convention."
+    )
+    st.markdown("---")
 
+    # Search filter
+    search = st.text_input("🔎 Filter (by name, module ID, or category)",
+                            "", key="reg_search")
+    search_lower = search.lower().strip()
+
+    # Render by category
+    for cat_id in sorted(by_category.keys(), key=lambda c: CATEGORIES.get(c, c)):
+        cat_label = CATEGORIES.get(cat_id, cat_id)
+        modules = by_category[cat_id]
+
+        # Apply search filter
+        if search_lower:
+            modules = [
+                m for m in modules
+                if search_lower in m.get("title", "").lower()
+                or search_lower in m.get("module_id", "").lower()
+                or search_lower in cat_id.lower()
+            ]
+        if not modules:
+            continue
+
+        with st.expander(f"{cat_label} ({len(modules)} modules)", expanded=True):
+            for spec in modules:
+                with st.container():
+                    render_module_config_form(spec, uname)
                     st.markdown("---")
 
-        # ── Audit / Export footer ─────────────────────────────────
-        st.markdown("### 📋 Configuration Export & Audit")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("📥 Download full config as JSON", key="mc_export"):
-                json_str = json.dumps(cfg, indent=2)
-                st.download_button(
-                    label="⬇️ Click to download module_config.json",
-                    data=json_str,
-                    file_name=f"module_config_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json",
-                    mime="application/json",
-                    key="mc_dl",
-                )
-        with c2:
-            st.caption(
-                f"Configuration last loaded at {datetime.now().strftime('%Y-%m-%d %H:%M')}. "
-                f"All changes are audited in the Audit Log tab."
-            )

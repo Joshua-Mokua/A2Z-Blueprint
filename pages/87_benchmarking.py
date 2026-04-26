@@ -59,12 +59,46 @@ c5.metric("Digital customers", f"{qmetrics.get('digital_customers_m','—')}M")
 
 st.markdown("---")
 
+# ─── Region selector — domestic vs international peer set ────────────────
+intl_data = bm.get("international_quarterly_metrics", {})
+intl_banks = list(intl_data.keys())
+intl_themes = bm.get("international_themes", [])
+
+if intl_banks:
+    region = st.radio(
+        "Peer set",
+        options=["🇰🇪 Kenyan Tier-1", "🌍 International Tier-1", "🔀 Both"],
+        horizontal=True,
+        key="bm_region",
+        help="Kenyan: KCB, Equity, Co-op, NCBA, Ecobank. International: JPMorgan, HSBC, Citi, StanChart, DBS."
+    )
+else:
+    region = "🇰🇪 Kenyan Tier-1"
+
+# Resolve which banks to show based on region
+if region == "🇰🇪 Kenyan Tier-1":
+    active_metrics = bm.get("quarterly_metrics", {})
+    active_banks = banks
+    region_note = "Comparing Ecobank to Kenyan Tier-1 peers."
+elif region == "🌍 International Tier-1":
+    active_metrics = intl_data
+    active_banks = intl_banks
+    region_note = "International Tier-1 banks — JPMorgan, HSBC, Citi, Standard Chartered, DBS. Note: absolute size in USD; ratios directly comparable."
+else:
+    active_metrics = {**bm.get("quarterly_metrics", {}), **intl_data}
+    active_banks = banks + intl_banks
+    region_note = "All peers combined. Size metrics not comparable across currencies."
+
+st.caption(region_note)
+st.markdown("---")
+
 tabs = st.tabs([
     "📊 Dashboard",
     "📈 Quarterly Trends",
     "🔢 Comparison Matrix",
     "🎯 Gap-vs-Leader",
-    "💡 Strategic Themes",
+    "💡 Domestic Themes",
+    "🌍 International Best Practices",
 ])
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -78,8 +112,8 @@ with tabs[0]:
     for metric_key, meta in metrics_md.items():
         higher = meta.get("higher_better", True)
         bank_values = []
-        for bank in banks:
-            v = bm["quarterly_metrics"].get(bank, {}).get(latest_q, {}).get(metric_key)
+        for bank in active_banks:
+            v = active_metrics.get(bank, {}).get(latest_q, {}).get(metric_key)
             if v is not None:
                 bank_values.append((bank, v))
 
@@ -148,9 +182,9 @@ with tabs[1]:
 
     # Build the trend chart
     trend_rows = []
-    for bank in banks:
+    for bank in active_banks:
         for q in quarters:
-            v = bm["quarterly_metrics"].get(bank, {}).get(q, {}).get(chosen_key)
+            v = active_metrics.get(bank, {}).get(q, {}).get(chosen_key)
             if v is not None:
                 trend_rows.append({"Bank": bank, "Quarter": q, "Value": v})
 
@@ -187,8 +221,8 @@ with tabs[2]:
     matrix_rows = []
     for metric_key, meta in metrics_md.items():
         row = {"Category": meta.get("category", ""), "Metric": meta.get("label", metric_key)}
-        for bank in banks:
-            v = bm["quarterly_metrics"].get(bank, {}).get(chosen_q, {}).get(metric_key)
+        for bank in active_banks:
+            v = active_metrics.get(bank, {}).get(chosen_q, {}).get(metric_key)
             row[bank] = v
         matrix_rows.append(row)
 
@@ -237,8 +271,8 @@ with tabs[3]:
     for metric_key, meta in metrics_md.items():
         higher = meta.get("higher_better", True)
         bank_values = []
-        for bank in banks:
-            v = bm["quarterly_metrics"].get(bank, {}).get(latest_q, {}).get(metric_key)
+        for bank in active_banks:
+            v = active_metrics.get(bank, {}).get(latest_q, {}).get(metric_key)
             if v is not None:
                 bank_values.append((bank, v))
         if not bank_values:
@@ -311,6 +345,69 @@ with tabs[4]:
             c3.metric("Our value",    theme.get("our_value",""))
 
             st.markdown(f"**Implication:** {theme.get('implication','')}")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Tab 6 — INTERNATIONAL BEST PRACTICES
+# ═══════════════════════════════════════════════════════════════════════════
+with tabs[5]:
+    st.markdown("### What international Tier-1 banks do that we should learn from")
+    st.caption(
+        "Five themes from JPMorgan, HSBC, Citi, Standard Chartered, and DBS. "
+        "Each links a quantified leader metric to a concrete Ecobank action."
+    )
+
+    if not intl_themes:
+        st.info("No international themes loaded. Add international_themes to tier1_benchmarking.json.")
+    else:
+        for theme in intl_themes:
+            with st.expander(f"🏆 **{theme.get('theme','')}** — champion: {theme.get('champion','')}", expanded=False):
+                c1, c2 = st.columns([1, 3])
+                c1.metric("Champion", theme.get("champion", "—"))
+                c2.markdown(f"**Champion benchmark:** {theme.get('champion_value', '')}")
+
+                st.markdown("**What they did:**")
+                st.markdown(theme.get("what_they_did", ""))
+
+                st.markdown("**Ecobank takeaway:**")
+                st.info(theme.get("ecobank_takeaway", ""))
+
+    # Quick reference panel — comparable ratios at a glance
+    if intl_banks and active_banks:
+        st.markdown("---")
+        st.markdown("**Cross-region ratio comparison** (latest quarter, comparable metrics only)")
+
+        comparable_metrics = bm.get("international_metadata", {}).get("metric_categories_comparable", [])
+        all_relevant_banks = list(bm.get("quarterly_metrics", {}).keys()) + intl_banks
+        all_data = {**bm.get("quarterly_metrics", {}), **intl_data}
+
+        rows = []
+        for bank in all_relevant_banks:
+            row = {"Bank": bank}
+            metrics = all_data.get(bank, {}).get(latest_q, {})
+            for m in comparable_metrics:
+                if m in metrics_md:
+                    row[metrics_md[m].get("label", m)] = metrics.get(m, "—")
+            rows.append(row)
+
+        if rows:
+            df_cross = pd.DataFrame(rows)
+
+            def highlight_ecobank(row):
+                if row["Bank"] == our_bank:
+                    return ["background-color: #fff3cd; color: #856404; font-weight: 600"] * len(row)
+                return [""] * len(row)
+
+            styled = df_cross.style.apply(highlight_ecobank, axis=1)
+            # Format numeric columns to 2 decimals
+            for col in df_cross.columns:
+                if col != "Bank" and df_cross[col].dtype in ("float64", "int64"):
+                    styled = styled.format({col: "{:.2f}"})
+            st.dataframe(styled, use_container_width=True, hide_index=True)
+
+            st.caption(
+                "🟡 Ecobank highlighted. Only ratio metrics shown (NPL%, ROE%, NIM%, etc.) — "
+                "absolute size metrics aren't comparable due to currency differences."
+            )
 
 # Audit page view
 audit_log("BENCHMARKING_VIEWED", uname, f"Tier-1 benchmarking dashboard viewed at {datetime.utcnow().isoformat()}")
