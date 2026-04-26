@@ -1,6 +1,7 @@
 """pages/7_admin.py — Administration: users, permissions, reporting lines, audit."""
 import streamlit as st
 from pages._admin_sprint import render_sprint_config
+from pages._admin_module_config import render_module_config_centre
 from pages._admin_org import (
     render_dept_manager, render_branch_manager,
     render_module_assignment, render_roles_manager,
@@ -75,6 +76,7 @@ tabs = st.tabs([
     "⚙️ Thresholds",
     "🏷️ Nav Labels",
     "🚀 Sprint Modules",
+    "🔧 Module Config Centre",
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -3697,6 +3699,7 @@ if is_admin:
     render_thresholds(tabs[23], uname)
     render_nav_labels(tabs[24], uname)
     render_sprint_config(tabs[25], uname)
+    render_module_config_centre(tabs[26], uname, is_admin)
 
 # ── IP Protection & System Fingerprint ───────────────────────────
 if is_admin:
