@@ -2,6 +2,7 @@
 CIR analysis, SBU profitability, branch P&L, staff productivity, trend analysis.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -29,7 +30,7 @@ st.markdown(
 @st.cache_data(ttl=60, show_spinner=False)
 def _load():
     p = DATA / "opex_data.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 opex = _load()
 if not opex:

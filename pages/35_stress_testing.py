@@ -3,6 +3,7 @@ Scenario-based stress testing: rate shocks, FX movements, credit crunch.
 CBK ICAAP requirements. AI generates executive narrative.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -23,7 +24,7 @@ is_exec  = any(x in role for x in ("Chief","Director","Managing","Head","CFO","R
 @st.cache_data(ttl=60, show_spinner=False)
 def _load(fname):
     p = DATA / fname
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 scenarios = _load("stress_scenarios.json")
 ifrs_sum  = _load("ifrs9_summary.json")

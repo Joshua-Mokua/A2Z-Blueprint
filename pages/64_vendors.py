@@ -2,6 +2,7 @@
 Vendor onboarding, KRA compliance, performance ratings, contract linkage.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -37,7 +38,7 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load():
     p = DATA / "vendor_register.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 vendors = _load()
 active     = [v for v in vendors if v.get("status")=="Active"]

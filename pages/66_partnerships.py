@@ -3,6 +3,7 @@ Full commercial relationship management: MOUs, referrals, events, beyond banking
 All categories configurable via Admin. Targets, penetration and ROI tracked per initiative.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import random
 import pandas as pd
 import json
@@ -45,12 +46,12 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _cfg():
     p = DATA / "partnership_config.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 @st.cache_data(ttl=30)
 def _mous():
     p = DATA / "partnerships_mous.json"
-    raw = json.loads(p.read_text()) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     # Normalise Decimal from PostgreSQL
     for m in raw:
         for k,v in m.items():
@@ -60,7 +61,7 @@ def _mous():
 @st.cache_data(ttl=30)
 def _refs():
     p = DATA / "referrals.json"
-    raw = json.loads(p.read_text()) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     for r in raw:
         for k,v in r.items():
             if isinstance(v, Decimal): r[k] = float(v)
@@ -69,7 +70,7 @@ def _refs():
 @st.cache_data(ttl=30)
 def _events():
     p = DATA / "sponsored_events.json"
-    raw = json.loads(p.read_text()) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     for e in raw:
         for k,v in e.items():
             if isinstance(v, Decimal): e[k] = float(v)

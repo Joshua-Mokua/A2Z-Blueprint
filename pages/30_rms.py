@@ -2,6 +2,7 @@
 CBS-to-GL reconciliation, nostro accounts, suspense clearing, inter-branch.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -31,7 +32,7 @@ is_mgr     = any(x in role for x in ("Manager","Director","Chief","Head"))
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_rms():
     p = DATA / "rms_reconciliations.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 records = _load_rms()
 

@@ -3,6 +3,7 @@ Rule-based credit deterioration triggers: missed payments, covenant breach,
 sector stress. Red/Amber/Yellow staging. RM action tracking.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -41,7 +42,7 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"ews_cases.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 cases = _load()
 stage_ct = Counter(c["stage"] for c in cases)

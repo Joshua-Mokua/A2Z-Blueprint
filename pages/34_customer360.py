@@ -3,6 +3,7 @@ Full customer view: products, propensity scores, churn risk,
 next best action, relationship history, digital engagement.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -31,7 +32,7 @@ is_admin = ud.get("is_admin",False)
 def _load(fname):
     p = DATA / fname
     if not p.exists(): return {}
-    d = json.loads(p.read_text())
+    d = a2z_db.load_json(p)
     return d
 
 ci_raw   = _load("customer_intelligence.json")

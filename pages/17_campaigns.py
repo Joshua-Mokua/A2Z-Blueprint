@@ -1,5 +1,6 @@
 """pages/17_campaigns.py — Campaign Management Module."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -62,7 +63,7 @@ class CampaignManager:
         except: return []
 
     def _save(self):
-        self.file.write_text(json.dumps(self.campaigns, indent=2, default=str))
+        self.a2z_db.save_json(file, self.campaigns)
 
     def create(self, data: dict) -> dict:
         camp_id = f"CAMP{len(self.campaigns)+1:04d}"

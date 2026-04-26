@@ -4,6 +4,7 @@ Hardcoded: channel types (Physical/Digital), core channel list
 Configurable: SLA targets per channel, adoption targets, active/inactive channels
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -33,13 +34,13 @@ def _bsc_trigger(username, kpi=""):
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"channels_data.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     if not mc.exists(): return {}
-    return json.loads(mc.read_text(encoding="utf-8")).get("channels",{})
+    return a2z_db.load_json(mc).get("channels",{})
 
 def _save(data):
     (DATA/"channels_data.json").write_text(json.dumps(data,indent=2))

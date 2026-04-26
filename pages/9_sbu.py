@@ -1,5 +1,6 @@
 """pages/9_sbu.py — SBU Performance: branch P&L, profitability analysis, turnaround."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -629,7 +630,7 @@ with sbu_tabs[4]:
     def _save_action_plans():
         """Persist action plans to disk."""
         try:
-            _ap_file.write_text(json.dumps(action_plans, indent=2, default=str))
+            a2z_db.save_json(_ap_file, action_plans)
         except: pass
 
     # Branch selector

@@ -41,7 +41,7 @@ def _save(data):
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
-    return json.loads(mc.read_text(encoding="utf-8")).get("data_protection",{}) if mc.exists() else {}
+    return (a2z_db.load_json(mc, default={}) or {}).get("data_protection",{}) if mc.exists() else {}
 
 
 records  = _load()

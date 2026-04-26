@@ -28,12 +28,12 @@ def _bsc_trigger(username, kpi=""):
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"consent_register.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 @st.cache_data(ttl=60)
 def _cfg():
     p = DATA/"consent_config.json"
-    if p.exists(): return json.loads(p.read_text())
+    if p.exists(): return a2z_db.load_json(p)
     return {
         "consent_types":[
             {"id":"MARKETING","name":"Marketing Communications","duration_days":365,"active":True},

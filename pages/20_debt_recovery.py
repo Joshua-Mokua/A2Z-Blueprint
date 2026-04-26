@@ -1,5 +1,6 @@
 """pages/20_debt_recovery.py — Debt Recovery System."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -62,7 +63,7 @@ def load_drs():
     p = DATA / "debt_recovery.json"
     if not p.exists():
         return []
-    raw = json.loads(p.read_text())
+    raw = a2z_db.load_json(p)
     # Handle both plain list and {"cases": [...]} dict formats
     if isinstance(raw, list):
         return raw

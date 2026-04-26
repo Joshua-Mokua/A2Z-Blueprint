@@ -1,5 +1,6 @@
 """pages/57_deal_room.py — Deal Room and Term Sheet Engine."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -33,7 +34,7 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load():
     p = DATA / "deal_rooms.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 deals  = _load()
 active = [d for d in deals if d.get("term_sheet_status") != "Signed"]

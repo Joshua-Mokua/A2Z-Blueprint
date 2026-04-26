@@ -3,6 +3,7 @@ Structured workflow for staff with BSC below 2.5.
 Targets, check-ins, HR tracking, outcome recording.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -41,7 +42,7 @@ st.info("PIP is a structured performance support programme. It is not punitive â
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"pip_cases.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 pips = _load()
 status_ct = Counter(p["status"] for p in pips)

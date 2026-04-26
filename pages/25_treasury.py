@@ -3,6 +3,7 @@ FD ratification, FX dealing, Money Market, Government Securities,
 Dealing Blotter, Nostro, ALM/Liquidity ratios, Limits & compliance.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -37,14 +38,14 @@ is_mgr      = any(x in role for x in ("Manager","Director","Chief","Head"))
 @st.cache_data(ttl=60, show_spinner=False)
 def _load(fname):
     p = DATA / fname
-    return json.loads(p.read_text()) if p.exists() else ([] if "json" in fname else {})
+    return a2z_db.load_json(p) if p.exists() else ([] if "json" in fname else {})
 
 # Load config
 @st.cache_data(ttl=30, show_spinner=False)
 def _cfg():
     p = DATA / "proposition_config.json"
     if not p.exists(): return {}
-    return json.loads(p.read_text()).get("treasury_config", {})
+    return a2z_db.load_json(p).get("treasury_config", {})
 
 tcfg = _cfg()
 cbk_rate   = tcfg.get("cbk_rate", 13.00)

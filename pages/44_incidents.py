@@ -2,6 +2,7 @@
 P1-P4 incidents, SLA tracking, root cause, CBK-reportable events.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -37,7 +38,7 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"incidents.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 incidents = _load()
 priority_ct = Counter(i["priority"] for i in incidents)

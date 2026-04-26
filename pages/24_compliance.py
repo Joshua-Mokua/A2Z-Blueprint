@@ -1,5 +1,6 @@
 """pages/24_compliance.py — Compliance Management: PEP, AML, KYC, sanctions."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -15,7 +16,7 @@ um, ud, uname, *_ = load_shared_state()
 @st.cache_data(ttl=60, show_spinner=False)
 def _load():
     f = DATA / "compliance_cases.json"
-    return json.loads(f.read_text()) if f.exists() else []
+    return a2z_db.load_json(f) if f.exists() else []
 
 cases = _load()
 role = ud.get("role",""); sc = str(ud.get("staff_code","") or "")

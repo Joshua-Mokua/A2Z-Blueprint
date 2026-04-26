@@ -3,6 +3,7 @@ Checker view: all high-value transactions awaiting dual approval.
 CBK requirement for transactions above defined thresholds.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -38,7 +39,7 @@ st.markdown(
 @st.cache_data(ttl=10, show_spinner=False)
 def _load_pending():
     p = DATA / "pending_approvals.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 def _save_pending(items):
     (DATA/"pending_approvals.json").write_text(json.dumps(items, indent=2))

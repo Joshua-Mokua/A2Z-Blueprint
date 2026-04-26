@@ -3,6 +3,7 @@ Purchase requests → POs → Goods receipt → Invoices → Payment.
 Co-owned: Procurement raises PRs/POs; Finance approves invoices for payment.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -43,17 +44,17 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load_prs():
     p = DATA / "purchase_requests.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 @st.cache_data(ttl=30)
 def _load_pos():
     p = DATA / "purchase_orders.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 @st.cache_data(ttl=30)
 def _load_invs():
     p = DATA / "invoices.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 prs  = _load_prs()
 pos  = _load_pos()

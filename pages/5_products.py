@@ -1,5 +1,6 @@
 """pages/5_products.py — Products module."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -26,7 +27,7 @@ def _bsc_trigger(username: str, kpi: str = ""):
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_products():
     p = Path(__file__).parent.parent / "data" / "products.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 products = _load_products()
 

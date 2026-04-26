@@ -1,5 +1,6 @@
 """pages/19_credit_monitoring.py — Credit Monitoring System."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -38,7 +39,7 @@ def load_cm():
     p = DATA / "credit_monitoring.json"
     if not p.exists():
         return {"watchlist": [], "last_updated": ""}
-    return json.loads(p.read_text())
+    return a2z_db.load_json(p)
 
 cm_data   = load_cm()
 watchlist = cm_data.get("watchlist", [])

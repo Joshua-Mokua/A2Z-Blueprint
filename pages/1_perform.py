@@ -1,6 +1,7 @@
 """pages/1_perform.py — Perform module."""
 import json
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -1472,7 +1473,7 @@ with tabs[5]:
         transfer_file = DATA_DIR / "transfers.json"
         if not transfer_file.exists(): transfer_file.write_text("[]")
         try:
-            transfers = json.loads(transfer_file.read_text())
+            transfers = a2z_db.load_json(transfer_file)
             if not isinstance(transfers, list): transfers = []
         except: transfers = []
 
@@ -1502,7 +1503,7 @@ with tabs[5]:
                         "recorded_at": datetime.now().isoformat(),
                     }
                     transfers.append(entry)
-                    transfer_file.write_text(json.dumps(transfers, indent=2))
+                    a2z_db.save_json(transfer_file, transfers)
                     audit_log("TRANSFER", st.session_state.get('username',''),
                               f"{t_code} from {t_from} to {t_to} ({t_reason})")
                     st.success(f"Transfer recorded for {t_name or t_code}!")

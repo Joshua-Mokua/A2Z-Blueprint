@@ -3,6 +3,7 @@ Expected Credit Loss (ECL) provisioning across loans, investments, OBS.
 Stage 1/2/3 migration, PD/LGD/EAD inputs, coverage ratios, regulatory reporting.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -33,14 +34,14 @@ is_mgr     = any(x in role for x in ("Manager","Director","Chief","Head"))
 def _load(fname):
     p = DATA / fname
     if not p.exists(): return []
-    d = json.loads(p.read_text())
+    d = a2z_db.load_json(p)
     return d if isinstance(d, list) else d.get("watchlist", d)
 
 @st.cache_data(ttl=30, show_spinner=False)
 def _cfg():
     p = DATA / "proposition_config.json"
     if not p.exists(): return {}
-    return json.loads(p.read_text()).get("treasury_config", {})
+    return a2z_db.load_json(p).get("treasury_config", {})
 
 loans   = _load("ifrs9_loans.json")
 invests = _load("ifrs9_investments.json")
@@ -49,7 +50,7 @@ tcfg    = _cfg()
 ecl_rates = tcfg.get("ifrs9_ecl_rates", {"Stage 1":0.01,"Stage 2":0.15,"Stage 3":0.50})
 
 summary_path = DATA / "ifrs9_summary.json"
-summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+summary = a2z_db.load_json(summary_path) if summary_path.exists() else {}
 
 st.markdown(
     "<div style='padding:16px 0 8px'>"

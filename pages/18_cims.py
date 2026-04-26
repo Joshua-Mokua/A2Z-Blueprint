@@ -1,5 +1,6 @@
 """pages/18_cims.py — CIMS: Customer Instruction Management System."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -305,7 +306,7 @@ class CIMSManager:
                 "exclude_on_leave": True,    # skip staff on leave
                 "round_robin": {},           # unit -> last_index
             }
-            self.auto_file.write_text(json.dumps(default, indent=2))
+            self.a2z_db.save_json(auto_file, default)
             return default
         try:
             return json.loads(self.auto_file.read_text())
@@ -313,12 +314,12 @@ class CIMSManager:
             return {"mode":"team_leader","unit_map":{},"exclude_on_leave":True,"round_robin":{}}
 
     def save_auto_config(self):
-        self.auto_file.write_text(json.dumps(self.auto_config, indent=2))
+        self.a2z_db.save_json(auto_file, self.auto_config)
 
     # ── Config (instruction types + SLAs) ────────────────────
     def _load_config(self):
         if not self.cfg_file.exists():
-            self.cfg_file.write_text(json.dumps(DEFAULT_INSTRUCTION_TYPES, indent=2))
+            self.a2z_db.save_json(cfg_file, DEFAULT_INSTRUCTION_TYPES)
         try:
             raw = self.cfg_file.read_text()
             d = json.loads(raw) if raw.strip() else {}
@@ -327,7 +328,7 @@ class CIMSManager:
             return DEFAULT_INSTRUCTION_TYPES.copy()
 
     def save_config(self):
-        self.cfg_file.write_text(json.dumps(self.config, indent=2))
+        self.a2z_db.save_json(cfg_file, self.config)
 
     def add_instruction_type(self, name: str, data: dict):
         self.config[name] = data
@@ -355,7 +356,7 @@ class CIMSManager:
             return []
 
     def _save_tickets(self):
-        self.tick_file.write_text(json.dumps(self.tickets, indent=2, default=str))
+        self.a2z_db.save_json(tick_file, self.tickets)
 
     def raise_instruction(self, data: dict) -> dict:
         """Log a new customer instruction from any originating branch/unit."""
@@ -425,7 +426,7 @@ class CIMSManager:
             try:
                 leave_file = DATA_DIR / "leave_records.json"
                 if leave_file.exists():
-                    records = json.loads(leave_file.read_text())
+                    records = a2z_db.load_json(leave_file)
                     today   = datetime.now().date().isoformat()
                     on_leave = {r["staff_code"] for r in records
                                 if r.get("status") == "Active"

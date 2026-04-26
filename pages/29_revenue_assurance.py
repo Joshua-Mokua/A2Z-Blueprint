@@ -2,6 +2,7 @@
 Tracks fee waivers, income leakages, and CBS-to-GL income variances.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -31,7 +32,7 @@ is_mgr     = any(x in role for x in ("Manager","Director","Chief","Head"))
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_ra():
     p = DATA / "revenue_assurance.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 records = _load_ra()
 

@@ -28,7 +28,7 @@ def _bsc_trigger(u,k=""):
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"bid_bonds.json"
-    raw = json.loads(p.read_text()) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     for r in raw:
         for k,v in r.items():
             if isinstance(v,Decimal): r[k]=float(v)
@@ -37,7 +37,7 @@ def _load():
 @st.cache_data(ttl=60)
 def _cfg():
     p = DATA/"bidbond_config.json"
-    if p.exists(): return json.loads(p.read_text())
+    if p.exists(): return a2z_db.load_json(p)
     return {
         "bond_types":[
             {"id":"BID","name":"Bid Bond","commission_pct":0.5,"max_tenor_days":180,"cbk_reportable":False,"active":True},

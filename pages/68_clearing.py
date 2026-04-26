@@ -5,6 +5,7 @@ BSC auto-scores: K055 (exception rate), K056 (nostro recon), K057 (settlement TA
 Department: Operations. Roles: Clearing Officer, Settlement Officer, Head of Ops.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -40,7 +41,7 @@ def _bsc_trigger(username, kpi=""):
 @st.cache_data(ttl=30)
 def _load():
     p = DATA/"clearing_records.json"
-    raw = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     for r in raw:
         for k,v in r.items():
             if isinstance(v,Decimal): r[k]=float(v)
@@ -49,7 +50,7 @@ def _load():
 @st.cache_data(ttl=60)
 def _cfg():
     p = DATA/"clearing_config.json"
-    if p.exists(): return json.loads(p.read_text(encoding="utf-8"))
+    if p.exists(): return a2z_db.load_json(p)
     return {
         "clearing_windows":[
             {"id":"RTGS","name":"RTGS","open":"08:00","close":"15:30","currency":"KES","active":True},

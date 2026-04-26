@@ -3,6 +3,7 @@ Detects transaction splitting (structuring), velocity anomalies, commission infl
 CBK alignment: POCAMLA 2009, CBK Prudential Guidelines on Agents.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -40,12 +41,12 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load_alerts():
     p = DATA / "agent_fraud_alerts.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 @st.cache_data(ttl=60)
 def _load_txns():
     p = DATA / "agent_transactions.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 alerts = _load_alerts()
 txns   = _load_txns()

@@ -3,6 +3,7 @@ Horizontal units (Women Banking, Diaspora, SME, Agri, Trade Finance, etc.)
 track INFLUENCE KPIs, not portfolio volumes — zero double-counting.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -17,17 +18,17 @@ um, ud, uname, *_ = load_shared_state()
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_props():
     f = DATA / "proposition_performance.json"
-    return json.loads(f.read_text()) if f.exists() else {}
+    return a2z_db.load_json(f) if f.exists() else {}
 
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_tags():
     f = DATA / "segment_tags.json"
-    return json.loads(f.read_text()) if f.exists() else {}
+    return a2z_db.load_json(f) if f.exists() else {}
 
 @st.cache_data(ttl=30, show_spinner=False)
 def _load_cfg():
     f = DATA / "proposition_config.json"
-    return json.loads(f.read_text()) if f.exists() else {"propositions": {}}
+    return a2z_db.load_json(f) if f.exists() else {"propositions": {}}
 
 props   = _load_props()
 tags    = _load_tags()

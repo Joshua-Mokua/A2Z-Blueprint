@@ -3,6 +3,7 @@ Fixed asset lifecycle: acquisition, tracking, depreciation, disposal.
 Co-owned: Procurement records assets; Finance handles depreciation/disposal.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -39,7 +40,7 @@ st.markdown(
 @st.cache_data(ttl=60)
 def _load():
     p = DATA / "asset_register.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 assets = _load()
 total_cost = sum(a.get("purchase_cost_kes",0) for a in assets)

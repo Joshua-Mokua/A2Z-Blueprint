@@ -3,6 +3,7 @@ Real-time cross-module intelligence: P&L, credit, pipeline, treasury,
 risk, people, digital — all in one board-ready view.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -29,11 +30,11 @@ st.markdown(
 @st.cache_data(ttl=30, show_spinner=False)
 def _loads():
     def _j(f): 
-        p=DATA/f; return json.loads(p.read_text()) if p.exists() else {}
+        p=DATA/f; return a2z_db.load_json(p) if p.exists() else {}
     def _jl(f):
         p=DATA/f
         if not p.exists(): return []
-        d=json.loads(p.read_text())
+        d=a2z_db.load_json(p)
         return d if isinstance(d,list) else d.get("watchlist",list(d.values())[:500])
     scores  = _j("feb_2026_staff_scores.json")
     apps    = _jl("loan_applications.json")

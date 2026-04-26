@@ -1,5 +1,6 @@
 """pages/8_export.py — Export module."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 from datetime import datetime, timedelta, date
 from utils.core import *
@@ -237,7 +238,7 @@ if st.button("📥 Generate Excel export", type="primary", key="exp_btn"):
     audit_log("EXPORT_GENERATED", uname, "Excel export requested")
     try:
         p = DATA8 / fname
-        d = json.loads(p.read_text()) if p.exists() else []
+        d = a2z_db.load_json(p) if p.exists() else []
         if isinstance(d, dict): d = list(d.values())[:500]
         df = pd.DataFrame(d[:2000])
         buf = io.BytesIO()

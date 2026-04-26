@@ -1,5 +1,6 @@
 """pages/28_ra.py — Reporting & Analytics (RA) Module."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -35,9 +36,9 @@ is_exec = any(x in role for x in (
 @st.cache_data(ttl=60, show_spinner=False)
 def load_all():
     def jl(f):
-        p = DATA / f; return json.loads(p.read_text()) if p.exists() else {}
+        p = DATA / f; return a2z_db.load_json(p) if p.exists() else {}
     def ja(f):
-        p = DATA / f; return json.loads(p.read_text()) if p.exists() else []
+        p = DATA / f; return a2z_db.load_json(p) if p.exists() else []
     return {
         "scores":    jl("feb_2026_staff_scores.json"),
         "pipeline":  ja("pipeline.json"),

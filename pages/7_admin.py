@@ -1,5 +1,6 @@
 """pages/7_admin.py — Administration: users, permissions, reporting lines, audit."""
 import streamlit as st
+from utils.db import db as a2z_db
 from pages._admin_sprint import render_sprint_config
 from pages._admin_module_config import render_module_config_centre
 from pages._admin_postgres import render_postgres_centre
@@ -527,7 +528,7 @@ with tabs[0]:
 
         _ws_file_adm = DATA_DIR / "execute_workstreams.json"
         try:
-            _ws_adm = json.loads(_ws_file_adm.read_text()) if _ws_file_adm.exists() else {}
+            _ws_adm = a2z_db.load_json(_ws_file_adm) if _ws_file_adm.exists() else {}
         except:
             _ws_adm = {}
 
@@ -561,7 +562,7 @@ with tabs[0]:
                             _ws_adm.setdefault(_ws_id_a, dict(_ws_a))
                             _ws_adm[_ws_id_a]["name"] = _wna
                             _ws_adm[_ws_id_a]["sub_workstreams"] = _sub_a
-                            _ws_file_adm.write_text(json.dumps(_ws_adm, indent=2))
+                            a2z_db.save_json(_ws_file_adm, _ws_adm)
                             audit_log("WS_RENAMED", uname, f"{_ws_id_a}:{_wna}")
                             st.success("✅ Saved")
                             st.cache_data.clear()
@@ -585,7 +586,7 @@ with tabs[0]:
                             _ws_adm.setdefault(_ws_id_a, dict(_ws_a))
                             _ws_adm[_ws_id_a]["cross_functional_pool"] = [
                                 p for p in _pool_a if p != _pu]
-                            _ws_file_adm.write_text(json.dumps(_ws_adm, indent=2))
+                            a2z_db.save_json(_ws_file_adm, _ws_adm)
                             st.cache_data.clear()
                             st.rerun()
 
@@ -609,7 +610,7 @@ with tabs[0]:
                                 if _cf_u not in _cur_pool:
                                     _cur_pool.append(_cf_u)
                                 _ws_adm[_ws_id_a]["cross_functional_pool"] = _cur_pool
-                                _ws_file_adm.write_text(json.dumps(_ws_adm, indent=2))
+                                a2z_db.save_json(_ws_file_adm, _ws_adm)
                                 audit_log("CF_ADDED", uname, f"{_ws_id_a}:{_cf_u}")
                                 st.success("Added")
                                 st.cache_data.clear()
@@ -649,7 +650,7 @@ with tabs[0]:
                             "cross_functional_pool": [],
                             "custom": True,
                         }
-                        _ws_file_adm.write_text(json.dumps(_ws_adm, indent=2))
+                        a2z_db.save_json(_ws_file_adm, _ws_adm)
                         audit_log("WS_CREATED", uname, _nws_name.strip())
                         st.success(f"✅ Workstream {_nws_id.upper()} created!")
                         st.cache_data.clear()
@@ -1860,7 +1861,7 @@ with tabs[5]:
 
     if not _al_rows and _al_json.exists():
         try:
-            _al_rows = json.loads(_al_json.read_text()) or []
+            _al_rows = a2z_db.load_json(_al_json) or []
             if not isinstance(_al_rows, list): _al_rows = []
         except: pass
 
@@ -2214,7 +2215,7 @@ with tabs[7]:
         _lf = DATA_DIR / "leave_settings.json"
         cur_settings = {}
         if _lf.exists():
-            try: cur_settings = _json.loads(_lf.read_text())
+            try: cur_settings = _a2z_db.load_json(_lf)
             except: pass
 
         st.markdown(
@@ -2629,7 +2630,7 @@ with tabs[10]:
         "Changes take effect immediately across all LMS modules.")
 
     _lms_cfg_path = DATA_DIR / "lms_config.json"
-    _lms_cfg = json.loads(_lms_cfg_path.read_text()) if _lms_cfg_path.exists() else {}
+    _lms_cfg = a2z_db.load_json(_lms_cfg_path) if _lms_cfg_path.exists() else {}
 
     _lcfg_tabs = st.tabs([
         "🏊 Swim Lanes & SLA", "📋 Decline / Rework Reasons",
@@ -2664,7 +2665,7 @@ with tabs[10]:
                         _lms_cfg["swim_lanes"][_lane_key]["max_amount"] = _new_max
                     elif _lane_key == "complex":
                         _lms_cfg["swim_lanes"][_lane_key]["min_amount"] = _new_min
-                    _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+                    a2z_db.save_json(_lms_cfg_path, _lms_cfg)
                     audit_log("LMS_CONFIG_UPDATED", uname, f"swim_lane:{_lane_key}")
                     st.success(f"✅ {_lane.get('label',_lane_key)} saved")
 
@@ -2681,7 +2682,7 @@ with tabs[10]:
                 height=240, key="dec_reasons_ta")
             if st.button("💾 Save decline reasons", key="save_dec_r"):
                 _lms_cfg["decline_reasons"] = [r.strip() for r in _dec_text.split("\n") if r.strip()]
-                _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+                a2z_db.save_json(_lms_cfg_path, _lms_cfg)
                 audit_log("LMS_CONFIG_UPDATED", uname, "decline_reasons")
                 st.success("✅ Saved")
 
@@ -2692,7 +2693,7 @@ with tabs[10]:
                 height=240, key="rework_reasons_ta")
             if st.button("💾 Save rework reasons", key="save_ret_r"):
                 _lms_cfg["rework_reasons"] = [r.strip() for r in _ret_text.split("\n") if r.strip()]
-                _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+                a2z_db.save_json(_lms_cfg_path, _lms_cfg)
                 audit_log("LMS_CONFIG_UPDATED", uname, "rework_reasons")
                 st.success("✅ Saved")
 
@@ -2705,7 +2706,7 @@ with tabs[10]:
             height=200, key="cond_types_ta")
         if st.button("💾 Save conditions", key="save_cond"):
             _lms_cfg["condition_types"] = [r.strip() for r in _cond_text.split("\n") if r.strip()]
-            _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+            a2z_db.save_json(_lms_cfg_path, _lms_cfg)
             audit_log("LMS_CONFIG_UPDATED", uname, "condition_types")
             st.success("✅ Saved")
 
@@ -2722,7 +2723,7 @@ with tabs[10]:
             _sla_days[_rl] = _new_sd
         if _cs2.button("💾 Save compliance SLA", key="save_comp_sla"):
             _lms_cfg["compliance_sla_days"] = _sla_days
-            _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+            a2z_db.save_json(_lms_cfg_path, _lms_cfg)
             audit_log("LMS_CONFIG_UPDATED", uname, "compliance_sla_days")
             st.success("✅ Saved")
 
@@ -2744,7 +2745,7 @@ with tabs[10]:
             _lms_cfg["fd_rate_bands"][_tenure]["min_rate"] = _min_r
             _lms_cfg["fd_rate_bands"][_tenure]["max_rate"] = _max_r
         if st.button("💾 Save FD rate bands", key="save_fd_bands"):
-            _lms_cfg_path.write_text(json.dumps(_lms_cfg, indent=2))
+            a2z_db.save_json(_lms_cfg_path, _lms_cfg)
             audit_log("LMS_CONFIG_UPDATED", uname, "fd_rate_bands")
             st.success("✅ FD rate bands saved")
 
@@ -2775,7 +2776,7 @@ with tabs[11]:
 
     def _load_prop_cfg():
         if _prop_cfg_path.exists():
-            return json.loads(_prop_cfg_path.read_text())
+            return a2z_db.load_json(_prop_cfg_path)
         return {"propositions": {}}
 
     _pcfg = _load_prop_cfg()
@@ -2821,7 +2822,7 @@ with tabs[11]:
                 key=f"prop_active_{_tag}")
             if _new_active != _prop.get("active", True):
                 _pcfg["propositions"][_tag]["active"] = _new_active
-                _prop_cfg_path.write_text(json.dumps(_pcfg, indent=2))
+                a2z_db.save_json(_prop_cfg_path, _pcfg)
                 audit_log("PROP_TOGGLED", uname, f"{_tag}={'active' if _new_active else 'inactive'}")
                 st.cache_data.clear()
                 st.success(f"{'Activated' if _new_active else 'Deactivated'}: {_prop.get('name','')}")
@@ -2868,7 +2869,7 @@ with tabs[11]:
                     "period":      "2026",
                     "kpis":        []
                 }
-                _prop_cfg_path.write_text(json.dumps(_pcfg, indent=2))
+                a2z_db.save_json(_prop_cfg_path, _pcfg)
                 audit_log("PROP_CREATED", uname, f"{_new_tag}|{_new_name}")
                 st.cache_data.clear()
                 st.success(f"✅ Proposition '{_new_name}' created. Add KPIs in the Edit tab.")
@@ -2963,7 +2964,7 @@ with tabs[11]:
                         k["weight"] = round(k["weight"] / _total_w, 4)
                 _pcfg["propositions"][_sel_prop_tag]["kpis"] = _updated_kpis
                 _pcfg["propositions"][_sel_prop_tag]["period"] = _ep_period
-                _prop_cfg_path.write_text(json.dumps(_pcfg, indent=2))
+                a2z_db.save_json(_prop_cfg_path, _pcfg)
                 audit_log("PROP_KPIS_UPDATED", uname,
                           f"{_sel_prop_tag}|{len(_updated_kpis)} KPIs")
                 st.cache_data.clear()
@@ -3004,7 +3005,7 @@ with tabs[11]:
             for _tag, _prop in _props.items():
                 _saved_role = st.session_state.get(f"head_role_{_tag}", _prop.get("head_role",""))
                 _pcfg["propositions"][_tag]["head_role"] = _saved_role
-            _prop_cfg_path.write_text(json.dumps(_pcfg, indent=2))
+            a2z_db.save_json(_prop_cfg_path, _pcfg)
             audit_log("PROP_HEAD_ROLES_UPDATED", uname, "all propositions")
             st.cache_data.clear()
             st.success("✅ Head role mappings saved")
@@ -3056,7 +3057,7 @@ with tabs[12]:
                "Calculations, chart types, and data sources are hardcoded by design.")
 
     _ra_cfg_path = Path(__file__).parent.parent / "data" / "proposition_config.json"
-    _ra_full_cfg = json.loads(_ra_cfg_path.read_text())
+    _ra_full_cfg = a2z_db.load_json(_ra_cfg_path)
     _ra_cfg      = _ra_full_cfg.get("ra_config", {})
 
     _ra_tabs = st.tabs(["⚙️ Display Settings", "🎨 Thresholds", "🔒 Tab Access", "📖 What's Configurable"])
@@ -3082,7 +3083,7 @@ with tabs[12]:
             _ra_full_cfg["ra_config"]["date_range_months"] = _ra_months
             _ra_full_cfg["ra_config"]["show_staff_names"]  = _ra_show_names
             _ra_full_cfg["ra_config"]["allow_export"]      = _ra_allow_export
-            _ra_cfg_path.write_text(json.dumps(_ra_full_cfg, indent=2))
+            a2z_db.save_json(_ra_cfg_path, _ra_full_cfg)
             audit_log("RA_CONFIG_UPDATED", uname, "display settings")
             st.cache_data.clear()
             st.success("✅ RA display settings saved")
@@ -3103,7 +3104,7 @@ with tabs[12]:
                 "bsc_green": _bsc_green, "bsc_amber": _bsc_amber, "bsc_red": _bsc_red,
                 "sla_green": _sla_green, "sla_amber": _sla_amber,
             }
-            _ra_cfg_path.write_text(json.dumps(_ra_full_cfg, indent=2))
+            a2z_db.save_json(_ra_cfg_path, _ra_full_cfg)
             audit_log("RA_THRESHOLDS_UPDATED", uname, "colour thresholds")
             st.cache_data.clear()
             st.success("✅ Thresholds saved")
@@ -3126,7 +3127,7 @@ with tabs[12]:
             _updated_access[_tab_name] = _new_access
         if st.button("💾 Save tab access", key="ra_save_access", type="primary"):
             _ra_full_cfg["ra_config"]["tab_access"] = _updated_access
-            _ra_cfg_path.write_text(json.dumps(_ra_full_cfg, indent=2))
+            a2z_db.save_json(_ra_cfg_path, _ra_full_cfg)
             audit_log("RA_TAB_ACCESS_UPDATED", uname, "tab access settings")
             st.cache_data.clear()
             st.success("✅ Tab access saved")
@@ -3164,7 +3165,7 @@ with tabs[13]:
     # ── REVENUE ASSURANCE CONFIG ──────────────────────────────────
     st.subheader("💰 Revenue Assurance Configuration")
     _rac_path = Path(__file__).parent.parent / "data" / "proposition_config.json"
-    _rac_full  = json.loads(_rac_path.read_text())
+    _rac_full  = a2z_db.load_json(_rac_path)
     _rac       = _rac_full.get("revenue_assurance_config", {})
 
     _r1,_r2 = st.tabs(["Fee Types & Reasons","Approval Limits"])
@@ -3178,7 +3179,7 @@ with tabs[13]:
         if st.button("💾 Save fee config", key="rac_save_fees", type="primary"):
             _rac_full["revenue_assurance_config"]["fee_types"] = [x.strip() for x in _fee_list.split("\n") if x.strip()]
             _rac_full["revenue_assurance_config"]["waiver_reasons"] = [x.strip() for x in _waiver_list.split("\n") if x.strip()]
-            _rac_path.write_text(json.dumps(_rac_full, indent=2))
+            a2z_db.save_json(_rac_path, _rac_full)
             st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
     with _r2:
         st.markdown("**Approval limits by role (KES — -1 means unlimited):**")
@@ -3192,7 +3193,7 @@ with tabs[13]:
         st.caption("Set to -1 for unlimited. Hardcoded: approval workflow sequence, audit trail.")
         if st.button("💾 Save limits", key="rac_save_limits", type="primary"):
             _rac_full["revenue_assurance_config"]["approval_limits"] = {k:int(v) for k,v in new_limits.items()}
-            _rac_path.write_text(json.dumps(_rac_full, indent=2))
+            a2z_db.save_json(_rac_path, _rac_full)
             st.cache_data.clear(); st.success("✅ Approval limits saved"); st.rerun()
 
 with tabs[14]:
@@ -3209,7 +3210,7 @@ with tabs[14]:
         if st.button("💾 Save types", key="rms_save_types", type="primary"):
             _rac_full["rms_config"]["recon_types"] = [x.strip() for x in _rt_list.split("\n") if x.strip()]
             _rac_full["rms_config"]["breaker_types"] = [x.strip() for x in _bt_list.split("\n") if x.strip()]
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
     with _rm2:
         st.markdown("**SLA days by status (days before escalation):**")
         sla_d = _rms_cfg.get("sla_days", {})
@@ -3224,7 +3225,7 @@ with tabs[14]:
             _rac_full["rms_config"]["sla_days"] = new_sla
             _rac_full["rms_config"]["auto_match_threshold_kes"] = int(new_auto)
             _rac_full["rms_config"]["escalation_days"] = new_esc
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
     with _rm3:
         st.markdown("**GL accounts tracked in reconciliation:**")
         accs = _rms_cfg.get("accounts",[])
@@ -3246,7 +3247,7 @@ with tabs[15]:
         if st.button("💾 Save categories", key="edms_save_cats", type="primary"):
             _rac_full["edms_config"]["categories"] = [x.strip() for x in _cat_list.split("\n") if x.strip()]
             _rac_full["edms_config"]["expiry_alert_days"] = _alert_days
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
     with _ed2:
         st.markdown("**Retention periods by category (years):**")
         ret = _edms_cfg.get("retention_periods_years",{})
@@ -3256,7 +3257,7 @@ with tabs[15]:
             rc1.markdown(f"**{cat_k}**"); new_ret[cat_k]=rc2.number_input("Years",value=int(yrs),min_value=1,step=1,key=f"ret_{cat_k}",label_visibility="collapsed")
         if st.button("💾 Save retention", key="edms_save_ret", type="primary"):
             _rac_full["edms_config"]["retention_periods_years"] = new_ret
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
     with _ed3:
         st.markdown("**Access level definitions:**")
         acc_lvls = _edms_cfg.get("access_levels",{})
@@ -3280,7 +3281,7 @@ with tabs[16]:
         if st.button("💾 Save rates", key="tc_save_rates", type="primary"):
             _rac_full["treasury_config"]["fx_reference_rates"] = new_fx
             _rac_full["treasury_config"]["cbk_rate"] = cbk_r
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Rates saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Rates saved"); st.rerun()
         st.caption("In production these are updated from a market data feed (Bloomberg/Reuters). Hardcoded: FX P&L calculation, revaluation engine.")
     with _t2:
         st.markdown("**IFRS 9 ECL rates by stage:**")
@@ -3295,7 +3296,7 @@ with tabs[16]:
         if st.button("💾 Save IFRS 9", key="tc_save_ifrs", type="primary"):
             _rac_full["treasury_config"]["ifrs9_ecl_rates"] = new_ecl
             _rac_full["treasury_config"]["ifrs9_classifications"] = clf_list
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ IFRS 9 config saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ IFRS 9 config saved"); st.rerun()
         st.caption("Hardcoded: ECL calculation engine, SPPI test logic, OCI recycling, CBK reporting template.")
     with _t3:
         st.markdown("**Minimum liquidity ratios (CBK Prudential Guidelines):**")
@@ -3306,7 +3307,7 @@ with tabs[16]:
             lc1.markdown(f"**{ratio}**"); new_liq[ratio]=lc2.number_input("%",value=float(val),step=1.0,key=f"liq_{ratio}",label_visibility="collapsed")
         if st.button("💾 Save ratios", key="tc_save_liq", type="primary"):
             _rac_full["treasury_config"]["liquidity_ratios_minimum"] = new_liq
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
         st.caption("Hardcoded: Basel III LCR/NSFR calculation methodology, HQLA classification, CBK regulatory formula.")
     with _t4:
         st.markdown("**Products and currencies:**")
@@ -3315,14 +3316,14 @@ with tabs[16]:
             default=_tc.get("fx_currencies",["USD","EUR","GBP"]), key="t_ccys")
         if st.button("💾 Save products", key="tc_save_prod", type="primary"):
             _rac_full["treasury_config"]["fx_currencies"] = _fx_ccys
-            _rac_path.write_text(json.dumps(_rac_full, indent=2)); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
+            a2z_db.save_json(_rac_path, _rac_full); st.cache_data.clear(); st.success("✅ Saved"); st.rerun()
 
 # ── RA Config tab content already rendered in tabs[12] above ────
 with tabs[17]:
     # ── STATEMENT ANALYZER CONFIG ─────────────────────────────────
     st.subheader("🧾 Statement Analyzer Configuration")
     _sa_cfg_path = Path(__file__).parent.parent / "data" / "proposition_config.json"
-    _sa_full = json.loads(_sa_cfg_path.read_text())
+    _sa_full = a2z_db.load_json(_sa_cfg_path)
     _sa_cfg  = _sa_full.get("statement_analyzer_config", {})
 
     _sa1, _sa2, _sa3 = st.tabs(["📊 Thresholds","⚠️ Risk Keywords","🎯 Auto-decisions"])
@@ -3340,7 +3341,7 @@ with tabs[17]:
             _sa_full["statement_analyzer_config"]["min_months"]           = int(_sa_mnths)
             _sa_full["statement_analyzer_config"]["living_expense_pct"]   = int(_sa_liv)
             _sa_full["statement_analyzer_config"]["interest_rate_monthly"]= float(_sa_rate)
-            _sa_cfg_path.write_text(json.dumps(_sa_full, indent=2))
+            a2z_db.save_json(_sa_cfg_path, _sa_full)
             audit_log("SA_CONFIG_UPDATED", uname, "thresholds")
             st.cache_data.clear(); st.success("✅ Thresholds saved"); st.rerun()
 
@@ -3351,7 +3352,7 @@ with tabs[17]:
         st.caption("Add gambling sites, digital loan providers, dishonour indicators. Case-insensitive. Applies to all new analyses.")
         if st.button("💾 Save keywords", key="sa_save_kws", type="primary"):
             _sa_full["statement_analyzer_config"]["risk_keywords"] = [x.strip().lower() for x in _sa_kws.split("\n") if x.strip()]
-            _sa_cfg_path.write_text(json.dumps(_sa_full, indent=2))
+            a2z_db.save_json(_sa_cfg_path, _sa_full)
             audit_log("SA_KEYWORDS_UPDATED", uname, "risk keywords")
             st.cache_data.clear(); st.success("✅ Keywords saved"); st.rerun()
 
@@ -3453,7 +3454,7 @@ with tabs[18]:
     try:
         from utils.core import is_bsc_locked, lock_bsc, unlock_bsc
         _lock_path = Path(__file__).parent.parent / "data" / "bsc_lock.json"
-        _lock_state = json.loads(_lock_path.read_text()) if _lock_path.exists() else {}
+        _lock_state = a2z_db.load_json(_lock_path) if _lock_path.exists() else {}
         _is_locked  = _lock_state.get("locked", False)
         
         if _is_locked:
@@ -3624,7 +3625,7 @@ with tabs[18]:
     _al_file = _data_dir / "audit_log.json"
     if _al_file.exists():
         try:
-            _al = json.loads(_al_file.read_text())
+            _al = a2z_db.load_json(_al_file)
             _al_df = pd.DataFrame(_al[-20:] if len(_al)>20 else _al)
             if not _al_df.empty:
                 st.dataframe(_al_df[::-1], hide_index=True,

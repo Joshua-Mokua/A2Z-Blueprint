@@ -1,5 +1,6 @@
 """pages/21_loan_applications.py — Loan Application & Completeness Engine."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -24,7 +25,7 @@ um, ud, uname, *_ = load_shared_state()
 @st.cache_data(ttl=60, show_spinner=False)
 def _load():
     f = DATA / "loan_applications.json"
-    return json.loads(f.read_text()) if f.exists() else []
+    return a2z_db.load_json(f) if f.exists() else []
 
 apps = _load()
 lam = LoanApplicationManager()

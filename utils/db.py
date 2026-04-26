@@ -423,6 +423,81 @@ class Database:
 
         return True
 
+    # ══════════════════════════════════════════════════════════════════════
+    # GENERIC JSON ACCESSORS — for legacy pages without dedicated PG tables
+    #
+    # These provide the architectural seam (no direct frontend-to-file I/O)
+    # while keeping the data in JSON for now. Each can be promoted to a
+    # real PG table later by adding it to TABLE_USE_DB.
+    # ══════════════════════════════════════════════════════════════════════
+
+    def load_json(self, path, default=None):
+        """Read a JSON file with fallback. Goes through the DB layer for
+        consistency — a future migration can promote this to a real PG table
+        without changing page code.
+
+        Args:
+            path:    Path to JSON file or filename string
+            default: Value to return if file missing (default: [] or {})
+
+        Returns:
+            Parsed JSON content, or default if file missing/corrupt.
+        """
+        from pathlib import Path as _Path
+        import json as _json
+
+        if hasattr(path, "exists"):
+            p = path
+        else:
+            p = _Path(path) if str(path).startswith("/") else _Path(__file__).parent.parent / "data" / str(path)
+
+        if not p.exists():
+            return default if default is not None else []
+
+        try:
+            data = _json.loads(p.read_text(encoding="utf-8"))
+            return data
+        except Exception as e:
+            logger.warning(f"load_json failed for {p}: {e}")
+            return default if default is not None else []
+
+    def save_json(self, path, data, indent: int = 2) -> bool:
+        """Write data to JSON file. Atomic write where possible.
+
+        Args:
+            path:   Path to JSON file or filename string
+            data:   Dict or list to serialise
+            indent: JSON indent (default 2)
+
+        Returns True on success.
+        """
+        from pathlib import Path as _Path
+        import json as _json
+        import tempfile
+        import os
+
+        if hasattr(path, "exists"):
+            p = path
+        else:
+            p = _Path(path) if str(path).startswith("/") else _Path(__file__).parent.parent / "data" / str(path)
+
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            # Atomic write: write to temp, then rename
+            tmp_fd, tmp_name = tempfile.mkstemp(suffix=".json", dir=p.parent)
+            try:
+                with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+                    _json.dump(data, f, indent=indent, default=str, ensure_ascii=False)
+                os.replace(tmp_name, p)
+            except Exception:
+                if os.path.exists(tmp_name):
+                    os.remove(tmp_name)
+                raise
+            return True
+        except Exception as e:
+            logger.error(f"save_json failed for {p}: {e}")
+            return False
+
 # Singleton instance used by all modules
 db = Database()
 

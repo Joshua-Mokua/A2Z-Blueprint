@@ -1,5 +1,6 @@
 """pages/13_sla.py — SLA Tracker: scoring CX based on SLA adherence."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -120,7 +121,7 @@ class SLAManager:
         except: return []
 
     def _save(self):
-        self.file.write_text(json.dumps(self.tickets, indent=2, default=str))
+        self.a2z_db.save_json(file, self.tickets)
 
     def log_ticket(self, data: dict) -> dict:
         ticket_id = f"SLA{len(self.tickets)+1:05d}"

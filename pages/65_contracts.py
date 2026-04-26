@@ -2,6 +2,7 @@
 Vendor contracts lifecycle: active, expiring, renewals, SLA terms.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -37,7 +38,7 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load():
     p = DATA / "contracts.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 contracts = _load()
 expiring  = [c for c in contracts if c.get("status")=="Expiring Soon"]

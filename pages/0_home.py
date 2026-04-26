@@ -1,5 +1,6 @@
 """pages/0_home.py — A2Z Blueprint Welcome & Landing Page."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 from datetime import datetime
 from utils.core import check_access, MODULE_ACCESS, get_visible_staff
@@ -245,7 +246,7 @@ except Exception: pass
 try:
     _cal_p = Path(__file__).parent.parent / "data" / "calendar_events.json"
     if _cal_p.exists():
-        _cal_events = json.loads(_cal_p.read_text()) if hasattr(json,'loads') else []
+        _cal_events = a2z_db.load_json(_cal_p) if hasattr(json,'loads') else []
         _upcoming   = [e for e in _cal_events
                        if e.get("date") and
                        0 <= (date.fromisoformat(e["date"][:10]) - date.today()).days <= 14]

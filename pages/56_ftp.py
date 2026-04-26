@@ -2,6 +2,7 @@
 NIM attribution by product and SBU. FTP curve configurable via Admin.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -24,7 +25,7 @@ st.markdown("<div style='padding:16px 0 4px'><span style='font-size:22px;font-we
 @st.cache_data(ttl=60)
 def _load():
     p = DATA/"transfer_pricing.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 data = _load()
 if not data: st.info("FTP data not available."); st.stop()

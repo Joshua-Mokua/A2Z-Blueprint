@@ -4,6 +4,7 @@ flags, affordability, and generates a full credit narrative in seconds.
 Configurable DSR limits, risk keywords, and product rules via Admin.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import json
 import re
 import requests
@@ -33,7 +34,7 @@ is_admin = ud.get("is_admin",False)
 def _sa_cfg():
     p = DATA / "proposition_config.json"
     if not p.exists(): return {}
-    return json.loads(p.read_text()).get("statement_analyzer_config",{})
+    return a2z_db.load_json(p).get("statement_analyzer_config",{})
 
 cfg          = _sa_cfg()
 DSR_LIMIT    = cfg.get("dsr_limit", 40)

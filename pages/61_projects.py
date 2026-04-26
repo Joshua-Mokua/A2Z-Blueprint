@@ -3,6 +3,7 @@ Full project lifecycle: assignment → milestones → action items → BSC auto-
 Every milestone/action completed automatically updates the owner's BSC.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -37,13 +38,13 @@ st.markdown(
 @st.cache_data(ttl=30)
 def _load_projects():
     p = DATA / "projects.json"
-    raw = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    raw = a2z_db.load_json(p) if p.exists() else []
     return raw if isinstance(raw, list) else raw.get("projects", [])
 
 @st.cache_data(ttl=300)
 def _load_users():
     p = DATA / "users.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 def _save_projects(projects):
     (DATA / "projects.json").write_text(json.dumps(projects, indent=2))
@@ -594,7 +595,7 @@ with tabs[5]:
     # Show my BSC operational scores
     scores_file = DATA / "feb_2026_staff_scores.json"
     if scores_file.exists():
-        scores = json.loads(scores_file.read_text(encoding="utf-8"))
+        scores = a2z_db.load_json(scores_file)
         my_score = scores.get(uname, {})
         kpi_scores = my_score.get("kpi_scores", {})
 

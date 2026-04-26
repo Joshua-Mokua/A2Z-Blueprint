@@ -45,7 +45,7 @@ def _save(data):
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
-    return json.loads(mc.read_text(encoding="utf-8")).get("regulatory_capital",{}) if mc.exists() else {}
+    return (a2z_db.load_json(mc, default={}) or {}).get("regulatory_capital",{}) if mc.exists() else {}
 
 
 records = sorted(_load(), key=lambda x:x.get("metric_date",""), reverse=True)

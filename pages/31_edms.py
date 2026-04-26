@@ -3,6 +3,7 @@ KYC documents, loan files, legal docs, board papers, policies, audit reports.
 Upload, search, version control, expiry alerts, access management.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -34,7 +35,7 @@ is_mgr   = any(x in role for x in ("Manager","Director","Chief","Head","Legal","
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_edms():
     p = DATA / "edms_documents.json"
-    return json.loads(p.read_text()) if p.exists() else []
+    return a2z_db.load_json(p) if p.exists() else []
 
 docs = _load_edms()
 

@@ -3,6 +3,7 @@ Connection status, API health, JMS topics, sample queries.
 Dept: IT & Digital | KPIs: K109 K110 K111
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -31,7 +32,7 @@ def _bsc_trigger(username, kpi=""):
 @st.cache_data(ttl=10)
 def _events():
     log = DATA / "flexcube_events.json"
-    return json.loads(log.read_text(encoding="utf-8")) if log.exists() else []
+    return a2z_db.load_json(log, default=[])
 
 cfg     = fcx.get_config()
 mode    = fcx.get_mode()

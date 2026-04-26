@@ -1,5 +1,6 @@
 """pages/12_cascade.py — Target Cascade with BSC scorecard format."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -810,7 +811,7 @@ if _tab_visible_bank_targets:
             _dist_cfg  = {}
             try:
                 if _dist_file.exists():
-                    _dist_cfg = json.loads(_dist_file.read_text())
+                    _dist_cfg = a2z_db.load_json(_dist_file)
             except: pass
 
             # Month labels
@@ -873,7 +874,7 @@ if _tab_visible_bank_targets:
                     "pattern": _sel_pat,
                     "weights": [round(w,4) for w in _final_wts] if _final_wts else [1/12]*12,
                 }
-                _dist_file.write_text(json.dumps(_dist_cfg, indent=2))
+                a2z_db.save_json(_dist_file, _dist_cfg)
                 st.success(f"✅ Distribution saved for {_sel_kpi_d}.")
                 st.cache_data.clear()
                 st.rerun()

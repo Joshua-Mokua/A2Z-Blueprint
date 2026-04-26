@@ -1,5 +1,6 @@
 """pages/4_execute.py — Execute module."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -881,14 +882,14 @@ with ex_tabs[4]:
                                 _cf_user = _add_cf.split("(")[-1].rstrip(")")
                                 _ws_file = (Path(__file__).parent.parent / "data" / "execute_workstreams.json")
                                 try:
-                                    _saved_ws = json.loads(_ws_file.read_text()) if _ws_file.exists() else {}
+                                    _saved_ws = a2z_db.load_json(_ws_file) if _ws_file.exists() else {}
                                 except: _saved_ws = {}
                                 _saved_ws.setdefault(_ws_id, dict(_all_ws[_ws_id]))
                                 _cur_pool = _saved_ws[_ws_id].get('cross_functional_pool', [])
                                 if _cf_user not in _cur_pool:
                                     _cur_pool.append(_cf_user)
                                 _saved_ws[_ws_id]['cross_functional_pool'] = _cur_pool
-                                _ws_file.write_text(json.dumps(_saved_ws, indent=2))
+                                a2z_db.save_json(_ws_file, _saved_ws)
                                 audit_log("WS_CF_ADDED", uname, f"{_ws_id}:{_cf_user}")
                                 _bsc_trigger(uname, "K036")
                                 st.success("Added"); st.rerun()

@@ -2,6 +2,7 @@
 Call volumes, AHT, FCR, CSAT, agent scorecards, queue view.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -27,7 +28,7 @@ st.markdown(
 @st.cache_data(ttl=15)
 def _load():
     p = DATA/"contact_centre.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 data = _load()
 if not data: st.info("Contact centre data not available."); st.stop()

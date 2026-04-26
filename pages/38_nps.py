@@ -2,6 +2,7 @@
 Net Promoter Score by branch and product. Customer verbatims. Trend analysis.
 """
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import json
 from pathlib import Path
@@ -28,7 +29,7 @@ st.markdown(
 @st.cache_data(ttl=60)
 def _load():
     p = DATA / "nps_data.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return a2z_db.load_json(p) if p.exists() else {}
 
 data = _load()
 if not data: st.info("NPS data not available."); st.stop()

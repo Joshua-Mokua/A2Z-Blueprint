@@ -1,5 +1,6 @@
 """pages/14_branch_log.py — Daily Branch Log: staff reporting + manager validation."""
 import streamlit as st
+from utils.db import db as a2z_db
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -79,7 +80,7 @@ class BranchLogManager:
         except: return []
 
     def _save(self):
-        self.file.write_text(json.dumps(self.logs, indent=2, default=str))
+        self.a2z_db.save_json(file, self.logs)
 
     def submit(self, data: dict) -> dict:
         today = str(date.today())
