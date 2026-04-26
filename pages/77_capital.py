@@ -10,6 +10,7 @@ from datetime import date, timedelta
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
+from utils.db import db as a2z_db
 
 require_access("regulatory_capital")
 DATA  = Path(__file__).parent.parent / "data"
@@ -34,17 +35,18 @@ def _bsc_trigger(username, kpi=""):
 
 @st.cache_data(ttl=30)
 def _load():
-    p = DATA/"capital_liquidity_metrics.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    return a2z_db.dual_load(DATA/"capital_liquidity_metrics.json", table="capital_liquidity_metrics")
+
+def _save(data):
+    a2z_db.dual_save(DATA/"capital_liquidity_metrics.json", data, table="capital_liquidity_metrics", flat_cols=('id', 'metric_date', 'tier1_ratio_pct', 'total_capital_ratio_pct', 'leverage_ratio_pct', 'lcr_pct', 'nsfr_pct', 'all_compliant'))
+    st.cache_data.clear()
+
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     return json.loads(mc.read_text(encoding="utf-8")).get("regulatory_capital",{}) if mc.exists() else {}
 
-def _save(data):
-    (DATA/"capital_liquidity_metrics.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
 
 records = sorted(_load(), key=lambda x:x.get("metric_date",""), reverse=True)
 cfg_c = _cfg()

@@ -11,6 +11,7 @@ from collections import defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
+from utils.db import db as a2z_db
 
 require_access("strategic_initiatives")
 DATA  = Path(__file__).parent.parent / "data"
@@ -31,17 +32,18 @@ def _bsc_trigger(username, kpi=""):
 
 @st.cache_data(ttl=30)
 def _load():
-    p = DATA/"strategic_initiatives.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    return a2z_db.dual_load(DATA/"strategic_initiatives.json", table="strategic_initiatives")
+
+def _save(data):
+    a2z_db.dual_save(DATA/"strategic_initiatives.json", data, table="strategic_initiatives", flat_cols=('id', 'name', 'pillar', 'sponsor', 'owner', 'owner_username', 'start_date', 'target_end_date', 'actual_end_date', 'completion_pct', 'status', 'rag_status', 'budget_kes_m', 'spent_kes_m', 'department'))
+    st.cache_data.clear()
+
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     return json.loads(mc.read_text(encoding="utf-8")).get("strategic_initiatives",{}) if mc.exists() else {}
 
-def _save(data):
-    (DATA/"strategic_initiatives.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
 
 records = _load()
 cfg_c = _cfg()

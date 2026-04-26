@@ -11,6 +11,7 @@ from collections import defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
+from utils.db import db as a2z_db
 
 require_access("merchant_acquiring")
 DATA  = Path(__file__).parent.parent / "data"
@@ -31,17 +32,18 @@ def _bsc_trigger(username, kpi=""):
 
 @st.cache_data(ttl=30)
 def _load():
-    p = DATA/"merchant_acquiring.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    return a2z_db.dual_load(DATA/"merchant_acquiring.json", table="merchant_acquiring")
+
+def _save(data):
+    a2z_db.dual_save(DATA/"merchant_acquiring.json", data, table="merchant_acquiring", flat_cols=('id', 'merchant_name', 'merchant_type', 'kra_pin', 'onboarding_date', 'status', 'active', 'pos_terminals', 'active_terminals', 'ytd_revenue_kes', 'branch', 'rm_code', 'category'))
+    st.cache_data.clear()
+
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     return json.loads(mc.read_text(encoding="utf-8")).get("merchant_acquiring",{}) if mc.exists() else {}
 
-def _save(data):
-    (DATA/"merchant_acquiring.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
 
 records = _load()
 cfg_c = _cfg()

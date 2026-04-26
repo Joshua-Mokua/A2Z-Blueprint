@@ -12,6 +12,7 @@ from collections import defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
+from utils.db import db as a2z_db
 
 require_access("esg_climate")
 DATA  = Path(__file__).parent.parent / "data"
@@ -33,17 +34,19 @@ def _bsc_trigger(username, kpi=""):
 
 @st.cache_data(ttl=30)
 def _load():
-    p = DATA/"esg_climate.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    return a2z_db.dual_load_dict(DATA/"esg_climate.json", table_map={'green_loans': 'esg_green_loans', 'esg_initiatives': 'esg_initiatives', 'climate_risk_assessments': 'esg_climate_assessments', 'esg_score': 'esg_score_snapshot'})
+
+def _save(data):
+    """Save nested-dict module data — JSON only (PG nested writes are explicit per sub-table)."""
+    (DATA/"esg_climate.json").write_text(json.dumps(data,indent=2,default=str))
+    st.cache_data.clear()
+
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     return json.loads(mc.read_text(encoding="utf-8")).get("esg_climate",{}) if mc.exists() else {}
 
-def _save(data):
-    (DATA/"esg_climate.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
 
 data = _load()
 green_loans = data.get("green_loans",[])

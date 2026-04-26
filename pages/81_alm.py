@@ -11,6 +11,7 @@ from collections import defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core import audit_log
+from utils.db import db as a2z_db
 
 require_access("alm_liquidity")
 DATA  = Path(__file__).parent.parent / "data"
@@ -30,17 +31,19 @@ def _bsc_trigger(username, kpi=""):
 
 @st.cache_data(ttl=30)
 def _load():
-    p = DATA/"alm_liquidity.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    return a2z_db.dual_load_dict(DATA/"alm_liquidity.json", table_map={'gap_analysis': 'alm_gap_analysis', 'funding_sources': 'alm_funding_sources', 'alco_meetings': 'alm_alco_meetings', 'contingency_plans': 'alm_contingency_plans'})
+
+def _save(data):
+    """Save nested-dict module data — JSON only (PG nested writes are explicit per sub-table)."""
+    (DATA/"alm_liquidity.json").write_text(json.dumps(data,indent=2,default=str))
+    st.cache_data.clear()
+
 
 @st.cache_data(ttl=60)
 def _cfg():
     mc = DATA/"module_config.json"
     return json.loads(mc.read_text(encoding="utf-8")).get("alm_liquidity",{}) if mc.exists() else {}
 
-def _save(data):
-    (DATA/"alm_liquidity.json").write_text(json.dumps(data,indent=2))
-    st.cache_data.clear()
 
 data = _load()
 gaps     = data.get("gap_analysis",[])
