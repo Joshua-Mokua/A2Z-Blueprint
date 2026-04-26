@@ -437,6 +437,52 @@ SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+
+-- ──────────────────────────────────────────────────────────────────────────
+-- v5.9 — SCHEMA SEGREGATION (per master prompt requirement)
+--
+-- Schemas group related tables for security (RLS per schema), backup strategy
+-- (back up `audit` schema separately for regulatory retention), and access
+-- control (different roles see different schemas).
+--
+-- Migration approach: NEW tables go to dedicated schemas immediately.
+-- Existing tables stay in `public` for now — moved table-by-table in v5.10
+-- using ALTER TABLE ... SET SCHEMA. Zero-downtime.
+-- ──────────────────────────────────────────────────────────────────────────
+
+CREATE SCHEMA IF NOT EXISTS auth;
+COMMENT ON SCHEMA auth IS 'Authentication, sessions, users, RBAC. CBK ICT Guideline scope.';
+
+CREATE SCHEMA IF NOT EXISTS performance;
+COMMENT ON SCHEMA performance IS 'BSC scores, KPIs, targets, role library, cascade.';
+
+CREATE SCHEMA IF NOT EXISTS credit;
+COMMENT ON SCHEMA credit IS 'Loan applications, monitoring, recovery, watchlist, EWS, RCSA.';
+
+CREATE SCHEMA IF NOT EXISTS finance;
+COMMENT ON SCHEMA finance IS 'Capital, liquidity, ALM, treasury, accounting, regulatory returns.';
+
+CREATE SCHEMA IF NOT EXISTS risk;
+COMMENT ON SCHEMA risk IS 'AML, sanctions, op risk, fraud, compliance cases, climate risk.';
+
+CREATE SCHEMA IF NOT EXISTS staging;
+COMMENT ON SCHEMA staging IS 'FLEXCUBE raw extracts. Validated and promoted to mart schemas nightly.';
+
+CREATE SCHEMA IF NOT EXISTS audit;
+COMMENT ON SCHEMA audit IS 'Append-only audit trails. 7-year retention per CBK. Backed up separately.';
+
+-- Grant usage to the application role (idempotent)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'a2z_app') THEN
+    EXECUTE 'GRANT USAGE ON SCHEMA auth, performance, credit, finance, risk, staging, audit TO a2z_app';
+    EXECUTE 'GRANT CREATE ON SCHEMA auth, performance, credit, finance, risk, staging, audit TO a2z_app';
+  END IF;
+END $$;
+
+-- Set search path so unqualified table names still resolve (for backward compat)
+-- Application code should still qualify as `staging.flexcube_accounts`, etc.
+
 -- ── Audit trail (append-only, never DELETE) ────────────────────────────────
 CREATE TABLE IF NOT EXISTS audit_trail (
     id            BIGSERIAL PRIMARY KEY,
@@ -626,6 +672,170 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires  ON sessions (expires_at);
 -- Auto-expire sessions older than 12 hours (run as a cron job)
 -- DELETE FROM sessions WHERE expires_at < now() OR invalidated = true;
 
+
+-- ──────────────────────────────────────────────────────────────────────────
+-- v5.9 — STAGING TABLES (FLEXCUBE raw extracts)
+--
+-- These mirror FLEXCUBE source structures with permissive types.
+-- ETL pipeline writes here first, then validates, then promotes to mart.
+-- Data residency: Kenya. Retention: 30 days raw, then archived.
+-- ──────────────────────────────────────────────────────────────────────────
+
+-- ── Staging: FLEXCUBE customer extract ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS staging.flexcube_customers (
+    extract_id           BIGSERIAL PRIMARY KEY,
+    extract_ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    batch_id             VARCHAR(50) NOT NULL,
+    source_system        VARCHAR(20) NOT NULL DEFAULT 'FLEXCUBE',
+    -- FLEXCUBE columns (all VARCHAR for forgiving ingest)
+    customer_id          VARCHAR(50),
+    customer_name        VARCHAR(300),
+    customer_type        VARCHAR(20),
+    branch_code          VARCHAR(10),
+    rm_code              VARCHAR(50),
+    kyc_status           VARCHAR(20),
+    risk_rating          VARCHAR(20),
+    country              VARCHAR(10),
+    id_number            VARCHAR(50),
+    phone                VARCHAR(50),
+    email                VARCHAR(200),
+    customer_since       VARCHAR(50),  -- raw date from FLEXCUBE, parsed during validation
+    -- ETL control
+    validation_status    VARCHAR(20) DEFAULT 'PENDING',  -- PENDING / VALID / INVALID / PROMOTED
+    validation_errors    JSONB DEFAULT '[]',
+    promoted_to_mart_at  TIMESTAMPTZ,
+    raw_payload          JSONB DEFAULT '{}'  -- full FLEXCUBE record for debugging
+);
+CREATE INDEX IF NOT EXISTS idx_stg_cust_batch  ON staging.flexcube_customers (batch_id);
+CREATE INDEX IF NOT EXISTS idx_stg_cust_status ON staging.flexcube_customers (validation_status);
+CREATE INDEX IF NOT EXISTS idx_stg_cust_ts     ON staging.flexcube_customers (extract_ts DESC);
+
+-- ── Staging: FLEXCUBE accounts ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS staging.flexcube_accounts (
+    extract_id           BIGSERIAL PRIMARY KEY,
+    extract_ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    batch_id             VARCHAR(50) NOT NULL,
+    source_system        VARCHAR(20) NOT NULL DEFAULT 'FLEXCUBE',
+    -- FLEXCUBE columns
+    account_no           VARCHAR(50),
+    customer_id          VARCHAR(50),
+    branch_code          VARCHAR(10),
+    product_code         VARCHAR(20),
+    currency             VARCHAR(5),
+    available_balance    VARCHAR(50),  -- numeric as string from FLEXCUBE
+    ledger_balance       VARCHAR(50),
+    blocked_amount       VARCHAR(50),
+    account_status       VARCHAR(20),
+    opened_date          VARCHAR(50),
+    closed_date          VARCHAR(50),
+    -- ETL control
+    validation_status    VARCHAR(20) DEFAULT 'PENDING',
+    validation_errors    JSONB DEFAULT '[]',
+    promoted_to_mart_at  TIMESTAMPTZ,
+    raw_payload          JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_stg_acct_batch  ON staging.flexcube_accounts (batch_id);
+CREATE INDEX IF NOT EXISTS idx_stg_acct_status ON staging.flexcube_accounts (validation_status);
+
+-- ── Staging: FLEXCUBE loans ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS staging.flexcube_loans (
+    extract_id           BIGSERIAL PRIMARY KEY,
+    extract_ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    batch_id             VARCHAR(50) NOT NULL,
+    source_system        VARCHAR(20) NOT NULL DEFAULT 'FLEXCUBE',
+    loan_id              VARCHAR(50),
+    customer_id          VARCHAR(50),
+    branch_code          VARCHAR(10),
+    product_code         VARCHAR(20),
+    principal_amount     VARCHAR(50),
+    outstanding_amount   VARCHAR(50),
+    interest_rate        VARCHAR(20),
+    tenor_months         VARCHAR(10),
+    disbursement_date    VARCHAR(50),
+    maturity_date        VARCHAR(50),
+    next_emi_date        VARCHAR(50),
+    classification       VARCHAR(20),
+    dpd                  VARCHAR(10),
+    npl_flag             VARCHAR(5),
+    rm_code              VARCHAR(50),
+    -- ETL control
+    validation_status    VARCHAR(20) DEFAULT 'PENDING',
+    validation_errors    JSONB DEFAULT '[]',
+    promoted_to_mart_at  TIMESTAMPTZ,
+    raw_payload          JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_stg_loan_batch  ON staging.flexcube_loans (batch_id);
+CREATE INDEX IF NOT EXISTS idx_stg_loan_status ON staging.flexcube_loans (validation_status);
+
+-- ── Staging: FLEXCUBE transactions (daily) ─────────────────────────────
+CREATE TABLE IF NOT EXISTS staging.flexcube_transactions (
+    extract_id           BIGSERIAL PRIMARY KEY,
+    extract_ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    batch_id             VARCHAR(50) NOT NULL,
+    source_system        VARCHAR(20) NOT NULL DEFAULT 'FLEXCUBE',
+    transaction_id       VARCHAR(50),
+    account_no           VARCHAR(50),
+    transaction_date     VARCHAR(50),
+    value_date           VARCHAR(50),
+    transaction_type     VARCHAR(20),
+    debit_credit         VARCHAR(5),
+    amount               VARCHAR(50),
+    currency             VARCHAR(5),
+    description          TEXT,
+    channel              VARCHAR(20),
+    reference            VARCHAR(100),
+    posted_by            VARCHAR(50),
+    -- ETL control
+    validation_status    VARCHAR(20) DEFAULT 'PENDING',
+    validation_errors    JSONB DEFAULT '[]',
+    promoted_to_mart_at  TIMESTAMPTZ,
+    raw_payload          JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_stg_txn_batch ON staging.flexcube_transactions (batch_id);
+CREATE INDEX IF NOT EXISTS idx_stg_txn_date  ON staging.flexcube_transactions (transaction_date);
+CREATE INDEX IF NOT EXISTS idx_stg_txn_acct  ON staging.flexcube_transactions (account_no);
+
+-- ── Staging: FLEXCUBE GL balances (financial reporting) ────────────────
+CREATE TABLE IF NOT EXISTS staging.flexcube_gl_balances (
+    extract_id           BIGSERIAL PRIMARY KEY,
+    extract_ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    batch_id             VARCHAR(50) NOT NULL,
+    source_system        VARCHAR(20) NOT NULL DEFAULT 'FLEXCUBE',
+    gl_code              VARCHAR(20),
+    gl_description       TEXT,
+    branch_code          VARCHAR(10),
+    currency             VARCHAR(5),
+    debit_balance        VARCHAR(50),
+    credit_balance       VARCHAR(50),
+    net_balance          VARCHAR(50),
+    balance_date         VARCHAR(50),
+    -- ETL control
+    validation_status    VARCHAR(20) DEFAULT 'PENDING',
+    validation_errors    JSONB DEFAULT '[]',
+    promoted_to_mart_at  TIMESTAMPTZ,
+    raw_payload          JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_stg_gl_batch ON staging.flexcube_gl_balances (batch_id);
+CREATE INDEX IF NOT EXISTS idx_stg_gl_date  ON staging.flexcube_gl_balances (balance_date);
+
+-- ── Staging: ETL batch register (one row per ETL run) ──────────────────
+CREATE TABLE IF NOT EXISTS staging.etl_batch_register (
+    batch_id             VARCHAR(50) PRIMARY KEY,
+    extract_started      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    extract_completed    TIMESTAMPTZ,
+    source_system        VARCHAR(20) NOT NULL,
+    extract_type         VARCHAR(50),  -- "FULL" / "INCREMENTAL" / "REPLAY"
+    record_count         INT DEFAULT 0,
+    valid_count          INT DEFAULT 0,
+    invalid_count        INT DEFAULT 0,
+    promoted_count       INT DEFAULT 0,
+    status               VARCHAR(20) DEFAULT 'RUNNING',  -- RUNNING / COMPLETED / FAILED / PARTIAL
+    error_message        TEXT,
+    triggered_by         VARCHAR(100),
+    metadata             JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_stg_batch_started ON staging.etl_batch_register (extract_started DESC);
+CREATE INDEX IF NOT EXISTS idx_stg_batch_status  ON staging.etl_batch_register (status);
 
 -- ──────────────────────────────────────────────────────────────────────────
 -- v5.8 — NEW MODULE TABLES (Phase 1, Phase 2, Phase 3 + FLEXCUBE)
@@ -979,6 +1189,64 @@ CREATE TABLE IF NOT EXISTS module_config (
     last_updated    TIMESTAMPTZ DEFAULT now(),
     last_updated_by VARCHAR(100)
 );
+
+
+-- ──────────────────────────────────────────────────────────────────────────
+-- v5.9 — RECONCILIATION FRAMEWORK
+--
+-- Daily checks: A2Z numbers vs FLEXCUBE numbers (deposits, loans, fees, NPL%).
+-- Breaks (mismatches > tolerance) trigger alerts to Finance.
+-- 30-day clean run = signal to deprecate JSON cache.
+--
+-- Lives in `audit` schema for tamper-proof retention (CBK 7-year requirement).
+-- ──────────────────────────────────────────────────────────────────────────
+
+-- ── Reconciliation runs (one row per check execution) ──────────────────
+CREATE TABLE IF NOT EXISTS audit.recon_runs (
+    run_id               BIGSERIAL PRIMARY KEY,
+    run_ts               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    check_name           VARCHAR(100) NOT NULL,
+    check_category       VARCHAR(50),  -- DEPOSITS / LOANS / FEES / NPL / CAPITAL / GENERIC
+    a2z_value            NUMERIC(20,2),
+    flexcube_value       NUMERIC(20,2),
+    variance             NUMERIC(20,2),
+    variance_pct         NUMERIC(10,4),
+    tolerance_kes        NUMERIC(20,2),
+    tolerance_pct        NUMERIC(10,4),
+    status               VARCHAR(20),  -- MATCH / BREAK / WARN
+    duration_ms          INT,
+    triggered_by         VARCHAR(100),  -- "scheduled" or username
+    notes                TEXT,
+    metadata             JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_recon_ts     ON audit.recon_runs (run_ts DESC);
+CREATE INDEX IF NOT EXISTS idx_recon_status ON audit.recon_runs (status);
+CREATE INDEX IF NOT EXISTS idx_recon_check  ON audit.recon_runs (check_name);
+
+-- ── Reconciliation breaks (only entries where status = BREAK) ──────────
+CREATE TABLE IF NOT EXISTS audit.recon_breaks (
+    break_id             BIGSERIAL PRIMARY KEY,
+    run_id               BIGINT REFERENCES audit.recon_runs(run_id),
+    break_ts             TIMESTAMPTZ NOT NULL DEFAULT now(),
+    check_name           VARCHAR(100) NOT NULL,
+    check_category       VARCHAR(50),
+    a2z_value            NUMERIC(20,2),
+    flexcube_value       NUMERIC(20,2),
+    variance             NUMERIC(20,2),
+    variance_pct         NUMERIC(10,4),
+    severity             VARCHAR(20),  -- CRITICAL / HIGH / MEDIUM / LOW
+    status               VARCHAR(20) DEFAULT 'OPEN',  -- OPEN / INVESTIGATING / RESOLVED / WAIVED
+    assigned_to          VARCHAR(100),
+    resolution           TEXT,
+    resolved_ts          TIMESTAMPTZ,
+    resolved_by          VARCHAR(100),
+    metadata             JSONB DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_break_open ON audit.recon_breaks (status) WHERE status = 'OPEN';
+CREATE INDEX IF NOT EXISTS idx_break_ts   ON audit.recon_breaks (break_ts DESC);
+
+-- Recon results are append-only (no UPDATE/DELETE on recon_runs)
+-- audit.recon_breaks allows status updates as breaks get investigated/resolved
 
 """
 

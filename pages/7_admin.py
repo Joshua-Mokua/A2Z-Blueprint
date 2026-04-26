@@ -3,6 +3,7 @@ import streamlit as st
 from pages._admin_sprint import render_sprint_config
 from pages._admin_module_config import render_module_config_centre
 from pages._admin_postgres import render_postgres_centre
+from pages._admin_reconciliation import render_recon_centre
 from pages._admin_org import (
     render_dept_manager, render_branch_manager,
     render_module_assignment, render_roles_manager,
@@ -79,6 +80,7 @@ tabs = st.tabs([
     "🚀 Sprint Modules",
     "🔧 Module Config Centre",
     "🗄️ PostgreSQL Migration",
+    "🔍 Reconciliation",
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -3703,6 +3705,7 @@ if is_admin:
     render_sprint_config(tabs[25], uname)
     render_module_config_centre(tabs[26], uname, is_admin)
     render_postgres_centre(tabs[27], uname, is_admin)
+    render_recon_centre(tabs[28], uname, is_admin)
 
 # ── IP Protection & System Fingerprint ───────────────────────────
 if is_admin:

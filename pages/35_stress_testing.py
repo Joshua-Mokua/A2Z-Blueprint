@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import date
 from pages._shared import load_shared_state
 from pages._access import require_access
+from utils.core import audit_log
 import requests
 
 require_access("stress_testing")
@@ -169,6 +170,7 @@ with tabs[2]:
     c_ecl    = cc2.number_input("ECL provision change (%)", value=0.0, step=5.0, key="st_ecl")
 
     if st.button("▶️ Run custom scenario", key="st_custom", type="primary"):
+        audit_log("STRESS_TEST_RUN", uname, "Custom scenario executed")
         s_npl  = round(BASE_NPL+c_npl,2)
         s_ecl  = round(BASE_ECL*(1+c_ecl/100)/1e6,0)
         s_lcr  = round(BASE_LCR-abs(c_npl)*3,1) if c_npl>0 else round(BASE_LCR+3,1)

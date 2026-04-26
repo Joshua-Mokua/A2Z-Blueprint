@@ -251,6 +251,7 @@ with cm_tabs[1]:
                             w["last_reviewed"] = str(date.today())
                     cm_data["watchlist"] = watchlist
                     (DATA/"credit_monitoring.json").write_text(json.dumps(cm_data, indent=2))
+                    audit_log("CREDIT_MONITORING_UPDATED", uname, "Credit monitoring data saved")
                     load_cm.clear()
                     st.success("Note saved.")
                     st.cache_data.clear()

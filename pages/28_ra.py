@@ -9,11 +9,12 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 
 require_access("ra")
+_ = audit_log("RA_PAGE_VIEWED", uname, "RA dashboard viewed") if "uname" in dir() else None
 
 def _bsc_trigger(username: str, kpi: str = ""):
     """Non-blocking BSC update."""
     try:
-        from utils.core import update_bsc_from_modules as _ubm
+        from utils.core import update_bsc_from_modules as _ubm, audit_log
         _ubm(username)
     except Exception:
         pass

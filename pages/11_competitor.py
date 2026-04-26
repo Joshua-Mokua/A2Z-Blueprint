@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import date
 from pages._shared import load_shared_state
 from pages._access import require_access
+from utils.core import audit_log
 import requests, re
 
 require_access("competitor")
@@ -141,6 +142,7 @@ with tabs[4]:
     st.caption("Claude analyses our position vs peers and generates a strategic brief.")
     our = banks.get(OUR_BANK,{})
     if st.button("🤖 Generate competitive brief", key="ci_ai", type="primary"):
+        audit_log("COMPETITOR_BRIEF_GENERATED", uname, "AI competitive brief")
         with st.spinner("Analysing competitive landscape…"):
             try:
                 _context = (f"Ecobank Kenya: Assets KES {our.get('assets_kes_b',0)}B, "
