@@ -76,32 +76,67 @@ def _format_value_for_display(val):
         return ", ".join(f"{k}: {v}" for k,v in val.items())
     return str(val) if val is not None else "—"
 
+def _safe_int_bounds(field_name, field_value):
+    """Compute safe min/max bounds for an integer field.
+
+    Bounds are computed from the actual stored value (not a brittle field-name
+    heuristic) so a banking ratio like LCR=110% doesn't blow past a hardcoded
+    cap of 100. We expand the range to give the admin headroom in both directions.
+    """
+    fname = field_name.lower()
+    val = field_value if field_value is not None else 0
+    abs_val = abs(val) if val else 1
+
+    # Lower bound: zero by default, but allow negatives if the stored value is negative
+    lo = 0 if val >= 0 else -10 * abs_val
+
+    # Upper bound: at minimum allow 10× the current value, with sensible floors per category
+    if "pct" in fname or "percent" in fname or "ratio" in fname:
+        hi = max(200, val * 3)        # ratios often exceed 100 (LCR/NSFR)
+    elif "days" in fname:
+        hi = max(3650, val * 3)        # 10 years default, expand if stored higher
+    elif "hours" in fname:
+        hi = max(8760, val * 3)        # 1 year of hours
+    elif "minutes" in fname:
+        hi = max(10080, val * 3)       # 1 week of minutes
+    elif "seconds" in fname:
+        hi = max(3600, val * 3)        # 1 hour
+    elif "kes" in fname or "amount" in fname or "limit" in fname:
+        hi = max(10_000_000_000, val * 10)  # KES amounts can be huge
+    elif "count" in fname or "target" in fname:
+        hi = max(10_000, val * 10)
+    else:
+        hi = max(1_000_000, val * 10)
+
+    return int(lo), int(hi)
+
+
 def _render_configurable_field(field_name, field_value, key_prefix):
     """Render the right Streamlit input for a configurable value."""
     label = field_name.replace("_", " ").title()
     field_key = f"{key_prefix}__{field_name}"
 
-    # bool → checkbox
+    # bool → checkbox  (must be checked BEFORE int — Python: bool is subclass of int)
     if isinstance(field_value, bool):
         return st.checkbox(label, value=field_value, key=field_key)
 
-    # int → number_input
-    if isinstance(field_value, int) and not isinstance(field_value, bool):
-        if "pct" in field_name or "percent" in field_name:
-            return st.number_input(label, min_value=0, max_value=100, value=field_value, key=field_key)
-        if "days" in field_name:
-            return st.number_input(label, min_value=0, max_value=3650, value=field_value, key=field_key)
-        if "hours" in field_name:
-            return st.number_input(label, min_value=0, max_value=8760, value=field_value, key=field_key)
-        if "minutes" in field_name:
-            return st.number_input(label, min_value=0, max_value=10080, value=field_value, key=field_key)
-        if "seconds" in field_name:
-            return st.number_input(label, min_value=0, max_value=3600, value=field_value, key=field_key)
-        return st.number_input(label, value=field_value, key=field_key, step=1)
+    # int → number_input with dynamic bounds
+    if isinstance(field_value, int):
+        lo, hi = _safe_int_bounds(field_name, field_value)
+        try:
+            return st.number_input(label, min_value=lo, max_value=hi,
+                                   value=field_value, key=field_key, step=1)
+        except Exception:
+            # Last-resort fallback: free-form number input with no bounds
+            return st.number_input(label, value=field_value, key=field_key, step=1)
 
-    # float → number_input with step
+    # float → number_input with no rigid bounds (banking values vary widely)
     if isinstance(field_value, float):
-        return st.number_input(label, value=field_value, key=field_key, step=0.1, format="%.4f")
+        try:
+            return st.number_input(label, value=field_value, key=field_key,
+                                   step=0.1, format="%.4f")
+        except Exception:
+            return st.number_input(label, value=field_value, key=field_key, step=0.1)
 
     # list → multiselect / display
     if isinstance(field_value, list):
