@@ -283,39 +283,177 @@ def gate_conventions_docs() -> Dict[str, Any]:
 
 
 def gate_bsc_contract() -> Dict[str, Any]:
-    """G8 — BSC Data Contract: addendum requirement.
+    """G8 — Universal BSC Data Contract + Central Engine (addendum Standards #1 + #2).
 
-    Verifies modules that feed BSC use the standard contract shape:
-    {staff_code, kpi_id, value, period, source_module}.
-    For now, this is a presence check — a contract validation utility
-    would be the next step.
+    Two checks, both must hold:
+
+    A) Every call to utils.bsc_engine.submit() or submit_batch() must pass
+       the full 5-field contract:
+           staff_code, kpi_id, value, period, source_module
+
+       Calls missing fields are violations.
+
+    B) NO module outside utils/bsc_engine.py is allowed to write directly
+       to bsc_actuals_*.json files or to performance.actuals in PG. The
+       engine is the only legitimate writer. Bypass writes are violations.
+
+    The gate also reports the count of compliant submitter sites — once
+    there's at least one, the gate is no longer vacuous.
+
+    Pre-v5.18 this gate was a presence-check that passed with zero writers
+    found. v5.18 makes it a structural enforcement: the engine exists,
+    one pilot module is wired through it, and bypass writes fail the gate.
     """
+    engine_path = UTILS / "bsc_engine.py"
+    engine_present = engine_path.exists()
+
+    violations: List[str] = []
+    compliant_submitters = 0
+    bypass_writers = 0
+    submitter_modules: set = set()
+
+    # The engine itself, this audit script, and any file matching these
+    # exemptions don't count as bypass writers.
+    EXEMPT_FROM_BYPASS_CHECK = {"utils/bsc_engine.py", "scripts/audit.py"}
+
+    files_to_scan: List[Path] = []
+    for d in (PAGES, UTILS, SCRIPTS):
+        if d.exists():
+            files_to_scan.extend(p for p in d.glob("*.py") if "backup" not in p.name)
+
     contract_fields = {"staff_code", "kpi_id", "value", "period", "source_module"}
 
-    # Look for any module that mentions writing to performance.actuals or
-    # to a "bsc_actuals" key. If it uses all 5 contract fields nearby, it's
-    # compliant; if it writes performance data without them, flag it.
-    violations = []
-    bsc_writers_found = 0
-    for p in PAGES.glob("*.py"):
-        if "backup" in p.name:
-            continue
+    # Bypass detection: direct writes to bsc_actuals_* or performance.actuals
+    bypass_rx = re.compile(
+        r"""(
+            save_json\s*\([^)]*bsc_actuals     # save_json(... 'bsc_actuals' ...)
+          | bsc_actuals_[A-Za-z0-9_-]+\.json   # bsc_actuals_2026-04.json literal
+          | INSERT\s+INTO\s+performance\.actuals
+          | UPDATE\s+performance\.actuals
+        )""",
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    for p in files_to_scan:
+        rel = str(p.relative_to(ROOT))
         code = read_text_safe(p)
-        # Heuristic: look for performance-related saves
-        if "performance.actuals" in code or "bsc_actuals" in code:
-            bsc_writers_found += 1
-            field_hits = sum(1 for f in contract_fields if f in code)
-            if field_hits < 3:  # we expect at least staff_code, kpi_id, value
-                violations.append(f"{p.name}: only {field_hits}/5 contract fields present")
+
+        # ── A) submitter compliance ─────────────────────────────────
+        # Only count calls in files that actually import the engine.
+        # Otherwise `form.submit()` and other unrelated submit() calls
+        # would all match the regex.
+        imports_engine = bool(re.search(
+            r"from\s+utils\.bsc_engine\s+import|import\s+utils\.bsc_engine",
+            code,
+        ))
+
+        if rel == "utils/bsc_engine.py" or rel == "scripts/audit.py":
+            imports_engine = False  # engine + audit script don't count
+
+        if imports_engine:
+            # Find aliases used. e.g. `from utils.bsc_engine import submit_batch as _bsc_submit_batch`
+            aliases: List[str] = []
+            for am in re.finditer(
+                r"from\s+utils\.bsc_engine\s+import\s+([^\n]+)",
+                code,
+            ):
+                for spec in am.group(1).split(","):
+                    spec = spec.strip()
+                    if not spec:
+                        continue
+                    if " as " in spec:
+                        orig, alias = [s.strip() for s in spec.split(" as ")]
+                        if orig in ("submit", "submit_batch"):
+                            aliases.append((alias, orig))
+                    elif spec in ("submit", "submit_batch"):
+                        aliases.append((spec, spec))
+
+            # Also handle attribute-style: bsc_engine.submit / bsc_engine.submit_batch
+            aliases.extend([
+                ("bsc_engine.submit", "submit"),
+                ("bsc_engine.submit_batch", "submit_batch"),
+            ])
+
+            # Deduplicate by alias name
+            seen_aliases = set()
+            unique_aliases = []
+            for alias, orig in aliases:
+                if alias not in seen_aliases:
+                    seen_aliases.add(alias)
+                    unique_aliases.append((alias, orig))
+
+            for alias, orig in unique_aliases:
+                # Match calls: `alias(`
+                # Use word-boundary on either side; allow attribute access form
+                pat = re.compile(
+                    r"(?<![\w.])" + re.escape(alias) + r"\s*\(",
+                )
+                for m in pat.finditer(code):
+                    # Walk forward to find matching close paren
+                    start = m.end()
+                    depth = 1
+                    i = start
+                    while i < len(code) and depth > 0:
+                        c = code[i]
+                        if c == "(":
+                            depth += 1
+                        elif c == ")":
+                            depth -= 1
+                        i += 1
+                    arg_block = code[start:i - 1]
+
+                    present = {f for f in contract_fields if re.search(rf"\b{f}\s*=", arg_block)}
+
+                    if orig == "submit_batch":
+                        if "source_module" in present:
+                            compliant_submitters += 1
+                            submitter_modules.add(rel)
+                        else:
+                            violations.append(
+                                f"{rel} {orig}() missing source_module= kwarg"
+                            )
+                    else:
+                        # plain submit() — needs all 5 contract fields
+                        missing = contract_fields - present
+                        if not missing:
+                            compliant_submitters += 1
+                            submitter_modules.add(rel)
+                        else:
+                            violations.append(
+                                f"{rel} {orig}() missing contract fields: {sorted(missing)}"
+                            )
+
+        # ── B) bypass-writer detection ──────────────────────────────
+        if rel in EXEMPT_FROM_BYPASS_CHECK:
+            continue
+        for m in bypass_rx.finditer(code):
+            line_start = code.rfind("\n", 0, m.start()) + 1
+            line_end = code.find("\n", m.end())
+            line = code[line_start:line_end if line_end > 0 else len(code)]
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if "noqa: a2z-bsc-bypass" in line:
+                continue
+            bypass_writers += 1
+            lineno = code.count("\n", 0, m.start()) + 1
+            violations.append(f"{rel}:L{lineno} bypass write: {stripped[:80]}")
+
+    if not engine_present:
+        violations.append("utils/bsc_engine.py missing — engine MUST exist (addendum Standard #2)")
+
+    summary = (
+        f"engine={'present' if engine_present else 'MISSING'}, "
+        f"{compliant_submitters} compliant submitter call(s) across "
+        f"{len(submitter_modules)} module(s), "
+        f"{bypass_writers} bypass writer(s) (target: 0)"
+    )
 
     return {
-        "id": "G8",
-        "name": "bsc_contract",
-        "passed": not violations,
-        "summary": (
-            f"{bsc_writers_found} BSC writer(s) found, "
-            f"{bsc_writers_found - len(violations)} contract-compliant"
-        ),
+        "id":     "G8",
+        "name":   "bsc_contract",
+        "passed": not violations and engine_present,
+        "summary": summary,
         "violations": violations,
     }
 

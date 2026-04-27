@@ -302,13 +302,73 @@ def compute_actuals_from_cbs(force: bool = False) -> dict:
     # ── Inject cascade targets ────────────────────────────────────────
     tgt_updated = inject_cascade_targets(out_path)
 
+    # ── Pilot: route through utils.bsc_engine (Standards #1 + #2) ─────
+    # Every BSC contribution from the CBS-derived actuals is now stamped
+    # through the central engine. Failures here are non-fatal — the
+    # legacy xlsx output still ships even if the engine rejects records.
+    bsc_summary = _submit_to_bsc_engine(rows, period)
+
     elapsed = (datetime.now() - t0).total_seconds()
     return {"success": True, "path": out_path,
             "rows": len(rows),
             "targets_set": tgt_updated,
+            "bsc_engine":  bsc_summary,
             "duration_s": round(elapsed, 1),
             "message": (f"Computed {len(rows):,} KPI rows, "
-                        f"{tgt_updated:,} targets injected in {elapsed:.1f}s")}
+                        f"{tgt_updated:,} targets injected, "
+                        f"BSC engine: {bsc_summary.get('ok',0)} ok / "
+                        f"{bsc_summary.get('rejected',0)} rejected "
+                        f"in {elapsed:.1f}s")}
+
+
+def _period_to_engine_format(legacy_period: str) -> str:
+    """Translate actuals_engine's 'Mar-26' label into the BSC engine's
+    canonical 'YYYY-MM' contract format.
+
+    'Mar-26' → '2026-03'
+    Falls back to current YYYY-MM if parsing fails.
+    """
+    from datetime import datetime as _dt
+    try:
+        # Parse with %y (2-digit year, current century by default)
+        parsed = _dt.strptime(legacy_period, "%b-%y")
+        return parsed.strftime("%Y-%m")
+    except Exception:
+        return _dt.today().strftime("%Y-%m")
+
+
+def _submit_to_bsc_engine(rows: list, legacy_period: str) -> dict:
+    """Translate actuals rows into the universal BSC contract and submit
+    them through utils.bsc_engine. Returns the engine's batch summary.
+
+    This is the addendum Standards #1 + #2 pilot — the actuals engine is
+    the first module wired to the central BSC integration engine.
+    """
+    try:
+        from utils.bsc_engine import submit_batch as _bsc_submit_batch
+    except Exception as e:
+        return {"ok": 0, "rejected": 0, "errors": [{"index": -1, "error": f"bsc_engine import failed: {e}"}]}
+
+    period = _period_to_engine_format(legacy_period)
+    contract_records = []
+    for r in rows:
+        sc  = str(r.get("Staff Code", "")).strip()
+        kid = str(r.get("kpi_id", "")).strip()
+        val = r.get(legacy_period, r.get("Annual Actual", 0))
+        if not sc or not kid:
+            continue
+        contract_records.append({
+            "staff_code": sc,
+            "kpi_id":     kid,
+            "value":      val,
+            "period":     period,
+        })
+
+    return _bsc_submit_batch(
+        records       = contract_records,
+        source_module = "actuals_engine",
+        actor         = "actuals_engine_etl",
+    )
 
 
 
@@ -648,6 +708,7 @@ def _build_from_cbs(staff_list, role_kpis, id_to_kpi, kpi_weights,
                 "Category":      str(staff.get("Category", "")),
                 "Staff Status":  str(staff.get("Staff Status", "Active")),
                 "KPI":           kpi_name,
+                "kpi_id":        kpi_id,  # for bsc_engine contract submission
                 "Pillar":        pillar,
                 "Weight":        weight,
                 "Annual Target": 0,      # filled by inject_cascade_targets()

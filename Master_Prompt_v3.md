@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.17 (April 2026)
+**Current version:** v5.18 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -76,6 +76,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - ~~**V-004 Stored XSS** — closed in v5.15. `safe_html()` applied at every user-data interpolation in 0_home.py, 1_perform.py, 7_admin.py, _sidebar.py. Verified by audit gate G10.~~
 - ~~**V-003 Password hashing (SHA-256)** — closed in v5.16. `_hash_password()` module-level helper using bcrypt with SHA-256 fallback. Bootstrap and runtime now share one implementation. Rehash-on-next-login already in `authenticate()`. Verified by audit gate G11.~~
 - ~~**V-001 API authentication bypass** — closed in v5.17. JWT bearer auth on every endpoint except `/api/health`; `/api/cache/clear` is admin-only. New `utils/auth_jwt.py`, new `/api/auth/login` and `/api/auth/me` routes. CORS tightened (V-009 also closed) — origins from `A2Z_CORS_ORIGINS` env var. Verified by audit gate G12.~~
+- ~~**BSC central integration engine** — closed in v5.18 (addendum Standards #1 + #2). New `utils/bsc_engine.py` with `submit()` / `submit_batch()` / `get_actual()` enforcing the 5-field contract through a 5-stage pipeline (validate → standardise → enrich → persist → audit). Idempotency via SHA-256 hash. Pilot module: `utils/actuals_engine.py` now stamps every CBS-derived KPI row through the engine. G8 evolved from vacuous presence-check to structural enforcement.~~
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test suite** — zero unit tests. pytest + CI/CD required. Effort: 4 weeks.
@@ -115,6 +116,34 @@ All modules MUST pass through a central integration layer responsible for:
 - **Enrichment** — adding `source_module` and timestamp
 - **Controlled insertion** — into `performance.actuals`
 - **Audit logging** — every transaction goes to `audit.audit_logs`
+
+**Implementation: `utils/bsc_engine.py` (v5.18).** Public API:
+
+```python
+from utils.bsc_engine import submit, submit_batch, get_actual
+
+# Single submission — kwargs are mandatory (the audit gate G8 detects them)
+ok, msg = submit(
+    staff_code    = "300001",
+    kpi_id        = "DEP_GROWTH",
+    value         = 12.5,
+    period        = "2026-04",
+    source_module = "cbs_etl",
+    actor         = "etl_runner",
+)
+
+# Bulk
+result = submit_batch(records, source_module="cbs_etl", actor="etl_runner")
+
+# Read
+val = get_actual(staff_code="300001", kpi_id="DEP_GROWTH", period="2026-04")
+```
+
+The engine enforces idempotency via SHA-256 hash of `(staff_code, kpi_id, period, source_module)` — replays update existing records rather than duplicating. Storage is one JSON file per period (`data/bsc_actuals_<period>.json`), routed through `a2z_db.save_json` so the dual-mode PG/JSON pattern applies. When `TABLE_USE_DB["bsc_actuals"]` flips True, records will land in `performance.actuals` automatically.
+
+**No module is allowed to write directly to `bsc_actuals_*.json` or `performance.actuals`.** The audit gate G8 detects bypass writes and fails the build. Modules contribute via `submit()` or `submit_batch()` only — no exceptions.
+
+**Pilot module wired in v5.18:** `utils/actuals_engine.py` — after `compute_actuals_from_cbs()` writes the actuals XLSX, every row also goes through `bsc_engine.submit_batch(source_module="actuals_engine")`. This is the reference example for any future module that produces BSC contributions.
 
 No module is allowed to write directly into performance tables without passing through this engine. Implementation lives in `utils/bsc_engine.py` (to be built — placeholder per audit gap).
 
@@ -402,7 +431,7 @@ The single source of truth for the score is `python scripts/audit.py`. It runs t
 | G5 | admin_sections | Exactly the 6 required sections in `7_admin.py` |
 | G6 | registry_coverage | All registered modules render via the renderer |
 | G7 | conventions_docs | All required docs present under `docs/` |
-| G8 | bsc_contract | BSC writers comply with the universal data contract (Standard #1) |
+| G8 | bsc_contract | utils/bsc_engine.py exists. Every `submit()` call passes the 5 contract fields as kwargs. NO module outside the engine writes directly to `bsc_actuals_*.json` or `performance.actuals` (Standards #1 + #2) |
 | G9 | sql_safety | utils/db.py uses TABLE_REGISTRY whitelist + `psycopg2.sql.Identifier()` (closes V-002) |
 | G10 | xss_safety | User-controlled data flowing into `unsafe_allow_html` is wrapped in `safe_html()` (closes V-004) |
 | G11 | password_safety | All password hashes go through bcrypt (`_hash_password` / `hash_pw`); no raw SHA-256 (closes V-003) |
@@ -473,4 +502,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.16. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.18. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
