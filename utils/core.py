@@ -6480,6 +6480,29 @@ def compute_operational_kpi_actuals(username: str, period: str = "2026") -> dict
     return actuals
 
 
+def _legacy_period_to_engine(legacy: str) -> str:
+    """Translate legacy period strings into the BSC engine's canonical
+    'YYYY-MM' format. Accepts 'Feb 2026', 'Feb-26', '2026-02', '2026-Q1',
+    falling back to current YYYY-MM if parsing fails.
+
+    Used by update_bsc_from_modules to bridge to bsc_engine.submit_batch.
+    """
+    from datetime import datetime as _dt
+    if not isinstance(legacy, str) or not legacy.strip():
+        return _dt.today().strftime("%Y-%m")
+    s = legacy.strip()
+    # Already canonical?
+    if len(s) == 7 and s[4] == "-":
+        return s  # "2026-02" or "2026-Q1"
+    # "Feb 2026"
+    for fmt in ("%b %Y", "%b-%y", "%b-%Y", "%B %Y"):
+        try:
+            return _dt.strptime(s, fmt).strftime("%Y-%m")
+        except ValueError:
+            continue
+    return _dt.today().strftime("%Y-%m")
+
+
 def update_bsc_from_modules(username: str, period: str = "Feb 2026") -> dict:
     """
     Update a staff member's BSC KPI scores from operational modules.
@@ -6524,6 +6547,41 @@ def update_bsc_from_modules(username: str, period: str = "Feb 2026") -> dict:
     
     if not actuals:
         return user_score
+    
+    # ── BSC engine pilot #2: stamp every actual through the contract ──
+    # Each entry in `actuals` is already a (kpi_id, value) pair tagged with
+    # a `source` field. Translate to the universal contract and submit
+    # through utils/bsc_engine. Failures are non-blocking — the legacy
+    # kpi_scores update below still runs even if the engine rejects records.
+    try:
+        from utils.bsc_engine import submit_batch as _bsc_submit_batch
+        _staff_code = str(user_score.get("staff_code", "") or "").strip()
+        _engine_period = _legacy_period_to_engine(period)
+        if _staff_code and _engine_period:
+            _bsc_records = []
+            for _kid, _payload in actuals.items():
+                _val = _payload.get("actual")
+                if _val is None:
+                    continue
+                _bsc_records.append({
+                    "staff_code": _staff_code,
+                    "kpi_id":     _kid,
+                    "value":      _val,
+                    "period":     _engine_period,
+                    "metadata":   {
+                        "original_source": str(_payload.get("source", "")),
+                        "detail":          str(_payload.get("detail", ""))[:200],
+                    },
+                })
+            if _bsc_records:
+                _bsc_submit_batch(
+                    records       = _bsc_records,
+                    source_module = "operational_modules",
+                    actor         = username,
+                )
+    except Exception as _e:
+        # Engine failures must never block the legacy update path.
+        pass
     
     # Update kpi_scores with new actuals
     kpi_scores = user_score.get("kpi_scores", {})

@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.18 (April 2026)
+**Current version:** v5.19 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -143,7 +143,11 @@ The engine enforces idempotency via SHA-256 hash of `(staff_code, kpi_id, period
 
 **No module is allowed to write directly to `bsc_actuals_*.json` or `performance.actuals`.** The audit gate G8 detects bypass writes and fails the build. Modules contribute via `submit()` or `submit_batch()` only — no exceptions.
 
-**Pilot module wired in v5.18:** `utils/actuals_engine.py` — after `compute_actuals_from_cbs()` writes the actuals XLSX, every row also goes through `bsc_engine.submit_batch(source_module="actuals_engine")`. This is the reference example for any future module that produces BSC contributions.
+**Pilot modules wired through the engine:**
+- `utils/actuals_engine.py` (v5.18) — after `compute_actuals_from_cbs()` writes the actuals XLSX, every CBS-derived row goes through `bsc_engine.submit_batch(source_module="actuals_engine")`.
+- `utils/core.py` `update_bsc_from_modules` (v5.19) — every operational KPI computed by `compute_operational_kpi_actuals` (36 KPIs covering projects, CIMS, pipeline, loan applications, EWS, AML, branch log) now flows through `bsc_engine.submit_batch(source_module="operational_modules")`. Original module name preserved in `metadata.original_source`.
+
+These two pilots together cover the vast majority of BSC contributions — CBS-derived numbers from the ETL path AND per-event operational updates from the bridge function called by every operational module.
 
 No module is allowed to write directly into performance tables without passing through this engine. Implementation lives in `utils/bsc_engine.py` (to be built — placeholder per audit gap).
 
@@ -502,4 +506,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.18. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.19. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
