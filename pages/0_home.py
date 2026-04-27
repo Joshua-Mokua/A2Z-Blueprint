@@ -22,9 +22,16 @@ require_access("perform")
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
 staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
-name    = ud.get("full_name", uname) or uname
-role    = ud.get("role", "")
-unit    = ud.get("unit", "")
+# V-004 mitigation — these values flow into st.markdown(unsafe_allow_html=True)
+# blocks throughout this file. An admin who sets a user's full_name to
+# <script>...</script> would XSS every viewer of the home page. Escape once
+# at the source so every downstream interpolation is safe by default.
+_raw_name = ud.get("full_name", uname) or uname
+_raw_role = ud.get("role", "")
+_raw_unit = ud.get("unit", "")
+name    = safe_html(_raw_name)
+role    = safe_html(_raw_role)
+unit    = safe_html(_raw_unit)
 hour    = datetime.now().hour
 greet   = ("Good morning" if hour < 12 else "Good afternoon" if hour < 17 else "Good evening")
 
@@ -107,7 +114,7 @@ st.markdown(_h, unsafe_allow_html=True)
 # ── Quick stats (if data loaded) ──────────────────────────────────────
 if len(staff_scores):
     vis    = get_visible_staff(ud, staff_scores)
-    my_row = staff_scores[staff_scores["Staff Name"]==name]
+    my_row = staff_scores[staff_scores["Staff Name"]==_raw_name]
 
     # Build stat cards as styled HTML
     _stats = []
@@ -133,7 +140,7 @@ if len(staff_scores):
         try:
             _my_sc2 = str(ud.get("staff_code","") or uname)
             _locked  = casc.targets_locked(_my_sc2,_gfy())
-            _given   = casc.get_what_i_was_given(_my_sc2,_gfy(),name)
+            _given   = casc.get_what_i_was_given(_my_sc2,_gfy(),_raw_name)
             _clbl    = "🔒 Locked" if _locked else ("⏳ Received" if _given else "⚠️ Not set")
             _cclr    = "var(--brand-primary,#006B3F)" if _locked else ("#F5A623" if _given else "#E24B4A")
             _stats.append(("My cascade",  _clbl, _cclr, "🎯"))
@@ -266,7 +273,7 @@ try:
 except Exception: pass
 
 # ── Quick action cards ───────────────────────────────────────────────
-_role_l = role.lower()
+_role_l = _raw_role.lower()
 _qa_items = []
 if any(x in _role_l for x in ('relationship','business banker','rm')):
     _qa_items += [('📊 New Pipeline Deal',     'pipeline',    '#2563EB'),
@@ -490,7 +497,7 @@ if accessible:
                     try:
                         if mod == "cascade" and casc:
                             _my_sc2 = str(ud.get("staff_code","") or uname)
-                            _given2 = casc.get_what_i_was_given(_my_sc2,_gfy(),name)
+                            _given2 = casc.get_what_i_was_given(_my_sc2,_gfy(),_raw_name)
                             _locked2 = casc.targets_locked(_my_sc2,_gfy())
                             _stat = "🔒 Locked" if _locked2 else (f"⏳ {len(_given2)} KPI(s) pending" if _given2 else "⚠️ Not cascaded")
                         elif mod == "pipeline" and pm:
@@ -502,7 +509,7 @@ if accessible:
                                            if l.get("approved") is None]
                             _stat = f"{len(_pending_lv)} leave request(s) pending" if _pending_lv else ""
                         elif mod == "perform" and len(staff_scores):
-                            _my_row2 = staff_scores[staff_scores["Staff Name"]==name]
+                            _my_row2 = staff_scores[staff_scores["Staff Name"]==_raw_name]
                             if len(_my_row2):
                                 _sc2 = float(_my_row2.iloc[0].get("Final_BSC_Score",0))
                                 _stat = f"BSC: {_sc2:.2f} / 5.0"
@@ -606,7 +613,7 @@ with n1:
     if casc:
         try:
             my_sc  = str(ud.get("staff_code","") or uname)
-            given  = casc.get_what_i_was_given(my_sc, _gfy(), name)
+            given  = casc.get_what_i_was_given(my_sc, _gfy(), _raw_name)
             locked = casc.targets_locked(my_sc, _gfy())
             if given and not locked:
                 notices.append(("🎯","You have cascaded targets awaiting your acceptance",

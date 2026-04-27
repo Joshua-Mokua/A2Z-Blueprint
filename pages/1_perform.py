@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta, date
 from utils.core import *
 
-from pages._shared import load_shared_state, get_user_proposition
+from pages._shared import load_shared_state, get_user_proposition, safe_html
 from pages._access import require_access, get_my_scope
 require_access("perform")
 
@@ -1697,9 +1697,9 @@ with sections[2]:
                     f"<div style='background:var(--color-background-secondary);"
                     f"border-radius:10px;padding:12px 16px;margin-bottom:14px'>"
                     f"<div style='font-size:13px;font-weight:500;color:var(--color-text-primary)'>"
-                    f"Applying as: {my_full_name}</div>"
+                    f"Applying as: {safe_html(my_full_name)}</div>"
                     f"<div style='font-size:11px;color:var(--color-text-secondary)'>"
-                    f"Staff code: {my_staff_code}</div></div>",
+                    f"Staff code: {safe_html(my_staff_code)}</div></div>",
                     unsafe_allow_html=True)
 
                 # Show own active leave

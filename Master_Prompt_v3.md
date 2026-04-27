@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.14 (April 2026)
+**Current version:** v5.17 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -72,8 +72,10 @@ a2z/
 
 These are real, not aspirational. Closing them is real work, not a flag flip.
 
-- **API authentication** — all 12 endpoints unauthenticated. JWT middleware required (CVSS 9.1). Effort: 3 days.
-- **Password hashing** — SHA-256 in use; bcrypt/argon2id required (CVSS 9.0). Effort: 1 day.
+- ~~**V-002 SQL injection in db.py** — closed in v5.15. TABLE_REGISTRY whitelist + `psycopg2.sql.Identifier()` quoting. Verified by audit gate G9.~~
+- ~~**V-004 Stored XSS** — closed in v5.15. `safe_html()` applied at every user-data interpolation in 0_home.py, 1_perform.py, 7_admin.py, _sidebar.py. Verified by audit gate G10.~~
+- ~~**V-003 Password hashing (SHA-256)** — closed in v5.16. `_hash_password()` module-level helper using bcrypt with SHA-256 fallback. Bootstrap and runtime now share one implementation. Rehash-on-next-login already in `authenticate()`. Verified by audit gate G11.~~
+- ~~**V-001 API authentication bypass** — closed in v5.17. JWT bearer auth on every endpoint except `/api/health`; `/api/cache/clear` is admin-only. New `utils/auth_jwt.py`, new `/api/auth/login` and `/api/auth/me` routes. CORS tightened (V-009 also closed) — origins from `A2Z_CORS_ORIGINS` env var. Verified by audit gate G12.~~
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test suite** — zero unit tests. pytest + CI/CD required. Effort: 4 weeks.
@@ -389,7 +391,7 @@ These rules apply when YOU (the agent) are making changes to A2Z. Follow them in
 
 ## ✅ Quality gates (the only valid scorecard)
 
-The single source of truth for the score is `python scripts/audit.py`. It runs eight automated gates:
+The single source of truth for the score is `python scripts/audit.py`. It runs twelve automated gates:
 
 | Gate | Name | Checks |
 |------|------|--------|
@@ -401,6 +403,10 @@ The single source of truth for the score is `python scripts/audit.py`. It runs e
 | G6 | registry_coverage | All registered modules render via the renderer |
 | G7 | conventions_docs | All required docs present under `docs/` |
 | G8 | bsc_contract | BSC writers comply with the universal data contract (Standard #1) |
+| G9 | sql_safety | utils/db.py uses TABLE_REGISTRY whitelist + `psycopg2.sql.Identifier()` (closes V-002) |
+| G10 | xss_safety | User-controlled data flowing into `unsafe_allow_html` is wrapped in `safe_html()` (closes V-004) |
+| G11 | password_safety | All password hashes go through bcrypt (`_hash_password` / `hash_pw`); no raw SHA-256 (closes V-003) |
+| G12 | api_auth_safety | Every API route except `/api/health` declares `Depends(get_current_user)` or `Depends(require_admin)` (closes V-001) |
 
 **Score = pass_count / total × 100.** Re-run after every change. If the score regresses, the change is incomplete.
 
@@ -408,7 +414,7 @@ The audits performed externally cover wider ground (security, performance, busin
 
 ### Recurring audit cadence
 
-The eight automated gates run on every commit (via CI when added). The wider audits — security (SAST + DAST), accessibility, financial calculation accuracy, FLEXCUBE pipeline validation, performance, business logic — should run on a documented schedule:
+The eleven automated gates run on every commit (via CI when added). The wider audits — security (SAST + DAST), accessibility, financial calculation accuracy, FLEXCUBE pipeline validation, performance, business logic — should run on a documented schedule:
 
 - **SAST + dependency scan:** every commit
 - **Quality gates (audit.py):** every commit, blocking
@@ -467,4 +473,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.14. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.16. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

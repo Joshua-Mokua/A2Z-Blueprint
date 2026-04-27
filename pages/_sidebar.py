@@ -5,6 +5,7 @@ import io
 from utils.core import (audit_log, process_kpi_data, build_staff_scores,
                          build_staff_registry, ExecuteManager, cache_upload,
                          BRANCH_REGION, fmt_num)
+from pages._shared import safe_html
 
 
 
@@ -138,9 +139,9 @@ def show_sidebar():
             f"<div style='padding:10px 12px;background:var(--color-background-secondary);"
             f"border-radius:8px;border:0.5px solid var(--color-border-tertiary);"
             f"margin-bottom:10px'>"
-            f"<div style='font-weight:500;font-size:14px'>{ud.get('full_name', uname)}</div>"
+            f"<div style='font-weight:500;font-size:14px'>{safe_html(ud.get('full_name', uname))}</div>"
             f"<div style='font-size:12px;color:var(--color-text-secondary)'>"
-            f"{ud.get('role','')} · {ud.get('unit','')}</div>"
+            f"{safe_html(ud.get('role',''))} · {safe_html(ud.get('unit',''))}</div>"
             f"</div>",
             unsafe_allow_html=True)
 

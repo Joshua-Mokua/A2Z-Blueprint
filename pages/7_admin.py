@@ -712,7 +712,7 @@ with sections[0]:
                                     _uname = f"{_base}{_sfx}"; _sfx += 1
                                 pwd = row["Password"]
                                 um.users[_uname] = {
-                                    "password": _hl.sha256(pwd.encode()).hexdigest(),
+                                    "password": um.hash_pw(pwd),
                                     "full_name": row["Staff Name"],
                                     "role": row["Role"],
                                     "unit": row["Unit"],
@@ -793,7 +793,7 @@ with sections[0]:
                 "Username: `admin` · Default password: `admin123`")
             if st.button("🔧 Restore admin account", type="primary", key="restore_admin"):
                 um.users["admin"] = {
-                    "password":   __import__("hashlib").sha256(b"admin123").hexdigest(),
+                    "password":   um.hash_pw("admin123"),
                     "full_name":  "System Admin", "role": "Admin",
                     "department": "All", "can_view_all": True,
                     "managed_roles": [], "managed_units": [],
@@ -812,7 +812,7 @@ with sections[0]:
                 f"<div style='padding:6px 12px;background:var(--brand-light,#E8F5EE);border:1px solid #BBF7D0;"
                 f"border-radius:6px;font-size:11px;color:#166534;margin-bottom:12px'>"
                 f"🔒 <b>admin</b> account is active and protected — cannot be deleted "
-                f"· last active account: {_admin_info.get('full_name','System Admin')}"
+                f"· last active account: {safe_html(_admin_info.get('full_name','System Admin'))}"
                 f"</div>", unsafe_allow_html=True)
 
         # ── Auto-sync staff codes from BSC data ────────────────────────
@@ -1407,8 +1407,8 @@ with sections[0]:
             st.markdown(
                 f"<div style='padding:8px 12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);"
                 f"border-radius:8px;font-size:12px;margin-bottom:10px'>"
-                f"<b>{pu.get('full_name',pu_sel)}</b> · Role: <b>{pu_role}</b> · "
-                f"Unit: {pu.get('unit','—')} · Staff code: {pu.get('staff_code','—')}</div>",
+                f"<b>{safe_html(pu.get('full_name',pu_sel))}</b> · Role: <b>{safe_html(pu_role)}</b> · "
+                f"Unit: {safe_html(pu.get('unit','—'))} · Staff code: {safe_html(pu.get('staff_code','—'))}</div>",
                 unsafe_allow_html=True)
 
             # When user selection changes, clear all cached widget states for permissions
@@ -2163,8 +2163,23 @@ with sections[4]:
                           f"DB: {_api_health.get('db','?')} · "
                           f"Cache keys: {_api_health.get('cache_keys',0)}")
                 if st.button("🗑️ Clear API cache", key="clear_api_cache"):
-                    _api.clear_cache()
-                    st.success("API cache cleared")
+                    # V-001 — clear_cache is admin-only on the API. The
+                    # client needs a bearer token before calling it. We
+                    # log in using the current Streamlit session credentials
+                    # held in session_state (set during Streamlit login).
+                    _sess_user = st.session_state.get("user", {}) or {}
+                    _sess_pwd  = st.session_state.get("_pwd_for_api", "")
+                    _logged_in = False
+                    if _sess_user.get("username") and _sess_pwd:
+                        _logged_in = _api.login(_sess_user["username"], _sess_pwd)
+                    if _logged_in:
+                        _api.clear_cache()
+                        st.success("API cache cleared")
+                    else:
+                        st.warning("⚠️ API cache clear requires re-login. "
+                                  "Log out and back in, or run "
+                                  "`curl -X POST http://localhost:8502/api/auth/login` "
+                                  "to obtain a token.")
             else:
                 st.info("ℹ️ FastAPI not running — using direct DB access. "
                        "Run: python -m utils.api (in a second terminal) for faster performance.")

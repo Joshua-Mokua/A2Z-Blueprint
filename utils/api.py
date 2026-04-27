@@ -4,23 +4,36 @@ Runs alongside Streamlit on port 8502. Provides cached, pooled database
 access for the heaviest pages. Pages that call this API load 3-5x faster
 than pages that hit PostgreSQL directly.
 
+V-001 SECURITY FIX (v5.17, CVSS 9.1):
+  Every endpoint except /api/health now requires a bearer JWT issued by
+  POST /api/auth/login. See utils/auth_jwt.py for the token contract.
+  V-009 (CORS) is also tightened — origins now come from A2Z_CORS_ORIGINS
+  env var, defaulting to localhost only.
+
 HOW TO RUN (two terminals):
   Terminal 1: streamlit run app.py
   Terminal 2: python -m utils.api
 
+Set A2Z_JWT_SECRET in production (otherwise a per-process random secret
+is generated, with a warning at startup).
+
 OR use run_all.bat which starts both automatically.
 
 ENDPOINTS:
-  GET /api/health              — system health check
-  GET /api/bsc/summary         — BSC scores summary (cached 5min)
-  GET /api/bsc/staff/{username}— individual staff BSC
-  GET /api/pipeline/summary    — pipeline summary metrics
-  GET /api/pipeline/deals      — all deals with filters
-  GET /api/credit/summary      — credit monitoring summary
-  GET /api/credit/watchlist    — watchlist with pagination
-  GET /api/aml/summary         — AML alerts summary
-  GET /api/users/summary       — org summary
-  GET /api/dashboard/md        — MD command centre data
+  POST /api/auth/login         — exchange username+password for bearer token
+  GET  /api/auth/me            — return the current user from the token
+  GET  /api/health             — system health check (NO AUTH — by design)
+  GET  /api/bsc/summary        — BSC scores summary (cached 5min)
+  GET  /api/bsc/staff/{username}— individual staff BSC
+  GET  /api/pipeline/summary   — pipeline summary metrics
+  GET  /api/pipeline/deals     — all deals with filters
+  GET  /api/credit/summary     — credit monitoring summary
+  GET  /api/credit/watchlist   — watchlist with pagination
+  GET  /api/aml/summary        — AML alerts summary
+  GET  /api/users/summary      — org summary
+  GET  /api/dashboard/md       — MD command centre data
+  POST /api/cache/clear        — admin-only
+  GET  /api/cache/stats        — cache observability
 """
 
 import os
@@ -32,9 +45,17 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+from utils.auth_jwt import (
+    create_access_token,
+    get_current_user,
+    require_admin,
+    warn_if_default_secret,
+)
 
 logger = logging.getLogger("a2z.api")
 
@@ -43,20 +64,46 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 app = FastAPI(
     title="A2Z Blueprint MIS 360 API",
     description="High-performance data layer for A2Z Blueprint",
-    version="5.3.0",
+    version="5.17.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
 
-# Allow Streamlit (same machine) to call the API
+# V-009 fix — CORS origins from env, NOT hardcoded. In dev the default is
+# localhost only. In production set A2Z_CORS_ORIGINS to a comma-separated
+# list of allowed origins. Never use "*" with allow_credentials=True.
+_default_cors = "http://localhost:8501,http://127.0.0.1:8501,http://localhost:8502,http://127.0.0.1:8502"
+_cors_origins = [o.strip() for o in os.getenv("A2Z_CORS_ORIGINS", _default_cors).split(",") if o.strip()]
+if "*" in _cors_origins:
+    raise RuntimeError(
+        "A2Z_CORS_ORIGINS must not contain '*' — wildcard with credentials is "
+        "the V-009 vulnerability. Set explicit origins."
+    )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501", "http://127.0.0.1:8501",
-                   "http://localhost:8502", "http://127.0.0.1:8502"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _startup_checks() -> None:
+    warn_if_default_secret()
+    logger.info(f"A2Z API startup — CORS origins: {_cors_origins}")
+
+
+# Helper: emit an audit_log entry from API context. Imported lazily so the
+# api module can be imported in environments that don't have streamlit
+# wired up (e.g. tests).
+def _audit(action: str, user: dict, detail: str = "") -> None:
+    try:
+        from utils.core import audit_log
+        username = (user or {}).get("username", "anonymous")
+        audit_log(action, username, detail, module="api")
+    except Exception as e:
+        logger.debug(f"audit_log failed: {e}")
 
 # ── In-memory cache ───────────────────────────────────────────────
 _cache: Dict[str, Any] = {}
@@ -83,12 +130,14 @@ def _set_cache(key: str, value: Any) -> None:
     _cache_ts[key] = time.time()
 
 def _load_json(fname: str) -> Any:
-    """Load a JSON data file."""
+    """Load a JSON data file. Routes through a2z_db so the dual-mode
+    PG/JSON migration applies here too (audit V-002 finding)."""
     p = DATA_DIR / fname
     if not p.exists():
         return []
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        from utils.db import db as _a2z_db
+        return _a2z_db.load_json(p, default=[])
     except Exception as e:
         logger.error(f"Error loading {fname}: {e}")
         return []
@@ -129,21 +178,87 @@ def _serialize(obj):
         return [_serialize(i) for i in obj]
     return obj
 
-# ── Health check ──────────────────────────────────────────────────
+# ── Auth endpoints ────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in_seconds: int = 1800
+    username: str
+    role: str
+
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+def login(req: LoginRequest):
+    """Exchange username + password for a 30-minute bearer JWT.
+
+    Verifies via UserManager.authenticate (which uses bcrypt per V-003 fix
+    and rehashes legacy SHA-256 on success). Audit log fires on both
+    success and failure so brute-force attempts are visible.
+    """
+    try:
+        from utils.core import UserManager
+        um = UserManager()
+        ok, user_data = um.authenticate(req.username, req.password)
+    except Exception as e:
+        logger.error(f"Login system error: {e}")
+        raise HTTPException(status_code=500, detail="Authentication system unavailable")
+
+    if not ok or not user_data:
+        # Audit failed login attempts (V-007 brute-force visibility)
+        _audit("API_LOGIN_FAILED", {"username": req.username},
+               f"Failed login from API for {req.username}")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = {
+        "username": req.username,
+        "role":     user_data.get("role", "Staff"),
+    }
+    token = create_access_token(user)
+    _audit("API_LOGIN_SUCCESS", user, "Issued bearer token via /api/auth/login")
+    return TokenResponse(
+        access_token=token,
+        username=req.username,
+        role=user["role"],
+    )
+
+
+@app.get("/api/auth/me")
+def me(user: dict = Depends(get_current_user)):
+    """Return the current user from the bearer token. Doubles as a
+    cheap token-validity probe."""
+    return {
+        "username": user["username"],
+        "role":     user["role"],
+        "expires_at": datetime.fromtimestamp(user["exp"]).isoformat() if user.get("exp") else None,
+    }
+
+
+# ── Health check (NO AUTH — by design) ────────────────────────────
 @app.get("/api/health")
 def health():
     db_ok = _db_available()
     return {
         "status":    "healthy",
-        "version":   "5.3.0",
+        "version":   "5.17.0",
         "db":        "postgresql" if db_ok else "json_fallback",
         "timestamp": datetime.now().isoformat(),
         "cache_keys": len(_cache),
+        "auth":      "jwt-bearer",
     }
 
 # ── BSC Endpoints ─────────────────────────────────────────────────
 @app.get("/api/bsc/summary")
-def bsc_summary():
+def bsc_summary(user: dict = Depends(get_current_user)):
+    _audit("API_BSC_SUMMARY", user)
     cached = _get_cache("bsc_summary", "bsc")
     if cached:
         return cached
@@ -211,7 +326,15 @@ def bsc_summary():
     return result
 
 @app.get("/api/bsc/staff/{username}")
-def bsc_staff(username: str):
+def bsc_staff(username: str, user: dict = Depends(get_current_user)):
+    # V-005 mitigation — basic IDOR check. A non-admin requesting another
+    # user's BSC has to share the same role tree. For v5.17 we approve when
+    # caller is admin or asking for their own record. A fuller check using
+    # UserManager.get_managed_staff_codes is a follow-up.
+    if user["username"] != username and (user.get("role") or "").lower() not in ("admin", "director"):
+        _audit("API_BSC_STAFF_DENIED", user, f"Tried to read {username}")
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _audit("API_BSC_STAFF", user, f"Read BSC for {username}")
     if _db_available():
         try:
             from utils.db import db as _db
@@ -231,7 +354,8 @@ def bsc_staff(username: str):
 
 # ── Pipeline Endpoints ────────────────────────────────────────────
 @app.get("/api/pipeline/summary")
-def pipeline_summary():
+def pipeline_summary(user: dict = Depends(get_current_user)):
+    _audit("API_PIPELINE_SUMMARY", user)
     cached = _get_cache("pipeline_summary", "pipeline")
     if cached:
         return cached
@@ -297,7 +421,9 @@ def pipeline_deals(
     unit:     Optional[str] = None,
     limit:    int = Query(default=500, le=5000),
     offset:   int = Query(default=0, ge=0),
+    user:     dict = Depends(get_current_user),
 ):
+    _audit("API_PIPELINE_DEALS", user, f"stage={stage} unit={unit} limit={limit}")
     if _db_available():
         try:
             from utils.db import db as _db
@@ -323,7 +449,8 @@ def pipeline_deals(
 
 # ── Credit Monitoring Endpoints ───────────────────────────────────
 @app.get("/api/credit/summary")
-def credit_summary():
+def credit_summary(user: dict = Depends(get_current_user)):
+    _audit("API_CREDIT_SUMMARY", user)
     cached = _get_cache("credit_summary", "credit")
     if cached:
         return cached
@@ -384,7 +511,9 @@ def credit_watchlist(
     npl_only:       bool = False,
     limit:          int = Query(default=200, le=1000),
     offset:         int = Query(default=0, ge=0),
+    user:           dict = Depends(get_current_user),
 ):
+    _audit("API_CREDIT_WATCHLIST", user, f"npl_only={npl_only} branch={branch}")
     if _db_available():
         try:
             from utils.db import db as _db
@@ -411,7 +540,8 @@ def credit_watchlist(
 
 # ── AML Endpoints ─────────────────────────────────────────────────
 @app.get("/api/aml/summary")
-def aml_summary():
+def aml_summary(user: dict = Depends(get_current_user)):
+    _audit("API_AML_SUMMARY", user)
     cached = _get_cache("aml_summary","aml")
     if cached: return cached
 
@@ -452,7 +582,8 @@ def aml_summary():
 
 # ── Users / Org Endpoints ─────────────────────────────────────────
 @app.get("/api/users/summary")
-def users_summary():
+def users_summary(user: dict = Depends(get_current_user)):
+    _audit("API_USERS_SUMMARY", user)
     cached = _get_cache("users_summary","users")
     if cached: return cached
 
@@ -492,16 +623,20 @@ def users_summary():
 
 # ── MD Dashboard Endpoint ─────────────────────────────────────────
 @app.get("/api/dashboard/md")
-def md_dashboard():
+def md_dashboard(user: dict = Depends(get_current_user)):
     """Single endpoint for MD command centre — aggregates all key metrics."""
+    _audit("API_DASHBOARD_MD", user)
     cached = _get_cache("md_dashboard","dashboard")
     if cached: return cached
 
-    bsc   = bsc_summary()
-    pipe  = pipeline_summary()
-    credit= credit_summary()
-    aml   = aml_summary()
-    users = users_summary()
+    # Direct calls now require the user dict (since the route fns gained
+    # the auth Depends). We pass the resolved user through — no need to
+    # re-validate the token internally.
+    bsc   = bsc_summary(user=user)
+    pipe  = pipeline_summary(user=user)
+    credit= credit_summary(user=user)
+    aml   = aml_summary(user=user)
+    users = users_summary(user=user)
 
     result = {
         "bsc":     {"overall_avg":bsc.get("overall_avg",0),
@@ -522,14 +657,18 @@ def md_dashboard():
     return result
 
 # ── Cache management ──────────────────────────────────────────────
+# ── Cache management ──────────────────────────────────────────────
 @app.post("/api/cache/clear")
-def clear_cache():
+def clear_cache(user: dict = Depends(require_admin)):
+    """Admin-only — flush the in-memory API cache."""
+    _audit("API_CACHE_CLEAR", user, "Cache flushed via /api/cache/clear")
     _cache.clear()
     _cache_ts.clear()
     return {"status":"cleared","message":"All API cache cleared"}
 
 @app.get("/api/cache/stats")
-def cache_stats():
+def cache_stats(user: dict = Depends(get_current_user)):
+    _audit("API_CACHE_STATS", user)
     now = time.time()
     return {
         "cached_keys": list(_cache.keys()),

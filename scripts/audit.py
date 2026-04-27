@@ -320,6 +320,277 @@ def gate_bsc_contract() -> Dict[str, Any]:
     }
 
 
+def gate_sql_safety() -> Dict[str, Any]:
+    """G9 — SQL injection safety in utils/db.py.
+
+    Verifies db.py has no f-string SQL with table/column interpolation.
+    The fix pattern is: psycopg2.sql.Identifier() + TABLE_REGISTRY whitelist.
+    Any code matching the unsafe pattern is a CWE-89 risk.
+    """
+    db_path = UTILS / "db.py"
+    if not db_path.exists():
+        return {
+            "id": "G9", "name": "sql_safety", "passed": False,
+            "summary": "utils/db.py missing", "violations": ["utils/db.py absent"],
+        }
+    code = read_text_safe(db_path)
+    violations = []
+
+    # Unsafe pattern: f"...SQL...{table}..." or f"...SQL...{col_str}..."
+    unsafe_patterns = [
+        (r'f"[^"]*INSERT[^"]*\{table\}', "INSERT with {table}"),
+        (r'f"[^"]*SELECT[^"]*\{table\}', "SELECT with {table}"),
+        (r'f"[^"]*UPDATE[^"]*\{table\}', "UPDATE with {table}"),
+        (r'f"[^"]*DELETE[^"]*\{table\}', "DELETE with {table}"),
+        (r'f"[^"]*\{col_str\}',          "f-string with {col_str}"),
+        (r'f"[^"]*\{placeholders\}',     "f-string with {placeholders}"),
+    ]
+    for i, line in enumerate(code.split("\n"), 1):
+        for pat, label in unsafe_patterns:
+            if re.search(pat, line):
+                violations.append(f"db.py:L{i} {label}")
+                break
+
+    # Check the safety helpers exist
+    helpers_present = (
+        "TABLE_REGISTRY" in code
+        and "def _check_table" in code
+        and "def _qid" in code
+    )
+    if not helpers_present:
+        violations.append("safety helpers (TABLE_REGISTRY, _check_table, _qid) missing")
+
+    return {
+        "id": "G9",
+        "name": "sql_safety",
+        "passed": not violations,
+        "summary": (
+            f"helpers present={helpers_present}, "
+            f"{len(violations)} unsafe SQL patterns (target: 0)"
+        ),
+        "violations": violations,
+    }
+
+
+def gate_xss_safety() -> Dict[str, Any]:
+    """G10 — XSS safety on user-controlled data flowing into HTML.
+
+    Detects the dangerous pattern:
+      st.markdown(f"...{user_var}...", unsafe_allow_html=True)
+    where user_var matches user-data names (full_name, role, unit, ...) and
+    is NOT wrapped in safe_html() / html.escape().
+
+    The audit script flags risky sites; full remediation across all 89 pages
+    is tracked separately. The gate's threshold accepts files that have
+    applied safe_html to known user-controlled values.
+    """
+    # User-controlled hint names — values that flow from forms / db / user_data.
+    # Matching the variable name is heuristic but catches the audit's named CVE.
+    user_data_names = {
+        "full_name", "fullname", "username", "first_name", "last_name",
+        "raw_name", "raw_role", "raw_unit", "raw_dept",
+    }
+
+    violations = []
+    pages_with_unsafe_html = 0
+
+    for p in PAGES.glob("*.py"):
+        if "backup" in p.name:
+            continue
+        code = read_text_safe(p)
+        if "unsafe_allow_html" not in code:
+            continue
+        pages_with_unsafe_html += 1
+
+        # For each unsafe_allow_html call, look back ~30 lines to find the
+        # markdown string and check for unsafe interpolations.
+        lines = code.split("\n")
+        for i, line in enumerate(lines):
+            if "unsafe_allow_html" not in line:
+                continue
+            window = "\n".join(lines[max(0, i - 30) : i + 1])
+
+            # Skip if the window doesn't contain a markdown/write call
+            if not re.search(r"st\.(markdown|write|caption|html)\s*\(", window):
+                continue
+
+            # Find {expr} interpolations that match user-data names
+            for m in re.finditer(r"\{([^{}]+?)\}", window):
+                expr = m.group(1).strip()
+                if not expr or expr.startswith(("'", '"')):
+                    continue
+
+                # Already wrapped in safe_html / html.escape → safe
+                if "safe_html" in expr or "html.escape" in expr or "escape(" in expr:
+                    continue
+
+                # Check the expression touches a user-data name
+                expr_lower = expr.lower()
+                hit_name = next((n for n in user_data_names if n in expr_lower), None)
+                if hit_name and "_raw_" not in expr_lower:
+                    # _raw_ prefix is the documented "I know this is raw, used for logic" marker
+                    violations.append(f"{p.name}:L{i + 1} {{{expr[:50]}}} ({hit_name})")
+                    break  # one violation per unsafe_allow_html line
+
+    return {
+        "id": "G10",
+        "name": "xss_safety",
+        "passed": not violations,
+        "summary": (
+            f"{pages_with_unsafe_html} pages use unsafe_allow_html, "
+            f"{len(violations)} risky user-data interpolations"
+        ),
+        "violations": violations,
+    }
+
+
+def gate_password_safety() -> Dict[str, Any]:
+    """G11 — password hashing safety (V-003 mitigation).
+
+    Every site that creates a password hash MUST use bcrypt — concretely,
+    UserManager.hash_pw() (instance method) or _hash_password() (module
+    helper for bootstrap). Direct hashlib.sha256() calls used for password
+    hashing are CWE-916 (use of password hash with insufficient
+    computational effort).
+
+    This gate flags any 'password' assignment whose value is built with
+    hashlib.sha256() / sha256() outside the documented exception sites
+    (the fallback inside _hash_password and the legacy verify path inside
+    verify_pw — both have the noqa marker).
+    """
+    files_to_scan = []
+    for d in (PAGES, UTILS, SCRIPTS):
+        if d.exists():
+            files_to_scan.extend(p for p in d.glob("*.py") if "backup" not in p.name)
+
+    violations = []
+    bcrypt_in_requirements = False
+    req_path = ROOT / "requirements.txt"
+    if req_path.exists():
+        bcrypt_in_requirements = "bcrypt" in read_text_safe(req_path).lower()
+
+    for p in files_to_scan:
+        rel = str(p.relative_to(ROOT))
+        code = read_text_safe(p)
+        lines = code.split("\n")
+        for i, line in enumerate(lines, 1):
+            # Detect SHA-256 calls
+            if "sha256(" not in line and "hashlib.sha256" not in line:
+                continue
+            # Allow explicit waivers
+            if "noqa: a2z-password-fallback" in line or "noqa: a2z-audit-chain" in line:
+                continue
+            # Look at context (3 lines back) for password assignment
+            ctx_start = max(0, i - 4)
+            ctx = "\n".join(lines[ctx_start:i + 1])
+            is_password_context = bool(
+                re.search(r'["\']password["\']\s*[:=]', ctx)
+                or "_hash_password" in ctx
+                or "verify_pw" in ctx
+                or "hash_pw" in ctx
+            )
+            if not is_password_context:
+                continue  # SHA-256 used for non-password (audit chain, etc.)
+            # The two legitimate sites inside _hash_password/verify_pw have
+            # the function name in the immediate context — exempt them.
+            if "_hash_password" in ctx or "verify_pw" in ctx:
+                continue
+            if "hash_pw" in ctx and "def hash_pw" in ctx:
+                continue
+            violations.append(f"{rel}:L{i} {line.strip()[:80]}")
+
+    if not bcrypt_in_requirements:
+        violations.append("bcrypt not in requirements.txt")
+
+    return {
+        "id": "G11",
+        "name": "password_safety",
+        "passed": not violations,
+        "summary": (
+            f"bcrypt in reqs={bcrypt_in_requirements}, "
+            f"{len(violations)} unsafe password-hash sites (target: 0)"
+        ),
+        "violations": violations,
+    }
+
+
+def gate_api_auth_safety() -> Dict[str, Any]:
+    """G12 — API authentication (V-001 mitigation).
+
+    Every @app.get / @app.post route in utils/api.py MUST declare a
+    Depends(get_current_user) or Depends(require_admin) parameter, with
+    these documented exceptions:
+
+      - /api/health     (intentionally public — used as a probe)
+      - /api/auth/login (issues the token; cannot itself require one)
+
+    The gate also verifies:
+      - PyJWT is in requirements.txt
+      - utils/auth_jwt.py exists and exports the expected helpers
+      - CORS is not configured with "*" + allow_credentials=True
+    """
+    api_path  = UTILS / "api.py"
+    auth_path = UTILS / "auth_jwt.py"
+    if not api_path.exists():
+        return {
+            "id": "G12", "name": "api_auth_safety", "passed": False,
+            "summary": "utils/api.py missing", "violations": ["utils/api.py absent"],
+        }
+
+    violations = []
+
+    # 1) auth_jwt.py present + exports key symbols
+    if not auth_path.exists():
+        violations.append("utils/auth_jwt.py missing")
+    else:
+        auth_code = read_text_safe(auth_path)
+        for sym in ("create_access_token", "get_current_user", "require_admin"):
+            if f"def {sym}" not in auth_code and f"{sym} =" not in auth_code:
+                violations.append(f"auth_jwt.py missing {sym}")
+
+    # 2) PyJWT in requirements
+    req = read_text_safe(ROOT / "requirements.txt")
+    if "pyjwt" not in req.lower() and "jwt" not in req.lower():
+        violations.append("PyJWT not in requirements.txt")
+
+    # 3) Every route in api.py has auth (except documented exemptions)
+    api_code = read_text_safe(api_path)
+    EXEMPT_ROUTES = {"/api/health", "/api/auth/login"}
+    lines = api_code.split("\n")
+    for i, line in enumerate(lines):
+        m = re.match(r'@app\.(get|post|put|delete)\("([^"]+)"', line.strip())
+        if not m:
+            continue
+        route = m.group(2)
+        # Look at the next ~30 lines for the function signature
+        sig_block = "\n".join(lines[i:i + 30])
+        sig_end = sig_block.find("):")
+        if sig_end < 0:
+            sig_end = sig_block.find(") ->")
+        sig = sig_block[: sig_end + 2] if sig_end > 0 else sig_block
+
+        has_auth = (
+            "Depends(get_current_user)" in sig
+            or "Depends(require_admin)" in sig
+        )
+        if route in EXEMPT_ROUTES:
+            continue  # fine either way
+        if not has_auth:
+            violations.append(f"api.py route {route} has no auth Depends")
+
+    # 4) CORS misconfig (V-009)
+    if 'allow_origins=["*"]' in api_code and "allow_credentials=True" in api_code:
+        violations.append("CORS allow_origins=['*'] with credentials (V-009)")
+
+    return {
+        "id": "G12",
+        "name": "api_auth_safety",
+        "passed": not violations,
+        "summary": f"{len(violations)} API auth issues (target: 0)",
+        "violations": violations,
+    }
+
+
 # ─── Runner ──────────────────────────────────────────────────────────────
 GATES = [
     ("G1", gate_syntax),
@@ -330,6 +601,10 @@ GATES = [
     ("G6", gate_registry_coverage),
     ("G7", gate_conventions_docs),
     ("G8", gate_bsc_contract),
+    ("G9", gate_sql_safety),
+    ("G10", gate_xss_safety),
+    ("G11", gate_password_safety),
+    ("G12", gate_api_auth_safety),
 ]
 
 

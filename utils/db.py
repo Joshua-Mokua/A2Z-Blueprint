@@ -133,6 +133,71 @@ TABLE_USE_DB = {
     "module_config":            False,
 }
 
+# ── SQL identifier safety (V-002 mitigation) ──────────────────────────────
+# Direct f-string interpolation of table/column names into SQL strings is the
+# CWE-89 SQL injection pattern. Even when current callers pass code constants,
+# any future caller passing user input would enable injection.
+#
+# Rule: every table and column name passed into an SQL builder MUST go through
+# _qid() (which uses psycopg2.sql.Identifier for safe quoting). Every table
+# name MUST also be checked against the TABLE_REGISTRY whitelist before use.
+#
+# scripts/audit.py G9 enforces no f-string SQL with {table}/{col_str} patterns
+# in this file.
+
+# Whitelist of valid table names. Built from TABLE_USE_DB so we have one source
+# of truth. Schema-qualified names (e.g. "audit.audit_logs") are added below.
+TABLE_REGISTRY: set = set(TABLE_USE_DB.keys()) | {
+    # Schema-qualified tables that aren't in TABLE_USE_DB
+    "audit.audit_logs", "audit.etl_logs", "audit.error_logs",
+    "audit.recon_runs", "audit.recon_breaks",
+    "performance.actuals", "performance.targets", "performance.kpi_catalogue",
+    "staging.flexcube_customers", "staging.flexcube_accounts",
+    "staging.flexcube_loans",     "staging.flexcube_transactions",
+    "staging.flexcube_gl_balances","staging.etl_batch_register",
+}
+
+
+def _check_table(name: str) -> str:
+    """Reject table names not in the whitelist. Returns the name unchanged
+    if valid. Use this at every entry point that takes a table name from
+    a caller.
+    """
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"Invalid table name: {name!r}")
+    if name not in TABLE_REGISTRY:
+        raise ValueError(
+            f"Table {name!r} is not in TABLE_REGISTRY. "
+            f"Add it to TABLE_USE_DB or TABLE_REGISTRY in utils/db.py before use."
+        )
+    return name
+
+
+def _qid(name: str):
+    """Return a safely-quoted SQL identifier (psycopg2.sql.Identifier).
+
+    Handles both plain ('users') and schema-qualified ('audit.audit_logs')
+    names. Each component is quoted independently so dots inside a single
+    component are escaped, not parsed as separators.
+    """
+    from psycopg2 import sql as _pg_sql
+    if "." in name:
+        parts = name.split(".", 1)
+        return _pg_sql.SQL(".").join(_pg_sql.Identifier(p) for p in parts)
+    return _pg_sql.Identifier(name)
+
+
+def _qcols(cols):
+    """Return a comma-separated SQL fragment of safely-quoted column identifiers."""
+    from psycopg2 import sql as _pg_sql
+    return _pg_sql.SQL(", ").join(_pg_sql.Identifier(c) for c in cols)
+
+
+def _qplaceholders(n: int):
+    """Return a comma-separated SQL fragment of n %s placeholders."""
+    from psycopg2 import sql as _pg_sql
+    return _pg_sql.SQL(", ").join([_pg_sql.Placeholder()] * n)
+
 # ── Connection pool ────────────────────────────────────────────────────────
 _pool = None
 
@@ -239,14 +304,25 @@ class Database:
 
     def upsert(self, table: str, data: Dict, conflict_col: str) -> None:
         """INSERT ... ON CONFLICT DO UPDATE for simple key-value upserts."""
+        from psycopg2 import sql as _pg_sql
+        _check_table(table)
         cols   = list(data.keys())
         vals   = [data[c] for c in cols]
-        placeholders = ", ".join(["%s"] * len(cols))
-        col_str      = ", ".join(cols)
-        update_str   = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != conflict_col)
-        sql = (
-            f"INSERT INTO {table} ({col_str}) VALUES ({placeholders}) "
-            f"ON CONFLICT ({conflict_col}) DO UPDATE SET {update_str}"
+        # Build SQL via psycopg2.sql composition — every identifier is safely
+        # quoted and validated. This replaces the previous f-string pattern.
+        update_clause = _pg_sql.SQL(", ").join(
+            _pg_sql.SQL("{c} = EXCLUDED.{c}").format(c=_pg_sql.Identifier(c))
+            for c in cols if c != conflict_col
+        )
+        sql = _pg_sql.SQL(
+            "INSERT INTO {tbl} ({cols}) VALUES ({vals}) "
+            "ON CONFLICT ({pk}) DO UPDATE SET {update}"
+        ).format(
+            tbl    = _qid(table),
+            cols   = _qcols(cols),
+            vals   = _qplaceholders(len(cols)),
+            pk     = _pg_sql.Identifier(conflict_col),
+            update = update_clause,
         )
         self.execute(sql, tuple(vals))
 
@@ -296,7 +372,11 @@ class Database:
         # Try PostgreSQL first if this table is migrated
         if table and self.table_uses_db(table):
             try:
-                rows = self.fetch_all(f"SELECT * FROM {table}")
+                from psycopg2 import sql as _pg_sql
+                _check_table(table)
+                rows = self.fetch_all(
+                    _pg_sql.SQL("SELECT * FROM {tbl}").format(tbl=_qid(table))
+                )
                 # Merge top-level columns with the JSONB `data` blob
                 result = []
                 for row in rows:
@@ -340,14 +420,22 @@ class Database:
         # Try PG first if all tables are migrated
         if table_map and all(self.table_uses_db(t) for t in table_map.values()):
             try:
+                from psycopg2 import sql as _pg_sql
                 result = {}
                 for json_key, table in table_map.items():
+                    _check_table(table)
                     if json_key == "esg_score":
                         # singleton dict — fetch latest row
-                        row = self.fetch_one(f"SELECT * FROM {table} ORDER BY as_of DESC LIMIT 1")
+                        row = self.fetch_one(
+                            _pg_sql.SQL(
+                                "SELECT * FROM {tbl} ORDER BY as_of DESC LIMIT 1"
+                            ).format(tbl=_qid(table))
+                        )
                         result[json_key] = row or {}
                     else:
-                        rows = self.fetch_all(f"SELECT * FROM {table}")
+                        rows = self.fetch_all(
+                            _pg_sql.SQL("SELECT * FROM {tbl}").format(tbl=_qid(table))
+                        )
                         result[json_key] = [
                             {**(r.get("data",{}) if isinstance(r.get("data"),dict) else {}),
                              **{k:v for k,v in r.items() if k!="data" and v is not None}}
@@ -395,9 +483,14 @@ class Database:
         # If migrated, also write to PostgreSQL
         if table and self.table_uses_db(table):
             try:
+                from psycopg2 import sql as _pg_sql
+                _check_table(table)
                 with self.transaction() as conn:
                     # Truncate-and-insert is the simplest safe pattern for full-table saves
-                    self.execute(f"DELETE FROM {table}", conn=conn)
+                    self.execute(
+                        _pg_sql.SQL("DELETE FROM {tbl}").format(tbl=_qid(table)),
+                        conn=conn,
+                    )
                     for record in data:
                         if not isinstance(record, dict):
                             continue
@@ -408,9 +501,13 @@ class Database:
 
                         cols = list(flat_data.keys())
                         vals = list(flat_data.values())
-                        placeholders = ", ".join(["%s"] * len(cols))
-                        col_str = ", ".join(f'"{c}"' for c in cols)
-                        sql = f"INSERT INTO {table} ({col_str}) VALUES ({placeholders})"
+                        sql = _pg_sql.SQL(
+                            "INSERT INTO {tbl} ({cols}) VALUES ({vals})"
+                        ).format(
+                            tbl  = _qid(table),
+                            cols = _qcols(cols),
+                            vals = _qplaceholders(len(cols)),
+                        )
                         try:
                             self.execute(sql, tuple(vals), conn=conn)
                         except Exception as e:
@@ -1348,15 +1445,22 @@ def migrate_json_to_db(table: str, json_data: list, conn=None) -> int:
     if not json_data:
         return 0
 
+    from psycopg2 import sql as _pg_sql
+    _check_table(table)
+
     inserted = 0
     for record in json_data:
         if not isinstance(record, dict):
             continue
         cols = list(record.keys())
         vals = [json.dumps(v) if isinstance(v, (dict, list)) else v for v in record.values()]
-        placeholders = ", ".join(["%s"] * len(cols))
-        col_str      = ", ".join(f'"{c}"' for c in cols)
-        sql = f"INSERT INTO {table} ({col_str}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
+        sql = _pg_sql.SQL(
+            "INSERT INTO {tbl} ({cols}) VALUES ({vals}) ON CONFLICT DO NOTHING"
+        ).format(
+            tbl  = _qid(table),
+            cols = _qcols(cols),
+            vals = _qplaceholders(len(cols)),
+        )
         try:
             db.execute(sql, tuple(vals), conn=conn)
             inserted += 1

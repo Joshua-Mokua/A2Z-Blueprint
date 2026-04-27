@@ -5773,6 +5773,24 @@ def photo_avatar_html(staff_code: str, staff_name: str,
                 f"color:var(--color-background-primary);font-size:{size//3}px;font-weight:800;flex-shrink:0'>{ini}</div>")
     return ""
 
+def _hash_password(pw: str) -> str:
+    """Module-level password hashing helper.
+
+    bcrypt with rounds=12, falls back to SHA-256 only if bcrypt is unavailable.
+    Module-level so bootstrap code (UserManager._load / _defaults) can use it
+    before the UserManager instance is fully constructed.
+
+    V-003 fix — every password-creating site MUST call this rather than
+    hashlib.sha256 directly. Audit gate G11 enforces this.
+    """
+    try:
+        import bcrypt as _bc
+        return _bc.hashpw(pw.encode("utf-8"), _bc.gensalt(rounds=12)).decode("utf-8")
+    except ImportError:
+        # Fallback only — bcrypt should always be available per requirements.txt
+        return hashlib.sha256(pw.encode()).hexdigest()
+
+
 class UserManager:
     def __init__(self):
         self.users_file = DATA_DIR / "users.json"
@@ -5786,7 +5804,7 @@ class UserManager:
             # Always ensure admin account exists and cannot be permanently removed
             if 'admin' not in users:
                 users['admin'] = {
-                    "password":   hashlib.sha256("admin123".encode()).hexdigest(),
+                    "password":   _hash_password("admin123"),
                     "full_name":  "System Admin",
                     "role":       "Admin",
                     "department": "All",
@@ -5813,21 +5831,21 @@ class UserManager:
     def _defaults(self):
         u = {
             "admin": {
-                "password": hashlib.sha256("admin123".encode()).hexdigest(),
+                "password": _hash_password("admin123"),
                 "full_name": "System Admin", "role": "Admin", "department": "All",
                 "can_view_all": True, "managed_roles": [], "managed_units": [],
                 "managed_staff_codes": [], "staff_code": "ADMIN001",
                 "email": "admin@bank.com", "active": True,
             },
             "manager1": {
-                "password": hashlib.sha256("manager123".encode()).hexdigest(),
+                "password": _hash_password("manager123"),
                 "full_name": "John Manager", "role": "Manager", "department": "Retail Banking",
                 "can_view_all": False, "managed_roles": [], "managed_units": ["Retail Banking"],
                 "managed_staff_codes": [], "staff_code": "MGR001",
                 "email": "manager@bank.com", "active": True,
             },
             "staff1": {
-                "password": hashlib.sha256("staff123".encode()).hexdigest(),
+                "password": _hash_password("staff123"),
                 "full_name": "Jane Staff", "role": "Staff", "department": "Retail Banking",
                 "can_view_all": False, "managed_roles": [], "managed_units": [],
                 "managed_staff_codes": [], "staff_code": "STF001",
@@ -5871,12 +5889,12 @@ class UserManager:
         return True, f"User '{username}' deleted by {verified_by}."
 
     def hash_pw(self, pw: str) -> str:
-        """bcrypt hash with SHA-256 fallback. Always use verify_pw to check."""
-        try:
-            import bcrypt as _bc
-            return _bc.hashpw(pw.encode('utf-8'), _bc.gensalt(rounds=12)).decode('utf-8')
-        except ImportError:
-            return hashlib.sha256(pw.encode()).hexdigest()
+        """bcrypt hash with SHA-256 fallback. Always use verify_pw to check.
+
+        Delegates to module-level _hash_password() so bootstrap and runtime
+        share a single implementation.
+        """
+        return _hash_password(pw)
 
     def verify_pw(self, pw: str, stored: str) -> bool:
         """Verify password — handles bcrypt and legacy SHA-256 hashes."""
