@@ -9,6 +9,7 @@ from pathlib import Path
 from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
+from utils.core import audit_log
 
 require_access("irrbb")
 DATA  = Path(__file__).parent.parent / "data"
@@ -91,3 +92,10 @@ with tabs[3]:
     Banks must report EaR and EVE under at least 6 rate scenarios including +/-100bps, +/-200bps,
     and parallel shocks. Breaches must be reported to CBK within 5 business days.
     """)
+
+# ── Audit trail (page view) ───────────────────────────────────────────
+try:
+    _viewer = (st.session_state.get("user", {}) or {}).get("username", "anonymous")
+    audit_log("PAGE_VIEWED", _viewer, f"Viewed {Path(__file__).stem}")
+except Exception:
+    pass

@@ -66,12 +66,14 @@ PHASES = {
 }
 
 def _load_config():
+    from utils.db import db as a2z_db
     p = DATA / "module_config.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    return a2z_db.load_json(p, default={}) if p.exists() else {}
 
 def _save_config(cfg):
+    from utils.db import db as a2z_db
     p = DATA / "module_config.json"
-    p.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    a2z_db.save_json(p, cfg)
 
 def _format_value_for_display(val):
     """Pretty-print a config value for the read-only hardcoded section."""

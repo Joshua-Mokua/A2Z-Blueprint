@@ -51,7 +51,7 @@ CHECKLIST = [
 def _load_state():
     if CHECKLIST_FILE.exists():
         try:
-            return json.loads(CHECKLIST_FILE.read_text(encoding="utf-8"))
+            return db.load_json(CHECKLIST_FILE, default={})
         except Exception:
             return {}
     return {}
@@ -59,7 +59,7 @@ def _load_state():
 
 def _save_state(state):
     CHECKLIST_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CHECKLIST_FILE.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
+    db.save_json(CHECKLIST_FILE, state)
 
 
 def render_cutover_centre(tab, uname: str, is_admin: bool):
@@ -195,11 +195,11 @@ def render_cutover_centre(tab, uname: str, is_admin: bool):
                           type="primary", disabled=(confirmation != "GOLIVE")):
                 try:
                     cfg_path = DATA / "flexcube_config.json"
-                    cfg = json.loads(cfg_path.read_text())
+                    cfg = db.load_json(cfg_path, default={})
                     cfg["mode"] = "live"
                     cfg["went_live_at"] = datetime.utcnow().isoformat() + "Z"
                     cfg["went_live_by"] = uname
-                    cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+                    db.save_json(cfg_path, cfg)
 
                     audit_log("CUTOVER_LIVE", uname, "FLEXCUBE adapter switched to LIVE mode")
                     st.success("✅ FLEXCUBE adapter is now LIVE")
@@ -226,13 +226,13 @@ def render_cutover_centre(tab, uname: str, is_admin: bool):
                           type="primary", disabled=(confirmation != "ROLLBACK")):
                 try:
                     cfg_path = DATA / "flexcube_config.json"
-                    cfg = json.loads(cfg_path.read_text())
+                    cfg = db.load_json(cfg_path, default={})
                     previous_mode = cfg.get("mode", "?")
                     cfg["mode"] = "synthetic"
                     cfg["rollback_at"] = datetime.utcnow().isoformat() + "Z"
                     cfg["rollback_by"] = uname
                     cfg["rollback_from"] = previous_mode
-                    cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+                    db.save_json(cfg_path, cfg)
 
                     audit_log("CUTOVER_ROLLBACK", uname, "FLEXCUBE adapter reverted from " + previous_mode + " to synthetic")
                     st.success("✅ Rollback complete — adapter is in SYNTHETIC mode")

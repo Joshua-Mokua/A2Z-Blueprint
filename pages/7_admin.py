@@ -76,8 +76,7 @@ with sections[0]:
         "🔑 Permissions",
         "🗂️ Staff movements",
         "🌳 Org tree",
-        "🏢 Dept Manager",
-        "🏪 Branch Manager",
+        "🏢 Org structure",
         "🎭 Roles Library",
     ])
     with sub[0]:
@@ -1840,9 +1839,21 @@ with sections[0]:
     # TAB 7 — AUDIT LOG
     # ════════════════════════════════════════════════════════════════
 
-    render_dept_manager(sub[5],    uname)
-    render_branch_manager(sub[6],  uname)
-    render_roles_manager(sub[7],   uname)
+    # Combined org-structure tab: dept + branch under one container
+    with sub[5]:
+        _struct_view = st.radio(
+            "Org structure scope",
+            ["🏢 Departments", "🏪 Branches"],
+            horizontal=True, key="org_struct_scope",
+            label_visibility="collapsed",
+        )
+        st.markdown("---")
+        if "Departments" in _struct_view:
+            render_dept_manager(st.container(), uname)
+        else:
+            render_branch_manager(st.container(), uname)
+
+    render_roles_manager(sub[6],   uname)
 
 # ── Section 1: Performance & BSC ────────────────────────────
 with sections[1]:

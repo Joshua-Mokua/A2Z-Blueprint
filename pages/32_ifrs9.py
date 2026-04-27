@@ -371,3 +371,10 @@ with tabs[6]:
         _buf_rf.seek(0)
         st.download_button("📥 Download Roll-forward",data=_buf_rf.getvalue(),
                             file_name=f"IFRS9_RollForward_{date.today()}.xlsx",key="rf_dl2")
+
+# ── Audit trail (page view) ───────────────────────────────────────────
+try:
+    _viewer = (st.session_state.get("user", {}) or {}).get("username", "anonymous")
+    audit_log("PAGE_VIEWED", _viewer, f"Viewed {Path(__file__).stem}")
+except Exception:
+    pass

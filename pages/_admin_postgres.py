@@ -66,7 +66,8 @@ def _count_json(json_path):
     if not p.exists():
         return 0
     try:
-        d = json.loads(p.read_text(encoding="utf-8"))
+        d = db.load_json(p, default=None)
+        if d is None: return 0
         if isinstance(d, list): return len(d)
         if isinstance(d, dict):
             # Sum sub-list lengths

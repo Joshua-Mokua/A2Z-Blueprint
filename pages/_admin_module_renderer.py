@@ -124,16 +124,31 @@ def _render_tab(tab_spec: Dict[str, Any], full_data: Dict, config_key: str,
             new_values[fkey] = [line.strip() for line in raw.split("\n") if line.strip()]
 
         elif ftype == "number_input":
-            number_kwargs = {
-                "value":  field.get("cast", float)(current) if current is not None else 0,
-                "key":    widget_key,
-            }
-            if field.get("min") is not None: number_kwargs["min_value"] = field["min"]
-            if field.get("max") is not None: number_kwargs["max_value"] = field["max"]
-            if field.get("step") is not None: number_kwargs["step"] = field["step"]
-            if field.get("format"): number_kwargs["format"] = field["format"]
+            cast_fn = field.get("cast", float)
+            # Resolve a safe default: stored value > field default > min_value > 0.
+            # Without this guard, a spec with min=7 and no stored value would crash
+            # because 0 < min_value.
+            if current is not None:
+                safe_value = cast_fn(current)
+            elif field.get("default") is not None:
+                safe_value = cast_fn(field["default"])
+            elif field.get("min") is not None:
+                safe_value = cast_fn(field["min"])
+            else:
+                safe_value = cast_fn(0)
+            # Clamp into [min, max] in case the stored value drifted outside the
+            # spec's bounds (e.g. spec tightened after data was saved).
+            if field.get("min") is not None:
+                safe_value = max(safe_value, cast_fn(field["min"]))
+            if field.get("max") is not None:
+                safe_value = min(safe_value, cast_fn(field["max"]))
+            number_kwargs = {"value": safe_value, "key": widget_key}
+            if field.get("min") is not None:    number_kwargs["min_value"] = cast_fn(field["min"])
+            if field.get("max") is not None:    number_kwargs["max_value"] = cast_fn(field["max"])
+            if field.get("step") is not None:   number_kwargs["step"] = cast_fn(field["step"])
+            if field.get("format"):             number_kwargs["format"] = field["format"]
             new_values[fkey] = st.number_input(flabel, **number_kwargs)
-            if field.get("cast") == int:
+            if cast_fn == int:
                 new_values[fkey] = int(new_values[fkey])
 
         elif ftype == "selectbox":

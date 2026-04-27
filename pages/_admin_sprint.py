@@ -6,6 +6,7 @@ import streamlit as st
 import json
 from pathlib import Path
 from utils.core import audit_log, get_org_config, save_org_config
+from utils.db import db as a2z_db
 
 DATA = Path(__file__).parent.parent / "data"
 
@@ -66,7 +67,7 @@ def render_sprint_config(tab, uname):
             st.markdown("**FTP curve (configurable via Treasury Config tab):**")
             ftp_data_p = DATA / "transfer_pricing.json"
             if ftp_data_p.exists():
-                ftp_data = json.loads(ftp_data_p.read_text())
+                ftp_data = a2z_db.load_json(ftp_data_p, default={})
                 ftp_rates = ftp_data.get("ftp_rates", {})
                 fcols = st.columns(len(ftp_rates) if ftp_rates else 1)
                 new_ftp = {}
@@ -75,7 +76,7 @@ def render_sprint_config(tab, uname):
                                                        float(rate), 0.1, key=f"sp_ftp_{tenor}")
                 if st.button("💾 Save FTP curve", key="sp_ftp_save"):
                     ftp_data["ftp_rates"] = new_ftp
-                    ftp_data_p.write_text(json.dumps(ftp_data, indent=2))
+                    a2z_db.save_json(ftp_data_p, ftp_data)
                     audit_log("FTP_CURVE_UPDATED", uname, f"{len(new_ftp)} tenors saved")
                     st.success("✅ FTP curve saved")
             st.markdown("**Hard-coded:**")
@@ -124,7 +125,7 @@ def render_sprint_config(tab, uname):
             st.markdown("**Risk categories (configurable via module):**")
             rcsa_p = DATA / "rcsa_register.json"
             if rcsa_p.exists():
-                risks = json.loads(rcsa_p.read_text())
+                risks = a2z_db.load_json(rcsa_p, default=[])
                 cats = sorted(set(r.get("category","") for r in risks))
                 st.caption(f"Current categories: {', '.join(cats)}")
             st.markdown("**Hard-coded:**")
@@ -166,14 +167,14 @@ def render_sprint_config(tab, uname):
             st.markdown("**Deal types and standard covenants (configurable):**")
             pc_p = DATA / "pipeline_settings.json"
             if pc_p.exists():
-                ps_d = json.loads(pc_p.read_text())
+                ps_d = a2z_db.load_json(pc_p, default={})
                 deal_types = ps_d.get("deal_types", [])
                 dt_text = st.text_area("Deal types (one per line)",
                                        value="\n".join(deal_types),
                                        height=100, key="sp_dt")
                 if st.button("💾 Save deal types", key="sp_dt_save"):
                     ps_d["deal_types"] = [x.strip() for x in dt_text.splitlines() if x.strip()]
-                    pc_p.write_text(json.dumps(ps_d, indent=2))
+                    a2z_db.save_json(pc_p, ps_d)
                     audit_log("DEAL_TYPES_UPDATED", uname, f"{len(ps_d['deal_types'])} types")
                     st.success("✅ Deal types saved")
             st.markdown("**Hard-coded:**")
@@ -216,7 +217,7 @@ def render_sprint_config(tab, uname):
             st.markdown("**Configurable systems list:**")
             cab_p = DATA / "cab_register.json"
             if cab_p.exists():
-                cab_d = json.loads(cab_p.read_text())
+                cab_d = a2z_db.load_json(cab_p, default={})
                 curr_systems = sorted(set(c.get("system","") for c in cab_d))
                 st.caption(f"Systems currently in register: {', '.join(curr_systems)}")
             st.markdown("**CBK notification flag:**")

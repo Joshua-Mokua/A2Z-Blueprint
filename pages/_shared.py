@@ -44,7 +44,12 @@ def get_user_proposition():
         cfg_path = _Path(__file__).parent.parent / "data" / "proposition_config.json"
         if not cfg_path.exists():
             return None
-        cfg = _json.loads(cfg_path.read_text())
+        try:
+            from utils.db import db as _a2z_db
+            cfg = _a2z_db.load_json(cfg_path, default={})
+        except Exception:
+            # Bootstrap fallback only — used if a2z_db is unavailable during early init
+            cfg = _json.loads(cfg_path.read_text())  # noqa: a2z-bootstrap-fallback
         for tag, prop in cfg.get("propositions", {}).items():
             if prop.get("active", True) and prop.get("head_role", "") == role:
                 return tag
