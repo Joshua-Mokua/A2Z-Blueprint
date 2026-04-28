@@ -1088,6 +1088,276 @@ def gate_pg_migration_progress() -> Dict[str, Any]:
     }
 
 
+def gate_api_v1_coverage() -> Dict[str, Any]:
+    """G16 — /api/v1 CRUD endpoint coverage (Standard #2, v5.31).
+
+    Counts endpoints under /api/v1/* and validates that every module
+    wired through make_crud_router() has the expected 8 endpoints
+    (list, get, create, update, delete, export, search, dashboard).
+
+    The gate ALSO surfaces the v1 module count so we can track progress
+    toward Standard #2's 136-endpoint target (8 endpoints × 17 modules
+    + system endpoints).
+
+    Distinct from G12 (api_auth_safety): G12 enforces JWT on every
+    route. G16 enforces CRUD completeness on every wired module.
+    """
+    api_path  = ROOT / "utils" / "api.py"
+    crud_path = ROOT / "utils" / "api_crud.py"
+
+    if not api_path.exists():
+        return {
+            "id": "G16", "name": "api_v1_coverage",
+            "passed": False, "summary": "utils/api.py not found",
+            "details": {},
+        }
+    if not crud_path.exists():
+        return {
+            "id": "G16", "name": "api_v1_coverage",
+            "passed": False, "summary": "utils/api_crud.py not found (Standard #2 framework missing)",
+            "details": {},
+        }
+
+    import re
+    api_src = api_path.read_text(encoding="utf-8", errors="ignore")
+
+    # Find make_crud_router(...) calls in api.py to extract module names
+    wired_modules = []
+    for m in re.finditer(
+        r"make_crud_router\s*\([^)]*module\s*=\s*[\"']([^\"']+)[\"']",
+        api_src, re.DOTALL,
+    ):
+        wired_modules.append(m.group(1))
+
+    # Total /api/v1/* routes (each module contributes 8)
+    expected_v1_routes = len(wired_modules) * 8
+
+    # System endpoints (not under /api/v1)
+    system_routes = len(re.findall(
+        r"@app\.(?:get|post|put|delete|patch)\([\"']/api/(?!v1/)",
+        api_src,
+    ))
+
+    # Count current endpoints actually in api.py:
+    #  - explicit @app.<verb>("/api/v1/...") (none expected — we use routers)
+    #  - implied by make_crud_router (8 per module)
+    # Plus the system ones.
+    explicit_v1 = len(re.findall(r"@app\.(?:get|post|put|delete|patch)\([\"']/api/v1/", api_src))
+
+    # Total = system + 8*N (from factory)
+    total_endpoints = system_routes + expected_v1_routes + explicit_v1
+
+    # Spec target: 136 = 8 endpoints × 17 modules
+    target = 136
+    progress_pct = (total_endpoints / target) * 100 if target else 0.0
+
+    # Validate: api_crud.py must define all 8 verbs
+    crud_src = crud_path.read_text(encoding="utf-8", errors="ignore")
+    expected_decorators = [
+        '@router.get("",',                    # list
+        '@router.get("/{row_id}"',            # get
+        '@router.post("",',                   # create
+        '@router.put("/{row_id}"',            # update
+        '@router.delete("/{row_id}"',         # delete
+        '@router.post("/export"',             # export
+        '@router.post("/search"',             # search
+        '@router.get("/dashboard"',           # dashboard
+    ]
+    missing_verbs = [d for d in expected_decorators if d not in crud_src]
+
+    # Validate: factory must use Depends(get_current_user) on every route
+    # (rough check — every @router.<verb> within make_crud_router)
+    factory_match = re.search(
+        r"def make_crud_router\(.*?return router",
+        crud_src, re.DOTALL,
+    )
+    decorator_count = 0
+    auth_count = 0
+    if factory_match:
+        body = factory_match.group(0)
+        decorator_count = len(re.findall(r"@router\.(get|post|put|delete|patch)\(", body))
+        auth_count = len(re.findall(r"Depends\(get_current_user\)", body))
+
+    violations = []
+    if missing_verbs:
+        violations.append(
+            f"api_crud.py missing CRUD verbs: {missing_verbs}"
+        )
+    if decorator_count != 8:
+        violations.append(
+            f"factory expected 8 @router decorators, found {decorator_count}"
+        )
+    if auth_count < decorator_count:
+        violations.append(
+            f"factory has {decorator_count} routes but only {auth_count} use "
+            f"Depends(get_current_user) — every CRUD route must be JWT-gated"
+        )
+
+    # Pass criteria:
+    # - api_crud.py has all 8 verbs (factory is complete)
+    # - At least one module is wired (factory is in use)
+    # - No JWT-auth violations (every route is gated)
+    passed = (
+        not missing_verbs and
+        len(wired_modules) >= 1 and
+        not violations
+    )
+
+    return {
+        "id": "G16", "name": "api_v1_coverage",
+        "passed": passed,
+        "summary": (
+            f"{total_endpoints} endpoints "
+            f"({system_routes} system + {expected_v1_routes} v1 from "
+            f"{len(wired_modules)} wired module(s)), "
+            f"{progress_pct:.0f}% of 136-target"
+        ),
+        "details": {
+            "total_endpoints":     total_endpoints,
+            "system_endpoints":    system_routes,
+            "v1_endpoints":        expected_v1_routes + explicit_v1,
+            "wired_modules":       wired_modules,
+            "factory_decorators":  decorator_count,
+            "factory_auth_count":  auth_count,
+            "missing_verbs":       missing_verbs,
+            "spec_target":         target,
+            "progress_pct":        round(progress_pct, 1),
+            "violations":          violations,
+        },
+    }
+
+
+def gate_bsc_engine_breadth() -> Dict[str, Any]:
+    """G17 — BSC engine adoption breadth (Standard #3, v5.32).
+
+    Distinct from G8 (which checks contract compliance + bypass detection),
+    G17 verifies BREADTH: how many distinct module-sources reach the engine?
+
+    The spec demands "All modules use bsc_engine.submit()" — a count, not
+    just a compliance check. With our two-bridge architecture
+    (utils/actuals_engine.py for CBS-derived KPIs, utils/core.py
+    update_bsc_from_modules for operational KPIs), each bridge submits a
+    BATCH of records tagged with multiple `original_source` values in
+    metadata. G17 counts both:
+
+      - distinct `source_module=...` kwargs at submit / submit_batch
+        sites (the immediate caller's tag)
+      - distinct values tagged into records' `metadata["original_source"]`
+        keys (the operational-modules bridge preserves the originating
+        module here)
+
+    Pass criteria: ≥17 distinct sources reach the engine. The spec's
+    target is "17 modules"; we accept this as met when either
+      (a) ≥17 distinct source_module values are seen, OR
+      (b) the union of source_module values + original_source tags
+          inside compute_operational_kpi_actuals reaches ≥17.
+
+    The gate is a TRACKING + THRESHOLD gate. It surfaces drift: if
+    someone breaks the bridge (e.g. drops the metadata tagging in
+    update_bsc_from_modules), the count falls and G17 fails.
+    """
+    engine_path = UTILS / "bsc_engine.py"
+    bridge_path = UTILS / "core.py"
+    actuals_path = UTILS / "actuals_engine.py"
+
+    if not engine_path.exists():
+        return {
+            "id": "G17", "name": "bsc_engine_breadth",
+            "passed": False,
+            "summary": "utils/bsc_engine.py missing — engine MUST exist (Standard #3)",
+            "details": {},
+        }
+
+    files_to_scan: List[Path] = []
+    for d in (PAGES, UTILS, SCRIPTS):
+        if d.exists():
+            files_to_scan.extend(p for p in d.glob("*.py") if "backup" not in p.name)
+
+    # ── Pass 1: collect every source_module=... value at submit sites ───
+    source_modules: set = set()
+    submit_sites = 0
+    for p in files_to_scan:
+        rel = str(p.relative_to(ROOT))
+        if rel == "utils/bsc_engine.py" or rel == "scripts/audit.py":
+            continue
+        code = read_text_safe(p)
+        if not re.search(r"from\s+utils\.bsc_engine\s+import|import\s+utils\.bsc_engine", code):
+            continue
+        # source_module="<name>"  /  source_module = '<name>'
+        for m in re.finditer(r'source_module\s*=\s*["\']([^"\']+)["\']', code):
+            source_modules.add(m.group(1))
+            submit_sites += 1
+
+    # ── Pass 2: collect distinct original_source tags inside the bridge
+    # function compute_operational_kpi_actuals (utils/core.py). The
+    # operational-modules bridge stamps each per-module-computed actual
+    # with a "source": "<module>" entry; that entry is preserved into
+    # metadata["original_source"] when the bridge submits the batch.
+    bridge_sources: set = set()
+    if bridge_path.exists():
+        core_src = read_text_safe(bridge_path)
+        m = re.search(
+            r"def\s+compute_operational_kpi_actuals\b.*?(?=\ndef |\Z)",
+            core_src, re.DOTALL,
+        )
+        if m:
+            body = m.group(0)
+            for tag in re.findall(r'"source"\s*:\s*"([^"]+)"', body):
+                bridge_sources.add(tag)
+
+    # ── Pass 3: same idea for actuals_engine.py — find KPI-source tags
+    actuals_sources: set = set()
+    if actuals_path.exists():
+        a_src = read_text_safe(actuals_path)
+        # actuals_engine submits with source_module="actuals_engine" but
+        # internally aggregates from CBS, LMS, ComplianceManager, etc.
+        # Capture any distinct tag-string the engine emits.
+        for tag in re.findall(r'"source"\s*:\s*"([^"]+)"', a_src):
+            actuals_sources.add(tag)
+
+    # Union of breadth signals
+    union = source_modules | bridge_sources | actuals_sources
+    target = 17  # per spec Standard #3
+
+    violations: List[str] = []
+    if not source_modules:
+        violations.append(
+            "No submit/submit_batch site found with source_module=... — "
+            "engine has no callers"
+        )
+    if len(union) < target:
+        violations.append(
+            f"Engine breadth = {len(union)} sources; spec target is {target}. "
+            f"Add bridge functions or instrument more modules."
+        )
+
+    passed = (
+        engine_path.exists() and
+        len(source_modules) >= 1 and
+        len(union) >= target
+    )
+
+    return {
+        "id": "G17", "name": "bsc_engine_breadth",
+        "passed": passed,
+        "summary": (
+            f"engine={'present' if engine_path.exists() else 'MISSING'}, "
+            f"{len(source_modules)} direct source_module(s), "
+            f"{len(bridge_sources)} bridge-tagged source(s), "
+            f"breadth={len(union)}/{target} (target: ≥{target})"
+        ),
+        "details": {
+            "direct_source_modules":   sorted(source_modules),
+            "bridge_tagged_sources":   sorted(bridge_sources),
+            "actuals_engine_sources":  sorted(actuals_sources),
+            "union_breadth":           len(union),
+            "spec_target":             target,
+            "submit_sites":            submit_sites,
+            "violations":              violations,
+        },
+    }
+
+
 GATES = [
     ("G1", gate_syntax),
     ("G2", gate_direct_io),
@@ -1104,6 +1374,8 @@ GATES = [
     ("G13", gate_test_infrastructure),
     ("G14", gate_core_split_adoption),
     ("G15", gate_pg_migration_progress),
+    ("G16", gate_api_v1_coverage),
+    ("G17", gate_bsc_engine_breadth),
 ]
 
 
