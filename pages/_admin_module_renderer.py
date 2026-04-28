@@ -11,7 +11,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Any, Dict, List
 from utils.db import db as a2z_db
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from utils.admin_registry import resolve_config_path
 
 

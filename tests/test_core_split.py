@@ -80,6 +80,21 @@ MIGRATED_PAGES = [
     "pages/84_board.py",
     "pages/_admin_reconciliation.py",
     "pages/83_strategy.py",
+    # Migrated in v5.24
+    "pages/69_consent.py",
+    "pages/82_oprisk.py",
+    "pages/71_bid_bond.py",
+    "pages/79_cards.py",
+    "pages/85_esg.py",
+    "pages/63_assets.py",
+    "pages/81_alm.py",
+    "pages/72_observability.py",
+    "pages/78_onboarding.py",
+    "pages/75_data_protection.py",
+    "pages/76_sanctions.py",
+    "pages/73_channels.py",
+    "pages/30_rms.py",
+    "pages/_admin_module_renderer.py",
 ]
 
 
