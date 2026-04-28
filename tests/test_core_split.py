@@ -155,7 +155,80 @@ class TestShimReExports:
         assert callable(obj), f"{shim_modpath}.{symbol} is not callable"
 
 
-class TestMigratedPagesParse:
+class TestPhysicalMoveV525:
+    """v5.25 physically moved 14 functions from utils.core into
+    utils/core_audit.py. These tests pin the move down so a future
+    refactor can't silently un-do it.
+
+    If any of these fail, someone has likely:
+      - Eagerly re-imported core_audit from core (re-creating the cycle)
+      - Put implementations back in core.py
+      - Removed the reverse-export path from core.py
+    """
+
+    def test_implementations_live_in_core_audit(self):
+        """Every shimmed symbol's __module__ must report core_audit —
+        proving the physical implementation lives there, not in core."""
+        import utils.core_audit as ca
+        for shim_modpath, symbols in SHIMS.items():
+            for sym in symbols:
+                fn = getattr(ca, sym)
+                assert fn.__module__ == shim_modpath, (
+                    f"{sym} reports __module__={fn.__module__!r}, "
+                    f"expected {shim_modpath!r}. The physical implementation "
+                    f"may have drifted back into utils.core."
+                )
+
+    def test_legacy_path_still_works(self):
+        """Pages that haven't migrated yet still do `from utils.core import
+        audit_log`. After the v5.25 physical move, that import has to keep
+        working via the reverse-export path in core.py (PEP 562 __getattr__)."""
+        from utils.core import audit_log, check_access, _hash_password
+        assert callable(audit_log)
+        assert callable(check_access)
+        assert callable(_hash_password)
+
+    def test_legacy_path_returns_same_object_as_new_path(self):
+        """The legacy `from utils.core import X` must return the EXACT same
+        object as `from utils.core_audit import X`. Anything else means the
+        backward-compat shim has drifted."""
+        for shim_modpath, symbols in SHIMS.items():
+            shim_mod = importlib.import_module(shim_modpath)
+            for sym in symbols:
+                from_new = getattr(shim_mod, sym)
+                from_old = getattr(importlib.import_module("utils.core"), sym)
+                assert from_new is from_old, (
+                    f"utils.core.{sym} and {shim_modpath}.{sym} are different "
+                    f"objects — backward-compat path has drifted"
+                )
+
+    def test_import_cycle_safe_either_order(self):
+        """The v5.25 physical move uses PEP 562 __getattr__ to break the
+        circular import that would otherwise occur if core_audit imports
+        constants from core, and core eagerly re-exports from core_audit.
+        Both import orders must succeed."""
+        # We can't easily reset sys.modules in a single test process here
+        # (other tests may have already imported either module), but we can
+        # at least verify both top-level imports succeed and reach a
+        # consistent state.
+        import utils.core
+        import utils.core_audit
+        # If we got here, no ImportError was raised on either module.
+        # The deeper "fresh import" coverage lives in the manual
+        # verification script run during release.
+        assert utils.core is not None
+        assert utils.core_audit is not None
+
+    def test_unknown_attr_still_raises_on_core(self):
+        """The PEP 562 __getattr__ on utils.core must only resolve the
+        14 reverse-exported names. Everything else must raise
+        AttributeError, otherwise it would silently swallow typos."""
+        import utils.core
+        with pytest.raises(AttributeError):
+            _ = utils.core.totally_made_up_symbol_that_does_not_exist
+
+
+
     """The pages already migrated must still be valid Python. Catches
     accidental syntax breakage when someone edits a migrated page."""
 

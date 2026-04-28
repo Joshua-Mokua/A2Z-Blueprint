@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.24 (April 2026)
+**Current version:** v5.25 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -45,7 +45,8 @@ a2z/
 │   └── _access.py                        # require_access(), get_my_scope()
 ├── utils/
 │   ├── db.py                             # Database singleton + schemas (1,367L)
-│   ├── core.py                           # audit_log, MODULE_ACCESS, helpers
+│   ├── core.py                           # MODULE_ACCESS, UserManager, KPI helpers (audit_log moved to core_audit.py in v5.25)
+│   ├── core_audit.py                     # audit_log, check_access, _hash_password, dept/access helpers (extracted v5.25)
 │   ├── admin_registry.py                 # Plug-in registration API
 │   ├── reconciliation.py                 # 5-check recon engine
 │   ├── flexcube_adapter.py               # synthetic / mock / live modes
@@ -81,7 +82,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
-- **core.py decomposition** — v5.21 introduced the shim pattern: `utils/core_audit.py` re-exports the audit/access/approval cluster (14 symbols). Adoption: v5.21 4%, v5.22 22%, v5.23 42%, v5.24 63% (42/67 pages). G14 audit gate tracks adoption percentage. Past the 50% threshold — physical code move from utils.core into utils/core_audit.py is now safe. Future work: more page migrations toward 75-90%, then the physical move which shrinks core.py by ~300 lines. core.py currently 6,672 lines, 15 classes. Effort: 1 week of incremental sessions.
+- **core.py decomposition** — v5.21–v5.24 introduced the shim pattern and migrated 42/67 pages to `from utils.core_audit import X`. **v5.25 is the milestone session: 14 audit-cluster functions physically moved out of `utils/core.py` and into `utils/core_audit.py`. core.py shrunk by 301 lines (6,673 → 6,372).** Backward compatibility is preserved via PEP 562 `__getattr__` in core.py — the 25 unmigrated pages still resolve `from utils.core import audit_log` lazily, no cycle. G14 audit gate tracks adoption percentage (63%). `utils/core_audit.py` added to FOUNDATIONAL list since it now hosts the audit_log primitive. Future work: continue migrations toward 100%, then delete the reverse-export `__getattr__` block in core.py. Then start the next cluster (`utils/core_kpi.py`). core.py currently 6,372 lines, 15 classes.
 
 ---
 
@@ -509,4 +510,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.24. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.25. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

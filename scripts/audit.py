@@ -56,6 +56,7 @@ DATA     = ROOT / "data"
 FOUNDATIONAL = {
     "utils/db.py",                  # the seam itself
     "utils/core.py",                # bootstrap primitives
+    "utils/core_audit.py",          # extracted from core.py in v5.25 — hosts audit_log + access helpers
     "utils/config.py",              # config loader
     "utils/api.py",                 # FastAPI — should migrate, but it's foundational
     "utils/reconciliation.py",      # multi-source reader
