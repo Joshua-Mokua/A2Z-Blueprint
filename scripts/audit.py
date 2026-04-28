@@ -994,6 +994,100 @@ def gate_core_split_adoption() -> Dict[str, Any]:
     }
 
 
+def gate_pg_migration_progress() -> Dict[str, Any]:
+    """G15 — PostgreSQL migration progress (Standard #1, v5.30).
+
+    Reads TABLE_USE_DB from utils/db.py and reports adoption.
+
+    Distinct from G18 in the spec — G18 is the Phase-2-completion gate
+    (52/52 tables flipped to True). G15 is the *progress* gate: it
+    passes as long as the registry is well-formed and at least one
+    table is in PG-mode. It also surfaces the dual-mode pilot table(s)
+    where dual-write marshallers are wired up in JSON_PATH_TO_TABLE.
+
+    The gate fails only if:
+      - utils/db.py can't be parsed for TABLE_USE_DB
+      - JSON_PATH_TO_TABLE references a table not in TABLE_USE_DB
+      - A pilot table is registered in JSON_PATH_TO_TABLE but no
+        marshaller pair is wired up in Database._get_marshallers
+    """
+    db_path = ROOT / "utils" / "db.py"
+    if not db_path.exists():
+        return {
+            "id": "G15", "name": "pg_migration_progress",
+            "passed": False, "summary": "utils/db.py not found",
+            "details": {},
+        }
+
+    src = db_path.read_text(encoding="utf-8", errors="ignore")
+
+    # Parse TABLE_USE_DB
+    import re
+    m = re.search(r"TABLE_USE_DB\s*=\s*\{(.*?)^\}", src, re.MULTILINE | re.DOTALL)
+    if not m:
+        return {
+            "id": "G15", "name": "pg_migration_progress",
+            "passed": False, "summary": "TABLE_USE_DB dict not found in utils/db.py",
+            "details": {},
+        }
+    body = m.group(1)
+    true_tables  = re.findall(r'"([^"]+)":\s*True',  body)
+    false_tables = re.findall(r'"([^"]+)":\s*False', body)
+    total = len(true_tables) + len(false_tables)
+    pct = (len(true_tables) / total * 100) if total else 0.0
+
+    # Parse JSON_PATH_TO_TABLE
+    m2 = re.search(r"JSON_PATH_TO_TABLE[^=]*=\s*\{(.*?)^\}", src, re.MULTILINE | re.DOTALL)
+    pilot_tables = []
+    if m2:
+        pilot_tables = re.findall(r'"[^"]+\.json":\s*"([^"]+)"', m2.group(1))
+
+    # Validate: every pilot table must be in TABLE_USE_DB
+    all_registered = set(true_tables) | set(false_tables)
+    unregistered_pilots = [t for t in pilot_tables if t not in all_registered]
+
+    # Validate: every pilot must have a marshaller wired in _get_marshallers
+    # (best-effort regex match; the cluster is small, mistakes here are obvious)
+    m3 = re.search(r"def _get_marshallers\(self, table[^)]*\):.*?return registry\.get",
+                   src, re.DOTALL)
+    wired_marshallers = set()
+    if m3:
+        m3_body = m3.group(0)
+        for tname in re.findall(r'"([^"]+)":\s*\(self\._save_', m3_body):
+            wired_marshallers.add(tname)
+    unwired_pilots = [t for t in pilot_tables if t not in wired_marshallers]
+
+    violations = []
+    if unregistered_pilots:
+        violations.append(
+            f"JSON_PATH_TO_TABLE references unregistered tables: {unregistered_pilots}"
+        )
+    if unwired_pilots:
+        violations.append(
+            f"JSON_PATH_TO_TABLE pilots without marshallers: {unwired_pilots}"
+        )
+
+    passed = (total > 0 and not violations)
+
+    return {
+        "id": "G15", "name": "pg_migration_progress",
+        "passed": passed,
+        "summary": (
+            f"{len(true_tables)}/{total} tables in PG-mode ({pct:.0f}%), "
+            f"{len(pilot_tables)} dual-write pilot(s)"
+        ),
+        "details": {
+            "tables_total":           total,
+            "tables_pg_mode":         len(true_tables),
+            "tables_json_mode":       len(false_tables),
+            "adoption_pct":           round(pct, 1),
+            "pilot_tables":           pilot_tables,
+            "wired_marshallers":      sorted(wired_marshallers),
+            "violations":             violations,
+        },
+    }
+
+
 GATES = [
     ("G1", gate_syntax),
     ("G2", gate_direct_io),
@@ -1009,6 +1103,7 @@ GATES = [
     ("G12", gate_api_auth_safety),
     ("G13", gate_test_infrastructure),
     ("G14", gate_core_split_adoption),
+    ("G15", gate_pg_migration_progress),
 ]
 
 

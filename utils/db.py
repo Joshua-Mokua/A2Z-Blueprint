@@ -158,6 +158,41 @@ TABLE_REGISTRY: set = set(TABLE_USE_DB.keys()) | {
 }
 
 
+# ── JSON-path → PG-table mapping (Standard #1, v5.30) ────────────────────
+# When a page calls a2z_db.load_json("module_config.json"), the dual-mode
+# router needs to know which PG table that file corresponds to. Add an
+# entry here for every JSON file you want to migrate. Keys are the BARE
+# filename (without "data/"); values are the table name as it appears in
+# TABLE_USE_DB.
+#
+# Adding a key here is harmless on its own — it only changes behaviour
+# when (a) PostgreSQL is reachable AND (b) `is_postgres_ready()` is True
+# AND (c) the table-specific PG marshallers are wired up below.
+#
+# Phase 1 (dual-write): file is the source of truth; PG receives a copy
+# on every save. Read still goes from file.
+# Phase 2 (cutover):    flip TABLE_USE_DB[table] = True. Reads now come
+# from PG; writes still go to both.
+# Phase 3 (deprecation): remove the JSON write. PG is the only writer.
+# Phase 4 (archive):    archive the JSON file under data/archive/.
+JSON_PATH_TO_TABLE: dict = {
+    "module_config.json": "module_config",
+    # Add more pilots here as we migrate them. Each entry needs a matching
+    # _save_<table>_to_pg() and _load_<table>_from_pg() pair in Database.
+}
+
+
+def _table_for_path(path) -> str | None:
+    """Return the PG table name for a JSON file path, or None if the
+    path isn't tracked. Accepts Path objects or strings."""
+    from pathlib import Path as _Path
+    if hasattr(path, "name"):
+        name = path.name
+    else:
+        name = _Path(str(path)).name
+    return JSON_PATH_TO_TABLE.get(name)
+
+
 def _check_table(name: str) -> str:
     """Reject table names not in the whitelist. Returns the name unchanged
     if valid. Use this at every entry point that takes a table name from
@@ -528,17 +563,133 @@ class Database:
     # real PG table later by adding it to TABLE_USE_DB.
     # ══════════════════════════════════════════════════════════════════════
 
+    # ── Per-table PG marshallers (Standard #1, v5.30) ──────────────────
+    # Each tracked JSON file gets a save/load pair. Add a new pair
+    # whenever you add an entry to JSON_PATH_TO_TABLE.
+    #
+    # Convention: data shape mirrors the table's column structure. The
+    # JSON file's top-level keys become PRIMARY KEY values; the rest is
+    # serialised into JSONB columns.
+
+    def _save_module_config_to_pg(self, data: dict) -> int:
+        """Write the contents of module_config.json to the PG table
+        `module_config`. Returns the number of rows upserted.
+
+        Schema (see CREATE TABLE in SCHEMA_SQL):
+            module_key      VARCHAR(100) PRIMARY KEY
+            hardcoded       JSONB
+            configurable    JSONB
+            bsc_kpis        JSONB
+            dept            VARCHAR(100)
+            nav_groups      JSONB
+            last_updated    TIMESTAMPTZ DEFAULT now()
+            last_updated_by VARCHAR(100)
+        """
+        if not isinstance(data, dict) or not data:
+            return 0
+        from psycopg2 import sql as _pg_sql
+        n = 0
+        with self.transaction() as conn:
+            cur = conn.cursor()
+            for module_key, payload in data.items():
+                if not isinstance(payload, dict):
+                    continue
+                cur.execute(
+                    _pg_sql.SQL(
+                        "INSERT INTO {tbl} ("
+                        "module_key, hardcoded, configurable, bsc_kpis, "
+                        "dept, nav_groups, last_updated_by"
+                        ") VALUES (%s, %s, %s, %s, %s, %s, %s) "
+                        "ON CONFLICT (module_key) DO UPDATE SET "
+                        "hardcoded = EXCLUDED.hardcoded, "
+                        "configurable = EXCLUDED.configurable, "
+                        "bsc_kpis = EXCLUDED.bsc_kpis, "
+                        "dept = EXCLUDED.dept, "
+                        "nav_groups = EXCLUDED.nav_groups, "
+                        "last_updated = now(), "
+                        "last_updated_by = EXCLUDED.last_updated_by"
+                    ).format(tbl=_qid("module_config")),
+                    (
+                        str(module_key)[:100],
+                        json.dumps(payload.get("hardcoded", {})),
+                        json.dumps(payload.get("configurable", {})),
+                        json.dumps(payload.get("bsc_kpis", [])),
+                        (payload.get("dept") or "")[:100],
+                        json.dumps(payload.get("nav_groups", [])),
+                        (payload.get("last_updated_by") or "")[:100],
+                    ),
+                )
+                n += 1
+            cur.close()
+        return n
+
+    def _load_module_config_from_pg(self) -> dict:
+        """Read the `module_config` PG table and reconstruct the JSON shape
+        that pages/_admin_module_config.py expects.
+
+        Returns a dict keyed by module_key, with the same nested shape as
+        data/module_config.json.
+        """
+        from psycopg2 import sql as _pg_sql
+        out: dict = {}
+        with self.connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                _pg_sql.SQL(
+                    "SELECT module_key, hardcoded, configurable, bsc_kpis, "
+                    "dept, nav_groups, last_updated, last_updated_by "
+                    "FROM {tbl}"
+                ).format(tbl=_qid("module_config"))
+            )
+            for row in cur.fetchall():
+                key, hc, cfg, kpis, dept, navs, ts, by = row
+                out[key] = {
+                    "hardcoded":       hc   or {},
+                    "configurable":    cfg  or {},
+                    "bsc_kpis":        kpis or [],
+                    "dept":            dept or "",
+                    "nav_groups":      navs or [],
+                    "last_updated":    ts.isoformat() if ts else None,
+                    "last_updated_by": by   or "",
+                }
+            cur.close()
+        return out
+
+    # Lookup table mapping table name → marshaller pair. Used by the
+    # dual-mode router below. Add a row for each new pilot.
+    _PG_MARSHALLERS = {
+        # populated lazily via _get_marshallers (instance methods)
+    }
+
+    def _get_marshallers(self, table: str):
+        """Return (save_fn, load_fn) for a given tracked table, or None
+        if no marshallers are registered for it."""
+        registry = {
+            "module_config": (self._save_module_config_to_pg,
+                              self._load_module_config_from_pg),
+        }
+        return registry.get(table)
+
     def load_json(self, path, default=None):
         """Read a JSON file with fallback. Goes through the DB layer for
         consistency — a future migration can promote this to a real PG table
         without changing page code.
+
+        Dual-mode routing (Standard #1, v5.30):
+          - If the path corresponds to a tracked table (JSON_PATH_TO_TABLE)
+            AND that table has been promoted (TABLE_USE_DB[table] = True)
+            AND PostgreSQL is reachable AND a load marshaller is registered,
+            read from PostgreSQL instead of the JSON file.
+          - On any PG failure, fall back to the JSON file with a warning.
+            JSON remains the safety net throughout the migration.
 
         Args:
             path:    Path to JSON file or filename string
             default: Value to return if file missing (default: [] or {})
 
         Returns:
-            Parsed JSON content, or default if file missing/corrupt.
+            Parsed JSON content (from PG or file, depending on table state),
+            or default if neither source has data.
         """
         from pathlib import Path as _Path
         import json as _json
@@ -548,6 +699,22 @@ class Database:
         else:
             p = _Path(path) if str(path).startswith("/") else _Path(__file__).parent.parent / "data" / str(path)
 
+        # ── Dual-mode read path ────────────────────────────────────────
+        table = _table_for_path(p)
+        if table is not None and self.table_uses_db(table):
+            marshallers = self._get_marshallers(table)
+            if marshallers is not None:
+                _, load_fn = marshallers
+                try:
+                    return load_fn()
+                except Exception as e:
+                    logger.warning(
+                        f"load_json: PG read for '{table}' failed ({e}); "
+                        f"falling back to JSON file {p}"
+                    )
+                    # fall through to JSON read
+
+        # ── Default: file read ──────────────────────────────────────────
         if not p.exists():
             return default if default is not None else []
 
@@ -561,12 +728,27 @@ class Database:
     def save_json(self, path, data, indent: int = 2) -> bool:
         """Write data to JSON file. Atomic write where possible.
 
+        Dual-mode routing (Standard #1, v5.30):
+          - JSON file is ALWAYS written first. This is the safety net —
+            if anything below fails, the file write has already succeeded
+            and pages keep working.
+          - If the path corresponds to a tracked table (JSON_PATH_TO_TABLE)
+            AND PostgreSQL is reachable AND a save marshaller is registered,
+            ALSO upsert to PostgreSQL. This is the dual-write phase.
+          - If TABLE_USE_DB[table] is False (Phase 1), the PG write is
+            best-effort: failures are logged but don't fail the save.
+          - If TABLE_USE_DB[table] is True (Phase 2), the PG write
+            failing is more serious — but we still don't fail the save,
+            because the JSON write already succeeded and operators may
+            need to fix PG without losing the change.
+
         Args:
             path:   Path to JSON file or filename string
             data:   Dict or list to serialise
             indent: JSON indent (default 2)
 
-        Returns True on success.
+        Returns True if the JSON write succeeded (PG write status is
+        logged but not reflected in the return value during dual-write).
         """
         from pathlib import Path as _Path
         import json as _json
@@ -578,6 +760,7 @@ class Database:
         else:
             p = _Path(path) if str(path).startswith("/") else _Path(__file__).parent.parent / "data" / str(path)
 
+        # ── Step 1: write the JSON file (the safety net) ────────────────
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
             # Atomic write: write to temp, then rename
@@ -590,10 +773,30 @@ class Database:
                 if os.path.exists(tmp_name):
                     os.remove(tmp_name)
                 raise
-            return True
         except Exception as e:
             logger.error(f"save_json failed for {p}: {e}")
             return False
+
+        # ── Step 2: dual-write to PG (best-effort during Phase 1) ───────
+        table = _table_for_path(p)
+        if table is not None and self.is_postgres_ready():
+            marshallers = self._get_marshallers(table)
+            if marshallers is not None:
+                save_fn, _ = marshallers
+                try:
+                    n = save_fn(data)
+                    logger.info(
+                        f"save_json: dual-write to PG '{table}' OK ({n} rows)"
+                    )
+                except Exception as e:
+                    # Don't fail the overall save — JSON has already been
+                    # written and is the source of truth in Phase 1.
+                    logger.warning(
+                        f"save_json: PG dual-write for '{table}' failed "
+                        f"({e}); JSON write at {p} still succeeded"
+                    )
+
+        return True
 
 # Singleton instance used by all modules
 db = Database()

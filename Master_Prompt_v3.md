@@ -22,11 +22,11 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.29 (April 2026)
+**Current version:** v5.30 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
-**Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
+**Codebase:** 89 numbered pages · ~55K lines · 15 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
-**Database layer:** `utils/db.py` (1,367 lines) — single architectural seam.
+**Database layer:** `utils/db.py` (1,470 lines) — single architectural seam.
 **Login (test):** `william001` / `ECOStaff001` (MD role). Admin: `admin` / `ECOStaff001`.
 **Repo:** `github.com/Joshua-Mokua/A2Z-Blueprint`
 
@@ -44,14 +44,20 @@ a2z/
 │   ├── _shared.py                        # load_shared_state()
 │   └── _access.py                        # require_access(), get_my_scope()
 ├── utils/
-│   ├── db.py                             # Database singleton + schemas (1,367L)
+│   ├── db.py                             # Database singleton + schemas (1,470L)
 │   ├── core.py                           # MODULE_ACCESS, UserManager, KPI helpers (audit_log moved to core_audit.py in v5.25)
 │   ├── core_audit.py                     # audit_log, check_access, _hash_password, dept/access helpers (extracted v5.25)
 │   ├── core_kpi.py                       # KPI library + scoring helpers (shim introduced v5.28; physical move pending)
+│   ├── auth_jwt.py                       # JWT bearer auth + Depends helpers (added v5.17)
+│   ├── bsc_engine.py                     # Central BSC contract enforcement (added v5.18)
+│   ├── actuals_engine.py                 # CBS → BSC actuals pipeline (pilot for engine v5.18)
 │   ├── admin_registry.py                 # Plug-in registration API
 │   ├── reconciliation.py                 # 5-check recon engine
 │   ├── flexcube_adapter.py               # synthetic / mock / live modes
-│   └── api.py                            # FastAPI routes (12 endpoints — needs expansion)
+│   ├── notifications.py                  # Notification logger
+│   ├── config.py                         # Config loader
+│   ├── api.py                            # FastAPI routes (12 endpoints — needs expansion)
+│   └── api_client.py                     # API client helper
 ├── scripts/
 │   ├── audit.py                          # ⭐ THE SCORE — run before any claim
 │   ├── etl_flexcube.py                   # Daily ETL orchestrator
@@ -60,7 +66,7 @@ a2z/
 ├── data/
 │   ├── module_config.json                # 20 modules' hardcoded/configurable
 │   ├── tier1_benchmarking.json           # 5 KE banks + 5 intl banks × 4 quarters
-│   ├── kpi_library.json                  # 113 KPIs across 4 BSC pillars
+│   ├── kpi_library.json                  # 111 KPIs across 4 BSC pillars
 │   ├── proposition_config.json           # Module-config storage
 │   └── (other JSON files for legacy data)
 └── docs/
@@ -80,7 +86,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - ~~**V-001 API authentication bypass** — closed in v5.17. JWT bearer auth on every endpoint except `/api/health`; `/api/cache/clear` is admin-only. New `utils/auth_jwt.py`, new `/api/auth/login` and `/api/auth/me` routes. CORS tightened (V-009 also closed) — origins from `A2Z_CORS_ORIGINS` env var. Verified by audit gate G12.~~
 - ~~**BSC central integration engine** — closed in v5.18 (addendum Standards #1 + #2). New `utils/bsc_engine.py` with `submit()` / `submit_batch()` / `get_actual()` enforcing the 5-field contract through a 5-stage pipeline (validate → standardise → enrich → persist → audit). Idempotency via SHA-256 hash. Pilot module: `utils/actuals_engine.py` now stamps every CBS-derived KPI row through the engine. G8 evolved from vacuous presence-check to structural enforcement.~~
 - ~~**Test infrastructure (0% → scaffolded)** — closed in v5.20. `tests/` directory with conftest.py, pytest.ini, 4 test files (67 test functions, 35 marked @security). GitHub Actions CI runs audit + bsc_engine self-test + pytest on every push and PR. Verified by audit gate G13.~~
-- **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
+- **PG migration** — Standard #1, Phase 1 framework landed v5.30. Dual-mode routing in `utils/db.py.load_json`/`save_json` via `JSON_PATH_TO_TABLE` map and per-table marshallers (e.g. `_save_module_config_to_pg`, `_load_module_config_from_pg`). First pilot: `module_config` table — wired but flag still False (Phase 1 dual-write phase). When PostgreSQL is reachable, every save to `data/module_config.json` is also upserted into the PG `module_config` table; reads still come from the JSON file until `TABLE_USE_DB["module_config"]` flips to True (Phase 2). Failures on the PG side are logged but don't fail the JSON write — JSON is the safety net. New audit gate G15 `pg_migration_progress` reports 19/52 tables in PG-mode (37%), 1 dual-write pilot. 33 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort to 100%: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
 - **core.py decomposition (audit cluster) — CLOSED** — Six-session arc complete. v5.21 introduced the shim pattern. v5.22-v5.24 migrated 42/67 pages. v5.25 physically moved 14 functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). v5.26 reached 67/67 (100%) adoption. v5.27 deleted the reverse-export `__getattr__` block and migrated 13 stragglers in app.py / utils / scripts / tests that G14 wasn't tracking. core.py now 6,345 lines (−328 net). The legacy `from utils.core import audit_log` path raises ImportError by design. Two safety tests guard the closure: `test_legacy_path_is_gone` (runtime) and `test_no_legacy_imports_outside_core_audit` (static lint).
@@ -445,7 +451,8 @@ The single source of truth for the score is `python scripts/audit.py`. It runs f
 | G11 | password_safety | All password hashes go through bcrypt (`_hash_password` / `hash_pw`); no raw SHA-256 (closes V-003) |
 | G12 | api_auth_safety | Every API route except `/api/health` declares `Depends(get_current_user)` or `Depends(require_admin)` (closes V-001) |
 | G13 | test_infrastructure | tests/ directory exists with ≥3 test files, conftest.py, pytest config, pytest in requirements, .github/workflows/ci.yml present (added v5.20) |
-| G14 | core_split_adoption | Tracks how many pages have migrated from `from utils.core import X` to the new `from utils.core_audit import X` (and future shim modules). Passes when ≥1 shim exists and ≥1 page has adopted. Tracking gate, not enforcement. (added v5.21) |
+| G14 | core_split_adoption | Tracks page adoption of shim modules. Currently 2 shims registered: `utils.core_audit` (v5.21, physical move v5.25, closed v5.27) and `utils.core_kpi` (v5.28, in shim phase). Passes when ≥1 shim exists and ≥1 page has adopted. Tracking gate, not enforcement. (added v5.21) |
+| G15 | pg_migration_progress | Standard #1 progress tracker. Reads `TABLE_USE_DB` from `utils/db.py`; reports adoption percentage. Validates that every entry in `JSON_PATH_TO_TABLE` is registered AND has a marshaller pair wired in `Database._get_marshallers`. Passes when registry is well-formed and ≥1 table is PG-live. (added v5.30) |
 
 **Score = pass_count / total × 100.** Re-run after every change. If the score regresses, the change is incomplete.
 
@@ -483,10 +490,10 @@ But always: **measure before changing**, and **prefer extending existing pattern
 These are load-bearing. Don't change them without explicit approval:
 
 - The login system (`utils/core.py` UserManager). `william001`/`ECOStaff001` is the demo MD account.
-- The 113 KPIs in `data/kpi_library.json`. Add KPIs by appending; never delete.
+- The 111 KPIs in `data/kpi_library.json`. Add KPIs by appending; never delete.
 - The 6-section admin layout. New tabs go inside existing sections.
-- The audit chain (`audit_log` function in `utils/core.py`).
-- The BSC engine (`pages/1_perform.py`'s scoring logic).
+- The audit chain (`audit_log` function — now in `utils/core_audit.py` since v5.25; legacy import path locked off in v5.27).
+- The BSC scoring logic (`pages/1_perform.py`) and the central contract enforcement (`utils/bsc_engine.py` v5.18 — Standards #1 and #2).
 - The dual-mode I/O pattern (`a2z_db.load_json` / `a2z_db.save_json`).
 - The 7 PostgreSQL schemas (auth, performance, credit, finance, risk, staging, audit). Don't rename them.
 - The plug-in registry pattern. Don't bypass `register_module_config()` to add hand-rolled forms.
@@ -512,4 +519,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.29. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.30. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
