@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.19 (April 2026)
+**Current version:** v5.21 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -77,10 +77,11 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - ~~**V-003 Password hashing (SHA-256)** — closed in v5.16. `_hash_password()` module-level helper using bcrypt with SHA-256 fallback. Bootstrap and runtime now share one implementation. Rehash-on-next-login already in `authenticate()`. Verified by audit gate G11.~~
 - ~~**V-001 API authentication bypass** — closed in v5.17. JWT bearer auth on every endpoint except `/api/health`; `/api/cache/clear` is admin-only. New `utils/auth_jwt.py`, new `/api/auth/login` and `/api/auth/me` routes. CORS tightened (V-009 also closed) — origins from `A2Z_CORS_ORIGINS` env var. Verified by audit gate G12.~~
 - ~~**BSC central integration engine** — closed in v5.18 (addendum Standards #1 + #2). New `utils/bsc_engine.py` with `submit()` / `submit_batch()` / `get_actual()` enforcing the 5-field contract through a 5-stage pipeline (validate → standardise → enrich → persist → audit). Idempotency via SHA-256 hash. Pilot module: `utils/actuals_engine.py` now stamps every CBS-derived KPI row through the engine. G8 evolved from vacuous presence-check to structural enforcement.~~
+- ~~**Test infrastructure (0% → scaffolded)** — closed in v5.20. `tests/` directory with conftest.py, pytest.ini, 4 test files (67 test functions, 35 marked @security). GitHub Actions CI runs audit + bsc_engine self-test + pytest on every push and PR. Verified by audit gate G13.~~
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
-- **Test suite** — zero unit tests. pytest + CI/CD required. Effort: 4 weeks.
-- **core.py size** — 6,596 lines, 15 classes. Should split into 8-10 modules. Effort: 1 week.
+- **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
+- **core.py decomposition** — v5.21 introduced the shim pattern: `utils/core_audit.py` re-exports the audit/access/approval cluster (14 symbols), and 3 pages have migrated to the new path (`pages/_access.py`, `pages/29_revenue_assurance.py`, `pages/26_legal.py`). G14 audit gate tracks adoption percentage. Future work: more shims (`utils/core_kpi.py`, `utils/core_perf.py`), more page migrations, then physical code moves once adoption is high. Currently 6,672 lines, 15 classes. Effort: 1 week of incremental sessions.
 
 ---
 
@@ -424,7 +425,7 @@ These rules apply when YOU (the agent) are making changes to A2Z. Follow them in
 
 ## ✅ Quality gates (the only valid scorecard)
 
-The single source of truth for the score is `python scripts/audit.py`. It runs twelve automated gates:
+The single source of truth for the score is `python scripts/audit.py`. It runs fourteen automated gates:
 
 | Gate | Name | Checks |
 |------|------|--------|
@@ -440,6 +441,8 @@ The single source of truth for the score is `python scripts/audit.py`. It runs t
 | G10 | xss_safety | User-controlled data flowing into `unsafe_allow_html` is wrapped in `safe_html()` (closes V-004) |
 | G11 | password_safety | All password hashes go through bcrypt (`_hash_password` / `hash_pw`); no raw SHA-256 (closes V-003) |
 | G12 | api_auth_safety | Every API route except `/api/health` declares `Depends(get_current_user)` or `Depends(require_admin)` (closes V-001) |
+| G13 | test_infrastructure | tests/ directory exists with ≥3 test files, conftest.py, pytest config, pytest in requirements, .github/workflows/ci.yml present (added v5.20) |
+| G14 | core_split_adoption | Tracks how many pages have migrated from `from utils.core import X` to the new `from utils.core_audit import X` (and future shim modules). Passes when ≥1 shim exists and ≥1 page has adopted. Tracking gate, not enforcement. (added v5.21) |
 
 **Score = pass_count / total × 100.** Re-run after every change. If the score regresses, the change is incomplete.
 
@@ -447,7 +450,7 @@ The audits performed externally cover wider ground (security, performance, busin
 
 ### Recurring audit cadence
 
-The eleven automated gates run on every commit (via CI when added). The wider audits — security (SAST + DAST), accessibility, financial calculation accuracy, FLEXCUBE pipeline validation, performance, business logic — should run on a documented schedule:
+The fourteen automated gates run on every commit (CI on every push and PR). The wider audits — security (SAST + DAST), accessibility, financial calculation accuracy, FLEXCUBE pipeline validation, performance, business logic — should run on a documented schedule:
 
 - **SAST + dependency scan:** every commit
 - **Quality gates (audit.py):** every commit, blocking
@@ -506,4 +509,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.19. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.21. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

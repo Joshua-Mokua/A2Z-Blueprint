@@ -729,7 +729,263 @@ def gate_api_auth_safety() -> Dict[str, Any]:
     }
 
 
+def gate_test_infrastructure() -> Dict[str, Any]:
+    """G13 — Test infrastructure (v5.20).
+
+    Verifies the test scaffolding is in place:
+      - tests/ directory exists with at least 3 test files
+      - pytest.ini (or equivalent) is present
+      - pytest is in requirements.txt
+      - .github/workflows/ci.yml exists (CI runs on every push)
+      - tests/conftest.py is present (shared fixtures)
+
+    Pre-v5.20 the codebase had ZERO tests. This gate ensures we don't
+    regress to that state. It does NOT verify test passes — that's
+    pytest's job, run by CI separately.
+
+    Once a coverage tool is wired (pytest-cov), a future revision of
+    this gate could enforce a minimum coverage threshold.
+    """
+    violations: List[str] = []
+
+    tests_dir = ROOT / "tests"
+    if not tests_dir.exists():
+        violations.append("tests/ directory missing — test infrastructure not set up")
+        return {
+            "id": "G13", "name": "test_infrastructure",
+            "passed": False,
+            "summary": "tests/ directory missing",
+            "violations": violations,
+        }
+
+    test_files = sorted(p.name for p in tests_dir.glob("test_*.py"))
+    if len(test_files) < 3:
+        violations.append(
+            f"only {len(test_files)} test file(s) found (target: ≥3)"
+        )
+
+    if not (tests_dir / "conftest.py").exists():
+        violations.append("tests/conftest.py missing — shared fixtures unavailable")
+
+    pytest_cfg = (
+        (ROOT / "pytest.ini").exists()
+        or (ROOT / "pyproject.toml").exists()
+        or (ROOT / "setup.cfg").exists()
+    )
+    if not pytest_cfg:
+        violations.append("pytest.ini / pyproject.toml / setup.cfg missing")
+
+    req = read_text_safe(ROOT / "requirements.txt")
+    if "pytest" not in req.lower():
+        violations.append("pytest not in requirements.txt")
+
+    ci_yml = ROOT / ".github" / "workflows" / "ci.yml"
+    ci_present = ci_yml.exists()
+    if not ci_present:
+        violations.append(".github/workflows/ci.yml missing — CI not configured")
+
+    # Count test functions (rough — uses ast for accuracy)
+    total_tests = 0
+    for tf in tests_dir.glob("test_*.py"):
+        try:
+            import ast as _ast
+            tree = _ast.parse(read_text_safe(tf))
+            for node in _ast.walk(tree):
+                if isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+                    if node.name.startswith("test_"):
+                        total_tests += 1
+        except Exception:
+            pass
+
+    summary = (
+        f"{len(test_files)} test file(s), {total_tests} test function(s), "
+        f"pytest_cfg={'present' if pytest_cfg else 'MISSING'}, "
+        f"CI={'configured' if ci_present else 'MISSING'}"
+    )
+
+    return {
+        "id":     "G13",
+        "name":   "test_infrastructure",
+        "passed": not violations,
+        "summary": summary,
+        "violations": violations,
+    }
+
+
 # ─── Runner ──────────────────────────────────────────────────────────────
+def gate_core_split_adoption() -> Dict[str, Any]:
+    """G14 — Core split adoption (v5.21).
+
+    Tracks how many pages have migrated to the new utils.core_* submodule
+    import paths. The shim modules (currently just utils/core_audit.py)
+    re-export symbols from utils.core, so old `from utils.core import X`
+    imports keep working — but the migration goal is for pages to gradually
+    move to `from utils.core_audit import X` (and future siblings).
+
+    This gate does NOT fail if pages still use the old paths — old imports
+    are valid until utils.core is fully decomposed. It just reports the
+    adoption percentage so progress is visible.
+
+    Adoption is computed as:
+        n_migrated_pages / n_pages_that_could_migrate * 100
+
+    A "page that could migrate" is one that currently imports any symbol
+    covered by an existing shim module (utils.core_audit etc.). A "migrated
+    page" is one that uses the new `from utils.core_audit import` path.
+    A page can be partially migrated — e.g. core_audit imports plus residual
+    `from utils.core import` for symbols not yet shimmed; that still counts.
+
+    The gate passes as long as the shim modules exist and the audit can
+    compute a reading. It fails only if a shim is referenced in the registry
+    but doesn't exist on disk, or if zero pages have adopted any shim.
+    """
+    # Registry of shim modules and the symbols each one covers.
+    # Future shims (utils.core_kpi, utils.core_perf, etc.) get added here.
+    SHIMS = {
+        "utils.core_audit": {
+            "audit_log", "requires_dual_approval", "submit_for_approval",
+            "get_pending_approvals", "get_user_department", "is_dept_super_user",
+            "is_ict_admin", "get_dept_modules", "check_access", "check_page_access",
+            "get_visible_staff", "tab_visible_cascade", "fix_view_all_permissions",
+            "_hash_password",
+        },
+    }
+
+    violations: List[str] = []
+
+    # Verify each registered shim file exists and re-exports something
+    for shim_modpath in SHIMS:
+        shim_relpath = shim_modpath.replace(".", "/") + ".py"
+        shim_file = ROOT / shim_relpath
+        if not shim_file.exists():
+            violations.append(f"shim {shim_modpath} declared in registry but missing on disk")
+            continue
+        shim_code = read_text_safe(shim_file)
+        if "from utils.core import" not in shim_code:
+            violations.append(f"shim {shim_modpath} doesn't re-export from utils.core")
+
+    if violations:
+        return {
+            "id": "G14", "name": "core_split_adoption",
+            "passed": False,
+            "summary": "shim registry inconsistent with disk",
+            "violations": violations,
+        }
+
+    # Build the union of all symbols any shim covers
+    all_shimmed = set()
+    for syms in SHIMS.values():
+        all_shimmed |= syms
+
+    # Walk pages/, classify each
+    n_total_pages         = 0   # all pages we scan
+    n_could_migrate       = 0   # pages that import any shimmed symbol from utils.core
+    n_partially_migrated  = 0   # pages that use at least one shim path
+    n_fully_migrated      = 0   # pages where ALL shimmed-symbol imports go via shims
+    examples_migrated     = []
+    examples_pending      = []
+
+    if PAGES.exists():
+        for p in sorted(PAGES.glob("*.py")):
+            if "backup" in p.name:
+                continue
+            n_total_pages += 1
+            code = read_text_safe(p)
+
+            # Symbols this page imports from utils.core (the OLD path)
+            old_imports: set = set()
+            for m in re.finditer(
+                r"from\s+utils\.core\s+import\s+\(([^)]+)\)",
+                code, re.DOTALL,
+            ):
+                for sym in m.group(1).split(","):
+                    sym = sym.strip().split(" as ")[0]
+                    if sym and sym.isidentifier():
+                        old_imports.add(sym)
+            for m in re.finditer(
+                r"^from\s+utils\.core\s+import\s+([^(\n]+)$",
+                code, re.MULTILINE,
+            ):
+                for sym in m.group(1).split(","):
+                    sym = sym.strip().split(" as ")[0]
+                    if sym and sym.isidentifier():
+                        old_imports.add(sym)
+
+            # Symbols this page imports via any registered shim (the NEW path)
+            new_imports: set = set()
+            for shim_modpath in SHIMS:
+                shim_re = re.escape(shim_modpath)
+                for m in re.finditer(
+                    rf"from\s+{shim_re}\s+import\s+\(([^)]+)\)",
+                    code, re.DOTALL,
+                ):
+                    for sym in m.group(1).split(","):
+                        sym = sym.strip().split(" as ")[0]
+                        if sym and sym.isidentifier():
+                            new_imports.add(sym)
+                for m in re.finditer(
+                    rf"^from\s+{shim_re}\s+import\s+([^(\n]+)$",
+                    code, re.MULTILINE,
+                ):
+                    for sym in m.group(1).split(","):
+                        sym = sym.strip().split(" as ")[0]
+                        if sym and sym.isidentifier():
+                            new_imports.add(sym)
+
+            # Does this page touch any shimmed symbol at all?
+            touches_shimmed_old = bool(old_imports & all_shimmed)
+            touches_shimmed_new = bool(new_imports & all_shimmed)
+
+            if touches_shimmed_old or touches_shimmed_new:
+                n_could_migrate += 1
+                if touches_shimmed_new:
+                    n_partially_migrated += 1
+                    if not (old_imports & all_shimmed):
+                        n_fully_migrated += 1
+                        if len(examples_migrated) < 3:
+                            examples_migrated.append(p.name)
+                    else:
+                        # Partial: still has old imports for shimmed symbols
+                        if len(examples_pending) < 3:
+                            examples_pending.append(p.name + " (partial)")
+                else:
+                    if len(examples_pending) < 3:
+                        examples_pending.append(p.name)
+
+    # Compute adoption percentage
+    pct = (n_partially_migrated / n_could_migrate * 100) if n_could_migrate else 0.0
+
+    # Pass condition: shims exist + at least one page has migrated.
+    # The threshold deliberately starts low (any adoption = pass) because
+    # this is a tracking gate, not an enforcement gate.
+    passed = bool(SHIMS) and n_partially_migrated > 0
+
+    summary = (
+        f"{len(SHIMS)} shim(s), "
+        f"{n_partially_migrated}/{n_could_migrate} pages adopted "
+        f"({pct:.0f}%) "
+        f"({n_fully_migrated} fully, {n_partially_migrated - n_fully_migrated} partial)"
+    )
+
+    return {
+        "id":     "G14",
+        "name":   "core_split_adoption",
+        "passed": passed,
+        "summary": summary,
+        "violations": violations,
+        "details": {
+            "shims_registered": list(SHIMS.keys()),
+            "pages_total":      n_total_pages,
+            "pages_could_migrate": n_could_migrate,
+            "pages_migrated":   n_partially_migrated,
+            "pages_fully_migrated": n_fully_migrated,
+            "adoption_pct":     round(pct, 1),
+            "examples_migrated": examples_migrated,
+            "examples_pending": examples_pending,
+        },
+    }
+
+
 GATES = [
     ("G1", gate_syntax),
     ("G2", gate_direct_io),
@@ -743,6 +999,8 @@ GATES = [
     ("G10", gate_xss_safety),
     ("G11", gate_password_safety),
     ("G12", gate_api_auth_safety),
+    ("G13", gate_test_infrastructure),
+    ("G14", gate_core_split_adoption),
 ]
 
 

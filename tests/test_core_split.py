@@ -1,0 +1,169 @@
+"""tests/test_core_split.py — verify the utils.core_* shim modules.
+
+The shim modules (utils.core_audit etc.) re-export symbols from utils.core
+so callers can migrate away from the monolithic core.py at their own pace.
+These tests pin down two invariants:
+
+  1. Every symbol the shim claims to export is actually callable, and
+     points at the SAME OBJECT as the implementation in utils.core.
+     (`is` identity check — no double-allocation, no behavioral drift.)
+
+  2. The pages that have already been migrated to use the new path
+     parse cleanly. If a future contributor accidentally breaks the
+     migration, this fails loudly.
+
+When new shim modules are added (utils.core_kpi, utils.core_perf, etc.),
+extend SHIMS below.
+"""
+from __future__ import annotations
+
+import ast
+import importlib
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).parent.parent
+
+# Registry of shims and the symbols each one is supposed to cover.
+# Must stay in sync with scripts/audit.py G14's SHIMS dict.
+SHIMS = {
+    "utils.core_audit": [
+        "audit_log",
+        "requires_dual_approval",
+        "submit_for_approval",
+        "get_pending_approvals",
+        "get_user_department",
+        "is_dept_super_user",
+        "is_ict_admin",
+        "get_dept_modules",
+        "check_access",
+        "check_page_access",
+        "get_visible_staff",
+        "tab_visible_cascade",
+        "fix_view_all_permissions",
+        "_hash_password",
+    ],
+}
+
+# Pages that have been migrated. When you migrate a page, add it here.
+MIGRATED_PAGES = [
+    "pages/_access.py",
+    "pages/29_revenue_assurance.py",
+    "pages/26_legal.py",
+]
+
+
+@pytest.fixture(scope="module")
+def core_module():
+    """Load utils.core once for the whole module."""
+    return importlib.import_module("utils.core")
+
+
+class TestShimReExports:
+    """Every symbol declared in __all__ must be re-exported and identical
+    to the implementation in utils.core. If these tests fail, the shim
+    has drifted from the implementation."""
+
+    @pytest.mark.parametrize("shim_modpath,symbols", SHIMS.items())
+    def test_shim_imports_cleanly(self, shim_modpath, symbols):
+        mod = importlib.import_module(shim_modpath)
+        assert mod is not None
+
+    @pytest.mark.parametrize("shim_modpath,symbols", SHIMS.items())
+    def test_shim_has_all_attribute(self, shim_modpath, symbols):
+        mod = importlib.import_module(shim_modpath)
+        assert hasattr(mod, "__all__"), f"{shim_modpath} missing __all__"
+        assert set(mod.__all__) == set(symbols), (
+            f"{shim_modpath}.__all__ doesn't match expected: "
+            f"missing={set(symbols)-set(mod.__all__)}, "
+            f"extra={set(mod.__all__)-set(symbols)}"
+        )
+
+    @pytest.mark.parametrize(
+        "shim_modpath,symbol",
+        [(s, sym) for s, syms in SHIMS.items() for sym in syms],
+    )
+    def test_symbol_is_same_object_as_core(
+        self, shim_modpath, symbol, core_module
+    ):
+        """The shim must re-export the SAME object — not a copy, not a
+        wrapper. `is` identity guarantees no behavioral drift."""
+        mod = importlib.import_module(shim_modpath)
+        shim_obj = getattr(mod, symbol)
+        core_obj = getattr(core_module, symbol)
+        assert shim_obj is core_obj, (
+            f"{shim_modpath}.{symbol} is not the same object as "
+            f"utils.core.{symbol} — shim has diverged"
+        )
+
+    @pytest.mark.parametrize(
+        "shim_modpath,symbol",
+        [(s, sym) for s, syms in SHIMS.items() for sym in syms],
+    )
+    def test_symbol_is_callable_or_value(self, shim_modpath, symbol):
+        """Every re-exported symbol must be callable. (None of the audit
+        cluster are constants.) If we add constants to a future shim,
+        relax this."""
+        mod = importlib.import_module(shim_modpath)
+        obj = getattr(mod, symbol)
+        # All audit-cluster symbols are functions
+        assert callable(obj), f"{shim_modpath}.{symbol} is not callable"
+
+
+class TestMigratedPagesParse:
+    """The pages already migrated must still be valid Python. Catches
+    accidental syntax breakage when someone edits a migrated page."""
+
+    @pytest.mark.parametrize("page_path", MIGRATED_PAGES)
+    def test_migrated_page_parses(self, page_path):
+        full = ROOT / page_path
+        assert full.exists(), f"migrated page missing: {page_path}"
+        code = full.read_text(encoding="utf-8", errors="ignore")
+        ast.parse(code)  # raises SyntaxError if broken
+
+    @pytest.mark.parametrize("page_path", MIGRATED_PAGES)
+    def test_migrated_page_uses_new_path(self, page_path):
+        """The page must import from at least one shim module — otherwise
+        it's not actually migrated."""
+        full = ROOT / page_path
+        code = full.read_text(encoding="utf-8", errors="ignore")
+        uses_any_shim = any(
+            f"from {shim} import" in code for shim in SHIMS
+        )
+        assert uses_any_shim, (
+            f"{page_path} is in MIGRATED_PAGES but doesn't import "
+            f"from any shim module"
+        )
+
+    @pytest.mark.parametrize("page_path", MIGRATED_PAGES)
+    def test_migrated_page_no_old_imports_for_shimmed_symbols(self, page_path):
+        """Once a page has migrated to the new path, it should NOT also
+        import the same symbols from utils.core. Mixed paths confuse the
+        adoption metric and signal an incomplete migration."""
+        import re
+        full = ROOT / page_path
+        code = full.read_text(encoding="utf-8", errors="ignore")
+
+        # All symbols covered by any shim
+        all_shimmed = set()
+        for syms in SHIMS.values():
+            all_shimmed |= set(syms)
+
+        # Find old-style imports
+        old_imported = set()
+        for m in re.finditer(
+            r"^from\s+utils\.core\s+import\s+([^(\n]+)$",
+            code, re.MULTILINE,
+        ):
+            for sym in m.group(1).split(","):
+                sym = sym.strip().split(" as ")[0]
+                if sym and sym.isidentifier():
+                    old_imported.add(sym)
+
+        old_shimmed = old_imported & all_shimmed
+        assert not old_shimmed, (
+            f"{page_path} still imports {old_shimmed} from utils.core "
+            f"even though it's listed as migrated. Move them to the shim."
+        )

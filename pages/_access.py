@@ -1,7 +1,8 @@
 """pages/_access.py — Central access guard. Import at top of every page."""
 import streamlit as st
 import pandas as pd
-from utils.core import check_access, MODULE_ACCESS, get_visible_staff, tab_visible_cascade
+from utils.core_audit import check_access, get_visible_staff, tab_visible_cascade
+from utils.core import MODULE_ACCESS
 
 
 def require_access(module: str, silent: bool = False):
