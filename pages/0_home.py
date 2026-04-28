@@ -3,7 +3,8 @@ import streamlit as st
 from utils.db import db as a2z_db
 import pandas as pd
 from datetime import datetime
-from utils.core import check_access, MODULE_ACCESS, get_visible_staff
+from utils.core_audit import check_access, get_visible_staff
+from utils.core import MODULE_ACCESS
 from pages._shared import load_shared_state, safe_html, get_user_proposition
 from pages._access import require_access
 

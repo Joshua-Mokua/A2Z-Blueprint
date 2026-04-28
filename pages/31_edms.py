@@ -10,7 +10,7 @@ from pathlib import Path
 from collections import defaultdict, Counter
 from datetime import date, timedelta
 from pages._shared import load_shared_state
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from pages._access import require_access
 
 def _safe_date(s, fallback=None):

@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 from utils.config import load_org_config, save_org_config
-from utils.core   import audit_log
+from utils.core_audit import audit_log
 
 DATA = Path(__file__).parent.parent / "data"
 

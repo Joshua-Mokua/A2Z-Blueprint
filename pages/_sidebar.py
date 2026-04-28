@@ -2,7 +2,8 @@
 import streamlit as st
 import pandas as pd
 import io
-from utils.core import (audit_log, process_kpi_data, build_staff_scores,
+from utils.core_audit import audit_log
+from utils.core import (process_kpi_data, build_staff_scores,
                          build_staff_registry, ExecuteManager, cache_upload,
                          BRANCH_REGION, fmt_num)
 from pages._shared import safe_html
@@ -223,7 +224,7 @@ def show_sidebar():
                         _cur_ud.get("full_name","") or
                         st.session_state.get("username",""))
             if st.session_state.get("_filtered_for") != _cur_uid:
-                from utils.core import get_visible_staff as _gvs
+                from utils.core_audit import get_visible_staff as _gvs
                 _new_filtered = _gvs(_cur_ud, _scores)
                 st.session_state["filtered_staff"] = _new_filtered
                 st.session_state["_filtered_for"]  = _cur_uid
@@ -299,7 +300,7 @@ def _process_upload_bytes(raw_bytes: bytes):
         ud      = st.session_state.get("user_data", {})
 
         # ── Hierarchy-aware staff visibility ─────────────────────────
-        from utils.core import get_visible_staff
+        from utils.core_audit import get_visible_staff
         filtered = get_visible_staff(ud, scores)
 
         month_cols = [c for c in df_proc.columns

@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.25 (April 2026)
+**Current version:** v5.26 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -82,7 +82,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
-- **core.py decomposition** — v5.21–v5.24 introduced the shim pattern and migrated 42/67 pages to `from utils.core_audit import X`. **v5.25 is the milestone session: 14 audit-cluster functions physically moved out of `utils/core.py` and into `utils/core_audit.py`. core.py shrunk by 301 lines (6,673 → 6,372).** Backward compatibility is preserved via PEP 562 `__getattr__` in core.py — the 25 unmigrated pages still resolve `from utils.core import audit_log` lazily, no cycle. G14 audit gate tracks adoption percentage (63%). `utils/core_audit.py` added to FOUNDATIONAL list since it now hosts the audit_log primitive. Future work: continue migrations toward 100%, then delete the reverse-export `__getattr__` block in core.py. Then start the next cluster (`utils/core_kpi.py`). core.py currently 6,372 lines, 15 classes.
+- **core.py decomposition (audit cluster) — COMPLETE** — v5.21–v5.24 introduced the shim pattern and migrated 42/67 pages. v5.25 physically moved 14 audit-cluster functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). **v5.26 finished the migration: 67/67 pages now use `from utils.core_audit import X` (G14: 100%).** core.py currently 6,383 lines with the PEP 562 `__getattr__` reverse-export block still in place for forward-compat. Next milestone: delete that 12-line block, drop core.py to ~6,371 lines, and start the next cluster (`utils/core_kpi.py`).
 
 ---
 
@@ -510,4 +510,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.25. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.26. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

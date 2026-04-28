@@ -12,7 +12,8 @@ from collections import defaultdict
 from decimal import Decimal
 from pages._shared import load_shared_state
 from pages._access import require_access
-from utils.core import audit_log, get_org_config
+from utils.core_audit import audit_log
+from utils.core import get_org_config
 
 require_access("projects")
 DATA  = Path(__file__).parent.parent / "data"

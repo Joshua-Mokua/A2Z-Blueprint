@@ -5,7 +5,8 @@ Hard-coded items are clearly labelled as such.
 import streamlit as st
 import json
 from pathlib import Path
-from utils.core import audit_log, get_org_config, save_org_config
+from utils.core_audit import audit_log
+from utils.core import get_org_config, save_org_config
 from utils.db import db as a2z_db
 
 DATA = Path(__file__).parent.parent / "data"

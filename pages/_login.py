@@ -4,7 +4,8 @@ Centred white card on deep-blue background. IP notice footer.
 import streamlit as st
 import hashlib, base64
 from pathlib import Path
-from utils.core import UserManager, audit_log
+from utils.core_audit import audit_log
+from utils.core import UserManager
 
 try:
     from utils.core import get_org_config as _goc

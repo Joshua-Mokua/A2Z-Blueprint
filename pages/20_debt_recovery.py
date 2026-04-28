@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import date, timedelta
 from pages._shared import load_shared_state
 from pages._access import require_access
-from utils.core import audit_log
+from utils.core_audit import audit_log
 
 def _safe_date(s, fallback=None):
     """Safe date parsing — returns fallback on invalid/None input."""

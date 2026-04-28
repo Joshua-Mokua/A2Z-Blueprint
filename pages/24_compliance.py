@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 from pages._shared import load_shared_state, get_user_proposition
 from pages._access import require_access
-from utils.core import ComplianceManager, audit_log
+from utils.core_audit import audit_log
+from utils.core import ComplianceManager
 
 require_access("compliance")
 

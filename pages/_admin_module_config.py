@@ -13,7 +13,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from datetime import datetime
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from utils.admin_registry import get_modules_by_category, get_registered_modules, CATEGORIES
 from pages._admin_module_renderer import render_module_config_form
 import pages._admin_module_specs  # triggers registration on import

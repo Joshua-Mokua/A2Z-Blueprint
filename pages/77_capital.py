@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import date, timedelta
 from pages._shared import load_shared_state
 from pages._access import require_access
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from utils.db import db as a2z_db
 
 require_access("regulatory_capital")

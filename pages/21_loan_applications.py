@@ -7,7 +7,8 @@ from pathlib import Path
 from datetime import date, timedelta
 from pages._shared import load_shared_state, get_user_proposition
 from pages._access import require_access
-from utils.core import LoanApplicationManager, audit_log, requires_dual_approval, submit_for_approval
+from utils.core_audit import audit_log, requires_dual_approval, submit_for_approval
+from utils.core import LoanApplicationManager
 
 require_access("loan_applications")
 

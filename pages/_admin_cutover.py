@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from utils.db import db
 
 DATA = Path(__file__).parent.parent / "data"

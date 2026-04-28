@@ -13,7 +13,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
-from utils.core import audit_log
+from utils.core_audit import audit_log
 from utils.db import db, TABLE_USE_DB, get_schema_sql
 
 DATA = Path(__file__).parent.parent / "data"
