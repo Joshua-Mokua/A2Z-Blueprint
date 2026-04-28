@@ -9,7 +9,7 @@ from datetime import date
 from collections import Counter, defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
-from utils.core import audit_log
+from utils.core_audit import audit_log
 
 require_access("credit_admin")
 

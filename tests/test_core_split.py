@@ -49,9 +49,23 @@ SHIMS = {
 
 # Pages that have been migrated. When you migrate a page, add it here.
 MIGRATED_PAGES = [
+    # Migrated in v5.21
     "pages/_access.py",
     "pages/29_revenue_assurance.py",
     "pages/26_legal.py",
+    # Migrated in v5.22
+    "pages/25_treasury.py",
+    "pages/53_irrbb.py",
+    "pages/46_trade_finance.py",
+    "pages/52_mgmt_accounts.py",
+    "pages/40_collateral.py",
+    "pages/60_disciplinary.py",
+    "pages/23_credit_admin.py",
+    "pages/50_cybersecurity.py",
+    "pages/49_bancassurance.py",
+    "pages/39_ews.py",
+    "pages/57_deal_room.py",
+    "pages/43_pip.py",
 ]
 
 
