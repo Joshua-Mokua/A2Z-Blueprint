@@ -251,7 +251,8 @@ def compute_actuals_from_cbs(force: bool = False) -> dict:
 
     # ── Load KPI library ───────────────────────────────────────────────
     try:
-        from utils.core import get_kpi_library, get_org_config
+        from utils.core_kpi import get_kpi_library
+        from utils.core import get_org_config
         lib = get_kpi_library()
         cfg = get_org_config()
         pillar_weights = cfg.get("pillar_weights", {
