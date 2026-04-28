@@ -15,7 +15,8 @@ _ = audit_log("RA_PAGE_VIEWED", uname, "RA dashboard viewed") if "uname" in dir(
 def _bsc_trigger(username: str, kpi: str = ""):
     """Non-blocking BSC update."""
     try:
-        from utils.core import update_bsc_from_modules as _ubm, audit_log
+        from utils.core_audit import audit_log
+        from utils.core import update_bsc_from_modules as _ubm
         _ubm(username)
     except Exception:
         pass

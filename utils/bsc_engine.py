@@ -356,7 +356,7 @@ def _audit(action: str, actor: str, detail: str) -> None:
     """Emit an audit log entry. Failures are swallowed — audit logging
     must never block the primary write path."""
     try:
-        from utils.core import audit_log
+        from utils.core_audit import audit_log
         audit_log(action, actor, detail, module="bsc_engine")
     except Exception as e:
         logger.debug(f"audit_log failed (non-fatal): {e}")

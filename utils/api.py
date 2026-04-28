@@ -99,7 +99,7 @@ def _startup_checks() -> None:
 # wired up (e.g. tests).
 def _audit(action: str, user: dict, detail: str = "") -> None:
     try:
-        from utils.core import audit_log
+        from utils.core_audit import audit_log
         username = (user or {}).get("username", "anonymous")
         audit_log(action, username, detail, module="api")
     except Exception as e:

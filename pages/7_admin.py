@@ -857,7 +857,8 @@ with sections[0]:
 
         # ── Permission safety check ──────────────────────────────────────
         try:
-            from utils.core import fix_view_all_permissions, _ALL_VIEW_ROLES
+            from utils.core_audit import fix_view_all_permissions
+            from utils.core import _ALL_VIEW_ROLES
             _danger = [(u, d.get("full_name",u), d.get("role",""))
                        for u,d in um.users.items()
                        if d.get("can_view_all")

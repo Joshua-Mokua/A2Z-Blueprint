@@ -154,23 +154,6 @@ class TestShimReExports:
         "shim_modpath,symbol",
         [(s, sym) for s, syms in SHIMS.items() for sym in syms],
     )
-    def test_symbol_is_same_object_as_core(
-        self, shim_modpath, symbol, core_module
-    ):
-        """The shim must re-export the SAME object — not a copy, not a
-        wrapper. `is` identity guarantees no behavioral drift."""
-        mod = importlib.import_module(shim_modpath)
-        shim_obj = getattr(mod, symbol)
-        core_obj = getattr(core_module, symbol)
-        assert shim_obj is core_obj, (
-            f"{shim_modpath}.{symbol} is not the same object as "
-            f"utils.core.{symbol} — shim has diverged"
-        )
-
-    @pytest.mark.parametrize(
-        "shim_modpath,symbol",
-        [(s, sym) for s, syms in SHIMS.items() for sym in syms],
-    )
     def test_symbol_is_callable_or_value(self, shim_modpath, symbol):
         """Every re-exported symbol must be callable. (None of the audit
         cluster are constants.) If we add constants to a future shim,
@@ -183,13 +166,16 @@ class TestShimReExports:
 
 class TestPhysicalMoveV525:
     """v5.25 physically moved 14 functions from utils.core into
-    utils/core_audit.py. These tests pin the move down so a future
-    refactor can't silently un-do it.
+    utils/core_audit.py. v5.27 deleted the reverse-export __getattr__
+    block from utils.core that provided backward compat for v5.25+v5.26.
+
+    These tests pin the move down so a future refactor can't silently
+    un-do it.
 
     If any of these fail, someone has likely:
       - Eagerly re-imported core_audit from core (re-creating the cycle)
       - Put implementations back in core.py
-      - Removed the reverse-export path from core.py
+      - Re-added the reverse-export __getattr__ block
     """
 
     def test_implementations_live_in_core_audit(self):
@@ -205,28 +191,91 @@ class TestPhysicalMoveV525:
                     f"may have drifted back into utils.core."
                 )
 
-    def test_legacy_path_still_works(self):
-        """Pages that haven't migrated yet still do `from utils.core import
-        audit_log`. After the v5.25 physical move, that import has to keep
-        working via the reverse-export path in core.py (PEP 562 __getattr__)."""
-        from utils.core import audit_log, check_access, _hash_password
-        assert callable(audit_log)
-        assert callable(check_access)
-        assert callable(_hash_password)
+    def test_legacy_path_is_gone(self):
+        """v5.27 deleted the reverse-export __getattr__ block from
+        utils.core. The legacy `from utils.core import audit_log` path
+        must no longer resolve — every call site has been migrated.
 
-    def test_legacy_path_returns_same_object_as_new_path(self):
-        """The legacy `from utils.core import X` must return the EXACT same
-        object as `from utils.core_audit import X`. Anything else means the
-        backward-compat shim has drifted."""
-        for shim_modpath, symbols in SHIMS.items():
-            shim_mod = importlib.import_module(shim_modpath)
-            for sym in symbols:
-                from_new = getattr(shim_mod, sym)
-                from_old = getattr(importlib.import_module("utils.core"), sym)
-                assert from_new is from_old, (
-                    f"utils.core.{sym} and {shim_modpath}.{sym} are different "
-                    f"objects — backward-compat path has drifted"
-                )
+        This is the v5.27 INVERSION of v5.25's test_legacy_path_still_works:
+        we now verify the OPPOSITE behaviour. If a future contributor
+        accidentally re-adds the reverse-export block (recreating the
+        backward-compat shim), this test fails — forcing them to choose
+        between the two designs explicitly."""
+        import utils.core
+        for sym in ("audit_log", "check_access", "_hash_password",
+                    "get_visible_staff", "requires_dual_approval"):
+            assert not hasattr(utils.core, sym), (
+                f"utils.core.{sym} still resolves — the v5.27 reverse-export "
+                f"deletion has been undone, or the symbol re-appeared in "
+                f"core.py. Migrate the caller to utils.core_audit instead "
+                f"of restoring the backward-compat block."
+            )
+
+    def test_no_legacy_imports_outside_core_audit(self):
+        """No file in the project (other than utils.core_audit itself,
+        which lives in this module by design) may import any audit-cluster
+        symbol via `from utils.core import X`. The reverse-export was
+        removed in v5.27 so any such import would crash at import time —
+        but we want to catch it at LINT time, before the app even starts.
+
+        This test is the static counterpart to test_legacy_path_is_gone:
+        runtime check + static check together = no way to slip in a
+        legacy import."""
+        import re
+        from pathlib import Path
+
+        all_shimmed = set()
+        for syms in SHIMS.values():
+            all_shimmed |= set(syms)
+
+        repo_root = Path(__file__).parent.parent
+        exclude = {"utils/core_audit.py", "utils/core.py",
+                   "utils/core.py.v5.24.bak", "tests/test_core_split.py"}
+        # tests/test_core_split.py is excluded because the SHIMS dict
+        # at module level references the symbols by string name, which
+        # is fine — but if we ever add a runtime call, we'll need to
+        # revisit this test.
+
+        offenders = []
+        for path in sorted(repo_root.rglob("*.py")):
+            rel = path.relative_to(repo_root).as_posix()
+            if rel in exclude or "/data/" in rel or "/.git/" in rel:
+                continue
+            if rel.startswith("_"):
+                continue
+            code = path.read_text(encoding="utf-8", errors="ignore")
+
+            # Single-line `from utils.core import X[, Y]`
+            for ln, line in enumerate(code.split("\n"), 1):
+                m = re.match(r"^\s*from\s+utils\.core\s+import\s+([^(]+)$",
+                             line)
+                if not m:
+                    continue
+                for sym in m.group(1).split(","):
+                    sym = sym.strip().split(" as ")[0].rstrip(",").strip()
+                    if sym and sym in all_shimmed:
+                        offenders.append((rel, ln, line.strip()))
+                        break
+
+            # Parenthesised form
+            for m in re.finditer(
+                r"from\s+utils\.core\s+import\s+\(([^)]+)\)",
+                code, re.DOTALL,
+            ):
+                for sym in m.group(1).split(","):
+                    sym = sym.strip().split(" as ")[0]
+                    if sym and sym in all_shimmed:
+                        ln = code[:m.start()].count("\n") + 1
+                        offenders.append((rel, ln, "(parenthesised)"))
+                        break
+
+        assert not offenders, (
+            "Files still import audit-cluster symbols via the dead "
+            "legacy path:\n  " + "\n  ".join(
+                f"{rel}:L{ln}  {line[:80]}" for rel, ln, line in offenders
+            ) + "\n\nMigrate them to `from utils.core_audit import X`. "
+            "The reverse-export was deleted in v5.27."
+        )
 
     def test_import_cycle_safe_either_order(self):
         """The v5.25 physical move uses PEP 562 __getattr__ to break the
@@ -246,9 +295,11 @@ class TestPhysicalMoveV525:
         assert utils.core_audit is not None
 
     def test_unknown_attr_still_raises_on_core(self):
-        """The PEP 562 __getattr__ on utils.core must only resolve the
-        14 reverse-exported names. Everything else must raise
-        AttributeError, otherwise it would silently swallow typos."""
+        """Accessing a non-existent attribute on utils.core must raise
+        AttributeError. Pre-v5.27 a custom PEP 562 __getattr__ in core.py
+        provided this guarantee with a custom error message; post-v5.27
+        Python's default behavior handles it. Either way, typos must
+        not silently resolve to None."""
         import utils.core
         with pytest.raises(AttributeError):
             _ = utils.core.totally_made_up_symbol_that_does_not_exist

@@ -218,7 +218,7 @@ def check_pg_connectivity():
 
 def check_audit_chain():
     try:
-        from utils.core import audit_log
+        from utils.core_audit import audit_log
         audit_log("PREFLIGHT_TEST", "system", "Pre-flight checkpoint")
         return CheckResult("audit chain", "PASS", 0, "audit_log writes OK")
     except Exception as e:

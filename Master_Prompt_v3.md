@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.26 (April 2026)
+**Current version:** v5.27 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -82,7 +82,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
-- **core.py decomposition (audit cluster) — COMPLETE** — v5.21–v5.24 introduced the shim pattern and migrated 42/67 pages. v5.25 physically moved 14 audit-cluster functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). **v5.26 finished the migration: 67/67 pages now use `from utils.core_audit import X` (G14: 100%).** core.py currently 6,383 lines with the PEP 562 `__getattr__` reverse-export block still in place for forward-compat. Next milestone: delete that 12-line block, drop core.py to ~6,371 lines, and start the next cluster (`utils/core_kpi.py`).
+- **core.py decomposition (audit cluster) — CLOSED** — Six-session arc complete. v5.21 introduced the shim pattern. v5.22-v5.24 migrated 42/67 pages. v5.25 physically moved 14 functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). v5.26 reached 67/67 (100%) adoption. **v5.27 deleted the reverse-export `__getattr__` block and migrated 13 stragglers in app.py / utils / scripts / tests that G14 wasn't tracking. core.py now 6,345 lines (−328 net from start). The legacy `from utils.core import audit_log` path now raises ImportError by design.** Two new safety tests guard the closure: `test_legacy_path_is_gone` (runtime) and `test_no_legacy_imports_outside_core_audit` (static lint). Next milestone: start the next cluster — `utils/core_kpi.py` for KPI library helpers.
 
 ---
 
@@ -510,4 +510,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.26. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.27. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

@@ -314,7 +314,7 @@ with sections[1]:
         else:
             _vis_dir = staff_scores.copy()
             if not can_all:
-                from utils.core import get_visible_staff as _gvs2
+                from utils.core_audit import get_visible_staff as _gvs2
                 _vis_dir = _gvs2(ud, staff_scores)
 
             # Search and filter

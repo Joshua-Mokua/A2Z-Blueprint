@@ -15,11 +15,12 @@ if st.session_state.get("_app_version") != _APP_VERSION:
     for _k in _mgr_keys:
         del st.session_state[_k]
     st.session_state["_app_version"] = _APP_VERSION
+from utils.core_audit import audit_log
 from utils.core import (
     UserManager, ExecuteManager, LeaveManager,
     PipelineManager, RIPipelineManager, ProductManager,
     run_escalation_scan, should_run_scan,
-    audit_log, DATA_DIR, clean_code,
+    DATA_DIR, clean_code,
     process_kpi_data, build_staff_scores, build_staff_registry,
 )
 try:
@@ -482,7 +483,7 @@ show_sidebar()
 # Strips can_view_all from any account that isn't MD/Admin
 # Runs on every app start but is effectively a no-op after first run
 try:
-    from utils.core import fix_view_all_permissions
+    from utils.core_audit import fix_view_all_permissions
     _um_ref = st.session_state.get("user_manager")
     if _um_ref and hasattr(_um_ref, "users"):
         _fixed = fix_view_all_permissions(_um_ref)
@@ -633,7 +634,7 @@ def render_topbar():
 
     # ── Module group tabs bar (below topbar) ──────────────────────────
     # ud is already defined above in render_topbar
-    from utils.core import check_access as _ca
+    from utils.core_audit import check_access as _ca
     _GROUP_DEFS = [
         ("🏆", "A2Z Perform",    "#006B3F",
          ["perform","cascade","products","optimize","branch_log"]),
@@ -747,7 +748,7 @@ if st.session_state.get("logged_in"):
     except Exception: pass
 
 # ── Build navigation dynamically based on user permissions ──────────
-from utils.core import check_access
+from utils.core_audit import check_access
 
 _ud       = st.session_state.get("user_data", {})
 _is_admin = _ud.get("is_admin", False)
@@ -794,10 +795,10 @@ def _pg(path, title, icon, module):
     except Exception: pass
     return _Page(path, title=_display_title, icon=icon)
 
-from utils.core import (get_user_department as _get_dept,
-                         get_dept_modules    as _get_dept_modules,
-                         is_dept_super_user  as _is_dsu,
-                         is_ict_admin        as _is_ict)
+from utils.core_audit import (get_user_department as _get_dept,
+                                get_dept_modules    as _get_dept_modules,
+                                is_dept_super_user  as _is_dsu,
+                                is_ict_admin        as _is_ict)
 
 _dept          = _get_dept(_ud)
 _is_admin_full = _ud.get("is_admin", False) or _ud.get("can_view_all", False)

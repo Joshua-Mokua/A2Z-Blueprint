@@ -494,7 +494,7 @@ with cm_tabs[5]:
                 "created_at":        str(_dt_rest.today()),
             })
             _rest_file.write_text(_json_cm.dumps(_rest_data, indent=2))
-            from utils.core import audit_log as _al_rest
+            from utils.core_audit import audit_log as _al_rest
             _al_rest("LOAN_RESTRUCTURED", uname, f"{_r_acct}|{_r_client}")
             st.cache_data.clear()
             st.success(f"✅ Restructuring recorded for {_r_acct}")
