@@ -850,6 +850,13 @@ def gate_core_split_adoption() -> Dict[str, Any]:
             "get_visible_staff", "tab_visible_cascade", "fix_view_all_permissions",
             "_hash_password",
         },
+        "utils.core_kpi": {
+            "KPI_LIBRARY_FILE", "DEFAULT_KPI_LIBRARY", "DEFAULT_ROLE_KPIS",
+            "get_kpi_library", "save_kpi_library", "get_active_kpis",
+            "get_role_kpis", "get_pillar_weights",
+            "get_scoring_scale", "bsc_score_from_pct",
+            "get_performance_bands", "score_to_band",
+        },
     }
 
     violations: List[str] = []

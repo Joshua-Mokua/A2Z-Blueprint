@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.27 (April 2026)
+**Current version:** v5.28 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -47,6 +47,7 @@ a2z/
 │   ├── db.py                             # Database singleton + schemas (1,367L)
 │   ├── core.py                           # MODULE_ACCESS, UserManager, KPI helpers (audit_log moved to core_audit.py in v5.25)
 │   ├── core_audit.py                     # audit_log, check_access, _hash_password, dept/access helpers (extracted v5.25)
+│   ├── core_kpi.py                       # KPI library + scoring helpers (shim introduced v5.28; physical move pending)
 │   ├── admin_registry.py                 # Plug-in registration API
 │   ├── reconciliation.py                 # 5-check recon engine
 │   ├── flexcube_adapter.py               # synthetic / mock / live modes
@@ -82,7 +83,8 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
-- **core.py decomposition (audit cluster) — CLOSED** — Six-session arc complete. v5.21 introduced the shim pattern. v5.22-v5.24 migrated 42/67 pages. v5.25 physically moved 14 functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). v5.26 reached 67/67 (100%) adoption. **v5.27 deleted the reverse-export `__getattr__` block and migrated 13 stragglers in app.py / utils / scripts / tests that G14 wasn't tracking. core.py now 6,345 lines (−328 net from start). The legacy `from utils.core import audit_log` path now raises ImportError by design.** Two new safety tests guard the closure: `test_legacy_path_is_gone` (runtime) and `test_no_legacy_imports_outside_core_audit` (static lint). Next milestone: start the next cluster — `utils/core_kpi.py` for KPI library helpers.
+- **core.py decomposition (audit cluster) — CLOSED** — Six-session arc complete. v5.21 introduced the shim pattern. v5.22-v5.24 migrated 42/67 pages. v5.25 physically moved 14 functions out of `utils/core.py` and into `utils/core_audit.py` (core.py: 6,673 → 6,383). v5.26 reached 67/67 (100%) adoption. v5.27 deleted the reverse-export `__getattr__` block and migrated 13 stragglers in app.py / utils / scripts / tests that G14 wasn't tracking. core.py now 6,345 lines (−328 net). The legacy `from utils.core import audit_log` path raises ImportError by design. Two safety tests guard the closure: `test_legacy_path_is_gone` (runtime) and `test_no_legacy_imports_outside_core_audit` (static lint).
+- **core.py decomposition (KPI cluster) — IN PROGRESS** — v5.28 introduced `utils/core_kpi.py` as a re-export shim covering 12 symbols: `KPI_LIBRARY_FILE`, `DEFAULT_KPI_LIBRARY`, `DEFAULT_ROLE_KPIS`, `get_kpi_library`, `save_kpi_library`, `get_active_kpis`, `get_role_kpis`, `get_pillar_weights`, `get_scoring_scale`, `bsc_score_from_pct`, `get_performance_bands`, `score_to_band`. 3 pilot pages migrated (`1_perform.py`, `12_cascade.py`, `7_admin.py`). G14 reports 2 shims, 68/68 pages adopted (100%). New `PHYSICALLY_MOVED` set in `tests/test_core_split.py` distinguishes shim phase from physical-move phase; tests scoped accordingly. Cluster scope is small — only 3 pages + `utils/actuals_engine.py` use these symbols, so the playbook is 2-3 sessions to close out instead of 6. Dependencies for eventual physical move: `get_org_config` (1 constant) + stdlib `json`. core.py currently 6,345 lines.
 
 ---
 
@@ -510,4 +512,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.27. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.28. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

@@ -45,6 +45,35 @@ SHIMS = {
         "fix_view_all_permissions",
         "_hash_password",
     ],
+    "utils.core_kpi": [
+        "KPI_LIBRARY_FILE",
+        "DEFAULT_KPI_LIBRARY",
+        "DEFAULT_ROLE_KPIS",
+        "get_kpi_library",
+        "save_kpi_library",
+        "get_active_kpis",
+        "get_role_kpis",
+        "get_pillar_weights",
+        "get_scoring_scale",
+        "bsc_score_from_pct",
+        "get_performance_bands",
+        "score_to_band",
+    ],
+}
+
+# Subset of SHIMS that have completed the physical-move milestone.
+# A shim is "physically moved" once its implementations have been
+# extracted from utils/core.py and now live in the shim file itself.
+# Membership here unlocks two extra checks:
+#   - test_implementations_live_in_core_audit (the assertion that
+#     fn.__module__ matches the shim path — only true post-move)
+#   - test_legacy_path_is_gone + test_no_legacy_imports_outside_core_audit
+#     (only meaningful once the reverse-export has been deleted)
+#
+# When a future cluster (e.g. utils.core_kpi) completes its physical
+# move, add it here. Until then it stays in SHIMS only.
+PHYSICALLY_MOVED = {
+    "utils.core_audit",  # v5.25 move, v5.27 reverse-export deleted
 }
 
 # Pages that have been migrated. When you migrate a page, add it here.
@@ -121,6 +150,10 @@ MIGRATED_PAGES = [
     "pages/61_projects.py",
     "pages/0_home.py",
     "pages/_sidebar.py",
+    # Migrated in v5.28 — first KPI cluster pilots
+    "pages/1_perform.py",
+    "pages/12_cascade.py",
+    "pages/7_admin.py",
 ]
 
 
@@ -179,12 +212,25 @@ class TestPhysicalMoveV525:
     """
 
     def test_implementations_live_in_core_audit(self):
-        """Every shimmed symbol's __module__ must report core_audit —
-        proving the physical implementation lives there, not in core."""
-        import utils.core_audit as ca
+        """Every shimmed symbol's __module__ must match the shim path —
+        proving the physical implementation lives there, not in core.
+
+        Scoped to PHYSICALLY_MOVED clusters only. Shims that haven't
+        yet completed the physical move (still re-exporting from
+        utils.core) report fn.__module__ == 'utils.core' and aren't
+        checked by this test until they graduate."""
+        import importlib
         for shim_modpath, symbols in SHIMS.items():
+            if shim_modpath not in PHYSICALLY_MOVED:
+                continue  # still in shim phase — fn.__module__ would
+                          # report 'utils.core', which is correct
+            mod = importlib.import_module(shim_modpath)
             for sym in symbols:
-                fn = getattr(ca, sym)
+                fn = getattr(mod, sym)
+                # Skip non-callable constants (e.g. paths, dicts) — only
+                # functions/classes have a meaningful __module__.
+                if not callable(fn):
+                    continue
                 assert fn.__module__ == shim_modpath, (
                     f"{sym} reports __module__={fn.__module__!r}, "
                     f"expected {shim_modpath!r}. The physical implementation "
@@ -212,21 +258,30 @@ class TestPhysicalMoveV525:
             )
 
     def test_no_legacy_imports_outside_core_audit(self):
-        """No file in the project (other than utils.core_audit itself,
-        which lives in this module by design) may import any audit-cluster
-        symbol via `from utils.core import X`. The reverse-export was
-        removed in v5.27 so any such import would crash at import time —
-        but we want to catch it at LINT time, before the app even starts.
+        """No file in the project (other than the shim modules themselves,
+        which read constants from utils.core by design) may import any
+        audit-cluster symbol via `from utils.core import X` for clusters
+        that have completed the physical move.
 
-        This test is the static counterpart to test_legacy_path_is_gone:
-        runtime check + static check together = no way to slip in a
-        legacy import."""
+        Scoped to PHYSICALLY_MOVED clusters only. During the shim phase,
+        legacy imports still resolve correctly (because the symbol is
+        still defined in utils.core), so they're permitted. Once a
+        cluster graduates to PHYSICALLY_MOVED + reverse-export-deleted,
+        legacy imports become crashes — and this test catches them
+        statically before the app even starts.
+
+        Runtime check + static check together = no way to slip in a
+        legacy import for a cluster whose closure has been finalised."""
         import re
         from pathlib import Path
 
+        # Only enforce against clusters whose physical move is complete
+        # AND whose reverse-export has been removed.
+        if not PHYSICALLY_MOVED:
+            return
         all_shimmed = set()
-        for syms in SHIMS.values():
-            all_shimmed |= set(syms)
+        for shim_modpath in PHYSICALLY_MOVED:
+            all_shimmed |= set(SHIMS.get(shim_modpath, []))
 
         repo_root = Path(__file__).parent.parent
         exclude = {"utils/core_audit.py", "utils/core.py",

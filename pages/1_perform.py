@@ -301,7 +301,7 @@ def render_bsc_scorecard(staff_df, df_kpi):
     sc_code= str(staff_row.get('Staff Code', ''))
     # Performance band colors from org_config
     try:
-        from utils.core import score_to_band as _s2b
+        from utils.core_kpi import score_to_band as _s2b
         _band_info = _s2b(float(bsc) if bsc else 0)
         bsc_clr = _band_info.get("color", "#888")
         clr_map = {b["label"]: b["color"] for b in
@@ -439,7 +439,7 @@ def render_bsc_scorecard(staff_df, df_kpi):
 
     # Apply KPI Library filter — only show KPIs assigned to this role
     try:
-        from utils.core import get_kpi_library, DEFAULT_ROLE_KPIS, DEFAULT_KPI_LIBRARY
+        from utils.core_kpi import get_kpi_library, DEFAULT_ROLE_KPIS, DEFAULT_KPI_LIBRARY
         _kpi_lib   = get_kpi_library()
         _lib_active = set(_kpi_lib.get("active_kpis", []))
         _role_kpi_ids = set(_kpi_lib.get("role_kpis", DEFAULT_ROLE_KPIS).get(role, []))
@@ -691,7 +691,7 @@ def render_bsc_scorecard(staff_df, df_kpi):
         _is_fixed_kpi = kpi in _fixed_kpis_set
         # Scoring scale from org_config — fully configurable per bank
         try:
-            from utils.core import bsc_score_from_pct as _bsc_score_fn
+            from utils.core_kpi import bsc_score_from_pct as _bsc_score_fn
         except:
             def _bsc_score_fn(p, reverse=False):
                 if p is None: return None

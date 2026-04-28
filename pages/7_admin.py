@@ -389,7 +389,7 @@ with sections[0]:
                                 # Clone KPIs from similar role
                                 if _new_role_kpis and _new_role_kpis[0] != "— None (configure later)":
                                     try:
-                                        from utils.core import get_kpi_library, save_kpi_library
+                                        from utils.core_kpi import get_kpi_library, save_kpi_library
                                         _klib = get_kpi_library()
                                         _src_kpis = _klib.get("role_kpis",{}).get(_new_role_kpis[0],[])
                                         if _src_kpis:
@@ -433,7 +433,7 @@ with sections[0]:
                                 save_org_config(_org)
                                 # 3. KPI library role_kpis
                                 try:
-                                    from utils.core import get_kpi_library, save_kpi_library
+                                    from utils.core_kpi import get_kpi_library, save_kpi_library
                                     _klib = get_kpi_library()
                                     _rk = _klib.get("role_kpis", {})
                                     if _ren_from in _rk:
@@ -1862,8 +1862,9 @@ with sections[1]:
         "📚 KPI Library",
     ])
     with sub[0]:
-        from utils.core import (get_kpi_library, save_kpi_library, DEFAULT_KPI_LIBRARY,
-                                 DEFAULT_ROLE_KPIS, CBS_SOURCE_LABELS, get_active_kpis)
+        from utils.core_kpi import (get_kpi_library, save_kpi_library, DEFAULT_KPI_LIBRARY,
+                                     DEFAULT_ROLE_KPIS, get_active_kpis)
+        from utils.core import CBS_SOURCE_LABELS
 
         st.subheader("📚 KPI Library")
         st.caption(

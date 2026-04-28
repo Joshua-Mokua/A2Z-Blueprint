@@ -741,7 +741,7 @@ if _tab_visible_bank_targets:
             "Weights across ALL pillars must total 100%. "
             "Changes are saved to the KPI library and apply to all roles.")
         try:
-            from utils.core import get_kpi_library, save_kpi_library
+            from utils.core_kpi import get_kpi_library, save_kpi_library
             _wlib = get_kpi_library()
             _wkpi_weights = _wlib.get("kpi_weights", {})
             _wpillars     = _wlib.get("pillars", {})
