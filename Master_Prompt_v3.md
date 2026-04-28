@@ -22,7 +22,7 @@ The system must:
 
 This section anchors aspirations to reality. **Update only by re-running `python scripts/audit.py`.** Self-graded numbers are not accepted.
 
-**Current version:** v5.22 (April 2026)
+**Current version:** v5.23 (April 2026)
 **Verified score:** Run `python scripts/audit.py` for the live number. The previous self-graded "92%" was unverified; the audit script now produces the only valid score.
 **Codebase:** 89 numbered pages · ~52K lines · 11 utils · 4 scripts · 9 admin handlers
 **Frontend:** Streamlit multipage app. Main entry `app.py`.
@@ -81,7 +81,7 @@ These are real, not aspirational. Closing them is real work, not a flag flip.
 - **PG migration** — 21/52 tables migrated. 31 still JSON. Per-table flag flips per `docs/POSTGRESQL_MIGRATION_GUIDE.md`. Effort: 3 weeks.
 - **API expansion** — 12 endpoints cover ~9% of the surface. ~144 needed for React migration. Effort: 6-8 weeks.
 - **Test coverage expansion** — scaffold + 67 tests landed v5.20 (covers bsc_engine, auth_jwt, audit smoke). Add tests for db.py SQL safety, core.py user management, FLEXCUBE adapter, page-level smoke tests. Effort: 3 weeks for full coverage.
-- **core.py decomposition** — v5.21 introduced the shim pattern: `utils/core_audit.py` re-exports the audit/access/approval cluster (14 symbols). v5.22 brought adoption to 15/67 pages (22%) by migrating `25_treasury`, `53_irrbb`, `46_trade_finance`, `52_mgmt_accounts`, `40_collateral`, `60_disciplinary`, `23_credit_admin`, `50_cybersecurity`, `49_bancassurance`, `39_ews`, `57_deal_room`, `43_pip` (12 pages this session) on top of the 3 from v5.21. G14 audit gate tracks adoption percentage. Future work: more page migrations toward 50%+, then more shims (`utils/core_kpi.py`, `utils/core_perf.py`), then physical code moves once adoption is high. core.py currently 6,672 lines, 15 classes. Effort: 1 week of incremental sessions.
+- **core.py decomposition** — v5.21 introduced the shim pattern: `utils/core_audit.py` re-exports the audit/access/approval cluster (14 symbols). v5.22 brought adoption to 22%, v5.23 to 42% (28/67 pages). G14 audit gate tracks adoption percentage. Future work: more page migrations toward 75%+, then physical code moves once adoption is high. core.py currently 6,672 lines, 15 classes. Effort: 1 week of incremental sessions.
 
 ---
 
@@ -509,4 +509,4 @@ When in doubt: **read the docs, run the audit, extract and regroup, audit everyt
 
 ---
 
-*Master prompt v3.0 generated for v5.22. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*
+*Master prompt v3.0 generated for v5.23. Update STATE OF PLAY only by re-running `scripts/audit.py`. Update CONVENTIONS whenever you publish a new doc in `docs/`. Self-grading is forbidden.*

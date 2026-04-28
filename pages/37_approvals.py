@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import date
 from pages._shared import load_shared_state, safe_html
 from pages._access import require_access
-from utils.core import audit_log
+from utils.core_audit import audit_log
 
 require_access("approvals")
 DATA  = Path(__file__).parent.parent / "data"

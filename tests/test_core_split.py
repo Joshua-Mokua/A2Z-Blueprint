@@ -66,6 +66,20 @@ MIGRATED_PAGES = [
     "pages/39_ews.py",
     "pages/57_deal_room.py",
     "pages/43_pip.py",
+    # Migrated in v5.23
+    "pages/44_incidents.py",
+    "pages/54_rcsa.py",
+    "pages/64_vendors.py",
+    "pages/59_cab.py",
+    "pages/65_contracts.py",
+    "pages/37_approvals.py",
+    "pages/55_aml.py",
+    "pages/80_merchant.py",
+    "pages/70_retailer_finance.py",
+    "pages/11_competitor.py",
+    "pages/84_board.py",
+    "pages/_admin_reconciliation.py",
+    "pages/83_strategy.py",
 ]
 
 

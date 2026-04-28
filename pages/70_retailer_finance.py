@@ -10,7 +10,7 @@ from collections import defaultdict
 from decimal import Decimal
 from pages._shared import load_shared_state
 from pages._access import require_access
-from utils.core import audit_log
+from utils.core_audit import audit_log
 
 require_access("retailer_finance")
 DATA  = Path(__file__).parent.parent / "data"
