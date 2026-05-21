@@ -1,184 +1,139 @@
-# v10.495 — Installation Guide
+# v10.496 — Installation Guide
 
 Extract this zip on top of your A2Z root:
 `C:\Users\Joshua\Desktop\A2Z Blue Print\a2z\`
 
-The zip contains:
+## What's in this zip
+
 ```
-utils/
-  config_v10495_append.py      ← block to APPEND to existing config.py
-  api_branding.py              ← new file (no existing version)
-  api_patch_instructions.md    ← 2-line edit to existing api.py
-frontend/web/
-  index.html                   ← new
-  vite.config.ts               ← new
-  tsconfig.json                ← new
-  tsconfig.node.json           ← new
-  tailwind.config.js           ← new
-  postcss.config.js            ← new
-  src/
-    App.tsx                    ← REPLACES the existing 2358-byte App.tsx
-                                  (contract literals preserved + BrandingProvider added)
-    main.tsx                   ← new
-    index.css                  ← new
-    types/branding.ts          ← new
-    lib/api.ts                 ← new
-    hooks/useBranding.ts       ← new
-    providers/
-      BrandingProvider.tsx     ← new
-      AuthProvider.tsx         ← new (placeholder satisfying contract)
-      WebSocketProvider.tsx    ← new (placeholder satisfying contract)
-    pages/
-      Dashboard.tsx            ← new
-      Perform.tsx              ← new
-      Profitability.tsx        ← new
-scripts/audit.py               ← REPLACES existing — G381 added
-docs/Master_Prompt_v5.39.md    ← new version doc
+frontend/web/src/
+  lib/
+    cn.ts                ← NEW — Tailwind class-joiner utility
+    tokens.ts            ← NEW — Canonical design tokens
+  types/
+    components.ts        ← NEW — Shared component prop types
+  components/            ← ALL NEW (8 primitive files)
+    Button.tsx
+    Card.tsx
+    Input.tsx
+    Stat.tsx
+    Badge.tsx
+    Toast.tsx
+    Skeleton.tsx
+    Table.tsx
+  pages/
+    Showcase.tsx         ← NEW — Kitchen-sink at /components
+    Dashboard.tsx        ← REPLACES — refactored to use primitives
+  App.tsx                ← REPLACES — adds /components route + ToastProvider
+
+scripts/audit.py         ← REPLACES — G382 added (413/413 gates)
 tests/integration/
-  test_v10495_branding_api.py  ← new
-CHANGELOG_v10.495.md           ← new
+  test_v10496_design_system.py   ← NEW (22 tests)
+docs/Master_Prompt_v5.40.md      ← NEW
+CHANGELOG_v10.496.md             ← NEW
+INSTALL.md                       ← (this file)
 ```
 
-## Step-by-step installation (15 minutes)
+**Good news:** v10.496 has **zero backend changes**. Pure frontend.
+No `utils/config.py` to edit. No `utils/api.py` to patch. No new
+Python deps. No new npm deps.
 
-### Step 1 — Extract on top of A2Z root
+## Three-step install (10 minutes)
+
+### Step 1 — Extract on top of your A2Z root
 
 In Windows Explorer:
-1. Find the downloaded zip
+1. Find the downloaded `a2z_v10496_patch.zip`
 2. Right-click → **Extract All...**
 3. Choose destination: `C:\Users\Joshua\Desktop\A2Z Blue Print\a2z\`
-4. Confirm overwriting existing files (App.tsx, scripts/audit.py)
+4. Confirm overwriting when prompted:
+   - `frontend/web/src/App.tsx` — yes, overwrite (we add the new route)
+   - `frontend/web/src/pages/Dashboard.tsx` — yes, overwrite (refactor)
+   - `scripts/audit.py` — yes, overwrite (G382 added)
 
-### Step 2 — Append the config helpers
+### Step 2 — Reload the React app
 
-The `utils/config_v10495_append.py` file is **not** a replacement; it's
-a snippet to add to your existing `utils/config.py`.
+You may already have the React dev server (Vite) running from v10.495.
 
-1. Open `utils/config.py` in VS Code
-2. Press `Ctrl+End` to jump to the bottom of the file
-3. Open `utils/config_v10495_append.py` in another tab
-4. Copy everything from the line `# ──────...` (line 21) to the end of file
-5. Paste at the bottom of `utils/config.py`
-6. Save (`Ctrl+S`)
-7. Delete `utils/config_v10495_append.py` (no longer needed)
+**If `pnpm dev` is still running in a Command Prompt:**
+Vite will hot-reload automatically. Just refresh your browser tab.
 
-Verify:
-```
-cd C:\Users\Joshua\Desktop\A2Z Blue Print\a2z
-python -c "from utils.config import brand_primary_hex, ip_notice; print(brand_primary_hex()); print(ip_notice()[:50])"
-```
-
-Expected output:
-```
-#1797ce
-Confidential · Authorised users only · All session
-```
-
-### Step 3 — Edit utils/api.py (2 lines)
-
-Open `utils/api_patch_instructions.md` and follow it.
-
-Quick version: in `utils/api.py`, find the existing block:
-```python
-try:
-    from utils.api_capacity_feedback import router as _capacity_router
-    app.include_router(_capacity_router)
-    ...
-except Exception as _exc:
-    logger.warning(f"Capacity router not loaded: {_exc}")
-```
-
-Add right after it:
-```python
-
-
-# v10.495 — Branding API for React SPA enablement
-try:
-    from utils.api_branding import router as _branding_router
-    app.include_router(_branding_router)
-    logger.info("A2Z API — branding router mounted at /api/branding")
-except Exception as _exc:  # noqa: BLE001
-    logger.warning(f"Branding router not loaded: {_exc}")
-```
-
-Save. Delete `utils/api_patch_instructions.md` (no longer needed).
-
-### Step 4 — Run two terminals
-
-**Terminal 1 (FastAPI backend):**
-```
-cd C:\Users\Joshua\Desktop\A2Z Blue Print\a2z
-python -m utils.api
-```
-
-You should see `Uvicorn running on http://0.0.0.0:8502` and somewhere
-in the log: `A2Z API — branding router mounted at /api/branding`.
-
-Test the new endpoint:
-```
-curl http://localhost:8502/api/branding
-```
-
-You should see JSON with bank_name=Ecobank Kenya, app_name=A2Z Blueprint,
-brand.primary=#1797ce, etc.
-
-**Terminal 2 (React frontend):**
+**If it's not running:**
+Open a Command Prompt and run:
 ```
 cd C:\Users\Joshua\Desktop\A2Z Blue Print\a2z\frontend\web
 pnpm dev
 ```
 
-You should see:
+(No need to start the Python backend; v10.496 doesn't add new endpoints.)
+
+### Step 3 — Take the tour
+
+Open two URLs:
+
+**1. Dashboard — refactored, same look:**
 ```
-  VITE v5.x.x  ready in ~800 ms
-  ➜  Local:   http://localhost:5173/
-```
-
-### Step 5 — Open browser
-
-Go to `http://localhost:5173/`
-
-You should see:
-- **Deep navy header** with "ECOBANK KENYA" uppercase
-- Title: "A2Z Blueprint MIS 360 — MD Command Centre"
-- Right side: "Central Bank of Kenya" / "Oracle FLEXCUBE v12"
-- **Three KPI cards** with cyan-blue (#1797ce) top borders
-- **Status panel** explaining v10.495
-- **IP notice footer** with the verbatim text from `_login.py`
-
-### Step 6 — Run the audit gate
-
-```
-cd C:\Users\Joshua\Desktop\A2Z Blue Print\a2z
-python scripts/audit.py
+http://localhost:5173/
 ```
 
-Should show **412/412 gates passing** including new G381.
+The MD Cockpit shell should still render identically to v10.495 — but
+under the hood it now uses `<Stat>`, `<Card>`, `<Card.Header>`,
+`<Card.Body>`, `<Badge>` primitives instead of inline `style={{}}`.
 
-### Step 7 — Run the verifier
+**2. Showcase — the kitchen sink:**
+```
+http://localhost:5173/components
+```
+
+Every primitive in every state. Try clicking the four "Fire toast"
+buttons. Try the "Toggle loading" button on the table. Type in the
+inputs. Watch what happens.
+
+## Verify it worked (3 commands)
+
+In a Command Prompt with the venv active (`.venv\Scripts\activate`):
+
+### Audit gate
 
 ```
-python scripts/verify_local_state.py
+python scripts\audit.py
 ```
 
-Should still pass (verifier doesn't check React files but does check
-that audit.py contains G381).
+Should show **413/413 gates passing** including G381 and G382.
 
-## If something doesn't work
+### Integration tests
 
-- **Browser shows "Branding API unavailable, using fallback" in console**
-  → FastAPI isn't running. Start Terminal 1. The fallback colors still
-  show (Ecobank defaults baked into BrandingProvider).
-- **Blank white page** → check browser console (F12). Most likely a
-  TypeScript error. Paste the error and we'll fix.
-- **`pnpm dev` errors with module not found** → run `pnpm install`
-  again in `frontend/web/` to be safe.
-- **`python -m utils.api` errors with ImportError for brand_primary_hex**
-  → you forgot Step 2 (append config helpers).
+```
+python -m pytest tests\integration\test_v10496_design_system.py -v
+```
+
+Should show **22 passed**.
+
+### Optional: TypeScript compile check
+
+In `frontend\web`:
+
+```
+pnpm exec tsc --noEmit
+```
+
+Should print nothing (no output = no errors).
+
+## If anything is off
+
+- **Blank page or red error overlay at `/components`** → screenshot
+  the browser console (`F12` → Console tab) and paste it. Most
+  likely cause: typo in an import path.
+- **`pnpm dev` errors** → paste the error.
+- **`python scripts\audit.py` errors** → paste it. Most likely a
+  v10.495 file wasn't extracted properly.
 
 ## What's next
 
-After this works, tell me "v10.495 live" and we proceed to v10.496:
-**Design System + shadcn/ui components**. Real component library,
-Button/Card/Input/Stat/Badge primitives in Ecobank brand, browseable
-on a kitchen-sink page.
+After verification, tell me **"v10.496 live"** and we proceed to
+**v10.497 — JWT auth + login page**.
+
+That batch is bigger emotionally (your first real auth flow) but
+mechanically similar: backend wire-up (login endpoint already exists
+at `/api/auth/login`), one new React provider, one new page, one
+protected-route wrapper. ~12 files. Same zip pattern.

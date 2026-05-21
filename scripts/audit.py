@@ -59112,6 +59112,141 @@ def gate_v10495_react_foundations() -> Dict[str, Any]:
     }
 
 
+
+def gate_v10496_design_system() -> Dict[str, Any]:
+    """G382 - v10.496 Design System brand discipline.
+
+    First frontend design system batch. Builds 8 reusable component
+    primitives (Button, Card, Input, Stat, Badge, Toast, Skeleton,
+    Table) plus a Showcase / kitchen-sink page at /components.
+    Dashboard.tsx refactored to use Stat + Card + Badge.
+
+    G382 enforces "brand discipline" — the rule that the only React
+    file allowed to contain non-brand semantic hex colors is
+    `src/lib/tokens.ts`. Every other component reads:
+      • brand colors via Tailwind `bg-brand-primary` etc. (which
+        resolve via CSS vars set by BrandingProvider)
+      • semantic colors via Tailwind semantic classes
+        (`bg-red-50`, `text-amber-700`, etc.) — Tailwind's built-in
+        palette is allowed because it's documented, accessible, and
+        product-wide.
+
+    What G382 verifies on every audit run:
+      1. All 8 primitive files exist
+      2. lib/cn.ts and lib/tokens.ts exist
+      3. types/components.ts exists
+      4. pages/Showcase.tsx exists
+      5. Dashboard.tsx imports from @/components/* (proves refactor
+         happened)
+      6. App.tsx contains the /components route AND ToastProvider
+      7. No file in src/components/** contains a hardcoded hex
+         color (#xxxxxx pattern). Exception: brand css variables
+         (`var(--brand-...)`) and tokens.ts itself.
+
+    Honest finding recorded:
+      - We deliberately did NOT install shadcn/ui CLI or Radix UI.
+        v10.496 builds the design primitives by hand (~500 LOC,
+        zero new deps) on the same visual API. If we ever need
+        complex shadcn primitives (Dialog, Combobox, Popover with
+        floating-ui positioning) we'll bring in the official CLI in
+        a dedicated future batch. Until then, no new dependencies
+        beyond what v10.495 shipped.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    # 1. Primitive components all exist
+    components_dir = repo / "frontend" / "web" / "src" / "components"
+    required_components = [
+        "Button.tsx", "Card.tsx", "Input.tsx", "Stat.tsx",
+        "Badge.tsx", "Toast.tsx", "Skeleton.tsx", "Table.tsx",
+    ]
+    for name in required_components:
+        if not (components_dir / name).exists():
+            violations.append(
+                f"frontend/web/src/components/{name} missing"
+            )
+
+    # 2. lib/cn.ts and lib/tokens.ts exist
+    lib_dir = repo / "frontend" / "web" / "src" / "lib"
+    for name in ("cn.ts", "tokens.ts"):
+        if not (lib_dir / name).exists():
+            violations.append(f"frontend/web/src/lib/{name} missing")
+
+    # 3. types/components.ts
+    types_file = (repo / "frontend" / "web" / "src" / "types"
+                    / "components.ts")
+    if not types_file.exists():
+        violations.append(
+            "frontend/web/src/types/components.ts missing"
+        )
+
+    # 4. Showcase page
+    showcase = (repo / "frontend" / "web" / "src" / "pages"
+                  / "Showcase.tsx")
+    if not showcase.exists():
+        violations.append(
+            "frontend/web/src/pages/Showcase.tsx missing"
+        )
+
+    # 5. Dashboard.tsx imports from @/components
+    dashboard = (repo / "frontend" / "web" / "src" / "pages"
+                   / "Dashboard.tsx")
+    if dashboard.exists():
+        src = dashboard.read_text(encoding="utf-8")
+        if "@/components/" not in src:
+            violations.append(
+                "Dashboard.tsx not refactored to use @/components/*"
+            )
+
+    # 6. App.tsx has /components route + ToastProvider
+    app_tsx = repo / "frontend" / "web" / "src" / "App.tsx"
+    if app_tsx.exists():
+        src = app_tsx.read_text(encoding="utf-8")
+        if 'path="/components"' not in src:
+            violations.append(
+                "App.tsx missing /components route"
+            )
+        if "ToastProvider" not in src:
+            violations.append(
+                "App.tsx missing ToastProvider"
+            )
+
+    # 7. No hardcoded hex colors in components/** except via
+    #    var(--brand-*). Tokens.ts is allowed to have hex.
+    import re
+    hex_re = re.compile(r"#[0-9a-fA-F]{6}\b")
+    if components_dir.exists():
+        for tsx in components_dir.rglob("*.tsx"):
+            text = tsx.read_text(encoding="utf-8")
+            # Strip out everything inside `var(--...)` since those
+            # are brand CSS vars set by BrandingProvider.
+            stripped = re.sub(r"var\(--brand-[a-z]+\)", "", text)
+            matches = hex_re.findall(stripped)
+            if matches:
+                violations.append(
+                    f"Hardcoded hex color in components/{tsx.name}: "
+                    f"{matches[:3]}"
+                )
+
+    return {
+        "id": "G382",
+        "name": "v10496_design_system",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": (
+            f"v10.496 Design System. 8 primitive components "
+            f"(Button, Card, Input, Stat, Badge, Toast, Skeleton, "
+            f"Table) wired to /api/branding via Tailwind brand "
+            f"tokens + CSS variables. Showcase page mounted at "
+            f"/components. Dashboard.tsx refactored to compose "
+            f"primitives. Zero new npm dependencies — built by "
+            f"hand on the shadcn visual API. {len(violations)} "
+            f"violations."
+        ),
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -59188,6 +59323,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G382", gate_v10496_design_system),  # v10.496 DESIGN SYSTEM
     ("G381", gate_v10495_react_foundations),  # v10.495 REACT FOUNDATIONS
     ("G380", gate_v10494_uncertainty_exposure_phase6_FINAL),  # v10.494 UNCERTAINTY P6 FINAL
     ("G379", gate_v10493_uncertainty_exposure_phase5),  # v10.493 UNCERTAINTY P5

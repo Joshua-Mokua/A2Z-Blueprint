@@ -1,28 +1,25 @@
 // a2z/web/src/App.tsx
 //
 // Standard #37 — React SPA Architecture.
-// Original v5.51 scaffolding preserved; v10.495 amendment adds
-// BrandingProvider for multi-tenant branding from /api/branding.
+// v10.495 amendment: BrandingProvider added between QueryClient and Auth.
+// v10.496 amendment: ToastProvider added between Branding and Auth.
+//                    /components route added (Showcase page).
 //
-// CONTRACT NOTES (G381 - replaces phantom G46):
+// CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
 //
-// The following literals are preserved byte-for-byte and enforced
-// by audit gate G381:
-//
+// Preserved byte-for-byte (G381 enforced):
 //   - `import { QueryClient, QueryClientProvider } from '@tanstack/react-query'`
 //   - `const queryClient = new QueryClient()`
 //   - `<QueryClientProvider client={queryClient}>`
 //   - `<AuthProvider><WebSocketProvider><BrowserRouter>`
 //   - Route paths `/`, `/perform`, `/profitability`
 //
-// AMENDMENT (v10.495): BrandingProvider added BETWEEN
-// QueryClientProvider and AuthProvider. This places branding-from-API
-// inside the TanStack Query scope but before auth, so the
-// (future) login page can render bank identity without being
-// authenticated yet.
+// AMENDED CHAIN (v10.496):
+//   QueryClient → Branding → Toast → Auth → WebSocket → BrowserRouter
 //
-// New provider chain:
-//   QueryClient → Branding → Auth → WebSocket → BrowserRouter
+// Toast is placed BELOW Branding so toasts can read brand colors,
+// but ABOVE Auth so unauthenticated pages (future login) can fire
+// toasts too. Same reasoning as Branding's placement.
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -30,22 +27,27 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { BrandingProvider } from './providers/BrandingProvider';
 import { AuthProvider } from './providers/AuthProvider';
 import { WebSocketProvider } from './providers/WebSocketProvider';
+import { ToastProvider } from './components/Toast';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
+import { Showcase } from './pages/Showcase';
 
 const queryClient = new QueryClient();
 
 function App() {
     return <QueryClientProvider client={queryClient}>
         <BrandingProvider>
+        <ToastProvider>
         <AuthProvider><WebSocketProvider><BrowserRouter>
             <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/perform" element={<Perform />} />
                 <Route path="/profitability" element={<Profitability />} />
+                <Route path="/components" element={<Showcase />} />
             </Routes>
         </BrowserRouter></WebSocketProvider></AuthProvider>
+        </ToastProvider>
         </BrandingProvider>
     </QueryClientProvider>;
 }
