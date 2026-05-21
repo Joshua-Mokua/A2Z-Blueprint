@@ -35,3 +35,24 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Node / React (pnpm workspace)
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+coverage/
+.npm/
+.pnpm-store/
+
+# Auth seeds (plaintext credentials — replaced by hashed users in v10.497)
+data/users.json
+# Versioned in-repo backup snapshots (use git history instead)
+data/_v*_backups/
+# Versioned in-repo backup snapshots (use git history instead)
+data/_v*_backups/
+# Stale nested project copy (pre-v10.22, removed in cleanup before v10.497)
+a2z/
