@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hard_counts_by_category": {
+    "CIRCULAR_IMPORT": 3
+  },
+  "hard_fingerprints": [
+    "CIRCULAR_IMPORT::utils.actuals_engine:utils.bsc_engine:utils.core:utils.core_audit",
+    "CIRCULAR_IMPORT::utils.actuals_engine:utils.core",
+    "CIRCULAR_IMPORT::utils.actuals_engine:utils.core:utils.core_kpi"
+  ]
+}

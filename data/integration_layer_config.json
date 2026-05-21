@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "purpose": "Per-bank Integration Layer configuration. Edited via the admin Module Config Centre at the Integration Layer card.",
+    "configurable_keys": [
+      "field_overrides \u2014 map operational table \u2192 staff field column when the deploying bank's CBS schema differs from A2Z defaults",
+      "active_rule_overrides \u2014 list of kpi_id strings to forcibly disable (overrides the JSON rule-set's `active` flag)",
+      "status_vocabulary \u2014 bank-specific enum lists for status values used by predicates",
+      "agent_alerts_config.role_aliases \u2014 map role-title labels in operational tables to the staff register's labels (v10.113)",
+      "agent_alerts_config.role_to_staff_code \u2014 pin a role to a specific staff_code regardless of role population (v10.113)"
+    ]
+  },
+  "field_overrides": {},
+  "active_rule_overrides": [],
+  "status_vocabulary": {
+    "loan_decided": [
+      "approved",
+      "declined",
+      "returned",
+      "disbursed"
+    ],
+    "loan_approved_disbursed": [
+      "approved",
+      "disbursed"
+    ],
+    "pipeline_closed": [
+      "Closed Won",
+      "Closed Lost"
+    ],
+    "campaign_active": [
+      "Active",
+      "Completed",
+      "active",
+      "completed"
+    ]
+  },
+  "agent_alerts_config": {
+    "_meta": "Per-bank role resolution for agent_fraud_alerts. role_aliases maps the table's role label to the staff-register role label (Eco Bank uses 'Manager Agency Banking' in users.json; the alerts table uses 'Agency Banking Manager'). role_to_staff_code allows admin to pin a specific staff_code regardless of register population \u2014 useful for permanent ownership.",
+    "role_aliases": {
+      "Agency Banking Manager": "Manager Agency Banking"
+    },
+    "role_to_staff_code": {}
+  },
+  "_security": {
+    "role_gating_enabled": true,
+    "allowed_roles_for_write": [
+      "admin",
+      "integration",
+      "Chief Transformation Officer",
+      "Director Risk",
+      "Director Commercial",
+      "Director IT",
+      "MD",
+      "CFO"
+    ],
+    "_documentation": "v10.120 role-gating GA. role_gating_enabled toggles POST /api/integration/run-period authorization. When True, user.role from JWT must be in allowed_roles_for_write. Defaults shipping with v10.120 reflect the canonical Eco Bank role taxonomy. Banks with different role names must update this list before enabling. Set to False to preserve v10.116-v10.119 JWT-only behavior."
+  },
+  "_data_source": {
+    "default": "json",
+    "per_table": {
+      "compliance_regulatory_returns": "auto",
+      "audit_reviews": "auto",
+      "incidents": "auto",
+      "nps_responses": "auto",
+      "rcsa_register": "auto"
+    },
+    "_note": "v10.311: first cutover toggle (compliance_regulatory_returns). v10.312: fanned out to all 5 v10.306 PG-migrated tables. All set to auto: try PG first, fall back to JSON silently. Safe when PG is unreachable. Future increment can switch to pg_view per-table once PG is populated and proven."
+  }
+}

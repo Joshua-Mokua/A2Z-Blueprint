@@ -1,0 +1,122 @@
+name: Load test (Standard #5)
+
+# Manual trigger only. Load tests are slow (~6 min) and need a target
+# environment — they don't belong on every push.
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "API base URL to test against"
+        required: true
+        default: "http://localhost:8502"
+      tests:
+        description: "Comma-separated test names (or 'all')"
+        required: true
+        default: "baseline_smoke,api_p95,export_10k"
+      skip_heavy:
+        description: "Skip 1k VU test (yes/no)"
+        required: true
+        default: "yes"
+        type: choice
+        options: ["yes", "no"]
+
+jobs:
+  loadtest:
+    name: k6 load suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      # Provide a Postgres instance for the API to talk to.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER:     a2z
+          POSTGRES_PASSWORD: a2z
+          POSTGRES_DB:       a2z_test
+        options: >-
+          --health-cmd "pg_isready -U a2z"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      A2Z_API_BASE:    ${{ github.event.inputs.target_url }}
+      A2Z_USE_DB:      "true"
+      A2Z_DB_HOST:     "localhost"
+      A2Z_DB_PORT:     "5432"
+      A2Z_DB_USER:     "a2z"
+      A2Z_DB_PASSWORD: "a2z"
+      A2Z_DB_NAME:     "a2z_test"
+      A2Z_TEST_USER:   "william001"
+      A2Z_TEST_PASS:   "ECOStaff001"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install k6
+        run: |
+          curl -fsSL https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz \
+            | tar -xz --strip-components=1 -C /usr/local/bin k6-v0.49.0-linux-amd64/k6
+          k6 version
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Apply PG schema
+        run: |
+          python -c "from utils.db import get_schema_sql; print(get_schema_sql())" \
+            | psql "host=localhost port=5432 user=a2z password=a2z dbname=a2z_test"
+
+      - name: Start API in background
+        run: |
+          nohup python -m utils.api > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
+          # Wait for /api/health to respond
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:8502/api/health > /dev/null; then
+              echo "API up after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run load tests
+        env:
+          A2Z_LOAD_TESTS: ${{ github.event.inputs.tests == 'all' && '' || github.event.inputs.tests }}
+          A2Z_SKIP_HEAVY: ${{ github.event.inputs.skip_heavy == 'yes' && '1' || '0' }}
+        run: python scripts/run_load_tests.py
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: |
+            results/
+            load_results.json
+
+      - name: Upload API log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-log
+          path: /tmp/api.log
+
+      - name: Re-run audit with load results
+        if: always()
+        run: python scripts/audit.py
+
+      - name: Tear down API
+        if: always()
+        run: |
+          if [ -f /tmp/api.pid ]; then kill $(cat /tmp/api.pid) || true; fi

@@ -1,0 +1,264 @@
+[
+  {
+    "id": "M001-clear-behind-pace",
+    "description": "20% achievement, 50% through period → should fire High-priority task",
+    "input": {
+      "staff_code": "S001",
+      "today": "2026-04-15",
+      "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 20},
+      "working_days_remaining": 12,
+      "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "High"}]
+  },
+  {
+    "id": "M002-on-pace-no-task",
+    "description": "On pace exactly, no task emitted",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 50},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M003-target-met-no-task",
+    "description": "Already met target → no task",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 100},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M004-target-exceeded-no-task",
+    "description": "Above target, definitely no task",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 110},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M005-no-target-no-task",
+    "description": "KPI has no target → engine refuses to reason → no task",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {},
+      "actuals": {"DEP_GROWTH": 20},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M006-zero-target-no-task",
+    "description": "Target = 0 (misconfig) → no task",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 0},
+      "actuals": {"DEP_GROWTH": 0},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M007-end-of-period-no-task",
+    "description": "0 working days remaining → no task even if behind",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-30", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 20},
+      "working_days_remaining": 0, "days_elapsed": 22
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M008-multiple-kpis-mixed",
+    "description": "Three KPIs: one ahead, one behind High, one on pace → 1 task",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [
+        {"id": "DEP_GROWTH"},
+        {"id": "NPL_PCT"},
+        {"id": "AML_SLA"}
+      ],
+      "targets": {"DEP_GROWTH": 100, "NPL_PCT": 100, "AML_SLA": 100},
+      "actuals": {"DEP_GROWTH": 60, "NPL_PCT": 5, "AML_SLA": 50},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "NPL_PCT"}]
+  },
+  {
+    "id": "M009-aml-task-routing",
+    "description": "AML KPI → task text mentions AML alerts",
+    "input": {
+      "staff_code": "S004", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "AML_SLA"}],
+      "targets": {"AML_SLA": 100},
+      "actuals": {"AML_SLA": 10},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [
+      {"kpi_id": "AML_SLA", "task_must_contain": "AML"}
+    ]
+  },
+  {
+    "id": "M010-npl-task-routing",
+    "description": "NPL KPI → task mentions delinquent accounts",
+    "input": {
+      "staff_code": "S005", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "NPL_PCT"}],
+      "targets": {"NPL_PCT": 100},
+      "actuals": {"NPL_PCT": 10},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [
+      {"kpi_id": "NPL_PCT", "task_must_contain": "delinquent"}
+    ]
+  },
+  {
+    "id": "M011-deposit-task-routing",
+    "description": "Deposit KPI → task mentions outbound calls",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 10},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [
+      {"kpi_id": "DEP_GROWTH", "task_must_contain": "prospect"}
+    ]
+  },
+  {
+    "id": "M012-borderline-just-below-threshold",
+    "description": "current_pace ≈ daily_req * 0.85 (just below 0.9 gate) → fires Medium task. With target=100, actual=44, days_elapsed=11, working_days_remaining=12: pace=4.0, daily_req=56/12≈4.67, ratio≈0.86.",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 44},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "Medium"}]
+  },
+  {
+    "id": "M013-clearly-above-threshold",
+    "description": "current_pace > daily_req * 0.9 (well above gate) → no task. With target=100, actual=53, days_elapsed=11, working_days_remaining=12: pace=4.82, daily_req=47/12≈3.92, ratio≈1.23 (above pace).",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 53},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M014-day-one-of-period",
+    "description": "Day 1, no actuals yet → fires task (everything is behind on day 1)",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-01", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 0},
+      "working_days_remaining": 22, "days_elapsed": 1
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "High"}]
+  },
+  {
+    "id": "M015-no-active-kpis-no-tasks",
+    "description": "Staff has no KPIs assigned → no tasks",
+    "input": {
+      "staff_code": "S999", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [],
+      "targets": {},
+      "actuals": {},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": []
+  },
+  {
+    "id": "M016-large-numbers",
+    "description": "KES-scale (1.5B target) — math should not overflow / lose precision",
+    "input": {
+      "staff_code": "S010", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 1500000000},
+      "actuals": {"DEP_GROWTH": 200000000},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "High"}]
+  },
+  {
+    "id": "M017-five-kpis-cap-applies",
+    "description": "Six KPIs all severely behind → engine returns at most 5 tasks",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [
+        {"id": "DEP_GROWTH"}, {"id": "LOAN_GROWTH"}, {"id": "NPL_PCT"},
+        {"id": "AML_SLA"}, {"id": "NPS"}, {"id": "APPROVAL_TAT"}
+      ],
+      "targets": {
+        "DEP_GROWTH": 100, "LOAN_GROWTH": 100, "NPL_PCT": 100,
+        "AML_SLA": 100, "NPS": 100, "APPROVAL_TAT": 100
+      },
+      "actuals": {
+        "DEP_GROWTH": 5, "LOAN_GROWTH": 5, "NPL_PCT": 5,
+        "AML_SLA": 5, "NPS": 5, "APPROVAL_TAT": 5
+      },
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_task_count": 5
+  },
+  {
+    "id": "M018-very-low-pace-high-priority",
+    "description": "Pace at <50% of daily_req → High priority",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 5},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "High"}]
+  },
+  {
+    "id": "M019-medium-pace-medium-priority",
+    "description": "Pace between 50% and 80% of daily_req → Medium priority",
+    "input": {
+      "staff_code": "S001", "today": "2026-04-15", "period": "2026-04",
+      "kpis": [{"id": "DEP_GROWTH"}],
+      "targets": {"DEP_GROWTH": 100},
+      "actuals": {"DEP_GROWTH": 40},
+      "working_days_remaining": 12, "days_elapsed": 11
+    },
+    "expected_tasks": [{"kpi_id": "DEP_GROWTH", "priority": "Medium"}]
+  },
+  {
+    "id": "M020-mid-quarter-period",
+    "description": "Quarterly period mid-flight, behind pace → fires task",
+    "input": {
+      "staff_code": "S001", "today": "2026-05-15", "period": "2026-Q2",
+      "kpis": [{"id": "LOAN_GROWTH"}],
+      "targets": {"LOAN_GROWTH": 1000},
+      "actuals": {"LOAN_GROWTH": 100},
+      "working_days_remaining": 32, "days_elapsed": 32
+    },
+    "expected_tasks": [{"kpi_id": "LOAN_GROWTH"}]
+  }
+]

@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kpi_library.json",
+  "description": "Canonical KPI library — pillars, role_kpis mapping, KPI definitions, pillar/kpi weights. Producer is the KPI Library admin tab in pages/7_admin.py (utils/core_kpi.save_kpi_library). Accumulates v103xx_* metadata keys from migration batches — those are allowed but not required.",
+  "type": "object",
+  "required": ["pillars", "role_kpis", "pillar_weights", "kpi_weights", "kpis"],
+  "properties": {
+    "pillars": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "weight"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "weight": {"type": "number", "minimum": 0, "maximum": 1},
+          "color": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "role_kpis": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "string", "minLength": 1}
+      }
+    },
+    "pillar_weights": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}
+    },
+    "kpi_weights": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0}
+    },
+    "kpis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "pillar"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "pillar": {"type": "string"},
+          "weight": {"type": "number"},
+          "unit": {"type": "string"},
+          "direction": {"type": "string", "enum": ["higher", "lower", "higher_better", "lower_better"]},
+          "active": {"type": "boolean"},
+          "description": {"type": "string"},
+          "source": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "active_kpis": {"type": "array"}
+  },
+  "additionalProperties": true,
+  "_lock_version": "v10.343",
+  "_canonical_producer": "pages/7_admin.py KPI Library tab → utils/core_kpi.save_kpi_library",
+  "_consumers_must_tolerate_missing": [],
+  "_known_divergence": {
+    "field": "direction",
+    "issue": "two naming conventions in active use — 'higher'/'lower' (88+21 KPIs, 7 consumers) and 'higher_better'/'lower_better' (61+15 KPIs, 2 consumers). Schema enum accepts all 4 to avoid breaking consumer behavior. Consolidation candidate for Option E.",
+    "consumers_using_short_form": [
+      "utils/credit_activity_generator.py",
+      "utils/proposition_activity_generator.py",
+      "utils/branch_staff_generator.py",
+      "utils/support_function_generator.py",
+      "utils/specialist_activity_generator.py",
+      "utils/branch_manager_generator.py",
+      "pages/7_admin.py"
+    ],
+    "consumers_using_long_form": [
+      "utils/core.py L6286",
+      "pages/68_clearing.py L288"
+    ]
+  },
+  "_note": "9 _v103xx_* migration-metadata keys present in current data (v10324 through v10336). additionalProperties:true allows future migration tags without breaking the schema."
+}

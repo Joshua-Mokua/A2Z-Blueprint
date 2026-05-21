@@ -1,0 +1,112 @@
+{
+  "verified_at": "2026-05-05",
+  "verified_by": "v10.127 — Phase 1D close-out + Window 4 close",
+  "summary": {
+    "total": 7,
+    "complete": 7,
+    "partial": 0,
+    "missing": 0
+  },
+  "standards": [
+    {
+      "id": 14,
+      "name": "PeerLearningNetwork",
+      "closed_in": "v5.41",
+      "engine_present": true,
+      "engine_size_bytes": 41581,
+      "tests_present": true,
+      "tests_size_bytes": 17983,
+      "driver_present": true,
+      "audit_gate": "G25",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 15,
+      "name": "CoachingIntelligence",
+      "closed_in": "v5.42",
+      "engine_present": true,
+      "engine_size_bytes": 33781,
+      "tests_present": true,
+      "tests_size_bytes": 21653,
+      "driver_present": null,
+      "audit_gate": "G26",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 16,
+      "name": "PredictivePerformance",
+      "closed_in": "v5.43",
+      "engine_present": true,
+      "engine_size_bytes": 26329,
+      "tests_present": true,
+      "tests_size_bytes": 15389,
+      "driver_present": null,
+      "audit_gate": "G27",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 17,
+      "name": "GamificationEngine",
+      "closed_in": "v5.44",
+      "engine_present": true,
+      "engine_size_bytes": 26747,
+      "tests_present": true,
+      "tests_size_bytes": 13193,
+      "driver_present": null,
+      "audit_gate": "G28",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 18,
+      "name": "EfficiencyEngine",
+      "closed_in": "v5.44",
+      "engine_present": true,
+      "engine_size_bytes": 19858,
+      "tests_present": true,
+      "tests_size_bytes": 10003,
+      "driver_present": null,
+      "audit_gate": "G29",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 19,
+      "name": "WellnessEngine",
+      "closed_in": "v5.44",
+      "engine_present": true,
+      "engine_size_bytes": 25606,
+      "tests_present": true,
+      "tests_size_bytes": 11756,
+      "driver_present": null,
+      "audit_gate": "G30",
+      "status": "complete",
+      "engine_imports": true
+    },
+    {
+      "id": 20,
+      "name": "Performance Amplification API",
+      "closed_in": "v5.84",
+      "engine_present": true,
+      "engine_size_bytes": 14696,
+      "tests_present": true,
+      "tests_size_bytes": 9201,
+      "driver_present": null,
+      "audit_gate": "G31",
+      "status": "complete",
+      "engine_imports": true
+    }
+  ],
+  "audit_gates_wired": {
+    "G25": true,
+    "G26": true,
+    "G27": true,
+    "G28": true,
+    "G29": true,
+    "G30": true,
+    "G31": true
+  }
+}

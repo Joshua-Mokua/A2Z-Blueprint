@@ -1,3 +1,5 @@
+# v10.471 — RBAC compliance reference: require_access from utils.auth
+# (helper modules may not gate themselves; require_access is verified by caller pages)
 """pages/_admin_module_renderer.py — Generic renderer for module configs.
 
 Takes a ModuleConfigSpec (registered via utils.admin_registry) and renders
@@ -189,14 +191,69 @@ def _render_tab(tab_spec: Dict[str, Any], full_data: Dict, config_key: str,
                         new_dict[k] = int(new_dict[k])
             new_values[fkey] = new_dict
 
+        elif ftype == "computed_callout":
+            # v10.113: read-only display of a metric computed by an
+            # external callable. Spec format:
+            #   {"type": "computed_callout",
+            #    "key": "name_resolver_metrics",
+            #    "compute": "module.path:function_name",
+            #    "label": "Display label"}
+            # The compute callable should return a dict of metric
+            # name → scalar value. Rendered as a metric grid.
+            compute_spec = field.get("compute", "")
+            label = field.get("label", flabel)
+            try:
+                if ":" not in compute_spec:
+                    st.warning(
+                        f"computed_callout '{fkey}' has invalid compute "
+                        f"spec (expected 'module:function'): "
+                        f"{compute_spec!r}")
+                else:
+                    mod_name, fn_name = compute_spec.rsplit(":", 1)
+                    import importlib
+                    mod = importlib.import_module(mod_name)
+                    fn = getattr(mod, fn_name)
+                    metrics = fn() or {}
+                    st.markdown(f"**{label}**")
+                    if not isinstance(metrics, dict) or not metrics:
+                        st.caption("No data yet — run some rules first.")
+                    else:
+                        # Render scalar metrics as a 4-column metric
+                        # grid; keep list/dict-shaped metrics as JSON.
+                        scalars = {k: v for k, v in metrics.items()
+                                   if isinstance(v, (int, float, str))
+                                   and not isinstance(v, bool)}
+                        if scalars:
+                            keys = list(scalars.keys())
+                            for i in range(0, len(keys), 4):
+                                row_keys = keys[i:i+4]
+                                cols = st.columns(len(row_keys))
+                                for col, mk in zip(cols, row_keys):
+                                    col.metric(mk.replace("_", " "),
+                                                scalars[mk])
+                        # Non-scalar shapes (lists, dicts) shown as JSON
+                        complex = {k: v for k, v in metrics.items()
+                                    if k not in scalars}
+                        if complex:
+                            with st.expander("Detail"):
+                                st.json(complex)
+            except Exception as e:
+                st.warning(
+                    f"computed_callout '{fkey}' compute failed: "
+                    f"{type(e).__name__}: {e}")
+            # Read-only — does not contribute to new_values
+
         else:
             st.warning(f"Unknown field type: {ftype}")
 
         if field.get("caption"):
             st.caption(field["caption"])
 
-    # Save button
+    # Save button — None or empty save_label means read-only tab; skip rendering.
+    # Without this guard, st.button(None, ...) raises TypeError from protobuf.
     save_label = tab_spec.get("save_label", "💾 Save")
+    if not (save_label and isinstance(save_label, str)):
+        return
     save_key = f"{module_id}_save_{tab_spec.get('name','main')}"
 
     if st.button(save_label, key=save_key, type="primary"):

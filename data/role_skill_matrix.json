@@ -1,0 +1,134 @@
+{
+  "Branch Manager": {
+    "Risk Management":      4.0,
+    "Customer Service":     4.5,
+    "Leadership":           4.5,
+    "Product Knowledge":    4.0,
+    "Operations":           4.0,
+    "Compliance":           4.0
+  },
+  "Branch Operations Manager": {
+    "Operations":           4.5,
+    "Customer Service":     4.0,
+    "Compliance":           4.0,
+    "Leadership":           3.5,
+    "Risk Management":      3.5
+  },
+  "Branch Credit Manager": {
+    "Credit Analysis":      4.5,
+    "Risk Management":      4.5,
+    "Customer Service":     3.5,
+    "Leadership":           3.5,
+    "Compliance":           4.0
+  },
+  "Personal Banker": {
+    "Customer Service":     4.0,
+    "Product Knowledge":    4.0,
+    "Sales":                3.5,
+    "Compliance":           3.5,
+    "Risk Management":      3.0
+  },
+  "Customer Service Officer": {
+    "Customer Service":     4.5,
+    "Product Knowledge":    3.5,
+    "Operations":           3.5,
+    "Compliance":           3.5
+  },
+  "Teller": {
+    "Customer Service":     4.0,
+    "Operations":           4.0,
+    "Compliance":           3.5,
+    "Cash Handling":        4.0
+  },
+  "Relationship Manager - Retail": {
+    "Customer Service":     4.0,
+    "Product Knowledge":    4.0,
+    "Sales":                4.0,
+    "Risk Management":      3.5,
+    "Compliance":           3.5
+  },
+  "Relationship Manager - SME": {
+    "Customer Service":     4.0,
+    "Credit Analysis":      4.0,
+    "Risk Management":      4.0,
+    "Sales":                4.0,
+    "Product Knowledge":    4.0
+  },
+  "Relationship Manager - Corporate": {
+    "Credit Analysis":      4.5,
+    "Customer Service":     4.0,
+    "Risk Management":      4.5,
+    "Sales":                4.5,
+    "Financial Modelling":  4.0,
+    "Product Knowledge":    4.5
+  },
+  "Credit Analyst": {
+    "Credit Analysis":      4.5,
+    "Risk Management":      4.0,
+    "Financial Modelling":  4.0,
+    "Compliance":           3.5
+  },
+  "Senior Credit Analyst": {
+    "Credit Analysis":      4.5,
+    "Risk Management":      4.5,
+    "Financial Modelling":  4.5,
+    "Leadership":           3.5,
+    "Compliance":           4.0
+  },
+  "Head Of Retail": {
+    "Leadership":           5.0,
+    "Risk Management":      4.5,
+    "Customer Service":     4.5,
+    "Strategy":             4.0,
+    "People Management":    4.5
+  },
+  "Regional Head": {
+    "Leadership":           4.5,
+    "Risk Management":      4.5,
+    "Strategy":             4.0,
+    "People Management":    4.5,
+    "Operations":           4.0
+  },
+  "Director Retail Banking": {
+    "Leadership":           5.0,
+    "Strategy":             4.5,
+    "Risk Management":      4.5,
+    "People Management":    5.0,
+    "Financial Modelling":  4.0
+  },
+  "Director Commercial Banking": {
+    "Leadership":           5.0,
+    "Strategy":             4.5,
+    "Risk Management":      4.5,
+    "Credit Analysis":      4.5,
+    "People Management":    5.0
+  },
+  "Direct Sales Officer": {
+    "Sales":                4.0,
+    "Customer Service":     3.5,
+    "Product Knowledge":    3.5
+  },
+  "AML Analyst": {
+    "Compliance":           4.5,
+    "Risk Management":      4.0,
+    "Investigation":        4.0,
+    "Operations":           3.5
+  },
+  "Internal Auditor": {
+    "Risk Management":      4.5,
+    "Compliance":           4.5,
+    "Investigation":        4.0,
+    "Operations":           4.0
+  },
+  "Treasury Dealer": {
+    "Treasury Operations":  4.5,
+    "Risk Management":      4.5,
+    "Financial Modelling":  4.0,
+    "Compliance":           4.0
+  },
+  "default": {
+    "Customer Service":     3.5,
+    "Compliance":           3.5,
+    "Operations":           3.5
+  }
+}

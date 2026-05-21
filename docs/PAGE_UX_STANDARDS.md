@@ -173,4 +173,144 @@ Test: imagine a new user opening the page for the first time. Can they find what
 
 ---
 
-*Standards version 1.0 (v5.13). Update when patterns change.*
+## 11. G4-Strict Rule (added v6.0 after v5.95 lesson)
+
+**Both top-level tabs AND sub-tab groups are capped at ≤7.** This is the comfort ceiling regardless of nesting depth — `scripts/audit.py:gate_tab_counts` enforces it via the G4 gate.
+
+### Why this matters
+
+Sub-tabs with 8+ entries hit the same horizontal scroll / label truncation problems as top-level tabs. The screen real estate doesn't change just because we're one level deeper.
+
+### What v5.95 taught us
+
+v5.95 (CLV depth) initially shipped with **9 sub-tabs in `clv_sub_tabs`** — failed G4 audit on first attempt. The 20-clean-streak broke. The fix: collapse 3 v5.95 sub-tabs into **1 sub-tab containing 3 inner tabs** (1+3 ≤7 each).
+
+### The pattern
+
+When a sub-tab group is at the ≤7 cap and you need to add more depth content:
+
+> **Use "1 sub-tab + N inner tabs" pattern, not flat N+ sub-tabs.**
+
+The inner tabs are a separate `st.tabs([...])` call. Each grouping is independently capped at 7.
+
+### Example structure
+
+```python
+# ✅ CORRECT — both groups ≤7
+clv_sub_tabs = st.tabs([          # 7 sub-tabs (at cap)
+    "💰 Calculator", "🌳 Yields", "📊 Distribution",
+    "💵 P&L", "🎯 Allocation", "🌳 Reference",
+    "📦 CLV Depth",  # ← contains inner tabs
+])
+with clv_sub_tabs[6]:
+    _depth_inner = st.tabs([      # 3 inner tabs
+        "📦 Per-Holding", "🔬 Sensitivity", "🌐 Aggregate",
+    ])
+
+# ❌ WRONG — 9 sub-tabs fails G4 audit
+clv_sub_tabs = st.tabs([
+    "💰 Calculator", "🌳 Yields", "📊 Distribution",
+    "💵 P&L", "🎯 Allocation", "🌳 Reference",
+    "📦 Per-Holding", "🔬 Sensitivity", "🌐 Aggregate",
+])
+```
+
+---
+
+## 12. Depth-Batch Template (added v6.0 after 4 applications)
+
+Some engines have rich multi-output return data (e.g. `EmployeeEngagementEngine` returns engagement_score + eNPS + drivers + flight_risk + sentiment). Initial integration usually surfaces each output independently — that's correct. But once the engine surface stabilises, **depth analytics that compose these outputs** create genuine analytical value beyond simple path-by-path display.
+
+### When to apply
+
+You're a candidate for a depth batch if:
+- An engine has 4+ STATIC methods or returns dicts with multiple semantically-distinct keys
+- Initial v5.x integration covers each method individually but doesn't compose them
+- The page has G4 budget (≤7 sub-tabs) for one more sub-tab — or can absorb the depth into an existing sub-tab via inner-tabs containment
+
+### The 4-inner-tab template
+
+Every depth batch follows this structure:
+
+| Inner tab | Pattern | Composes |
+|---|---|---|
+| **0** Existing | Preserve byte-for-byte from v5.x | Single engine path |
+| **1** Executive Scorecard | Compose 3+ engine paths into GREEN/AMBER/RED verdict | 3+ paths |
+| **2** Batch | Single-input engine method → portfolio iteration | 1 path × N entities |
+| **3** Aggregate | Text/list distribution analysis with concentration insights | Caller-side aggregation |
+| **4** Investment Map | Ranked + actionable priority bands | 1 multi-output path |
+
+### Proven applications (as of v6.0)
+
+| Batch | Engine | Domain |
+|---|---|---|
+| v5.95 | CLV (`customer_lifetime_value`) | Customer-centric |
+| v5.97 | Compensation (`compensation_equity`) | HR Compensation |
+| v5.98 | Engagement (`employee_engagement`) | HR Engagement |
+| v5.99 | RCSA (`internal_controls`) | Controls/Governance |
+
+### Executive Scorecard structure
+
+The Executive Scorecard inner tab is the highest-value addition. It always has 4 sections:
+
+1. **Section 1️⃣** — first engine path with 2-3 metric tiles
+2. **Section 2️⃣** — second engine path with severity-banded tile
+3. **Section 3️⃣** — third engine path with distribution metrics
+4. **Section 4️⃣** — overall verdict (GREEN/AMBER/RED) based on issue count
+
+**Verdict rule**: 0 issues = GREEN (success message), 1 issue = AMBER (warning), 2+ = RED (error).
+
+### Audit logging
+
+Every depth invocation produces an `IFRS_ENGINE_USED` audit event with:
+- `Standard #N (depth)` prefix
+- Inner tab name (scorecard / batch / aggregate / investment map)
+- Key metrics from the operation
+
+---
+
+## 13. Composite Scoring Layer (added v6.0)
+
+For engines whose multi-output return values (e.g. engagement: 4 paths) need to roll up into a **single board-ready number**, the platform provides a thin composition utility module: `utils/composite_scores.py`.
+
+### Philosophy
+
+**Engines stay deterministic and unbiased.** Composition layer keeps calls pure. Production deployment can override weights per market or bank policy without modifying engine code.
+
+### Coverage in v6.0
+
+| Composite | Inputs | Used in |
+|---|---|---|
+| `workforce_health_composite` | engagement + enps + weakest driver + flight risk | v5.98 Engagement Scorecard (v6.0 surface) |
+| `customer_value_composite` | RFM + CLV + Customer Value tier | (caller-ready, not yet UI-surfaced) |
+| `rcsa_health_composite` | COSO + control effectiveness + deficiency counts | (caller-ready, not yet UI-surfaced) |
+
+### Output contract
+
+All composites return:
+
+```python
+{
+    "score": float | None,              # 0-100, None if all inputs missing
+    "severity": "HEALTHY|MODERATE|LOW|UNKNOWN",
+    "components": {name: weighted_value, ...},
+    "missing_inputs": [list of missing input names],   # Rule 6
+    "weights_used": {name: weight, ...},               # audit trail
+    "reason": "computed|computed_with_missing|all_inputs_missing",
+}
+```
+
+### Severity bands
+
+- HEALTHY ≥ 75
+- MODERATE ≥ 60
+- LOW < 60
+- UNKNOWN if all inputs missing
+
+### Renormalisation when inputs missing
+
+If only some inputs are provided, the composite renormalises weights over available components — partial composition still produces a valid score with `missing_inputs` surfaced (Rule 6 transparency).
+
+---
+
+*Standards version 2.0 (v6.0 — added G4-strict, depth-batch template, composite scoring layer). Update when patterns change.*

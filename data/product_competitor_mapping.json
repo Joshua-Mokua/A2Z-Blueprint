@@ -1,0 +1,38 @@
+{
+  "_doc": "Product-to-competitor benchmark mapping for ENH-134 ProductCompetitiveIntelligence. Maps each of our products in data/products.json to the appropriate competitor benchmark key in data/competitor_data.json (lending_rates / deposit_rates). Products without a clear competitor benchmark are listed in unmapped[] with rationale — operators can extend over time.",
+  "_schema_version": "v10.145",
+  "_last_reviewed": "2026-05-05",
+
+  "lending_rate_mapping": {
+    "P001": "Personal Loan",
+    "P002": "Mortgage",
+    "P003": "Asset Finance",
+    "P004": "Personal Loan",
+    "P005": "Business Loan",
+    "P006": "Business Loan",
+    "P007": "Business Loan",
+    "P008": "Business Loan",
+    "P009": "Business Loan"
+  },
+
+  "deposit_rate_mapping": {
+    "P013": "Savings",
+    "P014": "12M Fixed"
+  },
+
+  "unmapped": [
+    {"product_id": "P010", "name": "Trade Finance LC", "reason": "trade_finance_pricing_not_in_public_competitor_dataset"},
+    {"product_id": "P011", "name": "Import Finance", "reason": "trade_finance_pricing_not_in_public_competitor_dataset"},
+    {"product_id": "P012", "name": "Current Accounts", "reason": "no_interest_product_no_rate_to_benchmark"},
+    {"product_id": "P015", "name": "Bancassurance", "reason": "fee_income_product_pricing_proprietary_not_benchmarked"},
+    {"product_id": "P016", "name": "Digital Finance", "reason": "digital_fees_proprietary_not_benchmarked"}
+  ],
+
+  "_notes": [
+    "rate_avg field on each product in products.json is the OUR_BANK rate used in benchmarking",
+    "When a product is mapped to a competitor benchmark, rates are compared against peer set excluding our own bank",
+    "Salary Advance (P004) mapped to Personal Loan as closest analogue — operators may want a separate benchmark when one becomes available",
+    "Corporate Loans (P009) mapped to Business Loan as closest analogue; tier-1 corporate-specific pricing may differ materially",
+    "Fixed Deposits (P014) mapped to 12M Fixed by default; bank can change to 3M/6M for shorter-tenor products"
+  ]
+}

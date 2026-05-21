@@ -11,8 +11,9 @@ from decimal import Decimal
 from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
+from utils.db import db as a2z_db
 
-require_access("consent_management")
+require_access("compliance_regulatory.consent")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]

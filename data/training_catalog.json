@@ -1,0 +1,87 @@
+{
+  "Risk Management": {
+    "basic":    ["Complete CISI Risk Management Level 1 e-learning",
+                 "Read 'A2Z Risk Framework Primer'"],
+    "advanced": ["Complete CISI Risk Management Level 2",
+                 "Shadow a Senior Risk Officer for 2 weeks",
+                 "Attend the bank's annual Risk Conference"]
+  },
+  "Customer Service": {
+    "basic":    ["Complete the bank's Customer Experience Foundation course",
+                 "Take the NPS Champions e-learning module"],
+    "advanced": ["Lead a customer-feedback workshop",
+                 "Mentor a junior staff member on CX excellence"]
+  },
+  "Leadership": {
+    "basic":    ["Enroll in the Bank Leadership Programme (Module 1)",
+                 "Read 'The First-Time Manager' (HR-recommended)"],
+    "advanced": ["Complete the Executive Leadership Programme",
+                 "Pursue a coaching certification"]
+  },
+  "Product Knowledge": {
+    "basic":    ["Attend the quarterly product training briefing",
+                 "Complete the product matrix e-learning"],
+    "advanced": ["Become a certified product specialist for at least 2 product lines",
+                 "Lead a product training session for new staff"]
+  },
+  "Operations": {
+    "basic":    ["Complete the Banking Operations 101 e-learning",
+                 "Job-shadow the BOM for 3 days"],
+    "advanced": ["Lead a process-improvement project",
+                 "Pursue Lean Six Sigma Yellow Belt certification"]
+  },
+  "Compliance": {
+    "basic":    ["Complete annual AML refresher",
+                 "Take the Code of Conduct quiz"],
+    "advanced": ["Pursue ICA Compliance certification",
+                 "Lead a compliance awareness session for the branch"]
+  },
+  "Credit Analysis": {
+    "basic":    ["Complete CISI Credit Analysis Foundation",
+                 "Practise on the bank's Credit Analyst sandbox"],
+    "advanced": ["Pursue CFA Level 1",
+                 "Co-author a complex deal credit memo"]
+  },
+  "Sales": {
+    "basic":    ["Complete 'Consultative Selling' e-learning",
+                 "Job-shadow a top RM for one week"],
+    "advanced": ["Attend an external sales-leadership workshop",
+                 "Mentor a junior banker on pipeline management"]
+  },
+  "Cash Handling": {
+    "basic":    ["Complete the Teller Operations module",
+                 "Re-certify on the bank's till accuracy SOP"],
+    "advanced": ["Lead a branch cash-management audit",
+                 "Train new tellers on cash handling"]
+  },
+  "Financial Modelling": {
+    "basic":    ["Complete advanced Excel for Finance",
+                 "Build 3 sample models from the bank's template library"],
+    "advanced": ["Pursue FMVA certification",
+                 "Lead a credit modelling project"]
+  },
+  "Strategy": {
+    "basic":    ["Read the bank's current 5-year strategy deck",
+                 "Attend the strategy town hall"],
+    "advanced": ["Complete the IMD Strategic Leadership programme",
+                 "Lead a strategic-initiative working group"]
+  },
+  "People Management": {
+    "basic":    ["Complete the People Manager's Toolkit e-learning",
+                 "Read 'Radical Candor' (recommended by HR)"],
+    "advanced": ["Pursue a coaching certification",
+                 "Lead a 360-feedback initiative for your team"]
+  },
+  "Investigation": {
+    "basic":    ["Complete ACAMS Foundation e-learning",
+                 "Shadow a senior investigator on a real case"],
+    "advanced": ["Pursue ACAMS CAMS certification",
+                 "Lead a complex case to closure"]
+  },
+  "Treasury Operations": {
+    "basic":    ["Complete the Treasury 101 module",
+                 "Read the bank's Treasury Operations Manual"],
+    "advanced": ["Pursue ACI Dealing Certificate",
+                 "Rotate through Money Market and FX desks"]
+  }
+}

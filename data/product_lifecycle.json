@@ -1,0 +1,88 @@
+{
+  "_doc": "Per-product lifecycle stage + transition history. Initial stages seeded from growth_rate heuristic (one-time). Operators update via stage-gate transitions in the UI/API.",
+  "_schema_version": "v10.143",
+  "products": {
+    "P001": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-2.3"
+    },
+    "P002": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=14.7"
+    },
+    "P003": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-5.5"
+    },
+    "P004": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=13.5"
+    },
+    "P005": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-16.3"
+    },
+    "P006": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-1.8"
+    },
+    "P007": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-14.9"
+    },
+    "P008": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-5.9"
+    },
+    "P009": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=9.5"
+    },
+    "P010": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=6.1"
+    },
+    "P011": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=12.0"
+    },
+    "P012": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-11.9"
+    },
+    "P013": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=5.8"
+    },
+    "P014": {
+      "current_stage": "GROWTH",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=16.7"
+    },
+    "P015": {
+      "current_stage": "MATURITY",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=7.2"
+    },
+    "P016": {
+      "current_stage": "DECLINE",
+      "since": "2026-01-01T00:00:00+00:00",
+      "_seeded_from": "growth_rate=-11.4"
+    }
+  },
+  "transitions": [],
+  "pending": []
+}

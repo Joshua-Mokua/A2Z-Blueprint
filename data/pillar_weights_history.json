@@ -1,0 +1,19 @@
+[
+  {
+    "changed_at": "2026-05-14T14:17:07.251050+00:00",
+    "changed_by": "Joshua",
+    "reason": "v10.423 Kaplan-Norton balanced scorecard decision (admin can vary via pages/7_admin.py)",
+    "old_weights": {
+      "Financial": 0.68,
+      "Customer Focus": 0.14,
+      "Operational Excellence": 0.06,
+      "People & Learning": 0.12
+    },
+    "new_weights": {
+      "Financial": 0.4,
+      "Customer Focus": 0.25,
+      "Operational Excellence": 0.25,
+      "People & Learning": 0.1
+    }
+  }
+]

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:01.661545+00:00",
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "RM01-clean-portfolio-3-customers",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 1000000.0,
+      "expected_pbt": 1000000.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": false
+    },
+    {
+      "id": "RM02-empty-portfolio",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 0.0,
+      "expected_pbt": 0.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": true
+    },
+    {
+      "id": "RM03-all-pnls-missing",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 0.0,
+      "expected_pbt": 0.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": true
+    },
+    {
+      "id": "RM04-one-ftp-off-customer-warning-surfaces",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 293500.0,
+      "expected_pbt": 293500.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": true
+    },
+    {
+      "id": "RM05-mostly-ftp-off-provisional",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 42000.0,
+      "expected_pbt": 42000.0,
+      "actual_provisional": true,
+      "expected_provisional": true,
+      "warning_present": true
+    },
+    {
+      "id": "RM06-bank-scale-portfolio",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 3700000000.0,
+      "expected_pbt": 3700000000.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": false
+    },
+    {
+      "id": "RM07-zero-revenue-customer",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 49900.0,
+      "expected_pbt": 49900.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": false
+    },
+    {
+      "id": "RM08-single-customer-portfolio",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 600000.0,
+      "expected_pbt": 600000.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": false
+    },
+    {
+      "id": "RM09-loss-making-portfolio",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": -300000.0,
+      "expected_pbt": -300000.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": false
+    },
+    {
+      "id": "RM10-50-percent-boundary-not-provisional",
+      "matched": true,
+      "issues": [],
+      "actual_pbt": 300000.0,
+      "expected_pbt": 300000.0,
+      "actual_provisional": false,
+      "expected_provisional": false,
+      "warning_present": true
+    }
+  ]
+}

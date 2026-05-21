@@ -1,0 +1,23 @@
+{
+  "n_modules_scanned": 302,
+  "n_imports": 753,
+  "summary": {
+    "n_modules": 302,
+    "n_imports": 753,
+    "n_findings": 53,
+    "by_severity": {
+      "HARD": 3,
+      "WARN": 45,
+      "INFO": 5
+    },
+    "by_category": {
+      "CIRCULAR_IMPORT": 3,
+      "GOD_MODULE": 1,
+      "JUNK_DRAWER": 1,
+      "ORPHAN_MODULE": 25,
+      "DUPLICATE_SYMBOL": 15,
+      "SIZE_OUTLIER": 8
+    },
+    "is_clean": false
+  }
+}

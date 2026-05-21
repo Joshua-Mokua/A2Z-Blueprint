@@ -15,7 +15,7 @@ from pages._access import require_access
 from utils.core_audit import audit_log
 from utils.core import get_org_config
 
-require_access("projects")
+require_access("operations.projects")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 

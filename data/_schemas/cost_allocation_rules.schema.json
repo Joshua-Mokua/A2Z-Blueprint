@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cost_allocation_rules.json",
+  "description": "Cost allocation rule set (Standard #25 + #26 + v10.339 runtime). Top-level metadata + 'rules' array.",
+  "type": "object",
+  "required": ["rules"],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id", "cost_item", "allocation_method", "annual_amount_kes_b"
+        ],
+        "properties": {
+          "rule_id": {"type": "string", "pattern": "^RULE_[A-Za-z0-9_]+$"},
+          "cost_item": {"type": "string", "minLength": 1},
+          "allocation_method": {
+            "type": "string",
+            "enum": ["direct", "driver_based", "equal_split", "activity_based_costing"]
+          },
+          "annual_amount_kes_b": {"type": "number", "minimum": 0},
+          "driver_1": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+          "driver_1_weight": {"oneOf": [{"type": "number", "minimum": 0, "maximum": 1}, {"type": "null"}]},
+          "driver_2": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+          "driver_2_weight": {"oneOf": [{"type": "number", "minimum": 0, "maximum": 1}, {"type": "null"}]},
+          "active": {"type": "boolean"},
+          "notes": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "_lock_version": "v10.342",
+  "_canonical_producer": "pages/7_admin.py Performance → Cost Matrix",
+  "_consumer": "utils/cost_allocation.py apply_rules + sbu_pnl_rollup"
+}

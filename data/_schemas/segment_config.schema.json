@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "segment_config.json",
+  "description": "Canonical segment vocabulary (v10.338). Codes FIXED. Display names + thresholds admin-editable per tenant.",
+  "type": "object",
+  "required": ["individual_tiers", "business_tiers", "cbk_sectors", "propositions_overlay"],
+  "properties": {
+    "individual_tiers": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["code", "display_name", "trb_min_kes"],
+        "properties": {
+          "code": {"type": "string", "enum": ["AFFLUENT", "CORE_MIDDLE", "MASS"]},
+          "display_name": {"type": "string", "minLength": 1},
+          "trb_min_kes": {"type": "number", "minimum": 0},
+          "trb_max_kes": {"oneOf": [{"type": "number"}, {"type": "null"}]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "business_tiers": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["code", "display_name", "turnover_min_kes", "in_msme"],
+        "properties": {
+          "code": {"type": "string", "enum": ["MICRO", "SMALL", "MEDIUM", "CORPORATE"]},
+          "display_name": {"type": "string", "minLength": 1},
+          "turnover_min_kes": {"type": "number", "minimum": 0},
+          "turnover_max_kes": {"oneOf": [{"type": "number"}, {"type": "null"}]},
+          "in_msme": {"type": "boolean"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "cbk_sectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    },
+    "propositions_overlay": {
+      "type": "object",
+      "required": ["propositions"],
+      "properties": {
+        "propositions": {"type": "array", "items": {"type": "string"}},
+        "view_only": {"type": "boolean"},
+        "reconciles_to_bank_total": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "_lock_version": "v10.342",
+  "_canonical_producer": "pages/7_admin.py Performance → Segment Configuration",
+  "_consumers": ["utils/segment_classifier.py", "utils/sbu_pnl_rollup.py", "utils/segment_balance_sheet.py"]
+}

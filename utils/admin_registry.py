@@ -57,17 +57,22 @@ CATEGORIES = {
 
 # Field types supported by the renderer
 FIELD_TYPES = {
-    "text_input":      "Single-line text",
-    "text_area":       "Multi-line text",
-    "text_area_list":  "Multi-line text, treated as list (split on newlines)",
-    "number_input":    "Numeric input (int or float)",
-    "multiselect":     "Pick multiple from options",
-    "selectbox":       "Pick one from options",
-    "checkbox":        "Boolean toggle",
-    "dict_editor":     "Key→number map (e.g. SLA days, retention years)",
-    "readonly_table":  "DataFrame shown but not editable",
-    "bullet_list":     "Static bullet list display",
-    "rich_caption":    "Markdown caption",
+    "text_input":       "Single-line text",
+    "text_area":        "Multi-line text",
+    "text_area_list":   "Multi-line text, treated as list (split on newlines)",
+    "number_input":     "Numeric input (int or float)",
+    "multiselect":      "Pick multiple from options",
+    "selectbox":        "Pick one from options",
+    "checkbox":         "Boolean toggle",
+    "dict_editor":      "Key→number map (e.g. SLA days, retention years)",
+    "readonly_table":   "DataFrame shown but not editable",
+    "bullet_list":      "Static bullet list display",
+    "rich_caption":     "Markdown caption",
+    # v10.113: read-only computed metric grid; calls a 'compute'
+    # callable (module:fn) and renders its dict result as st.metric
+    # cards. Used by the Integration Layer's Resolution Metrics tab
+    # to surface name/role resolver hit-rates in the admin UI.
+    "computed_callout": "Read-only metric grid computed from a callable (module:fn)",
 }
 
 # Global registry — modules register themselves at import time

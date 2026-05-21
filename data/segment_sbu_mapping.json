@@ -1,0 +1,28 @@
+{
+  "_schema_version": "v10.368",
+  "_last_updated_iso": "2026-05-13T00:00:00+00:00",
+  "_last_updated_by": "v10.368 initial mapping",
+  "_purpose": "Map customer segments to opex_data.json::by_sbu SBU names. Used by utils.pbt_computation.compute_pbt_by_sbu to attribute customer-facing income to SBUs. Per Rule N1, admin-editable to accommodate tenant terminology (Mass/Personal/Standard, SME/Small/Medium etc.).",
+  "_three_naming_conventions_unified_here": "The codebase has three concurrent segment naming conventions: (1) segment_config.json _locked_codes for production (AFFLUENT/CORE_MIDDLE/MASS/MICRO/SMALL/MEDIUM/CORPORATE); (2) VirtualBankCore.SegmentType for dev/seed (RETAIL/HNW/PRIVATE_BANKING/SME/CORPORATE); (3) opex_data.json by_sbu names (Retail Banking/Commercial Banking/Corporate Banking/Treasury/Digital/Agency). This file maps any of (1) or (2) to (3) so compute_pbt_by_sbu can aggregate correctly.",
+  "segment_to_sbu": {
+    "AFFLUENT":         "Retail Banking",
+    "CORE_MIDDLE":      "Retail Banking",
+    "MASS":             "Retail Banking",
+    "MICRO":            "Retail Banking",
+    "SMALL":            "Commercial Banking",
+    "MEDIUM":           "Commercial Banking",
+    "CORPORATE":        "Corporate Banking",
+    "RETAIL":           "Retail Banking",
+    "HNW":              "Retail Banking",
+    "PRIVATE_BANKING":  "Retail Banking",
+    "SME":              "Commercial Banking"
+  },
+  "operational_sbus": [
+    "Treasury",
+    "Digital/Agency"
+  ],
+  "_documentation": {
+    "segment_to_sbu": "Direct lookup. Each customer's segment code maps to exactly one SBU. Customers with unknown segments fall into 'Unallocated' bucket.",
+    "operational_sbus": "SBUs that exist in opex_data.json::by_sbu but have no customer-attributable accounts (Treasury for interbank/FX, Digital/Agency for channel operations). Their PBT = -OpEx until production GL provides treasury revenue. Listed here so compute_pbt_by_sbu knows to create entries for them even though no customers map to them."
+  }
+}

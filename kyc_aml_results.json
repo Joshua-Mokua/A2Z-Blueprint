@@ -1,0 +1,78 @@
+{
+  "harness": "kyc_aml_scenarios",
+  "total": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "results": [
+    {
+      "id": "KY001",
+      "expected_band": "LOW",
+      "actual_band": "LOW",
+      "actual_score": 0,
+      "match": true
+    },
+    {
+      "id": "KY002",
+      "expected_band": "HIGH",
+      "actual_band": "HIGH",
+      "actual_score": 65,
+      "match": true
+    },
+    {
+      "id": "KY003",
+      "expected_band": "PROHIBITED",
+      "actual_band": "PROHIBITED",
+      "actual_score": 100,
+      "match": true
+    },
+    {
+      "id": "KY004",
+      "expected_band": "PROHIBITED",
+      "actual_band": "PROHIBITED",
+      "actual_score": 100,
+      "match": true
+    },
+    {
+      "id": "KY005",
+      "expected_band": "MEDIUM",
+      "actual_band": "MEDIUM",
+      "actual_score": 25,
+      "match": true
+    },
+    {
+      "id": "KY006",
+      "expected_band": "MEDIUM",
+      "actual_band": "MEDIUM",
+      "actual_score": 35,
+      "match": true
+    },
+    {
+      "id": "KY007",
+      "expected_band": "MEDIUM",
+      "actual_band": "MEDIUM",
+      "actual_score": 40,
+      "match": true
+    },
+    {
+      "id": "KY008",
+      "expected_band": "HIGH",
+      "actual_band": "HIGH",
+      "actual_score": 75,
+      "match": true
+    },
+    {
+      "id": "KY009",
+      "expected_band": "PROHIBITED",
+      "actual_band": "PROHIBITED",
+      "actual_score": 100,
+      "match": true
+    },
+    {
+      "id": "KY010",
+      "expected_band": "LOW",
+      "actual_band": "LOW",
+      "actual_score": 0,
+      "match": true
+    }
+  ]
+}

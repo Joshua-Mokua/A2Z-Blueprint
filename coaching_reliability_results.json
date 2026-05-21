@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:05:33.336269+00:00",
+  "total_scenarios": 20,
+  "matches": 20,
+  "misses": 0,
+  "reliability_pct": 100.0,
+  "spec_target_pct": 90.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "C001-strong-performer",
+      "description": "Top performer on one KPI \u00e2\u2020\u2019 script references the win",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on DEP_GROWTH at 130% of target. What's working?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH",
+          "exceeding"
+        ],
+        "agenda_min": 3
+      }
+    },
+    {
+      "id": "C002-struggling-staff",
+      "description": "All KPIs behind pace \u00e2\u2020\u2019 script discusses challenges",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On NPL_PCT you're at 30% of target \u2014 what are the biggest blockers right now?\"",
+          "\"On DEP_GROWTH you're at 40% of target \u2014 what are the biggest blockers right now?\""
+        ],
+        "recommended_actions": [
+          "Schedule a focused working session on DEP_GROWTH",
+          "Schedule a focused working session on NPL_PCT",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 4
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_any_of": [
+          "DEP_GROWTH",
+          "NPL_PCT"
+        ],
+        "talking_points_must_contain": [
+          "blockers"
+        ]
+      }
+    },
+    {
+      "id": "C003-mixed-with-skill-gap",
+      "description": "Mixed KPIs + growth plan with skill gap \u00e2\u2020\u2019 covers both",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On LOAN_GROWTH you're at 60% of target \u2014 what are the biggest blockers right now?\"",
+          "\"On Credit Analysis, you're at 2.5 versus required 4.0. What development support would you prioritise?\""
+        ],
+        "recommended_actions": [
+          "Action: CISI Credit Foundation",
+          "Schedule a focused working session on LOAN_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "LOAN_GROWTH",
+          "Credit Analysis"
+        ]
+      }
+    },
+    {
+      "id": "C004-with-microtasks",
+      "description": "High-priority micro-tasks pending \u00e2\u2020\u2019 talking points reference them",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On DEP_GROWTH you're at 60% of target \u2014 what are the biggest blockers right now?\"",
+          "\"You have 3 high-priority micro-tasks outstanding. Let's go through them together.\""
+        ],
+        "recommended_actions": [
+          "Review the top 3 high-priority micro-tasks together",
+          "Schedule a focused working session on DEP_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "high-priority"
+        ],
+        "actions_must_contain": [
+          "3"
+        ]
+      }
+    },
+    {
+      "id": "C005-with-learning-card",
+      "description": "Behind on KPI + learning card \u00e2\u2020\u2019 recommended action mentions peer",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On DEP_GROWTH you're at 50% of target \u2014 what are the biggest blockers right now?\""
+        ],
+        "recommended_actions": [
+          "Connect S999 with the team member to share approach on DEP_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 4
+      },
+      "expected": {
+        "non_empty": true,
+        "actions_any_of": [
+          "S999",
+          "share approach"
+        ]
+      }
+    },
+    {
+      "id": "C006-no-signals-fallback",
+      "description": "New joiner with no data \u00e2\u2020\u2019 fallback talking points",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"How's the work going overall? Anything I should know?\"",
+          "\"What's one thing I could do as your manager to make your role easier?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 4
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_min": 1,
+        "agenda_min": 3
+      }
+    },
+    {
+      "id": "C007-cross-team-rejection",
+      "description": "Staff isn't in manager's report chain \u00e2\u2020\u2019 empty",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": null,
+        "recommended_actions": null,
+        "agenda_count": 0
+      },
+      "expected": {
+        "empty": true
+      }
+    },
+    {
+      "id": "C008-self-coaching-rejected",
+      "description": "Manager == staff_code \u00e2\u2020\u2019 empty",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": null,
+        "recommended_actions": null,
+        "agenda_count": 0
+      },
+      "expected": {
+        "empty": true
+      }
+    },
+    {
+      "id": "C009-unknown-staff-rejected",
+      "description": "Unknown staff_code \u00e2\u2020\u2019 empty (defensive)",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": null,
+        "recommended_actions": null,
+        "agenda_count": 0
+      },
+      "expected": {
+        "empty": true
+      }
+    },
+    {
+      "id": "C010-multiple-wins-prioritised",
+      "description": "Multiple exceeding KPIs \u00e2\u2020\u2019 top 2 referenced (not all of them)",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on DEP_GROWTH at 152% of target. What's working?\"",
+          "\"I noticed you're exceeding on LOAN_GROWTH at 138% of target. What's working?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH",
+          "LOAN_GROWTH"
+        ],
+        "talking_points_max": 8
+      }
+    },
+    {
+      "id": "C011-recognition-nudge-corroboration",
+      "description": "KPI exceeding + recognition nudge \u00e2\u2020\u2019 both signals contribute",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on DEP_GROWTH at 130% of target. What's working?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH"
+        ]
+      }
+    },
+    {
+      "id": "C012-medium-priority-tasks",
+      "description": "Only medium-priority tasks \u00e2\u2020\u2019 script mentions them but differently",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On DEP_GROWTH you're at 75% of target \u2014 what are the biggest blockers right now?\"",
+          "\"You have 1 micro-tasks pending \u2014 any blockers?\""
+        ],
+        "recommended_actions": [
+          "Schedule a focused working session on DEP_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH"
+        ]
+      }
+    },
+    {
+      "id": "C013-large-skill-gaps",
+      "description": "Multiple skill gaps \u00e2\u2020\u2019 top 2 in talking points",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On Risk Management, you're at 2.0 versus required 4.5. What development support would you prioritise?\"",
+          "\"On Leadership, you're at 2.5 versus required 4.5. What development support would you prioritise?\""
+        ],
+        "recommended_actions": [
+          "Action: CISI Risk Foundation",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "Risk Management",
+          "Leadership"
+        ]
+      }
+    },
+    {
+      "id": "C014-borderline-on-pace",
+      "description": "On-pace KPI (90%) \u00e2\u2020\u2019 no behind-pace talking point fired",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"How's the work going overall? Anything I should know?\"",
+          "\"What's one thing I could do as your manager to make your role easier?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 4
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_not_contain": [
+          "blockers"
+        ]
+      }
+    },
+    {
+      "id": "C015-very-large-numbers",
+      "description": "KES-scale targets \u00e2\u2020\u2019 no math overflow, talking points still reference KPI",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on DEP_GROWTH at 127% of target. What's working?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH"
+        ]
+      }
+    },
+    {
+      "id": "C016-many-microtasks-cap",
+      "description": "10+ pending micro-tasks \u00e2\u2020\u2019 talking point handles cleanly",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On DEP_GROWTH you're at 30% of target \u2014 what are the biggest blockers right now?\"",
+          "\"You have 4 high-priority micro-tasks outstanding. Let's go through them together.\""
+        ],
+        "recommended_actions": [
+          "Review the top 3 high-priority micro-tasks together",
+          "Schedule a focused working session on DEP_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "high-priority"
+        ]
+      }
+    },
+    {
+      "id": "C017-zero-target-kpi-skipped",
+      "description": "KPI with zero target \u00e2\u2020\u2019 engine skips (no division-by-zero, no fake content)",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on LOAN_GROWTH at 130% of target. What's working?\""
+        ],
+        "recommended_actions": [
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "LOAN_GROWTH"
+        ]
+      }
+    },
+    {
+      "id": "C018-very-low-promotion-readiness",
+      "description": "Low promotion readiness + skill gaps \u00e2\u2020\u2019 development discussion",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On Customer Service, you're at 2.0 versus required 4.0. What development support would you prioritise?\""
+        ],
+        "recommended_actions": [
+          "Action: NPS Champions e-learning",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 3
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "Customer Service"
+        ],
+        "actions_must_contain": [
+          "NPS"
+        ]
+      }
+    },
+    {
+      "id": "C019-mixed-signals-coherent",
+      "description": "All four signals present \u00e2\u2020\u2019 script is coherent (uses each)",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"I noticed you're exceeding on DEP_GROWTH at 130% of target. What's working?\"",
+          "\"On LOAN_GROWTH you're at 60% of target \u2014 what are the biggest blockers right now?\"",
+          "\"On Credit Analysis, you're at 3.0 versus required 4.0. What development support would you prioritise?\"",
+          "\"You have 1 high-priority micro-tasks outstanding. Let's go through them together.\""
+        ],
+        "recommended_actions": [
+          "Connect S2000 with the team member to share approach on LOAN_GROWTH",
+          "Action: CISI Credit",
+          "Review the 1 high-priority micro-task(s) together",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 5
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH",
+          "LOAN_GROWTH"
+        ],
+        "actions_any_of": [
+          "S2000",
+          "share approach"
+        ]
+      }
+    },
+    {
+      "id": "C020-staff-with-only-acknowledged-nudges",
+      "description": "Active nudges all acknowledged \u00e2\u2020\u2019 no nudge-driven talking point fires",
+      "matched": true,
+      "reason": "ok",
+      "actual_brief": {
+        "talking_points": [
+          "\"On DEP_GROWTH you're at 60% of target \u2014 what are the biggest blockers right now?\""
+        ],
+        "recommended_actions": [
+          "Schedule a focused working session on DEP_GROWTH",
+          "Confirm the date and outcome of the next 1:1"
+        ],
+        "agenda_count": 4
+      },
+      "expected": {
+        "non_empty": true,
+        "talking_points_must_contain": [
+          "DEP_GROWTH"
+        ]
+      }
+    }
+  ]
+}

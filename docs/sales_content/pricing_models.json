@@ -1,0 +1,61 @@
+{
+  "_doc": "Deployment options + ROI calculator inputs. Per docs/A2Z_LIVING_DOCS_PLAN.md Part 3 Rule 1, ROI projections are explicitly distinguished from measured outcomes.",
+  "_schema_version": "1.0",
+  "_last_reviewed_iso": "2026-05-01",
+  "deployment_options": {
+    "cloud_managed": {
+      "status": "roadmap",
+      "notes": "Multi-tenant SaaS deployment is roadmap; v8.x is single-process Streamlit suitable for development/pilot environments."
+    },
+    "on_premise": {
+      "status": "shipped",
+      "notes": "Single-process Streamlit deployment is the canonical v8.x deployment pattern. Banks run on their own infrastructure with their own FLEXCUBE.",
+      "compute_requirements_estimate": "1 CPU + 4GB RAM minimum; 2 CPU + 8GB RAM recommended for full registry load (per loader self-test timings)."
+    },
+    "hybrid": {
+      "status": "designed",
+      "notes": "Connected to bank-hosted FLEXCUBE via VPN/private link; A2Z runs on-premise."
+    }
+  },
+  "roi_methodology_disclaimers": {
+    "principle": "All ROI numbers in collateral must be either MEASURED (from a real A2Z deployment) or PROJECTED (from a defined methodology with stated assumptions). Mixing them is forbidden.",
+    "measured_outcomes_available": false,
+    "projection_basis_examples": [
+      "Industry research from published reports (e.g. McKinsey, Deloitte, Gartner) cited with date + URL",
+      "Bank-specific baseline measurements taken before A2Z deployment",
+      "Comparable-fintech outcomes (e.g. Zanifu) explicitly labelled as cited research"
+    ]
+  },
+  "roi_categories_addressed_at_design_level": [
+    {
+      "category": "Strategy execution",
+      "design_addresses": "Auto-cascade KPIs from board to teller (35 KPI library); engine + cascade shipped",
+      "measured_outcome_available": false,
+      "projection_methodology_required": "Bank-specific baseline of current KPI achievement rate; A2Z deployment outcome measurement at 6-month and 12-month points"
+    },
+    {
+      "category": "Operations resilience",
+      "design_addresses": "FLEXCUBE downtime cushioning via retry + circuit breaker; ACL chain falls through to CBS-synthetic when live tier degraded",
+      "measured_outcome_available": false,
+      "projection_methodology_required": "Pre/post measurement of platform uptime correlated with FLEXCUBE incidents"
+    },
+    {
+      "category": "Audit-readiness",
+      "design_addresses": "6-gate defense-in-depth perimeter; per-batch CHANGELOGs; tamper-evident audit trail",
+      "measured_outcome_available": false,
+      "projection_methodology_required": "Pre/post measurement of audit-pack assembly time"
+    },
+    {
+      "category": "Customer experience",
+      "design_addresses": "L14 channel reliability → smart alerts; tier classification (URGENT/HIGH/INFO) with alternative-channel guidance",
+      "measured_outcome_available": false,
+      "projection_methodology_required": "Customer-satisfaction measurement during/after channel-incident events; baseline + post-deployment comparison"
+    }
+  ],
+  "honest_scope": [
+    "A2Z has no measured ROI outcomes from production deployments. Any number framed as 'achievable ROI' is a projection, not a measurement.",
+    "Pricing model (per-bank licence, per-user, per-transaction) is not yet defined and must NOT appear in collateral as a fixed figure.",
+    "The 'numbers like 23% → 85%' from the original draft are removed because they have no methodology source.",
+    "ROI commitments to prospects must be made with explicit pre/post measurement methodology + bank-specific baselines, not generic claims."
+  ]
+}

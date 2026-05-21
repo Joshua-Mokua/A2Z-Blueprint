@@ -1,0 +1,38 @@
+[
+  {
+    "review_id": "REV-2026-Q2-MONTHLY",
+    "type": "MONTHLY",
+    "date": "2026-05-30",
+    "attendees": ["CEO", "CSO", "CFO", "CRO", "CTO", "STO Lead"],
+    "agenda": "Q2 strategy execution checkpoint: ENH-150 health dashboard review + ENH-146 gap analysis + ENH-148 lessons-learned discussion.",
+    "owner": "STO Lead",
+    "status": "scheduled"
+  },
+  {
+    "review_id": "REV-2026-Q2-CLOSE",
+    "type": "QUARTERLY",
+    "date": "2026-06-30",
+    "attendees": ["Board", "CEO", "C-Suite", "Department Heads"],
+    "agenda": "Q2 quarterly strategy review: pillar-level progress (ENH-143), portfolio status (ENH-144), corrective actions in flight (ENH-147), engagement pulse results (ENH-149).",
+    "owner": "Chief Strategy Officer",
+    "status": "scheduled"
+  },
+  {
+    "review_id": "REV-2026-Q3-MONTHLY",
+    "type": "MONTHLY",
+    "date": "2026-07-30",
+    "attendees": ["CEO", "CSO", "CFO", "CRO", "CTO", "STO Lead"],
+    "agenda": "Q3 strategy execution checkpoint.",
+    "owner": "STO Lead",
+    "status": "scheduled"
+  },
+  {
+    "review_id": "REV-2026-Q3-CLOSE",
+    "type": "QUARTERLY",
+    "date": "2026-09-30",
+    "attendees": ["Board", "CEO", "C-Suite", "Department Heads"],
+    "agenda": "Q3 quarterly strategy review with ENH-155 ROI snapshot.",
+    "owner": "Chief Strategy Officer",
+    "status": "scheduled"
+  }
+]

@@ -1,0 +1,43 @@
+[run]
+# Standard #4: Coverage scope and thresholds.
+# Source roots — coverage measures execution within these.
+source =
+    utils
+    pages
+    scripts
+
+# Exclude generated/legacy/test code from the coverage denominator.
+omit =
+    */tests/*
+    */conftest.py
+    */backup/*
+    */*.bak
+    # Streamlit pages with heavy UI surface — hard to unit-test.
+    # Tracked separately (Standard #4 target: pages 70%, lower than utils).
+    pages/_*.py
+    # Migration scripts run once, not in tests.
+    scripts/migrate_to_postgres.py
+    # The audit script measures itself indirectly via test_audit_smoke.
+    scripts/audit.py
+
+[report]
+# Exclude common non-executable lines from the denominator.
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    \.\.\.
+    pass
+
+# Always show missing line ranges in console output.
+show_missing = True
+skip_covered = False
+precision = 1
+
+[xml]
+# CI uploads this artifact; G18 in the audit gate parses it.
+output = coverage.xml
+
+[html]
+directory = htmlcov

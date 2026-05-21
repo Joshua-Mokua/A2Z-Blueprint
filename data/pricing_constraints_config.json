@@ -1,0 +1,56 @@
+{
+  "_doc": "Pricing constraints config for ENH-137 DynamicPricingEngine. Bank-overridable floors, ceilings, and per-category bounds. CBK-aware constraints (e.g. mortgage rate cap relative to CBR; deposit rate floor relative to inflation) — operators tune as regulation evolves.",
+  "_schema_version": "v10.148",
+  "_last_reviewed": "2026-05-05",
+
+  "global_constraints": {
+    "max_change_per_period_bps": 100,
+    "min_margin_floor_pct": 1.0,
+    "min_pricing_window_days": 30
+  },
+
+  "category_constraints": {
+    "Retail Lending": {
+      "rate_floor_pct": 9.0,
+      "rate_ceiling_pct": 22.0,
+      "rationale": "CBR-anchored floor + responsible-lending ceiling"
+    },
+    "SME Lending": {
+      "rate_floor_pct": 10.0,
+      "rate_ceiling_pct": 24.0,
+      "rationale": "Slightly higher SME risk premium permitted"
+    },
+    "Corporate": {
+      "rate_floor_pct": 8.0,
+      "rate_ceiling_pct": 18.0,
+      "rationale": "Corporate clients access lower spread; cap reflects negotiation room"
+    },
+    "Trade Finance": {
+      "rate_floor_pct": 9.5,
+      "rate_ceiling_pct": 20.0,
+      "rationale": "Trade finance typically priced as letter-of-credit fee + spread"
+    },
+    "Deposits": {
+      "rate_floor_pct": 2.0,
+      "rate_ceiling_pct": 14.0,
+      "rationale": "Deposit floor anchored to inflation; ceiling at COF + reasonable spread"
+    },
+    "Digital": {
+      "rate_floor_pct": null,
+      "rate_ceiling_pct": null,
+      "rationale": "Digital products use fee-based pricing not interest rate"
+    },
+    "Fee Income": {
+      "rate_floor_pct": null,
+      "rate_ceiling_pct": null,
+      "rationale": "Fee-based products use commission rates not interest"
+    }
+  },
+
+  "_notes": [
+    "max_change_per_period_bps caps single-period pricing moves at 100bps to prevent customer-shock from pricing engines",
+    "min_margin_floor_pct ensures any pricing recommendation preserves at least 1% margin per ENH-131 fully-loaded margin computation",
+    "min_pricing_window_days enforces a 30-day stability window between pricing changes to allow market response observation",
+    "Banks tune category_constraints as CBK regulations evolve and as competitive pressure changes"
+  ]
+}

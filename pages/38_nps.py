@@ -12,7 +12,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("nps")
+require_access("sales_customer.nps")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -109,3 +109,12 @@ with tabs[4]:
         st.markdown(f"  🔴 **{b['branch']}** — NPS {b['nps']} · {b['detractors']}% detractors · {b['responses']} responses")
     if not detractor_branches:
         st.success("✅ All branches above NPS threshold of 30.")
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

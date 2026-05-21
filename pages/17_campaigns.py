@@ -20,7 +20,7 @@ def _safe_date(s, fallback=None):
         return fallback or _d.today()
 
 
-require_access("campaigns")
+require_access("sales_customer.campaigns")
 
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()

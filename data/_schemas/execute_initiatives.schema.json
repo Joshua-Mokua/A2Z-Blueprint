@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "execute_initiatives.json",
+  "description": "Execute-module initiative list. 5 fields universal, 33 optional. Schema locks only the minimum — adding optional fields is allowed and intentional, but every record MUST have id, name, status, workstream, milestones.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "name", "status", "workstream", "milestones"],
+    "properties": {
+      "id": {"type": "string"},
+      "name": {"type": "string"},
+      "status": {"type": "string"},
+      "workstream": {"type": "string"},
+      "milestones": {"type": "array"},
+      "gate": {"type": "string"},
+      "phase": {"type": "string"}
+    },
+    "additionalProperties": true
+  },
+  "_lock_version": "v10.342",
+  "_canonical_producer": "pages/4_execute.py",
+  "_optional_fields_allowed": true,
+  "_note": "33 optional fields by design — different initiatives carry different metadata (budget, milestones, sponsor, etc.). Consumers MUST use .get() for any non-required field."
+}

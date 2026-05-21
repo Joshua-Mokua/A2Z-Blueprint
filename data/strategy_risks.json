@@ -1,0 +1,57 @@
+[
+  {
+    "id": "RISK-STR-001",
+    "name": "Insufficient resources allocated to digital transformation pillar",
+    "level": "HIGH",
+    "category": "Resource",
+    "mitigation": "Rebalance FTE from operational to digital pillar via ENH-151 simulator; engage CTO for additional headcount in Q1.",
+    "owner": "Chief Strategy Officer",
+    "status": "Open",
+    "identified_date": "2026-01-15",
+    "review_date": "2026-04-30"
+  },
+  {
+    "id": "RISK-STR-002",
+    "name": "Low employee engagement with strategy (pulse score below 50)",
+    "level": "MEDIUM",
+    "category": "Engagement",
+    "mitigation": "Run strategy contribution campaigns per ENH-149 across all departments; quarterly cascade refresher per ENH-145.",
+    "owner": "Chief People Officer",
+    "status": "Open",
+    "identified_date": "2026-02-01",
+    "review_date": "2026-05-15"
+  },
+  {
+    "id": "RISK-STR-003",
+    "name": "Initiative dependencies not visible at execution level",
+    "level": "MEDIUM",
+    "category": "Execution",
+    "mitigation": "Wire ENH-144 portfolio dependencies into 7_admin.py UI; weekly STO review.",
+    "owner": "STO Lead",
+    "status": "Open",
+    "identified_date": "2026-02-10",
+    "review_date": "2026-04-15"
+  },
+  {
+    "id": "RISK-STR-004",
+    "name": "ROI attribution accuracy degraded by indirect benefits estimation",
+    "level": "LOW",
+    "category": "Measurement",
+    "mitigation": "Calibrate ENH-155 monetization constants (LTV, productivity gain) against post-implementation reality every 2 quarters.",
+    "owner": "Chief Financial Officer",
+    "status": "Open",
+    "identified_date": "2026-03-01",
+    "review_date": "2026-06-30"
+  },
+  {
+    "id": "RISK-STR-005",
+    "name": "Strategy communication reach below 100% of employees",
+    "level": "LOW",
+    "category": "Communication",
+    "mitigation": "Inject SMTP + Slack adapters into ENH-152 communication engine; verify delivery via app-notification telemetry.",
+    "owner": "STO Lead",
+    "status": "Open",
+    "identified_date": "2026-03-15",
+    "review_date": "2026-06-15"
+  }
+]

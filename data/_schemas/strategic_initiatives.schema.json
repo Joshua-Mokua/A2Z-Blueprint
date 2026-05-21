@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "strategic_initiatives.json",
+  "description": "Strategic initiatives portfolio. Canonical producer is pages/83_strategy.py. Locks the 31 universal fields shared by all 25 v10.341 records. The command_centre_strategic_initiatives module reads via .get() with defaults and does NOT define the schema (it was built against a divergent shape that never landed in production data).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id", "name", "pillar", "sponsor", "owner", "owner_username",
+      "start_date", "target_end_date", "completion_pct", "status",
+      "rag_status", "budget_kes_m", "spent_kes_m", "department",
+      "type", "description", "milestones_met", "expected_roi_pct",
+      "actual_roi_pct", "key_milestones", "linked_bsc_kpis",
+      "linked_kpis", "linked_projects", "stakeholders", "risks_identified",
+      "risks_mitigated", "notes", "next_review", "actual_end_date",
+      "executive_summary", "last_updated"
+    ],
+    "properties": {
+      "id": {"type": "string", "pattern": "^[A-Z]{2,4}-?\\d+$|^SI[A-Z0-9_-]+$"},
+      "name": {"type": "string", "minLength": 1},
+      "pillar": {"type": "string"},
+      "sponsor": {"type": "string"},
+      "owner": {"type": "string"},
+      "owner_username": {"type": "string"},
+      "start_date": {"type": "string"},
+      "target_end_date": {"type": "string"},
+      "actual_end_date": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+      "completion_pct": {"type": "number", "minimum": 0, "maximum": 100},
+      "status": {"type": "string"},
+      "rag_status": {"type": "string", "enum": ["Green", "Amber", "Red"]},
+      "budget_kes_m": {"type": "number"},
+      "spent_kes_m": {"type": "number"},
+      "department": {"type": "string"},
+      "type": {"type": "string"},
+      "description": {"type": "string"},
+      "milestones_met": {"type": "integer", "minimum": 0},
+      "expected_roi_pct": {"type": "number"},
+      "actual_roi_pct": {"oneOf": [{"type": "number"}, {"type": "null"}]},
+      "key_milestones": {"type": "integer", "minimum": 0},
+      "linked_bsc_kpis": {"type": "array"},
+      "linked_kpis": {"type": "array"},
+      "linked_projects": {"type": "integer", "minimum": 0},
+      "stakeholders": {"type": "integer", "minimum": 0},
+      "risks_identified": {"type": "integer", "minimum": 0},
+      "risks_mitigated": {"type": "integer", "minimum": 0},
+      "notes": {"type": "string"},
+      "next_review": {"type": "string"},
+      "executive_summary": {"type": "string"},
+      "last_updated": {"type": "string"}
+    },
+    "additionalProperties": true
+  },
+  "_lock_version": "v10.342",
+  "_canonical_producer": "pages/83_strategy.py",
+  "_consumers_must_tolerate_missing": [
+    "phase", "initiative_id", "owner_role"
+  ],
+  "_note": "command_centre_strategic_initiatives.py expects phase + initiative_id but pages/83_strategy.py never writes them. v10.341 patched the consumer with .get() defaults. Module consolidation (Option E) is the proper fix."
+}

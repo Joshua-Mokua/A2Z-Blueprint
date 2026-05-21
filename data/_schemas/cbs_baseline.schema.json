@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CBS Baseline Snapshot",
+  "description": "Frozen snapshot of CBS state for YoY growth tracking. Once captured for a given snapshot_date, this file does not change.",
+  "_canonical_producer": "scripts/snapshot_cbs_baseline.py (via utils.cbs_baseline.snapshot_baseline)",
+  "type": "object",
+  "required": [
+    "_doc",
+    "_schema_version",
+    "snapshot_date",
+    "snapshot_generated_at",
+    "source_cbs_files",
+    "bank_aggregates",
+    "per_rm",
+    "per_branch",
+    "summary"
+  ],
+  "properties": {
+    "_doc": {
+      "type": "string",
+      "description": "Human-readable note explaining the baseline's purpose and immutability."
+    },
+    "_schema_version": {
+      "type": "string",
+      "description": "Semver of the baseline schema. Bump on breaking changes.",
+      "enum": ["1.0"]
+    },
+    "snapshot_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The date this baseline represents (ISO YYYY-MM-DD)."
+    },
+    "snapshot_generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the snapshot was generated (ISO timestamp, UTC)."
+    },
+    "source_cbs_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "CBS files that were read to compose this baseline."
+    },
+    "bank_aggregates": {
+      "type": "object",
+      "description": "Bank-wide aggregates. Always populated when CBS aggregate JSONs are present. Optional 'from_accounts_csv' sub-key when accounts.csv was available."
+    },
+    "per_rm": {
+      "type": "object",
+      "description": "Per-RM portfolio snapshots, keyed by rm_code. Empty {} if accounts.csv was absent.",
+      "additionalProperties": { "type": "object" }
+    },
+    "per_branch": {
+      "type": "object",
+      "description": "Per-branch portfolio snapshots, keyed by branch_code. Empty {} if accounts.csv was absent.",
+      "additionalProperties": { "type": "object" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["rm_count", "branch_count", "source_count", "has_account_level_data"],
+      "properties": {
+        "rm_count": { "type": "integer", "minimum": 0 },
+        "branch_count": { "type": "integer", "minimum": 0 },
+        "source_count": { "type": "integer", "minimum": 0 },
+        "has_account_level_data": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+"""pages/9_sbu.py — SBU Performance: branch P&L, profitability, turnaround.
+
+v10.346 — refactored to call utils.finance_hub_render.
+
+This page's body is now a thin call to render_sbu_performance().
+Logic moved into utils.finance_hub_render (single source of truth).
+
+The consolidated entry point is pages/116_finance_hub.py — area selector
+gives access to all 4 finance views (SBU Performance, SBU Drilldown,
+OpEx, Mgmt Accounts) under one page.
+
+Audience: Branch managers, regional heads, operations leads.
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("finance.sbu_performance")
+
+from utils.finance_hub_render import render_sbu_performance
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_sbu_performance(actor)

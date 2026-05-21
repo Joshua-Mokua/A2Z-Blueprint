@@ -1,0 +1,950 @@
+"""pages/22_credit_analysis.py — Credit Analysis System with swim lanes."""
+import streamlit as st
+from utils.db import db as a2z_db
+import pandas as pd
+import json
+from pathlib import Path
+from datetime import date
+from pages._shared import load_shared_state, get_user_proposition
+from pages._access import require_access
+from utils.core_audit import audit_log
+from utils.config import currency_symbol, regulator, bank_name
+from utils.core import LoanApplicationManager
+
+require_access("credit.analysis")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
+DATA = Path(__file__).parent.parent / "data"
+um, ud, uname, *_ = load_shared_state()
+lam = LoanApplicationManager()
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _load():
+    f = DATA / "loan_applications.json"
+    return a2z_db.load_json(f) if f.exists() else []
+
+apps  = _load()
+role  = ud.get("role",""); sc = str(ud.get("staff_code","") or "")
+is_admin  = ud.get("is_admin",False)
+is_credit = any(x in role for x in ("Credit","Risk","Chief Credit","Chief Risk"))
+is_mgr    = any(x in role for x in ("Director","Chief","Head","Manager"))
+
+# Credit team sees all in-flight; others see their own submitted
+credit_apps = [a for a in apps
+               if a["status"] in ("assigned","analysis","committee",
+                                   "approved","declined","returned",
+                                   "credit_admin","disbursed","submitted","completeness")]
+
+# ── Proposition head filter ─────────────────────────────
+_prop_tag_pg = get_user_proposition()
+if _prop_tag_pg:
+    credit_apps = [x for x in credit_apps if x.get("proposition_tag") == _prop_tag_pg]
+    try:
+        import json as _pfj; from pathlib import Path as _pfp
+        _pc2 = _pfj.loads((_pfp(__file__).parent.parent / "data" / "proposition_config.json").read_text())
+        _pn  = _pc2.get("propositions",{}).get(_prop_tag_pg,{}).get("name",_prop_tag_pg)
+        _pi  = _pc2.get("propositions",{}).get(_prop_tag_pg,{}).get("icon","🎯")
+        st.info(_pi + " **" + _pn + " view** — " + str(len(credit_apps)) + " tagged records")
+    except Exception: pass
+
+if not (is_admin or is_credit or is_mgr):
+    credit_apps = [a for a in credit_apps if str(a.get("rm_code","")) == sc]
+
+# ── Header ─────────────────────────────────────────────────────────
+st.markdown(
+    "<div style='padding:16px 0 8px'>"
+    "<span style='font-size:22px;font-weight:800'>🏦 Credit Analysis</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Appraisal · Swim lane processing · Decisions · Committee</span></div>",
+    unsafe_allow_html=True)
+
+# ── Stage pipeline visual ──────────────────────────────────────────
+STAGES = [
+    ("Submitted",   "submitted","#6B7280"),
+    ("Completeness","completeness","#D97706"),
+    ("Assigned",    "assigned","#7C3AED"),
+    ("Analysis",    "analysis","#0891B2"),
+    ("Committee",   "committee","#6D28D9"),
+    ("Decided",     "approved|declined|returned","#16A34A"),
+]
+stage_html = "<div style='display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap'>"
+for label, key, color in STAGES:
+    cnt = sum(1 for a in credit_apps
+              if a["status"] in key.split("|"))
+    stage_html += (
+        f"<div style='background:{color}15;border:1px solid {color}40;"
+        f"border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:8px'>"
+        f"<span style='color:{color};font-weight:700'>{cnt}</span>"
+        f"<span style='color:var(--color-text-secondary)'>{label}</span></div>")
+stage_html += "</div>"
+st.markdown(stage_html, unsafe_allow_html=True)
+
+tabs = st.tabs(["📥 Queue","🔍 Appraisal","🗳️ Decisions","📊 Analytics","⚙️ Assign","🤖 Arc Engines"])
+
+# ────────────────────────────────────────────────────────────────────
+# TAB 1: QUEUE
+# ────────────────────────────────────────────────────────────────────
+with tabs[0]:
+    LANE_COLOR = {"Express":"#16A34A","Standard":"#2563EB","Complex":"#7C3AED"}
+    STATUS_LABEL = {
+        "submitted":"Submitted","completeness":"Checking Docs","assigned":"Assigned",
+        "analysis":"In Analysis","committee":"At Committee","approved":"Approved",
+        "declined":"Declined","returned":"Returned","credit_admin":"Credit Admin","disbursed":"Disbursed",
+    }
+    queue = [a for a in credit_apps
+             if a["status"] in ("submitted","completeness","assigned","analysis","committee")]
+
+    lf1,lf2 = st.columns(2)
+    filt_lane = lf1.selectbox("Lane",["All","Express","Standard","Complex"], key="ca_lane")
+    filt_st   = lf2.selectbox("Status",["All"]+list(STATUS_LABEL.values()), key="ca_st")
+
+    if filt_lane != "All":
+        queue = [a for a in queue if a.get("swim_lane", "") == filt_lane]
+    if filt_st != "All":
+        rev   = {v:k for k,v in STATUS_LABEL.items()}
+        queue = [a for a in queue if a["status"] == rev.get(filt_st,"")]
+
+    st.markdown(f"**{len(queue)} applications in queue**")
+    for app in sorted(queue, key=lambda x: x.get("tat_days",0), reverse=True):
+        sla = app.get("sla_target_days",10); tat = app.get("tat_days",0)
+        sla_icon = "🔴" if tat > sla else "🟡" if tat > sla*0.8 else "🟢"
+        lc = LANE_COLOR.get(app["swim_lane"],"#6B7280")
+        amt = app["amount"]
+        amt_s = f"{currency_symbol()} {amt/1e9:.2f}B" if amt>=1e9 else f"{currency_symbol()} {amt/1e6:.1f}M"
+        flag = "🚩 " if app.get("compliance_flag") else ""
+        with st.expander(
+            f"{sla_icon} {flag}{app['client_name']}  ·  "
+            f"<span style='color:{lc}'>{app['swim_lane']}</span>  ·  "
+            f"{amt_s}  ·  {STATUS_LABEL.get(app['status'],app['status'])}  ·  TAT {tat}d",
+            expanded=False):
+            c1,c2,c3,c4 = st.columns(4)
+            c1.markdown(f"**ID:** `{app['id']}`")
+            c2.markdown(f"**Product:** {app['product']}")
+            c3.markdown(f"**RM:** {app['rm_name']}")
+            c4.markdown(f"**Applied:** {app['application_date']}")
+            if app.get("analyst"):
+                st.markdown(f"**Assigned to:** {app['analyst']['name']}")
+            if app.get("compliance_flag"):
+                st.error(f"⚠️ Compliance flag: {app.get('compliance_type','')} — must be cleared before approval")
+            # Quick action buttons (credit team only)
+            if is_credit or is_admin:
+                b1,b2,b3 = st.columns(3)
+                if b1.button("✅ Approve", key=f"apr_{app['id']}", type="primary"):
+                    lam.record_decision(app['id'], "approved", role)
+                    audit_log("LMS_APPROVED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
+                    st.cache_data.clear(); st.success(f"Approved: {app['id']}"); st.rerun()
+                if b2.button("↩️ Return for rework", key=f"ret_{app['id']}"):
+                    lam.record_decision(app['id'], "returned", role)
+                    audit_log("LMS_RETURNED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
+                    st.cache_data.clear(); st.warning(f"Returned: {app['id']}"); st.rerun()
+                if b3.button("❌ Decline", key=f"dec_{app['id']}"):
+                    lam.record_decision(app['id'], "declined", role)
+                    audit_log("LMS_DECLINED", uname, f"{app['id']}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
+                    st.cache_data.clear(); st.error(f"Declined: {app['id']}"); st.rerun()
+
+# ────────────────────────────────────────────────────────────────────
+# TAB 2: APPRAISAL CHECKLIST
+# ────────────────────────────────────────────────────────────────────
+with tabs[1]:
+    st.markdown("**Structured appraisal checklist** — complete all sections before decision.")
+    analysis_apps = [a for a in credit_apps if a["status"] in ("assigned","analysis")]
+    if not analysis_apps:
+        st.info("No applications currently in analysis stage.")
+    else:
+        sel = st.selectbox("Select application",
+                           [f"{a['id']} — {a['client_name']} ({a['swim_lane']})"
+                            for a in analysis_apps], key="appr_sel")
+        if sel:
+            app_id = sel.split(" — ")[0]
+            app    = next((a for a in analysis_apps if a["id"]==app_id), None)
+            if app:
+                st.markdown(f"**{app['client_name']}** · {app['product']} · "
+                            f"{currency_symbol()} {app['amount']/1e6:.1f}M · {app['swim_lane']} lane")
+
+                ar1, ar2, ar3 = st.columns(3)
+                _risk_key = f"risk_rating_{app_id}"
+                if _risk_key not in st.session_state:
+                    st.session_state[_risk_key] = "B — Standard"
+                _risk_rating = ar1.selectbox(
+                    "Internal Risk Rating",
+                    ["A — Low Risk","B — Standard","C — Watch List","D — Substandard","E — Loss"],
+                    key=_risk_key)
+                _crb_key = f"crb_{app_id}"
+                _crb = ar2.selectbox(
+                    "CRB Status",
+                    ["Not Done","✅ Done — Clean","⚠️ Done — Adverse"],
+                    key=_crb_key)
+                ar3.markdown(f"**SLA target:** {app.get('sla_target_days',10)} days · "
+                              f"**Elapsed:** {app.get('tat_days',0)} days")
+
+                APPRAISAL_SECTIONS = {
+                    "Financial Analysis": [
+                        "Revenue trend (3 years)","Cash flow adequacy",
+                        "Debt service coverage ratio","Profitability ratios",
+                        "Balance sheet strength",
+                    ],
+                    "Business Assessment": [
+                        "Industry/sector analysis","Management quality",
+                        "Business model viability","Market position",
+                        "Environmental & Social risks",
+                    ],
+                    "Security & Collateral": [
+                        "Collateral valuation verified","Legal charge confirmed",
+                        "Insurance coverage adequate","LTV ratio acceptable",
+                        "Force sale value assessed",
+                    ],
+                    "Compliance & KYC": [
+                        "KYC documentation complete","CRB check done",
+                        "PEP/Sanctions screening done","Source of funds verified",
+                        "AML risk rating assigned",
+                    ],
+                }
+                if app["swim_lane"] == "Complex":
+                    APPRAISAL_SECTIONS["Credit Committee Pack"] = [
+                        "Executive summary prepared","Risk mitigants documented",
+                        "Sensitivity analysis done","Recommendation stated",
+                        "Committee voting recorded",
+                    ]
+
+                for section, items in APPRAISAL_SECTIONS.items():
+                    st.markdown(f"**{section}**")
+                    cols = st.columns(len(items))
+                    for col, item in zip(cols, items):
+                        col.checkbox(item, key=f"apr_{app_id}_{item[:10]}")
+
+                st.markdown("---")
+                a1,a2,a3 = st.columns(3)
+                rec = a1.selectbox("Recommendation",
+                                   ["Select","Approve","Decline","Return for rework"],
+                                   key=f"rec_{app_id}")
+                cond = a2.text_area("Conditions precedent", height=80, key=f"cond_{app_id}")
+                comm = a3.text_area("Analyst comments",     height=80, key=f"comm_{app_id}")
+                if st.button("💾 Save & submit decision", type="primary",
+                             key=f"save_apr_{app_id}", disabled=(rec=="Select")):
+                    verdict_map = {"Approve":"approved","Decline":"declined","Return for rework":"returned"}
+                    lam.record_decision(app_id, verdict_map.get(rec, rec), role,
+                                        conditions=[c.strip() for c in cond.split(",") if c.strip()],
+                                        comments=comm)
+                    audit_log("LMS_DECISION", uname,
+                              f"{app_id}|{rec}|{app['client_name']}")
+                    _bsc_trigger(uname, "K046")
+                    st.cache_data.clear()
+                    st.success(f"✅ Decision recorded: {rec} for {app_id}")
+                    st.rerun()
+
+# ────────────────────────────────────────────────────────────────────
+# TAB 3: DECISIONS
+# ────────────────────────────────────────────────────────────────────
+with tabs[2]:
+    decided = [a for a in credit_apps
+               if a["status"] in ("approved","declined","returned","credit_admin","disbursed")]
+    if not decided:
+        st.info("No decisions recorded yet.")
+    else:
+        rows = []
+        for a in decided:
+            dec = a.get("decision") or {}
+            rows.append({
+                "ID": a["id"], "Client": a["client_name"][:28],
+                "Product": a["product"][:20], "Lane": a.get("swim_lane", ""),
+                f"Amount ({currency_symbol()} M)": round(a["amount"]/1e6,1),
+                "Verdict": dec.get("verdict","").upper(),
+                "Authority": dec.get("authority",""),
+                "Date": dec.get("date",""),
+                "Reason": (dec.get("reason","")[:40] if dec.get("reason") else ""),
+            })
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+# ────────────────────────────────────────────────────────────────────
+# TAB 4: ANALYTICS
+# ────────────────────────────────────────────────────────────────────
+with tabs[3]:
+    decided = [a for a in credit_apps
+               if a["status"] in ("approved","declined","returned","credit_admin","disbursed")]
+    if decided:
+        total_d  = len(decided)
+        app_n    = sum(1 for a in decided if a["status"] in ("approved","credit_admin","disbursed"))
+        dec_n    = sum(1 for a in decided if a["status"] == "declined")
+        ret_n    = sum(1 for a in decided if a["status"] == "returned")
+        avg_tat  = sum(a.get("tat_days",0) for a in decided) / total_d
+
+        m1,m2,m3,m4 = st.columns(4)
+        m1.metric("Approval Rate",  f"{app_n/total_d*100:.1f}%",  f"{app_n}/{total_d}")
+        m2.metric("Decline Rate",   f"{dec_n/total_d*100:.1f}%",  f"{dec_n}/{total_d}")
+        m3.metric("Rework Rate",    f"{ret_n/total_d*100:.1f}%",  f"{ret_n}/{total_d}")
+        m4.metric("Avg TAT (days)", f"{avg_tat:.1f}")
+
+        # By swim lane
+        st.markdown("**Performance by swim lane:**")
+        for lane in ["Express","Standard","Complex"]:
+            lane_d = [a for a in decided if a.get("swim_lane", "")==lane]
+            if not lane_d: continue
+            ld_app = sum(1 for a in lane_d if a["status"] in ("approved","credit_admin","disbursed"))
+            ld_dec = sum(1 for a in lane_d if a["status"]=="declined")
+            ld_ret = sum(1 for a in lane_d if a["status"]=="returned")
+            ld_tat = sum(a.get("tat_days",0) for a in lane_d) / len(lane_d)
+            sla    = 3 if lane=="Express" else 10 if lane=="Standard" else 21
+            sla_ok = sum(1 for a in lane_d if a.get("tat_days",0) <= sla)
+            st.markdown(
+                f"**{lane}** ({len(lane_d)}) — "
+                f"Approved {ld_app/max(len(lane_d),1)*100:.0f}% · "
+                f"Declined {ld_dec/max(len(lane_d),1)*100:.0f}% · "
+                f"Reworked {ld_ret/max(len(lane_d),1)*100:.0f}% · "
+                f"Avg TAT {ld_tat:.1f}d (SLA {sla}d) · "
+                f"SLA Compliance {sla_ok/max(len(lane_d),1)*100:.0f}%")
+
+        # Decline reasons breakdown
+        from collections import Counter
+        d_reasons = [a["decision"]["reason"] for a in decided
+                     if a["status"]=="declined" and a.get("decision",{}).get("reason")]
+        r_reasons = [a["decision"]["reason"] for a in decided
+                     if a["status"]=="returned" and a.get("decision",{}).get("reason")]
+        if d_reasons or r_reasons:
+            dr1,dr2 = st.columns(2)
+            if d_reasons:
+                dr1.markdown("**Decline reasons:**")
+                for reason, cnt in Counter(d_reasons).most_common(5):
+                    dr1.markdown(f"• {reason}: **{cnt}**")
+            if r_reasons:
+                dr2.markdown("**Rework reasons:**")
+                for reason, cnt in Counter(r_reasons).most_common(5):
+                    dr2.markdown(f"• {reason}: **{cnt}**")
+
+# ────────────────────────────────────────────────────────────────────
+# TAB 5: ASSIGN (credit managers only)
+# ────────────────────────────────────────────────────────────────────
+with tabs[4]:
+    if not (is_credit or is_admin or is_mgr):
+        st.info("Assignment is managed by the credit team.")
+    else:
+        unassigned = [a for a in credit_apps
+                      if a["status"] in ("submitted","completeness")
+                      and a.get("completeness_score",0) >= 80
+                      and not a.get("compliance_flag")]
+        if not unassigned:
+            st.success("✅ No unassigned complete applications.")
+        else:
+            st.markdown(f"**{len(unassigned)} applications ready to assign:**")
+            analysts = [d.get("full_name","") for u,d in um.users.items()
+                        if any(x in d.get("role","") for x in ("Credit Analyst","Credit Analysis"))]
+            for app in unassigned:
+                c1,c2,c3 = st.columns([3,2,1])
+                c1.markdown(f"**{app['client_name']}** — {app['product']} — "
+                            f"{currency_symbol()} {app['amount']/1e6:.1f}M — {app['swim_lane']}")
+                sel_analyst = c2.selectbox("Assign to", ["Select analyst"]+analysts,
+                                           key=f"asgn_{app['id']}", label_visibility="collapsed")
+                if c3.button("Assign", key=f"asgn_btn_{app['id']}",
+                             disabled=(sel_analyst=="Select analyst")):
+                    lam.submit_to_credit(app['id'], analyst_name=sel_analyst)
+                    audit_log("LMS_ASSIGNED", uname, f"{app['id']}|{sel_analyst}")
+                    _bsc_trigger(uname, "K046")
+                    st.cache_data.clear()
+                    st.success(f"✅ {app['id']} assigned to {sel_analyst}")
+                    st.rerun()
+
+# ── AI Credit Memo tab ────────────────────────────────────────────
+_last_tab_idx = len(re.findall(r"with tabs\[", code_snippet := """ """)) if False else None
+with tabs[-1]:  # AI Credit Memo
+    import requests as _req
+    st.markdown("**AI Credit Memo Generator** — one-click draft from analysis data")
+    st.caption("Based on the selected application's data, Claude generates a professional credit memo draft.")
+    if "view_app" in st.session_state and st.session_state.get("view_app"):
+        sel_a = st.session_state.get("view_app")
+        if st.button("🤖 Generate credit memo draft", key="ca_memo_gen", type="primary"):
+            with st.spinner("Drafting credit memo…"):
+                try:
+                    _app_data = json.dumps(sel_a, indent=2)[:3000]
+                    _r = _req.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers={"Content-Type":"application/json"},
+                        json={
+                            "model":"claude-sonnet-4-20250514",
+                            "max_tokens":800,
+                            "system":f"You are a senior credit analyst at {bank_name()}. Draft a formal credit memorandum based on the loan application data provided. Use {regulator()} standard credit memo format.",
+                            "messages":[{"role":"user","content":f"Draft a credit memo for this application:\n{_app_data}"}]
+                        }, timeout=30)
+                    _r.raise_for_status()
+                    memo_text = _r.json()["content"][0]["text"]
+                    st.session_state["ca_memo_text"] = memo_text
+                except Exception as _e:
+                    st.error(f"Could not generate memo: {str(_e)[:80]}")
+        if "ca_memo_text" in st.session_state:
+            st.markdown("**Draft Credit Memo:**")
+            st.markdown(st.session_state.get("ca_memo_text",""))
+            st.download_button("📥 Download memo", data=st.session_state["ca_memo_text"].encode(),
+                                file_name="credit_memo_draft.txt", key="ca_memo_dl")
+    else:
+        st.info("Select a loan application in the queue to generate its credit memo.")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Section 5: 🤖 Arc Engines (absorbed from
+# 94_credit_governance_cockpit.py in v10.209 per the architectural
+# reorganization sub-campaign. 2 diagnostic engines (ENH-260 alt
+# scoring + ENH-268 credit committee) presented as 3 nested sub-tabs:
+# Alt Credit Scoring, Credit Committee, About. Both engines are
+# diagnostic — alt scoring never auto-approves; committee engine
+# never auto-disburses or modifies the charter. Outputs feed
+# underwriting workflow + minute recording. Mirrors v10.202..v10.208
+# absorption patterns. Note: this remains visible to the MD/CEO via
+# admin's full-department traversal, since 22_credit_analysis.py is
+# in the credit department and the MD has cross-departmental
+# visibility.
+# ──────────────────────────────────────────────────────────────────────
+with tabs[5]:
+    from decimal import Decimal as _D_arc_cg
+    from datetime import date as _date_arc_cg
+
+    try:
+        from utils.credit_alt_scoring import (
+            AlternativeCreditScoringEngine,
+            ThinFileApplicant,
+            TransactionMetrics,
+            BehavioralMetrics,
+            PsychometricMetrics,
+            AltScoringResult,
+            ConfidenceBand,
+        )
+        from utils.credit_committee import (
+            CreditCommitteeEngine,
+            CommitteeCharter,
+            CommitteeMember,
+            CommitteeRole,
+            CreditDecisionRequest,
+            Vote,
+            VoteValue,
+            VotingRule,
+            DecisionOutcome,
+            QuorumStatus,
+        )
+        _ARC_CG_AVAILABLE = True
+    except ImportError as _ie:
+        st.error(f"Credit Governance arc engines unavailable: {_ie}")
+        _ARC_CG_AVAILABLE = False
+
+    if _ARC_CG_AVAILABLE:
+        st.markdown(
+            "<div style='padding:24px;background:linear-gradient(135deg,"
+            "#15803D 0%,#65A30D 100%);"
+            "border-radius:16px;color:white;margin-bottom:20px'>"
+            "<div style='font-size:13px;letter-spacing:2px;opacity:0.85'>"
+            "CREDIT GOVERNANCE · LIVE COCKPIT</div>"
+            "<div style='font-size:28px;font-weight:800;margin-top:6px'>"
+            "Credit Governance Engines</div>"
+            "<div style='font-size:14px;opacity:0.9;margin-top:8px'>"
+            "v10.209 absorbed from 94_credit_governance_cockpit.py — "
+            "Two diagnostic engines locked under G131: alternative "
+            "credit scoring for thin-file applicants (CGAP + Smart "
+            "Campaign + IFC) and credit committee governance "
+            "(per {regulator()} PG/03 §6). Outputs feed underwriting and minute-"
+            "recording — these engines surface exposure, never "
+            "approve loans or disburse funds.</div></div>",
+            unsafe_allow_html=True,
+        )
+
+        arc_tabs = st.tabs([
+            "🎯 Alt Credit Scoring (#ENH-260)",
+            "🏛️ Credit Committee (#ENH-268)",
+            "ℹ️ About",
+        ])
+
+        with arc_tabs[0]:
+            st.markdown("### 🎯 Thin-File PD via 3 Alternative Pillars")
+            st.caption(
+                "CGAP + Smart Campaign + IFC. Each pillar produces a "
+                "sub-PD AND a confidence weight (0 when unusable). "
+                "Composite = confidence-weighted across usable pillars. "
+                "Below LOW confidence → recommend_bureau_check=True so "
+                "underwriting escalates rather than acting on a thin "
+                "estimate.")
+
+            applicant_id = st.text_input(
+                "Applicant ID", value="APP-001", key="alt_applicant_id")
+
+            pillar_cols = st.columns(3)
+
+            # ── Transaction pillar inputs ─────────────────────────────────────
+            with pillar_cols[0]:
+                st.markdown("##### 1️⃣ TRANSACTION (50% weight)")
+                txn_enabled = st.checkbox(
+                    "Include transaction data", value=True, key="txn_on")
+                if txn_enabled:
+                    months = st.number_input(
+                        "Months observed", min_value=0, max_value=60, value=12,
+                        key="txn_months",
+                        help="Min 3 months for pillar to be usable.")
+                    cv = st.slider(
+                        "Monthly deposit CV", 0.0, 2.0, 0.20, 0.05,
+                        key="txn_cv",
+                        help="Coefficient of variation. Lower = more stable.")
+                    salary = st.checkbox(
+                        "Salary cycle signal present", value=True,
+                        key="txn_salary")
+                    ed_ratio = st.slider(
+                        "Expense / deposit ratio", 0.0, 1.5, 0.65, 0.05,
+                        key="txn_ed",
+                        help="High ≈ thin liquidity.")
+                    bills = st.slider(
+                        "Bills on time %", 0.0, 1.0, 0.90, 0.05,
+                        key="txn_bills")
+
+            # ── Behavioral pillar inputs ──────────────────────────────────────
+            with pillar_cols[1]:
+                st.markdown("##### 2️⃣ BEHAVIORAL (30% weight)")
+                beh_enabled = st.checkbox(
+                    "Include behavioral data", value=True, key="beh_on")
+                if beh_enabled:
+                    tenure = st.number_input(
+                        "Tenure with bank (months)",
+                        min_value=0, max_value=120, value=18,
+                        key="beh_tenure",
+                        help="Min 1 month for pillar to be usable.")
+                    mobile = st.slider(
+                        "Mobile-active days / month", 0, 31, 18, 1,
+                        key="beh_mobile")
+                    delinq = st.number_input(
+                        "Current facility delinquency days",
+                        min_value=0, max_value=180, value=0,
+                        key="beh_delinq",
+                        help="Strongest single behavioral signal.")
+
+            # ── Psychometric pillar inputs ────────────────────────────────────
+            with pillar_cols[2]:
+                st.markdown("##### 3️⃣ PSYCHOMETRIC (20% weight)")
+                psy_enabled = st.checkbox(
+                    "Include psychometric data", value=False, key="psy_on")
+                if psy_enabled:
+                    risk_tol = st.slider(
+                        "Risk tolerance score", 0.0, 1.0, 0.30, 0.05,
+                        key="psy_risk",
+                        help="Higher = more risk-taking ≈ riskier.")
+                    time_horizon = st.slider(
+                        "Time horizon score", 0.0, 1.0, 0.70, 0.05,
+                        key="psy_horizon",
+                        help="Higher = longer-term thinking ≈ lower risk.")
+
+            if st.button(
+                    "Compute alt-PD", type="primary", key="alt_compute"):
+                try:
+                    txn = (TransactionMetrics(
+                        months_observed=int(months),
+                        monthly_deposit_cv=float(cv),
+                        salary_cycle_signal=bool(salary),
+                        expense_to_deposit_ratio=float(ed_ratio),
+                        bills_on_time_pct=float(bills),
+                    ) if txn_enabled else None)
+                    beh = (BehavioralMetrics(
+                        tenure_months=int(tenure),
+                        mobile_active_days_per_month=float(mobile),
+                        current_facility_delinquency_days=int(delinq),
+                    ) if beh_enabled else None)
+                    psy = (PsychometricMetrics(
+                        risk_tolerance_score=float(risk_tol),
+                        time_horizon_score=float(time_horizon),
+                    ) if psy_enabled else None)
+
+                    applicant = ThinFileApplicant(
+                        applicant_id=applicant_id,
+                        transaction=txn, behavioral=beh, psychometric=psy)
+                    engine = AlternativeCreditScoringEngine()
+                    result: AltScoringResult = engine.compute(applicant)
+
+                    audit_log("CREDIT_ENGINE_USED", uname, {
+                        "engine": "credit_alt_scoring",
+                        "applicant_id": applicant_id,
+                        "composite_pd": (
+                            str(result.composite_pd)
+                            if result.composite_pd is not None else None),
+                        "confidence_band": result.confidence_band.value,
+                        "missing_pillars": list(result.missing_pillars),
+                    })
+
+                    # Confidence band traffic light
+                    band_colour = {
+                        ConfidenceBand.HIGH: "#10B981",
+                        ConfidenceBand.MEDIUM: "#F59E0B",
+                        ConfidenceBand.LOW: "#EF4444",
+                    }[result.confidence_band]
+                    pd_str = (
+                        f"{result.composite_pd * 100:.3f}%"
+                        if result.composite_pd is not None
+                        else "n/a (no usable pillars)")
+                    grade_str = result.grade if result.grade else "n/a"
+                    st.markdown(
+                        f"<div style='padding:16px;background:{band_colour};"
+                        f"border-radius:12px;color:white;margin:12px 0'>"
+                        f"<div style='font-size:12px;opacity:0.85'>"
+                        f"CONFIDENCE BAND</div>"
+                        f"<div style='font-size:24px;font-weight:700'>"
+                        f"{result.confidence_band.value} · "
+                        f"composite alt-PD = {pd_str} · grade = "
+                        f"{grade_str}</div></div>",
+                        unsafe_allow_html=True)
+
+                    if result.recommend_bureau_check:
+                        st.warning(
+                            "🔍 **Bureau check recommended.** Confidence "
+                            "below threshold — escalate to traditional "
+                            "bureau scoring before underwriting decision.")
+
+                    m_a, m_b, m_c, m_d = st.columns(4)
+                    m_a.metric(
+                        "Composite PD",
+                        pd_str)
+                    m_b.metric(
+                        "Overall confidence",
+                        f"{float(result.overall_confidence) * 100:.1f}%")
+                    m_c.metric(
+                        "Grade",
+                        grade_str)
+                    m_d.metric(
+                        "Missing pillars",
+                        str(len(result.missing_pillars)),
+                        help=(", ".join(result.missing_pillars)
+                              if result.missing_pillars else "none"))
+
+                    # Per-pillar breakdown
+                    st.markdown("##### Per-pillar breakdown")
+                    for ps in result.pillar_scores:
+                        with st.expander(
+                                f"{ps.pillar_name} · "
+                                f"PD = {ps.pillar_pd if ps.pillar_pd else 'n/a'} "
+                                f"· confidence = {ps.confidence_weight}"):
+                            if ps.pillar_pd is not None:
+                                st.write(
+                                    f"**Sub-PD:** "
+                                    f"{ps.pillar_pd * 100:.3f}%")
+                                st.write(
+                                    f"**Confidence weight:** "
+                                    f"{ps.confidence_weight}")
+                                st.write(
+                                    f"**Features used:** "
+                                    f"{', '.join(ps.features_used)}")
+                            else:
+                                st.write(f"**Skipped:** {ps.skip_reason}")
+
+                    with st.expander("Full result + framework refs (Rule 1)"):
+                        st.json({
+                            "applicant_id": result.applicant_id,
+                            "composite_pd": (
+                                str(result.composite_pd)
+                                if result.composite_pd is not None
+                                else None),
+                            "grade": result.grade,
+                            "confidence_band": result.confidence_band.value,
+                            "overall_confidence": str(
+                                result.overall_confidence),
+                            "missing_pillars": list(result.missing_pillars),
+                            "recommend_bureau_check":
+                                result.recommend_bureau_check,
+                            "pillar_scores": [
+                                {
+                                    "pillar_name": ps.pillar_name,
+                                    "pillar_pd": ps.pillar_pd,
+                                    "confidence_weight": str(
+                                        ps.confidence_weight),
+                                    "features_used": list(ps.features_used),
+                                    "skip_reason": ps.skip_reason,
+                                }
+                                for ps in result.pillar_scores],
+                            "framework_refs": list(result.framework_refs),
+                        })
+                except ValueError as e:
+                    st.error(f"Validation error: {e}")
+
+        with arc_tabs[1]:
+            st.markdown("### 🏛️ Credit Committee Decision")
+            st.caption(
+                f"{regulator()} PG/03 §6. Engine validates quorum (headcount + "
+                "required roles + independence min), applies the charter's "
+                "voting rule, supersedes voting with authority-limit check, "
+                "and surfaces escalation requirements for policy overrides "
+                "per §6.7. Per Rule 7, engine never auto-approves or "
+                "auto-disburses — output feeds minute recording.")
+
+            # Default charter (5 members, simple majority, configured-currency 100m authority)
+            DEFAULT_MEMBERS = (
+                ("m1", "Alice (Chair)", CommitteeRole.CHAIR, False),
+                ("m2", "Bob (CRO)", CommitteeRole.CRO, False),
+                ("m3", "Carol (CCO)", CommitteeRole.CCO, False),
+                ("m4", "Dave (Independent)",
+                 CommitteeRole.INDEPENDENT_MEMBER, True),
+                ("m5", "Eve (Independent)",
+                 CommitteeRole.INDEPENDENT_MEMBER, True),
+            )
+
+            st.markdown("#### Committee charter")
+            charter_cols = st.columns(2)
+            with charter_cols[0]:
+                voting_rule_label = st.selectbox(
+                    "Voting rule",
+                    [vr.value for vr in VotingRule],
+                    help=(
+                        "SIMPLE_MAJORITY ties → REJECT defensively. Use "
+                        "CHAIR_TIEBREAKER if ties should pass."))
+                min_quorum = st.number_input(
+                    "Min quorum count", min_value=1, max_value=5, value=3)
+            with charter_cols[1]:
+                authority_kes = st.number_input(
+                    f"Authority limit ({currency_symbol()})",
+                    min_value=1_000_000.0, value=100_000_000.0,
+                    step=10_000_000.0, format="%.2f",
+                    help="Facilities above → ESCALATED without vote.")
+                indep_min = st.number_input(
+                    "Min independent members", min_value=0, max_value=5,
+                    value=1)
+
+            st.markdown("#### Decision request")
+            req_cols = st.columns([2, 2, 1])
+            with req_cols[0]:
+                req_id = st.text_input(
+                    "Request ID", value="REQ-001", key="com_req_id")
+                borrower_id = st.text_input(
+                    "Borrower ID", value="BORR-123", key="com_borr_id")
+            with req_cols[1]:
+                facility_kes = st.number_input(
+                    f"Facility ({currency_symbol()})",
+                    min_value=1_000_000.0, value=50_000_000.0,
+                    step=1_000_000.0, format="%.2f",
+                    key="com_facility")
+                proposed_rationale = st.text_input(
+                    "Proposed rationale",
+                    value="Working capital line for established trader",
+                    key="com_rationale")
+            with req_cols[2]:
+                is_override = st.checkbox(
+                    "Policy override?", value=False, key="com_override")
+                override_rationale = ""
+                if is_override:
+                    override_rationale = st.text_area(
+                        "Override rationale (mandatory per §6.7)",
+                        value="LTV 92% vs policy max 80%",
+                        height=70, key="com_override_rat")
+
+            st.markdown("#### Attendance + voting")
+            st.caption(
+                "Tick attendance. For each attending member, select their "
+                "vote. Absent-member votes are silently ignored. Duplicate "
+                "votes from one member: first-vote-wins.")
+            attending_ids = []
+            votes_collected = []
+            for mid, mname, mrole, mindep in DEFAULT_MEMBERS:
+                att_col, vote_col = st.columns([3, 2])
+                with att_col:
+                    indep_marker = " ⭐" if mindep else ""
+                    attending = st.checkbox(
+                        f"{mname} ({mrole.value}){indep_marker}",
+                        value=True, key=f"att_{mid}")
+                with vote_col:
+                    vote_label = st.selectbox(
+                        f"Vote — {mid}",
+                        [vv.value for vv in VoteValue],
+                        index=0, key=f"vote_{mid}",
+                        disabled=not attending,
+                        label_visibility="collapsed")
+                if attending:
+                    attending_ids.append(mid)
+                    votes_collected.append(
+                        Vote(member_id=mid,
+                             vote=VoteValue(vote_label)))
+
+            conditions_text = st.text_area(
+                "Conditions (one per line, optional — drives "
+                "APPROVED_WITH_CONDITIONS outcome)",
+                value="", height=80, key="com_conditions")
+
+            if st.button(
+                    "Evaluate decision", type="primary", key="com_compute"):
+                try:
+                    members = tuple(
+                        CommitteeMember(
+                            member_id=mid, name=mname, role=mrole,
+                            is_independent=mindep)
+                        for mid, mname, mrole, mindep in DEFAULT_MEMBERS)
+                    charter = CommitteeCharter(
+                        committee_id="MCC",
+                        name="Management Credit Committee",
+                        members=members,
+                        voting_rule=VotingRule(voting_rule_label),
+                        min_quorum_count=int(min_quorum),
+                        required_roles=frozenset({CommitteeRole.CRO}),
+                        authority_limit_kes=Decimal(str(authority_kes)),
+                        independent_member_min=int(indep_min))
+                    request = CreditDecisionRequest(
+                        request_id=req_id, borrower_id=borrower_id,
+                        facility_kes=Decimal(str(facility_kes)),
+                        proposed_rationale=proposed_rationale,
+                        is_policy_override=is_override,
+                        override_rationale=override_rationale)
+                    applied_conditions = tuple(
+                        line.strip() for line in conditions_text.splitlines()
+                        if line.strip())
+
+                    engine = CreditCommitteeEngine(charter)
+                    result = engine.evaluate(
+                        request=request,
+                        attending_member_ids=tuple(attending_ids),
+                        votes=tuple(votes_collected),
+                        applied_conditions=applied_conditions,
+                        notes=f"cockpit_run_{date.today().isoformat()}")
+
+                    audit_log("CREDIT_ENGINE_USED", uname, {
+                        "engine": "credit_committee",
+                        "request_id": req_id,
+                        "outcome": result.outcome.value,
+                        "quorum_status": result.quorum_status.value,
+                        "escalation_required": result.escalation_required,
+                    })
+
+                    # Outcome banner
+                    outcome_colour = {
+                        DecisionOutcome.APPROVED: "#10B981",
+                        DecisionOutcome.APPROVED_WITH_CONDITIONS: "#10B981",
+                        DecisionOutcome.REJECTED: "#EF4444",
+                        DecisionOutcome.DEFERRED: "#F59E0B",
+                        DecisionOutcome.ESCALATED: "#3B82F6",
+                        DecisionOutcome.QUORUM_FAILED: "#7F1D1D",
+                    }[result.outcome]
+                    st.markdown(
+                        f"<div style='padding:16px;background:{outcome_colour};"
+                        f"border-radius:12px;color:white;margin:12px 0'>"
+                        f"<div style='font-size:12px;opacity:0.85'>OUTCOME</div>"
+                        f"<div style='font-size:24px;font-weight:700'>"
+                        f"{result.outcome.value}</div>"
+                        f"<div style='font-size:13px;opacity:0.9;"
+                        f"margin-top:6px'>{result.rationale}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True)
+
+                    if result.escalation_required:
+                        st.info(
+                            f"📤 **Escalation required** to "
+                            f"{result.escalation_target}. "
+                            f"{'Policy override approval — ' if result.is_policy_override else ''}"
+                            f"per {regulator()} PG/03 §6.7.")
+
+                    m_a, m_b, m_c, m_d = st.columns(4)
+                    m_a.metric(
+                        "Quorum",
+                        result.quorum_status.value,
+                        help=result.quorum_reason)
+                    m_b.metric(
+                        "YES votes",
+                        str(result.vote_tally.yes_count))
+                    m_c.metric(
+                        "NO votes",
+                        str(result.vote_tally.no_count))
+                    m_d.metric(
+                        "Total present",
+                        str(result.vote_tally.total_present),
+                        help=(f"abstain={result.vote_tally.abstain_count}, "
+                              f"recused={result.vote_tally.recused_count}"))
+
+                    with st.expander(
+                            "Full DecisionResult + framework refs (Rule 1)"):
+                        st.json({
+                            "request_id": result.request_id,
+                            "committee_id": result.committee_id,
+                            "members_present_ids": list(
+                                result.members_present_ids),
+                            "members_present_roles": [
+                                r.value for r in result.members_present_roles],
+                            "quorum_status": result.quorum_status.value,
+                            "quorum_reason": result.quorum_reason,
+                            "vote_tally": {
+                                "yes_count": result.vote_tally.yes_count,
+                                "no_count": result.vote_tally.no_count,
+                                "abstain_count":
+                                    result.vote_tally.abstain_count,
+                                "recused_count":
+                                    result.vote_tally.recused_count,
+                                "total_voting":
+                                    result.vote_tally.total_voting,
+                                "total_present":
+                                    result.vote_tally.total_present,
+                            },
+                            "voting_rule": result.voting_rule.value,
+                            "outcome": result.outcome.value,
+                            "rationale": result.rationale,
+                            "conditions": list(result.conditions),
+                            "is_policy_override": result.is_policy_override,
+                            "escalation_required":
+                                result.escalation_required,
+                            "escalation_target": result.escalation_target,
+                            "framework_refs": list(result.framework_refs),
+                            "notes": result.notes,
+                        })
+                except ValueError as e:
+                    st.error(f"Validation error: {e}")
+
+        with arc_tabs[2]:
+            st.markdown("### ℹ️ credit_model_risk arc — About this Cockpit")
+            st.markdown(
+                """
+                The credit_model_risk arc was opened at **v10.47** and closed
+                at **v10.49** under the v10.46-amended Lean+Compact protocol
+                (UI integration is now non-negotiable at arc closure):
+
+                | Batch    | Module                 | Standards | Status |
+                | -------- | ---------------------- | --------- | ------ |
+                | v10.47   | credit_alt_scoring     | ENH-260   | ✅      |
+                | v10.48   | credit_committee       | ENH-268   | ✅      |
+                | **v10.49** | **G131 + G132 + Tier 25 + Master Prompt + this cockpit** | **closure** | ✅      |
+
+                **Frameworks referenced:**
+
+                - CGAP Thin-File Lending Guidance
+                - Smart Campaign Client Protection Principles
+                - IFC Inclusive Finance — Alternative Data
+                - {regulator()} PG/03 §6 Credit Risk Governance (§6.4 quorum, §6.6
+                  voting + decision recording, §6.7 policy override
+                  documentation)
+
+                **Diagnostic-only posture (Rule 7).** Neither engine acts on
+                decisions. `AlternativeCreditScoringEngine.compute(...)` returns
+                a PD estimate with confidence band — never approves a loan,
+                never writes to the credit bureau. `CreditCommitteeEngine.
+                evaluate(...)` returns a DecisionResult with outcome — never
+                disburses funds, never modifies the charter at runtime, never
+                publishes to downstream systems. Outputs feed underwriting
+                workflow + minute recording — caller responsibility.
+
+                **Provenance discipline (Rule 1).** Every result rendered above
+                also exposes its full state under the "Full result + framework
+                refs" expander. Alt scoring surfaces all 3 PillarScore objects
+                with features_used + skip_reason; committee surfaces the full
+                VoteTally + members_present + quorum_status + rationale +
+                framework refs.
+
+                Locked under **G131 credit_model_risk_arc_closed** (registry
+                + scenario ratchet) and **G132
+                credit_model_risk_arc_ui_integrated** (this page's UI
+                ratchet — see CHANGELOG_v10.49).
+
+                **Arc state:** registry-locked + scenario-locked + UI-locked
+                along three axes per the v10.46 amendment.
+                """)
+
+            audit_log("CREDIT_COCKPIT_ABOUT_VIEWED", uname, {
+                "page": "94_credit_governance_cockpit"})
+
+
+        # Footer audit log
+        try:
+            audit_log(
+                action="credit_governance_arc_engines.view",
+                username=ud.get("username", "anonymous"),
+                detail=f"viewed_at={_date_arc_cg.today().isoformat()}",
+                module="credit_analysis")
+        except Exception:
+            pass

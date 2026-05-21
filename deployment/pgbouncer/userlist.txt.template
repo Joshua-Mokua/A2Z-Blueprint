@@ -1,0 +1,30 @@
+; deployment/pgbouncer/userlist.txt — v10.74 PgBouncer user credentials
+;
+; Format: "username" "password_hash"
+;
+; PASSWORD HASH FORMATS:
+;   md5       — md5 of (password + username) — required for auth_type=md5
+;   plain     — plaintext (auth_type=plain — DEV ONLY, never commit)
+;   scram-... — SCRAM-SHA-256 (auth_type=scram-sha-256)
+;
+; HOW TO GENERATE md5 HASH (for auth_type=md5):
+;   echo -n "yourpasswordyourusername" | md5sum
+;   Then prepend "md5" to the hash:
+;     "myuser" "md5<HASH-OUTPUT>"
+;
+;   Or use psql:
+;     SELECT 'md5' || md5('yourpassword' || 'yourusername');
+;
+; SECURITY NOTE: This file should be world-unreadable on the host.
+;   chmod 600 deployment/pgbouncer/userlist.txt
+;
+; The values below are PLACEHOLDERS. Replace with your actual hashes.
+; DO NOT COMMIT REAL CREDENTIALS to git — add this file to .gitignore
+; and ship a userlist.txt.template with empty placeholders instead.
+
+"a2z_app" "md5REPLACE_WITH_HASH_OF_password_PLUS_a2z_app"
+"stats_user" "md5REPLACE_WITH_HASH_OF_password_PLUS_stats_user"
+
+; Add a line per database role that needs to authenticate via PgBouncer.
+; Roles only used for direct Postgres connections (DBA tools, migrations)
+; do not need to be listed here.

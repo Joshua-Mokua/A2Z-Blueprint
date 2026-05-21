@@ -1,0 +1,50 @@
+[
+  {
+    "training_id": "TRN-STR-101",
+    "name": "Strategy 101 — Understanding Pillars & Cascade",
+    "description": "Introductory session on the 5 strategic pillars, OKR cascade per ENH-145, and how individual contributions ladder up to bank strategy. Suitable for all staff.",
+    "date": "2026-05-20",
+    "duration_hours": 2,
+    "facilitator": "STO Lead",
+    "audience": "All staff",
+    "seats_total": 80,
+    "seats_left": 23,
+    "format": "hybrid"
+  },
+  {
+    "training_id": "TRN-STR-201",
+    "name": "Strategic Initiative Management",
+    "description": "Deep-dive on ENH-144 portfolio optimization, ENH-146 gap analysis, and ENH-147 corrective action generation. Targeted at managers and initiative owners.",
+    "date": "2026-06-10",
+    "duration_hours": 4,
+    "facilitator": "Chief Strategy Officer",
+    "audience": "Managers and initiative owners",
+    "seats_total": 40,
+    "seats_left": 12,
+    "format": "in-person"
+  },
+  {
+    "training_id": "TRN-STR-301",
+    "name": "STO Toolkit Masterclass",
+    "description": "Full walkthrough of the Strategy Transformation Office toolkit (ENH-154): portfolio management, risk register, review cycles, analytics, and ROI attribution (ENH-155).",
+    "date": "2026-07-15",
+    "duration_hours": 6,
+    "facilitator": "Chief Strategy Officer + STO Lead",
+    "audience": "STO team and senior leadership",
+    "seats_total": 25,
+    "seats_left": 25,
+    "format": "in-person"
+  },
+  {
+    "training_id": "TRN-STR-302",
+    "name": "Strategy Simulation Workshop",
+    "description": "Hands-on workshop using ENH-151 simulator to test resource reallocation scenarios and what-if modeling. Bring your scenarios.",
+    "date": "2026-08-05",
+    "duration_hours": 3,
+    "facilitator": "STO Lead",
+    "audience": "Senior managers and pillar owners",
+    "seats_total": 30,
+    "seats_left": 30,
+    "format": "in-person"
+  }
+]

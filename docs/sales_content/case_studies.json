@@ -1,0 +1,47 @@
+{
+  "_doc": "Reference deployments + cited industry research. Per docs/A2Z_LIVING_DOCS_PLAN.md Part 3 Rule 8, bank logos appear only with signed reference agreements; external case studies are clearly labelled as 'cited industry research', not A2Z deployments.",
+  "_schema_version": "1.0",
+  "_last_reviewed_iso": "2026-05-01",
+  "a2z_reference_deployments": [
+    {
+      "_status": "in_development",
+      "bank_name": "Ecobank Kenya",
+      "agreement_status": "design_partner",
+      "scope": "A2Z Blueprint pilot — internal performance management + pipeline + CRM workflows",
+      "branches_covered": 35,
+      "staff_covered": 487,
+      "customers_simulated": 700000,
+      "accounts_simulated": 1200000,
+      "honest_disclaimer": "Ecobank Kenya is the design partner for the A2Z Blueprint local instance. This is a development context, not a production deployment with measured outcomes. Production reference status requires a separate signed agreement.",
+      "may_appear_in_collateral": false,
+      "publishable_logo": false
+    }
+  ],
+  "cited_industry_research": [
+    {
+      "_label": "EXTERNAL CITATION — NOT AN A2Z CUSTOMER",
+      "company": "Zanifu",
+      "claim": "99.2% repayment rate on alternative-credit-scoring loans to thin-file SME borrowers",
+      "relevance_to_a2z": "Validates the alternative-credit-scoring approach the A2Z engine implements at design level (utils/alternative_credit_scoring.py).",
+      "citation_url": "https://www.zanifu.com",
+      "verification_date": "2025-12-01",
+      "honest_disclaimer": "Zanifu is a separate Kenyan fintech, not an A2Z customer. The 99.2% figure is their published outcome on their own portfolio. A2Z's engine implements the same alternative-credit-scoring pattern but no comparable A2Z deployment results exist yet."
+    },
+    {
+      "_label": "EXTERNAL CITATION — NOT AN A2Z CUSTOMER",
+      "company": "C2FO / CycleFlow",
+      "claim": "Working capital optimization across supplier networks; addressable opportunity in Africa estimated at $25-30B by industry analysts",
+      "relevance_to_a2z": "The value-chain financing module (utils/value_chain_financing.py, designed) addresses this market opportunity.",
+      "citation_url": "https://c2fo.com",
+      "verification_date": "2025-12-01",
+      "honest_disclaimer": "C2FO is a global working-capital fintech, not an A2Z customer. The $25-30B estimate is from public C2FO research. A2Z's value-chain module is designed but not yet a wired feature; production deployment is roadmap."
+    }
+  ],
+  "honest_scope": [
+    "A2Z does not currently have any signed production-reference deployments with measurable outcomes.",
+    "Numbers like '99.2% repayment' or '$25-30B opportunity' come from external companies' published research, not from A2Z deployments. They appear only in 'Cited industry research' sections.",
+    "Bank logos and named-customer testimonials require signed reference agreements; the magazine-generator must check this flag before rendering.",
+    "The Ecobank Kenya design-partner relationship is for product development; it is not represented as a customer success story in published collateral.",
+    "Future production deployments with measurable outcomes will be added here as 'a2z_reference_deployments' entries with may_appear_in_collateral: true."
+  ]
+}

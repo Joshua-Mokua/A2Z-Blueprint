@@ -1,0 +1,2061 @@
+{
+  "version": "1.0",
+  "_meta": {
+    "schema": "see utils/aggregation_rules_loader.py docstring",
+    "configurable": [
+      "Each rule's `active` flag",
+      "Predicate values (e.g., status enums)",
+      "Field names (per-bank CBS schema mapping)",
+      "Period fields",
+      "invert flag for BOOL_FRACTION/PERCENTAGE",
+      "Decimal places for output"
+    ],
+    "hard_coded": [
+      "The 6 archetypal patterns: COUNT, SUM, PERCENTAGE, TAT_DAYS, RATIO, BOOL_FRACTION",
+      "compute_rule pattern dispatch logic",
+      "Ownership union rule (role_kpis ∪ cascade-locked)",
+      "Audit gate G143"
+    ],
+    "predicate_dsl_types": [
+      "field_eq",
+      "field_in",
+      "field_in_named",
+      "field_not_in",
+      "field_truthy",
+      "field_is_true",
+      "field_is_numeric",
+      "field_le_field",
+      "date_le_field",
+      "all",
+      "any"
+    ],
+    "extractor_types": [
+      "nested",
+      "name_lookup",
+      "role_lookup"
+    ]
+  },
+  "rules": [
+    {
+      "kpi_id": "K011",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "TAT_DAYS",
+      "description": "Mean processing time per RM for decided loans, from application_date to last_updated",
+      "start_field": "application_date",
+      "end_field": "last_updated",
+      "predicate": {
+        "type": "field_in_named",
+        "field": "status",
+        "list_name": "loan_decided"
+      },
+      "period_field": "last_updated",
+      "decimals": 1,
+      "_origin": "v10.108_revised_v10.109_externalized_v10.110_named_v10.111"
+    },
+    {
+      "kpi_id": "K027",
+      "active": true,
+      "source_table": "debt_recovery",
+      "pattern": "RATIO",
+      "description": "Amount recovered / outstanding NPL per recovery officer (active cases)",
+      "numerator_field": "amount_recovered",
+      "denominator_field": "outstanding",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Active"
+      },
+      "period_field": null,
+      "decimals": 4,
+      "_origin": "v10.108_revised_v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K020",
+      "active": true,
+      "source_table": "pipeline",
+      "pattern": "PERCENTAGE",
+      "description": "% of pipeline opportunities won out of closed (Closed Won + Closed Lost) per staff",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "stage",
+        "value": "Closed Won"
+      },
+      "denominator_pred": {
+        "type": "field_in",
+        "field": "stage",
+        "values": [
+          "Closed Won",
+          "Closed Lost"
+        ]
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.109_label_correction_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K014",
+      "active": true,
+      "source_table": "aml_alerts",
+      "pattern": "PERCENTAGE",
+      "description": "% of high-risk AML alerts where STR was filed per officer (proper escalation discipline). v10.111 wires to real aml_alerts table after the name→code resolver landed; was previously a loan_applications.compliance_flag proxy with invert:true.",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "risk_level",
+            "value": "High"
+          },
+          {
+            "type": "field_is_true",
+            "field": "str_filed"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_eq",
+        "field": "risk_level",
+        "value": "High"
+      },
+      "period_field": "created_at",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "assigned_to"
+      },
+      "decimals": 2,
+      "_origin": "v10.108_revised_v10.109_invert_v10.110_proper_aml_wiring_v10.111"
+    },
+    {
+      "kpi_id": "K001",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "SUM",
+      "description": "Total approved/disbursed loan value per RM in the period (staff-level companion to bank-aggregate K001 from cbs_loans)",
+      "predicate": {
+        "type": "field_in_named",
+        "field": "status",
+        "list_name": "loan_approved_disbursed"
+      },
+      "value_field": "amount",
+      "period_field": "last_updated",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110_named_v10.111"
+    },
+    {
+      "kpi_id": "K010",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "PERCENTAGE",
+      "description": "% of decided loans where tat_days <= sla_target_days per RM (loan-processing slice of generic SLA Adherence)",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_in",
+            "field": "status",
+            "values": [
+              "approved",
+              "declined",
+              "returned"
+            ]
+          },
+          {
+            "type": "field_is_numeric",
+            "field": "tat_days"
+          },
+          {
+            "type": "field_is_numeric",
+            "field": "sla_target_days"
+          },
+          {
+            "type": "field_le_field",
+            "field": "tat_days",
+            "compare_field": "sla_target_days"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "approved",
+          "declined",
+          "returned"
+        ]
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K041",
+      "active": true,
+      "source_table": "pipeline",
+      "pattern": "COUNT",
+      "description": "Number of active pipeline deals per staff (excluding Closed Won/Lost)",
+      "predicate": {
+        "type": "field_not_in",
+        "field": "stage",
+        "values": [
+          "Closed Won",
+          "Closed Lost"
+        ]
+      },
+      "period_field": "last_updated",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K044",
+      "active": true,
+      "source_table": "referrals",
+      "pattern": "PERCENTAGE",
+      "description": "% of referrals converted per referrer in the period",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "converted"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "referral_date",
+      "decimals": 2,
+      "_origin": "v10.109_correction_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K112",
+      "active": true,
+      "source_table": "pipeline",
+      "pattern": "SUM",
+      "description": "Total active-stage pipeline value held per staff (KES); excludes Closed Won/Lost/Disbursed",
+      "predicate": {
+        "type": "field_not_in",
+        "field": "stage",
+        "values": [
+          "Closed Won",
+          "Closed Lost",
+          "Disbursed"
+        ]
+      },
+      "value_field": "amount",
+      "period_field": "last_updated",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K113",
+      "active": true,
+      "source_table": "debt_recovery",
+      "pattern": "COUNT",
+      "description": "Number of active recovery cases per officer",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Active"
+      },
+      "period_field": null,
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K114",
+      "active": true,
+      "source_table": "debt_recovery",
+      "pattern": "SUM",
+      "description": "Total amount recovered per officer (KES, active cases)",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Active"
+      },
+      "value_field": "amount_recovered",
+      "period_field": null,
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K115",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "COUNT",
+      "description": "Number of loans approved per RM in the period",
+      "predicate": {
+        "type": "field_in_named",
+        "field": "status",
+        "list_name": "loan_approved_disbursed"
+      },
+      "period_field": "last_updated",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110_named_v10.111"
+    },
+    {
+      "kpi_id": "K116",
+      "active": true,
+      "source_table": "referrals",
+      "pattern": "COUNT",
+      "description": "Number of referrals made per referrer in the period",
+      "predicate": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "referral_date",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K117",
+      "active": true,
+      "source_table": "referrals",
+      "pattern": "COUNT",
+      "description": "Number of converted referrals per referrer (period filter on conversion_date)",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "converted"
+      },
+      "period_field": "conversion_date",
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K118",
+      "active": true,
+      "source_table": "legal_matters",
+      "pattern": "COUNT",
+      "description": "Number of legal matters completed per legal officer",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "completed"
+      },
+      "period_field": "completed_date",
+      "staff_field_extractor": {
+        "type": "nested",
+        "path": "legal_officer.code"
+      },
+      "decimals": 0,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K119",
+      "active": true,
+      "source_table": "legal_matters",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of completed legal matters where SLA was breached per legal officer (library direction:lower already matches the rule's emission, so invert:false)",
+      "bool_field": "sla_breached",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "completed"
+      },
+      "period_field": "completed_date",
+      "staff_field_extractor": {
+        "type": "nested",
+        "path": "legal_officer.code"
+      },
+      "decimals": 2,
+      "_origin": "v10.109_externalized_v10.110"
+    },
+    {
+      "kpi_id": "K120",
+      "active": true,
+      "source_table": "campaigns",
+      "pattern": "RATIO",
+      "description": "Actual revenue / target revenue per campaign owner",
+      "numerator_field": "actual_revenue",
+      "denominator_field": "target_revenue",
+      "predicate": {
+        "type": "field_in_named",
+        "field": "status",
+        "list_name": "campaign_active"
+      },
+      "period_field": null,
+      "decimals": 4,
+      "_origin": "v10.109_externalized_v10.110_named_v10.111"
+    },
+    {
+      "kpi_id": "K121",
+      "active": true,
+      "source_table": "training_completions",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of mandatory trainings completed per staff (True=completed)",
+      "bool_field": "completed",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "mandatory"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K122",
+      "active": true,
+      "source_table": "training_completions",
+      "pattern": "COUNT",
+      "description": "Number of completed training courses per staff in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Completed"
+      },
+      "period_field": "completion_date",
+      "decimals": 0,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K123",
+      "active": true,
+      "source_table": "performance_reviews",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of submitted/approved reviews that were on-time per reviewee",
+      "bool_field": "submitted_on_time",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "submitted",
+          "approved"
+        ]
+      },
+      "period_field": "submitted_date",
+      "decimals": 2,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K124",
+      "active": true,
+      "source_table": "performance_reviews",
+      "pattern": "COUNT",
+      "description": "Number of approved performance reviews per reviewee in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "approved"
+      },
+      "period_field": "submitted_date",
+      "decimals": 0,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K125",
+      "active": true,
+      "source_table": "leave_requests",
+      "pattern": "SUM",
+      "description": "Total approved leave days per staff in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "approved"
+      },
+      "value_field": "days",
+      "period_field": "approved_date",
+      "decimals": 0,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K126",
+      "active": true,
+      "source_table": "leave_requests",
+      "pattern": "COUNT",
+      "description": "Number of approved leave requests per staff in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "approved"
+      },
+      "period_field": "approved_date",
+      "decimals": 0,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K127",
+      "active": true,
+      "source_table": "training_completions",
+      "pattern": "SUM",
+      "description": "Total hours of completed training per staff in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Completed"
+      },
+      "value_field": "hours",
+      "period_field": "completion_date",
+      "decimals": 0,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K128",
+      "active": true,
+      "source_table": "performance_reviews",
+      "pattern": "PERCENTAGE",
+      "description": "% of performance reviews per reviewee that have been submitted",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "submitted",
+          "approved"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.112_hr_rules"
+    },
+    {
+      "kpi_id": "K129",
+      "active": true,
+      "source_table": "incidents",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of resolved incidents per assignee where sla_breached=False (use invert:true to flip the rate-of-bad emission to rate-of-clean)",
+      "bool_field": "sla_breached",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Closed"
+      },
+      "period_field": "resolved_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "assigned_to"
+      },
+      "invert": true,
+      "decimals": 2,
+      "_origin": "v10.113_incidents_wiring"
+    },
+    {
+      "kpi_id": "K130",
+      "active": true,
+      "source_table": "incidents",
+      "pattern": "COUNT",
+      "description": "Number of incidents closed per assignee in the period",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Closed"
+      },
+      "period_field": "resolved_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "assigned_to"
+      },
+      "decimals": 0,
+      "_origin": "v10.113_incidents_wiring"
+    },
+    {
+      "kpi_id": "K131",
+      "active": true,
+      "source_table": "agent_fraud_alerts",
+      "pattern": "COUNT",
+      "description": "Number of agent fraud alerts reviewed (status not Open) per assigned role-holder",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Cleared",
+          "Confirmed Fraud",
+          "Under Review"
+        ]
+      },
+      "period_field": "txn_date",
+      "staff_field_extractor": {
+        "type": "role_lookup",
+        "role_field": "assigned_to"
+      },
+      "decimals": 0,
+      "_origin": "v10.113_agent_alerts"
+    },
+    {
+      "kpi_id": "K104",
+      "active": true,
+      "source_table": "board_papers",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of board papers submitted on time per submitter (submitted_on_time bool)",
+      "bool_field": "submitted_on_time",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Approved",
+          "Returned",
+          "Under Review"
+        ]
+      },
+      "period_field": "submitted_date",
+      "decimals": 2,
+      "_origin": "v10.114_opex_existing_tables"
+    },
+    {
+      "kpi_id": "K072",
+      "active": true,
+      "source_table": "cbk_returns",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of submitted CBK returns filed on time per reviewer (uses on_time bool with submitted=True predicate)",
+      "bool_field": "on_time",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "submitted"
+      },
+      "period_field": "submitted_date",
+      "decimals": 2,
+      "_origin": "v10.114_opex_existing_tables"
+    },
+    {
+      "kpi_id": "K075",
+      "active": true,
+      "source_table": "dpo_register",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of completed DPO register items finished on time per dpo_reviewer (DPIA + breaches + ROPA covered uniformly)",
+      "bool_field": "on_time",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Approved",
+          "Closed",
+          "Contained"
+        ]
+      },
+      "period_field": "completed_date",
+      "decimals": 2,
+      "_origin": "v10.114_opex_existing_tables"
+    },
+    {
+      "kpi_id": "K036",
+      "active": true,
+      "source_table": "projects",
+      "pattern": "PERCENTAGE",
+      "description": "% of completed projects delivered on or before planned end date per project manager (strict on-time via date_le_field DSL type added in v10.115)",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "status",
+            "value": "Completed"
+          },
+          {
+            "type": "date_le_field",
+            "field": "actual_end_date",
+            "compare_field": "planned_end_date"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Completed"
+      },
+      "period_field": "actual_end_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "project_manager"
+      },
+      "decimals": 2,
+      "_origin": "v10.114_opex_v10.115_strict_ontime"
+    },
+    {
+      "kpi_id": "K132",
+      "active": true,
+      "source_table": "audit_reviews",
+      "pattern": "PERCENTAGE",
+      "description": "% of audit reviews where status=Closed per auditor",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Closed"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.114_audit_rules"
+    },
+    {
+      "kpi_id": "K133",
+      "active": true,
+      "source_table": "audit_reviews",
+      "pattern": "RATIO",
+      "description": "Audit findings closed / findings total per auditor (closed-status reviews only)",
+      "numerator_field": "findings_closed",
+      "denominator_field": "findings_total",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Closed"
+      },
+      "period_field": "completed_date",
+      "decimals": 4,
+      "_origin": "v10.114_audit_rules"
+    },
+    {
+      "kpi_id": "K134",
+      "active": true,
+      "source_table": "audit_reviews",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of closed audit reviews NOT breaching SLA per auditor (uses invert:true since sla_breached=True is bad)",
+      "bool_field": "sla_breached",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Closed"
+      },
+      "period_field": "completed_date",
+      "invert": true,
+      "decimals": 2,
+      "_origin": "v10.114_audit_rules"
+    },
+    {
+      "kpi_id": "K093",
+      "active": true,
+      "source_table": "merchant_acquiring",
+      "pattern": "TAT_FIELD",
+      "description": "Mean merchant onboarding TAT (days) per RM, computed from the pre-computed tat_days field on Active/Suspended/Terminated merchants",
+      "value_field": "tat_days",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Active",
+          "Suspended",
+          "Terminated"
+        ]
+      },
+      "period_field": "onboarding_date",
+      "decimals": 1,
+      "_origin": "v10.115_tat_field_pattern"
+    },
+    {
+      "kpi_id": "K084",
+      "active": true,
+      "source_table": "customer_onboarding",
+      "pattern": "TAT_FIELD",
+      "description": "Mean account opening TAT (hours) per RM, on completed onboardings (current_stage=Active Customer)",
+      "value_field": "tat_hours",
+      "predicate": {
+        "type": "field_eq",
+        "field": "current_stage",
+        "value": "Active Customer"
+      },
+      "period_field": "completed_date",
+      "decimals": 1,
+      "_origin": "v10.115_tat_field_pattern"
+    },
+    {
+      "kpi_id": "K078",
+      "active": true,
+      "source_table": "sanctions_register",
+      "pattern": "PERCENTAGE",
+      "description": "% of sanctions hits cleared (Cleared - False Positive or Clear status) per reviewer in the period",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Cleared - False Positive",
+          "Clear"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "review_date",
+      "decimals": 2,
+      "_origin": "v10.115_sanctions_wiring"
+    },
+    {
+      "kpi_id": "K047",
+      "active": true,
+      "source_table": "ews_cases",
+      "pattern": "PERCENTAGE",
+      "description": "% of EWS cases resolved (status=Resolved or stage=Green) per RM. Note: current CBS-mock has all 18 cases Active so this rule produces 0% — preserved for forward compatibility when resolutions are seeded.",
+      "numerator_pred": {
+        "type": "any",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "status",
+            "value": "Resolved"
+          },
+          {
+            "type": "field_eq",
+            "field": "stage",
+            "value": "Green"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "raised_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "rm"
+      },
+      "decimals": 2,
+      "_origin": "v10.115_ews_wiring"
+    },
+    {
+      "kpi_id": "K099",
+      "active": true,
+      "source_table": "op_risk_losses",
+      "pattern": "COUNT",
+      "description": "Number of operational risk loss events reported per reporter in the period",
+      "predicate": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "discovered_date",
+      "decimals": 0,
+      "_origin": "v10.115_oprisk_wiring"
+    },
+    {
+      "kpi_id": "K100",
+      "active": true,
+      "source_table": "op_risk_losses",
+      "pattern": "COUNT",
+      "description": "Number of near-miss op-risk events captured per reporter (gross_loss_kes < threshold proxy when type field doesn't include explicit Near Miss). Currently uses gross_loss_kes < 50000 as the near-miss threshold.",
+      "predicate": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_truthy",
+            "field": "id"
+          },
+          {
+            "type": "field_eq",
+            "field": "type",
+            "value": "Near Miss"
+          }
+        ]
+      },
+      "period_field": "discovered_date",
+      "decimals": 0,
+      "_origin": "v10.115_oprisk_wiring"
+    },
+    {
+      "kpi_id": "K087",
+      "active": true,
+      "source_table": "card_management",
+      "pattern": "COUNT",
+      "description": "Number of cards activated per RM in the period (status in [Active, Activated])",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Active",
+          "Activated"
+        ]
+      },
+      "period_field": "activation_date",
+      "decimals": 0,
+      "_origin": "v10.116_cards_batch"
+    },
+    {
+      "kpi_id": "K088",
+      "active": true,
+      "source_table": "card_management",
+      "pattern": "SUM",
+      "description": "Total YTD card spend (KES) per RM on active cards (status=Active or Activated)",
+      "value_field": "ytd_spend_kes",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Active",
+          "Activated"
+        ]
+      },
+      "period_field": "issue_date",
+      "decimals": 0,
+      "_origin": "v10.116_cards_batch"
+    },
+    {
+      "kpi_id": "K089",
+      "active": true,
+      "source_table": "card_management",
+      "pattern": "PERCENTAGE",
+      "description": "% of disputes resolved within SLA per RM (numerator: dispute_resolved AND dispute_actual_days <= dispute_sla_days; denominator: has_dispute=True)",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_is_true",
+            "field": "has_dispute"
+          },
+          {
+            "type": "field_is_true",
+            "field": "dispute_resolved"
+          },
+          {
+            "type": "field_le_field",
+            "field": "dispute_actual_days",
+            "compare_field": "dispute_sla_days"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_is_true",
+        "field": "has_dispute"
+      },
+      "period_field": "dispute_filed_date",
+      "decimals": 2,
+      "_origin": "v10.116_cards_batch"
+    },
+    {
+      "kpi_id": "K060",
+      "active": true,
+      "source_table": "retailer_finance",
+      "pattern": "SUM",
+      "description": "Total active retailer finance portfolio per RM (status in [Disbursed, Repaying, Approved])",
+      "value_field": "amount_kes",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Disbursed",
+          "Repaying",
+          "Approved"
+        ]
+      },
+      "period_field": "application_date",
+      "decimals": 0,
+      "_origin": "v10.116_retailer_finance_batch"
+    },
+    {
+      "kpi_id": "K062",
+      "active": true,
+      "source_table": "retailer_finance",
+      "pattern": "PERCENTAGE",
+      "description": "% of retailer finance facilities classified as NPL per RM",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "NPL"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "application_date",
+      "decimals": 2,
+      "_origin": "v10.116_retailer_finance_batch"
+    },
+    {
+      "kpi_id": "K022",
+      "active": true,
+      "source_table": "trade_finance",
+      "pattern": "SUM",
+      "description": "Total trade finance LC value (KES) per RM on active LCs (status in active/closed-positive states)",
+      "value_field": "kes_equivalent",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Issued",
+          "Advised",
+          "Negotiated",
+          "Accepted",
+          "Discounted",
+          "Settled"
+        ]
+      },
+      "period_field": "issue_date",
+      "decimals": 0,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K063",
+      "active": true,
+      "source_table": "bid_bonds",
+      "pattern": "SUM",
+      "description": "Total bid bond commission revenue (KES) per RM on active/issued bonds",
+      "value_field": "commission_kes",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Approved",
+          "Active",
+          "Issued",
+          "Called"
+        ]
+      },
+      "period_field": "issue_date",
+      "decimals": 0,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K064",
+      "active": true,
+      "source_table": "bid_bonds",
+      "pattern": "COUNT",
+      "description": "Number of bid bonds issued per RM (excludes Application/draft status)",
+      "predicate": {
+        "type": "field_not_in",
+        "field": "status",
+        "values": [
+          "Application"
+        ]
+      },
+      "period_field": "issue_date",
+      "decimals": 0,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K065",
+      "active": true,
+      "source_table": "bid_bonds",
+      "pattern": "PERCENTAGE",
+      "description": "% of issued bonds that were called per RM (Called status / non-Application status)",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Called"
+      },
+      "denominator_pred": {
+        "type": "field_not_in",
+        "field": "status",
+        "values": [
+          "Application"
+        ]
+      },
+      "period_field": "issue_date",
+      "decimals": 2,
+      "invert": false,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K101",
+      "active": true,
+      "source_table": "strategic_initiatives",
+      "pattern": "PERCENTAGE",
+      "description": "% of strategic initiatives currently On Track per owner (status=On Track / all)",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "On Track"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K102",
+      "active": true,
+      "source_table": "strategic_initiatives",
+      "pattern": "TAT_FIELD",
+      "description": "Mean completion_pct across an owner's initiatives — reuses TAT_FIELD pattern as a generic mean-of-numeric-field aggregator. Higher = better execution.",
+      "value_field": "completion_pct",
+      "predicate": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 1,
+      "_origin": "v10.117_trade_bonds_initiatives"
+    },
+    {
+      "kpi_id": "K105",
+      "active": true,
+      "source_table": "board_papers",
+      "pattern": "RATIO",
+      "description": "Sum of actions_closed / sum of action_items per submitter (only papers with action_items > 0). Multiplied by 100 conceptually for the BSC; the rule emits the ratio (0-1.0+).",
+      "numerator_field": "actions_closed",
+      "denominator_field": "action_items",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "action_items"
+      },
+      "period_field": "submitted_date",
+      "decimals": 4,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K098",
+      "active": true,
+      "source_table": "op_risk_losses",
+      "pattern": "SUM",
+      "description": "Total net operational risk losses (KES) per reporter on closed/under-review events",
+      "value_field": "net_loss_kes",
+      "predicate": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Closed",
+          "Under Review"
+        ]
+      },
+      "period_field": "discovered_date",
+      "decimals": 0,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K049",
+      "active": true,
+      "source_table": "aml_alerts",
+      "pattern": "PERCENTAGE",
+      "description": "% of AML cases that have been closed per assigned reviewer (Closed-No Action or Cleared) vs all assigned",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Closed-No Action",
+          "Cleared"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "transaction_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "assigned_to"
+      },
+      "decimals": 2,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K086",
+      "active": true,
+      "source_table": "customer_onboarding",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of completed (non-abandoned) onboardings that achieved first login within 7 days per RM",
+      "bool_field": "first_login_within_7d",
+      "predicate": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "abandoned",
+            "value": false
+          }
+        ]
+      },
+      "period_field": "completed_date",
+      "decimals": 2,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K085",
+      "active": true,
+      "source_table": "customer_onboarding",
+      "pattern": "PERCENTAGE",
+      "description": "% of onboardings that were not abandoned per RM (numerator: abandoned=False; denominator: all)",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "abandoned",
+        "value": false
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "started_date",
+      "decimals": 2,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K073",
+      "active": true,
+      "source_table": "cbk_returns",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean accuracy_score (0-100) of submitted CBK returns per reviewer. Uses MEAN_FIELD pattern (v10.118 alias for TAT_FIELD; same engine, broader naming since the field is not a TAT measure).",
+      "value_field": "accuracy_score",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "submitted"
+      },
+      "period_field": "submitted_date",
+      "decimals": 2,
+      "_origin": "v10.118_more_rules_mean_field"
+    },
+    {
+      "kpi_id": "K091",
+      "active": true,
+      "source_table": "merchant_acquiring",
+      "pattern": "COUNT",
+      "description": "Number of active POS merchants per RM (active=True)",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "active"
+      },
+      "period_field": "onboarding_date",
+      "decimals": 0,
+      "_origin": "v10.118_more_rules"
+    },
+    {
+      "kpi_id": "K046",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean completeness_score (50-100) per analyst on loan applications. Uses nested extractor on analyst.code since analyst is stored as a {code, name} dict in loan_applications.",
+      "value_field": "completeness_score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "completeness_score"
+      },
+      "period_field": "application_date",
+      "staff_field_extractor": {
+        "type": "nested",
+        "path": "analyst.code"
+      },
+      "decimals": 2,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K045",
+      "active": true,
+      "source_table": "loan_applications",
+      "pattern": "PERCENTAGE",
+      "description": "% of loan applications closed within SLA per RM (tat_days <= sla_target_days; denominator is decided/closed loans only)",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_is_numeric",
+            "field": "tat_days"
+          },
+          {
+            "type": "field_is_numeric",
+            "field": "sla_target_days"
+          },
+          {
+            "type": "field_le_field",
+            "field": "tat_days",
+            "compare_field": "sla_target_days"
+          },
+          {
+            "type": "field_in",
+            "field": "status",
+            "values": [
+              "approved",
+              "rejected",
+              "disbursed",
+              "closed",
+              "declined"
+            ]
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "approved",
+          "rejected",
+          "disbursed",
+          "closed",
+          "declined"
+        ]
+      },
+      "period_field": "application_date",
+      "decimals": 2,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K042",
+      "active": true,
+      "source_table": "pipeline",
+      "pattern": "PERCENTAGE",
+      "description": "% of closed deals that were won per staff (numerator: stage in [Disbursed, Closed Won, Signed]; denominator: closed-stage deals).",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "stage",
+        "values": [
+          "Disbursed",
+          "Closed Won",
+          "Signed"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_in",
+        "field": "stage",
+        "values": [
+          "Disbursed",
+          "Closed Won",
+          "Signed",
+          "Closed Lost"
+        ]
+      },
+      "period_field": "open_date",
+      "decimals": 2,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K038",
+      "active": true,
+      "source_table": "projects",
+      "pattern": "PERCENTAGE",
+      "description": "% of active projects within budget per project manager (numerator: pct_budget_used <= 100; denominator: not in [Cancelled, Initiation]). Uses name_lookup on project_manager.",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_le_value",
+            "field": "pct_budget_used",
+            "value": 100
+          },
+          {
+            "type": "field_not_in",
+            "field": "status",
+            "values": [
+              "Cancelled",
+              "Initiation"
+            ]
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_not_in",
+        "field": "status",
+        "values": [
+          "Cancelled",
+          "Initiation"
+        ]
+      },
+      "period_field": "last_updated",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "project_manager"
+      },
+      "decimals": 2,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K037",
+      "active": true,
+      "source_table": "projects",
+      "pattern": "COUNT",
+      "description": "Number of projects completed (pct_complete >= 100) per project manager. Uses name_lookup on project_manager.",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Completed"
+      },
+      "period_field": "last_updated",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "project_manager"
+      },
+      "decimals": 0,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K074",
+      "active": true,
+      "source_table": "cbk_returns",
+      "pattern": "RATIO",
+      "description": "Ratio of regulatory findings closed to total findings per reviewer (only returns with regulatory_findings > 0)",
+      "numerator_field": "findings_closed",
+      "denominator_field": "regulatory_findings",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "regulatory_findings"
+      },
+      "period_field": "submitted_date",
+      "decimals": 4,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K050",
+      "active": true,
+      "source_table": "aml_alerts",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of alerts escalated to STR for which the STR was filed per assigned reviewer",
+      "bool_field": "str_filed",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Escalated to STR"
+      },
+      "period_field": "transaction_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "assigned_to"
+      },
+      "decimals": 2,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K092",
+      "active": true,
+      "source_table": "merchant_acquiring",
+      "pattern": "SUM",
+      "description": "Total YTD merchant acquiring revenue (KES) per RM on active merchants",
+      "value_field": "ytd_revenue_kes",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "active"
+      },
+      "period_field": "onboarding_date",
+      "decimals": 0,
+      "_origin": "v10.119_50pct_crossing"
+    },
+    {
+      "kpi_id": "K090",
+      "active": true,
+      "source_table": "card_management",
+      "pattern": "SUM",
+      "description": "Total fraud-related loss (KES) per RM on cards flagged for fraud (fraud_flagged=True). Period filter on dispute_filed_date (when fraud was reported). Lower is better; BSC engine handles direction.",
+      "value_field": "fraud_loss_kes",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "fraud_flagged"
+      },
+      "period_field": "dispute_filed_date",
+      "decimals": 0,
+      "_origin": "v10.120_recovery_audit_referrals"
+    },
+    {
+      "kpi_id": "K051",
+      "active": true,
+      "source_table": "purchase_requests",
+      "pattern": "PERCENTAGE",
+      "description": "% of purchase requests that have been decided (Approved or Rejected) per requester. Proxy for PR processing throughput; an SLA-day field would refine this in v10.121+.",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Approved",
+          "Rejected"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "request_date",
+      "decimals": 2,
+      "_origin": "v10.120_recovery_audit_referrals"
+    },
+    {
+      "kpi_id": "Audit Score",
+      "active": true,
+      "source_table": "audit_reviews",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean audit score (1-5) per auditor across closed reviews. KPI library entry uses 'Audit Score' as ID (not K-coded). Forward-compat with library naming.",
+      "value_field": "score",
+      "predicate": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_is_numeric",
+            "field": "score"
+          },
+          {
+            "type": "field_eq",
+            "field": "status",
+            "value": "Closed"
+          }
+        ]
+      },
+      "period_field": "completed_date",
+      "decimals": 2,
+      "_origin": "v10.120_recovery_audit_referrals"
+    },
+    {
+      "kpi_id": "K061",
+      "active": true,
+      "source_table": "retailer_finance",
+      "pattern": "TAT_DAYS",
+      "description": "Mean disbursement TAT (days) per RM on retailer finance facilities. Filters out rows where disbursement_date is missing or precedes application_date (data-quality issue surfaced via the date_le_field predicate).",
+      "predicate": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_truthy",
+            "field": "disbursement_date"
+          },
+          {
+            "type": "date_le_field",
+            "field": "application_date",
+            "compare_field": "disbursement_date"
+          }
+        ]
+      },
+      "period_field": "application_date",
+      "decimals": 2,
+      "_origin": "v10.120_recovery_audit_referrals",
+      "start_field": "application_date",
+      "end_field": "disbursement_date"
+    },
+    {
+      "kpi_id": "Collection Throughput",
+      "active": true,
+      "source_table": "debt_recovery",
+      "pattern": "COUNT",
+      "description": "Number of recovery cases worked per officer (any case with demand_letters_sent > 0 OR amount_recovered > 0). Demonstrates non-K-coded library entry support, like 'Audit Score' in v10.120.",
+      "predicate": {
+        "type": "any",
+        "of": [
+          {
+            "type": "field_ge_value",
+            "field": "demand_letters_sent",
+            "value": 1
+          },
+          {
+            "type": "field_ge_value",
+            "field": "amount_recovered",
+            "value": 1
+          }
+        ]
+      },
+      "period_field": "last_updated",
+      "decimals": 0,
+      "_origin": "v10.121_modest_batch"
+    },
+    {
+      "kpi_id": "K033",
+      "active": true,
+      "source_table": "ews_cases",
+      "pattern": "PERCENTAGE",
+      "description": "% of EWS cases resolved per RM. Mirrors K047 logic since the library has both K033 and K047 as separate entries on the same source — banks may track resolution rate at multiple aggregation levels. Forward-compat: ews_cases seed has all status=Active, so emits 0% per resolving RM until data populates.",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Resolved",
+          "Closed"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "raised_date",
+      "staff_field_extractor": {
+        "type": "name_lookup",
+        "name_field": "rm"
+      },
+      "decimals": 2,
+      "_origin": "v10.121_modest_batch"
+    },
+    {
+      "kpi_id": "K076",
+      "active": true,
+      "source_table": "dpo_register",
+      "pattern": "BOOL_FRACTION",
+      "description": "% of data breaches reported within 72 hours per DPO reviewer. Forward-compat: dpo_register seed has type=Breach rows with on_time=None universally; rule emits no actuals until data populates. Designed for production deployment where regulatory filings populate on_time consistently.",
+      "bool_field": "on_time",
+      "predicate": {
+        "type": "field_eq",
+        "field": "type",
+        "value": "Breach"
+      },
+      "period_field": "started_date",
+      "decimals": 2,
+      "_origin": "v10.121_modest_batch_forward_compat"
+    },
+    {
+      "kpi_id": "K077",
+      "active": true,
+      "source_table": "dpo_register",
+      "pattern": "PERCENTAGE",
+      "description": "% of ROPA records currently up-to-date per DPO reviewer (status=Active or Approved out of all type=ROPA records). Forward-compat: dpo_register seed has type=ROPA rows with dpo_reviewer=None universally; rule emits no actuals until data populates.",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "type",
+            "value": "ROPA"
+          },
+          {
+            "type": "field_in",
+            "field": "status",
+            "values": [
+              "Active",
+              "Approved"
+            ]
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_eq",
+        "field": "type",
+        "value": "ROPA"
+      },
+      "period_field": "started_date",
+      "decimals": 2,
+      "_origin": "v10.121_modest_batch_forward_compat"
+    },
+    {
+      "kpi_id": "K039",
+      "active": true,
+      "source_table": "sla_tickets",
+      "pattern": "PERCENTAGE",
+      "description": "% of resolved/closed tickets that hit SLA per assignee. Numerator: status in [Resolved, Closed] AND within_sla=True. Denominator: status in [Resolved, Closed] (decided tickets only).",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_in",
+            "field": "status",
+            "values": [
+              "Resolved",
+              "Closed"
+            ]
+          },
+          {
+            "type": "field_is_true",
+            "field": "within_sla"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Resolved",
+          "Closed"
+        ]
+      },
+      "period_field": "raised_date",
+      "decimals": 2,
+      "_origin": "v10.122_pool_break_seeds"
+    },
+    {
+      "kpi_id": "K040",
+      "active": true,
+      "source_table": "sla_tickets",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean ticket resolution time (days) per assignee on resolved tickets. MEAN_FIELD on actual_days for status in [Resolved, Closed]. Open tickets are excluded (no actual_days yet); a separate v10.123+ rule may track open-ticket aging.",
+      "value_field": "actual_days",
+      "predicate": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_in",
+            "field": "status",
+            "values": [
+              "Resolved",
+              "Closed"
+            ]
+          },
+          {
+            "type": "field_is_numeric",
+            "field": "actual_days"
+          }
+        ]
+      },
+      "period_field": "raised_date",
+      "decimals": 2,
+      "_origin": "v10.122_pool_break_seeds"
+    },
+    {
+      "kpi_id": "K013",
+      "active": true,
+      "source_table": "branch_log",
+      "pattern": "COUNT",
+      "description": "Number of branch daily logs completed per submitter (status=Submitted). Counts only on-time submissions; late/missed are counted by K053's denominator.",
+      "predicate": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Submitted"
+      },
+      "period_field": "log_date",
+      "decimals": 0,
+      "_origin": "v10.122_pool_break_seeds"
+    },
+    {
+      "kpi_id": "K053",
+      "active": true,
+      "source_table": "branch_log",
+      "pattern": "PERCENTAGE",
+      "description": "% of daily logs submitted on time per submitter. Numerator: on_time=True. Denominator: all logs (including Late/Missed).",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "on_time"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "log_date",
+      "decimals": 2,
+      "_origin": "v10.122_pool_break_seeds"
+    },
+    {
+      "kpi_id": "K018",
+      "active": true,
+      "source_table": "hr",
+      "pattern": "PERCENTAGE",
+      "description": "% of staff retained over the past 12 months per manager. Numerator: retained_12m=True. Denominator: all hr records under that manager. Manager owns their team's retention.",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "retained_12m"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.123_window4_seeds"
+    },
+    {
+      "kpi_id": "K030",
+      "active": true,
+      "source_table": "hr",
+      "pattern": "PERCENTAGE",
+      "description": "% of staff occupying budgeted roles per manager. Higher is better — closer to 100% means headcount aligns with org design (no off-budget hires).",
+      "period_field": "last_updated",
+      "decimals": 4,
+      "_origin": "v10.123_window4_seeds",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "budgeted_for_role"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      }
+    },
+    {
+      "kpi_id": "K035",
+      "active": true,
+      "source_table": "hr",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean ENPS score (0-10 scale) per manager across their team. Production deployment may compute the canonical Promoter-minus-Detractor score from the underlying enps_score field; the mean here is a simpler proxy.",
+      "value_field": "enps_score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "enps_score"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.123_window4_seeds"
+    },
+    {
+      "kpi_id": "K016",
+      "active": true,
+      "source_table": "hr",
+      "staff_field": "staff_code",
+      "pattern": "SUM",
+      "description": "Year-to-date training hours per staff. Note: aggregates per staff_code (not manager_code) — staff own their own training hours. Overrides the hr-table default staff_field of manager_code.",
+      "value_field": "training_hours_ytd",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "training_hours_ytd"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.123_window4_seeds"
+    },
+    {
+      "kpi_id": "K025",
+      "active": true,
+      "source_table": "agency_banking",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean agent uptime % per supervisor. Aggregates uptime_pct across all agents under each supervisor.",
+      "value_field": "uptime_pct",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "uptime_pct"
+      },
+      "period_field": "last_audit_date",
+      "decimals": 2,
+      "_origin": "v10.123_window4_seeds"
+    },
+    {
+      "kpi_id": "K017",
+      "active": true,
+      "source_table": "bsc_scores",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean BSC total_score per staff. Period filter on last_updated (2026-04) selects scores updated this period; production deployment may use period_end with a 'previous quarter' resolver. Forward-compatible — rule emits actuals for any quarter that has scores with last_updated in the current month.",
+      "value_field": "total_score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "total_score"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.123_window4_seeds"
+    },
+    {
+      "kpi_id": "K055",
+      "active": true,
+      "source_table": "clearing",
+      "pattern": "PERCENTAGE",
+      "description": "% of clearing instructions that failed per processor (status in [Failed, Returned, Reversed]). Lower is better.",
+      "numerator_pred": {
+        "type": "field_in",
+        "field": "status",
+        "values": [
+          "Failed",
+          "Returned",
+          "Reversed"
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "submission_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "K056",
+      "active": true,
+      "source_table": "clearing",
+      "pattern": "PERCENTAGE",
+      "description": "% of settled clearing instructions that settled same-day per processor. Numerator: settled_same_day=True AND status=Settled. Denominator: status=Settled. Higher is better.",
+      "numerator_pred": {
+        "type": "all",
+        "of": [
+          {
+            "type": "field_eq",
+            "field": "status",
+            "value": "Settled"
+          },
+          {
+            "type": "field_is_true",
+            "field": "settled_same_day"
+          }
+        ]
+      },
+      "denominator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Settled"
+      },
+      "period_field": "submission_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "K057",
+      "active": true,
+      "source_table": "clearing",
+      "pattern": "PERCENTAGE",
+      "description": "% of clearing instructions reconciled per processor (reconciled=True / all). Higher is better.",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "reconciled"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "submission_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "K007",
+      "active": true,
+      "source_table": "nps",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean NPS score (0-10) per RM across customer survey responses. Higher is better. Production deployment may compute the canonical NPS = %Promoters - %Detractors; this is a simpler proxy.",
+      "value_field": "score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "score"
+      },
+      "period_field": "response_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "CX Score",
+      "active": true,
+      "source_table": "nps",
+      "pattern": "PERCENTAGE",
+      "description": "% of survey responses classified as Promoter (score >=9) per RM. Third non-K-coded library entry wired (after 'Audit Score' v10.120 and 'Collection Throughput' v10.121).",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "band",
+        "value": "Promoter"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "response_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "K015",
+      "active": true,
+      "source_table": "compliance",
+      "pattern": "PERCENTAGE",
+      "description": "% of CBK returns filed on time per filer. Numerator: on_time=True. Denominator: all returns assigned (including Pending/Late). Higher is better.",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "on_time"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "due_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "K008",
+      "active": true,
+      "source_table": "cims",
+      "pattern": "PERCENTAGE",
+      "description": "% of customer complaints resolved per agent (status=Resolved / all). Higher is better. Production deployment may add SLA-band cuts.",
+      "numerator_pred": {
+        "type": "field_eq",
+        "field": "status",
+        "value": "Resolved"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "raised_date",
+      "decimals": 2,
+      "_origin": "v10.124_window4_continuation"
+    },
+    {
+      "kpi_id": "Staff Productivity",
+      "active": true,
+      "source_table": "hr",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean productivity_score (1-100) per manager across their team. Fourth non-K-coded library entry wired (after Audit Score, Collection Throughput, CX Score).",
+      "value_field": "productivity_score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "productivity_score"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K079",
+      "active": true,
+      "source_table": "sanctions_register",
+      "pattern": "COUNT",
+      "description": "Number of sanctions screening records reviewed per reviewer in the period. Proxy for refresh frequency — each new watch_list_version triggers re-screening.",
+      "predicate": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "review_date",
+      "decimals": 0,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K043",
+      "active": true,
+      "source_table": "partnerships",
+      "pattern": "COUNT",
+      "description": "Number of activated partnerships (activated=True) per RM in the period.",
+      "predicate": {
+        "type": "field_is_true",
+        "field": "activated"
+      },
+      "period_field": "last_review_date",
+      "decimals": 0,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K052",
+      "active": true,
+      "source_table": "vendors",
+      "pattern": "PERCENTAGE",
+      "description": "% of managed vendors that are fully compliant (kyc_complete + contract_in_place + insurance_valid) per owner.",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "compliant"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K054",
+      "active": true,
+      "source_table": "agent_fraud",
+      "pattern": "PERCENTAGE",
+      "description": "% of agent fraud alerts cleared per investigator (cleared=True / all alerts assigned).",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "cleared"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "raised_date",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K028",
+      "active": true,
+      "source_table": "collateral",
+      "pattern": "PERCENTAGE",
+      "description": "% of pledged collateral reviewed in the period per credit officer (reviewed_in_period=True / all).",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "reviewed_in_period"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K048",
+      "active": true,
+      "source_table": "collateral",
+      "pattern": "PERCENTAGE",
+      "description": "Mirrors K028 — KPI library has both K028 and K048 with the same name 'Collateral Review Completion (%)'. Both wire identical logic; library may consolidate in a future cleanup.",
+      "numerator_pred": {
+        "type": "field_is_true",
+        "field": "reviewed_in_period"
+      },
+      "denominator_pred": {
+        "type": "field_truthy",
+        "field": "id"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    },
+    {
+      "kpi_id": "K019",
+      "active": true,
+      "source_table": "360_feedback",
+      "pattern": "MEAN_FIELD",
+      "description": "Mean 360 feedback score (1-5 scale) per ratee across all rater perspectives (manager, peer, direct report, cross-functional).",
+      "value_field": "score",
+      "predicate": {
+        "type": "field_is_numeric",
+        "field": "score"
+      },
+      "period_field": "last_updated",
+      "decimals": 2,
+      "_origin": "v10.125_strict_ready_high_crossing"
+    }
+  ]
+}

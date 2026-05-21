@@ -1,0 +1,59 @@
+{
+  "as_at": "2026-05-07",
+  "reporting_period": "March 2026",
+  "scaffolded": true,
+  "currency": "KES",
+  "scale": "millions",
+  "common_equity_tier_1": 11650,
+  "additional_tier_1": 2400,
+  "tier_1_capital": 14050,
+  "tier_2_capital": 3180,
+  "total_capital": 17230,
+  "rwa_credit_risk": 78400,
+  "rwa_market_risk": 4800,
+  "rwa_operational_risk": 9200,
+  "total_rwa": 92400,
+  "cet1_ratio": 12.61,
+  "tier1_ratio": 15.21,
+  "total_capital_ratio": 18.65,
+  "car": 18.65,
+  "cbk_minimum_cet1_pct": 8.0,
+  "cbk_minimum_tier1_pct": 10.5,
+  "cbk_minimum_total_pct": 14.5,
+  "cbk_capital_conservation_buffer_pct": 2.5,
+  "cbk_systemic_risk_buffer_pct": 1.0,
+  "leverage_ratio": 7.84,
+  "leverage_ratio_minimum_pct": 4.5,
+  "headroom_above_minimum": {
+    "cet1_pp": 4.61,
+    "tier1_pp": 4.71,
+    "total_pp": 4.15
+  },
+  "trend_4q": [
+    {
+      "quarter": "Q2 2025",
+      "total_capital_ratio": 17.92,
+      "tier1_ratio": 14.5,
+      "cet1_ratio": 11.92
+    },
+    {
+      "quarter": "Q3 2025",
+      "total_capital_ratio": 18.1,
+      "tier1_ratio": 14.78,
+      "cet1_ratio": 12.18
+    },
+    {
+      "quarter": "Q4 2025",
+      "total_capital_ratio": 18.42,
+      "tier1_ratio": 15.05,
+      "cet1_ratio": 12.41
+    },
+    {
+      "quarter": "Q1 2026",
+      "total_capital_ratio": 18.65,
+      "tier1_ratio": 15.21,
+      "cet1_ratio": 12.61
+    }
+  ],
+  "narrative": "Capital ratios comfortably above CBK minima. CET1 buffer of 4.6pp provides resilience against stress scenarios. Capital conservation buffer fully met."
+}

@@ -11,7 +11,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("irrbb")
+require_access("treasury_alm.irrbb")
 DATA  = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()[:12]
 role     = str(ud.get("role","")).lower()
@@ -99,3 +99,12 @@ try:
     audit_log("PAGE_VIEWED", _viewer, f"Viewed {Path(__file__).stem}")
 except Exception:
     pass
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

@@ -12,7 +12,7 @@ from datetime import date, timedelta
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("integrate")
+require_access("it_platform.command_centre")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -307,3 +307,11 @@ with tabs[5]:
             f"{a.get('message','')[:60]}</span></div>", unsafe_allow_html=True)
     if not all_alerts_disp:
         st.success("✅ No active alerts")
+
+# v10.464 — operational output (WF4 doctrine compliance)
+st.markdown("---")
+if st.button("🔄 Refresh this view"):
+    st.cache_data.clear() if hasattr(st, "cache_data") else None
+    if hasattr(st, "rerun"):
+        st.rerun()
+

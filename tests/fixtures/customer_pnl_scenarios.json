@@ -1,0 +1,888 @@
+[
+  {
+    "id": "P001-corporate-profitable",
+    "description": "Large corporate customer, comfortably profitable. Revenue 600k, direct 213k, indirect 85,898.23 (revenue-weighted from 100k pool, my=600k of 698,501 total revenue) \u2192 PBT=301,101.77, margin=0.5018.",
+    "input": {
+      "revenue": {
+        "interest_income": 500000,
+        "fee_income": 80000,
+        "other_income": 20000
+      },
+      "direct_costs": {
+        "interest_expense": 180000,
+        "loan_loss_provisions": 25000,
+        "transaction_costs": 8000
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 600000,
+        "total_revenue": 698501,
+        "customer_count": 4
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 600000.0,
+      "total_direct_costs": 213000.0,
+      "indirect_overhead": 85898.23,
+      "pbt": 301101.77,
+      "pbt_margin": 0.5018
+    }
+  },
+  {
+    "id": "P002-mass-retail-thin",
+    "description": "Mass-retail customer, thin margin. Revenue 3,500, direct 550, indirect 501.07 \u2192 PBT=2,448.93, margin=0.6997.",
+    "input": {
+      "revenue": {
+        "interest_income": 3000,
+        "fee_income": 500,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 400,
+        "loan_loss_provisions": 100,
+        "transaction_costs": 50
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 3500,
+        "total_revenue": 698501,
+        "customer_count": 4
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 3500.0,
+      "total_direct_costs": 550.0,
+      "indirect_overhead": 501.07,
+      "pbt": 2448.93,
+      "pbt_margin": 0.6997
+    }
+  },
+  {
+    "id": "P003-sme-mid-tier",
+    "description": "SME customer, mid-tier margin. Revenue 95k, direct 33,500, indirect 13,599.84 \u2192 PBT=47,900.16, margin=0.5042.",
+    "input": {
+      "revenue": {
+        "interest_income": 80000,
+        "fee_income": 12000,
+        "other_income": 3000
+      },
+      "direct_costs": {
+        "interest_expense": 28000,
+        "loan_loss_provisions": 4000,
+        "transaction_costs": 1500
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 95000,
+        "total_revenue": 698501,
+        "customer_count": 4
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 95000.0,
+      "total_direct_costs": 33500.0,
+      "indirect_overhead": 13599.84,
+      "pbt": 47900.16,
+      "pbt_margin": 0.5042
+    }
+  },
+  {
+    "id": "P004-loss-making",
+    "description": "Customer where direct costs exceed revenue (deposit-heavy). Negative PBT, negative margin. Revenue 50k, direct 65k, indirect 1k \u2192 PBT=-16,000, margin=-0.32.",
+    "input": {
+      "revenue": {
+        "interest_income": 30000,
+        "fee_income": 20000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 60000,
+        "loan_loss_provisions": 4000,
+        "transaction_costs": 1000
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 50000,
+        "total_revenue": 5000000,
+        "customer_count": 1000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 50000.0,
+      "total_direct_costs": 65000.0,
+      "indirect_overhead": 1000.0,
+      "pbt": -16000.0,
+      "pbt_margin": -0.32
+    }
+  },
+  {
+    "id": "P005-equal-allocation",
+    "description": "equal_per_customer method: pool 100k / 4 customers = 25k each. Revenue 600k, direct 213k, indirect 25k \u2192 PBT=362,000, margin=0.6033.",
+    "input": {
+      "revenue": {
+        "interest_income": 500000,
+        "fee_income": 80000,
+        "other_income": 20000
+      },
+      "direct_costs": {
+        "interest_expense": 180000,
+        "loan_loss_provisions": 25000,
+        "transaction_costs": 8000
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "customer_count": 4
+      },
+      "allocation_method": "equal_per_customer",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 600000.0,
+      "total_direct_costs": 213000.0,
+      "indirect_overhead": 25000.0,
+      "pbt": 362000.0,
+      "pbt_margin": 0.6033
+    }
+  },
+  {
+    "id": "P006-asset-weighted",
+    "description": "asset_weighted method. My assets 50M of 1B total = 5%. Pool 200k \u2192 indirect 10k. Revenue 200k - direct 150k - indirect 10k = PBT=40k, margin=0.20.",
+    "input": {
+      "revenue": {
+        "interest_income": 180000,
+        "fee_income": 20000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 140000,
+        "loan_loss_provisions": 8000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 200000,
+      "allocation_inputs": {
+        "my_assets": 50000000,
+        "total_assets": 1000000000
+      },
+      "allocation_method": "asset_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 200000.0,
+      "total_direct_costs": 150000.0,
+      "indirect_overhead": 10000.0,
+      "pbt": 40000.0,
+      "pbt_margin": 0.2
+    }
+  },
+  {
+    "id": "P007-activity-weighted",
+    "description": "activity_weighted: 1500 of 50000 transactions = 3%. Pool 500k \u2192 indirect 15k. Rev 100k - direct 60k - indirect 15k = 25k, margin=0.25.",
+    "input": {
+      "revenue": {
+        "interest_income": 80000,
+        "fee_income": 18000,
+        "other_income": 2000
+      },
+      "direct_costs": {
+        "interest_expense": 50000,
+        "loan_loss_provisions": 8000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 500000,
+      "allocation_inputs": {
+        "my_activity": 1500,
+        "total_activity": 50000
+      },
+      "allocation_method": "activity_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 100000.0,
+      "total_direct_costs": 60000.0,
+      "indirect_overhead": 15000.0,
+      "pbt": 25000.0,
+      "pbt_margin": 0.25
+    }
+  },
+  {
+    "id": "P008-zero-overhead-pool",
+    "description": "No overhead pool to allocate. Indirect=0. Revenue 100k - direct 70k - 0 = PBT=30k, margin=0.30.",
+    "input": {
+      "revenue": {
+        "interest_income": 100000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 60000,
+        "loan_loss_provisions": 8000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {
+        "my_revenue": 100000,
+        "total_revenue": 1000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 100000.0,
+      "total_direct_costs": 70000.0,
+      "indirect_overhead": 0.0,
+      "pbt": 30000.0,
+      "pbt_margin": 0.3
+    }
+  },
+  {
+    "id": "P009-kes-scale-billions",
+    "description": "Bank-scale PBT. Revenue 5B, direct 3B, indirect 500M \u2192 PBT=1.5B, margin=0.30. Tests Decimal precision at the high end.",
+    "input": {
+      "revenue": {
+        "interest_income": 4500000000,
+        "fee_income": 450000000,
+        "other_income": 50000000
+      },
+      "direct_costs": {
+        "interest_expense": 2700000000,
+        "loan_loss_provisions": 250000000,
+        "transaction_costs": 50000000
+      },
+      "overhead_pool": 500000000,
+      "allocation_inputs": {
+        "customer_count": 1
+      },
+      "allocation_method": "equal_per_customer",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 5000000000.0,
+      "total_direct_costs": 3000000000.0,
+      "indirect_overhead": 500000000.0,
+      "pbt": 1500000000.0,
+      "pbt_margin": 0.3
+    }
+  },
+  {
+    "id": "P010-decimal-revenue",
+    "description": "Fractional currency amounts (basis-point-level fees). Tests that 2dp output rounds correctly. Revenue 12,345.67, direct 8,901.23, indirect 0 \u2192 PBT=3,444.44, margin=0.2790.",
+    "input": {
+      "revenue": {
+        "interest_income": 11111.11,
+        "fee_income": 1234.56,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 8888.88,
+        "loan_loss_provisions": 12.35,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 12345.67,
+      "total_direct_costs": 8901.23,
+      "indirect_overhead": 0.0,
+      "pbt": 3444.44,
+      "pbt_margin": 0.279
+    }
+  },
+  {
+    "id": "P011-tiny-revenue-edge",
+    "description": "Customer with KES 1 of revenue (edge case). Revenue=1, direct=2, indirect=0 \u2192 PBT=-1, margin=-1.0.",
+    "input": {
+      "revenue": {
+        "interest_income": 1,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 2,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 1.0,
+      "total_direct_costs": 2.0,
+      "indirect_overhead": 0.0,
+      "pbt": -1.0,
+      "pbt_margin": -1.0
+    }
+  },
+  {
+    "id": "P012-multiple-revenue-streams",
+    "description": "Customer with all three revenue streams. Revenue 250k (100k+100k+50k), direct 130k, indirect 20k \u2192 PBT=100k, margin=0.40.",
+    "input": {
+      "revenue": {
+        "interest_income": 100000,
+        "fee_income": 100000,
+        "other_income": 50000
+      },
+      "direct_costs": {
+        "interest_expense": 100000,
+        "loan_loss_provisions": 25000,
+        "transaction_costs": 5000
+      },
+      "overhead_pool": 200000,
+      "allocation_inputs": {
+        "my_revenue": 250000,
+        "total_revenue": 2500000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 250000.0,
+      "total_direct_costs": 130000.0,
+      "indirect_overhead": 20000.0,
+      "pbt": 100000.0,
+      "pbt_margin": 0.4
+    }
+  },
+  {
+    "id": "P013-high-provision-low-margin",
+    "description": "Customer with heavy IFRS-9 provisions eating into PBT. Revenue 100k, direct 90k (70k interest + 20k provisions), indirect 5k \u2192 PBT=5k, margin=0.05.",
+    "input": {
+      "revenue": {
+        "interest_income": 90000,
+        "fee_income": 10000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 70000,
+        "loan_loss_provisions": 20000,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 100000,
+        "total_revenue": 2000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 100000.0,
+      "total_direct_costs": 90000.0,
+      "indirect_overhead": 5000.0,
+      "pbt": 5000.0,
+      "pbt_margin": 0.05
+    }
+  },
+  {
+    "id": "P014-platinum-tier-candidate",
+    "description": "Top-tier customer: very high margin (>80%). Revenue 1M, direct 50k, indirect 100k \u2192 PBT=850k, margin=0.85.",
+    "input": {
+      "revenue": {
+        "interest_income": 800000,
+        "fee_income": 150000,
+        "other_income": 50000
+      },
+      "direct_costs": {
+        "interest_expense": 30000,
+        "loan_loss_provisions": 15000,
+        "transaction_costs": 5000
+      },
+      "overhead_pool": 1000000,
+      "allocation_inputs": {
+        "my_revenue": 1000000,
+        "total_revenue": 10000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 1000000.0,
+      "total_direct_costs": 50000.0,
+      "indirect_overhead": 100000.0,
+      "pbt": 850000.0,
+      "pbt_margin": 0.85
+    }
+  },
+  {
+    "id": "P015-cross-method-consistency-check",
+    "description": "Same numerator on revenue_weighted: my=100k of 500k = 20% \u00d7 50k pool = 10k indirect. Revenue 100k, direct 70k, indirect 10k \u2192 PBT=20k, margin=0.20.",
+    "input": {
+      "revenue": {
+        "interest_income": 80000,
+        "fee_income": 20000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 60000,
+        "loan_loss_provisions": 8000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 50000,
+      "allocation_inputs": {
+        "my_revenue": 100000,
+        "total_revenue": 500000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 100000.0,
+      "total_direct_costs": 70000.0,
+      "indirect_overhead": 10000.0,
+      "pbt": 20000.0,
+      "pbt_margin": 0.2
+    }
+  },
+  {
+    "id": "P016-rounding-edge",
+    "description": "Tests 2dp rounding precision. Numbers chosen so the indirect lands at 333.333... and rounds to 333.33. Revenue 1000, direct 500, indirect 333.33 \u2192 PBT=166.67, margin=0.1667.",
+    "input": {
+      "revenue": {
+        "interest_income": 1000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 500,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 1000,
+      "allocation_inputs": {
+        "my_revenue": 1000,
+        "total_revenue": 3000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 1000.0,
+      "total_direct_costs": 500.0,
+      "indirect_overhead": 333.33,
+      "pbt": 166.67,
+      "pbt_margin": 0.1667
+    }
+  },
+  {
+    "id": "P017-equal-allocation-many-customers",
+    "description": "equal_per_customer with 1000 customers. Pool 10M / 1000 = 10k each. Revenue 200k, direct 100k, indirect 10k \u2192 PBT=90k, margin=0.45.",
+    "input": {
+      "revenue": {
+        "interest_income": 180000,
+        "fee_income": 20000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 90000,
+        "loan_loss_provisions": 8000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 10000000,
+      "allocation_inputs": {
+        "customer_count": 1000
+      },
+      "allocation_method": "equal_per_customer",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 200000.0,
+      "total_direct_costs": 100000.0,
+      "indirect_overhead": 10000.0,
+      "pbt": 90000.0,
+      "pbt_margin": 0.45
+    }
+  },
+  {
+    "id": "P018-deposit-only-customer",
+    "description": "Customer with only deposits (no lending). Interest_income=0, fee_income=2000, interest_expense=8000, indirect=500. PBT=-6500, margin=-3.25.",
+    "input": {
+      "revenue": {
+        "interest_income": 0,
+        "fee_income": 2000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 8000,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 2000,
+        "total_revenue": 400000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 2000.0,
+      "total_direct_costs": 8000.0,
+      "indirect_overhead": 500.0,
+      "pbt": -6500.0,
+      "pbt_margin": -3.25
+    }
+  },
+  {
+    "id": "P019-loan-only-customer",
+    "description": "Customer with only lending (no deposits). All revenue from interest. Revenue 50k, direct 12k (provisions+txn), indirect 5k \u2192 PBT=33k, margin=0.66.",
+    "input": {
+      "revenue": {
+        "interest_income": 50000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 0,
+        "loan_loss_provisions": 10000,
+        "transaction_costs": 2000
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 50000,
+        "total_revenue": 1000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 50000.0,
+      "total_direct_costs": 12000.0,
+      "indirect_overhead": 5000.0,
+      "pbt": 33000.0,
+      "pbt_margin": 0.66
+    }
+  },
+  {
+    "id": "P020-revenue-weighted-tiny-share",
+    "description": "Tiny revenue share of bank total. my=1000 of 10M total = 0.01% \u00d7 1M pool = 100 indirect. Revenue 1k, direct 200, indirect 100 \u2192 PBT=700, margin=0.70.",
+    "input": {
+      "revenue": {
+        "interest_income": 1000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 200,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 1000000,
+      "allocation_inputs": {
+        "my_revenue": 1000,
+        "total_revenue": 10000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_mode": "off"
+    },
+    "expected": {
+      "total_revenue": 1000.0,
+      "total_direct_costs": 200.0,
+      "indirect_overhead": 100.0,
+      "pbt": 700.0,
+      "pbt_margin": 0.7
+    }
+  },
+  {
+    "id": "P021-ftp-deposit-only-canonical",
+    "description": "CANONICAL DEMONSTRATION OF V5.45\u2192V5.46 FIX. Deposit-only customer: KES 10M deposit at 1% paid, fee income 2,000. FTP rate 8%, monthly period (1/12). ftp_credit = 10M \u00d7 (0.08-0.01) \u00d7 1/12 = 58,333.33; interest_expense = 10M \u00d7 0.01 \u00d7 1/12 = 8,333.33; no overhead. Total revenue = 2,000 + 58,333.33 = 60,333.33. PBT = 60,333.33 - 8,333.33 - 0 = 52,000. (In v5.45 this customer would have been -6,333.33.)",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 0,
+        "fee_income": 2000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 8333.33,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 10000000,
+        "deposit_rate_paid": 0.01,
+        "loan_balance": 0,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 58333.33,
+      "ftp_charge_on_loans": null,
+      "total_revenue": 60333.33,
+      "total_direct_costs": 8333.33,
+      "indirect_overhead": 0.0,
+      "pbt": 52000.0,
+      "pbt_margin": 0.8619
+    }
+  },
+  {
+    "id": "P022-ftp-loan-only-margin-shrinks",
+    "description": "Loan-only customer: KES 5M loan at 14%, FTP 8%, monthly. interest_income (customer rate) = 5M \u00d7 0.14 \u00d7 1/12 = 58,333.33; ftp_charge = 5M \u00d7 0.08 \u00d7 1/12 = 33,333.33; loan_loss_provisions 1,000. PBT = 58,333.33 - 33,333.33 - 1,000 = 24,000. Net lending margin = 25,000 (= 5M \u00d7 0.06 \u00d7 1/12) before provisions.",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 58333.33,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 0,
+        "loan_loss_provisions": 1000,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 0,
+        "deposit_rate_paid": 0,
+        "loan_balance": 5000000,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": null,
+      "ftp_charge_on_loans": 33333.33,
+      "total_revenue": 58333.33,
+      "total_direct_costs": 34333.33,
+      "indirect_overhead": 0.0,
+      "pbt": 24000.0,
+      "pbt_margin": 0.4115
+    }
+  },
+  {
+    "id": "P023-ftp-mixed-relationship",
+    "description": "Customer with both sides: KES 5M deposit at 2%, KES 3M loan at 12%, FTP 8%, monthly. interest_income = 3M \u00d7 0.12 \u00d7 1/12 = 30,000; interest_expense = 5M \u00d7 0.02 \u00d7 1/12 = 8,333.33; ftp_credit on deposits = 5M \u00d7 (0.08-0.02) \u00d7 1/12 = 25,000; ftp_charge on loans = 3M \u00d7 0.08 \u00d7 1/12 = 20,000. Total rev = 30,000 + 25,000 = 55,000; Total direct = 8,333.33 + 20,000 = 28,333.33; PBT = 55,000 - 28,333.33 = 26,666.67. Sanity: deposit margin (5M\u00d76%/12=25k) + loan margin (3M\u00d74%/12=10k) = 35k - interest_expense 8,333 = 26,667 \u2713",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 30000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 8333.33,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 5000000,
+        "deposit_rate_paid": 0.02,
+        "loan_balance": 3000000,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 25000.0,
+      "ftp_charge_on_loans": 20000.0,
+      "total_revenue": 55000.0,
+      "total_direct_costs": 28333.33,
+      "indirect_overhead": 0.0,
+      "pbt": 26666.67,
+      "pbt_margin": 0.4848
+    }
+  },
+  {
+    "id": "P024-ftp-deposit-rate-equals-ftp",
+    "description": "Edge case: deposit rate paid = FTP rate (e.g. wholesale time deposit at funding curve). ftp_credit = bal \u00d7 (FTP - rate) = 0. 10M deposit at 8% paid, FTP 8% \u2192 ftp_credit=0. interest_expense = 10M \u00d7 0.08 \u00d7 1/12 = 66,666.67. fee_income 5,000. Total rev = 5,000; direct = 66,666.67. PBT = -61,666.67. (Honest: this customer IS unprofitable \u2014 no spread on the deposit because rate paid matches FTP. Correct behaviour.)",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 0,
+        "fee_income": 5000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 66666.67,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 10000000,
+        "deposit_rate_paid": 0.08,
+        "loan_balance": 0,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 0.0,
+      "ftp_charge_on_loans": null,
+      "total_revenue": 5000.0,
+      "total_direct_costs": 66666.67,
+      "indirect_overhead": 0.0,
+      "pbt": -61666.67,
+      "pbt_margin": -12.3333
+    }
+  },
+  {
+    "id": "P025-ftp-quarterly-period",
+    "description": "Quarterly period_fraction = 1/4. KES 4M deposit at 1.5%, FTP 7%. ftp_credit = 4M \u00d7 (0.07-0.015) \u00d7 0.25 = 55,000. interest_expense = 4M \u00d7 0.015 \u00d7 0.25 = 15,000. fee_income 3,000. Total rev = 58,000; direct = 15,000; PBT = 43,000.",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 0,
+        "fee_income": 3000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 15000,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.07,
+        "deposit_balance": 4000000,
+        "deposit_rate_paid": 0.015,
+        "loan_balance": 0,
+        "period_fraction": 0.25
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 55000.0,
+      "ftp_charge_on_loans": null,
+      "total_revenue": 58000.0,
+      "total_direct_costs": 15000.0,
+      "indirect_overhead": 0.0,
+      "pbt": 43000.0,
+      "pbt_margin": 0.7414
+    }
+  },
+  {
+    "id": "P026-ftp-with-overhead-allocation",
+    "description": "Mixed customer + revenue-weighted overhead allocation. KES 8M deposit at 2%, KES 2M loan at 13%, FTP 8%, monthly, fee income 1,500. Pool 100k, my=expected_revenue, total=10M. interest_income = 2M \u00d7 0.13 \u00d7 1/12 = 21,666.67; interest_expense = 8M \u00d7 0.02 \u00d7 1/12 = 13,333.33; ftp_credit = 8M \u00d7 (0.08-0.02) \u00d7 1/12 = 40,000; ftp_charge = 2M \u00d7 0.08 \u00d7 1/12 = 13,333.33. Total revenue = 21,666.67 + 1,500 + 40,000 = 63,166.67. indirect_overhead = 100,000 \u00d7 63,166.67/10,000,000 = 631.67. Total direct = 13,333.33 + 13,333.33 = 26,666.66. PBT = 63,166.67 - 26,666.66 - 631.67 = 35,868.34.",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 21666.67,
+        "fee_income": 1500,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 13333.33,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 100000,
+      "allocation_inputs": {
+        "my_revenue": 63166.67,
+        "total_revenue": 10000000
+      },
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 8000000,
+        "deposit_rate_paid": 0.02,
+        "loan_balance": 2000000,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 40000.0,
+      "ftp_charge_on_loans": 13333.33,
+      "total_revenue": 63166.67,
+      "total_direct_costs": 26666.66,
+      "indirect_overhead": 631.67,
+      "pbt": 35868.34,
+      "pbt_margin": 0.5678
+    }
+  },
+  {
+    "id": "P027-ftp-large-corporate",
+    "description": "Large corporate. KES 500M deposit at 3%, KES 200M loan at 11%, FTP 8%, monthly. interest_income = 200M \u00d7 0.11 \u00d7 1/12 = 1,833,333.33; interest_expense = 500M \u00d7 0.03 \u00d7 1/12 = 1,250,000; ftp_credit = 500M \u00d7 (0.08-0.03) \u00d7 1/12 = 2,083,333.33; ftp_charge = 200M \u00d7 0.08 \u00d7 1/12 = 1,333,333.33; fee_income 100,000. Total rev = 1,833,333.33 + 100,000 + 2,083,333.33 = 4,016,666.66. Total direct = 1,250,000 + 1,333,333.33 = 2,583,333.33. PBT = 4,016,666.66 - 2,583,333.33 = 1,433,333.33.",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 1833333.33,
+        "fee_income": 100000,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 1250000,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "ftp_rate": 0.08,
+        "deposit_balance": 500000000,
+        "deposit_rate_paid": 0.03,
+        "loan_balance": 200000000,
+        "period_fraction": 0.0833333333333333
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": 2083333.33,
+      "ftp_charge_on_loans": 1333333.33,
+      "total_revenue": 4016666.66,
+      "total_direct_costs": 2583333.33,
+      "indirect_overhead": 0.0,
+      "pbt": 1433333.33,
+      "pbt_margin": 0.3569
+    }
+  },
+  {
+    "id": "P028-ftp-incomplete-inputs-graceful",
+    "description": "ftp_mode='on' but ftp_inputs returns dict missing ftp_rate. Engine should NOT silently fall back to gross-interest math. Instead: log missing keys in meta.ftp_missing, skip FTP buckets, compute PBT from supplied buckets only. Revenue 10,000, direct 6,000 \u2192 PBT 4,000.",
+    "input": {
+      "ftp_mode": "on",
+      "revenue": {
+        "interest_income": 10000,
+        "fee_income": 0,
+        "other_income": 0
+      },
+      "direct_costs": {
+        "interest_expense": 6000,
+        "loan_loss_provisions": 0,
+        "transaction_costs": 0
+      },
+      "overhead_pool": 0,
+      "allocation_inputs": {},
+      "allocation_method": "revenue_weighted",
+      "ftp_inputs": {
+        "deposit_balance": 1000000
+      }
+    },
+    "expected": {
+      "ftp_credit_on_deposits": null,
+      "ftp_charge_on_loans": null,
+      "total_revenue": 10000.0,
+      "total_direct_costs": 6000.0,
+      "indirect_overhead": 0.0,
+      "pbt": 4000.0,
+      "pbt_margin": 0.4,
+      "ftp_missing_should_contain": [
+        "ftp_rate",
+        "period_fraction"
+      ]
+    }
+  }
+]

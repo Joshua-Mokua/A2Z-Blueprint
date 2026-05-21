@@ -1,0 +1,55 @@
+{
+  "_doc": "Honest competitive comparison. Per docs/A2Z_LIVING_DOCS_PLAN.md Part 3 Rule 1, comparisons cite specific competitor capabilities with URLs/dates rather than vague 'we are better' claims. Honest scope sections distinguish what A2Z does/doesn't do.",
+  "_schema_version": "1.0",
+  "_last_reviewed_iso": "2026-05-01",
+  "what_a2z_is_genuinely_distinctive_about": [
+    {
+      "claim": "Audit-locked architectural invariants",
+      "explanation": "6-gate defense-in-depth perimeter (G104-G109) means the codebase enforces its own architectural rules. Engineering decisions documented in the charter become permanent invariants — future regressions fail the build. Few banking platforms ship with this discipline.",
+      "verification": "Run python scripts/audit.py on any version and review the gate definitions in scripts/audit.py.",
+      "honest_scope": "This is a discipline pattern, not a unique technology. Other platforms COULD adopt it; A2Z has."
+    },
+    {
+      "claim": "Systems-layer-first design",
+      "explanation": "The platform's stocks (6), feedback loops (15), invariants, and composites are first-class objects in the codebase, not inferred from a relational schema. Per Charter §6 (Meadows: 'a system is its feedback loops').",
+      "verification": "utils/system_stocks.py + utils/system_flows.py + utils/system_invariants.py + utils/composite_scores.py",
+      "honest_scope": "Most banking MIS systems organize around modules + reports. A2Z organizes around stocks + flows + invariants. This is not strictly better; it is a different design choice that produces different operational properties."
+    },
+    {
+      "claim": "100% feedback-loop coverage with the engine+loop+UI canonical sequence",
+      "explanation": "All 15 designed feedback loops are wired in code. New loops follow a 2-batch + UI-surface sequence (engine batch + closure batch + surfacing batch).",
+      "verification": "utils/system_flows.py — every loop has status: WIRED. The L05 (cards) and L14 (streaming) sequences (v7.12/v7.13 + v8.4/v8.5) are documented examples.",
+      "honest_scope": "100% of DESIGNED loops are wired. The charter could grow with new loops in v9.x; we have not surveyed every conceivable feedback signal in banking."
+    }
+  ],
+  "alternatives_a2z_does_not_attempt_to_replace": [
+    {
+      "category": "Core banking system (FLEXCUBE, T24, Finacle, etc.)",
+      "explanation": "A2Z requires a core banking system; it does NOT replace one. A2Z reads from FLEXCUBE via the ACL.",
+      "honest_disclaimer": "Banks evaluating A2Z still need their core banking platform."
+    },
+    {
+      "category": "General-purpose business intelligence (PowerBI, Tableau, Looker)",
+      "explanation": "A2Z is banking-domain-specific with built-in IFRS engines, BSC pillars, capital adequacy, etc. PowerBI/Tableau are general analytics — they need every domain rule built from scratch.",
+      "honest_disclaimer": "If a bank wants a generic dashboard tool with custom calculations, BI tools are appropriate. A2Z is appropriate when the bank wants the BANKING DOMAIN baked in."
+    },
+    {
+      "category": "Customer relationship management (Salesforce, Dynamics)",
+      "explanation": "A2Z's CRM workflows (pipeline_management.py + page 3_pipeline.py) are A2Z-Blueprint-internal, not a Salesforce replacement.",
+      "honest_disclaimer": "Banks deeply invested in Salesforce/Dynamics will use those for CRM; A2Z's pipeline module is for banks without dedicated CRM."
+    }
+  ],
+  "what_a2z_is_NOT_better_at": [
+    "Multi-process scaling: v8.x is single-process Streamlit. Production multi-tenant deployments need Redis-backed shared state (v9.x roadmap). High-throughput banking platforms like Mambu or Temenos T24 handle scale natively.",
+    "Mobile banking customer-facing app: A2Z is internal MIS. It does not provide the customer-facing mobile/web banking experience. Banks need a separate digital banking suite (Backbase, Finastra, etc.) for that.",
+    "Payment processing: A2Z does not process payments. It reports on them. Payment processing belongs to the core banking system + payment networks.",
+    "Marketing automation: A2Z's campaigns module is internal targeting + tracking. It does not replace marketing automation platforms (Marketo, HubSpot).",
+    "Card processing: A2Z's cards module (utils/cards.py) provides usage profiling and L05 closure. It does not provide card issuance or transaction authorization."
+  ],
+  "honest_scope": [
+    "This document deliberately does NOT name specific competitor products with comparative percentages. Such claims require defensible methodology that A2Z does not have at v8.x.",
+    "A2Z's discipline patterns (audit gates, honest acknowledgements, 2-batch canonical sequence) are reproducible by others. The competitive moat is execution of the discipline, not the discipline itself.",
+    "Banks evaluating A2Z should treat the 36-batch clean-streak as evidence of execution discipline, not as evidence of feature breadth. Specific feature parity vs Oracle FCUBS Performance Manager or McKinsey Wave requires line-item comparison the bank does itself.",
+    "Where the original draft said 'no other banking MIS offers...' — those claims are removed because verifying them would require a market survey A2Z has not conducted."
+  ]
+}

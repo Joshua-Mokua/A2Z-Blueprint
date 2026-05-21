@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pipeline.json",
+  "description": "CRM pipeline — sales opportunities at all stages. 302 records in current dataset. 10 universal fields lock the minimum; 34 optional fields tolerate per-deal metadata variation (notes, expected_close, currency, etc).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id", "client_name", "amount", "stage", "probability",
+      "product", "staff_code", "staff_name", "open_date", "last_updated"
+    ],
+    "properties": {
+      "id": {"type": "string", "minLength": 1},
+      "client_name": {"type": "string", "minLength": 1},
+      "amount": {"type": "number", "minimum": 0},
+      "stage": {"type": "string", "minLength": 1},
+      "probability": {"type": "number", "minimum": 0, "maximum": 100},
+      "product": {"type": "string"},
+      "staff_code": {"type": "string"},
+      "staff_name": {"type": "string"},
+      "open_date": {"type": "string"},
+      "last_updated": {"type": "string"},
+      "unit": {"type": "string"},
+      "role": {"type": "string"},
+      "currency": {"type": "string"},
+      "expected_close": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+      "notes": {"type": "string"}
+    },
+    "additionalProperties": true
+  },
+  "_lock_version": "v10.343",
+  "_canonical_producer": "pages/3_pipeline.py CRM pipeline editor",
+  "_optional_fields_allowed": true,
+  "_note": "8 of 302 records (2.6%) lack the 5 newer optional fields — likely older deals from before fields were added. Schema accepts this; consumers must use .get() for any non-required field. Pipeline data is also consumed by utils/pipeline_to_bsc.py (v10.323) and the v10.337 activity bridge."
+}

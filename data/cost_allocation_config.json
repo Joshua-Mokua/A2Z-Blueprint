@@ -1,0 +1,32 @@
+{
+  "_doc": "Cost allocation config for ENH-131 ProductPnLIntelligence. Bank-overridable. Defaults reflect Tier-2 Kenya bank baseline. Anchor rates: CBK rate 13.0% (treasury_alm.json), interbank 13.85%; blended COF 8.5% reflects ~50/50 CASA-vs-term mix.",
+  "_schema_version": "v10.142",
+  "_last_reviewed": "2026-05-05",
+
+  "cost_of_funds_rate_pct": 8.5,
+  "loss_given_default_pct": 45.0,
+  "direct_ops_cost_pct_of_revenue": 12.0,
+  "allocated_overhead_pct_of_revenue": 18.0,
+
+  "category_overrides": {
+    "Trade Finance": {
+      "direct_ops_cost_pct_of_revenue": 18.0,
+      "loss_given_default_pct": 35.0,
+      "_note": "Trade Finance has higher ops cost (LC issuance, document handling) and lower LGD (collateralized by underlying goods)."
+    },
+    "Digital": {
+      "direct_ops_cost_pct_of_revenue": 6.0,
+      "_note": "Digital channels have low marginal ops cost — STP processing dominates."
+    },
+    "Deposits": {
+      "_note": "Cost model is deposits — funding/credit costs are not applied (revenue is already NIM-net)."
+    },
+    "Fee Income": {
+      "_note": "Cost model is fee — funding/credit costs are not applied. Bancassurance commission income is netted at source."
+    },
+    "Corporate": {
+      "loss_given_default_pct": 35.0,
+      "_note": "Corporate exposures often have collateral / parent guarantees, lowering effective LGD."
+    }
+  }
+}

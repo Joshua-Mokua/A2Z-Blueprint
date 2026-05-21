@@ -1,0 +1,660 @@
+[
+  {
+    "branch_code": "B001",
+    "branch_name": "Banana",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B002",
+    "branch_name": "Bomet",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B003",
+    "branch_name": "Bungoma",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B004",
+    "branch_name": "Busia",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B005",
+    "branch_name": "Cargen House",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B006",
+    "branch_name": "Chuka",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B007",
+    "branch_name": "City Hall",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B008",
+    "branch_name": "Dagoretti",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B009",
+    "branch_name": "Digo",
+    "region": "Coast",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B010",
+    "branch_name": "Donholm",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B011",
+    "branch_name": "Eastleigh",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B012",
+    "branch_name": "Eldoret",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B013",
+    "branch_name": "Eldoret West",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B014",
+    "branch_name": "Embu",
+    "region": "Central",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B015",
+    "branch_name": "FB Towers Corporate",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B016",
+    "branch_name": "FB Towers Retail",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B017",
+    "branch_name": "Gateway Mall",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B018",
+    "branch_name": "Gatundu",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B019",
+    "branch_name": "Gikomba",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B020",
+    "branch_name": "Gikomba Area 42",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B021",
+    "branch_name": "Githunguri",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B022",
+    "branch_name": "Githurai",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B023",
+    "branch_name": "Industrial Area",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B024",
+    "branch_name": "Isiolo",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B025",
+    "branch_name": "JKIA",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B026",
+    "branch_name": "KTDA Retail",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B027",
+    "branch_name": "Kagwe",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B028",
+    "branch_name": "Kahawa West",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B029",
+    "branch_name": "Kajiado",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B030",
+    "branch_name": "Kakamega",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B031",
+    "branch_name": "Kangari",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B032",
+    "branch_name": "Kangema",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B033",
+    "branch_name": "Kangemi",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B034",
+    "branch_name": "Kapsabet",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B035",
+    "branch_name": "Karatina",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B036",
+    "branch_name": "Kariobangi",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B037",
+    "branch_name": "Kasarani",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B038",
+    "branch_name": "Kayole",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B039",
+    "branch_name": "Kenyatta Avenue",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B040",
+    "branch_name": "Kericho",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B041",
+    "branch_name": "Kerugoya",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B042",
+    "branch_name": "Kiambu",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B043",
+    "branch_name": "Kikuyu",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B044",
+    "branch_name": "Kilimani",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B045",
+    "branch_name": "Kiriaini",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B046",
+    "branch_name": "Kisii",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B047",
+    "branch_name": "Kisumu Express",
+    "region": "Nyanza",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B048",
+    "branch_name": "Kitale",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B049",
+    "branch_name": "Kitengela",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B050",
+    "branch_name": "Kitui",
+    "region": "Eastern",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B051",
+    "branch_name": "Kongowea",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B052",
+    "branch_name": "Kutus",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B053",
+    "branch_name": "Laptrust",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B054",
+    "branch_name": "Limuru",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B055",
+    "branch_name": "Litein",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B056",
+    "branch_name": "Machakos",
+    "region": "Eastern",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B057",
+    "branch_name": "Makongeni",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B058",
+    "branch_name": "Malindi",
+    "region": "Coast",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B059",
+    "branch_name": "Maua",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B060",
+    "branch_name": "Meru",
+    "region": "Central",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B061",
+    "branch_name": "Migori",
+    "region": "Nyanza",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B062",
+    "branch_name": "Mlolongo",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B063",
+    "branch_name": "Moi Avenue",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B064",
+    "branch_name": "Molo",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B065",
+    "branch_name": "Mombasa Kenyatta Avenue",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B066",
+    "branch_name": "Mombasa Nkrumah",
+    "region": "Coast",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B067",
+    "branch_name": "Mtwapa",
+    "region": "Coast",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B068",
+    "branch_name": "Mumias",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B069",
+    "branch_name": "Muranga",
+    "region": "Central",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B070",
+    "branch_name": "Mwea",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B071",
+    "branch_name": "Naivasha",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B072",
+    "branch_name": "Nakuru Finance",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B073",
+    "branch_name": "Nakuru Market",
+    "region": "Rift Valley",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B074",
+    "branch_name": "Nanyuki",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B075",
+    "branch_name": "Narok",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B076",
+    "branch_name": "Ngara",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B077",
+    "branch_name": "Nkubu",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B078",
+    "branch_name": "Nyahururu",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B079",
+    "branch_name": "Nyali",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B080",
+    "branch_name": "Nyamira",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B081",
+    "branch_name": "Nyeri",
+    "region": "Central",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B082",
+    "branch_name": "Ol Kalau",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B083",
+    "branch_name": "Othaya",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B084",
+    "branch_name": "River Road",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B085",
+    "branch_name": "River Road West",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B086",
+    "branch_name": "Rongai",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B087",
+    "branch_name": "Ruaka",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B088",
+    "branch_name": "Ruiru",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B089",
+    "branch_name": "Thika",
+    "region": "Central",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B090",
+    "branch_name": "Ukunda",
+    "region": "Coast",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B091",
+    "branch_name": "Utawala",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B092",
+    "branch_name": "Wangige",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B093",
+    "branch_name": "Westlands",
+    "region": "Nairobi",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  },
+  {
+    "branch_code": "B094",
+    "branch_name": "Wote",
+    "region": "Other",
+    "status": "ACTIVE",
+    "opened_date": "2010-01-01"
+  }
+]

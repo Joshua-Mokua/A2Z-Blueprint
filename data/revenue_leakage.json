@@ -1,0 +1,86 @@
+[
+  {
+    "id": "LEAK0001",
+    "detected_date": "2026-04-12",
+    "category": "Duplicate Billing",
+    "amount": 480000,
+    "client": "ABC Holdings Ltd",
+    "client_cif": "CIF000123",
+    "status": "investigating",
+    "detection_method": "RevenueAnomalyPatternEngine.detect_duplicate_billing",
+    "recovery_status": "pending",
+    "recovered_amount": 0
+  },
+  {
+    "id": "LEAK0002",
+    "detected_date": "2026-04-14",
+    "category": "Unauthorized Waiver",
+    "amount": 1240000,
+    "client": "Karatina Tea Factory",
+    "client_cif": "CIF000456",
+    "status": "confirmed",
+    "detection_method": "RevenueAnomalyPatternEngine.detect_unauthorized_waiver",
+    "recovery_status": "in_progress",
+    "recovered_amount": 320000
+  },
+  {
+    "id": "LEAK0003",
+    "detected_date": "2026-04-18",
+    "category": "Expired Contract Billing",
+    "amount": 85000,
+    "client": "Nyali Beach Hotel",
+    "client_cif": "CIF000789",
+    "status": "resolved",
+    "detection_method": "RevenueAnomalyPatternEngine.detect_expired_contract",
+    "recovery_status": "recovered",
+    "recovered_amount": 85000
+  },
+  {
+    "id": "LEAK0004",
+    "detected_date": "2026-04-22",
+    "category": "Rate Card Breach",
+    "amount": 2180000,
+    "client": "Sasini Tea & Coffee Plc",
+    "client_cif": "CIF000321",
+    "status": "confirmed",
+    "detection_method": "RevenueAnomalyPatternEngine.detect_rate_card_breach",
+    "recovery_status": "pending",
+    "recovered_amount": 0
+  },
+  {
+    "id": "LEAK0005",
+    "detected_date": "2026-04-25",
+    "category": "Missing Tax (Excise Duty)",
+    "amount": 340000,
+    "client": "Bidco Africa Ltd",
+    "client_cif": "CIF000654",
+    "status": "confirmed",
+    "detection_method": "RevenueAnomalyPatternEngine.detect_missing_tax",
+    "recovery_status": "in_progress",
+    "recovered_amount": 340000
+  },
+  {
+    "id": "LEAK0006",
+    "detected_date": "2026-04-28",
+    "category": "Commission Anomaly",
+    "amount": 760000,
+    "client": "Multiple Agents (12)",
+    "client_cif": "AGENT_BATCH",
+    "status": "investigating",
+    "detection_method": "CommissionAssuranceEngine.summarize_disputes",
+    "recovery_status": "pending",
+    "recovered_amount": 0
+  },
+  {
+    "id": "LEAK0007",
+    "detected_date": "2026-05-02",
+    "category": "Partner Share Mismatch",
+    "amount": 1580000,
+    "client": "Visa Direct (settlement)",
+    "client_cif": "PARTNER_VISA",
+    "status": "confirmed",
+    "detection_method": "PartnerSupplierReconciliationEngine.validate_partner_share",
+    "recovery_status": "pending",
+    "recovered_amount": 0
+  }
+]

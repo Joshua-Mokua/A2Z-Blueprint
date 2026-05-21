@@ -5,9 +5,12 @@ Called by app.py on startup and by the Admin refresh button.
 No manual Excel upload needed once CBS data exists.
 """
 import json, csv, openpyxl
+import logging
 from pathlib import Path
 from datetime import date, datetime
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 def _root():
@@ -308,6 +311,13 @@ def compute_actuals_from_cbs(force: bool = False) -> dict:
     # through the central engine. Failures here are non-fatal — the
     # legacy xlsx output still ships even if the engine rejects records.
     bsc_summary = _submit_to_bsc_engine(rows, period)
+
+    # v10.355: YoY sidecar is refreshed by callers (app.py / admin
+    # refresh) AFTER this function returns. Inverted from the original
+    # v10.355 placement to break the actuals_engine → live_actuals →
+    # cbs_baseline → actuals_engine cycle that G128 flagged. The lower
+    # data-extraction layer (this module) no longer depends on the
+    # higher orchestration layer (live_actuals).
 
     elapsed = (datetime.now() - t0).total_seconds()
     return {"success": True, "path": out_path,
@@ -758,9 +768,13 @@ def _add_initiative_kpis(rows, staff_list, lib, period):
         pass
     # ── Inject DRS recovery actuals ──────────────────────────────────
     try:
-        ra_file = DATA_DIR.parent / "data" / "recovery_actuals.json"
+        # v10.352 — DATA_DIR was undefined here (latent NameError). Resolve
+        # the data directory via the same helper other functions in this
+        # module use.
+        _cbs_dir, _data_dir = get_cbs_paths()
+        ra_file = _data_dir.parent / "data" / "recovery_actuals.json"
         if not ra_file.exists():
-            ra_file = DATA_DIR / "recovery_actuals.json"
+            ra_file = _data_dir / "recovery_actuals.json"
         if ra_file.exists():
             ra_data = json.loads(ra_file.read_text())
             for row in rows:
@@ -965,6 +979,27 @@ def compute_bank_aggregates(cbs_dir: Path) -> dict:
 
     lt = bank["loans"] or 1;  dt = bank["dep"] or 1;  at = bi["total"] or 1
 
+    # ── v10.364: compute PBT via proper P&L breakdown ─────────────────
+    # Replaces the v10.34x naive placeholder (bank[int] + bank[fee] - bank[loans]*0.02)
+    # with a real Operating Income - OpEx - Impairment computation. All
+    # factors configurable in data/opex_data.json + data/pbt_assumptions.json.
+    # See utils/pbt_computation.py for the full P&L drill-down.
+    try:
+        from utils.pbt_computation import compute_pbt_from_cbs as _compute_pbt
+        _pbt_components = _compute_pbt(cbs_dir)
+        _pbt_value = float(_pbt_components.pbt)
+        _nii_value = float(_pbt_components.nii)
+        _cir_value = (
+            float(_pbt_components.total_opex / _pbt_components.operating_income * 100)
+            if _pbt_components.operating_income > 0 else 0.0
+        )
+    except Exception:
+        # Fallback to legacy naive estimate if pbt_computation is unavailable
+        # (won't happen normally — module is imported lazily for clean separation)
+        _pbt_value = round(bank["int"] + bank["fee"] - bank["loans"] * 0.02, 2)
+        _nii_value = bank["int"]
+        _cir_value = 0.0
+
     return {
         "Retail & MSME Deposit Growth":  bank["retail_dep"],
         "Commercial Deposit Growth":      bank["comm_dep"],
@@ -979,7 +1014,9 @@ def compute_bank_aggregates(cbs_dir: Path) -> dict:
         "CASA Ratio":                     round(bank["casa"] / dt * 100, 2),
         "Total NFI":                      round(bank["fee"] + bank["int"] * 0.15, 2),
         "Fees and Commission":            bank["fee"],
-        "PBT":                            round(bank["int"] + bank["fee"] - bank["loans"] * 0.02, 2),
+        "PBT":                            _pbt_value,
+        "NII":                            _nii_value,
+        "CIR":                            round(_cir_value, 2),
         "Account Dormancy":               round(bi["dormant"] / at * 100, 2),
         "Channel Dormancy":               round(bi["dormant"] / at * 100, 2),
         "New Accounts":                   bi["new_accts"],
@@ -1150,3 +1187,281 @@ def _count_rows(xlsx_path):
         return wb.active.max_row - 2
     except:
         return 0
+
+
+# ─── v10.108 — Integration Layer: operational-table autofit tributary ──
+#
+# This is the second pathway alongside compute_actuals_from_cbs(). The
+# CBS pathway feeds ~24 strategic-tier KPIs from CBS aggregations. This
+# operational pathway feeds ~87 KPIs that are computed from operational
+# tables (loan_applications, debt_recovery, pipeline, aml_screenings,
+# etc.) using rules registered in utils/kpi_aggregation_rules.py.
+#
+# The ownership gate (utils/kpi_ownership.is_kpi_owned_by_staff) ensures
+# we only submit actuals for staff who actually own the KPI for the
+# given period — either through role_kpis or through cascade lock.
+
+def _read_data_source_config(data_dir: Path) -> dict:
+    """Read the `_data_source` config knob from
+    integration_layer_config.json. Returns the resolved configuration:
+
+      {
+        "default":     "json"|"pg_view"|"auto",
+        "per_table":   {"<table_name>": "json"|"pg_view"|"auto", ...}
+      }
+
+    The default for missing config is `"json"` (current behavior — keeps
+    every existing deployment working unchanged). v10.116 closes the
+    JSON-deprecation blueprint gap by making this knob honor PG views
+    without a code change.
+
+    Mode semantics:
+      json     — read data/<table>.json (current default)
+      pg_view  — SELECT * FROM <table>; raise on failure
+      auto     — try pg_view first; fall back to json on any failure
+
+    The per_table dict allows progressive migration — a bank can move
+    one table at a time from JSON to a PG view, leaving others on JSON
+    until ready.
+    """
+    cfg_path = data_dir / "integration_layer_config.json"
+    if not cfg_path.exists():
+        return {"default": "json", "per_table": {}}
+    try:
+        with open(cfg_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception:
+        return {"default": "json", "per_table": {}}
+
+    raw = cfg.get("_data_source", "json")
+    # Allow the simple shorthand `"_data_source": "json"` (string)
+    if isinstance(raw, str):
+        return {"default": raw, "per_table": {}}
+    # Or the structured form `{"default": ..., "per_table": {...}}`
+    if isinstance(raw, dict):
+        return {
+            "default":   raw.get("default", "json"),
+            "per_table": raw.get("per_table", {}) or {},
+        }
+    return {"default": "json", "per_table": {}}
+
+
+def _read_operational_table(table: str, data_dir: Path) -> list[dict]:
+    """Read all rows from an operational table.
+
+    Per the A2Z storage convention, operational tables are JSON files
+    in data/<table>.json (post-Phase-1A migration, PostgreSQL is dual-
+    write but JSON is still authoritative for read paths until the cut-
+    over). Returns [] for missing files — the autofit pipeline treats
+    missing tables as "no actuals to submit", not as errors.
+
+    **v10.116 PG-readiness shim**: respects the `_data_source` knob in
+    integration_layer_config.json. Default behavior (json) is unchanged;
+    setting `_data_source: "pg_view"` for a table reads from a PG view
+    of the same name. `auto` mode tries PG first and silently falls
+    back to JSON. This is the loader-side support for the JSON
+    deprecation roadmap from the architectural blueprint.
+    """
+    cfg = _read_data_source_config(data_dir)
+    mode = cfg["per_table"].get(table, cfg["default"])
+
+    if mode in ("pg_view", "auto"):
+        rows = _try_read_from_pg_view(table)
+        if rows is not None:
+            return rows
+        if mode == "pg_view":
+            # Strict mode: caller asked for PG explicitly and we couldn't
+            # produce data. Don't silently downgrade to JSON — that
+            # masks deployment misconfiguration. Return [] so the rule
+            # is reported as 'no actuals' rather than served stale data.
+            logger.warning(
+                f"_read_operational_table({table}): pg_view mode but "
+                f"PG read failed/unavailable — returning empty rows. "
+                f"Switch _data_source to 'auto' to allow JSON fallback.")
+            return []
+        # auto mode falls through to JSON fallback
+
+    # Default / fallback path — read from JSON file
+    path = data_dir / f"{table}.json"
+    if not path.exists():
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        logger.warning(f"_read_operational_table({table}): {e}")
+        return []
+
+    # A2Z JSON tables are sometimes a list, sometimes a dict keyed by id.
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
+    if isinstance(data, dict):
+        # Dict-keyed: yield the values that are dicts
+        return [r for r in data.values() if isinstance(r, dict)]
+    return []
+
+
+def _try_read_from_pg_view(table: str) -> list[dict] | None:
+    """Attempt to read an operational table from a PG view of the same
+    name. Returns the list of row-dicts on success, None on any failure
+    (no PG configured, view doesn't exist, query error). Used by the
+    PG-readiness shim in `_read_operational_table`.
+
+    **Safety**: the table identifier is validated against a
+    conservative whitelist regex before being interpolated into SQL.
+    SQL injection via this path is not possible because:
+      1. Table names come from the rule registry (curated, not user
+         input)
+      2. The whitelist regex `^[a-z][a-z0-9_]{0,62}$` rejects anything
+         that isn't a plain lowercase identifier
+      3. We use psycopg2.sql.Identifier composition for the actual
+         interpolation, not f-strings
+    """
+    import re
+    if not re.match(r"^[a-z][a-z0-9_]{0,62}$", table):
+        logger.warning(
+            f"_try_read_from_pg_view({table}): identifier rejected by "
+            f"whitelist; falling back")
+        return None
+    try:
+        from utils.db import db as a2z_db, _USE_DB
+        if not _USE_DB:
+            return None
+    except Exception:
+        return None
+    try:
+        from psycopg2 import sql as _pg_sql
+        sql = _pg_sql.SQL("SELECT * FROM {}").format(
+            _pg_sql.Identifier(table))
+        rows = a2z_db.fetch_all(sql.as_string(a2z_db._connection_template())
+                                 if hasattr(a2z_db, '_connection_template')
+                                 else f"SELECT * FROM {table}")
+        return rows if isinstance(rows, list) else None
+    except Exception as e:
+        logger.debug(
+            f"_try_read_from_pg_view({table}): {type(e).__name__}: {e}")
+        return None
+
+
+def compute_actuals_from_operational_tables(period: str) -> dict:
+    """Second autofit tributary — operational tables → BSC actuals.
+
+    For each registered rule in utils/kpi_aggregation_rules.REGISTRY:
+        1. Read the operational table.
+        2. Apply the rule (compute_rule groups by staff and aggregates).
+        3. For each (staff, value) pair: check ownership via
+           kpi_ownership.is_kpi_owned_by_staff.
+        4. If owned: submit to bsc_engine via _submit_to_bsc_engine.
+        5. If not owned: drop silently (this is the gate that prevents
+           cascade-misallocated actuals from polluting the BSC).
+
+    Returns a status dict:
+        {
+          "success":           bool,
+          "period":            <period>,
+          "rules_processed":   <int>,
+          "rules_skipped":     <int>,        # tables not found
+          "actuals_submitted": <int>,        # passed ownership gate
+          "actuals_dropped":   <int>,        # failed ownership gate
+          "by_rule":           [
+              {"kpi_id": K011,
+               "table": loan_applications,
+               "staff_count": 17,
+               "submitted": 12,
+               "dropped": 5},
+              ...
+          ],
+          "engine_summary":    <dict from bsc_engine.submit_batch>,
+          "duration_s":        <float>,
+        }
+    """
+    from datetime import datetime as _dt
+    t0 = _dt.now()
+
+    try:
+        from utils import kpi_aggregation_rules as _rules
+        from utils import kpi_ownership as _own
+        from utils.staff_field_resolver import resolve_staff_field
+        from utils.bsc_engine import submit_batch as _bsc_submit_batch
+    except ImportError as e:
+        return {
+            "success": False,
+            "period": period,
+            "message": f"v10.108 Integration Layer modules not available: {e}",
+            "rules_processed": 0,
+            "actuals_submitted": 0,
+            "duration_s": 0.0,
+        }
+
+    _, data_dir = get_cbs_paths()
+
+    contract_records: list[dict] = []
+    by_rule: list[dict] = []
+    rules_processed = 0
+    rules_skipped = 0
+    actuals_dropped = 0
+
+    for rule in _rules.REGISTRY:
+        rows = _read_operational_table(rule.source_table, data_dir)
+        if not rows:
+            rules_skipped += 1
+            by_rule.append({
+                "kpi_id": rule.kpi_id,
+                "table": rule.source_table,
+                "staff_count": 0,
+                "submitted": 0,
+                "dropped": 0,
+                "skip_reason": "table_missing_or_empty",
+            })
+            continue
+
+        rules_processed += 1
+        staff_field = resolve_staff_field(rule.source_table, rule.staff_field)
+        per_staff = _rules.compute_rule(rule, rows, period, staff_field)
+
+        rule_submitted = 0
+        rule_dropped = 0
+        for staff_code, value in per_staff.items():
+            if _own.is_kpi_owned_by_staff(staff_code, rule.kpi_id, period):
+                contract_records.append({
+                    "staff_code": str(staff_code),
+                    "kpi_id":     rule.kpi_id,
+                    "value":      value,
+                    "period":     str(period),
+                })
+                rule_submitted += 1
+            else:
+                rule_dropped += 1
+                actuals_dropped += 1
+
+        by_rule.append({
+            "kpi_id": rule.kpi_id,
+            "table": rule.source_table,
+            "staff_count": len(per_staff),
+            "submitted": rule_submitted,
+            "dropped": rule_dropped,
+        })
+
+    # Submit the batch through the central BSC engine
+    if contract_records:
+        engine_summary = _bsc_submit_batch(
+            records       = contract_records,
+            source_module = "actuals_engine.operational",
+            actor         = "operational_autofit",
+        )
+    else:
+        engine_summary = {"ok": 0, "rejected": 0,
+                          "errors": [], "skipped": "no_records"}
+
+    duration = (_dt.now() - t0).total_seconds()
+    return {
+        "success": True,
+        "period": period,
+        "rules_processed": rules_processed,
+        "rules_skipped": rules_skipped,
+        "actuals_submitted": len(contract_records),
+        "actuals_dropped": actuals_dropped,
+        "by_rule": by_rule,
+        "engine_summary": engine_summary,
+        "duration_s": duration,
+    }

@@ -1,0 +1,2028 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "A2Z Blueprint Cascade API",
+    "description": "FastAPI endpoints for the Target Cascade module. All endpoints require JWT bearer authentication. Built v10.413 (E7) per React front-end requirement. Wraps pure-compute engines: cascade_health_engine, manager_rollup, pillar_impact_engine, kpi_ownership_pairing, target_scenario_simulator, capacity_feedback_engine, cascade_structure_engine.",
+    "version": "10.413.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8502"
+    }
+  ],
+  "paths": {
+    "/api/v1/cascade/health/summary": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Bank-wide cascade health summary",
+        "description": "Composite health score + entry counts + coverage distribution.\n\nWraps `cascade_health_engine.bank_health_summary(period)`.",
+        "operationId": "get_bank_health_summary_api_v1_cascade_health_summary_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Period like '2026'",
+              "title": "Period"
+            },
+            "description": "Period like '2026'"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankHealthSummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/health/pillars": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Per-pillar cascade health",
+        "operationId": "get_pillar_health_api_v1_cascade_health_pillars_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PillarHealthResponse"
+                  },
+                  "title": "Response Get Pillar Health Api V1 Cascade Health Pillars Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/health/sbu": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Per-SBU (chief) subtree completeness",
+        "operationId": "get_sbu_health_api_v1_cascade_health_sbu_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SBUHealthResponse"
+                  },
+                  "title": "Response Get Sbu Health Api V1 Cascade Health Sbu Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/health/kpis": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Per-KPI cascade health",
+        "operationId": "get_kpi_health_api_v1_cascade_health_kpis_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KPIHealthResponse"
+                  },
+                  "title": "Response Get Kpi Health Api V1 Cascade Health Kpis Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/health/broken-chains": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Managers who received but didn't cascade onward",
+        "operationId": "get_broken_chains_api_v1_cascade_health_broken_chains_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "max_results",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Max Results"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrokenChainResponse"
+                  },
+                  "title": "Response Get Broken Chains Api V1 Cascade Health Broken Chains Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/health/stale-entries": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Cascade entries older than N days without acceptance",
+        "operationId": "get_stale_entries_api_v1_cascade_health_stale_entries_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaleEntryResponse"
+                  },
+                  "title": "Response Get Stale Entries Api V1 Cascade Health Stale Entries Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/rollup/{manager_code}/{period}": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Live progress rollup for a manager's subtree",
+        "description": "Aggregated KPI progress across the manager's full subtree.",
+        "operationId": "get_team_rollup_api_v1_cascade_rollup__manager_code___period__get",
+        "parameters": [
+          {
+            "name": "manager_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Manager Code"
+            }
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/pillars/bank-weights": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Canonical bank pillar weights",
+        "operationId": "get_bank_pillar_weights_api_v1_cascade_pillars_bank_weights_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/pillars/staff/{staff_code}/{period}": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Personal pillar mix for a staff member",
+        "operationId": "get_staff_pillar_breakdown_api_v1_cascade_pillars_staff__staff_code___period__get",
+        "parameters": [
+          {
+            "name": "staff_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Staff Code"
+            }
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PillarBreakdownResponse"
+                  },
+                  "title": "Response Get Staff Pillar Breakdown Api V1 Cascade Pillars Staff  Staff Code   Period  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/pairing/shared-kpis": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "List all KPIs with 2+ primary co-owners",
+        "operationId": "get_shared_kpis_api_v1_cascade_pairing_shared_kpis_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Get Shared Kpis Api V1 Cascade Pairing Shared Kpis Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/pairing/co-owners/{kpi}": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Co-ownership map for a specific KPI",
+        "operationId": "get_co_owners_for_kpi_api_v1_cascade_pairing_co_owners__kpi__get",
+        "parameters": [
+          {
+            "name": "kpi",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kpi"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoOwnershipResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/pairing/apply": {
+      "post": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Compute pairing allocations across co-owners",
+        "operationId": "apply_pairing_api_v1_cascade_pairing_apply_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingResultResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/simulator/current/{manager_code}/{kpi}/{period}": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Load current allocation scenario",
+        "operationId": "get_current_scenario_api_v1_cascade_simulator_current__manager_code___kpi___period__get",
+        "parameters": [
+          {
+            "name": "manager_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Manager Code"
+            }
+          },
+          {
+            "name": "kpi",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kpi"
+            }
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/simulator/split": {
+      "post": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Apply a split strategy (equal / weighted)",
+        "operationId": "apply_split_api_v1_cascade_simulator_split_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cascade/structure/audit-summary": {
+      "get": {
+        "tags": [
+          "cascade"
+        ],
+        "summary": "Cascade structure engine audit summary",
+        "operationId": "get_structure_audit_api_v1_cascade_structure_audit_summary_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cascade/capacity-feedback": {
+      "get": {
+        "tags": [
+          "cascade",
+          "capacity-feedback"
+        ],
+        "summary": "List Capacity Feedback",
+        "description": "List capacity feedback with optional filters.\n\nReturns ALL feedback by default. Filter via query params.",
+        "operationId": "list_capacity_feedback_api_cascade_capacity_feedback_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by period e.g. '2026'",
+              "title": "Period"
+            },
+            "description": "Filter by period e.g. '2026'"
+          },
+          {
+            "name": "manager_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recipient manager",
+              "title": "Manager Code"
+            },
+            "description": "Filter by recipient manager"
+          },
+          {
+            "name": "staff_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by raiser staff",
+              "title": "Staff Code"
+            },
+            "description": "Filter by raiser staff"
+          },
+          {
+            "name": "kpi",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by KPI id",
+              "title": "Kpi"
+            },
+            "description": "Filter by KPI id"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status",
+              "title": "Status"
+            },
+            "description": "Filter by status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapacityFeedbackOut"
+                  },
+                  "title": "Response List Capacity Feedback Api Cascade Capacity Feedback Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cascade",
+          "capacity-feedback"
+        ],
+        "summary": "Submit Capacity Feedback",
+        "description": "Staff raises a new capacity feedback.\n\nValidates constraint_type against CONSTRAINT_TYPES.",
+        "operationId": "submit_capacity_feedback_api_cascade_capacity_feedback_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapacityFeedbackSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapacityFeedbackOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cascade/capacity-feedback/kpi/{kpi}/{manager_code}/{period}": {
+      "get": {
+        "tags": [
+          "cascade",
+          "capacity-feedback"
+        ],
+        "summary": "Inline Warnings",
+        "description": "Inline warnings for Set team targets \u2014 open feedback only.\n\nUsed by the manager UI when allocating a target for KPI X to\ntheir team: surfaces any open constraints raised by team\nmembers about that KPI.",
+        "operationId": "inline_warnings_api_cascade_capacity_feedback_kpi__kpi___manager_code___period__get",
+        "parameters": [
+          {
+            "name": "kpi",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kpi"
+            }
+          },
+          {
+            "name": "manager_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Manager Code"
+            }
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapacityFeedbackOut"
+                  },
+                  "title": "Response Inline Warnings Api Cascade Capacity Feedback Kpi  Kpi   Manager Code   Period  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cascade/capacity-feedback/{feedback_id}/status": {
+      "patch": {
+        "tags": [
+          "cascade",
+          "capacity-feedback"
+        ],
+        "summary": "Patch Status",
+        "description": "Manager updates the status of a feedback.\n\nValid statuses: Open / Acknowledged / Accepted / Rejected / Resolved.",
+        "operationId": "patch_status_api_cascade_capacity_feedback__feedback_id__status_patch",
+        "parameters": [
+          {
+            "name": "feedback_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Feedback Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapacityFeedbackOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cascade/capacity-feedback/{feedback_id}": {
+      "delete": {
+        "tags": [
+          "cascade",
+          "capacity-feedback"
+        ],
+        "summary": "Delete Capacity Feedback",
+        "description": "Staff withdraws their own feedback (or admin deletes).",
+        "operationId": "delete_capacity_feedback_api_cascade_capacity_feedback__feedback_id__delete",
+        "parameters": [
+          {
+            "name": "feedback_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Feedback Id"
+            }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "system",
+              "title": "By"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BankHealthSummaryResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "total_bank_targets": {
+            "type": "integer",
+            "title": "Total Bank Targets"
+          },
+          "cascade_entries": {
+            "type": "integer",
+            "title": "Cascade Entries"
+          },
+          "distinct_recipients": {
+            "type": "integer",
+            "title": "Distinct Recipients"
+          },
+          "distinct_kpis_cascaded": {
+            "type": "integer",
+            "title": "Distinct Kpis Cascaded"
+          },
+          "fully_allocated_count": {
+            "type": "integer",
+            "title": "Fully Allocated Count"
+          },
+          "partial_allocated_count": {
+            "type": "integer",
+            "title": "Partial Allocated Count"
+          },
+          "under_allocated_count": {
+            "type": "integer",
+            "title": "Under Allocated Count"
+          },
+          "average_coverage_pct": {
+            "type": "number",
+            "title": "Average Coverage Pct"
+          },
+          "overall_health_score": {
+            "type": "number",
+            "title": "Overall Health Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "total_bank_targets",
+          "cascade_entries",
+          "distinct_recipients",
+          "distinct_kpis_cascaded",
+          "fully_allocated_count",
+          "partial_allocated_count",
+          "under_allocated_count",
+          "average_coverage_pct",
+          "overall_health_score"
+        ],
+        "title": "BankHealthSummaryResponse"
+      },
+      "BrokenChainResponse": {
+        "properties": {
+          "staff_code": {
+            "type": "string",
+            "title": "Staff Code"
+          },
+          "staff_name": {
+            "type": "string",
+            "title": "Staff Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "received_amount": {
+            "type": "number",
+            "title": "Received Amount"
+          },
+          "has_direct_reports": {
+            "type": "boolean",
+            "title": "Has Direct Reports"
+          },
+          "reports_with_subcascade": {
+            "type": "integer",
+            "title": "Reports With Subcascade"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "staff_code",
+          "staff_name",
+          "role",
+          "kpi",
+          "received_amount",
+          "has_direct_reports",
+          "reports_with_subcascade",
+          "reason"
+        ],
+        "title": "BrokenChainResponse"
+      },
+      "CapacityFeedbackOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "staff_code": {
+            "type": "string",
+            "title": "Staff Code"
+          },
+          "staff_name": {
+            "type": "string",
+            "title": "Staff Name"
+          },
+          "manager_code": {
+            "type": "string",
+            "title": "Manager Code"
+          },
+          "manager_name": {
+            "type": "string",
+            "title": "Manager Name"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "constraint_type": {
+            "type": "string",
+            "title": "Constraint Type"
+          },
+          "constraint_value": {
+            "type": "string",
+            "title": "Constraint Value"
+          },
+          "suggested_target_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Target Max"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "raised_at": {
+            "type": "string",
+            "title": "Raised At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response"
+          },
+          "history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "History",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "staff_code",
+          "staff_name",
+          "manager_code",
+          "manager_name",
+          "period",
+          "kpi",
+          "constraint_type",
+          "constraint_value",
+          "rationale",
+          "status",
+          "raised_at"
+        ],
+        "title": "CapacityFeedbackOut",
+        "description": "Response shape \u2014 mirrors CapacityFeedback dataclass."
+      },
+      "CapacityFeedbackSubmit": {
+        "properties": {
+          "staff_code": {
+            "type": "string",
+            "title": "Staff Code"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "constraint_type": {
+            "type": "string",
+            "title": "Constraint Type"
+          },
+          "constraint_value": {
+            "type": "string",
+            "title": "Constraint Value"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "suggested_target_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Target Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "staff_code",
+          "period",
+          "kpi",
+          "constraint_type",
+          "constraint_value",
+          "rationale"
+        ],
+        "title": "CapacityFeedbackSubmit",
+        "description": "POST request body for new feedback."
+      },
+      "CoOwnershipResponse": {
+        "properties": {
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "primary_owners": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Primary Owners"
+          },
+          "secondary_owners": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Secondary Owners"
+          },
+          "default_pairing": {
+            "type": "string",
+            "title": "Default Pairing"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi",
+          "primary_owners",
+          "secondary_owners",
+          "default_pairing",
+          "note"
+        ],
+        "title": "CoOwnershipResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "KPIHealthResponse": {
+        "properties": {
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "pillar": {
+            "type": "string",
+            "title": "Pillar"
+          },
+          "bank_target_set": {
+            "type": "boolean",
+            "title": "Bank Target Set"
+          },
+          "cascade_entries": {
+            "type": "integer",
+            "title": "Cascade Entries"
+          },
+          "distinct_recipients": {
+            "type": "integer",
+            "title": "Distinct Recipients"
+          },
+          "avg_coverage_pct": {
+            "type": "number",
+            "title": "Avg Coverage Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi",
+          "pillar",
+          "bank_target_set",
+          "cascade_entries",
+          "distinct_recipients",
+          "avg_coverage_pct"
+        ],
+        "title": "KPIHealthResponse"
+      },
+      "PairingRequest": {
+        "properties": {
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "total_target": {
+            "type": "number",
+            "title": "Total Target"
+          },
+          "recipients": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recipients"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy",
+            "default": "equal_split"
+          },
+          "manual_shares": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Shares"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi",
+          "total_target",
+          "recipients"
+        ],
+        "title": "PairingRequest"
+      },
+      "PairingResultResponse": {
+        "properties": {
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy"
+          },
+          "total_target": {
+            "type": "number",
+            "title": "Total Target"
+          },
+          "allocations": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Allocations"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi",
+          "strategy",
+          "total_target",
+          "allocations"
+        ],
+        "title": "PairingResultResponse"
+      },
+      "PillarBreakdownResponse": {
+        "properties": {
+          "pillar": {
+            "type": "string",
+            "title": "Pillar"
+          },
+          "bank_weight": {
+            "type": "number",
+            "title": "Bank Weight"
+          },
+          "personal_weight": {
+            "type": "number",
+            "title": "Personal Weight"
+          },
+          "kpi_count": {
+            "type": "integer",
+            "title": "Kpi Count"
+          },
+          "kpis": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Kpis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pillar",
+          "bank_weight",
+          "personal_weight",
+          "kpi_count",
+          "kpis"
+        ],
+        "title": "PillarBreakdownResponse"
+      },
+      "PillarHealthResponse": {
+        "properties": {
+          "pillar": {
+            "type": "string",
+            "title": "Pillar"
+          },
+          "bank_weight": {
+            "type": "number",
+            "title": "Bank Weight"
+          },
+          "kpis_with_target": {
+            "type": "integer",
+            "title": "Kpis With Target"
+          },
+          "cascaded_count": {
+            "type": "integer",
+            "title": "Cascaded Count"
+          },
+          "not_cascaded_count": {
+            "type": "integer",
+            "title": "Not Cascaded Count"
+          },
+          "avg_coverage_pct": {
+            "type": "number",
+            "title": "Avg Coverage Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pillar",
+          "bank_weight",
+          "kpis_with_target",
+          "cascaded_count",
+          "not_cascaded_count",
+          "avg_coverage_pct"
+        ],
+        "title": "PillarHealthResponse"
+      },
+      "SBUHealthResponse": {
+        "properties": {
+          "sbu": {
+            "type": "string",
+            "title": "Sbu"
+          },
+          "chief_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chief Code"
+          },
+          "chief_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chief Name"
+          },
+          "direct_reports_in_cascade": {
+            "type": "integer",
+            "title": "Direct Reports In Cascade"
+          },
+          "total_direct_reports": {
+            "type": "integer",
+            "title": "Total Direct Reports"
+          },
+          "distinct_kpis_received": {
+            "type": "integer",
+            "title": "Distinct Kpis Received"
+          },
+          "completeness_pct": {
+            "type": "number",
+            "title": "Completeness Pct"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sbu",
+          "chief_code",
+          "chief_name",
+          "direct_reports_in_cascade",
+          "total_direct_reports",
+          "distinct_kpis_received",
+          "completeness_pct"
+        ],
+        "title": "SBUHealthResponse"
+      },
+      "SimulatorRequest": {
+        "properties": {
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "total_target": {
+            "type": "number",
+            "title": "Total Target"
+          },
+          "recipient_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recipient Codes"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy",
+            "default": "equal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi",
+          "period",
+          "total_target",
+          "recipient_codes"
+        ],
+        "title": "SimulatorRequest"
+      },
+      "StaleEntryResponse": {
+        "properties": {
+          "from_code": {
+            "type": "string",
+            "title": "From Code"
+          },
+          "from_name": {
+            "type": "string",
+            "title": "From Name"
+          },
+          "kpi": {
+            "type": "string",
+            "title": "Kpi"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "last_modified": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified"
+          },
+          "days_stale": {
+            "type": "integer",
+            "title": "Days Stale"
+          },
+          "coverage_pct": {
+            "type": "number",
+            "title": "Coverage Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_code",
+          "from_name",
+          "kpi",
+          "period",
+          "last_modified",
+          "days_stale",
+          "coverage_pct"
+        ],
+        "title": "StaleEntryResponse"
+      },
+      "StatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "resolved_by": {
+            "type": "string",
+            "title": "Resolved By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "response",
+          "resolved_by"
+        ],
+        "title": "StatusUpdate",
+        "description": "PATCH request body for status change."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "cascade",
+      "description": "Target cascade module endpoints"
+    }
+  ]
+}

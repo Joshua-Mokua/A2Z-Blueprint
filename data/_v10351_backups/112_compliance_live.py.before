@@ -1,0 +1,26 @@
+"""
+Phase 3 — Compliance Live Cockpit (pages/112)
+=================================================================
+v10.345 — refactored to call utils.live_cockpit_render.
+
+This page's body is now a thin call to render_compliance_cockpit().
+Logic moved into utils.live_cockpit_render (single source of truth).
+
+The consolidated entry point is pages/115_live_cockpits.py.
+
+Audience: Chief compliance officer, AML team, sanctions analysts,
+regulatory affairs, internal audit, examiners (read-only).
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("compliance_regulatory.compliance_live")
+
+from utils.live_cockpit_render import render_compliance_cockpit
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_compliance_cockpit(actor)

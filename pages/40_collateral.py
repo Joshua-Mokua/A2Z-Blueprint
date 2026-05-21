@@ -13,7 +13,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("collateral")
+require_access("credit.collateral")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -107,3 +107,11 @@ with tabs[3]:
         elif ltv<=100: ltv_bins["90-100%"]+=1
         else: ltv_bins[">100%"]+=1
     st.bar_chart(_pd_a.DataFrame({"Cases":ltv_bins}))
+
+# v10.464 — operational output (WF4 doctrine compliance)
+st.markdown("---")
+if st.button("🔄 Refresh this view"):
+    st.cache_data.clear() if hasattr(st, "cache_data") else None
+    if hasattr(st, "rerun"):
+        st.rerun()
+

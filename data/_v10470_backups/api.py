@@ -1,0 +1,2933 @@
+"""utils/api.py — FastAPI backend for A2Z Blueprint MIS 360.
+
+Runs alongside Streamlit on port 8502. Provides cached, pooled database
+access for the heaviest pages. Pages that call this API load 3-5x faster
+than pages that hit PostgreSQL directly.
+
+V-001 SECURITY FIX (v5.17, CVSS 9.1):
+  Every endpoint except /api/health now requires a bearer JWT issued by
+  POST /api/auth/login. See utils/auth_jwt.py for the token contract.
+  V-009 (CORS) is also tightened — origins now come from A2Z_CORS_ORIGINS
+  env var, defaulting to localhost only.
+
+HOW TO RUN (two terminals):
+  Terminal 1: streamlit run app.py
+  Terminal 2: python -m utils.api
+
+Set A2Z_JWT_SECRET in production (otherwise a per-process random secret
+is generated, with a warning at startup).
+
+OR use run_all.bat which starts both automatically.
+
+ENDPOINTS:
+  POST /api/auth/login         — exchange username+password for bearer token
+  GET  /api/auth/me            — return the current user from the token
+  GET  /api/health             — system health check (NO AUTH — by design)
+  GET  /api/bsc/summary        — BSC scores summary (cached 5min)
+  GET  /api/bsc/staff/{username}— individual staff BSC
+  GET  /api/pipeline/summary   — pipeline summary metrics
+  GET  /api/pipeline/deals     — all deals with filters
+  GET  /api/credit/summary     — credit monitoring summary
+  GET  /api/credit/watchlist   — watchlist with pagination
+  GET  /api/aml/summary        — AML alerts summary
+  GET  /api/users/summary      — org summary
+  GET  /api/dashboard/md       — MD command centre data
+  POST /api/cache/clear        — admin-only
+  GET  /api/cache/stats        — cache observability
+"""
+
+import os
+import json
+import time
+import logging
+from datetime import datetime, date
+from typing import Optional, List, Dict, Any
+from pathlib import Path
+from functools import lru_cache
+
+from fastapi import FastAPI, HTTPException, Query, Depends, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+from utils.auth_jwt import (
+    create_access_token,
+    get_current_user,
+    require_admin,
+    warn_if_default_secret,
+)
+
+logger = logging.getLogger("a2z.api")
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+
+app = FastAPI(
+    title="A2Z Blueprint MIS 360 API",
+    description="High-performance data layer for A2Z Blueprint",
+    version="5.17.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
+
+# V-009 fix — CORS origins from env, NOT hardcoded. In dev the default is
+# localhost only. In production set A2Z_CORS_ORIGINS to a comma-separated
+# list of allowed origins. Never use "*" with allow_credentials=True.
+#
+# v10.299 — Default list extended to include React dev servers so the
+# frontend team can run `npm start` (port 3000, Create React App) or
+# `npm run dev` (port 5173, Vite) without env-var fiddling. Streamlit
+# origins (8501/8502) remain for the existing cockpit pages.
+_default_cors = (
+    "http://localhost:3000,http://127.0.0.1:3000,"      # CRA
+    "http://localhost:5173,http://127.0.0.1:5173,"      # Vite
+    "http://localhost:8501,http://127.0.0.1:8501,"      # Streamlit
+    "http://localhost:8502,http://127.0.0.1:8502"
+)
+_cors_raw = os.getenv("A2Z_CORS_ORIGINS", _default_cors)
+_cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+
+# v10.299 — Guard against an empty / whitespace-only env var. Before this
+# fix, setting A2Z_CORS_ORIGINS="" would silently produce zero origins,
+# blocking every cross-origin request without any error. Now we fall back
+# to defaults and log it loudly.
+if not _cors_origins:
+    logger.warning(
+        "A2Z_CORS_ORIGINS env var is empty after parsing — falling "
+        "back to default localhost origins. Set explicit origins in "
+        "production deployments."
+    )
+    _cors_origins = [o.strip() for o in _default_cors.split(",")
+                     if o.strip()]
+
+if "*" in _cors_origins:
+    raise RuntimeError(
+        "A2Z_CORS_ORIGINS must not contain '*' — wildcard with credentials is "
+        "the V-009 vulnerability. Set explicit origins."
+    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    # v10.299 — Full standard method set. OPTIONS is required for CORS
+    # preflight; DELETE and PATCH are needed by the React SPA as we add
+    # state-changing endpoints in future Phase 3 batches.
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    # v10.299 — Explicit headers for the React/Authorization JWT flow.
+    # Wildcard would work but explicit listing documents what the
+    # frontend team needs to send.
+    allow_headers=[
+        "Authorization",   # JWT bearer tokens
+        "Content-Type",    # JSON POST/PUT bodies
+        "Accept",          # Content negotiation
+        "X-Requested-With",  # Conventional ajax indicator
+    ],
+)
+
+
+@app.on_event("startup")
+def _startup_checks() -> None:
+    warn_if_default_secret()
+    logger.info(f"A2Z API startup — CORS origins: {_cors_origins}")
+
+
+# v10.413 — Mount cascade routers (E7: React-readiness payoff)
+# All cascade endpoints wrap the pure-compute engines built v10.406-v10.412.
+# JWT-required on every route.
+#
+# Two routers, two prefixes:
+#   /api/v1/cascade/*              — broad surface (health, rollup, pairing,
+#                                    simulator, pillars, structure)
+#   /api/cascade/capacity-feedback — capacity-feedback (v10.412 stub now mounted)
+try:
+    from utils.api_cascade import router as _cascade_router
+    app.include_router(_cascade_router)
+    logger.info("A2Z API — cascade router mounted at /api/v1/cascade")
+except Exception as _exc:  # noqa: BLE001
+    logger.warning(f"Cascade router not loaded: {_exc}")
+
+try:
+    from utils.api_capacity_feedback import router as _capacity_router
+    app.include_router(_capacity_router)
+    logger.info("A2Z API — capacity router mounted at /api/cascade/capacity-feedback")
+except Exception as _exc:  # noqa: BLE001
+    logger.warning(f"Capacity router not loaded: {_exc}")
+
+
+# Helper: emit an audit_log entry from API context. Imported lazily so the
+# api module can be imported in environments that don't have streamlit
+# wired up (e.g. tests).
+def _audit(action: str, user: dict, detail: str = "") -> None:
+    try:
+        from utils.core_audit import audit_log
+        username = (user or {}).get("username", "anonymous")
+        audit_log(action, username, detail, module="api")
+    except Exception as e:
+        logger.debug(f"audit_log failed: {e}")
+
+# ── In-memory cache ───────────────────────────────────────────────
+_cache: Dict[str, Any] = {}
+_cache_ts: Dict[str, float] = {}
+CACHE_TTL = {
+    "bsc":       300,   # 5 minutes — scores don't change often
+    "pipeline":   60,   # 1 minute — deals change frequently
+    "credit":    120,   # 2 minutes
+    "aml":       120,
+    "users":     600,   # 10 minutes — org structure rarely changes
+    "dashboard": 120,
+    "partnerships": 60,
+}
+
+def _get_cache(key: str, ttl_key: str = "pipeline") -> Optional[Any]:
+    if key in _cache:
+        age = time.time() - _cache_ts.get(key, 0)
+        if age < CACHE_TTL.get(ttl_key, 60):
+            return _cache[key]
+    return None
+
+def _set_cache(key: str, value: Any) -> None:
+    _cache[key] = value
+    _cache_ts[key] = time.time()
+
+def _load_json(fname: str) -> Any:
+    """Load a JSON data file. Routes through a2z_db so the dual-mode
+    PG/JSON migration applies here too (audit V-002 finding)."""
+    p = DATA_DIR / fname
+    if not p.exists():
+        return []
+    try:
+        from utils.db import db as _a2z_db
+        return _a2z_db.load_json(p, default=[])
+    except Exception as e:
+        logger.error(f"Error loading {fname}: {e}")
+        return []
+
+def _db_available() -> bool:
+    """Check if PostgreSQL is available."""
+    try:
+        from utils.db import db as _db
+        return _db.is_postgres_ready()
+    except Exception:
+        return False
+
+def _safe_float(val) -> float:
+    try:
+        from decimal import Decimal
+        if isinstance(val, Decimal):
+            return float(val)
+        return float(val) if val is not None else 0.0
+    except Exception:
+        return 0.0
+
+def _safe_int(val) -> int:
+    try:
+        return int(val) if val is not None else 0
+    except Exception:
+        return 0
+
+def _serialize(obj):
+    """Make objects JSON serializable."""
+    from decimal import Decimal
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _serialize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_serialize(i) for i in obj]
+    return obj
+
+# ── Auth endpoints ────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in_seconds: int = 1800
+    username: str
+    role: str
+
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+def login(req: LoginRequest):
+    """Exchange username + password for a 30-minute bearer JWT.
+
+    Verifies via UserManager.authenticate (which uses bcrypt per V-003 fix
+    and rehashes legacy SHA-256 on success). Audit log fires on both
+    success and failure so brute-force attempts are visible.
+    """
+    try:
+        from utils.core import UserManager
+        um = UserManager()
+        ok, user_data = um.authenticate(req.username, req.password)
+    except Exception as e:
+        logger.error(f"Login system error: {e}")
+        raise HTTPException(status_code=500, detail="Authentication system unavailable")
+
+    if not ok or not user_data:
+        # Audit failed login attempts (V-007 brute-force visibility)
+        _audit("API_LOGIN_FAILED", {"username": req.username},
+               f"Failed login from API for {req.username}")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = {
+        "username": req.username,
+        "role":     user_data.get("role", "Staff"),
+    }
+    token = create_access_token(user)
+    _audit("API_LOGIN_SUCCESS", user, "Issued bearer token via /api/auth/login")
+    return TokenResponse(
+        access_token=token,
+        username=req.username,
+        role=user["role"],
+    )
+
+
+@app.get("/api/auth/me")
+def me(user: dict = Depends(get_current_user)):
+    """Return the current user from the bearer token. Doubles as a
+    cheap token-validity probe."""
+    return {
+        "username": user["username"],
+        "role":     user["role"],
+        "expires_at": datetime.fromtimestamp(user["exp"]).isoformat() if user.get("exp") else None,
+    }
+
+
+# ── Health check (NO AUTH — by design) ────────────────────────────
+@app.get("/api/health")
+def health():
+    db_ok = _db_available()
+    return {
+        "status":    "healthy",
+        "version":   "5.17.0",
+        "db":        "postgresql" if db_ok else "json_fallback",
+        "timestamp": datetime.now().isoformat(),
+        "cache_keys": len(_cache),
+        "auth":      "jwt-bearer",
+    }
+
+# ── BSC Endpoints ─────────────────────────────────────────────────
+@app.get("/api/bsc/summary")
+def bsc_summary(user: dict = Depends(get_current_user)):
+    _audit("API_BSC_SUMMARY", user)
+    cached = _get_cache("bsc_summary", "bsc")
+    if cached:
+        return cached
+
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            rows = _db.fetch_all("""
+                SELECT dept,
+                       COUNT(*)                              as staff_count,
+                       ROUND(AVG(final_score)::numeric, 2)  as avg_score,
+                       SUM(CASE WHEN final_score >= 4.0 THEN 1 ELSE 0 END) as exceeding,
+                       SUM(CASE WHEN final_score < 2.5 THEN 1 ELSE 0 END)  as at_risk,
+                       period
+                FROM bsc_scores
+                GROUP BY dept, period
+                ORDER BY avg_score DESC
+            """)
+            result = {
+                "by_dept":     _serialize(rows),
+                "total_staff": sum(_safe_int(r.get("staff_count")) for r in rows),
+                "overall_avg": round(
+                    sum(_safe_float(r.get("avg_score",0)) * _safe_int(r.get("staff_count",1))
+                        for r in rows) /
+                    max(sum(_safe_int(r.get("staff_count",1)) for r in rows), 1), 2),
+                "source":      "postgresql",
+            }
+            _set_cache("bsc_summary", result)
+            return result
+        except Exception as e:
+            logger.error(f"BSC DB error: {e}")
+
+    # JSON fallback
+    scores = _load_json("feb_2026_staff_scores.json")
+    if isinstance(scores, dict):
+        all_scores = list(scores.values())
+    else:
+        all_scores = scores
+
+    by_dept = {}
+    for s in all_scores:
+        d = s.get("dept", "Unknown")
+        if d not in by_dept:
+            by_dept[d] = {"dept": d, "staff_count": 0, "avg_score": 0.0,
+                          "exceeding": 0, "at_risk": 0, "total": 0.0}
+        by_dept[d]["staff_count"] += 1
+        sc = _safe_float(s.get("final_score", 0))
+        by_dept[d]["total"] += sc
+        if sc >= 4.0: by_dept[d]["exceeding"] += 1
+        if sc < 2.5:  by_dept[d]["at_risk"]   += 1
+
+    for d in by_dept:
+        by_dept[d]["avg_score"] = round(
+            by_dept[d]["total"] / max(by_dept[d]["staff_count"], 1), 2)
+
+    result = {
+        "by_dept":     list(by_dept.values()),
+        "total_staff": len(all_scores),
+        "overall_avg": round(
+            sum(_safe_float(s.get("final_score",0)) for s in all_scores) /
+            max(len(all_scores), 1), 2),
+        "source": "json",
+    }
+    _set_cache("bsc_summary", result)
+    return result
+
+@app.get("/api/bsc/staff/{username}")
+def bsc_staff(username: str, user: dict = Depends(get_current_user)):
+    # V-005 mitigation — basic IDOR check. A non-admin requesting another
+    # user's BSC has to share the same role tree. For v5.17 we approve when
+    # caller is admin or asking for their own record. A fuller check using
+    # UserManager.get_managed_staff_codes is a follow-up.
+    if user["username"] != username and (user.get("role") or "").lower() not in ("admin", "director"):
+        _audit("API_BSC_STAFF_DENIED", user, f"Tried to read {username}")
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _audit("API_BSC_STAFF", user, f"Read BSC for {username}")
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            row = _db.fetch_one(
+                "SELECT * FROM bsc_scores WHERE username = %s ORDER BY computed_at DESC LIMIT 1",
+                (username,)
+            )
+            if row:
+                return _serialize(row)
+        except Exception as e:
+            logger.error(f"BSC staff DB error: {e}")
+
+    scores = _load_json("feb_2026_staff_scores.json")
+    if isinstance(scores, dict):
+        return scores.get(username, {})
+    return {}
+
+# ── Pipeline Endpoints ────────────────────────────────────────────
+@app.get("/api/pipeline/summary")
+def pipeline_summary(user: dict = Depends(get_current_user)):
+    _audit("API_PIPELINE_SUMMARY", user)
+    cached = _get_cache("pipeline_summary", "pipeline")
+    if cached:
+        return cached
+
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            rows = _db.fetch_all("""
+                SELECT stage, deal_category,
+                       COUNT(*)          as deal_count,
+                       SUM(amount)       as total_value,
+                       AVG(probability)  as avg_probability
+                FROM pipeline_deals
+                GROUP BY stage, deal_category
+                ORDER BY total_value DESC
+            """)
+            totals = _db.fetch_one("""
+                SELECT COUNT(*)    as total_deals,
+                       SUM(amount) as pipeline_value,
+                       SUM(CASE WHEN stage = 'Closed Won' THEN amount ELSE 0 END) as won_value,
+                       SUM(CASE WHEN stage = 'Closed Lost' THEN 1 ELSE 0 END)    as lost_count
+                FROM pipeline_deals
+            """)
+            result = {
+                "by_stage":       _serialize(rows),
+                "totals":         _serialize(totals),
+                "source":         "postgresql",
+            }
+            _set_cache("pipeline_summary", result)
+            return result
+        except Exception as e:
+            logger.error(f"Pipeline DB error: {e}")
+
+    # JSON fallback
+    raw = _load_json("pipeline.json")
+    deals = raw if isinstance(raw, list) else raw.get("deals", [])
+    by_stage = {}
+    total_val = 0
+    won_val   = 0
+    for d in deals:
+        st  = d.get("stage","Unknown")
+        amt = _safe_float(d.get("amount",0))
+        total_val += amt
+        if st == "Closed Won": won_val += amt
+        if st not in by_stage:
+            by_stage[st] = {"stage":st,"deal_count":0,"total_value":0.0}
+        by_stage[st]["deal_count"]  += 1
+        by_stage[st]["total_value"] += amt
+
+    result = {
+        "by_stage":     list(by_stage.values()),
+        "totals":       {"total_deals":len(deals),"pipeline_value":total_val,
+                         "won_value":won_val,"lost_count":0},
+        "source":       "json",
+    }
+    _set_cache("pipeline_summary", result)
+    return result
+
+@app.get("/api/pipeline/deals")
+def pipeline_deals(
+    stage:    Optional[str] = None,
+    category: Optional[str] = None,
+    unit:     Optional[str] = None,
+    limit:    int = Query(default=500, le=5000),
+    offset:   int = Query(default=0, ge=0),
+    user:     dict = Depends(get_current_user),
+):
+    _audit("API_PIPELINE_DEALS", user, f"stage={stage} unit={unit} limit={limit}")
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            where  = []
+            params = []
+            if stage:    where.append("stage = %s");        params.append(stage)
+            if category: where.append("deal_category = %s");params.append(category)
+            if unit:     where.append("unit = %s");         params.append(unit)
+            sql = "SELECT * FROM pipeline_deals"
+            if where: sql += " WHERE " + " AND ".join(where)
+            sql += f" ORDER BY open_date DESC LIMIT {limit} OFFSET {offset}"
+            rows = _db.fetch_all(sql, tuple(params))
+            return {"deals": _serialize(rows), "count": len(rows), "source": "postgresql"}
+        except Exception as e:
+            logger.error(f"Pipeline deals DB error: {e}")
+
+    raw   = _load_json("pipeline.json")
+    deals = raw if isinstance(raw, list) else raw.get("deals", [])
+    if stage:    deals = [d for d in deals if d.get("stage")==stage]
+    if category: deals = [d for d in deals if d.get("deal_category")==category]
+    if unit:     deals = [d for d in deals if d.get("unit")==unit]
+    return {"deals": deals[offset:offset+limit], "count": len(deals), "source": "json"}
+
+# ── Credit Monitoring Endpoints ───────────────────────────────────
+@app.get("/api/credit/summary")
+def credit_summary(user: dict = Depends(get_current_user)):
+    _audit("API_CREDIT_SUMMARY", user)
+    cached = _get_cache("credit_summary", "credit")
+    if cached:
+        return cached
+
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            totals = _db.fetch_one("""
+                SELECT COUNT(*)                                          as total_accounts,
+                       ROUND(SUM(outstanding)::numeric/1e9, 2)          as outstanding_bn,
+                       ROUND(SUM(loan_amount)::numeric/1e9, 2)          as loan_book_bn,
+                       SUM(CASE WHEN npl_flag THEN 1 ELSE 0 END)        as npl_count,
+                       ROUND(SUM(CASE WHEN npl_flag THEN outstanding ELSE 0 END)::numeric/
+                             NULLIF(SUM(outstanding),0)*100, 2)         as npl_ratio_pct,
+                       COUNT(DISTINCT branch)                           as branches
+                FROM watchlist
+            """)
+            by_class = _db.fetch_all("""
+                SELECT classification,
+                       COUNT(*) as accounts,
+                       ROUND(SUM(outstanding)::numeric/1e6, 1) as outstanding_m
+                FROM watchlist
+                GROUP BY classification
+                ORDER BY outstanding_m DESC
+            """)
+            result = {
+                "totals":   _serialize(totals),
+                "by_class": _serialize(by_class),
+                "source":   "postgresql",
+            }
+            _set_cache("credit_summary", result)
+            return result
+        except Exception as e:
+            logger.error(f"Credit DB error: {e}")
+
+    raw   = _load_json("credit_monitoring.json")
+    accts = raw if isinstance(raw,list) else raw.get("watchlist",[])
+    total_out = sum(_safe_float(a.get("outstanding",0)) for a in accts)
+    npl_ct    = sum(1 for a in accts if _safe_int(a.get("npl_days",0))>=90)
+    npl_out   = sum(_safe_float(a.get("outstanding",0))
+                    for a in accts if _safe_int(a.get("npl_days",0))>=90)
+    result = {
+        "totals": {"total_accounts":len(accts),
+                   "outstanding_bn":round(total_out/1e9,2),
+                   "npl_count":npl_ct,
+                   "npl_ratio_pct":round(npl_out/max(total_out,1)*100,2)},
+        "by_class":[],
+        "source":"json",
+    }
+    _set_cache("credit_summary", result)
+    return result
+
+@app.get("/api/credit/watchlist")
+def credit_watchlist(
+    classification: Optional[str] = None,
+    stage:          Optional[str] = None,
+    branch:         Optional[str] = None,
+    npl_only:       bool = False,
+    limit:          int = Query(default=200, le=1000),
+    offset:         int = Query(default=0, ge=0),
+    user:           dict = Depends(get_current_user),
+):
+    _audit("API_CREDIT_WATCHLIST", user, f"npl_only={npl_only} branch={branch}")
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            where  = []
+            params = []
+            if classification: where.append("classification = %s"); params.append(classification)
+            if stage:          where.append("stage = %s");          params.append(stage)
+            if branch:         where.append("branch_name ILIKE %s");params.append(f"%{branch}%")
+            if npl_only:       where.append("npl_flag = true")
+            sql = "SELECT * FROM watchlist"
+            if where: sql += " WHERE " + " AND ".join(where)
+            sql += f" ORDER BY dpd DESC LIMIT {limit} OFFSET {offset}"
+            rows = _db.fetch_all(sql, tuple(params))
+            return {"accounts":_serialize(rows),"count":len(rows),"source":"postgresql"}
+        except Exception as e:
+            logger.error(f"Watchlist DB error: {e}")
+
+    raw   = _load_json("credit_monitoring.json")
+    accts = raw if isinstance(raw,list) else raw.get("watchlist",[])
+    if classification: accts = [a for a in accts if a.get("classification")==classification]
+    if stage:          accts = [a for a in accts if a.get("stage")==stage]
+    if npl_only:       accts = [a for a in accts if _safe_int(a.get("npl_days",0))>=90]
+    return {"accounts":accts[offset:offset+limit],"count":len(accts),"source":"json"}
+
+# ── AML Endpoints ─────────────────────────────────────────────────
+@app.get("/api/aml/summary")
+def aml_summary(user: dict = Depends(get_current_user)):
+    _audit("API_AML_SUMMARY", user)
+    cached = _get_cache("aml_summary","aml")
+    if cached: return cached
+
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            totals = _db.fetch_one("""
+                SELECT COUNT(*)                                            as total_alerts,
+                       SUM(CASE WHEN status='Open' THEN 1 ELSE 0 END)   as open_alerts,
+                       SUM(CASE WHEN risk_level='High' THEN 1 ELSE 0 END) as high_risk,
+                       SUM(CASE WHEN str_filed THEN 1 ELSE 0 END)          as strs_filed,
+                       ROUND(SUM(amount)::numeric/1e6, 1)                  as total_amount_m
+                FROM aml_alerts
+            """)
+            by_rule = _db.fetch_all("""
+                SELECT rule_triggered, COUNT(*) as alerts,
+                       SUM(CASE WHEN status='Open' THEN 1 ELSE 0 END) as open_count
+                FROM aml_alerts
+                GROUP BY rule_triggered
+                ORDER BY alerts DESC
+            """)
+            result = {"totals":_serialize(totals),"by_rule":_serialize(by_rule),"source":"postgresql"}
+            _set_cache("aml_summary",result)
+            return result
+        except Exception as e:
+            logger.error(f"AML DB error: {e}")
+
+    alerts = _load_json("aml_alerts.json")
+    result = {
+        "totals":{"total_alerts":len(alerts),
+                  "open_alerts":sum(1 for a in alerts if a.get("status")=="Open"),
+                  "high_risk":sum(1 for a in alerts if a.get("risk_level")=="High"),
+                  "strs_filed":sum(1 for a in alerts if a.get("str_filed"))},
+        "by_rule":[],"source":"json"
+    }
+    _set_cache("aml_summary",result)
+    return result
+
+# ── Users / Org Endpoints ─────────────────────────────────────────
+@app.get("/api/users/summary")
+def users_summary(user: dict = Depends(get_current_user)):
+    _audit("API_USERS_SUMMARY", user)
+    cached = _get_cache("users_summary","users")
+    if cached: return cached
+
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            totals = _db.fetch_one("""
+                SELECT COUNT(*)                                          as total_users,
+                       SUM(CASE WHEN active THEN 1 ELSE 0 END)          as active_users,
+                       SUM(CASE WHEN is_admin THEN 1 ELSE 0 END)        as admins,
+                       COUNT(DISTINCT department)                        as departments,
+                       COUNT(DISTINCT unit)                              as units
+                FROM users
+            """)
+            by_dept = _db.fetch_all("""
+                SELECT department, COUNT(*) as headcount
+                FROM users WHERE active = true
+                GROUP BY department
+                ORDER BY headcount DESC
+            """)
+            result = {"totals":_serialize(totals),"by_dept":_serialize(by_dept),"source":"postgresql"}
+            _set_cache("users_summary",result)
+            return result
+        except Exception as e:
+            logger.error(f"Users DB error: {e}")
+
+    users = _load_json("users.json")
+    if isinstance(users,dict): users = list(users.values())
+    result = {
+        "totals":{"total_users":len(users),
+                  "active_users":sum(1 for u in users if u.get("active",True)),
+                  "admins":sum(1 for u in users if u.get("is_admin"))},
+        "by_dept":[],"source":"json"
+    }
+    _set_cache("users_summary",result)
+    return result
+
+# ── MD Dashboard Endpoint ─────────────────────────────────────────
+@app.get("/api/dashboard/md")
+def md_dashboard(user: dict = Depends(get_current_user)):
+    """Single endpoint for MD command centre — aggregates all key metrics."""
+    _audit("API_DASHBOARD_MD", user)
+    cached = _get_cache("md_dashboard","dashboard")
+    if cached: return cached
+
+    # Direct calls now require the user dict (since the route fns gained
+    # the auth Depends). We pass the resolved user through — no need to
+    # re-validate the token internally.
+    bsc   = bsc_summary(user=user)
+    pipe  = pipeline_summary(user=user)
+    credit= credit_summary(user=user)
+    aml   = aml_summary(user=user)
+    users = users_summary(user=user)
+
+    result = {
+        "bsc":     {"overall_avg":bsc.get("overall_avg",0),
+                    "total_staff":bsc.get("total_staff",0)},
+        "pipeline":{"total_deals":pipe.get("totals",{}).get("total_deals",0),
+                    "pipeline_value":pipe.get("totals",{}).get("pipeline_value",0),
+                    "won_value":pipe.get("totals",{}).get("won_value",0)},
+        "credit":  {"total_accounts":credit.get("totals",{}).get("total_accounts",0),
+                    "outstanding_bn":credit.get("totals",{}).get("outstanding_bn",0),
+                    "npl_ratio_pct":credit.get("totals",{}).get("npl_ratio_pct",0)},
+        "aml":     {"open_alerts":aml.get("totals",{}).get("open_alerts",0),
+                    "high_risk":aml.get("totals",{}).get("high_risk",0)},
+        "org":     {"total_staff":users.get("totals",{}).get("total_users",0),
+                    "departments":users.get("totals",{}).get("departments",0)},
+        "generated_at": datetime.now().isoformat(),
+    }
+    _set_cache("md_dashboard",result)
+    return result
+
+# ── Cache management ──────────────────────────────────────────────
+# ── Cache management ──────────────────────────────────────────────
+@app.post("/api/cache/clear")
+def clear_cache(user: dict = Depends(require_admin)):
+    """Admin-only — flush the in-memory API cache."""
+    _audit("API_CACHE_CLEAR", user, "Cache flushed via /api/cache/clear")
+    _cache.clear()
+    _cache_ts.clear()
+    return {"status":"cleared","message":"All API cache cleared"}
+
+@app.get("/api/cache/stats")
+def cache_stats(user: dict = Depends(get_current_user)):
+    _audit("API_CACHE_STATS", user)
+    now = time.time()
+    return {
+        "cached_keys": list(_cache.keys()),
+        "ages_seconds": {k: round(now - _cache_ts.get(k,now)) for k in _cache},
+    }
+
+# ══════════════════════════════════════════════════════════════════════
+# /api/v1/* — Generic CRUD routers (Standard #2, v5.31)
+# ══════════════════════════════════════════════════════════════════════
+# Each module gets 8 endpoints generated by the factory:
+#   list, get, create, update, delete, export, search, dashboard
+# All are JWT-gated, parameterised, and audit-logged.
+#
+# Adding a new module is one make_crud_router() call. The G16 audit
+# gate counts these and validates JWT auth on every route.
+# ══════════════════════════════════════════════════════════════════════
+from utils.api_crud import make_crud_router
+
+# Pilot module: pipeline_deals
+# - PG-live (TABLE_USE_DB["pipeline_deals"] = True since v5.x)
+# - Schema in SCHEMA_SQL with `id` PK
+# - Existing /api/pipeline/* endpoints stay (backward compat); the new
+#   /api/v1/pipeline_deals/* endpoints add CRUD that wasn't there before.
+app.include_router(
+    make_crud_router(
+        module     = "pipeline_deals",
+        table      = "pipeline_deals",
+        json_file  = "pipeline.json",
+        list_key   = "deals",
+        searchable = ["stage", "deal_category", "unit", "staff_code", "client_cif"],
+        order_by   = "open_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# ══════════════════════════════════════════════════════════════════════
+# v10.92 — Phase 1B kickoff: CRUD modules for high-value tables
+# ══════════════════════════════════════════════════════════════════════
+# Each make_crud_router call = 8 endpoints (list/get/create/update/delete/
+# export/search/dashboard). All inherit JWT auth, audit logging, and PG/JSON
+# fallback from the factory. The 3 modules below are picked from the
+# TABLE_USE_DB-enabled list with PG migrations completed in v10.88-v10.91.
+
+# loan_applications: credit origination pipeline — extended schema in v10.89
+# (added clean_repayment_history, compliance_type, appraisal_notes,
+# proposition_tag, data JSONB to the pre-existing table). The CRUD router
+# uses `last_updated DESC` since application_date may be stale for long-
+# running applications.
+app.include_router(
+    make_crud_router(
+        module     = "loan_applications",
+        table      = "loan_applications",
+        json_file  = "loan_applications.json",
+        list_key   = None,            # source JSON is a flat list, not nested
+        searchable = ["status", "swim_lane", "deal_category",
+                      "rm_code", "client_cif", "compliance_flag",
+                      "is_repeat_borrower"],
+        order_by   = "last_updated DESC",
+        pk_column  = "id",
+    )
+)
+
+# aml_alerts: AML/CTF case tracking — RLS-protected (Risk & Compliance +
+# Internal Audit only); the CRUD router inherits the table-level RLS
+# automatically because PG enforces RLS at SELECT/INSERT time regardless
+# of how the SQL is built.
+app.include_router(
+    make_crud_router(
+        module     = "aml_alerts",
+        table      = "aml_alerts",
+        json_file  = "aml_alerts.json",
+        list_key   = None,
+        searchable = ["status", "risk_level", "str_filed",
+                      "assigned_to", "rule_triggered"],
+        order_by   = "transaction_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# projects: project management tracking — added in v10.91 PG migration
+# batch 4 (40 records). Common dashboard queries by status + rag_status.
+app.include_router(
+    make_crud_router(
+        module     = "projects",
+        table      = "projects",
+        json_file  = "projects.json",
+        list_key   = None,
+        searchable = ["status", "priority", "rag_status",
+                      "department", "project_manager", "sponsor"],
+        order_by   = "start_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# ══════════════════════════════════════════════════════════════════════
+# v10.93 — Phase 1B continuation: 3 more CRUD modules (+24 endpoints)
+# ══════════════════════════════════════════════════════════════════════
+# Prerequisite was added in v10.93 itself: the v10.88-v10.91 PG-migrated
+# tables now have TABLE_USE_DB=True entries. Picking 3 high-value tables
+# from the 25 newly-eligible: ifrs9_loans (5045 records, IFRS 9 ECL),
+# legal_matters (362 records, legal arc ops), collateral_register
+# (200 records, credit collateral).
+
+# ifrs9_loans: high-volume IFRS 9 expected credit loss data (5045 records).
+# Stage filter is the single most-used query in credit risk dashboards;
+# reporting_date enables snapshot comparisons across reporting periods.
+# pk_column "account_id" because this table uses account_id as PK, not id.
+app.include_router(
+    make_crud_router(
+        module     = "ifrs9_loans",
+        table      = "ifrs9_loans",
+        json_file  = "ifrs9_loans.json",
+        list_key   = None,
+        searchable = ["stage", "ecl_basis", "sicr_flag",
+                      "product", "client_name"],
+        order_by   = "ecl_amount DESC",
+        pk_column  = "account_id",
+    )
+)
+
+# legal_matters: legal arc litigation/advisory tracking (362 records).
+# SLA breach status is the operational priority filter; matter_type
+# segments litigation vs advisory vs collections.
+app.include_router(
+    make_crud_router(
+        module     = "legal_matters",
+        table      = "legal_matters",
+        json_file  = "legal_matters.json",
+        list_key   = None,
+        searchable = ["status", "priority", "sla_breached",
+                      "matter_type", "client_cif", "attorney"],
+        order_by   = "opened_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# collateral_register: credit collateral inventory (200 records).
+# LTV ratio + status filter directly map to credit governance queries
+# (high-LTV positions need attention; impaired collateral changes ECL).
+app.include_router(
+    make_crud_router(
+        module     = "collateral_register",
+        table      = "collateral_register",
+        json_file  = "collateral_register.json",
+        list_key   = None,
+        searchable = ["status", "collateral_type", "client_cif",
+                      "branch", "valuer"],
+        order_by   = "market_value DESC",
+        pk_column  = "id",
+    )
+)
+
+# ══════════════════════════════════════════════════════════════════════
+# v10.94 — Phase 1B continuation: 3 more CRUD modules (+24 endpoints)
+# ══════════════════════════════════════════════════════════════════════
+# All 3 verified ready in pre-flight: TABLE_USE_DB=True (set v10.93),
+# schema in db.py, FLAT_MIGRATIONS entry, source JSON exists with data.
+
+# agent_transactions: high-volume agent banking transaction log
+# (679 records → millions in production). Most operational queries
+# are by agent_id, txn_date, or fraud_flag — these drive the
+# fraud-detection workflow. Default sort by txn_date DESC matches
+# how operations teams review recent activity.
+app.include_router(
+    make_crud_router(
+        module     = "agent_transactions",
+        table      = "agent_transactions",
+        json_file  = "agent_transactions.json",
+        list_key   = None,
+        searchable = ["agent_id", "branch", "txn_type",
+                      "fraud_flag", "txn_date"],
+        order_by   = "txn_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# debt_recovery: NPL recovery tracking (150 records). Recovery_stage
+# is the primary operational filter (early/letter/legal/written-off);
+# legal_referral surfaces matters that need legal-arc handoff. Order
+# by NPL days descending so the worst delinquencies surface first.
+app.include_router(
+    make_crud_router(
+        module     = "debt_recovery",
+        table      = "debt_recovery",
+        json_file  = "debt_recovery.json",
+        list_key   = None,
+        searchable = ["status", "recovery_stage", "client_cif",
+                      "rm_code", "legal_referral", "branch"],
+        order_by   = "npl_days DESC",
+        pk_column  = "id",
+    )
+)
+
+# cims_tickets: customer instruction management (200 records).
+# Priority + status are the SLA-driven filters; instruction_type
+# segments the workflow (transfers, cheques, statements, etc.).
+# Ordered by SLA due_date ASC so soon-to-breach tickets surface
+# first.
+app.include_router(
+    make_crud_router(
+        module     = "cims_tickets",
+        table      = "cims_tickets",
+        json_file  = "cims_tickets.json",
+        list_key   = None,
+        searchable = ["status", "priority", "instruction_type",
+                      "branch", "rm_code", "client_cif"],
+        order_by   = "due_date ASC",
+        pk_column  = "id",
+    )
+)
+
+# ══════════════════════════════════════════════════════════════════════
+# v10.95 — Phase 1B continuation: 3 more CRUD modules (+24 endpoints)
+# ══════════════════════════════════════════════════════════════════════
+# All 3 verified clean in pre-flight: TABLE_USE_DB=True (set v10.93 +
+# stale flips), schemas + FLAT_MIGRATIONS in place, source JSONs exist.
+
+# compliance_cases: compliance arc case tracking (115 records).
+# Risk-level + status are the operational filters; flag_type segments
+# the case taxonomy (Adverse Media, Sanctions Hit, PEP Match, etc.).
+# Order by raised_date DESC so most recent cases surface first.
+app.include_router(
+    make_crud_router(
+        module     = "compliance_cases",
+        table      = "compliance_cases",
+        json_file  = "compliance_cases.json",
+        list_key   = None,
+        searchable = ["status", "risk_level", "flag_type",
+                      "client_cif", "assigned_officer",
+                      "case_type"],
+        order_by   = "raised_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# referrals: customer referral tracking (200 records). Channel
+# attribution analytics: referral_source (Staff/Branch/Partner/MOU)
+# is the primary segmentation; converted + fee_paid surface the
+# operational state. Branch + rm_assigned support performance
+# tracking by location and relationship manager.
+app.include_router(
+    make_crud_router(
+        module     = "referrals",
+        table      = "referrals",
+        json_file  = "referrals.json",
+        list_key   = None,
+        searchable = ["status", "referral_source", "converted",
+                      "fee_paid", "branch", "rm_assigned",
+                      "product_interested"],
+        order_by   = "referral_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# consent_register: DPO compliance — customer consent tracking
+# (200 records). consent_type segments the regulatory category
+# (Marketing, Data Processing, Product Recommendations, etc.);
+# legal_basis (Consent/Contract/Legitimate Interest/Legal
+# Obligation) drives reviewability. Status + granted flag the
+# active vs withdrawn state.
+app.include_router(
+    make_crud_router(
+        module     = "consent_register",
+        table      = "consent_register",
+        json_file  = "consent_register.json",
+        list_key   = None,
+        searchable = ["status", "consent_type", "granted",
+                      "legal_basis", "customer_cif",
+                      "cbk_category", "channel"],
+        order_by   = "granted_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# ══════════════════════════════════════════════════════════════════════
+# v10.96 — Phase 1B CLOSE-OUT: 3 final CRUD modules (+24 endpoints)
+# Total: 16 CRUD modules × 8 verbs = 128 CRUD endpoints + 19 direct =
+# 147 endpoints (108% of the 136 target).
+# ══════════════════════════════════════════════════════════════════════
+# Note on candidates: staff_history (originally targeted for v10.96) and
+# commission_records were dropped because they use composite primary
+# keys — the factory pattern requires a single pk_column. Substituted
+# clearing_records (has `id` field). Composite-PK tables are wired via
+# direct decorators when needed; not a CRUD-factory case.
+
+# revenue_assurance: revenue leakage tracking (300 records).
+# revenue_assurance arc data (arc closed at G133+G134). Common queries:
+# by status (Open/Recovered/Written-off), by type (Pricing/Fee/Variance),
+# by period for trend analytics.
+app.include_router(
+    make_crud_router(
+        module     = "revenue_assurance",
+        table      = "revenue_assurance",
+        json_file  = "revenue_assurance.json",
+        list_key   = None,
+        searchable = ["status", "type", "fee_type", "period",
+                      "branch", "recovered", "client_cif"],
+        order_by   = "date_raised DESC",
+        pk_column  = "id",
+    )
+)
+
+# edms_documents: document management (500 records, largest by volume
+# among remaining candidates). Used by compliance + legal arcs.
+# Filters: category (Loan Doc, KYC, Legal, etc.), status, expiry,
+# review-pending. Order by uploaded_date DESC for fresh-content first.
+app.include_router(
+    make_crud_router(
+        module     = "edms_documents",
+        table      = "edms_documents",
+        json_file  = "edms_documents.json",
+        list_key   = None,
+        searchable = ["status", "category", "document_type",
+                      "client_cif", "branch", "is_expired",
+                      "requires_review", "access_level"],
+        order_by   = "uploaded_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# clearing_records: clearing house settlement tracking (120 records).
+# Settlement workflow: status (Pending/Settled/Failed/Reversed),
+# system (PESALINK/RTGS/EFT/SWIFT), reconciliation state.
+# Order by value_date DESC matches operations review pattern.
+app.include_router(
+    make_crud_router(
+        module     = "clearing_records",
+        table      = "clearing_records",
+        json_file  = "clearing_records.json",
+        list_key   = None,
+        searchable = ["status", "system", "reconciled",
+                      "currency", "settlement_tat_met",
+                      "officer_username"],
+        order_by   = "value_date DESC",
+        pk_column  = "id",
+    )
+)
+
+# ── Strategy module router (v10.141) ─────────────────────────────
+# Mounts the 19 Strategy module endpoints (ENH-141..155) at
+# /api/strategy/*. Each endpoint requires JWT via
+# Depends(get_current_user). The router is the React-ready surface
+# for the closed Strategy module — engines are the source of truth
+# for both this API and pages/15_strategy_arc_cockpit.py.
+from utils.api_strategy import router as strategy_router
+app.include_router(strategy_router)
+
+# ── Cockpit API router (v10.297) ────────────────────────────────
+# Phase 3 React-readiness arc. Exposes the cockpit_read composers
+# at /api/cockpit/* so the React SPA (#37) can fetch the same live
+# cockpit views that Streamlit pages 109 (CIMS) and 110 (Treasury)
+# render. Single source of truth: HTTP and Streamlit transports
+# both call the same composer functions. Read-only GETs only;
+# state changes go through engine-specific routers.
+try:
+    from utils.api_cockpit import (
+        router as cockpit_router,
+        FASTAPI_AVAILABLE as _COCKPIT_FASTAPI_AVAILABLE,
+    )
+    if _COCKPIT_FASTAPI_AVAILABLE and cockpit_router is not None:
+        app.include_router(cockpit_router)
+except Exception:
+    # Cockpit API is additive — never break the app if it fails
+    # to import (e.g. cockpit_read deps unavailable).
+    pass
+
+# ── Standard #20: Performance Amplification API (v5.44) ───────────
+@app.get("/api/v2/performance/insights/{staff_code}")
+def performance_insights(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    """Standard #20 — Performance Amplification API.
+
+    Returns aggregated insights for a single staff member:
+      - overall_score:       BSC overall on 1-5 scale
+      - strengths:           list of KPIs at ≥110% achievement
+      - promotion_readiness: 0-1 from #12 GrowthPathEngine
+
+    Returns 404 for unknown staff. Auth required (per G12).
+    """
+    from utils.performance_insights import get_performance_insights
+    result = get_performance_insights(staff_code)
+    if not result:
+        raise HTTPException(status_code=404, detail=f"No insights for staff_code={staff_code!r}")
+    return result
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# INTEGRATION LAYER API (v10.115) — React-readiness endpoints
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# These endpoints expose the v10.108-v10.115 Integration Layer state
+# in JSON shapes a React frontend can consume directly without
+# Streamlit-side rendering. Each endpoint:
+#   - JWT-protected (Depends(get_current_user))
+#   - Returns flat JSON / arrays of dicts (no Streamlit data structures)
+#   - Includes a `source` field so the React side knows where the data
+#     originated (`registry`, `aggregator`, etc.) for debugging
+#   - Cached per the existing _set_cache / _get_cache pattern
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def _rule_to_dict(rule) -> dict:
+    """Serialize an AggregationRule to a JSON-shaped dict suitable
+    for React consumption. Excludes callable fields (predicate,
+    extractor) — the React side only needs the metadata."""
+    return {
+        "kpi_id":         rule.kpi_id,
+        "source_table":   rule.source_table,
+        "pattern":        rule.pattern,
+        "description":    rule.description or "",
+        "value_field":    rule.value_field,
+        "start_field":    rule.start_field,
+        "end_field":      rule.end_field,
+        "numerator_field": rule.numerator_field,
+        "denominator_field": rule.denominator_field,
+        "bool_field":     rule.bool_field,
+        "period_field":   rule.period_field,
+        "decimals":       rule.decimals,
+        "invert":         rule.invert,
+        "uses_extractor": rule.staff_field_extractor is not None,
+    }
+
+
+@app.get("/api/integration/rules")
+def integration_rules(
+    pattern: Optional[str] = None,
+    source_table: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """Standard #15 — List Integration Layer rules.
+
+    Returns rule metadata for every registered AggregationRule. React
+    uses this to render the rule catalog, filter by pattern (e.g.
+    'show all PERCENTAGE rules'), and join against the KPI library
+    for display labels and units.
+
+    Query params:
+      pattern:       filter by pattern name (COUNT, PERCENTAGE, etc.)
+      source_table:  filter by operational table
+
+    Response shape:
+      {
+        "rules":          [...rule dicts...],
+        "count":          int,
+        "patterns":       sorted list of distinct patterns in result,
+        "source_tables":  sorted list of distinct tables in result,
+        "source":         "registry"
+      }
+    """
+    _audit("API_INTEGRATION_RULES", user)
+
+    try:
+        from utils.kpi_aggregation_rules import REGISTRY
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"REGISTRY not available: {type(e).__name__}: {e}")
+
+    rules = list(REGISTRY)
+    if pattern:
+        rules = [r for r in rules if r.pattern == pattern]
+    if source_table:
+        rules = [r for r in rules if r.source_table == source_table]
+
+    rule_dicts = [_rule_to_dict(r) for r in rules]
+    return {
+        "rules":         rule_dicts,
+        "count":         len(rule_dicts),
+        "patterns":      sorted({r["pattern"] for r in rule_dicts}),
+        "source_tables": sorted({r["source_table"] for r in rule_dicts}),
+        "source":        "registry",
+    }
+
+
+@app.get("/api/integration/actuals/{period}")
+def integration_actuals(
+    period: str,
+    kpi_id: Optional[str] = None,
+    staff_code: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """Standard #15 — Compute Integration Layer actuals for a period.
+
+    Runs every active rule against its operational table for the
+    requested period, applies ownership gating, and returns the
+    submitted+dropped records as JSON.
+
+    Path params:
+      period:      "YYYY-MM" period filter (e.g. "2026-04")
+
+    Query params:
+      kpi_id:      filter to a single KPI
+      staff_code:  filter to a single staff (across all KPIs they own)
+
+    Response shape:
+      {
+        "period":          "2026-04",
+        "actuals":         [
+          {"staff_code", "kpi_id", "value", "source_table", "pattern"}
+        ],
+        "count":           int,
+        "by_kpi":          {kpi_id: count, ...},
+        "by_source_table": {table_name: count, ...},
+        "source":          "aggregator"
+      }
+
+    The shape mirrors what bsc_engine.submit_batch consumes — a React
+    'pending actuals' preview screen can render this without further
+    transformation.
+    """
+    _audit("API_INTEGRATION_ACTUALS", user, {"period": period})
+
+    # Validate period format
+    import re
+    if not re.match(r"^\d{4}-(0[1-9]|1[0-2])$", period):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid period {period!r}; expected YYYY-MM")
+
+    try:
+        from utils.kpi_aggregation_rules import REGISTRY, compute_rule
+        from utils.staff_field_resolver import resolve_staff_field
+        from utils.staff_name_resolver import refresh_cache as nr_refresh
+        from utils.kpi_ownership import is_kpi_owned_by_staff
+        nr_refresh()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Integration Layer unavailable: {type(e).__name__}: {e}")
+
+    # Cache by (period, kpi_id, staff_code) tuple to avoid recomputing
+    cache_key = f"integration_actuals:{period}:{kpi_id or '*'}:{staff_code or '*'}"
+    cached = _get_cache(cache_key, "integration")
+    if cached:
+        return cached
+
+    actuals = []
+    for rule in REGISTRY:
+        if kpi_id and rule.kpi_id != kpi_id:
+            continue
+        # Read operational table from JSON (PG-readiness shim is a
+        # v10.116+ task per blueprint; the rule data path is already
+        # PG-ready via the loader, but the operational tables aren't
+        # yet in PG views).
+        from pathlib import Path
+        path = Path(_data_dir()) / f"{rule.source_table}.json"
+        if not path.exists():
+            continue
+        try:
+            with open(path) as f:
+                d = json.load(f)
+            rows = d if isinstance(d, list) else list(d.values())
+        except Exception:
+            continue
+
+        sf = resolve_staff_field(rule.source_table, rule.staff_field)
+        try:
+            per_staff = compute_rule(rule, rows, period, sf)
+        except Exception:
+            continue
+        if not per_staff:
+            continue
+
+        for sc, value in per_staff.items():
+            if staff_code and sc != staff_code:
+                continue
+            # Apply ownership gate
+            try:
+                if not is_kpi_owned_by_staff(sc, rule.kpi_id, period):
+                    continue
+            except Exception:
+                # If ownership cannot be determined, skip silently
+                # (matches the v10.108 actuals_engine behavior)
+                continue
+            actuals.append({
+                "staff_code":   sc,
+                "kpi_id":       rule.kpi_id,
+                "value":        round(float(value), rule.decimals)
+                                  if isinstance(value, (int, float))
+                                  else value,
+                "source_table": rule.source_table,
+                "pattern":      rule.pattern,
+                "period":       period,
+            })
+
+    by_kpi = {}
+    by_table = {}
+    for a in actuals:
+        by_kpi[a["kpi_id"]] = by_kpi.get(a["kpi_id"], 0) + 1
+        by_table[a["source_table"]] = by_table.get(a["source_table"], 0) + 1
+
+    result = {
+        "period":          period,
+        "actuals":         actuals,
+        "count":           len(actuals),
+        "by_kpi":          by_kpi,
+        "by_source_table": by_table,
+        "source":          "aggregator",
+    }
+    _set_cache(cache_key, result)
+    return result
+
+
+@app.get("/api/integration/resolution-metrics")
+def integration_resolution_metrics(user: dict = Depends(get_current_user)):
+    """Standard #15 — Surface name + role resolver metrics.
+
+    Returns the current hit/miss rates from staff_name_resolver and
+    staff_role_resolver. The React admin page renders this as the
+    Resolution Metrics card so deploying admins can see staff-register
+    coverage gaps.
+
+    Response shape:
+      {
+        "name_resolver": {
+          "lookups_total", "lookups_hit", "lookups_miss",
+          "ambiguous_misses", "miss_examples", "hit_rate_pct"
+        },
+        "role_resolver": {
+          ...same shape plus "resolved_via" breakdown...
+        },
+        "source": "resolvers"
+      }
+    """
+    _audit("API_INTEGRATION_RESOLUTION_METRICS", user)
+    out = {"name_resolver": None, "role_resolver": None, "source": "resolvers"}
+    try:
+        from utils.staff_name_resolver import get_resolution_metrics as nm
+        out["name_resolver"] = nm()
+    except Exception as e:
+        out["name_resolver_error"] = f"{type(e).__name__}: {e}"
+    try:
+        from utils.staff_role_resolver import get_resolution_metrics as rm
+        out["role_resolver"] = rm()
+    except Exception as e:
+        out["role_resolver_error"] = f"{type(e).__name__}: {e}"
+    return out
+
+
+@app.post("/api/integration/run-period")
+def integration_run_period(
+    period: str,
+    dry_run: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Standard #15 — Submit Integration Layer actuals for a period
+    (write-side trigger).
+
+    Runs the full pipeline: every active rule → operational table read
+    (PG view or JSON via the v10.116 _data_source shim) → compute →
+    ownership gate → bsc_engine.submit_batch. Returns a JSON status
+    matching the dict shape from
+    `compute_actuals_from_operational_tables(period)`.
+
+    **This is the write-side counterpart to GET /api/integration/
+    actuals/{period}.** The GET endpoint computes-and-previews without
+    persistence; this POST endpoint runs the full submit pipeline and
+    persists actuals to the BSC engine. Together they close the
+    React API read+write contract.
+
+    Path-style param (period) is provided as a query string for POST
+    consistency with the rest of the integration endpoints.
+
+    Query params:
+      period:   "YYYY-MM" period filter (required, validated)
+      dry_run:  if true, computes but skips bsc_engine.submit_batch.
+                Useful for React 'preview before commit' flows.
+                Defaults to false.
+
+    Response shape (matches actuals_engine output):
+      {
+        "success":           bool,
+        "period":            "2026-04",
+        "rules_processed":   int,
+        "rules_skipped":     int,    # source table missing
+        "actuals_submitted": int,    # passed ownership gate
+        "actuals_dropped":   int,    # failed ownership gate
+        "by_rule":           [...],
+        "engine_summary":    {...},  # from bsc_engine.submit_batch
+        "dry_run":           bool,
+        "source":            "aggregator-write"
+      }
+
+    Idempotency: bsc_engine.submit_batch is idempotent on
+    (staff_code, kpi_id, period) — calling this endpoint twice for
+    the same period writes the actuals once and reports
+    'duplicates_skipped' in engine_summary on the second call.
+
+    Authorization: standard JWT auth (Depends(get_current_user)).
+    Per Standard #15, write endpoints SHOULD additionally check that
+    the caller has admin/integration role; v10.116 ships with
+    user-role-agnostic auth and v10.117 adds role gating once the
+    role taxonomy stabilises (avoids breaking React work waiting for
+    a roles backlog).
+    """
+    _audit("API_INTEGRATION_RUN_PERIOD", user,
+            {"period": period, "dry_run": dry_run})
+
+    # v10.117 role gating — feature flag (default OFF). When enabled,
+    # caller's role must be in _security.allowed_roles_for_write or
+    # the POST is rejected with HTTP 403. Layered on top of the
+    # existing JWT auth (Depends(get_current_user)).
+    _check_write_role(user)
+
+    # Validate period
+    import re
+    if not re.match(r"^\d{4}-(0[1-9]|1[0-2])$", period):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid period {period!r}; expected YYYY-MM")
+
+    try:
+        from utils.actuals_engine import (
+            compute_actuals_from_operational_tables)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Integration Layer unavailable: "
+                   f"{type(e).__name__}: {e}")
+
+    if dry_run:
+        # Dry run = use the GET-style preview path so React can render
+        # 'pending actuals' without persisting. Reuses the existing
+        # GET /api/integration/actuals/{period} logic by calling
+        # the read-only handler directly.
+        preview = integration_actuals(
+            period=period, kpi_id=None, staff_code=None, user=user)
+        return {
+            "success":           True,
+            "period":            period,
+            "rules_processed":   len({a["kpi_id"] for a in preview["actuals"]}),
+            "rules_skipped":     0,
+            "actuals_submitted": 0,                       # not persisted
+            "actuals_dropped":   0,
+            "preview_count":     preview["count"],
+            "preview_actuals":   preview["actuals"],
+            "by_rule":           [],
+            "engine_summary":    {"mode": "dry_run"},
+            "dry_run":           True,
+            "source":            "aggregator-write",
+        }
+
+    # Full pipeline: compute + ownership gate + bsc_engine.submit_batch
+    try:
+        result = compute_actuals_from_operational_tables(period)
+    except Exception as e:
+        logger.error(
+            f"integration_run_period: pipeline error: "
+            f"{type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pipeline error: {type(e).__name__}: {e}")
+
+    # Tag the response so the React side knows whether this was a real
+    # write or a dry run. Preserve everything the engine returned.
+    result = dict(result) if isinstance(result, dict) else {
+        "success": False, "error": "non-dict response"}
+    result["dry_run"] = False
+    result["source"] = "aggregator-write"
+    return result
+
+
+@app.get("/api/integration/coverage")
+def integration_coverage(user: dict = Depends(get_current_user)):
+    """Standard #15 — G143-style coverage report.
+
+    Returns a JSON-shaped version of the audit gate output so the
+    React admin dashboard can render coverage progress without
+    parsing the audit log.
+
+    Response shape:
+      {
+        "covered":           int,    # operational-source KPIs with rules
+        "total_operational": int,    # operational-source KPIs in library
+        "pct":               float,
+        "cbs_source_count":  int,    # autofitted via CBS pathway
+        "uncovered_kpis":    [kpi_ids without rules],
+        "source":            "audit_gate_g143"
+      }
+    """
+    _audit("API_INTEGRATION_COVERAGE", user)
+
+    try:
+        from utils.kpi_aggregation_rules import kpis_with_aggregator
+        with open(_data_dir() / "kpi_library.json") as f:
+            lib = json.load(f)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Coverage unavailable: {type(e).__name__}: {e}")
+
+    covered = kpis_with_aggregator()
+    # Match the v10.108 audit gate G143's prefix-based detection for
+    # CBS-source KPIs (cbs_*, management_accounts*) so /api/integration
+    # /coverage and the gate report identical numerators/denominators.
+    cbs_prefixes = ("cbs_", "management_accounts")
+    op_kpis = [k for k in lib.get("kpis", [])
+                if k.get("source")
+                and not any(k.get("source").startswith(p)
+                            for p in cbs_prefixes)]
+    op_ids = {k.get("id") for k in op_kpis if k.get("id")}
+    op_covered = covered & op_ids
+    op_uncovered = sorted(op_ids - covered)
+    cbs_source_count = sum(1 for k in lib.get("kpis", [])
+                            if k.get("source")
+                            and any(k.get("source").startswith(p)
+                                    for p in cbs_prefixes))
+
+    pct = round(100.0 * len(op_covered) / max(len(op_ids), 1), 2)
+
+    # v10.117 strict-mode preview tier (matches scripts/audit.py G143)
+    if pct >= 75.0:
+        strict_tag = "STRICT-READY (high)"
+    elif pct >= 50.0:
+        strict_tag = "STRICT-READY (preview)"
+    else:
+        strict_tag = "BELOW STRICT THRESHOLD"
+
+    return {
+        "covered":           len(op_covered),
+        "total_operational": len(op_ids),
+        "pct":               pct,
+        "cbs_source_count":  cbs_source_count,
+        "uncovered_kpis":    op_uncovered,
+        "strict_preview": {
+            "tag":                   strict_tag,
+            "preview_threshold_pct": 50.0,
+            "high_threshold_pct":    75.0,
+            "flip_target_pct":       100.0,
+        },
+        "source":            "audit_gate_g143",
+    }
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# v10.132 — Rule-explain debug endpoint
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Operator/audit superpower: for any wired rule, return:
+#   - The full rule definition (pattern, predicates, period_field, staff_field)
+#   - Input summary (rows in table, rows in period, rows matching predicate)
+#   - Sample matched rows (top N for spot-check)
+#   - Per-staff intermediate values
+#   - Final aggregated value (matches /actuals/{period} for the same rule)
+#
+# When a number looks wrong on a dashboard, this endpoint shows the
+# working: which rows were considered, which were filtered out by
+# period, which were filtered out by predicate, and how the final
+# value was computed. The cockpit's Debug tab consumes this.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+@app.get("/api/integration/rule-explain/{kpi_id}")
+def integration_rule_explain(
+    kpi_id: str,
+    period: str,
+    staff_code: Optional[str] = None,
+    sample_size: int = 5,
+    user: dict = Depends(get_current_user),
+):
+    """v10.132 — Rule-explain debug endpoint.
+
+    For a given (kpi_id, period), returns a complete trace of how the
+    rule's actuals are computed: rule definition, input row counts,
+    sample matched rows, per-staff intermediate values, and final
+    aggregated value.
+
+    Path params:
+      kpi_id:       the KPI identifier whose rule should be explained
+
+    Query params:
+      period:       "YYYY-MM" period filter (required)
+      staff_code:   optional — narrow to one staff's slice of the output
+      sample_size:  number of sample matched rows to return (1-20, default 5)
+
+    Response shape:
+      {
+        "kpi_id":         "K001",
+        "rule":           {... full rule_to_dict() ...},
+        "input_summary":  {
+          "total_rows_in_table":     int,
+          "rows_in_period":          int,
+          "rows_matching_predicate": int,
+          "distinct_staff_codes":    int
+        },
+        "sample_matched_rows": [...up to sample_size rows...],
+        "per_staff_actuals":   {staff_code: value, ...},
+        "final_value": {
+          "for_staff":  staff_code or null,
+          "value":      numeric (if staff_code) or aggregate dict,
+          "decimals":   int
+        },
+        "source":       "rule_explain_v10_132"
+      }
+
+    Errors:
+      404 — kpi_id not in REGISTRY (no active rule)
+      400 — invalid period format
+    """
+    _audit("API_INTEGRATION_RULE_EXPLAIN", user,
+           {"kpi_id": kpi_id, "period": period})
+
+    # Validate period format (matches /actuals/{period})
+    import re
+    if not re.match(r"^\d{4}-(0[1-9]|1[0-2])$", period):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid period {period!r}; expected YYYY-MM")
+
+    # Cap sample_size to a sane range
+    sample_size = max(1, min(20, int(sample_size)))
+
+    try:
+        from utils.kpi_aggregation_rules import (
+            REGISTRY, compute_rule, _row_in_period,
+        )
+        from utils.staff_field_resolver import resolve_staff_field
+        from utils.staff_name_resolver import refresh_cache as nr_refresh
+        nr_refresh()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Integration Layer unavailable: "
+                   f"{type(e).__name__}: {e}")
+
+    # Find the rule for this kpi_id
+    matching = [r for r in REGISTRY if r.kpi_id == kpi_id]
+    if not matching:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No active aggregation rule for kpi_id {kpi_id!r}. "
+                   f"Try GET /api/integration/rules to list available "
+                   f"rules.")
+    if len(matching) > 1:
+        # Library duplicates (e.g. K028/K048) — explain the first one,
+        # but signal the duplicate
+        rule = matching[0]
+        duplicate_count = len(matching) - 1
+    else:
+        rule = matching[0]
+        duplicate_count = 0
+
+    # Read operational table
+    from pathlib import Path
+    path = Path(_data_dir()) / f"{rule.source_table}.json"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail=f"Operational table {rule.source_table!r} not found")
+    try:
+        with open(path) as f:
+            d = json.load(f)
+        rows = d if isinstance(d, list) else list(d.values())
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not read {rule.source_table}: "
+                   f"{type(e).__name__}: {e}")
+
+    # Stage 1: filter by period
+    rows_in_period = [r for r in rows
+                      if _row_in_period(r, rule.period_field, period)]
+
+    # Stage 2: filter by primary predicate (varies by pattern)
+    # Different patterns use different predicate fields. Show "matching"
+    # rows = rows that the rule's primary filter accepts.
+    primary_pred = (rule.predicate
+                    or rule.numerator_pred
+                    or (lambda _r: True))
+    try:
+        rows_matching = [r for r in rows_in_period if primary_pred(r)]
+    except Exception:
+        rows_matching = rows_in_period  # if predicate errors, show all
+
+    # Stage 3: resolve staff_field + group
+    sf = resolve_staff_field(rule.source_table, rule.staff_field)
+    distinct_staff = set()
+    for r in rows_matching:
+        if rule.staff_field_extractor is not None:
+            try:
+                sc = rule.staff_field_extractor(r)
+            except Exception:
+                sc = None
+        else:
+            sc = r.get(sf)
+        if sc:
+            distinct_staff.add(str(sc))
+
+    # Stage 4: compute_rule for the actual aggregated values
+    try:
+        per_staff = compute_rule(rule, rows, period, sf)
+    except Exception as e:
+        per_staff = {}
+
+    # Sample matched rows (truncate large nested fields for brevity)
+    def _truncate_value(v, max_len=120):
+        if isinstance(v, str) and len(v) > max_len:
+            return v[:max_len] + "…"
+        if isinstance(v, list) and len(v) > 5:
+            return v[:5] + ["…(+%d more)" % (len(v) - 5)]
+        return v
+
+    sample = []
+    for r in rows_matching[:sample_size]:
+        sample.append({k: _truncate_value(v) for k, v in r.items()})
+
+    # If staff_code provided, narrow per_staff
+    if staff_code:
+        per_staff_filtered = {staff_code: per_staff.get(staff_code)} \
+            if staff_code in per_staff else {}
+        final_for_staff = per_staff.get(staff_code)
+    else:
+        per_staff_filtered = {sc: round(float(v), rule.decimals)
+                                  if isinstance(v, (int, float)) else v
+                              for sc, v in per_staff.items()}
+        final_for_staff = None
+
+    return {
+        "kpi_id":            kpi_id,
+        "period":            period,
+        "rule":              _rule_to_dict(rule),
+        "duplicate_rules":   duplicate_count,
+        "input_summary": {
+            "total_rows_in_table":     len(rows),
+            "rows_in_period":          len(rows_in_period),
+            "rows_matching_predicate": len(rows_matching),
+            "distinct_staff_codes":    len(distinct_staff),
+        },
+        "sample_matched_rows": sample,
+        "per_staff_actuals":   per_staff_filtered,
+        "final_value": {
+            "for_staff":  staff_code,
+            "value":      (round(float(final_for_staff), rule.decimals)
+                           if isinstance(final_for_staff, (int, float))
+                           else final_for_staff),
+            "decimals":   rule.decimals,
+        },
+        "source":              "rule_explain_v10_132",
+    }
+
+
+def _data_dir():
+    """Return the data/ directory path (helper for the integration
+    endpoints)."""
+    from pathlib import Path
+    here = Path(__file__).resolve().parent
+    return here.parent / "data"
+
+
+def _read_security_config() -> dict:
+    """Read the `_security` config block from
+    integration_layer_config.json. Returns the resolved policy:
+
+      {
+        "role_gating_enabled":     bool,    # default True (on) since v10.126
+        "allowed_roles_for_write": [str],   # default ["admin", "integration"]
+      }
+
+    **v10.117 history:** shipped role gating as a feature flag that
+    defaulted to OFF so v10.116's POST /api/integration/run-period
+    endpoint stayed backward-compatible. Banks who wanted to enforce
+    role-based authorization set `_security.role_gating_enabled: true`
+    in admin config.
+
+    **v10.120 GA polish:** shipped the explicit `_security` block in
+    `integration_layer_config.json` with role_gating_enabled=true and
+    the canonical Eco Bank role taxonomy. Soft-flip — code default
+    stayed OFF for backward compat with deployments that updated
+    v10.117→v10.120 in one go without consuming the new config.
+
+    **v10.126 default flip:** code default now defaults to **True**.
+    Deployments that don't explicitly set role_gating_enabled get
+    role-gating ON. Deployments that want to keep JWT-only auth must
+    set `_security.role_gating_enabled: false` explicitly. Aligns
+    code with config defaults and brings the integration layer to
+    secure-by-default. Documented in CHANGELOG_v10.126.
+    """
+    cfg_path = _data_dir() / "integration_layer_config.json"
+    default = {
+        "role_gating_enabled":     True,   # v10.126: flipped from False
+        "allowed_roles_for_write": ["admin", "integration"],
+    }
+    if not cfg_path.exists():
+        return default
+    try:
+        with open(cfg_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception:
+        return default
+    sec = cfg.get("_security")
+    if not isinstance(sec, dict):
+        return default
+    return {
+        "role_gating_enabled":     bool(sec.get("role_gating_enabled", True)),  # v10.126
+        "allowed_roles_for_write":
+            sec.get("allowed_roles_for_write")
+            or default["allowed_roles_for_write"],
+    }
+
+
+def _check_write_role(user: dict) -> None:
+    """v10.117 role-gating guard. Raises HTTPException(403) if role
+    gating is enabled and the user's role is not in the allowed list.
+    No-op when role gating is disabled (the v10.117 default).
+
+    Caller MUST already have validated JWT via
+    `Depends(get_current_user)` — this is layered on top, not a
+    replacement for auth.
+    """
+    sec = _read_security_config()
+    if not sec["role_gating_enabled"]:
+        return  # feature flag off → backward-compatible
+    user_role = (user or {}).get("role") or ""
+    allowed = sec["allowed_roles_for_write"] or []
+    if user_role not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail=(f"Write access denied: role {user_role!r} not in "
+                    f"allowed_roles_for_write. Contact your A2Z "
+                    f"administrator to update _security config."))
+
+
+# ════════════════════════════════════════════════════════════════════
+# Role weight audit + normalization (v10.419, Phase 2d)
+# ════════════════════════════════════════════════════════════════════
+# Per Joshua's locked backlog: 225/227 roles broken (weight sums != 1.0).
+# These endpoints expose the audit + migration capability.
+
+@app.get("/api/v1/role-weights/audit",
+         summary="Bank-wide role weight audit (sums vs 1.0)")
+def role_weight_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns total_roles, normalized_count, broken_count, broken_roles list."""
+    try:
+        from utils.role_weight_engine import bank_role_weight_audit
+        audit = bank_role_weight_audit()
+        return audit.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"bank_role_weight_audit failed: {exc}")
+
+
+@app.get("/api/v1/role-weights/{role}/audit",
+         summary="Audit a single role's weight situation")
+def role_weight_single_audit_endpoint(
+    role: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.role_weight_engine import (
+            audit_role_weight, _load_library,
+        )
+        lib = _load_library()
+        kpis = lib.get("role_kpis", {}).get(role)
+        if kpis is None:
+            raise HTTPException(404, f"Role not found: {role}")
+        kpi_weights = lib.get("kpi_weights", {})
+        result = audit_role_weight(role, kpis, kpi_weights)
+        return result.to_dict()
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_role_weight failed: {exc}")
+
+
+@app.get("/api/v1/role-weights/{role}/normalized",
+         summary="Get normalized weights for one role")
+def role_normalized_weights_endpoint(
+    role: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns {kpi: normalized_weight} for the role, summing to 1.0.
+    Prefers the migrated role_normalized_weights field; falls back to
+    on-the-fly computation if not migrated yet."""
+    try:
+        from utils.role_weight_engine import (
+            _load_library, compute_role_normalized_weights,
+        )
+        lib = _load_library()
+        # Prefer stored normalized weights if migration ran
+        rnw = lib.get("role_normalized_weights", {})
+        if role in rnw and isinstance(rnw[role], dict):
+            return {"role": role, "weights": rnw[role], "source": "migrated"}
+        # Fall back to on-the-fly
+        kpis = lib.get("role_kpis", {}).get(role)
+        if kpis is None:
+            raise HTTPException(404, f"Role not found: {role}")
+        computed = compute_role_normalized_weights(role, kpis, lib.get("kpi_weights", {}))
+        return {"role": role, "weights": computed, "source": "computed"}
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"role_normalized_weights failed: {exc}")
+
+
+@app.post("/api/v1/role-weights/migrate",
+          summary="Run the role-weight normalization migration (admin)")
+def role_weight_migrate_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Writes role_normalized_weights field to kpi_library.json. Idempotent.
+    Production: gate behind an admin role check."""
+    try:
+        from utils.role_weight_engine import migrate_normalize_all_roles
+        audit, normalized = migrate_normalize_all_roles(write_back=True)
+        return {
+            "audit": audit.to_dict(),
+            "roles_normalized": len(normalized),
+            "migrated_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"migrate_normalize_all_roles failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# KPI library dedup (v10.420, Phase 2d)
+# ════════════════════════════════════════════════════════════════════
+# Per Joshua's locked backlog: 4 KPI alias pairs consolidated.
+
+@app.get("/api/v1/kpi-dedup/audit",
+         summary="Audit KPI library for duplicate alias pairs")
+def kpi_dedup_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns the 4 alias pairs with reference counts."""
+    try:
+        from utils.kpi_dedup_engine import audit_kpi_dedup
+        a = audit_kpi_dedup()
+        return a.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_kpi_dedup failed: {exc}")
+
+
+@app.post("/api/v1/kpi-dedup/migrate",
+          summary="Run the KPI library dedup migration (admin)")
+def kpi_dedup_migrate_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Consolidates 4 alias pairs. Idempotent.
+    Production: gate behind an admin role check."""
+    try:
+        from utils.kpi_dedup_engine import migrate_dedup_kpi_library
+        result = migrate_dedup_kpi_library(
+            write_back=True, rebuild_normalized_weights=True,
+        )
+        return {
+            "result": result.to_dict(),
+            "migrated_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"migrate_dedup_kpi_library failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Backup retention (v10.421, Phase 2d)
+# ════════════════════════════════════════════════════════════════════
+# Audit + cleanup for accumulated _v10*_backups dirs under data/.
+
+@app.get("/api/v1/backup-retention/audit",
+         summary="Audit backup directories against retention policy")
+def backup_retention_audit_endpoint(
+    keep_recent: int = 3,
+    size_threshold_mb: float = 1.0,
+    user: dict = Depends(get_current_user),
+):
+    """Returns per-directory audit. No filesystem changes."""
+    try:
+        from utils.backup_retention_engine import audit_backup_retention
+        audit = audit_backup_retention(
+            keep_recent_n=keep_recent,
+            size_threshold_bytes=int(size_threshold_mb * 1024 * 1024),
+        )
+        return audit.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_backup_retention failed: {exc}")
+
+
+@app.post("/api/v1/backup-retention/apply",
+          summary="Apply retention policy (delete stale backups). Destructive.")
+def backup_retention_apply_endpoint(
+    keep_recent: int = 3,
+    size_threshold_mb: float = 1.0,
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """If confirm=True, actually deletes. Else returns dry-run result.
+    Production: gate behind admin role check."""
+    try:
+        from utils.backup_retention_engine import apply_retention_policy
+        result = apply_retention_policy(
+            keep_recent_n=keep_recent,
+            size_threshold_bytes=int(size_threshold_mb * 1024 * 1024),
+            dry_run=not bool(confirm),
+        )
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"apply_retention_policy failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Retired test audit (v10.422, Phase 2d)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/test-cleanup/audit",
+         summary="Audit retired test functions (_retired_ prefix convention)")
+def test_cleanup_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns per-file + per-version counts of soft-retired test functions."""
+    try:
+        from utils.test_cleanup_engine import audit_retired_tests
+        audit = audit_retired_tests()
+        return audit.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_retired_tests failed: {exc}")
+
+
+@app.post("/api/v1/test-cleanup/archive",
+          summary="Write data/_retired_tests_archive.json (idempotent)")
+def test_cleanup_archive_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Extracts retired tests into a searchable JSON archive.
+    Does NOT delete from source files."""
+    try:
+        from utils.test_cleanup_engine import archive_retired_tests
+        result = archive_retired_tests(dry_run=False)
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"archive_retired_tests failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Deep Audit (v10.424 — BSC Rescue Phase opens)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-audit/full",
+         summary="Full BSC integrity audit (7 categories)")
+def bsc_audit_full_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Rollup of staff coverage, KPI completeness, pillar canonical,
+    weight normalization, library alignment, cascade linkage, duplicates."""
+    try:
+        from utils.bsc_audit_engine import bsc_full_audit
+        audit = bsc_full_audit()
+        return audit.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"bsc_full_audit failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/staff-coverage",
+         summary="Staff coverage: every register row has BSC entries")
+def bsc_audit_coverage_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_staff_coverage
+        return audit_staff_coverage().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_staff_coverage failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/kpi-completeness",
+         summary="KPI completeness per staff vs role tier thresholds")
+def bsc_audit_completeness_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_kpi_completeness
+        return audit_kpi_completeness().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_kpi_completeness failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/pillar-canonical",
+         summary="Pillar canonical check (only 4 canonical pillars)")
+def bsc_audit_pillar_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_pillar_canonical
+        return audit_pillar_canonical().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_pillar_canonical failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/weight-normalization",
+         summary="Weight normalization (per-staff sums = 1.0)")
+def bsc_audit_weights_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_weight_normalization
+        return audit_weight_normalization().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_weight_normalization failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/library-alignment",
+         summary="BSC KPIs vs kpi_library alignment")
+def bsc_audit_alignment_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_library_alignment
+        return audit_library_alignment().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_library_alignment failed: {exc}")
+
+
+@app.get("/api/v1/bsc-audit/cascade-linkage",
+         summary="Cascade targets reflected in BSC")
+def bsc_audit_cascade_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.bsc_audit_engine import audit_cascade_linkage
+        return audit_cascade_linkage().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_cascade_linkage failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Pillar Normalize (v10.425, BSC Rescue batch 1)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-pillar/audit",
+         summary="Audit BSC actuals for non-canonical pillar values")
+def bsc_pillar_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns per-alias row counts + affected KPIs."""
+    try:
+        from utils.bsc_pillar_normalize_engine import audit_actuals_pillars
+        return audit_actuals_pillars().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_actuals_pillars failed: {exc}")
+
+
+@app.post("/api/v1/bsc-pillar/migrate",
+          summary="Migrate non-canonical pillars in BSC actuals (default dry-run)")
+def bsc_pillar_migrate_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """If confirm=True, performs the migration with backup. Else dry-run."""
+    try:
+        from utils.bsc_pillar_normalize_engine import migrate_actuals_pillars
+        result = migrate_actuals_pillars(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"migrate_actuals_pillars failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Library Register (v10.426, BSC Rescue batch 2)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-library/audit",
+         summary="Audit unregistered BSC KPIs vs canonical library")
+def bsc_library_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns: aliases to add, library pillar fixes needed, multi-pillar
+    BSC KPIs, and truly-new KPIs needing registration."""
+    try:
+        from utils.bsc_library_register_engine import audit_unregistered_bsc_kpis
+        return audit_unregistered_bsc_kpis().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_unregistered_bsc_kpis failed: {exc}")
+
+
+@app.post("/api/v1/bsc-library/register",
+          summary="Run full registration migration (default dry-run)")
+def bsc_library_register_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Atomic 4-layer migration: aliases + library pillars + actuals
+    multi-pillar + new registrations. Production: gate behind admin."""
+    try:
+        from utils.bsc_library_register_engine import apply_full_registration
+        result = apply_full_registration(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"apply_full_registration failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Completeness (v10.427, BSC Rescue batch 3)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-completeness/audit",
+         summary="Audit incomplete BSCs vs canonical role_kpis")
+def bsc_completeness_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Per-staff gap analysis: which staff have fewer KPIs than configured
+    in kpi_library::role_kpis for their role."""
+    try:
+        from utils.bsc_completeness_engine import audit_bsc_completeness
+        return audit_bsc_completeness().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_bsc_completeness failed: {exc}")
+
+
+@app.post("/api/v1/bsc-completeness/repair",
+          summary="Add missing BSC rows for incomplete staff (default dry-run)")
+def bsc_completeness_repair_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Generates new BSC rows for missing KPIs with peer-median targets;
+    re-normalizes weights to 1.0 per staff."""
+    try:
+        from utils.bsc_completeness_engine import repair_bsc_completeness
+        result = repair_bsc_completeness(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"repair_bsc_completeness failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Weight Normalization (v10.428, BSC Rescue batch 4)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-weights/audit",
+         summary="Audit per-staff weight sums in BSC actuals")
+def bsc_weights_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns per-staff Weight column sum + which staff need renormalization."""
+    try:
+        from utils.bsc_weight_normalize_engine import audit_actuals_weights
+        return audit_actuals_weights().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_actuals_weights failed: {exc}")
+
+
+@app.post("/api/v1/bsc-weights/renormalize",
+          summary="Per-staff proportional weight rescale (default dry-run)")
+def bsc_weights_renormalize_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Rescales each staff's Weight column so sums = 1.0 exactly.
+    Preserves relative importance per KPI."""
+    try:
+        from utils.bsc_weight_normalize_engine import renormalize_actuals_weights
+        result = renormalize_actuals_weights(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"renormalize_actuals_weights failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# BSC Cascade Linkage (v10.429, BSC Rescue closing batch)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/bsc-codes/audit",
+         summary="Audit BSC Staff Codes vs canonical register codes")
+def bsc_codes_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns: code mismatches between BSC actuals and staff_register."""
+    try:
+        from utils.bsc_cascade_linkage_engine import audit_bsc_code_alignment
+        return audit_bsc_code_alignment().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"audit_bsc_code_alignment failed: {exc}")
+
+
+@app.post("/api/v1/bsc-codes/fix",
+          summary="Rewrite BSC Staff Codes to match canonical register (default dry-run)")
+def bsc_codes_fix_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Updates BSC Staff Code values to canonical register codes per name."""
+    try:
+        from utils.bsc_cascade_linkage_engine import fix_bsc_codes
+        result = fix_bsc_codes(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"fix_bsc_codes failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Admin validation (v10.431, admin polish)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/admin-validation/library",
+         summary="Validate kpi_library.json snapshot")
+def admin_validation_library_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns errors/warnings/info on the current library state."""
+    try:
+        from utils.admin_validation_engine import validate_full_library
+        return validate_full_library().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"validate_full_library failed: {exc}")
+
+
+@app.post("/api/v1/admin-validation/legacy-aliases",
+          summary="Add legacy SNAKE_CASE codes as aliases (default dry-run)")
+def admin_validation_legacy_aliases_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Cleans up role_kpis SNAKE_CASE references by registering them as
+    aliases on the corresponding canonical library entries."""
+    try:
+        from utils.admin_validation_engine import apply_legacy_code_aliases
+        result = apply_legacy_code_aliases(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"apply_legacy_code_aliases failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Cascade-BSC 360° audit (v10.432, deep review)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/cascade-360/audit",
+         summary="Full 360° cascade↔BSC harmony audit")
+def cascade_360_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns the 5-stage rollup: bank→MD, cascade integrity,
+    cascade→BSC targets, BSC actuals coverage, score calculation."""
+    try:
+        from utils.cascade_bsc_360_engine import cascade_bsc_360_audit
+        return cascade_bsc_360_audit().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"cascade_bsc_360_audit failed: {exc}")
+
+
+@app.get("/api/v1/cascade-360/stage/{stage}",
+         summary="Single-stage 360 audit (1-5)")
+def cascade_360_stage_endpoint(
+    stage: int,
+    user: dict = Depends(get_current_user),
+):
+    """Stage 1=bank_to_md, 2=cascade_integrity, 3=cascade_to_bsc,
+    4=bsc_actuals, 5=score_calc."""
+    try:
+        from utils.cascade_bsc_360_engine import (
+            audit_bank_to_md, audit_cascade_integrity,
+            audit_cascade_to_bsc_targets, audit_bsc_actuals_coverage,
+            audit_score_calculation,
+        )
+        stages = {
+            1: audit_bank_to_md,
+            2: audit_cascade_integrity,
+            3: audit_cascade_to_bsc_targets,
+            4: audit_bsc_actuals_coverage,
+            5: audit_score_calculation,
+        }
+        fn = stages.get(stage)
+        if fn is None:
+            raise HTTPException(400, f"stage must be 1-5, got {stage}")
+        return fn().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"stage {stage} failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Cascade-BSC harmonization (v10.433, full harmony)
+# ════════════════════════════════════════════════════════════════════
+
+@app.post("/api/v1/harmonize/all",
+          summary="Run all 5 harmonization stages (default dry-run)")
+def harmonize_all_endpoint(
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """Stages A-E: docs Staff Productivity scale, narrow cascade by
+    role_kpis, supplement BSC, renormalize weights, align targets."""
+    try:
+        from utils.cascade_bsc_harmonize_engine import harmonize_all
+        result = harmonize_all(dry_run=not bool(confirm))
+        return {
+            "result": result.to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"harmonize_all failed: {exc}")
+
+
+@app.post("/api/v1/harmonize/stage/{stage}",
+          summary="Run single harmonization stage (default dry-run)")
+def harmonize_stage_endpoint(
+    stage: str,
+    confirm: bool = False,
+    user: dict = Depends(get_current_user),
+):
+    """stage in {a, b, c, d, e}."""
+    try:
+        from utils.cascade_bsc_harmonize_engine import (
+            fix_staff_productivity_bank_target, prune_obsolete_cascade_kpis,
+            supplement_bsc_from_cascade, renormalize_after_supplement,
+            align_bsc_targets_to_cascade,
+        )
+        stage_fns = {
+            "a": fix_staff_productivity_bank_target,
+            "b": prune_obsolete_cascade_kpis,
+            "c": supplement_bsc_from_cascade,
+            "d": renormalize_after_supplement,
+            "e": align_bsc_targets_to_cascade,
+        }
+        fn = stage_fns.get(stage.lower())
+        if fn is None:
+            raise HTTPException(400, f"stage must be a-e, got {stage}")
+        return {
+            "result": fn(dry_run=not bool(confirm)).to_dict(),
+            "executed_by": str(user.get("staff_code") or user.get("username") or "unknown"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"harmonize stage {stage} failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Staff onboarding fit-in (v10.434)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/onboarding/audit",
+         summary="Bank-wide staff onboarding fit-in audit")
+def onboarding_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns FullCompletenessAudit across all 1437 staff."""
+    try:
+        from utils.staff_onboarding_engine import audit_all_staff_completeness
+        return audit_all_staff_completeness().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"onboarding audit failed: {exc}")
+
+
+@app.get("/api/v1/onboarding/audit/{staff_code}",
+         summary="Single-staff onboarding completeness audit")
+def onboarding_staff_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns CompletenessAudit for one staff_code."""
+    try:
+        from utils.staff_onboarding_engine import audit_staff_completeness
+        return audit_staff_completeness(staff_code).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"staff audit failed: {exc}")
+
+
+@app.post("/api/v1/onboarding/simulate",
+          summary="Simulate new staff onboarding (dry-run only)")
+def onboarding_simulate_endpoint(
+    payload: Dict[str, Any] = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """Projects what would happen for a hypothetical new staff."""
+    try:
+        from utils.staff_onboarding_engine import simulate_onboarding
+        return simulate_onboarding(payload, dry_run=True).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"simulate failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Staff exit risk (v10.435)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/exit-risk/audit",
+         summary="Bank-wide staff exit risk audit")
+def exit_risk_audit_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Returns BankWideExitAudit: counts per band + top critical/high lists."""
+    try:
+        from utils.staff_exit_engine import audit_all_exit_risks
+        return audit_all_exit_risks().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"exit-risk audit failed: {exc}")
+
+
+@app.get("/api/v1/exit-risk/audit/{staff_code}",
+         summary="Single-staff exit risk assessment")
+def exit_risk_staff_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns StaffExitRisk with risk score, drivers, and footprint."""
+    try:
+        from utils.staff_exit_engine import audit_exit_risk
+        return audit_exit_risk(staff_code).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"exit-risk audit failed: {exc}")
+
+
+@app.get("/api/v1/exit-risk/simulate/{staff_code}",
+         summary="Full exit simulation with redistribution options")
+def exit_risk_simulate_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns ExitSimulation: risk + 3 redistribution scenarios."""
+    try:
+        from utils.staff_exit_engine import simulate_exit
+        return simulate_exit(staff_code).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"exit simulation failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# HR section audit (v10.436)
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/hr-audit/full",
+         summary="Full HR section health audit (6 dimensions)")
+def hr_audit_full_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Master rollup: placement, completeness, wiring, REACT, API, data."""
+    try:
+        from utils.hr_section_audit_engine import hr_full_audit
+        return hr_full_audit().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"hr_full_audit failed: {exc}")
+
+
+@app.get("/api/v1/hr-audit/dimension/{dimension}",
+         summary="Single HR audit dimension")
+def hr_audit_dimension_endpoint(
+    dimension: str,
+    user: dict = Depends(get_current_user),
+):
+    """Dimensions: placement, completeness, wiring, react, api, data."""
+    try:
+        from utils.hr_section_audit_engine import (
+            audit_module_placement, audit_page_completeness,
+            audit_engine_wiring, audit_react_readiness,
+            audit_api_coverage, audit_data_backing,
+        )
+        fns = {
+            "placement":   audit_module_placement,
+            "completeness": audit_page_completeness,
+            "wiring":      audit_engine_wiring,
+            "react":       audit_react_readiness,
+            "api":         audit_api_coverage,
+            "data":        audit_data_backing,
+        }
+        fn = fns.get(dimension.lower())
+        if fn is None:
+            raise HTTPException(400, f"dimension must be one of {list(fns.keys())}")
+        return fn().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"hr_audit/{dimension} failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# HR engines API endpoints (v10.442)
+# Std #14 PeerLearning + #15 Coaching + #16 PredictivePerf +
+# Std #17 Gamification + #18 Efficiency + #19 Wellness
+# ════════════════════════════════════════════════════════════════════
+
+# ── Std #14 PeerLearningNetwork ──────────────────────────────────
+@app.get("/api/v1/peer-learning/cards/{staff_code}",
+         summary="Get peer learning cards for a staff member")
+def peer_learning_cards_endpoint(
+    staff_code: str, limit: int = 20,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.peer_learning import list_cards_for_staff
+        return {"cards": list_cards_for_staff(staff_code, limit=limit)}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"peer-learning cards failed: {exc}")
+
+
+@app.post("/api/v1/peer-learning/generate-cards",
+          summary="Generate weekly peer learning cards (Std #14)")
+def peer_learning_generate_endpoint(
+    payload: Dict[str, Any] = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.peer_learning import PeerLearningNetwork
+        week = str(payload.get("week", ""))
+        if not week:
+            raise HTTPException(400, "payload must include 'week' (e.g. 2026-W20)")
+        network = PeerLearningNetwork()
+        cards = network.generate_weekly_cards(week=week)
+        return {
+            "week": week,
+            "generated_count": len(cards),
+            "cards": [c.__dict__ if hasattr(c, "__dict__") else c for c in cards[:50]],
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"peer-learning generation failed: {exc}")
+
+
+@app.get("/api/v1/peer-learning/match-skill",
+         summary="Match peers ahead on a skill (Std #14)")
+def peer_learning_match_endpoint(
+    skill: str, level: int, top_n: int = 10,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.peer_learning import PeerLearningNetwork
+        network = PeerLearningNetwork()
+        peers = network.match_for_skill(skill=skill, level=level, top_n=top_n)
+        return {"skill": skill, "level": level, "peers": peers}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"skill match failed: {exc}")
+
+
+# ── Std #15 CoachingIntelligence ─────────────────────────────────
+@app.get("/api/v1/coaching/script",
+         summary="Generate a coaching script (Std #15)")
+def coaching_script_endpoint(
+    manager_code: str, staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.coaching_intelligence import CoachingIntelligence
+        ci = CoachingIntelligence()
+        script = ci.generate_coaching_script(
+            manager_code=manager_code, staff_code=staff_code,
+        )
+        return script if isinstance(script, dict) else {"script": script}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"coaching script generation failed: {exc}")
+
+
+# ── Std #16 PredictivePerformance ────────────────────────────────
+@app.get("/api/v1/predict/{staff_code}",
+         summary="Predict EOM achievement per KPI (Std #16)")
+def predict_achievement_endpoint(
+    staff_code: str, period: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.predictive_performance import PredictivePerformance
+        pp = PredictivePerformance()
+        # Period defaults to current per engine
+        prediction = pp.predict_achievement(
+            staff_code=staff_code, period_end=period,
+        )
+        return prediction if isinstance(prediction, dict) else {"prediction": prediction}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"prediction failed: {exc}")
+
+
+# ── Std #17 GamificationEngine ───────────────────────────────────
+@app.get("/api/v1/gamification/badges/{staff_code}",
+         summary="List badges for a staff member (Std #17)")
+def gamification_badges_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.gamification import list_badges_for_staff
+        return {"staff_code": staff_code,
+                "badges": list_badges_for_staff(staff_code)}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"badge listing failed: {exc}")
+
+
+@app.post("/api/v1/gamification/evaluate/{staff_code}",
+          summary="Evaluate all badge types for a staff member (Std #17)")
+def gamification_evaluate_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.gamification import GamificationEngine
+        engine = GamificationEngine()
+        awarded = engine.evaluate_all_badges(staff_code)
+        return {
+            "staff_code": staff_code,
+            "evaluated_count": len(awarded) if isinstance(awarded, list) else 0,
+            "badges": [
+                b.__dict__ if hasattr(b, "__dict__") else b
+                for b in (awarded or [])
+            ],
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"badge evaluation failed: {exc}")
+
+
+@app.get("/api/v1/gamification/leaderboard",
+         summary="Build gamification leaderboard for a period (Std #17)")
+def gamification_leaderboard_endpoint(
+    period: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.gamification import GamificationEngine
+        engine = GamificationEngine()
+        rows = engine.build_leaderboard(period=period)
+        return {
+            "period": period,
+            "rows": [
+                r.__dict__ if hasattr(r, "__dict__") else r
+                for r in (rows or [])
+            ],
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"leaderboard failed: {exc}")
+
+
+# ── Std #18 EfficiencyEngine ─────────────────────────────────────
+@app.get("/api/v1/efficiency/{staff_code}",
+         summary="Calculate efficiency scores per KPI vs peer avg (Std #18)")
+def efficiency_endpoint(
+    staff_code: str, period: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.efficiency import EfficiencyEngine
+        engine = EfficiencyEngine()
+        scores = engine.calculate_efficiency_scores(
+            staff_code=staff_code, period=period,
+        )
+        return scores or {"staff_code": staff_code, "period": period,
+                         "personal_efficiency": {}, "vs_peer_average": {}}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"efficiency calc failed: {exc}")
+
+
+# ── Std #19 WellnessEngine ───────────────────────────────────────
+@app.get("/api/v1/wellness/{staff_code}",
+         summary="Assess burnout risk (Std #19, ethical guardrails enforced)")
+def wellness_assess_endpoint(
+    staff_code: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns {} if staff has wellness_monitoring_disabled (opt-out respected)."""
+    try:
+        from utils.wellness import WellnessEngine
+        engine = WellnessEngine()
+        result = engine.assess_burnout_risk(staff_code=staff_code)
+        return result or {"staff_code": staff_code, "opted_out": True}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"wellness assessment failed: {exc}")
+
+
+@app.get("/api/v1/wellness/alerts/{manager_code}",
+         summary="List wellness alerts for a manager's direct reports (Std #19)")
+def wellness_alerts_endpoint(
+    manager_code: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.wellness import list_alerts_for_manager
+        return {"manager_code": manager_code,
+                "alerts": list_alerts_for_manager(manager_code)}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"alerts listing failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# HR Auto-Actuals API endpoints (v10.443)
+# Std hr_actuals_engine - automate KPI actual fetching from HR modules
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/hr-actuals/staff/{staff_code}",
+         summary="Auto-compute all HR-pillar KPI actuals for a staff member")
+def hr_actuals_staff_endpoint(
+    staff_code: str, period: str,
+    user: dict = Depends(get_current_user),
+):
+    """Returns auto-populated actuals for every HR-domain KPI in the
+    staff's role_kpis. KPIs without an HR module source return value=null
+    with source=manual."""
+    try:
+        from utils.hr_actuals_engine import compute_all_hr_actuals_for_staff
+        results = compute_all_hr_actuals_for_staff(staff_code, period)
+        return {
+            "staff_code": staff_code,
+            "period": period,
+            "kpi_count": len(results),
+            "auto_populated_count": sum(1 for r in results if r.value is not None),
+            "actuals": [r.to_dict() for r in results],
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"hr-actuals/staff failed: {exc}")
+
+
+@app.get("/api/v1/hr-actuals/bank-wide/{kpi_id_or_name}",
+         summary="Auto-compute bank-wide HR KPI (e.g. K018 Retention, K030 Headcount)")
+def hr_actuals_bank_wide_endpoint(
+    kpi_id_or_name: str, period: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.hr_actuals_engine import compute_bank_wide_hr_kpi
+        r = compute_bank_wide_hr_kpi(kpi_id_or_name, period)
+        return r.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"hr-actuals/bank-wide failed: {exc}")
+
+
+@app.get("/api/v1/hr-actuals/coverage",
+         summary="Audit how many HR KPIs are auto-populated vs manual")
+def hr_actuals_coverage_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.hr_actuals_engine import audit_auto_actuals_coverage
+        cov = audit_auto_actuals_coverage()
+        return cov.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"hr-actuals/coverage failed: {exc}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# System Vitals API endpoints (v10.444)
+# Per Joshua mantra: continuous body-wide health monitoring
+# ════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/vitals/full",
+         summary="Run full body vital signs (~30-60s)")
+def vitals_full_endpoint(
+    sample_staff_code: str = "300001",
+    user: dict = Depends(get_current_user),
+):
+    """Heavy operation - runs 5 audits + 6 flow checks + sentinels.
+    Caller should rate-limit (recommend once per minute max)."""
+    try:
+        from utils.system_vitals_engine import full_body_vitals
+        v = full_body_vitals(sample_staff_code)
+        return v.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"vitals/full failed: {exc}")
+
+
+@app.get("/api/v1/vitals/organs",
+         summary="Quick organ vitals check (lighter than full)")
+def vitals_organs_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.system_vitals_engine import check_organ_vitals
+        v = check_organ_vitals()
+        return v.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"vitals/organs failed: {exc}")
+
+
+@app.get("/api/v1/vitals/regression",
+         summary="Just the regression sentinels - any drop in baselines?")
+def vitals_regression_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    try:
+        from utils.system_vitals_engine import check_regression_sentinels
+        v = check_regression_sentinels()
+        return v.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"vitals/regression failed: {exc}")
+
+
+# ── Entry point ───────────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("A2Z_API_PORT", "8502"))
+    print(f"Starting A2Z API on http://localhost:{port}")
+    print(f"  API docs: http://localhost:{port}/api/docs")
+    print(f"  Health:   http://localhost:{port}/api/health")
+    uvicorn.run(
+        "utils.api:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+        log_level="warning",
+    )

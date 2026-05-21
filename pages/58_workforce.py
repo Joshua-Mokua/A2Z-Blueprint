@@ -10,7 +10,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("workforce")
+require_access("people_hr.workforce_planning")
 DATA  = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()[:12]
 is_admin = ud.get("is_admin",False)

@@ -277,13 +277,28 @@ def tab_visible_cascade(user_data: dict, tab_name: str) -> bool:
     is_mgr  = is_md or any(k in role for k in (
         "director","head of","regional","manager","chief"))
     return {
+        # v10.410 — Consolidated top-level tabs (max 6 per Joshua's directive)
+        "bank_setup":      is_md,    # MD-only: bank targets + fixed KPIs
+        "cascade_alloc":   True,     # cascade alloc parent visible to all (capacity feedback inside is for all)
+        "my_view":         True,     # all: my targets + strategic impact
+        "team_analytics":  is_mgr,   # mgr: rollup + simulator + cascade tree
+        "health":          is_mgr,   # mgr: coverage + (future) executive health
+        "negotiation":     is_mgr,   # mgr: review requests with E4 escalation
+        # Legacy keys retained for backward compat with any old links/audits
         "bank_targets":    is_md,
         "fixed_kpis":      is_md,
         "set_targets":     is_mgr,
         "my_targets":      True,
+        "team_progress":   is_mgr,
+        "strategic_impact": True,
+        "what_if_simulator": is_mgr,
         "cascade_tree":    is_mgr,
         "coverage":        is_mgr,
         "review_requests": is_mgr,
+        # v10.412 — Capacity Feedback (E6)
+        "capacity_feedback": True,   # staff raise + managers review (UI auto-switches)
+        # v10.411 — Cascade Health (E5)
+        "cascade_health":  is_mgr,
     }.get(tab_name, True)
 
 # ─── check_access (was core.py L5633–L5696) ───

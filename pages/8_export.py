@@ -11,7 +11,7 @@ except: _gfy = lambda: _gfy()
 
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
-require_access("export")
+require_access("strategy_performance.export")
 
 
 # Load session state

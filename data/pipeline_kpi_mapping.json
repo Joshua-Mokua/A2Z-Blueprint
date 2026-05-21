@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "shipped": "v10.323",
+    "description": "Maps pipeline deal products to canonical BSC KPI IDs. Used by utils/pipeline_to_bsc.py to aggregate won deals into BSC actuals. Admin-editable: add new products or re-classify by changing the kpi_id below. Aggregation method (sum/mean) comes from the KPI's unit in kpi_library.json \u2014 money units sum, score units mean.",
+    "stages_treated_as_won": [
+      "Disbursed",
+      "Closed Won",
+      "Signed",
+      "Documentation"
+    ],
+    "stages_treated_as_lost": [
+      "Closed Lost"
+    ]
+  },
+  "product_to_kpi": {
+    "Personal Loan": "Disbursements Retail Loans",
+    "Salary Advance": "Disbursements Retail Loans",
+    "Staff Loan": "Disbursements Retail Loans",
+    "Fanikisha Loan": "Disbursements Retail Loans",
+    "Mortgage": "Disbursements Retail Loans",
+    "Personal Overdraft": "Disbursements Retail Loans",
+    "LPO Financing": "Disbursements MSME Loans",
+    "SME Working Capital": "Disbursements MSME Loans",
+    "MSME Working Capital": "Disbursements MSME Loans",
+    "SME Invoice Discounting": "Disbursements MSME Loans",
+    "Asset Finance": "Disbursements MSME Loans",
+    "Business Loan": "Disbursements MSME Loans",
+    "Invoice Discounting": "Disbursements MSME Loans",
+    "Agribusiness Loan": "Disbursements MSME Loans",
+    "Seasonal Crop Finance": "Disbursements MSME Loans",
+    "Corporate Bond": "Disbursements Corporate Loans",
+    "Overdraft Facility": "Disbursements Corporate Loans",
+    "Term Loan Corporate": "Disbursements Corporate Loans",
+    "Performance Bond": "Total NFI",
+    "Bid Bond": "Total NFI",
+    "Trade Finance LC": "Total NFI",
+    "Import Finance": "Total NFI",
+    "Export Finance LC": "Total NFI",
+    "Documentary Collection": "Total NFI",
+    "Diaspora Fixed Deposit": "Retail & MSME Deposit Growth",
+    "Diaspora Business Account": "Retail & MSME Deposit Growth",
+    "Fixed Deposit": "Retail & MSME Deposit Growth",
+    "Savings Account": "Retail & MSME Deposit Growth",
+    "Current Account": "Retail & MSME Deposit Growth",
+    "Diaspora Home Loan": "Disbursements Retail Loans",
+    "Medical Cover": "Total NFI",
+    "Life Insurance": "Total NFI",
+    "Group Personal Accident": "Total NFI",
+    "Corporate Loan": "Disbursements Corporate Loans",
+    "SME Term Loan": "Disbursements MSME Loans",
+    "Letter of Credit": "Total NFI",
+    "Term Loan": "Disbursements Corporate Loans",
+    "Working Capital Loan": "Disbursements Corporate Loans",
+    "Bank Guarantee": "Total NFI",
+    "Trade Loan": "Disbursements Corporate Loans"
+  },
+  "fee_estimation_rates": {
+    "_note": "For fee-bearing products (Total NFI), estimate fee as % of deal amount. Used when the product is mapped to a fee-income KPI rather than disbursement volume.",
+    "Performance Bond": 0.02,
+    "Bid Bond": 0.015,
+    "Trade Finance LC": 0.012,
+    "Import Finance": 0.01,
+    "Export Finance LC": 0.01,
+    "Documentary Collection": 0.005,
+    "Medical Cover": 0.15,
+    "Life Insurance": 0.18,
+    "Group Personal Accident": 0.12,
+    "_default": 0.01
+  },
+  "_v10325_mapping_additions": [
+    [
+      "Corporate Loan",
+      "Disbursements Corporate Loans"
+    ],
+    [
+      "SME Term Loan",
+      "Disbursements MSME Loans"
+    ],
+    [
+      "Letter of Credit",
+      "Total NFI"
+    ],
+    [
+      "Term Loan",
+      "Disbursements Corporate Loans"
+    ],
+    [
+      "Working Capital Loan",
+      "Disbursements Corporate Loans"
+    ],
+    [
+      "Bank Guarantee",
+      "Total NFI"
+    ],
+    [
+      "Trade Loan",
+      "Disbursements Corporate Loans"
+    ]
+  ]
+}

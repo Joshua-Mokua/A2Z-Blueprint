@@ -1,0 +1,236 @@
+{
+  "_meta": {
+    "shipped": "v10.328",
+    "description": "Per-role KPI targets for the 7 support-function Chief subtrees: COO (Operations/Contact Centre/Procurement/Facilities/Cash/Recon), CFO (Finance/Analytics), CRSO (Risk/Compliance), CIO (IT/Digital), CHRO (HR), CIA (Internal Audit), CCMP (Compliance/Legal). Admin-editable — tune targets, noise, direction without code changes.",
+    "design": "Universal KPIs (Audit, CX, Compliance, Staff Productivity) appear across most roles. Function-specific KPIs use canonical codes from kpi_library.json (K010 SLA Adherence, K014 AML/CFT, K016 Training, K129 Incidents SLA, K132 Audit Closure, etc.)"
+  },
+  "chiefs": [
+    "EXEC-COO-001",
+    "EXEC-CFO-001",
+    "EXEC-CRSO-001",
+    "EXEC-CIO-001",
+    "EXEC-CHRO-001",
+    "EXEC-CIA-001",
+    "EXEC-CCMP-001"
+  ],
+  "performance_bands": {
+    "_note": "Bands define performance tiers — shares must sum to 1.0; factor_range governs value spread",
+    "HIGH": {"share": 0.25, "factor_range": [1.10, 1.25]},
+    "MID": {"share": 0.55, "factor_range": [0.90, 1.10]},
+    "LOW": {"share": 0.20, "factor_range": [0.70, 0.90]}
+  },
+  "role_kpi_targets": {
+    "_chief_personal_scores": "Chiefs without subordinates still get a personal scorecard so they appear in MD's view",
+    "Chief Operating Officer": {
+      "Audit Score": {"target": 90.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "CX Score": {"target": 4.2, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"},
+      "COMPLIANCE_SCORE": {"target": 4.5, "noise_pct": 0.08, "direction": "higher", "scale": "score_5"}
+    },
+    "Chief Financial Officer": {
+      "Audit Score": {"target": 92.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.06, "direction": "higher", "scale": "score_5"}
+    },
+    "Chief Risk Officer": {
+      "Audit Score": {"target": 91.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.7, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"}
+    },
+    "Chief Information Officer": {
+      "Audit Score": {"target": 88.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "CX Score": {"target": 4.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"},
+      "K129": {"target": 92.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"}
+    },
+    "Chief Human Resource Officer": {
+      "Audit Score": {"target": 90.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "K121": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "Staff Productivity": {"target": 85.0, "noise_pct": 0.08, "direction": "higher", "scale": "score_100"}
+    },
+    "Chief Internal Auditor": {
+      "Audit Score": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "K132": {"target": 90.0, "noise_pct": 0.05, "direction": "higher", "scale": "pct"},
+      "K134": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+    "Chief Compliance Officer": {
+      "Audit Score": {"target": 92.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.7, "noise_pct": 0.04, "direction": "higher", "scale": "score_5"},
+      "K014": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+
+    "_coo_subtree": "COO subordinates — contact centre + ops + clearing + recon + procurement + facilities + cash centre",
+    "Head of Operations": {
+      "Audit Score": {"target": 88.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 90.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.5, "noise_pct": 0.08, "direction": "higher", "scale": "score_5"}
+    },
+    "Head, Customer Experience": {
+      "CX Score": {"target": 4.3, "noise_pct": 0.08, "direction": "higher", "scale": "score_5"},
+      "K010": {"target": 92.0, "noise_pct": 0.05, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+    "Head of Procurement": {
+      "K010": {"target": 88.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.4, "noise_pct": 0.08, "direction": "higher", "scale": "score_5"}
+    },
+    "Contact Centre Officer": {
+      "CX Score": {"target": 4.0, "noise_pct": 0.12, "direction": "higher", "scale": "score_5"},
+      "K010": {"target": 90.0, "noise_pct": 0.10, "direction": "higher", "scale": "pct"},
+      "Staff Productivity": {"target": 80.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"}
+    },
+    "Operations Officer": {
+      "K010": {"target": 92.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 86.0, "noise_pct": 0.08, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.4, "noise_pct": 0.08, "direction": "higher", "scale": "score_5"}
+    },
+    "Clearing Officer": {
+      "K010": {"target": 95.0, "noise_pct": 0.05, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 88.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+    "Reconciliation Officer": {
+      "K010": {"target": 93.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 89.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"}
+    },
+    "Procurement Officer": {
+      "K010": {"target": 88.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"},
+      "Audit Score": {"target": 86.0, "noise_pct": 0.07, "direction": "higher", "scale": "score_100"}
+    },
+    "Facilities Officer": {
+      "K010": {"target": 90.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 85.0, "noise_pct": 0.08, "direction": "higher", "scale": "score_100"}
+    },
+    "Cash Centre Supervisor": {
+      "Audit Score": {"target": 92.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"}
+    },
+
+    "_cfo_subtree": "CFO subordinates",
+    "Financial Controller-Senior Manager": {
+      "Audit Score": {"target": 92.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"}
+    },
+    "Finance Manager & Money Laundering Reporting Officer": {
+      "Audit Score": {"target": 93.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.7, "noise_pct": 0.04, "direction": "higher", "scale": "score_5"},
+      "K014": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+    "Finance Officer": {
+      "Audit Score": {"target": 88.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 92.0, "noise_pct": 0.05, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.4, "noise_pct": 0.06, "direction": "higher", "scale": "score_5"}
+    },
+    "Business Analytics Manager": {
+      "Audit Score": {"target": 88.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 90.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"}
+    },
+    "Business Analytics Officer": {
+      "Audit Score": {"target": 86.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "Staff Productivity": {"target": 82.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"}
+    },
+
+    "_crso_subtree": "CRSO subordinates — risk team",
+    "Senior Manager- Compliance": {
+      "COMPLIANCE_SCORE": {"target": 4.7, "noise_pct": 0.04, "direction": "higher", "scale": "score_5"},
+      "Audit Score": {"target": 92.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "K014": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+    "Risk Manager": {
+      "Audit Score": {"target": 90.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "COMPLIANCE_SCORE": {"target": 4.5, "noise_pct": 0.06, "direction": "higher", "scale": "score_5"},
+      "K010": {"target": 92.0, "noise_pct": 0.05, "direction": "higher", "scale": "pct"}
+    },
+    "Regulatory Compliance Officer": {
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"},
+      "K014": {"target": 94.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 89.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"}
+    },
+
+    "_cio_subtree": "CIO subordinates — IT/Digital",
+    "Head Of ICT": {
+      "Audit Score": {"target": 88.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "K129": {"target": 92.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "CX Score": {"target": 4.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"}
+    },
+    "Head of Digital Financial Services": {
+      "CX Score": {"target": 4.2, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"},
+      "K129": {"target": 90.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+    "Senior Digital Channels Officer": {
+      "CX Score": {"target": 4.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"},
+      "Staff Productivity": {"target": 80.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"},
+      "K010": {"target": 88.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"}
+    },
+    "PHP Software Developer": {
+      "Audit Score": {"target": 85.0, "noise_pct": 0.08, "direction": "higher", "scale": "score_100"},
+      "Staff Productivity": {"target": 82.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"},
+      "K129": {"target": 88.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"}
+    },
+    "Core Banking Support Officer": {
+      "K129": {"target": 92.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+    "ICT Support Officer": {
+      "K129": {"target": 90.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"},
+      "CX Score": {"target": 4.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_5"}
+    },
+    "Cyber Security SOC Analyst": {
+      "Audit Score": {"target": 92.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "K129": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"}
+    },
+    "Business Analyst Officer": {
+      "Audit Score": {"target": 86.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "Staff Productivity": {"target": 82.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"}
+    },
+    "Acquiring Officer": {
+      "K010": {"target": 90.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+
+    "_chro_subtree": "CHRO subordinates — HR Business Partners",
+    "Senior Human Resource Business Partner- Performance & HRIS": {
+      "Audit Score": {"target": 89.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "K121": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "Staff Productivity": {"target": 85.0, "noise_pct": 0.08, "direction": "higher", "scale": "score_100"}
+    },
+    "Senior Human Resource Business Partner -OSH": {
+      "Audit Score": {"target": 90.0, "noise_pct": 0.04, "direction": "higher", "scale": "score_100"},
+      "K121": {"target": 96.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+    "Senior Human Resource Business Partner-Training": {
+      "K121": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "K016": {"target": 40.0, "noise_pct": 0.10, "direction": "higher", "scale": "hours"},
+      "Audit Score": {"target": 88.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"}
+    },
+    "Human Resource Business Partner- Operations": {
+      "Audit Score": {"target": 86.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"},
+      "Staff Productivity": {"target": 82.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"}
+    },
+    "Human Resource Business Partner-Payroll": {
+      "K010": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 88.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"}
+    },
+    "Human Resource Business Partner- Adminstration": {
+      "K010": {"target": 90.0, "noise_pct": 0.06, "direction": "higher", "scale": "pct"},
+      "Audit Score": {"target": 86.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    },
+    "Human Resource Officer Admin": {
+      "K010": {"target": 88.0, "noise_pct": 0.08, "direction": "higher", "scale": "pct"},
+      "Staff Productivity": {"target": 80.0, "noise_pct": 0.10, "direction": "higher", "scale": "score_100"}
+    },
+
+    "_ccmp_subtree": "CCMP subordinates — legal/compliance",
+    "Manager- Legal": {
+      "COMPLIANCE_SCORE": {"target": 4.6, "noise_pct": 0.05, "direction": "higher", "scale": "score_5"},
+      "Audit Score": {"target": 90.0, "noise_pct": 0.05, "direction": "higher", "scale": "score_100"},
+      "K014": {"target": 95.0, "noise_pct": 0.04, "direction": "higher", "scale": "pct"}
+    },
+    "Legal Officer": {
+      "COMPLIANCE_SCORE": {"target": 4.4, "noise_pct": 0.06, "direction": "higher", "scale": "score_5"},
+      "Audit Score": {"target": 87.0, "noise_pct": 0.06, "direction": "higher", "scale": "score_100"}
+    }
+  }
+}

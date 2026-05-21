@@ -1,0 +1,24 @@
+# A2Z MIS 360 — ML training environment dependencies
+#
+# These dependencies are required ONLY for the ML training pipeline
+# (scripts/training/*.py). The runtime engines are pure stdlib —
+# they accept trained models via the v10.76 ML hook contract but
+# do NOT require sklearn / numpy at inference time UNLESS the
+# specific classifier wrapper depends on sklearn.
+#
+# Install for training environments:
+#   pip install -r requirements-ml.txt
+#
+# Production runtime does NOT need these; ml_disabled=True is the
+# correct posture when training-side dependencies aren't available.
+
+# Install requirements.txt first (numpy + pandas are runtime deps)
+-r requirements.txt
+
+# Classifiers + metrics
+scikit-learn>=1.0,<2.0
+
+# Future expansions (commented out — uncomment per training need):
+# xgboost>=1.7,<3.0
+# lightgbm>=4.0,<5.0
+# joblib>=1.3,<2.0    # alternative to pickle for sklearn artifacts

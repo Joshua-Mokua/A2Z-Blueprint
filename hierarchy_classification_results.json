@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:01.603693+00:00",
+  "total_scenarios": 20,
+  "correct": 20,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "H001-platinum-clear",
+      "actual_tier": "platinum",
+      "expected_tier": "platinum",
+      "actual_action": "Retain at all costs",
+      "expected_action": "Retain at all costs",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H002-platinum-boundary-exact",
+      "actual_tier": "platinum",
+      "expected_tier": "platinum",
+      "actual_action": "Retain at all costs",
+      "expected_action": "Retain at all costs",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H003-platinum-just-below",
+      "actual_tier": "gold",
+      "expected_tier": "gold",
+      "actual_action": "Deepen relationship",
+      "expected_action": "Deepen relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H004-gold-mid",
+      "actual_tier": "gold",
+      "expected_tier": "gold",
+      "actual_action": "Deepen relationship",
+      "expected_action": "Deepen relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H005-gold-boundary-exact",
+      "actual_tier": "gold",
+      "expected_tier": "gold",
+      "actual_action": "Deepen relationship",
+      "expected_action": "Deepen relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H006-gold-just-below",
+      "actual_tier": "silver",
+      "expected_tier": "silver",
+      "actual_action": "Maintain",
+      "expected_action": "Maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H007-silver-mid",
+      "actual_tier": "silver",
+      "expected_tier": "silver",
+      "actual_action": "Maintain",
+      "expected_action": "Maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H008-silver-boundary-exact",
+      "actual_tier": "silver",
+      "expected_tier": "silver",
+      "actual_action": "Maintain",
+      "expected_action": "Maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H009-silver-just-below",
+      "actual_tier": "bronze",
+      "expected_tier": "bronze",
+      "actual_action": "Improve or maintain",
+      "expected_action": "Improve or maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H010-bronze-mid",
+      "actual_tier": "bronze",
+      "expected_tier": "bronze",
+      "actual_action": "Improve or maintain",
+      "expected_action": "Improve or maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H011-bronze-boundary-exact-zero",
+      "actual_tier": "bronze",
+      "expected_tier": "bronze",
+      "actual_action": "Improve or maintain",
+      "expected_action": "Improve or maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H012-negative-just-below-zero",
+      "actual_tier": "negative",
+      "expected_tier": "negative",
+      "actual_action": "Exit relationship",
+      "expected_action": "Exit relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H013-negative-mid",
+      "actual_tier": "negative",
+      "expected_tier": "negative",
+      "actual_action": "Exit relationship",
+      "expected_action": "Exit relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H014-negative-extreme",
+      "actual_tier": "negative",
+      "expected_tier": "negative",
+      "actual_action": "Exit relationship",
+      "expected_action": "Exit relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H015-unclassified-none-margin",
+      "actual_tier": "unclassified",
+      "expected_tier": "unclassified",
+      "actual_action": "Re-evaluate when upstream data is complete",
+      "expected_action": "Re-evaluate when upstream data is complete",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H016-unclassified-ftp-off-deposit-trap",
+      "actual_tier": "unclassified",
+      "expected_tier": "unclassified",
+      "actual_action": "Re-evaluate when upstream data is complete",
+      "expected_action": "Re-evaluate when upstream data is complete",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H017-ftp-off-positive-pbt-still-classifies",
+      "actual_tier": "silver",
+      "expected_tier": "silver",
+      "actual_action": "Maintain",
+      "expected_action": "Maintain",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H018-ftp-on-negative-classifies-as-negative",
+      "actual_tier": "negative",
+      "expected_tier": "negative",
+      "actual_action": "Exit relationship",
+      "expected_action": "Exit relationship",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H019-large-corporate-platinum",
+      "actual_tier": "platinum",
+      "expected_tier": "platinum",
+      "actual_action": "Retain at all costs",
+      "expected_action": "Retain at all costs",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    },
+    {
+      "id": "H020-tiny-customer-still-platinum-without-secondary",
+      "actual_tier": "platinum",
+      "expected_tier": "platinum",
+      "actual_action": "Retain at all costs",
+      "expected_action": "Retain at all costs",
+      "tier_ok": true,
+      "action_ok": true,
+      "reason_ok": true,
+      "matched": true
+    }
+  ]
+}

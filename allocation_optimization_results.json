@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:12.037984+00:00",
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "A001-simple-3x2-known-optimal",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A002-tight-capacity",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A003-empty-segment",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A004-no-rms-in-segment",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A005-honesty-ftp-mixed-warning",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A006-honesty-provisional-flag",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A007-customer-no-projections",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A008-large-roster",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A009-marginal-gain-from-current",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "A010-determinism-tie-breaking",
+      "matched": true,
+      "diffs": []
+    }
+  ]
+}

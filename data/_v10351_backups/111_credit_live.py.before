@@ -1,0 +1,26 @@
+"""
+Phase 3 — Credit Live Cockpit (pages/111)
+=================================================================
+v10.345 — refactored to call utils.live_cockpit_render.
+
+This page's body is now a thin call to render_credit_cockpit().
+Logic moved into utils.live_cockpit_render (single source of truth).
+
+The consolidated entry point is pages/115_live_cockpits.py.
+
+Audience: Chief credit officer, credit committee, watchlist team,
+credit admin, internal audit (read-only via role gating).
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("credit.credit_live")
+
+from utils.live_cockpit_render import render_credit_cockpit
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_credit_cockpit(actor)

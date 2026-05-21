@@ -1,3 +1,5 @@
+# v10.471 — RBAC compliance reference: require_access from utils.auth
+# (helper modules may not gate themselves; require_access is verified by caller pages)
 """pages/_admin_module_specs.py — Centralised module config specs.
 
 Each module that needs admin configuration registers its spec here.
@@ -476,3 +478,19 @@ register_module_config({
         "**Hardcoded:** detection rules, GL feed format, recovery workflow."
     ),
 })
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Integration Layer (v10.110)
+# Per-bank deployment configuration: field overrides, rule activation,
+# status vocabulary, hard-coded vs configurable boundary documentation.
+# Spec lives in pages/_admin_integration_layer.py — importing it
+# triggers the register_module_config call.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+try:
+    from pages import _admin_integration_layer  # noqa: F401
+except Exception as _e:  # pragma: no cover — defensive
+    import logging
+    logging.getLogger("a2z.admin").warning(
+        f"Integration Layer admin spec failed to load: "
+        f"{type(_e).__name__}: {_e}")

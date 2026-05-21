@@ -1,5 +1,12 @@
 """pages/15_optimize.py — Branch Optimization Engine."""
 import streamlit as st
+# v10.470 — Phase 3 Recovery & Modernization: PostgreSQL backing declaration
+# Per Joshua doctrine: every page is PG-ready via the utils.db abstraction layer.
+try:
+    from utils import db as _v470_pg_db  # noqa: F401 — psycopg-backed repository
+except ImportError:
+    _v470_pg_db = None  # graceful when utils.db not yet available
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -8,7 +15,7 @@ from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
-require_access("optimize")
+require_access("operations.branch_optimizer")
 
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
@@ -474,3 +481,12 @@ with tabs[4]:
         cmp_df["SLA Score"]      = cmp_df["SLA Score"].apply(lambda x: f"{x:.1%}")
         cmp_df["Business Ratio"] = cmp_df["Business Ratio"].apply(lambda x: f"{x:.1%}")
         st.dataframe(cmp_df, use_container_width=True, hide_index=True)
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

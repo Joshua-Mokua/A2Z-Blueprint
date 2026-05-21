@@ -139,6 +139,13 @@ def _load_kpi_index() -> Dict[str, dict]:
         code = kpi.get("code")
         if code:
             idx[str(code)] = kpi
+        # v10.107: alias support — cascade entries refer to KPIs by short
+        # names (e.g. "NPL Ratio" for the library's "NPL Ratio (%)") that
+        # don't match id/code/name exactly. The library's `aliases` list
+        # provides the resolution.
+        for alias in kpi.get("aliases", []) or []:
+            if str(alias) not in idx:
+                idx[str(alias)] = kpi
 
     # Also accept semantic IDs in active_kpis even if not in catalogue
     for sem in data.get("active_kpis", []) or []:
@@ -407,6 +414,17 @@ def submit(
                f"{source_module} → {staff_code}/{kpi_id}/{period}: {op}")
         return False, op
 
+    # v10.333 — invalidate the index for the affected period so the
+    # next get_actual call rebuilds with the new write. mtime check
+    # also catches this, but explicit invalidation is safer for
+    # in-process tests that don't pass through the filesystem.
+    try:
+        period_n = _normalise_period(enriched.get("period"))
+        if period_n:
+            _ACTUALS_INDEX_CACHE.pop(period_n, None)
+    except Exception:
+        pass
+
     # 5. audit
     _audit(
         "BSC_SUBMIT",
@@ -481,6 +499,11 @@ def submit_batch(
 def get_actual(staff_code: str, kpi_id: str, period: str) -> Optional[Decimal]:
     """Read a single actual from the store. Returns None if not found.
 
+    v10.333 (B-024 perf): uses a period-keyed in-memory index built
+    lazily on first access. Lookups are O(1) by (staff_code, kpi_id).
+    Index is invalidated when the underlying file mtime changes —
+    safe across submit() writes within the same process.
+
     Reads ALL records for the period (one file) and picks the most
     recently submitted. Suitable for typical lookup; for analytics use
     get_actuals_for_period() instead.
@@ -490,24 +513,87 @@ def get_actual(staff_code: str, kpi_id: str, period: str) -> Optional[Decimal]:
         return None
 
     fpath = _file_for_period(period_n)
+    idx = _get_actuals_index(fpath, period_n)
+    if idx is None:
+        return None
+
+    key = (str(staff_code).strip(), str(kpi_id).strip())
+    return idx.get(key)
+
+
+# v10.333 — period-keyed in-memory index for fast get_actual lookups
+# Closes B-024 (full MD rollups timing out).
+# Cache key: (period_string)
+# Cache value: (mtime_at_load, dict[(staff_code, kpi_id) -> Decimal])
+# Invalidated when file mtime changes.
+_ACTUALS_INDEX_CACHE: Dict[str, Tuple[float, Dict[Tuple[str, str], Decimal]]] = {}
+
+
+def _get_actuals_index(
+    fpath: "Path",
+    period: str,
+) -> Optional[Dict[Tuple[str, str], Decimal]]:
+    """Return (or build) the (staff_code, kpi_id) → Decimal lookup for a period.
+
+    Most-recently-submitted record wins when multiple rows exist for
+    the same (staff_code, kpi_id) — matches the original linear-scan
+    semantics of get_actual().
+    """
+    try:
+        cur_mtime = fpath.stat().st_mtime if fpath.exists() else 0.0
+    except Exception:
+        return None
+
+    cached = _ACTUALS_INDEX_CACHE.get(period)
+    if cached is not None and cached[0] == cur_mtime:
+        return cached[1]
+
+    # Rebuild index
     try:
         from utils.db import db as _a2z_db
         records = _a2z_db.load_json(fpath, default=[]) or []
     except Exception:
         return None
 
-    matches = [r for r in records
-               if r.get("staff_code") == str(staff_code).strip()
-               and r.get("kpi_id") == str(kpi_id).strip()]
-    if not matches:
-        return None
-    # Most recently submitted wins
-    matches.sort(key=lambda r: r.get("submitted_at", ""), reverse=True)
-    val = matches[0].get("value")
-    try:
-        return Decimal(str(val)) if val is not None else None
-    except Exception:
-        return None
+    # Newest-first: sort once so we can take first occurrence as winner
+    records_sorted = sorted(
+        records,
+        key=lambda r: r.get("submitted_at", "") if isinstance(r, dict) else "",
+        reverse=True,
+    )
+    index: Dict[Tuple[str, str], Decimal] = {}
+    for r in records_sorted:
+        if not isinstance(r, dict):
+            continue
+        sc = r.get("staff_code")
+        kid = r.get("kpi_id")
+        if not sc or not kid:
+            continue
+        key = (str(sc).strip(), str(kid).strip())
+        if key in index:
+            continue  # Already have newer record
+        val = r.get("value")
+        if val is None:
+            continue
+        try:
+            index[key] = Decimal(str(val))
+        except Exception:
+            continue
+
+    _ACTUALS_INDEX_CACHE[period] = (cur_mtime, index)
+    return index
+
+
+def invalidate_actuals_index(period: Optional[str] = None) -> None:
+    """Drop the cached index. Call after bulk writes if you don't want
+    to wait for the mtime check (e.g. tests that write then read).
+    """
+    global _ACTUALS_INDEX_CACHE
+    if period is None:
+        _ACTUALS_INDEX_CACHE = {}
+    else:
+        _ACTUALS_INDEX_CACHE.pop(period, None)
+
 
 
 def get_actuals_for_period(period: str, source_module: Optional[str] = None) -> List[Dict[str, Any]]:

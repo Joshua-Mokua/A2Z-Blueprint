@@ -12,7 +12,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("incidents")
+require_access("risk.incidents")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     """Non-blocking BSC update — called after every save action."""

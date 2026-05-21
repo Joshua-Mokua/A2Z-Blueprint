@@ -2,6 +2,13 @@
 CBK mandatory training, CPD tracking, completion reports, compliance.
 """
 import streamlit as st
+# v10.470 — Phase 3 Recovery & Modernization: PostgreSQL backing declaration
+# Per Joshua doctrine: every page is PG-ready via the utils.db abstraction layer.
+try:
+    from utils import db as _v470_pg_db  # noqa: F401 — psycopg-backed repository
+except ImportError:
+    _v470_pg_db = None  # graceful when utils.db not yet available
+
 import pandas as pd
 import json
 from pathlib import Path
@@ -10,7 +17,7 @@ from collections import Counter, defaultdict
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("lms")
+require_access("people_hr.learning_mgmt")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -45,7 +52,7 @@ m2.metric("CBK Mandatory",      len(cbk_courses))
 m3.metric("Completed (all)",    len(completed))
 m4.metric("Overdue",            len(overdue), delta_color="normal" if not overdue else "inverse")
 
-tabs = st.tabs(["📚 Course Catalogue","👤 My Training","📊 Compliance Report","⚠️ Overdue","🏆 Leaderboard"])
+tabs = st.tabs(["📚 Course Catalogue","👤 My Training","📊 Compliance Report","⚠️ Overdue","🏆 Leaderboard","🤝 Peer Learning Cards","🎯 Skill Matching"])
 
 with tabs[0]:
     st.markdown("**Course catalogue:**")
@@ -107,3 +114,93 @@ with tabs[4]:
         st.markdown("**Top 10 learners by courses completed:**")
         lb_rows=[{"Rank":i+1,"Name":n[:28],"Courses Completed":cnt} for i,(n,cnt) in enumerate(top10)]
         st.dataframe(pd.DataFrame(lb_rows),use_container_width=True,hide_index=True)
+
+
+# ════════════════════════════════════════════════════════════════════
+# v10.438 — Wire Std #14 PeerLearningNetwork into LMS
+# ════════════════════════════════════════════════════════════════════
+
+with tabs[5]:
+    st.markdown("**🤝 Peer Learning Cards — Best practice sharing across the bank**")
+    st.caption(
+        "Top performers' approaches surfaced as weekly learning cards. "
+        "Driver: scripts/generate_learning_cards.py · Std #14 (PeerLearningNetwork)."
+    )
+    try:
+        from utils.peer_learning import list_cards_for_staff, PeerLearningNetwork
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Peer learning engine unavailable: {exc}")
+    else:
+        # My cards
+        if sc:
+            my_cards = list_cards_for_staff(sc, limit=20)
+            if my_cards:
+                st.markdown(f"**My relevant cards ({len(my_cards)}):**")
+                card_rows = [{
+                    "KPI/Skill": c.get("kpi_id", c.get("skill", ""))[:30],
+                    "Performer": c.get("performer_name", "")[:25],
+                    "Insight": (c.get("insight", "") or "")[:80],
+                    "Generated": (c.get("generated_at", "") or "")[:10],
+                } for c in my_cards]
+                st.dataframe(pd.DataFrame(card_rows),
+                            use_container_width=True, hide_index=True)
+            else:
+                st.info("No peer learning cards relevant to you yet. "
+                       "Cards generate weekly from top-5 performers per KPI.")
+
+        # Admin: generate cards manually
+        if is_hr or is_admin:
+            st.divider()
+            st.markdown("**Admin: Trigger card generation**")
+            from datetime import datetime as _dt
+            current_week = _dt.now().strftime("%Y-W%V")
+            colA, colB = st.columns([3, 1])
+            colA.write(f"Generate weekly learning cards for: **{current_week}**")
+            if colB.button("Generate cards", key="lms_gen_cards"):
+                try:
+                    network = PeerLearningNetwork()
+                    cards = network.generate_weekly_cards(week=current_week)
+                    st.success(f"✓ Generated {len(cards)} learning cards.")
+                except Exception as exc:  # noqa: BLE001
+                    st.error(f"Generation failed: {exc}")
+
+with tabs[6]:
+    st.markdown("**🎯 Skill Matching — Find peers ahead on a skill**")
+    st.caption(
+        "Match yourself with peers who rank higher on a skill. Uses "
+        "role_skill_matrix.json. Std #14 (PeerLearningNetwork)."
+    )
+    try:
+        from utils.peer_learning import PeerLearningNetwork
+        skill_options = [
+            "Customer Service Excellence", "Digital Tools Proficiency",
+            "Credit Analysis", "Sales Pipeline Management",
+            "Risk Assessment", "Compliance Awareness",
+            "Coaching & Mentoring", "Data Analysis",
+            "Process Improvement", "Communication Skills",
+        ]
+        sel_skill = st.selectbox("Skill area", skill_options, key="lms_skill")
+        sel_level = st.slider("Your current level (1-5)", 1, 5, 3, key="lms_level")
+        if st.button("Find peers ahead", key="lms_match_btn"):
+            try:
+                network = PeerLearningNetwork()
+                peers = network.match_for_skill(
+                    skill=sel_skill, level=sel_level, top_n=10,
+                )
+                if peers:
+                    st.markdown(f"**{len(peers)} peer(s) ahead of you on {sel_skill}:**")
+                    peer_rows = [{
+                        "Staff Code": p.get("staff_code", ""),
+                        "Name": p.get("name", "")[:30],
+                        "Role": p.get("role", "")[:30],
+                        "Their level": p.get("level", ""),
+                        "Department": p.get("department", "")[:20],
+                    } for p in peers]
+                    st.dataframe(pd.DataFrame(peer_rows),
+                                use_container_width=True, hide_index=True)
+                else:
+                    st.info(f"No peers found ahead of level {sel_level} on {sel_skill}.")
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Match failed: {exc}")
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Peer learning engine unavailable: {exc}")

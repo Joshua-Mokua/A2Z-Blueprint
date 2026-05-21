@@ -23,7 +23,7 @@ def _bsc_trigger(username, kpi=""):
         pass
 
 
-require_access("fraud_detection")
+require_access("compliance_regulatory.fraud")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]

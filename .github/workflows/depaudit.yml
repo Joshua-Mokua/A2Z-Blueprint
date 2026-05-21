@@ -1,0 +1,66 @@
+name: Dependency security audit (Standard #9)
+
+# Manual trigger + weekly schedule. CVE databases update continuously,
+# so even unchanged code may pick up new disclosures. Weekly cadence
+# catches them.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Requirements file to scan"
+        required: true
+        default: "requirements.txt"
+        type: choice
+        options: ["requirements.txt", "requirements-dev.txt"]
+      scanners:
+        description: "Comma-separated scanners (or 'all')"
+        required: true
+        default: "pip-audit,safety"
+  schedule:
+    # Every Monday 04:00 UTC
+    - cron: '0 4 * * 1'
+
+jobs:
+  depaudit:
+    name: pip-audit + safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dev deps (includes pip-audit + safety)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Verify scanner availability
+        run: |
+          which pip-audit && pip-audit --version
+          which safety && safety --version
+
+      - name: Run dependency audit
+        env:
+          A2Z_DEP_AUDIT_TARGET: ${{ github.event.inputs.target || 'requirements.txt' }}
+          A2Z_DEP_AUDIT_SCANNERS: ${{ github.event.inputs.scanners == 'all' && 'pip-audit,safety' || github.event.inputs.scanners || 'pip-audit,safety' }}
+        run: python scripts/run_dependency_audit.py
+        continue-on-error: true   # surface findings via the audit gate, not exit code
+
+      - name: Upload scanner outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: depaudit-results
+          path: |
+            dependency_audit_results.json
+            results/depaudit/
+
+      - name: Re-run audit with G21 enforcement
+        if: always()
+        run: python scripts/audit.py

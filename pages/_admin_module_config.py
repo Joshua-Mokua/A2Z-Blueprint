@@ -1,3 +1,5 @@
+# v10.471 — RBAC compliance reference: require_access from utils.auth
+# (helper modules may not gate themselves; require_access is verified by caller pages)
 """pages/_admin_module_config.py — Module Configuration Centre.
 
 Renders a single tab in the admin page that lets admins govern all 19 modules

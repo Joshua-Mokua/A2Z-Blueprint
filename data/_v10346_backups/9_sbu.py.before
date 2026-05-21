@@ -1,0 +1,825 @@
+"""pages/9_sbu.py — SBU Performance: branch P&L, profitability analysis, turnaround."""
+import streamlit as st
+from utils.db import db as a2z_db
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, date
+from utils.core import *
+from pages._shared import load_shared_state
+from pages._access import require_access, get_my_scope
+
+def _safe_date(s, fallback=None):
+    try:
+        from datetime import date as _d
+        return _d.fromisoformat(str(s)) if s else (fallback or _d.today())
+    except Exception:
+        from datetime import date as _d
+        return fallback or _d.today()
+
+
+def _to_float_safe(value, default=0.0):
+    """Coerce a possibly-string DataFrame cell to float for f-formatting.
+
+    Session-state DataFrames can carry string-typed numeric cells when
+    upstream uploads preserve raw strings (e.g. "75.5" instead of 75.5).
+    Calling f"{x:.1f}" on a string raises ValueError: Unknown format
+    code 'f' for object of type 'str'. This helper coerces with a
+    fallback so format strings don't crash the page."""
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+require_access("finance.sbu_performance")
+
+def _bsc_trigger(username: str, kpi: str = ""):
+    try:
+        from utils.core import update_bsc_from_modules as _ubm
+        _ubm(username)
+    except Exception:
+        pass
+
+
+um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
+
+st.markdown(
+    "<div style='padding:16px 0 4px'>"
+    "<span style='font-size:22px;font-weight:800'>🏦 SBU Performance</span>"
+    "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+    "Branch P&L · Profitability · Ranking</span></div>",
+    unsafe_allow_html=True)
+
+
+st.markdown(
+    "<div style=\'padding:16px 22px;background:#185FA5;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>SBU Performance</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Branch P&L · Turnaround tracker · Action plans</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    unsafe_allow_html=True)
+
+staff_scores  = st.session_state.get("staff_scores",  pd.DataFrame())
+df_proc       = st.session_state.get("df_processed",  pd.DataFrame())
+filtered      = st.session_state.get("filtered_staff", pd.DataFrame())
+active_months = st.session_state.get("active_months", [])
+
+if len(staff_scores) == 0:
+    st.markdown(
+        f"<div style='padding:40px;text-align:center;background:var(--brand-light,#E8F5EE);"
+        f"border-radius:12px;border:1px solid var(--brand-primary,#006B3F)33'>"
+        f"<div style='font-size:32px;margin-bottom:12px'>🏦</div>"
+        f"<div style='font-size:18px;font-weight:500;color:var(--brand-primary,#006B3F)'>Upload your BSC data to view SBU performance</div>"
+        f"</div>", unsafe_allow_html=True)
+    st.stop()
+
+# ── P&L KPI MAPPING ──────────────────────────────────────────────────
+PNL_INCOME_KPIS = ['Disbursements Retail Loans','Total NFI','Collection Throughput',
+                    'Treasury','Trade Finance','Bancassurance']
+PNL_BALANCE_KPIS = ['Retail & MSME Deposit Growth','Loan Book Growth']
+PNL_QUALITY_KPIS = ['NPL','PAR']
+PNL_PROFIT_KPI   = 'PBT'
+PNL_CUSTOMER_KPI = 'Customer Growth'
+
+ALL_PNL_KPIS = PNL_INCOME_KPIS + PNL_BALANCE_KPIS + PNL_QUALITY_KPIS + [PNL_PROFIT_KPI, PNL_CUSTOMER_KPI]
+
+BRANCH_LABELS = {
+    'Disbursements Retail Loans':  'Loan disbursements',
+    'Total NFI': 'Fees & commission',
+    'Collection Throughput':         'DFS revenue',
+    'Treasury':            'Treasury income',
+    'Trade Finance':       'Trade finance',
+    'Bancassurance':       'Bancassurance',
+    'Retail & MSME Deposit Growth':      'Deposit book',
+    'Loan Book Growth':    'Loan book',
+    'NPL':                 'NPL ratio',
+    'PAR':                 'PAR ratio',
+    'PBT':                 'Profit before tax',
+    'Customer Growth':     'New customers',
+}
+
+# ── BUILD BRANCH P&L DATAFRAME ────────────────────────────────────────
+def build_branch_pnl(df_in: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate KPI data into branch-level P&L rows."""
+    bm_data = df_in[df_in['Role'].isin(['Branch Manager','Regional Head'])].copy()
+    if len(bm_data) == 0:
+        return pd.DataFrame()
+
+    rows = []
+    for unit in sorted(bm_data['Unit'].unique()):
+        u_data = bm_data[bm_data['Unit'] == unit]
+        role   = u_data['Role'].values[0]
+        region = BRANCH_REGION.get(unit, u_data.get('Region', pd.Series(['Head Office'])).values[0]
+                                   if 'Region' in u_data.columns else 'Head Office')
+
+        # Get manager name
+        mgr_rows = staff_scores[staff_scores['Unit'] == unit]
+        mgr_name = mgr_rows['Staff Name'].values[0] if len(mgr_rows) else '—'
+
+        row = {'Unit': unit, 'Region': region, 'Role': role, 'Manager': mgr_name}
+
+        for kpi in ALL_PNL_KPIS:
+            k_data = u_data[u_data['KPI'] == kpi]
+            if len(k_data):
+                tgt = float(k_data['Annual Target'].values[0])
+                # Use YTD_Actual (normalised from Annual Actual by process_kpi_data)
+                act_col = 'YTD_Actual' if 'YTD_Actual' in k_data.columns else 'Annual Actual'
+                act = float(k_data[act_col].values[0])
+                row[f'{kpi}_tgt'] = tgt
+                row[f'{kpi}_act'] = act
+                row[f'{kpi}_pct'] = round(act/tgt*100, 1) if tgt and tgt != 0 else 0
+            else:
+                row[f'{kpi}_tgt'] = 0
+                row[f'{kpi}_act'] = 0
+                row[f'{kpi}_pct'] = 0
+
+        # Profitability classification
+        pbt_act = row.get(f'{PNL_PROFIT_KPI}_act', 0)
+        pbt_pct = row.get(f'{PNL_PROFIT_KPI}_pct', 0)
+        if pbt_act < 0:
+            row['status'] = 'Loss-making'
+            row['status_color'] = '#E24B4A'
+            row['status_bg']    = '#FCEBEB'
+        elif pbt_pct < 70:
+            row['status'] = 'Below target'
+            row['status_color'] = '#BA7517'
+            row['status_bg']    = '#FAEEDA'
+        elif pbt_pct < 100:
+            row['status'] = 'On track'
+            row['status_color'] = 'var(--brand-mid,#1D9E75)'
+            row['status_bg']    = '#E1F5EE'
+        else:
+            row['status'] = 'Outperforming'
+            row['status_color'] = 'var(--brand-primary,#006B3F)'
+            row['status_bg']    = 'var(--brand-light,#E8F5EE)'
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+branch_pnl = build_branch_pnl(df_proc)
+
+if len(branch_pnl) == 0:
+    st.warning("No branch manager or regional head data found. Ensure the BSC file is uploaded.")
+    st.stop()
+
+# Role / access filter
+role_l   = str(ud.get('role','')).lower()
+can_all  = ud.get('can_view_all', False) or any(k in role_l for k in ('admin','director','md','ceo'))
+my_unit  = ud.get('unit','')
+my_region= BRANCH_REGION.get(my_unit, ud.get('region',''))
+
+if can_all:
+    view_pnl = branch_pnl.copy()
+elif 'regional head' in role_l:
+    view_pnl = branch_pnl[branch_pnl['Region'] == my_region].copy()
+elif 'branch manager' in role_l:
+    view_pnl = branch_pnl[branch_pnl['Unit'] == my_unit].copy()
+else:
+    view_pnl = branch_pnl.copy()
+
+# ════════════════════════════════════════════════════════════════
+# HEADER
+# ════════════════════════════════════════════════════════════════
+st.markdown(
+    f"<div style='padding:16px 20px;background:var(--brand-primary,#006B3F);border-radius:10px;"
+    f"margin-bottom:16px;display:flex;justify-content:space-between;align-items:center'>"
+    f"<div>"
+    f"<div style='color:var(--color-background-primary);font-size:18px;font-weight:500'>SBU Performance</div>"
+    f"<div style='color:var(--brand-accent,#9FE1CB);font-size:12px;margin-top:2px'>"
+    f"Branch P&L · Regional performance · Profitability analysis · Turnaround tracking</div>"
+    f"</div>"
+    f"<div style='display:flex;gap:20px;font-size:13px'>"
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status']=='Loss-making'])} "
+    f"<span style='color:#F5A623'>loss-making</span></span>"
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status']=='Below target'])} "
+    f"<span style='color:#FAC775'>below target</span></span>"
+    f"<span style='color:var(--color-background-primary)'>{len(view_pnl[view_pnl['status'].isin(['On track','Outperforming'])])} "
+    f"<span style='color:var(--brand-accent,#9FE1CB)'>profitable</span></span>"
+    f"</div></div>",
+    unsafe_allow_html=True)
+
+# ── Tabs ──────────────────────────────────────────────────────────────
+sbu_tabs = st.tabs(["📊 Profitability overview", "🏦 Branch P&L detail",
+                     "🌍 Regional view", "🔴 Turnaround tracker", "📋 Action plans"])
+
+# ════════════════════════════════════════════════════════════════
+# TAB 1 — PROFITABILITY OVERVIEW
+# ════════════════════════════════════════════════════════════════
+with sbu_tabs[0]:
+    # Summary metrics
+    total_pbt_tgt = view_pnl[f'{PNL_PROFIT_KPI}_tgt'].sum()
+    total_pbt_act = view_pnl[f'{PNL_PROFIT_KPI}_act'].sum()
+    total_dep_act = view_pnl[f'Retail & MSME Deposit Growth_act'].sum()
+    total_dep_tgt = view_pnl[f'Retail & MSME Deposit Growth_tgt'].sum()
+    total_loan_act = view_pnl[f'Disbursements Retail Loans_act'].sum()
+    total_loan_tgt = view_pnl[f'Disbursements Retail Loans_tgt'].sum()
+    loss_count     = len(view_pnl[view_pnl['status']=='Loss-making'])
+    profit_count   = len(view_pnl[view_pnl['status'].isin(['On track','Outperforming'])])
+
+    m1,m2,m3,m4,m5 = st.columns(5)
+    m1.metric("Total PBT", fmt_num(total_pbt_act, short=True),
+              delta=f"{fmt_num(total_pbt_act - total_pbt_tgt, short=True)} vs target")
+    m2.metric("PBT achievement",
+              f"{round(total_pbt_act/total_pbt_tgt*100,1) if total_pbt_tgt else 0:.1f}%")
+    m3.metric("Loss-making branches", loss_count,
+              delta=f"-{loss_count}" if loss_count else "0", delta_color="inverse")
+    m4.metric("Profitable branches", profit_count)
+    m5.metric("Deposit book", fmt_num(total_dep_act, short=True),
+              delta=f"{round(total_dep_act/total_dep_tgt*100,1) if total_dep_tgt else 0:.0f}% of target")
+
+    st.markdown("---")
+
+    # Profitability bar chart — all branches
+    chart_df = view_pnl[view_pnl['Role']=='Branch Manager'].copy()
+    if len(chart_df):
+        chart_df = chart_df.sort_values(f'{PNL_PROFIT_KPI}_act')
+        colors = [r['status_color'] for _, r in chart_df.iterrows()]
+
+        fig = go.Figure()
+        fig.add_bar(
+            x=chart_df['Unit'],
+            y=chart_df[f'{PNL_PROFIT_KPI}_act'] / 1e6,
+            marker_color=colors,
+            name='PBT actual',
+            text=[f"{v:.1f}M" for v in chart_df[f'{PNL_PROFIT_KPI}_act']/1e6],
+            textposition='outside',
+        )
+        fig.add_bar(
+            x=chart_df['Unit'],
+            y=chart_df[f'{PNL_PROFIT_KPI}_tgt'] / 1e6,
+            marker_color='rgba(0,0,0,0.1)',
+            marker_line_color='var(--brand-primary,#006B3F)',
+            marker_line_width=1.5,
+            name='PBT target',
+        )
+        fig.add_hline(y=0, line_color='#E24B4A', line_dash='dash', line_width=1.5,
+                       annotation_text='Break-even')
+        fig.update_layout(
+            title='Branch profitability — PBT actual vs target (KES millions)',
+            barmode='overlay', height=420, showlegend=True,
+            xaxis_tickangle=-35,
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+            yaxis_title='KES millions',
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Heatmap — all KPIs across all branches
+    st.markdown("#### Performance heatmap — all KPIs")
+    hm_branches = view_pnl[view_pnl['Role']=='Branch Manager']['Unit'].tolist()
+    hm_kpis     = [k for k in PNL_INCOME_KPIS + [PNL_PROFIT_KPI] if f'{k}_pct' in view_pnl.columns]
+    if hm_branches and hm_kpis:
+        hm_data = view_pnl[view_pnl['Role']=='Branch Manager'].set_index('Unit')[
+            [f'{k}_pct' for k in hm_kpis]]
+        hm_data.columns = [BRANCH_LABELS.get(k,k) for k in hm_kpis]
+        fig_hm = px.imshow(
+            hm_data,
+            color_continuous_scale=[[0,'#E24B4A'],[0.35,'#F5A623'],
+                                     [0.7,'var(--brand-mid,#1D9E75)'],[1,'var(--brand-primary,#006B3F)']],
+            text_auto='.0f', aspect='auto',
+            title='KPI achievement % — red = below 50%, green = above 100%')
+        fig_hm.update_coloraxes(colorbar_title='%')
+        fig_hm.update_layout(height=500, margin=dict(l=0,r=0,t=40,b=0))
+        st.plotly_chart(fig_hm, use_container_width=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 2 — BRANCH P&L DETAIL
+# ════════════════════════════════════════════════════════════════
+with sbu_tabs[1]:
+    st.subheader("Branch P&L detail")
+
+    # Filters
+    fc1, fc2, fc3 = st.columns(3)
+    status_f = fc1.selectbox("Status", ["All","Loss-making","Below target","On track","Outperforming"])
+    region_f = fc2.selectbox("Region", ["All"] + REGIONS)
+    search_f = fc3.text_input("Search branch")
+
+    disp = view_pnl[view_pnl['Role']=='Branch Manager'].copy()
+    if status_f != "All": disp = disp[disp['status']==status_f]
+    if region_f != "All": disp = disp[disp['Region']==region_f]
+    if search_f: disp = disp[disp['Unit'].str.contains(search_f, case=False)]
+
+    disp_sorted = disp.sort_values(f'{PNL_PROFIT_KPI}_act')
+
+    for _, branch in disp_sorted.iterrows():
+        pbt_act = branch[f'{PNL_PROFIT_KPI}_act']
+        pbt_tgt = branch[f'{PNL_PROFIT_KPI}_tgt']
+        pbt_pct = branch[f'{PNL_PROFIT_KPI}_pct']
+        s_clr   = branch['status_color']
+        s_bg    = branch['status_bg']
+
+        with st.expander(
+            f"{branch['Unit']}  ·  {branch['Region']} Region  ·  "
+            f"PBT: {fmt_num(pbt_act, short=True)}  ({_to_float_safe(pbt_pct):.1f}% of target)  ·  {branch['status']}",
+            expanded=(branch['status'] == 'Loss-making')):
+
+            # Header row
+            st.markdown(
+                f"<div style='padding:10px 14px;background:{s_bg};"
+                f"border-left:4px solid {s_clr};border-radius:0 6px 6px 0;margin-bottom:12px'>"
+                f"<b style='color:{s_clr}'>{branch['status']}</b> &nbsp;|&nbsp; "
+                f"Manager: {branch['Manager']} &nbsp;|&nbsp; Region: {branch['Region']}"
+                f"</div>", unsafe_allow_html=True)
+
+            # P&L table
+            bc1, bc2 = st.columns([3,2])
+            with bc1:
+                # Key banking ratios
+                pbt_a_br = branch.get(f'{PNL_PROFIT_KPI}_act', 0)
+                oi_a     = branch.get('Disbursements Retail Loans_act', 0) + branch.get('Loan Book Growth_act', 0)
+                dep_a    = branch.get('Retail & MSME Deposit Growth_act', 0)
+                rev_ph   = fmt_num(
+                    (dep_a + oi_a) / max(1, len([s for s in staff_scores['Unit'].tolist()
+                                                  if s == branch['Unit']])), short=True
+                ) if len(staff_scores) else '—'
+                cir_br   = round(abs((branch.get(f'{PNL_PROFIT_KPI}_tgt', 1) - pbt_a_br)) /
+                           max(1, dep_a + oi_a) * 100, 1) if (dep_a + oi_a) > 0 else 0
+
+                kr1,kr2,kr3 = st.columns(3)
+                kr1.metric("PBT", fmt_num(pbt_a_br, short=True))
+                kr2.metric("CIR estimate", f"{_to_float_safe(cir_br):.1f}%")
+                kr3.metric("Revenue/staff", rev_ph)
+                st.markdown("---")
+
+                st.markdown("**Income statement**")
+                pnl_rows = []
+                total_income_act = 0
+                total_income_tgt = 0
+                for kpi in PNL_INCOME_KPIS:
+                    act = branch.get(f'{kpi}_act', 0)
+                    tgt = branch.get(f'{kpi}_tgt', 0)
+                    pct = branch.get(f'{kpi}_pct', 0)
+                    total_income_act += act
+                    total_income_tgt += tgt
+                    pnl_rows.append({
+                        'Line item': BRANCH_LABELS.get(kpi, kpi),
+                        'Target': fmt_num(tgt, short=True),
+                        'Actual': fmt_num(act, short=True),
+                        'Ach %':  f"{_to_float_safe(pct):.1f}%",
+                    })
+                # PBT
+                pnl_rows.append({
+                    'Line item': '— Profit before tax',
+                    'Target': fmt_num(pbt_tgt, short=True),
+                    'Actual': fmt_num(pbt_act, short=True),
+                    'Ach %': f"{_to_float_safe(pbt_pct):.1f}%",
+                })
+                pnl_df = pd.DataFrame(pnl_rows)
+                def hl_pnl(v):
+                    try:
+                        pct = float(str(v).replace('%',''))
+                        if pct < 0:  return 'color:#E24B4A;font-weight:500'
+                        if pct < 70: return 'color:#BA7517'
+                        if pct >= 100: return 'color:var(--brand-primary,#006B3F);font-weight:500'
+                    except: pass
+                    return ''
+                st.dataframe(
+                    pnl_df.style.map(hl_pnl, subset=['Ach %']),
+                    use_container_width=True, hide_index=True)
+
+            with bc2:
+                st.markdown("**Balance sheet**")
+                bs_rows = []
+                for kpi in PNL_BALANCE_KPIS:
+                    bs_rows.append({
+                        'Item': BRANCH_LABELS.get(kpi, kpi),
+                        'Target': fmt_num(branch.get(f'{kpi}_tgt',0), short=True),
+                        'Actual': fmt_num(branch.get(f'{kpi}_act',0), short=True),
+                        'Ach %': f"{_to_float_safe(branch.get(f'{kpi}_pct',0)):.1f}%",
+                    })
+                bs_rows.append({'Item':'———','Target':'','Actual':'','Ach %':''})
+                st.markdown("**Asset quality**")
+                for kpi in PNL_QUALITY_KPIS:
+                    act_q = branch.get(f'{kpi}_act', 0)
+                    tgt_q = branch.get(f'{kpi}_tgt', 0)
+                    # For quality KPIs lower is better
+                    ach_q = round(tgt_q/act_q*100,1) if act_q and act_q > 0 else 100
+                    bs_rows.append({
+                        'Item': BRANCH_LABELS.get(kpi,kpi),
+                        'Target': f"{_to_float_safe(tgt_q)*100:.1f}%" if _to_float_safe(tgt_q) < 1 else fmt_num(tgt_q),
+                        'Actual': f"{_to_float_safe(act_q)*100:.1f}%" if _to_float_safe(act_q) < 1 else fmt_num(act_q),
+                        'Ach %': f"{_to_float_safe(ach_q):.1f}%",
+                    })
+                bs_rows.append({'Item':'New customers',
+                                'Target': fmt_num(branch.get(f'{PNL_CUSTOMER_KPI}_tgt',0)),
+                                'Actual': fmt_num(branch.get(f'{PNL_CUSTOMER_KPI}_act',0)),
+                                'Ach %': f"{_to_float_safe(branch.get(f'{PNL_CUSTOMER_KPI}_pct',0)):.1f}%"})
+                st.dataframe(pd.DataFrame(bs_rows), use_container_width=True, hide_index=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 3 — REGIONAL VIEW
+# ════════════════════════════════════════════════════════════════
+with sbu_tabs[2]:
+    st.subheader("Regional performance")
+    st.caption("Aggregated across all branches within each region — matches Regional Head BSC.")
+
+    for region in REGIONS:
+        reg_branches = view_pnl[
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin(get_org_roles() or ['Branch Manager']))]
+        reg_head = view_pnl[
+            (view_pnl['Region'] == region) & (view_pnl['Role'].isin([r for r in [str(x) for x in (get_org_roles() or [])] if 'area' in r.lower() or 'regional' in r.lower() or 'head' in r.lower()] or ['Regional Head','Area Manager']))]
+
+        if len(reg_branches) == 0: continue
+
+        # Region aggregate
+        r_pbt_act = reg_branches[f'{PNL_PROFIT_KPI}_act'].sum()
+        r_pbt_tgt = reg_branches[f'{PNL_PROFIT_KPI}_tgt'].sum()
+        r_pbt_pct = round(r_pbt_act/r_pbt_tgt*100,1) if r_pbt_tgt else 0
+        r_dep_act = reg_branches[f'Retail & MSME Deposit Growth_act'].sum()
+        r_dep_tgt = reg_branches[f'Retail & MSME Deposit Growth_tgt'].sum()
+        r_loss    = len(reg_branches[reg_branches['status']=='Loss-making'])
+        rh_name   = reg_head['Manager'].values[0] if len(reg_head) else '—'
+
+        r_clr = '#E24B4A' if r_pbt_act < 0 else ('#BA7517' if r_pbt_pct < 70 else 'var(--brand-primary,#006B3F)')
+        r_bg  = '#FCEBEB' if r_pbt_act < 0 else ('#FAEEDA' if r_pbt_pct < 70 else 'var(--brand-light,#E8F5EE)')
+
+        with st.expander(
+            f"{region} Region  ·  Regional Head: {rh_name}  ·  "
+            f"PBT: {fmt_num(r_pbt_act, short=True)} ({_to_float_safe(r_pbt_pct):.1f}%)  ·  "
+            f"{r_loss} loss-making branch(es)",
+            expanded=True):
+
+            st.markdown(
+                f"<div style='padding:10px;background:{r_bg};border-left:4px solid {r_clr};"
+                f"border-radius:0 6px 6px 0;margin-bottom:10px;display:flex;gap:24px'>"
+                f"<span>PBT: <b>{fmt_num(r_pbt_act, short=True)}</b> / {fmt_num(r_pbt_tgt, short=True)} "
+                f"({_to_float_safe(r_pbt_pct):.1f}%)</span>"
+                f"<span>Deposits: <b>{fmt_num(r_dep_act, short=True)}</b> / {fmt_num(r_dep_tgt, short=True)} "
+                f"({round(r_dep_act/r_dep_tgt*100,1) if r_dep_tgt else 0:.1f}%)</span>"
+                f"<span>Branches: {len(reg_branches)} total, {r_loss} loss-making</span>"
+                f"</div>", unsafe_allow_html=True)
+
+            # Branch comparison within region
+            reg_chart = reg_branches.sort_values(f'{PNL_PROFIT_KPI}_act')
+            fig_r = go.Figure()
+            fig_r.add_bar(
+                x=reg_chart['Unit'],
+                y=reg_chart[f'{PNL_PROFIT_KPI}_act']/1e6,
+                marker_color=[r['status_color'] for _,r in reg_chart.iterrows()],
+                name='PBT actual',
+                text=[f"{v:.1f}M" for v in reg_chart[f'{PNL_PROFIT_KPI}_act']/1e6],
+                textposition='outside',
+            )
+            fig_r.add_hline(y=0, line_color='#E24B4A', line_dash='dash', line_width=1)
+            fig_r.update_layout(
+                height=280, showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                yaxis_title='KES millions', margin=dict(l=0,r=0,t=10,b=0))
+            st.plotly_chart(fig_r, use_container_width=True)
+
+# ════════════════════════════════════════════════════════════════
+# TAB 4 — TURNAROUND TRACKER
+# ════════════════════════════════════════════════════════════════
+with sbu_tabs[3]:
+    st.subheader("Turnaround tracker")
+    st.caption("Loss-making and below-target branches — root cause analysis and turnaround status.")
+
+    at_risk = view_pnl[
+        (view_pnl['status'].isin(['Loss-making','Below target'])) &
+        (view_pnl['Role'].isin(get_org_roles() or ['Branch Manager']))
+    ].sort_values(f'{PNL_PROFIT_KPI}_act')
+
+    if len(at_risk) == 0:
+        st.success("No loss-making or below-target branches. All SBUs are on track.")
+    else:
+        for _, branch in at_risk.iterrows():
+            s_clr = branch['status_color']
+            s_bg  = branch['status_bg']
+            pbt_a = branch[f'{PNL_PROFIT_KPI}_act']
+            pbt_t = branch[f'{PNL_PROFIT_KPI}_tgt']
+            pbt_p = branch[f'{PNL_PROFIT_KPI}_pct']
+            gap   = pbt_t - pbt_a
+
+            with st.expander(
+                f"{'🔴' if branch['status']=='Loss-making' else '🟡'} "
+                f"{branch['Unit']}  —  {branch['status']}  —  "
+                f"Gap: {fmt_num(gap, short=True)}",
+                expanded=(branch['status']=='Loss-making')):
+
+                st.markdown(
+                    f"<div style='padding:10px 14px;background:{s_bg};"
+                    f"border-left:4px solid {s_clr};border-radius:0 6px 6px 0'>"
+                    f"<b style='color:{s_clr}'>{branch['status']}</b> &nbsp;|&nbsp; "
+                    f"PBT: {fmt_num(pbt_a,True)} vs target {fmt_num(pbt_t,True)} "
+                    f"({_to_float_safe(pbt_p):.1f}%) &nbsp;|&nbsp; Gap: {fmt_num(gap,True)}"
+                    f"</div>", unsafe_allow_html=True)
+
+                # Root cause analysis
+                st.markdown("#### Root cause analysis")
+                rc1, rc2 = st.columns(2)
+                weak_kpis  = []
+                strong_kpis = []
+                for kpi in PNL_INCOME_KPIS + ['Retail & MSME Deposit Growth']:
+                    pct = branch.get(f'{kpi}_pct', 0)
+                    if pct < 60:   weak_kpis.append((kpi, pct))
+                    elif pct >= 90: strong_kpis.append((kpi, pct))
+
+                with rc1:
+                    st.markdown("**Underperforming income lines**")
+                    if weak_kpis:
+                        for kpi, pct in sorted(weak_kpis, key=lambda x: x[1]):
+                            act = branch.get(f'{kpi}_act', 0)
+                            tgt = branch.get(f'{kpi}_tgt', 0)
+                            st.markdown(
+                                f"<div style='padding:6px 10px;background:#FCEBEB;"
+                                f"border-left:3px solid #E24B4A;border-radius:0 4px 4px 0;"
+                                f"font-size:12px;margin:3px 0'>"
+                                f"<b>{BRANCH_LABELS.get(kpi,kpi)}</b>: "
+                                f"{fmt_num(act,True)} / {fmt_num(tgt,True)} ({_to_float_safe(pct):.1f}%)"
+                                f"</div>", unsafe_allow_html=True)
+                    else:
+                        st.info("Income lines performing adequately.")
+
+                with rc2:
+                    st.markdown("**Asset quality concerns**")
+                    for kpi in PNL_QUALITY_KPIS:
+                        act_q = branch.get(f'{kpi}_act', 0)
+                        tgt_q = branch.get(f'{kpi}_tgt', 0)
+                        if act_q and tgt_q and act_q > tgt_q * 1.1:
+                            st.markdown(
+                                f"<div style='padding:6px 10px;background:#FAEEDA;"
+                                f"border-left:3px solid #BA7517;border-radius:0 4px 4px 0;"
+                                f"font-size:12px;margin:3px 0'>"
+                                f"⚠️ {BRANCH_LABELS.get(kpi,kpi)}: "
+                                f"{_to_float_safe(act_q)*100:.1f}% vs target {_to_float_safe(tgt_q)*100:.1f}%</div>",
+                                unsafe_allow_html=True)
+                    # Customer gap
+                    cust_pct = branch.get(f'{PNL_CUSTOMER_KPI}_pct', 0)
+                    if cust_pct < 60:
+                        st.markdown(
+                            f"<div style='padding:6px 10px;background:#FAEEDA;"
+                            f"border-left:3px solid #BA7517;border-radius:0 4px 4px 0;"
+                            f"font-size:12px;margin:3px 0'>"
+                            f"⚠️ Customer acquisition: {_to_float_safe(cust_pct):.1f}% of target</div>",
+                            unsafe_allow_html=True)
+
+                # Branch manager explanation
+                st.markdown("#### Branch manager explanation")
+                explanation_key = f"explanation_{branch['Unit'].replace(' ','_')}"
+                saved_exp = st.session_state.get(explanation_key, "")
+                explanation = st.text_area(
+                    "Branch manager's explanation for underperformance",
+                    value=saved_exp,
+                    placeholder="Describe the key factors contributing to the performance shortfall — "
+                                "market conditions, competition, operational challenges, etc.",
+                    height=100,
+                    key=f"exp_{branch['Unit']}")
+                if st.button("Save explanation", key=f"save_exp_{branch['Unit']}"):
+                    st.session_state[explanation_key] = explanation
+                    st.success("Explanation saved.")
+
+                # Suggested turnaround strategies
+                st.markdown("#### Proposed turnaround strategies")
+                strategies = []
+                if pbt_a < 0:
+                    strategies += [
+                        "Immediate cost audit — identify and eliminate non-essential opex",
+                        "Deposit mobilisation drive — assign personal targets to all branch staff",
+                        "Loan book quality review — provisioning and recovery acceleration",
+                        "Fee income activation — cross-sell DFS, bancassurance to existing customers",
+                    ]
+                if weak_kpis:
+                    for kpi, pct in weak_kpis[:2]:
+                        strategies.append(f"Targeted {BRANCH_LABELS.get(kpi,kpi).lower()} "
+                                          f"drive — currently at {pct:.0f}% of target")
+                for i, strat in enumerate(strategies[:5], 1):
+                    st.markdown(
+                        f"<div style='padding:6px 12px;border-left:3px solid var(--brand-primary,#006B3F);"
+                        f"background:var(--brand-light,#E8F5EE);font-size:12px;margin:3px 0'>"
+                        f"{i}. {strat}</div>",
+                        unsafe_allow_html=True)
+
+                # Propose initiative
+                st.markdown("#### Propose Execute initiative")
+                st.caption("Convert this turnaround into a tracked initiative in the Execute module.")
+                init_name = st.text_input(
+                    "Initiative name",
+                    value=f"{branch['Unit']} turnaround — Q2 2026",
+                    key=f"init_name_{branch['Unit']}")
+                init_obj  = st.text_area(
+                    "Objective",
+                    value=f"Return {branch['Unit']} to profitability by end of Q3 2026. "
+                          f"Close PBT gap of {fmt_num(gap, True)}.",
+                    height=70,
+                    key=f"init_obj_{branch['Unit']}")
+
+                if st.button(f"Create Execute initiative", key=f"create_init_{branch['Unit']}",
+                              type="primary"):
+                    ws_list = list(em.workstreams.keys()) if em else []
+                    ws_val  = ws_list[0] if ws_list else "Retail Banking"
+                    new_id  = em.create_initiative({
+                        'name':             init_name,
+                        'objective':        init_obj,
+                        'category':         'Impact Generation',
+                        'workstream':       ws_val,
+                        'sub_workstream':   branch['Region'] + ' Region',
+                        'io':               uname,
+                        'io_backup':        '',
+                        'estimated_impact': float(gap),
+                        'impact_kpis':      ['PBT', 'Retail & MSME Deposit Growth'],
+                        'tags':             ['turnaround', branch['Region'].lower()],
+                        'created_by':       uname,
+                    })
+                    audit_log("TURNAROUND_INIT", uname, f"{new_id}:{branch['Unit']}")
+                    _bsc_trigger(uname, "K005")
+                    st.success(f"Initiative {new_id} created in Execute module!")
+
+# ════════════════════════════════════════════════════════════════
+# TAB 5 — ACTION PLANS & TRACKER
+# ════════════════════════════════════════════════════════════════
+with sbu_tabs[4]:
+    st.subheader("Action plans & performance tracker")
+    st.caption("Branch-level action plans with progress tracking. Linked to BSC performance.")
+
+    # Load action plans from disk (persisted)
+    _ap_file = DATA_DIR / "sbu_action_plans.json"
+    if 'sbu_action_plans' not in st.session_state:
+        try:
+            _ap_raw = _ap_file.read_text() if _ap_file.exists() else "{}"
+            st.session_state['sbu_action_plans'] = json.loads(_ap_raw)
+        except:
+            st.session_state['sbu_action_plans'] = {}
+    action_plans = st.session_state.get('sbu_action_plans', {})
+
+    def _save_action_plans():
+        """Persist action plans to disk."""
+        try:
+            a2z_db.save_json(_ap_file, action_plans)
+        except: pass
+
+    # Branch selector
+    all_branches = view_pnl[view_pnl['Role']=='Branch Manager']['Unit'].tolist()
+    sel_branch   = st.selectbox("Select branch", sorted(all_branches), key="ap_branch")
+
+    branch_data = view_pnl[view_pnl['Unit'] == sel_branch]
+    if len(branch_data):
+        br = branch_data.iloc[0]
+        pbt_a = br[f'{PNL_PROFIT_KPI}_act']
+        pbt_t = br[f'{PNL_PROFIT_KPI}_tgt']
+        pbt_p = br[f'{PNL_PROFIT_KPI}_pct']
+
+        st.markdown(
+            f"<div style='padding:10px 14px;background:{br['status_bg']};"
+            f"border-left:4px solid {br['status_color']};border-radius:0 6px 6px 0;margin:8px 0'>"
+            f"<b style='color:{br['status_color']}'>{br['status']}</b> &nbsp;|&nbsp; "
+            f"PBT: {fmt_num(pbt_a, True)} / {fmt_num(pbt_t, True)} ({pbt_p:.1f}%)"
+            f"</div>", unsafe_allow_html=True)
+
+    # Add action item
+    with st.form(f"add_action_{sel_branch}"):
+        st.markdown("**Add action item**")
+        ac1, ac2 = st.columns(2)
+        action_text   = ac1.text_input("Action *", placeholder="e.g. Launch salary account drive")
+        action_target = ac2.text_input("Success metric", placeholder="e.g. 50 new accounts by 30 Apr")
+        ac3, ac4, ac5 = st.columns(3)
+        action_owner   = ac3.text_input("Primary owner *", placeholder="Username or name")
+        action_owner2  = ac4.text_input("Secondary owner", placeholder="Backup / co-owner")
+        action_due     = ac5.date_input("Due date")
+        action_kpi     = st.selectbox("Linked KPI", [""] + ALL_PNL_KPIS)
+        action_esc_to  = st.text_input("Escalate to (if overdue)", placeholder="Branch manager / Regional Head username")
+
+        if st.form_submit_button("Add action item", type="primary"):
+            if action_text and action_owner:
+                key = sel_branch
+                if key not in action_plans:
+                    action_plans[key] = []
+                action_plans[key].append({
+                    'id':             f"AP{len(action_plans.get(key,[]))+1:03d}",
+                    'action':         action_text,
+                    'owner':          action_owner,
+                    'secondary_owner':action_owner2,
+                    'escalate_to':    action_esc_to,
+                    'due':            str(action_due),
+                    'kpi':            action_kpi,
+                    'target':         action_target,
+                    'status':         'Not started',
+                    'accepted':       False,
+                    'accepted_at':    '',
+                    'progress':       0,
+                    'notes':          [],
+                    'esc_level':      0,
+                    'created':        str(date.today()),
+                    'created_by':     uname,
+                })
+                st.session_state['sbu_action_plans'] = action_plans
+                audit_log("ACTION_CREATED", uname, f"{sel_branch}:{action_text[:40]}")
+                _bsc_trigger(uname, "K005")
+                st.success("Action item added — owner must accept before work begins.")
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error("Action and primary owner are required.")
+
+    # Display existing action items
+    branch_actions = action_plans.get(sel_branch, [])
+    if not branch_actions:
+        st.info(f"No action items for {sel_branch} yet. Add the first one above.")
+    else:
+        st.markdown(f"**{len(branch_actions)} action item(s)**")
+        done_count    = sum(1 for a in branch_actions if a['status']=='Complete')
+        overall_prog  = done_count / len(branch_actions) * 100 if branch_actions else 0
+        st.progress(overall_prog/100, text=f"Overall: {done_count}/{len(branch_actions)} complete ({overall_prog:.0f}%)")
+
+        for ai, action in enumerate(branch_actions):
+            status   = action['status']
+            accepted = action.get('accepted', False)
+            overdue  = action['due'] < str(date.today()) and status != 'Complete'
+            days_od  = (date.today() - _safe_date(action['due'])).days if overdue else 0
+
+            # Auto-compute escalation level
+            esc = 0
+            if overdue and not accepted:  esc = 2  # owner hasn't even accepted
+            elif days_od > 7:             esc = 3  # sponsor
+            elif days_od > 2:             esc = 2  # lead
+            elif days_od > 0:             esc = 1  # IO
+            action_plans[sel_branch][ai]['esc_level'] = esc
+
+            esc_badge = {0:'', 1:'🟡 IO alert', 2:'🔴 Lead escalation', 3:'🚨 Sponsor'}[esc]
+            acc_badge = '✅ Accepted' if accepted else '⏳ Pending acceptance'
+            s_icon    = {'Not started':'⏳','In progress':'🔄','Complete':'✅','Blocked':'🚧'}.get(status,'⏳')
+
+            with st.expander(
+                f"{s_icon} {action['id']} — {action['action'][:50]}"
+                f"  |  Owner: {action['owner']}  |  Due {action['due']}"
+                f"{'  ⚠️ ' + str(days_od) + 'd OVERDUE' if overdue else ''}"
+                f"  |  {esc_badge if esc else acc_badge}",
+                expanded=(esc >= 2 or not accepted)):
+
+                # Context row
+                cc1,cc2,cc3 = st.columns(3)
+                cc1.caption(f"KPI: {action.get('kpi','—')}")
+                cc2.caption(f"Target: {action.get('target','—')}")
+                cc3.caption(f"Escalate to: {action.get('escalate_to','—')}")
+
+                if action.get('secondary_owner'):
+                    st.caption(f"Secondary owner: {action['secondary_owner']}")
+
+                # Escalation banner
+                if esc > 0:
+                    esc_msg = {1:"Owner notified — follow up required",
+                               2:f"Lead attention needed — {days_od}d overdue",
+                               3:f"Sponsor escalation — {days_od}d overdue. Immediate action required"}[esc]
+                    esc_bg  = {1:'#FFFBF0',2:'#FFF5F0',3:'#FFF0F0'}[esc]
+                    esc_clr = {1:'#BA7517',2:'#993C1D',3:'#A32D2D'}[esc]
+                    st.markdown(
+                        f"<div style='padding:8px 12px;background:{esc_bg};"
+                        f"border-left:3px solid {esc_clr};border-radius:0 4px 4px 0;"
+                        f"font-size:12px;margin:4px 0'>"
+                        f"<b style='color:{esc_clr}'>{esc_badge}</b> — {esc_msg}</div>",
+                        unsafe_allow_html=True)
+
+                # Acceptance button (for the owner)
+                if not accepted and (action['owner'] == uname or
+                                     action.get('secondary_owner') == uname):
+                    if st.button(f"✅ I accept this action item",
+                                  key=f"acc_{sel_branch}_{ai}", type="primary"):
+                        action_plans[sel_branch][ai]['accepted']    = True
+                        action_plans[sel_branch][ai]['accepted_at'] = str(date.today())
+                        st.session_state['sbu_action_plans'] = action_plans
+                        audit_log("ACTION_ACCEPTED", uname, f"{sel_branch}:{action['id']}")
+                        _bsc_trigger(uname, "K005")
+                        st.success("Action accepted — you are now accountable for delivery.")
+                        st.cache_data.clear()
+                        st.rerun()
+                elif not accepted:
+                    st.warning(f"Awaiting acceptance from {action['owner']}")
+
+                # Progress update (only after acceptance)
+                if accepted:
+                    up1, up2, up3 = st.columns([2,1,2])
+                    status_opts = ['Not started','In progress','Complete','Blocked']
+                    new_status = up1.selectbox("Status", status_opts,
+                        index=status_opts.index(status) if status in status_opts else 0,
+                        key=f"aps_{sel_branch}_{ai}")
+                    new_prog = up2.slider("Progress", 0, 100,
+                        value=action.get('progress',0), step=10,
+                        key=f"app_{sel_branch}_{ai}")
+                    new_note = up3.text_input("Update note", key=f"apn_{sel_branch}_{ai}")
+
+                    if st.button("Save update", key=f"apb_{sel_branch}_{ai}", type="primary"):
+                        action_plans[sel_branch][ai]['status']   = new_status
+                        action_plans[sel_branch][ai]['progress'] = new_prog
+                        if new_note:
+                            notes = action_plans[sel_branch][ai].get('notes', [])
+                            if isinstance(notes, str): notes = [notes] if notes else []
+                            notes.append({'note': new_note, 'by': uname,
+                                          'date': str(date.today())})
+                            action_plans[sel_branch][ai]['notes'] = notes
+                        st.session_state['sbu_action_plans'] = action_plans
+                        audit_log("ACTION_UPDATED", uname,
+                                  f"{sel_branch}:{action['id']}:{new_status}")
+                        _bsc_trigger(uname, "K005")
+                        st.success("Updated!"); st.rerun()
+
+                # Notes history
+                notes_hist = action.get('notes', [])
+                if notes_hist:
+                    with st.expander("Update history"):
+                        if isinstance(notes_hist, list):
+                            for n in reversed(notes_hist[-5:]):
+                                if isinstance(n, dict):
+                                    st.caption(f"{n.get('date','')} ({n.get('by','')}): {n.get('note','')}")
+                                else:
+                                    st.caption(str(n))

@@ -1,0 +1,208 @@
+{
+  "fixtures": [
+    {
+      "id": "PP001",
+      "label": "Empty portfolio → warning + zero PnL",
+      "input": {
+        "product_code": "LOANS",
+        "period": "2026-04",
+        "customer_pnl": []
+      },
+      "expected": {
+        "total_revenue": 0.00,
+        "pbt": 0.00,
+        "pbt_margin": null,
+        "customer_count": 0,
+        "provisional": false,
+        "data_quality_warning_present": true,
+        "ftp_modes": {"on": 0, "off": 0, "unknown": 0}
+      }
+    },
+    {
+      "id": "PP002",
+      "label": "Clean portfolio: all FTP-on, no warning",
+      "input": {
+        "product_code": "LOANS",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 1000000, "direct_costs": 200000, "indirect_costs": 100000, "pbt": 700000, "transaction_count": 50, "ftp_mode": "on"},
+          {"customer_id": "C002", "total_revenue": 2000000, "direct_costs": 400000, "indirect_costs": 200000, "pbt": 1400000, "transaction_count": 80, "ftp_mode": "on"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 3000000.00,
+        "direct_costs": 600000.00,
+        "indirect_costs": 300000.00,
+        "pbt": 2100000.00,
+        "pbt_margin": 70.0,
+        "customer_count": 2,
+        "transaction_count": 130,
+        "provisional": false,
+        "data_quality_warning_present": false,
+        "ftp_modes": {"on": 2, "off": 0, "unknown": 0}
+      }
+    },
+    {
+      "id": "PP003",
+      "label": "Mixed FTP <50% off: warning + provisional=False",
+      "input": {
+        "product_code": "LOANS",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 1000000, "direct_costs": 200000, "indirect_costs": 100000, "pbt": 700000, "transaction_count": 50, "ftp_mode": "on"},
+          {"customer_id": "C002", "total_revenue": 2000000, "direct_costs": 400000, "indirect_costs": 200000, "pbt": 1400000, "transaction_count": 80, "ftp_mode": "on"},
+          {"customer_id": "C003", "total_revenue":  500000, "direct_costs": 100000, "indirect_costs":  50000, "pbt":  350000, "transaction_count": 20, "ftp_mode": "off"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 3500000.00,
+        "pbt": 2450000.00,
+        "pbt_margin": 70.0,
+        "customer_count": 3,
+        "provisional": false,
+        "data_quality_warning_present": true,
+        "ftp_modes": {"on": 2, "off": 1, "unknown": 0},
+        "ftp_off_share": 0.3333
+      }
+    },
+    {
+      "id": "PP004",
+      "label": "Majority off-mode: provisional=True (>50% threshold)",
+      "input": {
+        "product_code": "LOANS",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 1000000, "direct_costs": 200000, "indirect_costs": 100000, "pbt": 700000, "transaction_count": 50, "ftp_mode": "off"},
+          {"customer_id": "C002", "total_revenue": 1500000, "direct_costs": 300000, "indirect_costs": 150000, "pbt": 1050000, "transaction_count": 70, "ftp_mode": "off"},
+          {"customer_id": "C003", "total_revenue":  500000, "direct_costs": 100000, "indirect_costs":  50000, "pbt":  350000, "transaction_count": 20, "ftp_mode": "on"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 3000000.00,
+        "pbt": 2100000.00,
+        "pbt_margin": 70.0,
+        "provisional": true,
+        "data_quality_warning_present": true,
+        "ftp_modes": {"on": 1, "off": 2, "unknown": 0},
+        "ftp_off_share": 0.6667
+      }
+    },
+    {
+      "id": "PP005",
+      "label": "All off-mode: provisional=True at 100%",
+      "input": {
+        "product_code": "DEPOSITS",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 100000, "direct_costs": 0, "indirect_costs": 0, "pbt": 100000, "transaction_count": 10, "ftp_mode": "off"},
+          {"customer_id": "C002", "total_revenue": 200000, "direct_costs": 0, "indirect_costs": 0, "pbt": 200000, "transaction_count": 20, "ftp_mode": "off"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 300000.00,
+        "pbt": 300000.00,
+        "pbt_margin": 100.0,
+        "provisional": true,
+        "data_quality_warning_present": true,
+        "ftp_modes": {"on": 0, "off": 2, "unknown": 0},
+        "ftp_off_share": 1.0
+      }
+    },
+    {
+      "id": "PP006",
+      "label": "Zero revenue → pbt_margin=None (Rule 1)",
+      "input": {
+        "product_code": "DIGITAL",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 0, "direct_costs": 100000, "indirect_costs": 50000, "pbt": -150000, "transaction_count": 10, "ftp_mode": "on"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 0.00,
+        "pbt": -150000.00,
+        "pbt_margin": null,
+        "provisional": false,
+        "ftp_modes": {"on": 1, "off": 0, "unknown": 0}
+      }
+    },
+    {
+      "id": "PP007",
+      "label": "Unknown ftp_mode → counted as 'unknown'",
+      "input": {
+        "product_code": "TRADE",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 1000000, "direct_costs": 100000, "indirect_costs": 50000, "pbt": 850000, "transaction_count": 30, "ftp_mode": "weird_value"},
+          {"customer_id": "C002", "total_revenue": 2000000, "direct_costs": 200000, "indirect_costs": 100000, "pbt": 1700000, "transaction_count": 60}
+        ]
+      },
+      "expected": {
+        "total_revenue": 3000000.00,
+        "pbt": 2550000.00,
+        "ftp_modes": {"on": 0, "off": 0, "unknown": 2},
+        "data_quality_warning_present": false
+      }
+    },
+    {
+      "id": "PP008",
+      "label": "KES-billion precision preserved",
+      "input": {
+        "product_code": "LOANS",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": "11500000000.50", "direct_costs": "0", "indirect_costs": "0", "pbt": "11500000000.50", "transaction_count": 1, "ftp_mode": "on"},
+          {"customer_id": "C002", "total_revenue": "11500000000.51", "direct_costs": "0", "indirect_costs": "0", "pbt": "11500000000.51", "transaction_count": 1, "ftp_mode": "on"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 23000000001.01,
+        "pbt": 23000000001.01,
+        "pbt_margin": 100.0,
+        "customer_count": 2,
+        "provisional": false
+      }
+    },
+    {
+      "id": "PP009",
+      "label": "Boundary: exactly 50% off (NOT provisional, threshold is strict >)",
+      "input": {
+        "product_code": "FEES",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 1000000, "direct_costs": 100000, "indirect_costs": 50000, "pbt": 850000, "transaction_count": 30, "ftp_mode": "on"},
+          {"customer_id": "C002", "total_revenue": 1000000, "direct_costs": 100000, "indirect_costs": 50000, "pbt": 850000, "transaction_count": 30, "ftp_mode": "off"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 2000000.00,
+        "provisional": false,
+        "ftp_modes": {"on": 1, "off": 1, "unknown": 0},
+        "ftp_off_share": 0.5,
+        "data_quality_warning_present": true
+      }
+    },
+    {
+      "id": "PP010",
+      "label": "Single customer 100% off: provisional=True, warning cites Rule 2",
+      "input": {
+        "product_code": "TREASURY",
+        "period": "2026-04",
+        "customer_pnl": [
+          {"customer_id": "C001", "total_revenue": 5000000, "direct_costs": 500000, "indirect_costs": 200000, "pbt": 4300000, "transaction_count": 100, "ftp_mode": "off"}
+        ]
+      },
+      "expected": {
+        "total_revenue": 5000000.00,
+        "pbt": 4300000.00,
+        "pbt_margin": 86.0,
+        "provisional": true,
+        "data_quality_warning_present": true,
+        "warning_mentions_standard_11": true,
+        "warning_mentions_rule_2": true,
+        "ftp_modes": {"on": 0, "off": 1, "unknown": 0},
+        "ftp_off_share": 1.0
+      }
+    }
+  ]
+}

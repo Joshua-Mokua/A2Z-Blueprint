@@ -1,0 +1,6 @@
+{
+  "mode": "dev",
+  "set_at": "2026-05-15T17:35:00+00:00",
+  "set_by": "v10.474_init",
+  "reason": "Initial canonical environment declaration per Phase O8 doctrine. Default DEV; promotion via utils/environment.set_environment(). Production deployments must explicitly set mode=prod via A2Z_ENV env var or admin action."
+}

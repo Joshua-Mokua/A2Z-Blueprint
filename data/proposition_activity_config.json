@@ -1,0 +1,305 @@
+{
+  "_schema_version": "v10.334",
+  "_description": "Specialized Segments + Propositions activity generator config. Each proposition has a head and (sometimes) dedicated staff. The head's BSC = the proposition's BSC (per banking convention \u2014 segment performance = segment owner's performance). Covers the 3 specialized segments not yet in cascade: WB (Women Banking), DIA (Diaspora), AGR (Agribusiness). Other 5 propositions (SME, GOV, TF, BNC, DFS) already score via Pipeline\u2192BSC bridge or Support Function generator.",
+  "_design_principles": [
+    "Head BSC reflects segment-level performance, not personal sales",
+    "Staff under proposition heads get RM-style scorecards (deposit, NFI, NPL, etc.)",
+    "Deterministic per (staff_code, period, kpi_id)",
+    "Direction-aware (NPL/PAR lower-is-better)",
+    "Scale-aware (currency-M bases convert to raw currency)",
+    "Customer-count weighted \u2014 bigger segments have larger base KPIs"
+  ],
+  "performance_bands": {
+    "HIGH": {
+      "weight": 0.25,
+      "factor_range": [
+        1.05,
+        1.15
+      ],
+      "description": "Top performers \u2014 beat targets"
+    },
+    "MID": {
+      "weight": 0.55,
+      "factor_range": [
+        0.92,
+        1.05
+      ],
+      "description": "On-track \u2014 within band"
+    },
+    "LOW": {
+      "weight": 0.2,
+      "factor_range": [
+        0.78,
+        0.9
+      ],
+      "description": "Below target"
+    }
+  },
+  "propositions": {
+    "WB": {
+      "name": "Women Banking",
+      "customer_count": 2737,
+      "head_role": "Head Of Women Banking",
+      "head_band_weights": {
+        "HIGH": 0.3,
+        "MID": 0.5,
+        "LOW": 0.2
+      },
+      "_note": "WB is a cross-functional segment \u2014 head has no dedicated team, works across all branches. KPIs reflect segment-level penetration and growth."
+    },
+    "DIA": {
+      "name": "Diaspora",
+      "customer_count": 780,
+      "head_role": "Senior Manager Diaspora Banking",
+      "head_band_weights": {
+        "HIGH": 0.3,
+        "MID": 0.5,
+        "LOW": 0.2
+      },
+      "_note": "Diaspora segment focused on Kenyans abroad \u2014 deposits, remittances, investment products"
+    },
+    "AGR": {
+      "name": "Agribusiness",
+      "customer_count": 763,
+      "head_role": "Senior Manager Diaspora Banking",
+      "head_shares_with": "DIA",
+      "head_band_weights": {
+        "HIGH": 0.3,
+        "MID": 0.5,
+        "LOW": 0.2
+      },
+      "_note": "AGR shares the head with DIA (Sr Mgr Diaspora covers both segments). KPIs additive but stored against the same staff code via separate proposition tagging."
+    }
+  },
+  "role_kpi_bases": {
+    "Head Of Women Banking": {
+      "_resolves_from_role_kpis": true,
+      "kpi_bases": {
+        "PBT": {
+          "base": 95,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Total NFI": {
+          "base": 38,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Retail & MSME Deposit Growth": {
+          "base": 13,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Top 100 Customers Deposit": {
+          "base": 2200,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Number of Business Borrowers": {
+          "base": 180,
+          "unit": "count",
+          "direction": "higher"
+        },
+        "CX Score": {
+          "base": 4.1,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "COMPLIANCE_SCORE": {
+          "base": 4.3,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "Staff Productivity": {
+          "base": 72,
+          "unit": "score_100",
+          "direction": "higher"
+        }
+      }
+    },
+    "Senior Manager Diaspora Banking": {
+      "_resolves_from_role_kpis": true,
+      "kpi_bases": {
+        "PBT": {
+          "base": 78,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Total NFI": {
+          "base": 34,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Retail & MSME Deposit Growth": {
+          "base": 14,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Commercial Deposit Growth": {
+          "base": 11,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Top 100 Customers Deposit": {
+          "base": 1450,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Number of Business Borrowers": {
+          "base": 95,
+          "unit": "count",
+          "direction": "higher"
+        },
+        "CX Score": {
+          "base": 4.0,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "COMPLIANCE_SCORE": {
+          "base": 4.2,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "Staff Productivity": {
+          "base": 70,
+          "unit": "score_100",
+          "direction": "higher"
+        }
+      }
+    },
+    "Relationship Manager - Diaspora": {
+      "kpi_bases": {
+        "Disbursements MSME Loans": {
+          "base": 85,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Retail & MSME Deposit Growth": {
+          "base": 14,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Total NFI": {
+          "base": 6.5,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Number of Business Borrowers": {
+          "base": 32,
+          "unit": "count",
+          "direction": "higher"
+        },
+        "NPL_RATIO": {
+          "base": 6.8,
+          "unit": "%",
+          "direction": "lower"
+        },
+        "Audit Score": {
+          "base": 78,
+          "unit": "score_100",
+          "direction": "higher"
+        },
+        "CX Score": {
+          "base": 4.0,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "COMPLIANCE_SCORE": {
+          "base": 4.2,
+          "unit": "score_5",
+          "direction": "higher"
+        }
+      }
+    },
+    "Relationship Manager - Agribusiness": {
+      "kpi_bases": {
+        "Disbursements MSME Loans": {
+          "base": 95,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Retail & MSME Deposit Growth": {
+          "base": 12,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Total NFI": {
+          "base": 5.8,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Number of Business Borrowers": {
+          "base": 48,
+          "unit": "count",
+          "direction": "higher"
+        },
+        "NPL_RATIO": {
+          "base": 9.2,
+          "unit": "%",
+          "direction": "lower"
+        },
+        "Audit Score": {
+          "base": 75,
+          "unit": "score_100",
+          "direction": "higher"
+        },
+        "CX Score": {
+          "base": 3.8,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "COMPLIANCE_SCORE": {
+          "base": 4.1,
+          "unit": "score_5",
+          "direction": "higher"
+        }
+      }
+    },
+    "Senior Relationship Officer - Diaspora Banking": {
+      "kpi_bases": {
+        "Disbursements MSME Loans": {
+          "base": 35,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Retail & MSME Deposit Growth": {
+          "base": 13,
+          "unit": "%",
+          "direction": "higher"
+        },
+        "Total NFI": {
+          "base": 3.2,
+          "unit": "CCY_M",
+          "direction": "higher"
+        },
+        "Number of Business Borrowers": {
+          "base": 18,
+          "unit": "count",
+          "direction": "higher"
+        },
+        "Audit Score": {
+          "base": 76,
+          "unit": "score_100",
+          "direction": "higher"
+        },
+        "CX Score": {
+          "base": 3.9,
+          "unit": "score_5",
+          "direction": "higher"
+        },
+        "Staff Productivity": {
+          "base": 65,
+          "unit": "score_100",
+          "direction": "higher"
+        }
+      }
+    }
+  },
+  "noise_range_pct": 0.04,
+  "_rationale": {
+    "why_kes_m": "Bases in currency-M to align with how Kenya banks discuss segment revenue \u2014 multiplied by 1,000,000 at value computation",
+    "agr_shares_head_with_dia": "Sr Mgr Diaspora 300014 covers both DIA and AGR \u2014 single staff_code, two propositions tagged in customer base. Both segments roll up through the same scorecard.",
+    "wb_no_team": "Head WB has no dedicated RMs \u2014 segment served by general branch RMs. KPIs reflect segment owner accountability, not personal book.",
+    "smaller_bases_than_branches": "Specialized segment heads have smaller bases than Branch Managers because they serve narrower customer slices (2737 WB vs 3000+ at a major branch)"
+  }
+}

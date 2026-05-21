@@ -10,7 +10,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("transfer_pricing")
+require_access("treasury_alm.ftp")
 DATA  = Path(__file__).parent.parent / "data"
 um, ud, uname, *_ = load_shared_state()[:12]
 role     = str(ud.get("role","")).lower()
@@ -81,3 +81,12 @@ with tabs[3]:
         st.success(f"✅ Top NIM contributor: {top_sbu.get('unit','')} — KES {top_sbu.get('nim_contribution_m',0):.0f}M")
     st.caption("FTP allocates the cost of funding to each product/SBU. Positive spread = earning above cost. "
                "Negative spread = selling below cost of funds — requires ALCO review.")
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

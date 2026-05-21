@@ -1,10 +1,14 @@
 """pages/87_benchmarking.py — Tier-1 Bank Benchmarking.
 
-Compares Ecobank against KCB, Equity, Co-op, NCBA across 15 financial metrics
+Compares our bank against domestic Tier-1 peers across 15 financial metrics
 over 4 quarters. Provides peer ranking, gap-to-leader, and strategic themes.
 
 Data source: data/tier1_benchmarking.json
-Updated: quarterly when CBK Bank Supervision reports are released.
+Updated: quarterly when central-bank supervision reports are released.
+
+Tenant identity (bank name, regulator) read from utils.config helpers
+per master prompt addendum Rule N1 (v10.219). Refactored v10.222 as
+first batch of the post-G162 cleanup sub-campaign.
 """
 import streamlit as st
 from utils.db import db as a2z_db
@@ -18,8 +22,9 @@ from datetime import datetime
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
 from utils.core_audit import audit_log
+from utils.config import bank_name, currency_symbol, country, regulator
 
-require_access("benchmarking")
+require_access("strategy_performance.benchmarking")
 
 DATA = Path(__file__).parent.parent / "data"
 
@@ -39,7 +44,7 @@ if not bm:
 quarters    = bm.get("quarters", [])
 banks       = list(bm.get("quarterly_metrics", {}).keys())
 metrics_md  = bm.get("metric_metadata", {})
-our_bank    = bm.get("our_bank", "Ecobank")
+our_bank    = bm.get("our_bank") or bank_name()
 themes      = bm.get("strategic_themes", [])
 latest_q    = quarters[-1] if quarters else None
 
@@ -51,7 +56,7 @@ st.caption(f"As at {bm.get('as_at','')}  ·  Source: {bm.get('data_source','')}"
 qmetrics = bm.get("quarterly_metrics", {}).get(our_bank, {}).get(latest_q, {})
 
 c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("Our assets", f"KES {qmetrics.get('assets_kes_b','—')}B")
+c1.metric("Our assets", f"{currency_symbol()} {qmetrics.get('assets_kes_b','—')}B")
 c2.metric("ROE", f"{qmetrics.get('roe_pct','—')}%")
 c3.metric("NPL", f"{qmetrics.get('npl_pct','—')}%")
 c4.metric("Branches", qmetrics.get('branches','—'))
@@ -67,19 +72,19 @@ intl_themes = bm.get("international_themes", [])
 if intl_banks:
     region = st.radio(
         "Peer set",
-        options=["🇰🇪 Kenyan Tier-1", "🌍 International Tier-1", "🔀 Both"],
+        options=["🏠 Domestic Tier-1", "🌍 International Tier-1", "🔀 Both"],
         horizontal=True,
         key="bm_region",
-        help="Kenyan: KCB, Equity, Co-op, NCBA, Ecobank. International: JPMorgan, HSBC, Citi, StanChart, DBS."
+        help=f"Domestic peers from data/tier1_benchmarking.json (includes {our_bank}). International: JPMorgan, HSBC, Citi, StanChart, DBS."
     )
 else:
-    region = "🇰🇪 Kenyan Tier-1"
+    region = "🏠 Domestic Tier-1"
 
 # Resolve which banks to show based on region
-if region == "🇰🇪 Kenyan Tier-1":
+if region == "🏠 Domestic Tier-1":
     active_metrics = bm.get("quarterly_metrics", {})
     active_banks = banks
-    region_note = "Comparing Ecobank to Kenyan Tier-1 peers."
+    region_note = f"Comparing {our_bank} to domestic Tier-1 peers."
 elif region == "🌍 International Tier-1":
     active_metrics = intl_data
     active_banks = intl_banks
@@ -105,7 +110,7 @@ tabs = st.tabs([
 # Tab 1 — DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════
 with tabs[0]:
-    st.markdown(f"### Where Ecobank ranks across {len(metrics_md)} metrics ({latest_q})")
+    st.markdown(f"### Where {our_bank} ranks across {len(metrics_md)} metrics ({latest_q})")
 
     # Build a ranking table
     rank_rows = []
@@ -194,7 +199,7 @@ with tabs[1]:
             df, x="Quarter", y="Value", color="Bank", markers=True,
             title=f"{chosen_label} — quarterly trend",
         )
-        # Highlight Ecobank with thicker line
+        # Highlight our bank with thicker line
         fig.for_each_trace(lambda t: t.update(line=dict(width=4)) if t.name == our_bank else t.update(line=dict(width=2, dash="dot")))
         fig.update_layout(height=420)
         st.plotly_chart(fig, use_container_width=True)
@@ -258,7 +263,7 @@ with tabs[2]:
     )
     st.dataframe(styled, use_container_width=True, hide_index=True)
 
-    st.caption("🟢 Leader · 🔴 Laggard · 🟡 Ecobank (highlighted in yellow)")
+    st.caption(f"🟢 Leader · 🔴 Laggard · 🟡 {our_bank} (highlighted in yellow)")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Tab 4 — GAP-VS-LEADER
@@ -353,7 +358,7 @@ with tabs[5]:
     st.markdown("### What international Tier-1 banks do that we should learn from")
     st.caption(
         "Five themes from JPMorgan, HSBC, Citi, Standard Chartered, and DBS. "
-        "Each links a quantified leader metric to a concrete Ecobank action."
+        f"Each links a quantified leader metric to a concrete {our_bank} action."
     )
 
     if not intl_themes:
@@ -368,7 +373,7 @@ with tabs[5]:
                 st.markdown("**What they did:**")
                 st.markdown(theme.get("what_they_did", ""))
 
-                st.markdown("**Ecobank takeaway:**")
+                st.markdown(f"**{our_bank} takeaway:**")
                 st.info(theme.get("ecobank_takeaway", ""))
 
     # Quick reference panel — comparable ratios at a glance
@@ -405,9 +410,18 @@ with tabs[5]:
             st.dataframe(styled, use_container_width=True, hide_index=True)
 
             st.caption(
-                "🟡 Ecobank highlighted. Only ratio metrics shown (NPL%, ROE%, NIM%, etc.) — "
+                f"🟡 {our_bank} highlighted. Only ratio metrics shown (NPL%, ROE%, NIM%, etc.) — "
                 "absolute size metrics aren't comparable due to currency differences."
             )
 
 # Audit page view
 audit_log("BENCHMARKING_VIEWED", uname, f"Tier-1 benchmarking dashboard viewed at {datetime.utcnow().isoformat()}")
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

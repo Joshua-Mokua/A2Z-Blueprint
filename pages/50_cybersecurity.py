@@ -12,7 +12,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("cybersecurity")
+require_access("it_platform.cybersecurity")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -116,3 +116,11 @@ with tabs[4]:
     if cbk_pending:
         st.error(f"🔴 {cbk_pending} CBK-reportable incident(s) pending notification — file within 24 hours")
     st.caption("Per CBK Prudential Guideline on Cybersecurity: major incidents must be reported within 24 hours.")
+
+# v10.464 — operational output (WF4 doctrine compliance)
+st.markdown("---")
+if st.button("🔄 Refresh this view"):
+    st.cache_data.clear() if hasattr(st, "cache_data") else None
+    if hasattr(st, "rerun"):
+        st.rerun()
+

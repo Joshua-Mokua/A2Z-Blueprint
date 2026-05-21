@@ -20,7 +20,7 @@ def _safe_date(s, fallback=None):
 
 
 
-require_access("debt_recovery")
+require_access("credit.debt_recovery")
 
 def _bsc_trigger(username, kpi=""):
     try:

@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:01.082516+00:00",
+  "total_scenarios": 20,
+  "matches": 20,
+  "misses": 0,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 95.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "T001-clear-recognition",
+      "description": "115% of target with steadily-accelerating history \u00e2\u2020\u2019 recognition",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "recognition",
+          "action_items": [],
+          "message": "\ud83c\udf89 Exceeding target on DEP_GROWTH!"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "recognition"
+        }
+      ]
+    },
+    {
+      "id": "T002-clear-alert",
+      "description": "39% of target halfway through period (pace=50, threshold=40) \u00e2\u2020\u2019 alert",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Review your top 5 prospects and confirm next-step dates",
+            "Schedule 3 client visits this week",
+            "Discuss pipeline blockers with your Branch Manager"
+          ],
+          "message": "\u26a0\ufe0f Behind target on DEP_GROWTH"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert"
+        }
+      ]
+    },
+    {
+      "id": "T003-on-pace-no-nudge",
+      "description": "Exactly on pace, neither extreme \u00e2\u2020\u2019 no nudge",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T004-above-110-but-not-accelerating",
+      "description": "115% of target but flat history \u00e2\u2020\u2019 NO recognition (only fires when accelerating)",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T005-zero-target",
+      "description": "Target = 0 (misconfig) \u00e2\u2020\u2019 no nudge (engine refuses to reason)",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T006-missing-target",
+      "description": "Target = None \u00e2\u2020\u2019 no nudge",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T007-period-just-started",
+      "description": "Day 1 of period, value low \u00e2\u20ac\u201d pace target \u00e2\u2030\u02c6 0, no alert (threshold not meaningful)",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T008-strong-recognition",
+      "description": "200% of target with rapidly accelerating history \u00e2\u2020\u2019 recognition",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "recognition",
+          "action_items": [],
+          "message": "\ud83c\udf89 Exceeding target on LOAN_GROWTH!"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "recognition"
+        }
+      ]
+    },
+    {
+      "id": "T009-just-below-recognition-threshold",
+      "description": "109% of target \u00e2\u20ac\u201d under the 110% bar \u00e2\u20ac\u201d no recognition",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T010-just-below-alert-threshold",
+      "description": "Pace=50, value=41 (82% of pace, above 80% threshold) \u00e2\u2020\u2019 no alert",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T011-deep-decline-clear-alert",
+      "description": "Strong negative trajectory and well below pace \u00e2\u2020\u2019 alert",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Review your top 5 prospects and confirm next-step dates",
+            "Schedule 3 client visits this week",
+            "Discuss pipeline blockers with your Branch Manager"
+          ],
+          "message": "\u26a0\ufe0f Behind target on SALES"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert"
+        }
+      ]
+    },
+    {
+      "id": "T012-aml-alert-action-items",
+      "description": "AML KPI alert should include AML-class action items",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Clear the oldest 3 open cases today",
+            "Request more info from analyst on stalled cases",
+            "Escalate truly blocked cases to compliance lead"
+          ],
+          "message": "\u26a0\ufe0f Behind target on AML_SLA"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert",
+          "action_items_must_contain": "Clear the oldest"
+        }
+      ]
+    },
+    {
+      "id": "T013-npl-alert-action-items",
+      "description": "NPL KPI alert should include credit-recovery actions",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Review delinquent accounts and call top 10 oldest",
+            "Restructure loans where appropriate",
+            "Escalate uncooperative cases to recoveries"
+          ],
+          "message": "\u26a0\ufe0f Behind target on NPL_PCT"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert",
+          "action_items_must_contain": "delinquent accounts"
+        }
+      ]
+    },
+    {
+      "id": "T014-insufficient-history-suppresses-recognition",
+      "description": "115% of target but only 1 prior datapoint \u00e2\u2020\u2019 recognition suppressed",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T015-recognition-and-alert-mutually-exclusive",
+      "description": "When pace is high (e.g. 95% of period) and value < 80% pace, fires alert. The recognition path requires >110% of target, which can't simultaneously be <80% of pace. Verifies the elif gate.",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Review your top 5 prospects and confirm next-step dates",
+            "Schedule 3 client visits this week",
+            "Discuss pipeline blockers with your Branch Manager"
+          ],
+          "message": "\u26a0\ufe0f Behind target on DEP_GROWTH"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert"
+        }
+      ]
+    },
+    {
+      "id": "T016-large-numbers",
+      "description": "KES-scale figures (e.g. 1.5B target, 1.7B actual) with accelerating growth",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "recognition",
+          "action_items": [],
+          "message": "\ud83c\udf89 Exceeding target on DEP_GROWTH!"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "recognition"
+        }
+      ]
+    },
+    {
+      "id": "T017-zero-value",
+      "description": "Zero value with non-zero pace \u00e2\u2020\u2019 alert",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "alert",
+          "action_items": [
+            "Review your top 5 prospects and confirm next-step dates",
+            "Schedule 3 client visits this week",
+            "Discuss pipeline blockers with your Branch Manager"
+          ],
+          "message": "\u26a0\ufe0f Behind target on DEP_GROWTH"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "alert"
+        }
+      ]
+    },
+    {
+      "id": "T018-q4-recognition",
+      "description": "Quarterly KPI (2026-Q4) at end-of-Q4 with strong (non-linear) acceleration",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [
+        {
+          "type": "recognition",
+          "action_items": [],
+          "message": "\ud83c\udf89 Exceeding target on LOAN_GROWTH!"
+        }
+      ],
+      "expected_nudges": [
+        {
+          "type": "recognition"
+        }
+      ]
+    },
+    {
+      "id": "T019-accelerating-but-still-below-target",
+      "description": "Accelerating BUT current value still below 110% target \u00e2\u2020\u2019 no recognition (only fires above 110%)",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    },
+    {
+      "id": "T020-below-pace-but-target-zero",
+      "description": "Target = 0 means no nudge regardless of pace",
+      "matched": true,
+      "reason": "ok",
+      "actual_nudges": [],
+      "expected_nudges": []
+    }
+  ]
+}

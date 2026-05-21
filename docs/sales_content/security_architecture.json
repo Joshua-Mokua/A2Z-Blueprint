@@ -1,0 +1,108 @@
+{
+  "_doc": "Security architecture summary for CISO whitepaper. Per docs/A2Z_LIVING_DOCS_PLAN.md Part 3, every claim has explicit shipped/designed/roadmap status.",
+  "_schema_version": "1.0",
+  "_last_reviewed_iso": "2026-05-01",
+  "authentication": {
+    "primary_method": "JWT Bearer Token",
+    "primary_status": "shipped",
+    "primary_source": "utils/api.py",
+    "mfa_support": {
+      "totp": {"status": "designed", "notes": "Designed in v5.x; not yet wired to login flow"}
+    },
+    "sso": {
+      "saml_2_0": {"status": "roadmap", "notes": "Planned v9.x; depends on SSO provider integration"},
+      "oidc": {"status": "roadmap", "notes": "Planned v9.x"}
+    }
+  },
+  "authorization": {
+    "rbac": {
+      "status": "shipped",
+      "source": "users.json + UserManager.authenticate (per A2Z Blueprint convention)",
+      "default_roles_count": 6,
+      "granularity": "Page-level + API endpoint-level"
+    }
+  },
+  "encryption": {
+    "at_rest": {"status": "designed", "method": "AES-256", "notes": "Standard pattern; production deployment-specific"},
+    "in_transit": {"status": "designed", "method": "TLS 1.3", "notes": "Standard pattern; production deployment-specific"},
+    "key_management": {"hsm": {"status": "roadmap", "notes": "HSM integration is bank-deployment-specific"}}
+  },
+  "audit_trail": {
+    "implementation": "Tamper-evident, hash-chained per audit_log() helper",
+    "status": "shipped",
+    "source": "utils/core_audit.py",
+    "retention_default": "7 years (configurable)",
+    "cbk_compliance_export": "Available via audit page"
+  },
+  "operations_resilience": {
+    "retry": {
+      "status": "shipped",
+      "version_introduced": "v8.1",
+      "config": {
+        "attempts": 3,
+        "backoff_seconds": [1.0, 3.0, 9.0],
+        "jitter_pct": 0.2,
+        "jitter_added": "v8.8"
+      },
+      "source": "utils/flexcube_adapter.py",
+      "regulatory_alignment": "CBK Operations Resilience Guidelines (2019)",
+      "audit_gate": "G108"
+    },
+    "circuit_breaker": {
+      "status": "shipped",
+      "version_introduced": "v8.1",
+      "config": {
+        "threshold": 5,
+        "open_duration_seconds": 60.0,
+        "half_open_probe": true
+      },
+      "admin_reset_function": {
+        "status": "shipped",
+        "version_introduced": "v8.9",
+        "source": "utils/flexcube_adapter.py reset_circuit()"
+      },
+      "audit_gate": "G108"
+    },
+    "latency_telemetry": {
+      "status": "shipped",
+      "version_introduced": "v8.2",
+      "metrics": ["p50", "p95", "p99", "count", "success_rate_pct"],
+      "rolling_window_size": 200,
+      "circuit_open_suppression": "Intentional — fast-fails are not real RTTs",
+      "source": "utils/flexcube_adapter.py get_latency_state()",
+      "audit_gate": "G108"
+    },
+    "observability_triangle": {
+      "status": "shipped",
+      "components": [
+        {"name": "Mode banner", "version": "v7.10", "source": "pages/91_systems_view.py"},
+        {"name": "Circuit banner", "version": "v8.1", "source": "pages/91_systems_view.py"},
+        {"name": "Latency expander", "version": "v8.2", "source": "pages/91_systems_view.py"}
+      ],
+      "operator_questions_answered": ["Which path are we on?", "Is the path healthy?", "How fast is the path?"]
+    }
+  },
+  "compliance": {
+    "cbk_prudential": {"status": "designed", "notes": "Aligned in charter; per-bank verification needed"},
+    "cbk_operations_resilience_2019": {"status": "shipped", "audit_locked_via": "G108 + G109"},
+    "data_protection_act_2019": {"status": "designed", "notes": "Audit trail + RBAC support; per-bank deployment review needed"},
+    "ifrs_9": {"status": "shipped", "source": "utils/ifrs9_engine.py + page 88"},
+    "ifrs_7": {"status": "shipped", "source": "utils/ifrs7_engine.py"},
+    "ifrs_16": {"status": "shipped", "source": "utils/ifrs16_engine.py"},
+    "ifrs_15": {"status": "shipped", "source": "utils/ifrs15_engine.py"},
+    "basel_iii": {"status": "shipped", "source": "utils/capital_adequacy.py"}
+  },
+  "certifications": {
+    "soc_2_type_ii": {"status": "roadmap", "notes": "Planned; no certification yet awarded"},
+    "iso_27001": {"status": "roadmap", "notes": "Planned; no certification yet awarded"},
+    "honest_disclaimer": "A2Z does not currently hold SOC 2 or ISO 27001 certifications. References to readiness reflect architectural alignment with the standards' control families, not awarded certifications."
+  },
+  "honest_scope": [
+    "Encryption at-rest and in-transit are deployment-specific patterns; A2Z relies on host infrastructure (cloud/on-prem) for actual implementation.",
+    "MFA is designed but not yet wired into the default login flow.",
+    "SAML/OIDC SSO is roadmap, not shipped.",
+    "HSM key-management integration is bank-deployment-specific; A2Z provides hooks but not bundled HSM.",
+    "SOC 2 and ISO 27001 are roadmap goals, not awarded certifications.",
+    "Multi-process state (circuit breaker + latency telemetry shared across gunicorn workers / kubernetes pods) needs Redis backend; v8.x ships single-process pattern, multi-process is v9.x roadmap."
+  ]
+}

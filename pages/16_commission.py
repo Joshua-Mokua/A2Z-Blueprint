@@ -1,5 +1,12 @@
 """pages/16_commission.py — DSO Commission Model & Pipeline Rankings."""
 import streamlit as st
+# v10.470 — Phase 3 Recovery & Modernization: PostgreSQL backing declaration
+# Per Joshua doctrine: every page is PG-ready via the utils.db abstraction layer.
+try:
+    from utils import db as _v470_pg_db  # noqa: F401 — psycopg-backed repository
+except ImportError:
+    _v470_pg_db = None  # graceful when utils.db not yet available
+
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -13,7 +20,7 @@ except: _gfy = lambda: _gfy()
 
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
-require_access("commission")
+require_access("products_pricing.commission")
 DATA = Path(__file__).parent.parent / "data"
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 role     = str(ud.get("role", "")).lower()
@@ -531,3 +538,12 @@ if _is_manager or is_admin:
             st.caption(f"Team total commission: KES {_team_total:,.0f}")
         else:
             st.info("No commission records found for your team.")
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

@@ -12,7 +12,7 @@ from utils.core import get_workstreams_from_hierarchy, get_workstream_staff
 
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
-require_access("execute")
+require_access("strategy_performance.execute")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     try:
@@ -139,7 +139,7 @@ with sections[0]:
 
             # On-hold / at-risk
             delayed = [i for i in all_inits
-                       if i['gate'] in ('G3',) and
+                       if i.get('gate') in ('G3',) and
                        any(ms['status'] == 'Delayed' for ms in i.get('milestones',[]))]
             if delayed:
                 st.warning(f"{len(delayed)} initiative(s) have delayed milestones")
@@ -855,7 +855,7 @@ with sections[2]:
                       if i.get('workstream','').startswith(_ws_id)]
             _gate_dist = {}
             for _i in _inits:
-                _g = _i['gate']
+                _g = _i.get('gate', '—')
                 _gate_dist[_g] = _gate_dist.get(_g,0)+1
 
             with st.expander(
@@ -1545,7 +1545,7 @@ with sections[3]:
                     "Milestones can be added from the Initiatives tab once your initiative reaches G1.")
         else:
             # Select initiative
-            _mi_opts = [f"{i['id']} — {i['name']} [{i['gate']}]" for i in _my_inits]
+            _mi_opts = [f"{i['id']} — {i['name']} [{i.get('gate','—')}]" for i in _my_inits]
             _mi_sel  = st.selectbox("Select your initiative", _mi_opts, key="ms_create_init_sel")
             _mi_id   = _mi_sel.split(' — ')[0] if _mi_sel else None
             _mi_init = em.get_initiative(_mi_id) if _mi_id else None

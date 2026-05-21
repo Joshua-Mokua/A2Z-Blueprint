@@ -1,0 +1,120 @@
+{
+  "_doc": "CBS baseline snapshot for YoY growth tracking. Frozen at 2025-12-31; do not modify.",
+  "_schema_version": "1.0",
+  "snapshot_date": "2025-12-31",
+  "snapshot_generated_at": "2026-05-12T19:46:32.480462+00:00",
+  "source_cbs_files": [
+    "deposits_aggregate.json",
+    "loans_aggregate.json",
+    "npl_aggregate.json",
+    "customer_aggregate.json",
+    "dormant_aggregate.json"
+  ],
+  "bank_aggregates": {
+    "deposits_aggregate": {
+      "total_deposits_kes": "110000000000",
+      "loan_to_deposit_ratio_pct": "72.73",
+      "by_stability_tier_kes": {
+        "RETAIL_STABLE": "55000000000",
+        "RETAIL_LESS_STABLE": "22000000000",
+        "OPERATIONAL_DEPOSITS": "16500000000",
+        "NON_OPERATIONAL_CORPORATE": "11000000000",
+        "FINANCIAL_INSTITUTIONS": "5500000000"
+      },
+      "by_product_kes": {
+        "CURRENT_ACCOUNTS": "33000000000",
+        "SAVINGS_ACCOUNTS": "44000000000",
+        "FIXED_DEPOSITS": "27500000000",
+        "CALL_DEPOSITS": "5500000000"
+      },
+      "by_segment_kes": {
+        "RETAIL_INDIVIDUAL": "66000000000",
+        "SME": "16500000000",
+        "CORPORATE": "22000000000",
+        "FINANCIAL_INSTITUTIONS": "5500000000"
+      }
+    },
+    "loans_aggregate": {
+      "gross_outstanding_kes": "80000000000",
+      "by_segment_kes": {
+        "RETAIL_INDIVIDUAL": "20000000000",
+        "SME": "18000000000",
+        "CORPORATE": "32000000000",
+        "REAL_ESTATE": "8000000000",
+        "STAFF_LOANS": "2000000000"
+      },
+      "by_stage_kes": {
+        "STAGE_1": "68000000000",
+        "STAGE_2": "4000000000",
+        "STAGE_3": "8000000000"
+      },
+      "weighted_avg_pd_pct": "3.2",
+      "average_lgd_pct": "45.0"
+    },
+    "npl_aggregate": {
+      "stage_3_kes": "8000000000",
+      "loan_book_basis_kes": "80000000000",
+      "npl_ratio_pct": "10.00",
+      "by_aging_kes": {
+        "DAYS_91_180": "3000000000",
+        "DAYS_181_365": "3500000000",
+        "DAYS_OVER_365": "1500000000"
+      }
+    },
+    "customer_aggregate": {
+      "total_customers": 700000,
+      "by_segment_count": {
+        "RETAIL_INDIVIDUAL": 595000,
+        "SME": 70000,
+        "CORPORATE": 28000,
+        "STAFF": 7000
+      },
+      "by_tenure_band_count": {
+        "0_TO_1_YEAR": 105000,
+        "1_TO_3_YEARS": 175000,
+        "3_TO_5_YEARS": 140000,
+        "OVER_5_YEARS": 280000
+      },
+      "by_onboarding_channel_count": {
+        "BRANCH": 350000,
+        "DIGITAL_ONBOARDING": 210000,
+        "AGENT": 105000,
+        "REFERRAL": 35000
+      },
+      "by_kyc_risk_band_count": {
+        "LOW": 525000,
+        "MEDIUM": 140000,
+        "HIGH": 35000,
+        "PROHIBITED": 0
+      },
+      "monthly_growth_rate_pct": "0.8"
+    },
+    "dormant_aggregate": {
+      "total_dormant": 84000,
+      "customer_basis_count": 700000,
+      "dormancy_rate_pct": "12.00",
+      "by_dormancy_band_count": {
+        "DAYS_90_TO_180": 42000,
+        "DAYS_181_TO_365": 25200,
+        "OVER_365_DAYS": 16800
+      },
+      "by_segment_count": {
+        "RETAIL_INDIVIDUAL": 75600,
+        "SME": 5880,
+        "CORPORATE": 1680,
+        "STAFF": 840
+      },
+      "reactivation_potential_count": 12600,
+      "avg_balance_per_dormant_kes": 8500,
+      "estimated_latent_value_kes": "714000000"
+    }
+  },
+  "per_rm": {},
+  "per_branch": {},
+  "summary": {
+    "rm_count": 0,
+    "branch_count": 0,
+    "source_count": 5,
+    "has_account_level_data": false
+  }
+}

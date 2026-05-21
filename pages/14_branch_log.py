@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state
 from pages._access import require_access, get_my_scope
-require_access("branch_log")
+require_access("sales_customer.branch_log")
 
 
 
@@ -235,6 +235,8 @@ tabs = st.tabs([
     "📊 Unit summary",
     "📈 Trends",
     "🏆 Leaderboard",
+    "🏛️ Branch Performance (Standard #90)",
+    "🛠️ Branch Ops Excellence (Standard #92)",
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -595,3 +597,670 @@ with tabs[4]:
         fig_c.update_layout(height=300, xaxis_tickangle=-30,
             plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_c, use_container_width=True)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 6 — BRANCH PERFORMANCE (Standard #90, integrated v5.80)
+# ════════════════════════════════════════════════════════════════
+with tabs[5]:
+    from utils.branch_performance import (
+        BranchPerformanceEngine, BranchPnlInputs,
+        BRANCH_LIFECYCLE_STAGES, LIFECYCLE_BANDS_YEARS,
+        PERFORMANCE_TIERS, PEER_GROUP_LOCATIONS, PEER_GROUP_SIZES,
+        TIER_1_THRESHOLD_PCT, BRANCH_PNL_LINES,
+    )
+    from utils.core_audit import audit_log
+    from decimal import Decimal as _D_bp
+
+    st.markdown(
+        f"**Standard #90 — Branch Performance Engine**. "
+        f"P&L computation, cost-income ratio, Return on Average Assets, "
+        f"lifecycle classification, peer benchmarking, quartile ranking."
+    )
+    st.caption(
+        f"Performance tiers: {' / '.join(PERFORMANCE_TIERS)} "
+        f"(TIER_1 ≥ {TIER_1_THRESHOLD_PCT}th percentile). "
+        f"Lifecycle bands: NEW (0-2y) / GROWTH (2-5y) / MATURE (5+y)."
+    )
+
+    bp_sub_tabs = st.tabs([
+        "📊 Branch P&L",
+        "🌳 Lifecycle Classifier",
+        "📐 Cost-Income & RoAA",
+        "🏅 Peer Benchmarking",
+    ])
+
+    # ──────── Branch P&L ────────
+    with bp_sub_tabs[0]:
+        st.markdown(
+            "**Branch P&L computation** — deterministic income/expense aggregation.")
+        st.caption(
+            "Engine returns 6 BRANCH_PNL_LINES: NII / NON_INTEREST_INCOME / "
+            "OPEX_DIRECT / OPEX_ALLOCATED / IMPAIRMENT / NPBT plus total_income, total_opex.")
+        c1, c2 = st.columns(2)
+        with c1:
+            bp_id = st.text_input("Branch ID", value="BR_100", key="bp_id")
+            bp_nii = st.number_input("NII (KES M)",
+                                       min_value=0.0, value=50.0, step=5.0,
+                                       key="bp_nii",
+                                       help="Net interest income for the period.")
+            bp_nfi = st.number_input("Non-interest income (KES M)",
+                                       min_value=0.0, value=15.0, step=2.0,
+                                       key="bp_nfi")
+            bp_imp = st.number_input("Impairment (KES M)",
+                                       min_value=0.0, value=3.0, step=0.5,
+                                       key="bp_imp")
+        with c2:
+            bp_opex_dir = st.number_input("Direct opex (KES M)",
+                                            min_value=0.0, value=20.0, step=2.0,
+                                            key="bp_opex_dir",
+                                            help="Salaries, rent, utilities at branch.")
+            bp_opex_alloc = st.number_input("Allocated opex (KES M)",
+                                              min_value=0.0, value=8.0, step=1.0,
+                                              key="bp_opex_alloc",
+                                              help="Headquarters cost allocation.")
+            bp_assets = st.number_input("Average assets (KES M)",
+                                          min_value=0.0, value=800.0, step=50.0,
+                                          key="bp_assets")
+
+        if st.button("Compute branch P&L",
+                       key="bp_pnl_btn", type="primary"):
+            inputs = BranchPnlInputs(
+                branch_id=bp_id,
+                nii=_D_bp(str(bp_nii)) * _D_bp("1000000"),
+                non_interest_income=_D_bp(str(bp_nfi)) * _D_bp("1000000"),
+                opex_direct=_D_bp(str(bp_opex_dir)) * _D_bp("1000000"),
+                opex_allocated=_D_bp(str(bp_opex_alloc)) * _D_bp("1000000"),
+                impairment=_D_bp(str(bp_imp)) * _D_bp("1000000"),
+                avg_assets=_D_bp(str(bp_assets)) * _D_bp("1000000"),
+            )
+            r = BranchPerformanceEngine.branch_pnl(inputs)
+            if r.get("computed"):
+                k1, k2, k3, k4 = st.columns(4)
+                ti = _D_bp(str(r["total_income"]))
+                tox = _D_bp(str(r["total_opex"]))
+                imp = _D_bp(str(r["impairment"]))
+                npbt = _D_bp(str(r["npbt"]))
+                k1.metric("Total income",
+                           f"KES {ti/_D_bp('1000000'):,.2f}M")
+                k2.metric("Total opex",
+                           f"KES {tox/_D_bp('1000000'):,.2f}M")
+                k3.metric("Impairment",
+                           f"KES {imp/_D_bp('1000000'):,.2f}M")
+                k4.metric("**NPBT**",
+                           f"KES {npbt/_D_bp('1000000'):,.2f}M",
+                           delta=f"{(npbt/ti*100 if ti else 0):.1f}% margin"
+                                  if ti else None)
+
+                # Cost-income ratio derived from this same data
+                cir = BranchPerformanceEngine.cost_income_ratio(tox, ti)
+                roaa = BranchPerformanceEngine.return_on_avg_assets(
+                    npbt, _D_bp(str(bp_assets)) * _D_bp("1000000"))
+                col1, col2 = st.columns(2)
+                if cir is not None:
+                    cir_color = "#10B981" if cir < 50 else "#F59E0B" if cir < 70 else "#DC2626"
+                    col1.markdown(
+                        f"<div style='padding:12px;background:{cir_color}22;"
+                        f"border-left:4px solid {cir_color};border-radius:8px'>"
+                        f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                        f"COST-INCOME RATIO</div>"
+                        f"<div style='font-size:24px;font-weight:800;color:{cir_color}'>"
+                        f"{cir:.2f}%</div>"
+                        f"<div style='font-size:11px;opacity:0.85'>Lower = more efficient</div>"
+                        f"</div>", unsafe_allow_html=True)
+                if roaa is not None:
+                    col2.metric("Return on Avg Assets", f"{roaa:.2f}%",
+                                 help="NPBT / average assets — measures profitability.")
+
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"Branch #90: P&L {bp_id} NPBT={npbt} CIR={cir}")
+            else:
+                st.error("Could not compute (Rule 1 — missing inputs).")
+
+    # ──────── Lifecycle classifier ────────
+    with bp_sub_tabs[1]:
+        st.markdown(
+            "**Branch Lifecycle Stage** — classification by years open.")
+        st.caption(
+            f"NEW: 0-2 years (still ramping) · GROWTH: 2-5 years (scaling) · "
+            f"MATURE: 5+ years (steady-state). Different KPI expectations apply per stage.")
+        years = st.number_input("Years open",
+                                  min_value=0, max_value=50, value=3, step=1,
+                                  key="bp_years")
+        if st.button("Classify lifecycle",
+                       key="bp_lc_btn", type="primary"):
+            stage = BranchPerformanceEngine.lifecycle_stage(int(years))
+            if stage:
+                colors = {"NEW": "#3B82F6", "GROWTH": "#10B981", "MATURE": "#8B5CF6"}
+                color = colors.get(stage, "#6B7280")
+                st.markdown(
+                    f"<div style='padding:18px;background:{color}22;"
+                    f"border-left:6px solid {color};border-radius:12px;text-align:center'>"
+                    f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                    f"LIFECYCLE STAGE</div>"
+                    f"<div style='font-size:28px;font-weight:800;color:{color}'>"
+                    f"{stage}</div></div>",
+                    unsafe_allow_html=True)
+                stage_guidance = {
+                    "NEW": "🌱 Focus: customer acquisition, brand awareness, breakeven trajectory. Lower P&L expectations.",
+                    "GROWTH": "🚀 Focus: deposit/loan growth, cross-sell, profitability. Standard KPI targets.",
+                    "MATURE": "🏛️ Focus: efficiency, retention, market share defence. Higher cost-income discipline.",
+                }
+                st.info(stage_guidance.get(stage, ""))
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"Branch #90: lifecycle {years}y → {stage}")
+
+    # ──────── Cost-income + RoAA ────────
+    with bp_sub_tabs[2]:
+        st.markdown(
+            "**Cost-Income Ratio & Return on Average Assets** "
+            "(standalone calculators)")
+        st.caption(
+            "Use these for cross-branch comparison or for testing scenarios "
+            "without going through full P&L computation.")
+
+        cir_tab, roaa_tab = st.tabs([
+            "📐 Cost-Income Ratio",
+            "💎 Return on Avg Assets",
+        ])
+
+        with cir_tab:
+            st.markdown("**Cost-Income Ratio** = Total opex / Total income")
+            c1, c2 = st.columns(2)
+            with c1:
+                opex_v = st.number_input("Total opex (KES M)",
+                                           min_value=0.0, value=28.0, step=2.0,
+                                           key="bp_cir_opex")
+            with c2:
+                inc_v = st.number_input("Total income (KES M)",
+                                          min_value=0.0, value=65.0, step=5.0,
+                                          key="bp_cir_inc")
+            if st.button("Compute CIR", key="bp_cir_btn", type="primary"):
+                cir = BranchPerformanceEngine.cost_income_ratio(
+                    _D_bp(str(opex_v)) * _D_bp("1000000"),
+                    _D_bp(str(inc_v)) * _D_bp("1000000"))
+                if cir is None:
+                    st.error("Could not compute (income must be > 0).")
+                else:
+                    color = "#10B981" if cir < 50 else "#F59E0B" if cir < 70 else "#DC2626"
+                    label = "EFFICIENT" if cir < 50 else "ACCEPTABLE" if cir < 70 else "INEFFICIENT"
+                    st.markdown(
+                        f"<div style='padding:14px;background:{color}22;"
+                        f"border-left:6px solid {color};border-radius:10px;text-align:center'>"
+                        f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                        f"COST-INCOME RATIO</div>"
+                        f"<div style='font-size:28px;font-weight:800;color:{color}'>"
+                        f"{cir:.2f}% — {label}</div></div>",
+                        unsafe_allow_html=True)
+                    audit_log("IFRS_ENGINE_USED", uname,
+                               f"Branch #90: CIR opex={opex_v}M inc={inc_v}M → {cir}%")
+
+        with roaa_tab:
+            st.markdown("**Return on Average Assets** = NPBT / Avg assets × 100")
+            c1, c2 = st.columns(2)
+            with c1:
+                npbt_v = st.number_input("NPBT (KES M)",
+                                           value=30.0, step=2.0, key="bp_roaa_npbt")
+            with c2:
+                aa_v = st.number_input("Average assets (KES M)",
+                                         min_value=0.0, value=800.0, step=50.0,
+                                         key="bp_roaa_aa")
+            if st.button("Compute RoAA", key="bp_roaa_btn", type="primary"):
+                roaa = BranchPerformanceEngine.return_on_avg_assets(
+                    _D_bp(str(npbt_v)) * _D_bp("1000000"),
+                    _D_bp(str(aa_v)) * _D_bp("1000000"))
+                if roaa is None:
+                    st.error("Could not compute (avg assets must be > 0).")
+                else:
+                    color = "#10B981" if roaa > 2 else "#F59E0B" if roaa > 0 else "#DC2626"
+                    st.markdown(
+                        f"<div style='padding:14px;background:{color}22;"
+                        f"border-left:6px solid {color};border-radius:10px;text-align:center'>"
+                        f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                        f"RoAA</div>"
+                        f"<div style='font-size:28px;font-weight:800;color:{color}'>"
+                        f"{roaa:.2f}%</div></div>",
+                        unsafe_allow_html=True)
+                    audit_log("IFRS_ENGINE_USED", uname,
+                               f"Branch #90: RoAA NPBT={npbt_v}M / AA={aa_v}M → {roaa}%")
+
+    # ──────── Peer benchmarking ────────
+    with bp_sub_tabs[3]:
+        st.markdown(
+            "**Peer Benchmarking** — compare branch performance against peer group")
+        st.caption(
+            f"Engine returns P25 / median / P75 for the peer set, plus quartile rank "
+            f"for the target branch. TIER_1 ≥ {TIER_1_THRESHOLD_PCT}th percentile.")
+
+        st.markdown("**Peer values** (e.g. NPBT or RoAA across peer branches):")
+        peer_input = st.text_area(
+            "Enter peer values (one per line, KES M)",
+            value="20.0\n25.0\n28.0\n32.0\n35.0\n40.0\n42.0\n48.0\n50.0",
+            height=100, key="bp_peer_input",
+            help="Peers should be of similar lifecycle / location / size for valid comparison.")
+
+        target_v = st.number_input("Target branch value (KES M)",
+                                      value=48.0, step=1.0, key="bp_peer_target")
+
+        if st.button("Run benchmarking",
+                       key="bp_bench_btn", type="primary"):
+            try:
+                peers = [_D_bp(line.strip()) * _D_bp("1000000")
+                          for line in peer_input.split("\n") if line.strip()]
+            except Exception:
+                st.error("Could not parse peer values — use one number per line.")
+                peers = []
+
+            if not peers:
+                st.warning("Add at least one peer value.")
+            else:
+                bm = BranchPerformanceEngine.peer_benchmark_metrics(peers)
+                qr = BranchPerformanceEngine.quartile_rank(
+                    _D_bp(str(target_v)) * _D_bp("1000000"), peers)
+
+                k1, k2, k3 = st.columns(3)
+                k1.metric("Peer count", bm.get("n"))
+                k2.metric("P25",
+                           f"KES {_D_bp(str(bm['percentile_25']))/_D_bp('1000000'):.1f}M")
+                k3.metric("Median",
+                           f"KES {_D_bp(str(bm['median']))/_D_bp('1000000'):.1f}M")
+
+                k1, k2 = st.columns(2)
+                k1.metric("P75",
+                           f"KES {_D_bp(str(bm['percentile_75']))/_D_bp('1000000'):.1f}M")
+                tier = qr.get("tier")
+                pct = qr.get("percentile")
+                tier_colors = {"TIER_1": "#059669", "TIER_2": "#10B981",
+                                "TIER_3": "#F59E0B", "TIER_4": "#DC2626"}
+                color = tier_colors.get(tier, "#6B7280")
+                with k2:
+                    st.markdown(
+                        f"<div style='padding:12px;background:{color}22;"
+                        f"border-left:4px solid {color};border-radius:8px;text-align:center'>"
+                        f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                        f"BRANCH RANK</div>"
+                        f"<div style='font-size:22px;font-weight:800;color:{color}'>"
+                        f"{tier} @ {pct}%ile</div></div>",
+                        unsafe_allow_html=True)
+
+                if tier == "TIER_1":
+                    st.success(
+                        f"🏅 **Top tier branch** — at or above {TIER_1_THRESHOLD_PCT}th "
+                        "percentile vs peers. Strong performer.")
+                elif tier == "TIER_4":
+                    st.error(
+                        "⚠ **Bottom tier** — branch in lowest quartile vs peers. "
+                        "Performance review recommended.")
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"Branch #90: peer bench {target_v}M → {tier} @ {pct}%ile")
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 7 — BRANCH OPS EXCELLENCE (Standard #92, integrated v5.82)
+# ════════════════════════════════════════════════════════════════
+with tabs[6]:
+    from utils.branch_ops_excellence import (
+        BranchOpsExcellenceEngine, WaitTimeObservation,
+        TransactionRecord, OpsIncident,
+        TAT_TARGETS, ALLOWED_INCIDENT_TRANSITIONS, SCORE_WEIGHTS,
+        CUSTOMER_WAIT_P50_TARGET_MIN, CUSTOMER_WAIT_P90_TARGET_MIN,
+        CUSTOMER_WAIT_AMBER_P90_MIN,
+        ERROR_RATE_GREEN_MAX, ERROR_RATE_AMBER_MAX,
+        INCIDENT_SEVERITY_LEVELS, VALID_INCIDENT_STATUSES,
+    )
+    from datetime import datetime, timedelta
+    from decimal import Decimal as _D_be
+
+    st.markdown(
+        f"**Standard #92 — Branch Operational Excellence Engine**. "
+        f"Customer wait time, error rate, turnaround time per transaction type, "
+        f"and incident transition state machine."
+    )
+    st.caption(
+        f"Wait time targets: P50 ≤ {CUSTOMER_WAIT_P50_TARGET_MIN}min, "
+        f"P90 ≤ {CUSTOMER_WAIT_P90_TARGET_MIN}min (RED above {CUSTOMER_WAIT_AMBER_P90_MIN}min P90). "
+        f"Error rate bands: GREEN ≤ {ERROR_RATE_GREEN_MAX}% / AMBER ≤ {ERROR_RATE_AMBER_MAX}% / RED above. "
+        f"TAT targets defined per-transaction-type ({len(TAT_TARGETS)} types)."
+    )
+
+    boe_sub_tabs = st.tabs([
+        "⏱️ Customer Wait Time",
+        "❌ Error Rate",
+        "📅 Turnaround Time (TAT)",
+        "🚨 Incident Workflow",
+        "🌳 Engine Reference",
+    ])
+
+    # ──────── Customer Wait Time ────────
+    with boe_sub_tabs[0]:
+        st.markdown(
+            f"**Customer Wait Time Analysis** (P50/P90 vs CBK retail SLA targets)")
+        st.caption(
+            f"Demo dataset — 30 observations across BR_100 (faster) and BR_200 (slower) "
+            "to demonstrate severity bands. Production deployment would feed via "
+            "`branch_wait_observations.json`.")
+
+        # Demo dataset
+        @st.cache_data(ttl=300, show_spinner=False)
+        def _demo_wait_obs():
+            base = datetime(2026, 4, 30, 9, 0)
+            obs = []
+            for i in range(15):
+                join = base + timedelta(minutes=i*3)
+                start = join + timedelta(minutes=2 + i % 8)  # 2-9 min wait
+                end = start + timedelta(minutes=5)
+                obs.append(WaitTimeObservation(f"O{i}", "BR_100", f"C{i}",
+                                                 join, start, end))
+            for i in range(15):
+                join = base + timedelta(minutes=i*3)
+                start = join + timedelta(minutes=8 + i % 12)  # 8-19 min wait
+                end = start + timedelta(minutes=5)
+                obs.append(WaitTimeObservation(f"OB{i}", "BR_200", f"CB{i}",
+                                                 join, start, end))
+            return obs
+
+        observations = _demo_wait_obs()
+
+        if st.button("Compute wait time stats",
+                       key="boe_wait_btn", type="primary"):
+            r = BranchOpsExcellenceEngine.customer_wait_time(observations)
+            severity = r.get("severity")
+            colors = {"GREEN": "#10B981", "AMBER": "#F59E0B",
+                      "RED": "#DC2626", None: "#6B7280"}
+            color = colors.get(severity, "#6B7280")
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Observations", r.get("observations_count"))
+            k2.metric("P50 (median)",
+                       f"{r.get('p50_minutes')} min",
+                       delta=f"target ≤ {CUSTOMER_WAIT_P50_TARGET_MIN} min")
+            k3.metric("P90", f"{r.get('p90_minutes')} min",
+                       delta=f"target ≤ {CUSTOMER_WAIT_P90_TARGET_MIN} min")
+            with k4:
+                st.markdown(
+                    f"<div style='padding:8px 12px;background:{color}22;"
+                    f"border-left:4px solid {color};border-radius:8px;text-align:center'>"
+                    f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                    f"SEVERITY</div>"
+                    f"<div style='font-size:20px;font-weight:800;color:{color}'>"
+                    f"{severity}</div></div>", unsafe_allow_html=True)
+
+            st.metric("Max wait observed",
+                       f"{r.get('max_minutes')} min")
+            excluded = r.get("observations_excluded", 0)
+            if excluded > 0:
+                st.warning(
+                    f"⚠ {excluded} observation(s) excluded — missing service times "
+                    "(Rule 6 transparency).")
+
+            if severity == "RED":
+                st.error(
+                    f"⛔ Wait times exceed CBK retail SLA. Branch managers should "
+                    "review queue management — staffing levels, peak-hour routing, "
+                    "self-service options.")
+            elif severity == "AMBER":
+                st.warning(
+                    "⚠ Wait times approach SLA limits. Monitor closely.")
+            else:
+                st.success("✅ Wait times within target.")
+            audit_log("IFRS_ENGINE_USED", uname,
+                       f"BranchOps #92: wait_time count={r['observations_count']} "
+                       f"P50={r.get('p50_minutes')} P90={r.get('p90_minutes')} "
+                       f"severity={severity}")
+
+    # ──────── Error Rate ────────
+    with boe_sub_tabs[1]:
+        st.markdown(
+            f"**Error Rate by Branch** — % of transactions flagged with errors")
+        st.caption(
+            f"Severity bands: GREEN ≤ {ERROR_RATE_GREEN_MAX}% · "
+            f"AMBER ≤ {ERROR_RATE_AMBER_MAX}% · RED above {ERROR_RATE_AMBER_MAX}%. "
+            "Demo dataset includes deliberately injected errors.")
+
+        @st.cache_data(ttl=300, show_spinner=False)
+        def _demo_txns():
+            base = datetime(2026, 4, 1)
+            txns = []
+            # BR_100 — 30 txns, 3 errors (10% — RED)
+            for i in range(30):
+                init = base + timedelta(days=i % 25)
+                comp = init + timedelta(days=1)
+                txns.append(TransactionRecord(
+                    f"T_100_{i}", "BR_100", "ACCOUNT_OPENING",
+                    init, comp,
+                    has_error=(i % 10 < 3),  # 30% errors
+                    business_days_elapsed=1 + (i % 4)))
+            # BR_200 — 50 txns, 1 error (2% — AMBER)
+            for i in range(50):
+                init = base + timedelta(days=i % 25)
+                comp = init + timedelta(days=1 + i % 3)
+                txns.append(TransactionRecord(
+                    f"T_200_{i}", "BR_200", "ACCOUNT_OPENING",
+                    init, comp,
+                    has_error=(i == 5),
+                    business_days_elapsed=1 + i % 3))
+            # BR_300 — 100 txns, 0 errors (GREEN)
+            for i in range(100):
+                init = base + timedelta(days=i % 25)
+                comp = init + timedelta(days=1)
+                txns.append(TransactionRecord(
+                    f"T_300_{i}", "BR_300", "ACCOUNT_OPENING",
+                    init, comp,
+                    has_error=False,
+                    business_days_elapsed=1))
+            return txns
+
+        all_txns = _demo_txns()
+
+        if st.button("Compute error rates",
+                       key="boe_err_btn", type="primary"):
+            r = BranchOpsExcellenceEngine.error_rate_by_branch(all_txns)
+            branches = r.get("branches", [])
+            if branches:
+                rows = []
+                for br in branches:
+                    sev = br.get("severity", "—")
+                    sev_emoji = {"GREEN": "🟢", "AMBER": "🟡", "RED": "🔴"}.get(sev, "—")
+                    rows.append({
+                        "Branch": br.get("branch_id"),
+                        "Transactions": br.get("transaction_count"),
+                        "Errors": br.get("error_count"),
+                        "Error rate %": br.get("error_rate_pct"),
+                        "Severity": f"{sev_emoji} {sev}",
+                    })
+                st.dataframe(pd.DataFrame(rows),
+                             use_container_width=True, hide_index=True)
+
+                # Bar chart
+                chart_data = pd.DataFrame({
+                    "Error rate %": [b.get("error_rate_pct", 0) for b in branches]
+                }, index=[b.get("branch_id") for b in branches])
+                st.bar_chart(chart_data)
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"BranchOps #92: error rate {len(branches)} branches scanned")
+
+    # ──────── Turnaround Time ────────
+    with boe_sub_tabs[2]:
+        st.markdown(
+            f"**Turnaround Time (TAT)** per transaction type")
+        st.caption(
+            f"Engine binds {len(TAT_TARGETS)} TAT targets byte-for-byte: "
+            "ACCOUNT_OPENING=1 day, LOAN_DISBURSEMENT=5 days, CARD_ISSUANCE=7 days, etc.")
+
+        ttype = st.selectbox(
+            "Transaction type",
+            list(TAT_TARGETS.keys()),
+            key="boe_tat_type")
+        target_days = TAT_TARGETS[ttype]
+        st.caption(f"**Target**: ≤ {target_days} business day{'s' if target_days != 1 else ''}")
+
+        @st.cache_data(ttl=300, show_spinner=False)
+        def _demo_tat_txns():
+            base = datetime(2026, 4, 1)
+            txns = []
+            for ttype_x, target in TAT_TARGETS.items():
+                for i in range(15):
+                    init = base + timedelta(days=i)
+                    # 60% within target, 40% slow
+                    days_taken = (target if i < 9 else target * (2 + i % 3))
+                    comp = init + timedelta(days=days_taken)
+                    txns.append(TransactionRecord(
+                        f"TAT_{ttype_x}_{i}", "BR_100", ttype_x,
+                        init, comp,
+                        business_days_elapsed=days_taken))
+            return txns
+
+        tat_txns = _demo_tat_txns()
+
+        if st.button("Compute TAT stats",
+                       key="boe_tat_btn", type="primary"):
+            r = BranchOpsExcellenceEngine.turnaround_time(tat_txns, ttype)
+            sla_pct = r.get("sla_compliant_pct", 0)
+            sla_color = "#10B981" if sla_pct >= 90 else "#F59E0B" if sla_pct >= 70 else "#DC2626"
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Completed", r.get("completed_count"))
+            k2.metric("Median days", r.get("median_days"),
+                       delta=f"target ≤ {target_days}")
+            k3.metric("P90 days", r.get("p90_days"))
+            with k4:
+                st.markdown(
+                    f"<div style='padding:8px 12px;background:{sla_color}22;"
+                    f"border-left:4px solid {sla_color};border-radius:8px;text-align:center'>"
+                    f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>"
+                    f"SLA COMPLIANT</div>"
+                    f"<div style='font-size:20px;font-weight:800;color:{sla_color}'>"
+                    f"{sla_pct}%</div></div>", unsafe_allow_html=True)
+
+            incomplete = r.get("incomplete_count", 0)
+            if incomplete > 0:
+                st.warning(
+                    f"⚠ {incomplete} transaction(s) incomplete — excluded from TAT "
+                    "(Rule 6 transparency).")
+
+            sla_count = r.get("sla_compliant_count", 0)
+            total = r.get("completed_count", 0)
+            if sla_pct >= 90:
+                st.success(
+                    f"✅ Strong TAT compliance — {sla_count}/{total} within target.")
+            elif sla_pct >= 70:
+                st.warning(
+                    f"⚠ Moderate TAT compliance — {sla_count}/{total} within target. "
+                    "Process review recommended.")
+            else:
+                st.error(
+                    f"⛔ Poor TAT compliance — only {sla_count}/{total} within target. "
+                    "Operational improvement plan required.")
+            audit_log("IFRS_ENGINE_USED", uname,
+                       f"BranchOps #92: TAT {ttype} median={r.get('median_days')} "
+                       f"sla_pct={sla_pct}")
+
+    # ──────── Incident Workflow ────────
+    with boe_sub_tabs[3]:
+        st.markdown(
+            f"**Incident Transition State Machine** — enforces valid status flow.")
+        st.caption(
+            f"States: {' / '.join(VALID_INCIDENT_STATUSES)}. "
+            f"Severity levels: {' / '.join(INCIDENT_SEVERITY_LEVELS)}. "
+            "RESOLVED is terminal — no transitions out. RESOLVED requires resolution_reason.")
+
+        st.markdown("**Valid transitions:**")
+        trans_rows = [
+            {"From state": k,
+              "Allowed to": ", ".join(v) if v else "(terminal)"}
+            for k, v in ALLOWED_INCIDENT_TRANSITIONS.items()
+        ]
+        st.dataframe(pd.DataFrame(trans_rows),
+                     use_container_width=True, hide_index=True)
+
+        st.markdown("**Test a transition:**")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            inc_id = st.text_input("Incident ID", value="I_TEST", key="boe_inc_id")
+            inc_branch = st.text_input("Branch ID", value="BR_100", key="boe_inc_br")
+        with c2:
+            inc_severity = st.selectbox("Severity",
+                                          list(INCIDENT_SEVERITY_LEVELS),
+                                          index=2, key="boe_inc_sev")
+            inc_current = st.selectbox("Current status",
+                                         list(VALID_INCIDENT_STATUSES),
+                                         key="boe_inc_curr")
+        with c3:
+            inc_target = st.selectbox("Target status",
+                                        list(VALID_INCIDENT_STATUSES),
+                                        index=1, key="boe_inc_tgt")
+            inc_reviewer = st.text_input("Reviewer ID",
+                                            value=uname, key="boe_inc_rev")
+
+        inc_reason = st.text_input(
+            "Resolution reason (required for → RESOLVED)",
+            value="" if inc_target != "RESOLVED" else "Cash variance reconciled",
+            key="boe_inc_reason")
+
+        if st.button("Test transition",
+                       key="boe_inc_btn", type="primary"):
+            inc = OpsIncident(
+                incident_id=inc_id,
+                branch_id=inc_branch,
+                severity=inc_severity,
+                description="Test incident",
+                status=inc_current,
+            )
+            ok, msg = BranchOpsExcellenceEngine.transition_incident(
+                inc, inc_target, inc_reviewer,
+                resolution_reason=inc_reason if inc_reason.strip() else None)
+            if ok:
+                st.success(
+                    f"✅ Transition allowed: **{inc_current} → {inc_target}**. "
+                    f"Final status: `{inc.status}`. Engine confirmed: `{msg}`.")
+                if inc.reviewer_id:
+                    st.caption(f"Reviewer recorded: {inc.reviewer_id}")
+            else:
+                st.error(
+                    f"⛔ Transition rejected: **{inc_current} → {inc_target}**. "
+                    f"Reason: `{msg}`. Status unchanged.")
+            audit_log("IFRS_ENGINE_USED", uname,
+                       f"BranchOps #92: incident {inc_current}→{inc_target} "
+                       f"ok={ok}")
+
+    # ──────── Engine Reference ────────
+    with boe_sub_tabs[4]:
+        st.markdown("**Engine Constants Reference** (single source of truth)")
+
+        st.markdown("**Wait time targets:**")
+        wait_rows = [
+            {"Metric": "P50 (median wait)", "Target": f"≤ {CUSTOMER_WAIT_P50_TARGET_MIN} min", "Source": "CUSTOMER_WAIT_P50_TARGET_MIN"},
+            {"Metric": "P90 (95% of customers)", "Target": f"≤ {CUSTOMER_WAIT_P90_TARGET_MIN} min", "Source": "CUSTOMER_WAIT_P90_TARGET_MIN"},
+            {"Metric": "P90 AMBER threshold", "Target": f"≤ {CUSTOMER_WAIT_AMBER_P90_MIN} min", "Source": "CUSTOMER_WAIT_AMBER_P90_MIN"},
+        ]
+        st.dataframe(pd.DataFrame(wait_rows),
+                     use_container_width=True, hide_index=True)
+
+        st.markdown("**Error rate severity bands:**")
+        err_rows = [
+            {"Band": "🟢 GREEN", "Range": f"≤ {ERROR_RATE_GREEN_MAX}%"},
+            {"Band": "🟡 AMBER", "Range": f"≤ {ERROR_RATE_AMBER_MAX}%"},
+            {"Band": "🔴 RED", "Range": f"> {ERROR_RATE_AMBER_MAX}%"},
+        ]
+        st.dataframe(pd.DataFrame(err_rows),
+                     use_container_width=True, hide_index=True)
+
+        st.markdown(f"**TAT targets** ({len(TAT_TARGETS)} transaction types):")
+        tat_rows = [
+            {"Transaction type": t, "Target (business days)": d}
+            for t, d in TAT_TARGETS.items()
+        ]
+        st.dataframe(pd.DataFrame(tat_rows),
+                     use_container_width=True, hide_index=True)
+
+        st.markdown(f"**Score weights** (composite operational score):")
+        sw_rows = [
+            {"Component": k, "Weight (%)": v}
+            for k, v in SCORE_WEIGHTS.items()
+        ]
+        st.dataframe(pd.DataFrame(sw_rows),
+                     use_container_width=True, hide_index=True)
+        st.caption(
+            f"Note: composite score weights sum to {sum(SCORE_WEIGHTS.values())} — "
+            "engine constant. The composite score itself is computed by the higher-level "
+            "BSC engine, not exposed in this tab.")

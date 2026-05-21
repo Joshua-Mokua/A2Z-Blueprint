@@ -1,0 +1,65 @@
+{
+  "as_at": "2026-05-07",
+  "reporting_period": "March 2026",
+  "scaffolded": true,
+  "currency": "KES",
+  "lcr": 142.5,
+  "lcr_components": {
+    "hqla_b": 21.4,
+    "hqla_level_1_b": 18.2,
+    "hqla_level_2a_b": 2.8,
+    "hqla_level_2b_b": 0.4,
+    "net_cash_outflows_30d_b": 15.0,
+    "stressed_outflows_b": 22.6,
+    "stressed_inflows_b": 7.6
+  },
+  "lcr_minimum_pct": 100.0,
+  "lcr_internal_target_pct": 130.0,
+  "nsfr": 118.4,
+  "nsfr_components": {
+    "available_stable_funding_b": 124.8,
+    "required_stable_funding_b": 105.4
+  },
+  "nsfr_minimum_pct": 100.0,
+  "statutory_liquidity_ratio": 32.6,
+  "slr_minimum_pct": 20.0,
+  "crr_pct": 4.25,
+  "crr_required_b": 4.68,
+  "crr_held_b": 4.71,
+  "crr_compliance": true,
+  "liquidity_gap_b": {
+    "0_to_7d": 8.4,
+    "8_to_30d": 4.2,
+    "31_to_90d": 1.8,
+    "91d_to_1y": -3.4,
+    "1y_to_3y": -8.2,
+    "3y_plus": -2.8
+  },
+  "trend_4q": [
+    {
+      "quarter": "Q2 2025",
+      "lcr": 138.2,
+      "nsfr": 116.8,
+      "slr": 31.4
+    },
+    {
+      "quarter": "Q3 2025",
+      "lcr": 140.5,
+      "nsfr": 117.5,
+      "slr": 31.8
+    },
+    {
+      "quarter": "Q4 2025",
+      "lcr": 141.8,
+      "nsfr": 118.0,
+      "slr": 32.2
+    },
+    {
+      "quarter": "Q1 2026",
+      "lcr": 142.5,
+      "nsfr": 118.4,
+      "slr": 32.6
+    }
+  ],
+  "narrative": "LCR comfortably above 100% minimum and 130% internal target. NSFR stable. SLR well above CBK 20% floor. Modest negative gap in 1y+ tenors managed via treasury hedging."
+}

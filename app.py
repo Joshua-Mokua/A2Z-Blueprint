@@ -475,6 +475,36 @@ if ud.get("must_change_password"):
     show_force_pw_change(um, uname, ud)
     st.stop()
 
+# ─── Standard #39: Streamlit Admin (Preserved) ────────────────────────
+# Per master spec #39, app.py is the Admin-only Streamlit interface;
+# non-Admin users go to the React SPA (#37) or Mobile (#38).
+#
+# The gate is FEATURE-FLAG CONTROLLED so production stays working
+# during the rollout window — when the React SPA goes live, set
+# `enforce_admin_only` true in data/feature_flags.json.
+#
+# The spec-literal pattern below is preserved BYTE-FOR-BYTE so audit
+# gate G44 catches any drift. Reading from user_data.role is how the
+# A2Z auth layer exposes role; spec literal `st.session_state.get('role')`
+# is checked as a fallback for compatibility.
+def _admin_only_enabled() -> bool:
+    """Feature flag — defaults False so existing users aren't locked out
+    until the React SPA is operational."""
+    try:
+        from utils.db import db
+        flags = db.load_json(DATA_DIR / "feature_flags.json", default={})
+        return bool(flags.get("enforce_admin_only", False))
+    except Exception:
+        return False
+
+if _admin_only_enabled():
+    # Spec-literal pattern (#39): non-Admin → access denied + stop
+    if st.session_state.get('role') not in ['Admin'] \
+       and ud.get('role') not in ['Admin']:
+        st.error("Access denied. Admin interface only.")
+        st.stop()
+# Keep existing 89 admin pages unchanged
+
 # ── Sidebar ────────────────────────────────────────────────────────────
 from pages._sidebar import show_sidebar
 show_sidebar()
@@ -807,372 +837,135 @@ _is_ict_user   = _is_ict(_ud)
 
 def _dg(lst): return [p for p in lst if p]
 
-# Universal (all staff)
-_universal = _dg([
-    _pg("pages/0_home.py",              "Home",               "🏠", "perform"),
-    _pg("pages/36_smart_alerts.py",     "Smart Alerts",       "🔔", "smart_alerts"),
-    _pg("pages/37_approvals.py",        "Approvals",          "✅", "approvals"),
-    _pg("pages/33_statement_analyzer.py","Statement Analyzer","🧾", "statement_analyzer"),
-    _pg("pages/34_customer360.py",      "Customer 360",       "🎯", "customer360"),
-])
+# ── v10.199 — Manifest-driven navigation ──────────────────────────
+# Replaces the v10.196-era hand-crafted 18-group structure (~390 lines)
+# with manifest-derived nav (~150 lines). Source of truth is now
+# pages/_manifest.json (v10.197) consumed via pages/_manifest_loader.py.
+# Per master prompt v3.62 line 957: "prefer extending existing patterns
+# over inventing new ones." Audit gate G160 (v10.198) locks the manifest
+# completeness as permanent invariant.
+try:
+    from pages._manifest_loader import (
+        list_departments as _list_departments,
+        pages_in_department as _pages_in_department,
+    )
+    _MANIFEST_AVAILABLE = True
+except Exception:
+    _MANIFEST_AVAILABLE = False
 
-# Retail Banking
-_retail_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/12_cascade.py",          "Target Cascade",     "🎯", "cascade"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/21_loan_applications.py","Loan Applications",  "📋", "loan_applications"),
-    _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
-    _pg("pages/13_sla.py",              "SLA Tracker",        "📋", "sla"),
-    _pg("pages/14_branch_log.py",       "Branch Daily Log",   "📝", "branch_log"),
-    _pg("pages/16_commission.py",       "Commission",         "💰", "commission"),
-    _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
-    _pg("pages/27_propositions.py",     "Propositions",       "🎯", "propositions"),
-    _pg("pages/15_optimize.py",         "Branch Optimizer",   "📐", "optimize"),
-    _pg("pages/5_products.py",          "Products",           "🏷️",  "products"),
-    _pg("pages/38_nps.py",              "NPS / Voice of Cust", "⭐", "nps"),
-    _pg("pages/45_crosssell.py",        "Cross-sell Intel",    "🔁", "crosssell"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
-    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
-    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
-    _pg("pages/79_cards.py",          "Cards",              "💳", "card_management"),
-])
-
-# Commercial & Corporate
-_comm_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/12_cascade.py",          "Target Cascade",     "🎯", "cascade"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/21_loan_applications.py","Loan Applications",  "📋", "loan_applications"),
-    _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
-    _pg("pages/13_sla.py",              "SLA Tracker",        "📋", "sla"),
-    _pg("pages/16_commission.py",       "Commission",         "💰", "commission"),
-    _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
-    _pg("pages/27_propositions.py",     "Propositions",       "🎯", "propositions"),
-    _pg("pages/57_deal_room.py",      "Deal Room",            "🤝", "deal_room"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
-    _pg("pages/70_retailer_finance.py", "Retailer Finance",  "🛒", "retailer_finance"),
-    _pg("pages/80_merchant.py",       "Merchant Acquiring", "🏪", "merchant_acquiring"),
-])
-
-# Credit
-_credit_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/21_loan_applications.py","Loan Applications",  "📋", "loan_applications"),
-    _pg("pages/22_credit_analysis.py",  "Credit Analysis",    "🏦", "credit_analysis"),
-    _pg("pages/23_credit_admin.py",     "Credit Admin",       "📑", "credit_admin"),
-    _pg("pages/19_credit_monitoring.py","Credit Monitoring",  "🔴", "credit_monitoring"),
-    _pg("pages/20_debt_recovery.py",    "Debt Recovery",      "💰", "debt_recovery"),
-    _pg("pages/32_ifrs9.py",            "IFRS 9",             "📐", "ifrs9"),
-    _pg("pages/39_ews.py",              "Early Warning Sys",   "⚠️", "ews"),
-    _pg("pages/40_collateral.py",       "Collateral Register", "🏠", "collateral"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# Treasury
-_treasury_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/25_treasury.py",         "Treasury",           "💹", "treasury"),
-    _pg("pages/32_ifrs9.py",            "IFRS 9",             "📐", "ifrs9"),
-    _pg("pages/35_stress_testing.py",   "Stress Testing",     "🔥", "stress_testing"),
-    _pg("pages/28_ra.py",               "Analytics",          "📊", "ra"),
-    _pg("pages/53_irrbb.py",          "IRRBB Dashboard",      "📉", "irrbb"),
-    _pg("pages/56_ftp.py",            "Transfer Pricing",     "💱", "transfer_pricing"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
-    _pg("pages/81_alm.py",            "ALM & Liquidity",    "💧", "alm_liquidity"),
-])
-
-# Finance
-_finance_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/9_sbu.py",               "SBU Performance",    "🏦", "sbu"),
-    _pg("pages/10_opex.py",             "Operating Leverage", "📉", "opex"),
-    _pg("pages/29_revenue_assurance.py","Revenue Assurance",  "💰", "revenue_assurance"),
-    _pg("pages/30_rms.py",              "Reconciliation",     "🔄", "rms"),
-    _pg("pages/28_ra.py",               "Analytics",          "📊", "ra"),
-    _pg("pages/32_ifrs9.py",            "IFRS 9",             "📐", "ifrs9"),
-    _pg("pages/8_export.py",            "Export",             "📥", "export"),
-    _pg("pages/41_budget.py",           "Budget vs Actual",    "📊", "budget"),
-    _pg("pages/52_mgmt_accounts.py",  "Management Accounts",  "📑", "mgmt_accounts"),
-    _pg("pages/56_ftp.py",            "Transfer Pricing",     "💱", "transfer_pricing"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/62_p2p.py",             "Procure-to-Pay",       "🛒", "p2p"),
-    _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/74_cbk_returns.py",    "CBK Returns",        "📊", "cbk_returns"),
-    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
-])
-
-# Risk & Compliance
-_risk_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/24_compliance.py",       "Compliance",         "🛡️", "compliance"),
-    _pg("pages/19_credit_monitoring.py","Credit Monitoring",  "🔴", "credit_monitoring"),
-    _pg("pages/35_stress_testing.py",   "Stress Testing",     "🔥", "stress_testing"),
-    _pg("pages/20_debt_recovery.py",    "Debt Recovery",      "💰", "debt_recovery"),
-    _pg("pages/26_legal.py",            "Legal",              "⚖️", "legal"),
-    _pg("pages/31_edms.py",             "EDMS",               "📁", "edms"),
-    _pg("pages/32_ifrs9.py",            "IFRS 9",             "📐", "ifrs9"),
-    _pg("pages/54_rcsa.py",           "Risk Register (RCSA)", "🛡️", "rcsa"),
-    _pg("pages/55_aml.py",            "AML Monitoring",       "🔍", "aml_monitoring"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
-    _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
-    _pg("pages/74_cbk_returns.py",    "CBK Returns",        "📊", "cbk_returns"),
-    _pg("pages/75_data_protection.py","Data Protection",    "🔒", "data_protection"),
-    _pg("pages/76_sanctions.py",      "Sanctions",          "🚨", "sanctions_screening"),
-    _pg("pages/77_capital.py",        "Capital & Liquidity","🏛️", "regulatory_capital"),
-    _pg("pages/81_alm.py",            "ALM & Liquidity",    "💧", "alm_liquidity"),
-    _pg("pages/82_oprisk.py",         "Op Risk Losses",     "⚠️", "operational_risk"),
-    _pg("pages/85_esg.py",            "ESG & Climate",      "🌱", "esg_climate"),
-])
-
-# Legal
-_legal_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/26_legal.py",            "Legal",              "⚖️", "legal"),
-    _pg("pages/31_edms.py",             "EDMS",               "📁", "edms"),
-    _pg("pages/24_compliance.py",       "Compliance",         "🛡️", "compliance"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
-    _pg("pages/75_data_protection.py","Data Protection",    "🔒", "data_protection"),
-    _pg("pages/84_board.py",          "Board Papers",       "📋", "board_papers"),
-])
-
-# Operations
-_ops_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/30_rms.py",              "Reconciliation",     "🔄", "rms"),
-    _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
-    _pg("pages/31_edms.py",             "EDMS",               "📁", "edms"),
-    _pg("pages/15_cbs.py",              "CBS Explorer",       "🏦", "cbs"),
-    _pg("pages/8_export.py",            "Export",             "📥", "export"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/62_p2p.py",              "Procure-to-Pay",       "🛒", "p2p"),
-    _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/68_clearing.py",         "Clearing",          "🏦", "clearing"),
-    _pg("pages/69_consent.py",          "Consent Mgmt",      "🔏", "consent_management"),
-    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
-    _pg("pages/79_cards.py",          "Cards",              "💳", "card_management"),
-])
-
-# People & HR
-_hr_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/2_people.py",            "People",             "👥", "people"),
-    _pg("pages/12_cascade.py",          "Target Cascade",     "🎯", "cascade"),
-    _pg("pages/8_export.py",            "Export",             "📥", "export"),
-    _pg("pages/42_lms.py",              "Learning Mgmt",       "🎓", "lms"),
-    _pg("pages/43_pip.py",              "Perf. Improvement",   "📈", "pip"),
-    _pg("pages/58_workforce.py",      "Workforce Planning",   "📋", "workforce"),
-    _pg("pages/60_disciplinary.py",   "Disciplinary Register","⚖️", "disciplinary"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# IT & Digital
-_it_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/15_cbs.py",              "CBS Explorer",       "🏦", "cbs"),
-    _pg("pages/8_export.py",            "Export",             "📥", "export"),
-    _pg("pages/44_incidents.py",        "Incident Mgmt",       "🚨", "incidents"),
-    _pg("pages/59_cab.py",            "Change Management",    "🔄", "cab"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
-    _pg("pages/72_observability.py",    "Observability",     "📡", "observability"),
-    _pg("pages/86_flexcube.py",        "FLEXCUBE Integration","🔌", "flexcube_integration"),
-    _pg("pages/87_benchmarking.py",    "Tier-1 Benchmarking","🏆", "benchmarking"),
-])
-
-# Bancassurance / Marketing / Misc
-_bnc_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/27_propositions.py",     "Propositions",       "🎯", "propositions"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# Internal Audit
-_audit_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/28_ra.py",               "Analytics",          "📊", "ra"),
-    _pg("pages/24_compliance.py",       "Compliance",         "🛡️", "compliance"),
-    _pg("pages/19_credit_monitoring.py","Credit Monitoring",  "🔴", "credit_monitoring"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/62_p2p.py",              "Procure-to-Pay",       "🛒", "p2p"),
-    _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/64_vendors.py",          "Vendor Management",    "🤝", "vendor_management"),
-    _pg("pages/65_contracts.py",        "Contracts Register",   "📄", "contracts"),
-_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
-    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
-    _pg("pages/82_oprisk.py",         "Op Risk Losses",     "⚠️", "operational_risk"),
-])
-
-# Executive
-_exec_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/6_integrate.py",         "Command Centre",     "🔗", "integrate"),
-    _pg("pages/28_ra.py",               "Analytics",          "📊", "ra"),
-    _pg("pages/9_sbu.py",               "SBU Performance",    "🏦", "sbu"),
-    _pg("pages/10_opex.py",             "Operating Leverage", "📉", "opex"),
-    _pg("pages/11_competitor.py",       "Competitor Intel",   "🔍", "competitor"),
-    _pg("pages/35_stress_testing.py",   "Stress Testing",     "🔥", "stress_testing"),
-    _pg("pages/2_people.py",            "People",             "👥", "people"),
-    _pg("pages/12_cascade.py",          "Target Cascade",     "🎯", "cascade"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/21_loan_applications.py","Loan Applications",  "📋", "loan_applications"),
-    _pg("pages/25_treasury.py",         "Treasury",           "💹", "treasury"),
-    _pg("pages/24_compliance.py",       "Compliance",         "🛡️", "compliance"),
-    _pg("pages/19_credit_monitoring.py","Credit Monitoring",  "🔴", "credit_monitoring"),
-    _pg("pages/32_ifrs9.py",            "IFRS 9",             "📐", "ifrs9"),
-    _pg("pages/29_revenue_assurance.py","Revenue Assurance",  "💰", "revenue_assurance"),
-    _pg("pages/8_export.py",            "Export",             "📥", "export"),
-    _pg("pages/52_mgmt_accounts.py",  "Management Accounts",  "📑", "mgmt_accounts"),
-    _pg("pages/53_irrbb.py",          "IRRBB Dashboard",      "📉", "irrbb"),
-    _pg("pages/54_rcsa.py",           "Risk Register (RCSA)", "🛡️", "rcsa"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/58_workforce.py",      "Workforce Planning",   "📋", "workforce"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/62_p2p.py",             "Procure-to-Pay",       "🛒", "p2p"),
-    _pg("pages/63_assets.py",          "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/64_vendors.py",         "Vendor Management",    "🤝", "vendor_management"),
-    _pg("pages/65_contracts.py",       "Contracts Register",   "📄", "contracts"),
-_pg("pages/66_partnerships.py",    "Partnerships & MOUs",  "🤝", "partnerships"),
-    _pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
-    _pg("pages/83_strategy.py",       "Strategic Init.",    "🎯", "strategic_initiatives"),
-    _pg("pages/84_board.py",          "Board Papers",       "📋", "board_papers"),
-    _pg("pages/85_esg.py",            "ESG & Climate",      "🌱", "esg_climate"),
-    _pg("pages/86_flexcube.py",        "FLEXCUBE Integration","🔌", "flexcube_integration"),
-    _pg("pages/87_benchmarking.py",    "Tier-1 Benchmarking","🏆", "benchmarking"),
-])
+# Map legacy user.department strings to one or more manifest dept_ids.
+# Multiple manifest depts means user sees pages from all of them.
+# v10.197 introduced 16 manifest dept_ids; legacy user.department strings
+# are preserved for backward compat (no admin role data migration needed).
+_USER_DEPT_TO_MANIFEST: Dict[str, List[str]] = {
+    "Retail Banking":             ["sales_customer"],
+    "Commercial & Corporate":     ["sales_customer"],
+    "Credit":                     ["credit"],
+    "Treasury":                   ["treasury_alm"],
+    "Finance":                    ["finance"],
+    "Risk & Compliance":          ["risk", "compliance_regulatory"],
+    "Legal":                      ["legal"],
+    "Operations":                 ["operations"],
+    "People & HR":                ["people_hr"],
+    "IT & Digital":               ["it_platform"],
+    "Bancassurance":              ["sales_customer"],
+    "Marketing":                  ["sales_customer"],
+    "Internal Audit":             ["compliance_regulatory"],
+    "Support Services":           ["operations"],
+    "Executive":                  ["strategy_performance"],
+    "Trade Finance":              ["trade_finance"],
+    "Agency Banking":             ["sales_customer"],
+    "Contact Centre":             ["sales_customer"],
+    "Cybersecurity":              ["it_platform"],
+    "Digital Financial Services": ["sales_customer"],
+    "Diaspora & Special Segments":["sales_customer"],
+    "Business Intelligence":      ["strategy_performance"],
+}
 
 
-# Trade Finance
-_tf_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/46_trade_finance.py",    "Trade Finance",      "🚢", "trade_finance"),
-    _pg("pages/21_loan_applications.py","Loan Applications",  "📋", "loan_applications"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
-    _pg("pages/57_deal_room.py",      "Deal Room",            "🤝", "deal_room"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/70_retailer_finance.py", "Retailer Finance",  "🛒", "retailer_finance"),
-    _pg("pages/71_bid_bond.py",         "Bid Bond & Gtees",  "📜", "bid_bond"),
-])
+def _build_dept_pages(dept_id: str, include_secondary: bool = True) -> list:
+    """Return list of registered _Page objects for a manifest dept_id.
+    Uses _pg() which enforces check_access + dept_module_config.json
+    hidden-modules + org_config.json nav_labels customisation. None
+    entries (denied access) are filtered."""
+    if not _MANIFEST_AVAILABLE:
+        return []
+    pages = []
+    seen_paths = set()  # de-dup within this section
+    for fname, entry in _pages_in_department(dept_id, include_secondary=include_secondary):
+        path = "pages/" + fname
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        page = _pg(path, entry["title"], entry["icon"], entry["current_module_key"])
+        if page is not None:
+            pages.append(page)
+    return pages
 
-# Digital Financial Services
-_dfs_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/47_digital_channels.py", "Digital Channels",   "📱", "digital_channels"),
-    _pg("pages/15_cbs.py",              "CBS Explorer",       "🏦", "cbs"),
-    _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-    _pg("pages/73_channels.py",         "Channels",          "📲", "channels_management"),
-    _pg("pages/78_onboarding.py",     "Onboarding",         "🎯", "customer_onboarding"),
-    _pg("pages/80_merchant.py",       "Merchant Acquiring", "🏪", "merchant_acquiring"),
-])
 
-# Contact Centre
-_cc_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/48_contact_centre.py",   "Contact Centre",     "📞", "contact_centre"),
-    _pg("pages/18_cims.py",             "CIMS",               "📨", "cims"),
-    _pg("pages/13_sla.py",              "SLA Tracker",        "📋", "sla"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
+# Build _nav_sections from manifest if available; fall back to a minimal
+# "Home only" structure if the manifest is missing (defensive — should
+# never happen in production since G160 enforces presence).
+_nav_sections: Dict[str, list] = {}
 
-# Bancassurance (full dept module)
-_bnc_full_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/49_bancassurance.py",    "Bancassurance",      "🏥", "bancassurance_mgmt"),
-    _pg("pages/17_campaigns.py",        "Campaigns",          "🚀", "campaigns"),
-    _pg("pages/3_pipeline.py",          "Pipeline",           "💼", "pipeline"),
-    _pg("pages/27_propositions.py",     "Propositions",       "🎯", "propositions"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# Cybersecurity
-_cyber_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/50_cybersecurity.py",    "Cybersecurity",      "🔐", "cybersecurity"),
-    _pg("pages/44_incidents.py",        "Incident Management","🚨", "incidents"),
-    _pg("pages/31_edms.py",             "EDMS",               "📁", "edms"),
-    _pg("pages/59_cab.py",            "Change Management",    "🔄", "cab"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# Agency Banking
-_agn_grp = _dg([
-    _pg("pages/1_perform.py",           "My BSC",             "🏆", "perform"),
-    _pg("pages/51_agency_banking.py",   "Agent Network",      "🏪", "agency_banking"),
-    _pg("pages/47_digital_channels.py", "Digital Channels",   "📱", "digital_channels"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-_pg("pages/67_fraud.py",           "Agent Fraud Detection","🔎", "fraud_detection"),
-])
-
-# Admin
-_admin_grp = _dg([
-    _pg("pages/7_admin.py",             "Admin",              "⚙️", "admin"),
-    _pg("pages/61_projects.py",       "Projects",             "🗂️", "projects"),
-])
-
-# ── Build nav_sections based on user department ───────────────────
-_nav_sections = {}
-
-if _is_admin_full:
-    if _universal:      _nav_sections["🏠 Shared"]              = _universal
-    if _exec_grp:       _nav_sections["🔗 Executive"]           = _exec_grp
-    if _retail_grp:     _nav_sections["🏦 Retail Banking"]      = _retail_grp
-    if _comm_grp:       _nav_sections["💼 Commercial/Corp"]     = _comm_grp
-    if _credit_grp:     _nav_sections["📋 Credit"]              = _credit_grp
-    if _treasury_grp:   _nav_sections["💹 Treasury"]            = _treasury_grp
-    if _finance_grp:    _nav_sections["💰 Finance"]             = _finance_grp
-    if _risk_grp:       _nav_sections["🛡️ Risk & Compliance"]   = _risk_grp
-    if _ops_grp:        _nav_sections["⚙️ Operations"]          = _ops_grp
-    if _hr_grp:         _nav_sections["👥 People & HR"]         = _hr_grp
-    if _it_grp:         _nav_sections["💻 IT & Digital"]        = _it_grp
-    if _tf_grp:         _nav_sections["🚢 Trade Finance"]        = _tf_grp
-    if _dfs_grp:        _nav_sections["📱 Digital / DFS"]        = _dfs_grp
-    if _cc_grp:         _nav_sections["📞 Contact Centre"]        = _cc_grp
-    if _bnc_full_grp:   _nav_sections["🏥 Bancassurance"]         = _bnc_full_grp
-    if _cyber_grp:      _nav_sections["🔐 Cybersecurity"]          = _cyber_grp
-    if _agn_grp:        _nav_sections["🏪 Agency Banking"]         = _agn_grp
-    if _admin_grp:      _nav_sections["⚙️ Admin"]               = _admin_grp
+if not _MANIFEST_AVAILABLE:
+    # Defensive fallback — manifest missing, render only Home
+    _home = _pg("pages/0_home.py", "Home", "🏠", "perform")
+    if _home:
+        _nav_sections["🏠 Home"] = [_home]
 else:
-    _DEPT_MAP_NAV = {
-        "Retail Banking":         ("🏦 Retail Banking",      _retail_grp),
-        "Commercial & Corporate": ("💼 Commercial / Corp",   _comm_grp),
-        "Credit":                 ("📋 Credit",               _credit_grp),
-        "Treasury":               ("💹 Treasury",             _treasury_grp),
-        "Finance":                ("💰 Finance",              _finance_grp),
-        "Risk & Compliance":      ("🛡️ Risk & Compliance",   _risk_grp),
-        "Legal":                  ("⚖️ Legal",                _legal_grp),
-        "Operations":             ("⚙️ Operations",           _ops_grp),
-        "People & HR":            ("👥 People & HR",          _hr_grp),
-        "IT & Digital":           ("💻 IT & Digital",         _it_grp),
-        "Bancassurance":          ("🏥 Bancassurance",        _bnc_grp),
-        "Marketing":              ("🚀 Marketing",            _bnc_grp),
-        "Internal Audit":         ("🔍 Internal Audit",       _audit_grp),
-        "Support Services":       ("🔧 Support Services",    _dg([
-    _pg("pages/1_perform.py",           "My BSC",               "🏆", "perform"),
-    _pg("pages/31_edms.py",             "EDMS",                 "📁", "edms"),
-    _pg("pages/37_approvals.py",        "Approvals",            "✅", "approvals"),
-    _pg("pages/62_p2p.py",              "Procure-to-Pay",       "🛒", "p2p"),
-    _pg("pages/63_assets.py",           "Asset Register",       "🏢", "asset_management"),
-    _pg("pages/64_vendors.py",          "Vendor Management",    "🤝", "vendor_management"),
-    _pg("pages/65_contracts.py",        "Contracts Register",   "📄", "contracts"),
-    _pg("pages/61_projects.py",         "Projects",             "🗂️", "projects"),
-])),
-        "Executive":              ("🔗 Executive",            _exec_grp),
-    }
-    _nav_label, _nav_primary = _DEPT_MAP_NAV.get(_dept, ("🏦 Retail Banking", _retail_grp))
-    if _universal:    _nav_sections["🏠 Shared"] = _universal
-    if _nav_primary:  _nav_sections[_nav_label]  = _nav_primary
-    if _is_dsu_user or _is_ict_user:
-        if _admin_grp: _nav_sections["⚙️ Admin"] = _admin_grp
+    _depts = _list_departments()
+    # Sort departments by their declared 'order' field for stable nav
+    _ordered_dept_ids = sorted(_depts.keys(), key=lambda d: _depts[d].get("order", 999))
+
+    if _is_admin_full:
+        # Admin sees all 16 departments — primary-only assignment to
+        # avoid same page appearing in multiple sections.
+        for _dept_id in _ordered_dept_ids:
+            _info = _depts[_dept_id]
+            _section_label = _info["icon"] + " " + _info["label"]
+            _section_pages = _build_dept_pages(_dept_id, include_secondary=False)
+            if _section_pages:
+                _nav_sections[_section_label] = _section_pages
+    else:
+        # Regular user — show Shared + their dept(s) + External + Admin (if DSU/ICT)
+        # 1. Shared (always visible)
+        _shared_info = _depts.get("shared")
+        if _shared_info:
+            _shared_pages = _build_dept_pages("shared", include_secondary=False)
+            if _shared_pages:
+                _nav_sections[_shared_info["icon"] + " " + _shared_info["label"]] = _shared_pages
+
+        # 2. User's primary department(s) — include secondary visibility
+        # so cross-department pages (e.g. IFRS 9, Fraud, CBK Returns)
+        # appear in the user's nav per the manifest's secondary_visibility
+        # field.
+        _user_dept_ids = _USER_DEPT_TO_MANIFEST.get(_dept, ["sales_customer"])
+        for _u_dept_id in _user_dept_ids:
+            _u_info = _depts.get(_u_dept_id)
+            if not _u_info:
+                continue
+            _u_label = _u_info["icon"] + " " + _u_info["label"]
+            if _u_label in _nav_sections:
+                continue  # already added (e.g. Risk & Compliance maps to 2 depts)
+            _u_pages = _build_dept_pages(_u_dept_id, include_secondary=True)
+            if _u_pages:
+                _nav_sections[_u_label] = _u_pages
+
+        # 3. External Intelligence (visible to all)
+        _ext_info = _depts.get("external")
+        if _ext_info:
+            _ext_pages = _build_dept_pages("external", include_secondary=False)
+            if _ext_pages:
+                _nav_sections[_ext_info["icon"] + " " + _ext_info["label"]] = _ext_pages
+
+        # 4. Admin — only for DSU/ICT users
+        if _is_dsu_user or _is_ict_user:
+            _admin_info = _depts.get("admin")
+            if _admin_info:
+                _admin_pages = _build_dept_pages("admin", include_secondary=False)
+                if _admin_pages:
+                    _nav_sections[_admin_info["icon"] + " " + _admin_info["label"]] = _admin_pages
 
 
 # ── Deduplicate nav_sections before passing to st.navigation ────

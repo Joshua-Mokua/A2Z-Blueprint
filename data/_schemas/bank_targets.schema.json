@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "bank_targets.json",
+  "description": "MD-level KPI targets per (KPI, year). Locked v10.341 after 48 scalar→dict migration. Every value must be a dict with at least target + buffer_pct.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object",
+    "required": ["target", "buffer_pct"],
+    "properties": {
+      "target": {"type": "number"},
+      "buffer_pct": {"type": "number", "minimum": 0, "maximum": 100},
+      "_v10341_normalized_from": {"type": "string"}
+    }
+  },
+  "_lock_version": "v10.342",
+  "_owners": ["target_cascade module (pages/12_cascade.py)", "MD BSC (pages/1_perform.py)"]
+}

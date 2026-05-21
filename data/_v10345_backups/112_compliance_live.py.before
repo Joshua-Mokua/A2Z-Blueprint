@@ -1,0 +1,507 @@
+"""
+Phase 3 — Compliance Live Cockpit (pages/112)
+=================================================================
+v10.301 — fourth Phase 3 cockpit integration arc. Composes the
+CMS module engines (#191-#200) into a read-side cockpit showing
+the bank-wide compliance work landscape: KYC cases, AML alerts,
+sanctions screening hits, and regulatory returns.
+
+Pattern: record-registry (CIMS-style). Compliance work is
+fundamentally "counts of open registry entries" across four
+parallel registries, joined for cross-cutting views.
+
+Tab map (7 tabs at G4 ceiling):
+  1. Open work pulse        — bank-wide compliance landscape NOW
+  2. Compliance cases       — by status / risk / flag type
+  3. AML alerts             — by rule / risk / customer
+  4. Sanctions screening    — pending review queue + match scores
+  5. Regulatory returns     — filing calendar + on-time KPI
+  6. CRA & training         — Cat A composer placeholder
+  7. Audit trail            — compliance decisions log placeholder
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+import streamlit as st
+
+from utils.core_audit import audit_log
+from utils.cockpit_read import (
+    compliance_open_work, compliance_cases,
+    compliance_aml_alerts, compliance_sanctions_screening,
+    compliance_regulatory_returns,
+    count_by, latest_n,
+)
+
+# Phase 3 standing rule: hard require_access, no silent try/except
+from pages._access import require_access
+require_access("compliance_regulatory.compliance_live")
+
+
+# ---- Live data caching (10s TTL) ----
+@st.cache_data(ttl=10)
+def _cached_open_work():
+    return compliance_open_work(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_cases():
+    return compliance_cases(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_alerts():
+    return compliance_aml_alerts(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_sanctions():
+    return compliance_sanctions_screening(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_returns():
+    return compliance_regulatory_returns(data_dir="data")
+
+
+@st.cache_data(ttl=60)  # Cat A composer is heavier — cache 60s
+def _cached_cra_training():
+    """v10.310 Cat A composer — wraps compliance_cra_training
+    composing ComplianceRiskAssessmentEngine + ComplianceTrainingEngine."""
+    from utils.cockpit_read import compliance_cra_training
+    return compliance_cra_training(data_dir="data")
+
+
+def main():
+    st.title("⚖ Compliance Live Cockpit")
+    st.caption(
+        "v10.301 · Read-side composition of CMS engines "
+        "(#191-#200) · Auto-refreshes every 10s · KYC/AML/"
+        "Sanctions/Regulatory-return tracking"
+    )
+
+    actor = st.session_state.get("user", {}).get(
+        "username", "anonymous",
+    )
+
+    cols = st.columns([4, 1])
+    cols[0].caption(
+        f"Loaded at: "
+        f"{datetime.utcnow().isoformat(timespec='seconds')} UTC"
+    )
+    if cols[1].button("🔄 Refresh now"):
+        st.cache_data.clear()
+        audit_log(
+            action="cockpit_cache_clear",
+            username=actor,
+            module="compliance_live",
+        )
+        st.rerun()
+
+    tabs = st.tabs([
+        "📊 Open work pulse",
+        "🗂 Compliance cases",
+        "🚨 AML alerts",
+        "🔍 Sanctions screening",
+        "📅 Regulatory returns",
+        "🎯 CRA & training",
+        "📜 Audit trail",
+    ])
+
+    # ---------- Tab 1: Open work pulse ----------
+    with tabs[0]:
+        st.subheader("Bank-wide Compliance landscape")
+        st.caption(
+            "Live counts across KYC cases, AML alerts, "
+            "sanctions screening hits, and regulatory returns."
+        )
+
+        snap = _cached_open_work()
+
+        cols = st.columns(4)
+        cols[0].metric(
+            "Cases open",
+            snap["compliance_cases_open"],
+            delta=(
+                f"of {snap['compliance_cases_total']} total"
+            ),
+            delta_color="off",
+        )
+        cols[1].metric(
+            "AML alerts (high risk)",
+            snap["aml_alerts_high_risk"],
+            delta=(
+                f"{snap['aml_alerts_open']} open"
+            ),
+            delta_color="off",
+        )
+        cols[2].metric(
+            "Sanctions hits pending",
+            snap["sanctions_hits_pending_review"],
+            delta=(
+                f"of {snap['sanctions_screening_total']} "
+                f"screenings"
+            ),
+            delta_color="off",
+        )
+        cols[3].metric(
+            "Returns overdue",
+            snap["regulatory_returns_overdue"],
+            delta=(
+                f"on-time: "
+                f"{snap['regulatory_returns_on_time_pct']:.1f}%"
+                if snap['regulatory_returns_on_time_pct']
+                is not None
+                else "no filed returns yet"
+            ),
+            delta_color="inverse",
+        )
+
+        # Risk distribution row
+        st.markdown("---")
+        st.markdown("**Compliance cases by risk level:**")
+        risks = snap["compliance_cases_by_risk"]
+        rcols = st.columns(3)
+        rcols[0].metric("High", risks.get("high", 0))
+        rcols[1].metric("Medium", risks.get("medium", 0))
+        rcols[2].metric("Low", risks.get("low", 0))
+
+        # Triage banners
+        if snap["sanctions_hits_pending_review"] > 0:
+            st.error(
+                f"🛑 {snap['sanctions_hits_pending_review']} "
+                f"sanctions match(es) await human review. "
+                f"Regulatory SLA: escalate immediately."
+            )
+        if snap["regulatory_returns_overdue"] > 0:
+            st.error(
+                f"🛑 {snap['regulatory_returns_overdue']} "
+                f"regulatory return(s) overdue. CBK / KRA "
+                f"penalties accrue daily."
+            )
+        if snap["aml_alerts_high_risk"] > 5:
+            st.warning(
+                f"⚠ {snap['aml_alerts_high_risk']} high-risk "
+                f"AML alerts open. Consider escalation to MLRO."
+            )
+
+    # ---------- Tab 2: Compliance cases ----------
+    with tabs[1]:
+        st.subheader("Compliance cases registry")
+        cases = _cached_cases()
+        st.metric("Total cases on file", len(cases))
+
+        if not cases:
+            st.info(
+                "No records in data/compliance_cases.json."
+            )
+        else:
+            by_status = count_by(cases, "status")
+            by_flag = count_by(cases, "flag_type")
+            by_risk = count_by(cases, "risk_level")
+
+            pcols = st.columns(3)
+            pcols[0].write("**By status:**")
+            for k, v in sorted(by_status.items(),
+                                  key=lambda x: -x[1]):
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+            pcols[1].write("**By flag type:**")
+            for k, v in sorted(by_flag.items(),
+                                  key=lambda x: -x[1])[:10]:
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+            pcols[2].write("**By risk:**")
+            for k, v in sorted(by_risk.items(),
+                                  key=lambda x: -x[1]):
+                pcols[2].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown(
+                "**Recent cases (top 20 by raised_date):**"
+            )
+            recent = latest_n(cases, n=20,
+                                 by_field="raised_date")
+            for r in recent:
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"{r.get('client_name', '?')} · "
+                    f"flag={r.get('flag_type', '?')} · "
+                    f"risk={r.get('risk_level', '?')} · "
+                    f"status={r.get('status', '?')}"
+                )
+
+    # ---------- Tab 3: AML alerts ----------
+    with tabs[2]:
+        st.subheader("AML monitoring alerts")
+        st.caption(
+            "AML rule-based + risk-scored alerts from "
+            "utils.aml_monitoring.AmlMonitoringEngine "
+            "(standard #194)."
+        )
+        alerts = _cached_alerts()
+        st.metric("Total alerts on file", len(alerts))
+
+        if not alerts:
+            st.info("No records in data/aml_alerts.json.")
+        else:
+            by_rule = count_by(alerts, "rule_triggered")
+            by_risk = count_by(alerts, "risk_level")
+
+            pcols = st.columns(2)
+            pcols[0].write("**By rule triggered (top 10):**")
+            for k, v in sorted(by_rule.items(),
+                                  key=lambda x: -x[1])[:10]:
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+            pcols[1].write("**By risk:**")
+            for k, v in sorted(by_risk.items(),
+                                  key=lambda x: -x[1]):
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown("**Recent alerts (top 20):**")
+            recent = latest_n(alerts, n=20,
+                                 by_field="transaction_date")
+            for r in recent:
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"{r.get('customer_name', '?')} · "
+                    f"amount={r.get('amount', 0):,} · "
+                    f"rule={r.get('rule_triggered', '?')} · "
+                    f"risk={r.get('risk_level', '?')} · "
+                    f"status={r.get('status', '?')}"
+                )
+
+    # ---------- Tab 4: Sanctions screening ----------
+    with tabs[3]:
+        st.subheader("Sanctions screening queue")
+        st.caption(
+            "PEP + Sanctions matches from "
+            "utils.sanctions_screening.SanctionsScreeningEngine "
+            "(standard #192). Cleared/Confirmed/False-positive "
+            "are terminal."
+        )
+        screenings = _cached_sanctions()
+        st.metric("Total screenings on file", len(screenings))
+
+        if not screenings:
+            st.info(
+                "No records in data/sanctions_register.json."
+            )
+        else:
+            snap = _cached_open_work()
+            st.metric(
+                "Pending review (regulatorily critical)",
+                snap["sanctions_hits_pending_review"],
+            )
+
+            by_source = count_by(screenings, "screening_source")
+            by_status = count_by(screenings, "status")
+            pcols = st.columns(2)
+            pcols[0].write("**By screening source:**")
+            for k, v in sorted(by_source.items(),
+                                  key=lambda x: -x[1]):
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+            pcols[1].write("**By status:**")
+            for k, v in sorted(by_status.items(),
+                                  key=lambda x: -x[1]):
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown(
+                "**Top 20 by match score (descending):**"
+            )
+            try:
+                top_matches = sorted(
+                    [s for s in screenings
+                     if isinstance(s, dict)],
+                    key=lambda r: float(r.get("match_score") or 0),
+                    reverse=True,
+                )[:20]
+            except Exception:
+                top_matches = screenings[:20]
+            for r in top_matches:
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"{r.get('customer_name', '?')} · "
+                    f"match={r.get('match_score', '?')} · "
+                    f"list={r.get('list_matched', '?')} · "
+                    f"status={r.get('status', '?')}"
+                )
+
+    # ---------- Tab 5: Regulatory returns ----------
+    with tabs[4]:
+        st.subheader("Regulatory filing calendar")
+        st.caption(
+            "Returns to CBK, KRA, and other authorities. "
+            "Overdue items accrue penalties daily — escalate "
+            "to Head of Compliance."
+        )
+        returns = _cached_returns()
+        st.metric("Total returns tracked", len(returns))
+
+        snap = _cached_open_work()
+        kcols = st.columns(2)
+        kcols[0].metric(
+            "Overdue",
+            snap["regulatory_returns_overdue"],
+            delta_color="inverse",
+        )
+        on_time_display = (
+            f"{snap['regulatory_returns_on_time_pct']:.1f}%"
+            if snap["regulatory_returns_on_time_pct"] is not None
+            else "—"
+        )
+        kcols[1].metric(
+            "On-time filing rate",
+            on_time_display,
+        )
+
+        if returns:
+            by_freq = count_by(returns, "frequency")
+            by_status = count_by(returns, "status")
+            pcols = st.columns(2)
+            pcols[0].write("**By frequency:**")
+            for k, v in sorted(by_freq.items(),
+                                  key=lambda x: -x[1]):
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+            pcols[1].write("**By status:**")
+            for k, v in sorted(by_status.items(),
+                                  key=lambda x: -x[1]):
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown(
+                "**Returns with nearest due date (top 15):**"
+            )
+            # Sort by due_date ascending so soonest surface
+            try:
+                upcoming = sorted(
+                    [r for r in returns
+                     if isinstance(r, dict)
+                     and r.get("due_date")],
+                    key=lambda r: r.get("due_date", ""),
+                )[:15]
+            except Exception:
+                upcoming = returns[:15]
+            for r in upcoming:
+                filed = r.get("filed_date") or "—"
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"{r.get('return_name', '?')} · "
+                    f"due={r.get('due_date', '?')} · "
+                    f"filed={filed} · "
+                    f"on_time={r.get('on_time', '?')}"
+                )
+
+    # ---------- Tab 6: CRA & training ----------
+    with tabs[5]:
+        st.subheader("Compliance Risk Assessment & Training")
+        st.caption(
+            "v10.310 — Cat A composer. Composes "
+            "ComplianceRiskAssessmentEngine (#198) + "
+            "ComplianceTrainingEngine (#197). Refresh cached "
+            "60s."
+        )
+
+        from utils.cockpit_read import compliance_cra_training
+        report = _cached_cra_training()
+
+        audit_log(
+            action="compliance_cra_training_view",
+            username=actor,
+            module="compliance_live",
+        )
+
+        # Header row
+        kcols = st.columns(3)
+        kcols[0].metric("Report ID", report["report_id"])
+        kcols[1].metric("Sections", report["n_sections"])
+        kcols[2].metric("Status", report["status"])
+
+        # Section rendering
+        st.markdown("---")
+        st.markdown("**Sections:**")
+        for s in report["sections"]:
+            status_icon = {
+                "ok": "✅", "warning": "⚠", "breach": "🛑",
+                "no_data": "⚪", "error": "❌",
+            }.get(s["status"], "•")
+            st.markdown(
+                f"**{status_icon} {s['section_title']}** · "
+                f"`{s['section_id']}` · status: {s['status']}"
+            )
+            if s.get("notes"):
+                st.caption(s["notes"])
+            if s.get("metrics"):
+                metric_pairs = [
+                    f"{k}={v}" for k, v in s["metrics"].items()
+                ]
+                st.write("  " + " · ".join(metric_pairs))
+
+    # ---------- Tab 7: Audit trail ----------
+    with tabs[6]:
+        st.subheader("Compliance decisions audit trail")
+        audit_log(
+            action="compliance_audit_view",
+            username=actor,
+            module="compliance_live",
+        )
+
+        # v10.305 — wired to the platform-wide audit_log.json
+        # via the audit_log_records composer. Pre-filtered to
+        # the compliance_live module so operators see
+        # decisions made through this cockpit (sanctions
+        # reviews, SAR triage, etc.).
+        from utils.cockpit_read import audit_log_records
+
+        fcols = st.columns(3)
+        action_filter = fcols[0].text_input(
+            "Filter by action (exact match)",
+            value="", key="compliance_audit_action_filter",
+        ) or None
+        user_filter = fcols[1].text_input(
+            "Filter by user",
+            value="", key="compliance_audit_user_filter",
+        ) or None
+        limit_choice = fcols[2].selectbox(
+            "Show last", [25, 50, 100, 250],
+            index=1,
+            key="compliance_audit_limit",
+        )
+
+        trail = audit_log_records(
+            data_dir="data",
+            module="compliance_live",
+            action=action_filter,
+            user=user_filter,
+            limit=limit_choice,
+        )
+
+        mcols = st.columns(2)
+        mcols[0].metric("Filtered records", trail["count"])
+        mcols[1].metric(
+            "Showing",
+            min(trail["count"], limit_choice),
+        )
+
+        if not trail["records"]:
+            st.info(
+                "No audit records match the filter. Note: only "
+                "compliance_live-tagged actions appear here. "
+                "SAR filing decisions are audit-logged "
+                "separately under module=sar_filing via "
+                "utils.sar_filing — query without the "
+                "compliance_live module filter to see those, "
+                "or visit the SAR module page directly."
+            )
+        else:
+            for r in trail["records"]:
+                st.write(
+                    f"• {r.get('ts', '?')[:19]} · "
+                    f"{r.get('user', '?')} · "
+                    f"`{r.get('action', '?')}` · "
+                    f"{r.get('detail', '')[:80]}"
+                )
+
+
+main()

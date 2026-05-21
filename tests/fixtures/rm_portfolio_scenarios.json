@@ -1,0 +1,241 @@
+[
+  {
+    "id": "RM01-clean-portfolio-3-customers",
+    "description": "RM with 3 fully-FTP-on customers. Aggregation is straightforward sum.",
+    "input": {
+      "rm_code": "RM001",
+      "customers": ["C1", "C2", "C3"],
+      "pnls": {
+        "C1": {"pbt": 500000, "pbt_margin": 0.50, "total_revenue": 1000000,
+               "total_direct_costs": 400000, "total_indirect_costs": 100000,
+               "meta": {"ftp_mode": "on"}},
+        "C2": {"pbt": 300000, "pbt_margin": 0.30, "total_revenue": 1000000,
+               "total_direct_costs": 600000, "total_indirect_costs": 100000,
+               "meta": {"ftp_mode": "on"}},
+        "C3": {"pbt": 200000, "pbt_margin": 0.20, "total_revenue": 1000000,
+               "total_direct_costs": 700000, "total_indirect_costs": 100000,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 3,
+      "total_revenue": 3000000.00,
+      "total_direct_costs": 1700000.00,
+      "total_indirect_costs": 300000.00,
+      "total_pbt": 1000000.00,
+      "portfolio_margin": 0.3333,
+      "provisional": false,
+      "warning_present": false,
+      "ftp_off_count": 0
+    }
+  },
+  {
+    "id": "RM02-empty-portfolio",
+    "description": "RM with no assigned customers. Portfolio totals are zero, warning surfaced.",
+    "input": {
+      "rm_code": "RM002",
+      "customers": [],
+      "pnls": {}
+    },
+    "expected": {
+      "customer_count": 0,
+      "total_revenue": 0.00,
+      "total_direct_costs": 0.00,
+      "total_indirect_costs": 0.00,
+      "total_pbt": 0.00,
+      "portfolio_margin": null,
+      "provisional": false,
+      "warning_present": true,
+      "warning_contains": "no assigned customers",
+      "ftp_off_count": 0
+    }
+  },
+  {
+    "id": "RM03-all-pnls-missing",
+    "description": "RM has assigned customers but their PnLs aren't in the data store. Warning explains.",
+    "input": {
+      "rm_code": "RM003",
+      "customers": ["C100", "C200", "C300"],
+      "pnls": {}
+    },
+    "expected": {
+      "customer_count": 0,
+      "total_revenue": 0.00,
+      "total_pbt": 0.00,
+      "provisional": false,
+      "warning_present": true,
+      "warning_contains": "All customer PnLs unavailable",
+      "unavailable_count": 3
+    }
+  },
+  {
+    "id": "RM04-one-ftp-off-customer-warning-surfaces",
+    "description": "Mandatory Standard #11 inheritance: 1 of 3 customers has ftp_mode='off'. Portfolio computes, but warning surfaces and cites Std #11.",
+    "input": {
+      "rm_code": "RM004",
+      "customers": ["C1", "C2", "C3"],
+      "pnls": {
+        "C1": {"pbt": -6500, "pbt_margin": -3.25, "total_revenue": 2000,
+               "total_direct_costs": 8500, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "off"}},
+        "C2": {"pbt": 100000, "pbt_margin": 0.20, "total_revenue": 500000,
+               "total_direct_costs": 400000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}},
+        "C3": {"pbt": 200000, "pbt_margin": 0.40, "total_revenue": 500000,
+               "total_direct_costs": 300000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 3,
+      "total_pbt": 293500.00,
+      "total_revenue": 1002000.00,
+      "provisional": false,
+      "warning_present": true,
+      "warning_contains": "Mandatory Standard #11",
+      "ftp_off_count": 1,
+      "ftp_on_count": 2
+    }
+  },
+  {
+    "id": "RM05-mostly-ftp-off-provisional",
+    "description": "2 of 3 customers in ftp_mode='off' (>50% threshold). Portfolio is provisional.",
+    "input": {
+      "rm_code": "RM005",
+      "customers": ["C1", "C2", "C3"],
+      "pnls": {
+        "C1": {"pbt": -5000, "pbt_margin": -2.5, "total_revenue": 2000,
+               "total_direct_costs": 7000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "off"}},
+        "C2": {"pbt": -3000, "pbt_margin": -1.5, "total_revenue": 2000,
+               "total_direct_costs": 5000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "off"}},
+        "C3": {"pbt": 50000, "pbt_margin": 0.50, "total_revenue": 100000,
+               "total_direct_costs": 50000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 3,
+      "total_pbt": 42000.00,
+      "provisional": true,
+      "warning_present": true,
+      "ftp_off_count": 2,
+      "ftp_on_count": 1
+    }
+  },
+  {
+    "id": "RM06-bank-scale-portfolio",
+    "description": "Large corporate RM portfolio with KES-billion-scale numbers. Tests Decimal precision at portfolio aggregation.",
+    "input": {
+      "rm_code": "RM006",
+      "customers": ["C_BIG1", "C_BIG2"],
+      "pnls": {
+        "C_BIG1": {"pbt": 1500000000, "pbt_margin": 0.30, "total_revenue": 5000000000,
+                    "total_direct_costs": 3000000000, "total_indirect_costs": 500000000,
+                    "meta": {"ftp_mode": "on"}},
+        "C_BIG2": {"pbt": 2200000000, "pbt_margin": 0.40, "total_revenue": 5500000000,
+                    "total_direct_costs": 2800000000, "total_indirect_costs": 500000000,
+                    "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 2,
+      "total_revenue": 10500000000.00,
+      "total_pbt": 3700000000.00,
+      "portfolio_margin": 0.3524,
+      "provisional": false,
+      "ftp_off_count": 0
+    }
+  },
+  {
+    "id": "RM07-zero-revenue-customer",
+    "description": "Portfolio includes a customer with revenue=0 (margin=None upstream). customers_unclassified count surfaces.",
+    "input": {
+      "rm_code": "RM007",
+      "customers": ["C1", "C2"],
+      "pnls": {
+        "C1": {"pbt": -100, "pbt_margin": null, "total_revenue": 0,
+               "total_direct_costs": 100, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}},
+        "C2": {"pbt": 50000, "pbt_margin": 0.50, "total_revenue": 100000,
+               "total_direct_costs": 50000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 2,
+      "total_pbt": 49900.00,
+      "total_revenue": 100000.00,
+      "customers_unclassified": 1,
+      "provisional": false
+    }
+  },
+  {
+    "id": "RM08-single-customer-portfolio",
+    "description": "Smallest non-empty portfolio. Single customer at 60% margin.",
+    "input": {
+      "rm_code": "RM008",
+      "customers": ["C1"],
+      "pnls": {
+        "C1": {"pbt": 600000, "pbt_margin": 0.60, "total_revenue": 1000000,
+               "total_direct_costs": 300000, "total_indirect_costs": 100000,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 1,
+      "total_pbt": 600000.00,
+      "portfolio_margin": 0.60,
+      "provisional": false
+    }
+  },
+  {
+    "id": "RM09-loss-making-portfolio",
+    "description": "All FTP-aware, but customers genuinely loss-making. Portfolio PBT negative; not provisional.",
+    "input": {
+      "rm_code": "RM009",
+      "customers": ["C1", "C2"],
+      "pnls": {
+        "C1": {"pbt": -200000, "pbt_margin": -0.40, "total_revenue": 500000,
+               "total_direct_costs": 700000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}},
+        "C2": {"pbt": -100000, "pbt_margin": -0.20, "total_revenue": 500000,
+               "total_direct_costs": 600000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 2,
+      "total_pbt": -300000.00,
+      "total_revenue": 1000000.00,
+      "portfolio_margin": -0.30,
+      "provisional": false,
+      "ftp_off_count": 0
+    }
+  },
+  {
+    "id": "RM10-50-percent-boundary-not-provisional",
+    "description": "EXACTLY 50% FTP-off (1 of 2). The threshold is >50%, so this stays not-provisional.",
+    "input": {
+      "rm_code": "RM010",
+      "customers": ["C1", "C2"],
+      "pnls": {
+        "C1": {"pbt": 100000, "pbt_margin": 0.20, "total_revenue": 500000,
+               "total_direct_costs": 400000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "off"}},
+        "C2": {"pbt": 200000, "pbt_margin": 0.40, "total_revenue": 500000,
+               "total_direct_costs": 300000, "total_indirect_costs": 0,
+               "meta": {"ftp_mode": "on"}}
+      }
+    },
+    "expected": {
+      "customer_count": 2,
+      "total_pbt": 300000.00,
+      "provisional": false,
+      "warning_present": true,
+      "ftp_off_count": 1,
+      "ftp_on_count": 1
+    }
+  }
+]

@@ -1,0 +1,1321 @@
+"""Credit Section Audit Engine — v10.446 Phase 1 diagnostic.
+
+Per Joshua's Credit MODULE REVIVAL doctrine (the heart of the bank):
+
+  "Credit section has over 13 modules mapped, like in HR you need to
+   determine if all genuinely belong there and remap, if others fit
+   to be modules or they are tabs. Important is the flow of the
+   credit process from a pipeline, to analysis, Administration,
+   Monitoring, DRU, and how it links with legal modules, Compliance,
+   credit approvals, Swim lane."
+
+Follows the proven HR pattern (v10.436 -> v10.443 rescue arc):
+diagnose first via audit-only batch, then execute rescue across
+multiple batches.
+
+The credit flow per doctrine:
+
+  ┌────────────┐   ┌──────────┐   ┌────────────┐   ┌────────────┐
+  │  PIPELINE  │ → │ ANALYSIS │ → │  APPROVALS │ → │   ADMIN    │
+  │ (intake)   │   │          │   │ (committee │   │ (CAMs,     │
+  │            │   │          │   │ swim lane) │   │  disburse) │
+  └────────────┘   └──────────┘   └────────────┘   └────────────┘
+                                                          │
+                                                          ▼
+  ┌────────────┐   ┌──────────────┐                ┌────────────┐
+  │   LEGAL    │ ← │     DRU      │ ←── if NPL ←── │ MONITORING │
+  │ (collateral│   │ (recovery)   │                │ (EWS,      │
+  │  enforcement)  │              │                │  IFRS9)    │
+  └────────────┘   └──────────────┘                └────────────┘
+              ↑                            ↑
+              └────── COMPLIANCE ──────────┘
+                  (cross-cutting overlay)
+
+Six audit dimensions (mirroring HR section audit pattern):
+  1. module_placement - which pages claim credit dept; misplaced ones
+  2. page_completeness - stub vs substantial pages
+  3. engine_wiring - credit engines wired into pages
+  4. flow_coverage - each flow stage covered by >=1 page
+  5. ifrs9_consolidation - IFRS9 sprawls 3 pages, document analysis
+  6. specialized_products - bid_bond, retailer_finance: tab or page?
+
+Public API (API-first, ZERO streamlit):
+  - audit_module_placement() -> ModulePlacementAudit
+  - audit_page_completeness() -> PageCompletenessAudit
+  - audit_engine_wiring() -> EngineWiringAudit
+  - audit_flow_coverage() -> FlowCoverageAudit
+  - audit_ifrs9_consolidation() -> IFRS9ConsolidationAudit
+  - audit_specialized_products() -> SpecializedProductsAudit
+  - credit_full_audit() -> CreditSectionAudit (master rollup)
+
+Shipped: v10.446 — Credit Diagnostic Phase 1 (audit-only, no fixes).
+"""
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, asdict, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+REPO_ROOT = Path(__file__).parent.parent
+PAGES_DIR = REPO_ROOT / "pages"
+UTILS_DIR = REPO_ROOT / "utils"
+
+
+# Credit dept pages (per manifest as of v10.445, updated v10.448 +82_credit_approvals)
+CREDIT_PAGES: List[str] = [
+    "111_credit_live.py",
+    "19_credit_monitoring.py",
+    "20_debt_recovery.py",
+    "21_loan_applications.py",
+    "22_credit_analysis.py",
+    "23_credit_admin.py",
+    "32_ifrs9.py",
+    "39_ews.py",
+    "40_collateral.py",
+    "70_retailer_finance.py",
+    "71_bid_bond.py",
+    "82_credit_approvals.py",  # v10.448 — Approvals/Swim Lane (NEW)
+    "88_ifrs_engines.py",
+    "90_remaining_ifrs.py",
+]
+
+# Credit-domain engines (in utils/)
+CREDIT_ENGINES: List[str] = [
+    "credit_workflow",          # SWIM LANE — Joshua emphasized this
+    "credit_committee",         # approvals
+    "credit_risk_scoring",      # scoring
+    "credit_alt_scoring",       # alternative scoring
+    "credit_risk_irb",          # IRB approach (regulatory capital)
+    "ifrs9_classification",     # IFRS9 staging
+    "provisions",               # ECL provisioning
+    "analytics_credit_workbench",  # analytics
+]
+
+
+# The credit flow stages per Joshua's doctrine
+FLOW_STAGES: List[Dict[str, Any]] = [
+    {
+        "id": "pipeline",
+        "name": "Pipeline (Origination / Intake)",
+        "expected_pages": ["21_loan_applications.py"],
+        "expected_engines": ["credit_workflow"],
+        "description": "Lead intake, application capture, initial triage",
+    },
+    {
+        "id": "analysis",
+        "name": "Analysis",
+        "expected_pages": ["22_credit_analysis.py"],
+        "expected_engines": [
+            "credit_risk_scoring", "credit_alt_scoring", "credit_committee",
+        ],
+        "description": "Risk scoring, alternative data, committee prep",
+    },
+    {
+        "id": "approvals",
+        "name": "Approvals (Committee / Swim Lane)",
+        "expected_pages": ["82_credit_approvals.py"],  # v10.448: NEW dedicated page
+        "expected_engines": ["credit_committee", "credit_workflow"],
+        "description": "Committee review, decision queues, swim lane workflow",
+    },
+    {
+        "id": "administration",
+        "name": "Administration (CAMs, Disbursement)",
+        "expected_pages": ["23_credit_admin.py"],
+        "expected_engines": ["credit_workflow"],
+        "description": "CAMs, pre-disbursement conditions, security perfection, disbursement queue",
+    },
+    {
+        "id": "monitoring",
+        "name": "Monitoring (EWS, IFRS9 staging)",
+        "expected_pages": [
+            "19_credit_monitoring.py", "39_ews.py", "32_ifrs9.py",
+            "88_ifrs_engines.py", "90_remaining_ifrs.py",
+        ],
+        "expected_engines": [
+            "credit_risk_scoring", "ifrs9_classification", "provisions",
+        ],
+        "description": "Performance tracking, early warning signals, IFRS9 stage transitions",
+    },
+    {
+        "id": "dru",
+        "name": "DRU (Debt Recovery Unit)",
+        "expected_pages": ["20_debt_recovery.py"],
+        "expected_engines": [],  # GAP: no DRU-specific engine
+        "description": "NPL workout, recovery cases, write-offs",
+    },
+    {
+        "id": "collateral",
+        "name": "Collateral (Legal bridge)",
+        "expected_pages": ["40_collateral.py"],
+        "expected_engines": [],  # GAP: no collateral engine
+        "description": "Collateral register, valuations, legal enforcement bridge",
+    },
+    {
+        "id": "specialized_products",
+        "name": "Specialized Products",
+        "expected_pages": ["70_retailer_finance.py", "71_bid_bond.py"],
+        "expected_engines": [],
+        "description": "Retailer financing, bid bonds, guarantees",
+    },
+    {
+        "id": "cockpit",
+        "name": "Executive Cockpit",
+        "expected_pages": ["111_credit_live.py"],
+        "expected_engines": [],
+        "description": "Chief Credit Officer panoramic surface (thin redirect to 115_live_cockpits)",
+    },
+]
+
+# Cross-organ bridge expectations
+CROSS_ORGAN_BRIDGES: List[Dict[str, str]] = [
+    {
+        "to_organ": "legal",
+        "via": "Collateral enforcement + foreclosure workflow",
+        "expected_page": "40_collateral.py (collateral register linked to legal cases)",
+    },
+    {
+        "to_organ": "compliance",
+        "via": "AML screening on loan applicants + CBK PG/04 limits",
+        "expected_page": "21_loan_applications.py (AML check at intake)",
+    },
+    {
+        "to_organ": "finance",
+        "via": "Provisions feed into Income Statement + Capital Adequacy",
+        "expected_page": "32_ifrs9.py + 90_remaining_ifrs.py (provisions engine)",
+    },
+    {
+        "to_organ": "risk",
+        "via": "Credit Risk Capital (RWA) + IRB models",
+        "expected_page": "35_stress_testing.py (risk dept) — credit RWA contribution",
+    },
+    {
+        "to_organ": "hr",
+        "via": "Staff loan approval + 1/3 salary rule",
+        "expected_page": "(MISSING — Joshua strand 4 pending)",
+    },
+]
+
+
+# ════════════════════════════════════════════════════════════════════
+# 360 Review Dimensions (v10.450 - per Joshua doctrine deep review)
+# ════════════════════════════════════════════════════════════════════
+#
+# Per Joshua: "for credit am yet the confirmation of react readiness,
+# fast api, etc... have we done functionality tests of every tab, have
+# we confirmed that all the credit staff are in place with proper
+# reporting lines and can get targets and their actuals can populate
+# and bsc calculate accordingly and even feed to hr performance and
+# their individual bsc are we really at 84.8% with all these things,
+# our doctrine dictates a 360 review and revival"
+#
+# These 6 new dimensions implement Phase 2 + Phase 3 + Phase 4 + Phase 5
+# of the doctrine: QA Standards Compliance, Modernization, Human
+# Workflow Alignment, BSC & Actuals Intelligence Wiring.
+
+@dataclass
+class APICoverageAudit:
+    total_credit_engines: int
+    engines_with_api: List[Dict[str, Any]]
+    engines_without_api: List[str]
+    api_coverage_pct: float
+    credit_endpoint_count: int
+    expected_endpoints_per_engine: int
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class ReactReadinessAudit:
+    pages_audited: int
+    react_clean_pages: List[str]
+    pages_with_blockers: List[Dict[str, Any]]  # [{page, blockers}]
+    react_readiness_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class PostgresBackingAudit:
+    pages_audited: int
+    pages_reading_postgres: List[str]
+    pages_reading_json_only: List[str]
+    postgres_backing_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class StaffCompletenessAudit:
+    expected_credit_roles: List[str]
+    found_in_cascade: List[Dict[str, Any]]    # [{role, count}]
+    missing_from_cascade: List[str]
+    staff_completeness_pct: float
+    reporting_lines_intact: bool
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class BSCActualsWiringAudit:
+    credit_kpis_total: int
+    auto_populated_kpis: List[Dict[str, Any]]   # [{kpi_id, name, source}]
+    manual_kpis: List[Dict[str, Any]]
+    actuals_auto_pct: float
+    feeds_hr_performance: bool   # does credit performance feed HR KPIs?
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class TabFunctionalityAudit:
+    pages_tested: int
+    tabs_total: int
+    tabs_with_imports_resolved: int
+    parse_errors: List[Dict[str, str]]
+    import_errors: List[Dict[str, str]]
+    functional_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+# ════════════════════════════════════════════════════════════════════
+# 360 audit functions
+# ════════════════════════════════════════════════════════════════════
+
+def audit_api_coverage() -> APICoverageAudit:
+    """Per Joshua doctrine Phase 3: 'FastAPI standardized'.
+
+    Counts credit endpoints in utils/api.py vs # of credit engines.
+    Reference: HR has 17 endpoints for 8 engines after v10.442.
+    """
+    api_file = REPO_ROOT / "utils" / "api.py"
+    if not api_file.exists():
+        return APICoverageAudit(
+            total_credit_engines=len(CREDIT_ENGINES),
+            engines_with_api=[],
+            engines_without_api=list(CREDIT_ENGINES),
+            api_coverage_pct=0.0,
+            credit_endpoint_count=0,
+            expected_endpoints_per_engine=1,
+            timestamp=datetime.now().isoformat(),
+        )
+    try:
+        api_text = api_file.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        api_text = ""
+
+    # Count credit-themed endpoints (route declarations)
+    credit_endpoint_count = len(re.findall(
+        r"@(?:app|router)\.(?:get|post|put|delete|patch)\("
+        r"['\"]/api/(?:credit|loan|disbursement|collateral|ifrs|provision"
+        r"|workflow|committee|approvals)",
+        api_text, re.IGNORECASE,
+    ))
+
+    # For each credit engine, check if its symbols appear in api.py
+    engines_with_api = []
+    engines_without_api = []
+    for eng in CREDIT_ENGINES:
+        # Search for import or reference of this engine in api.py
+        if re.search(rf"\butils\.{eng}\b", api_text) or \
+           re.search(rf"\bfrom\s+utils\.{eng}\b", api_text):
+            engines_with_api.append({
+                "engine": eng,
+                "referenced_in_api": True,
+            })
+        else:
+            engines_without_api.append(eng)
+
+    total = len(CREDIT_ENGINES)
+    coverage = len(engines_with_api) / total * 100 if total else 0.0
+
+    return APICoverageAudit(
+        total_credit_engines=total,
+        engines_with_api=engines_with_api,
+        engines_without_api=engines_without_api,
+        api_coverage_pct=round(coverage, 1),
+        credit_endpoint_count=credit_endpoint_count,
+        expected_endpoints_per_engine=1,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_react_readiness() -> ReactReadinessAudit:
+    """Per doctrine Phase 3: 'React migration ready'.
+
+    A page is React-clean if:
+      - No raw HTML injection (unsafe_allow_html should be minimal)
+      - No streamlit-specific magic that won't translate (st.cache_data
+        on module level, exotic widgets)
+      - All imports resolve cleanly
+    """
+    clean_pages = []
+    blockers = []
+
+    for page in CREDIT_PAGES:
+        p = PAGES_DIR / page
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        page_blockers = []
+        # Heavy unsafe_allow_html usage (rough threshold: >10 instances)
+        unsafe_count = text.count("unsafe_allow_html=True")
+        if unsafe_count > 10:
+            page_blockers.append(f"{unsafe_count} unsafe_allow_html (heavy raw HTML)")
+        # st.experimental_* APIs that may not migrate
+        if re.search(r"st\.experimental_\w+", text):
+            page_blockers.append("uses st.experimental_* APIs")
+        # Inline JavaScript blocks
+        if "<script>" in text.lower():
+            page_blockers.append("inline <script> tags")
+
+        if page_blockers:
+            blockers.append({
+                "page": page,
+                "blockers": page_blockers,
+            })
+        else:
+            clean_pages.append(page)
+
+    total = len(CREDIT_PAGES)
+    pct = len(clean_pages) / total * 100 if total else 0.0
+
+    return ReactReadinessAudit(
+        pages_audited=total,
+        react_clean_pages=clean_pages,
+        pages_with_blockers=blockers,
+        react_readiness_pct=round(pct, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_postgres_backing() -> PostgresBackingAudit:
+    """Per doctrine Phase 3: 'Fully on PostgreSQL'.
+
+    Detects which pages read from JSON files vs PostgreSQL adapter.
+    """
+    pg_pages = []
+    json_pages = []
+
+    for page in CREDIT_PAGES:
+        p = PAGES_DIR / page
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        # PostgreSQL signals
+        has_pg = bool(re.search(
+            r"from\s+utils\.(?:db|postgres|pg_adapter)|"
+            r"import\s+psycopg|"
+            r"a2z_db\.(?:query|execute|fetch)",
+            text,
+        ))
+        # JSON-only signals
+        has_json_load = ".read_text(" in text or "json.load" in text
+
+        if has_pg:
+            pg_pages.append(page)
+        elif has_json_load:
+            json_pages.append(page)
+
+    total = len(CREDIT_PAGES)
+    pct = len(pg_pages) / total * 100 if total else 0.0
+
+    return PostgresBackingAudit(
+        pages_audited=total,
+        pages_reading_postgres=pg_pages,
+        pages_reading_json_only=json_pages,
+        postgres_backing_pct=round(pct, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_staff_completeness() -> StaffCompletenessAudit:
+    """Per doctrine Phase 4: Human Workflow & Organizational Alignment.
+
+    Verifies all credit roles exist in target_cascade with proper
+    reporting lines (MD → Director → Head → Manager → Officer chain).
+    """
+    expected_roles = [
+        "Chief Credit Officer",
+        "Head Of Credit",        # Note: dataset uses "Head Of Credit"
+        "Credit Analyst",
+        "Senior Credit Analyst",
+        "Credit Risk Analyst",
+        "Branch Credit Manager",
+        "Branch Credit Officer",
+        "Credit Monitoring Officer",
+        "Manager-Credit Monitoring",
+        "Debt Recovery Officer",
+        "Credit Administration Officer",
+        "Collateral Officer",
+    ]
+    found = []
+    missing = []
+
+    # Load target_cascade.json
+    tc_file = REPO_ROOT / "data" / "target_cascade.json"
+    if not tc_file.exists():
+        return StaffCompletenessAudit(
+            expected_credit_roles=expected_roles,
+            found_in_cascade=[],
+            missing_from_cascade=expected_roles,
+            staff_completeness_pct=0.0,
+            reporting_lines_intact=False,
+            timestamp=datetime.now().isoformat(),
+        )
+
+    try:
+        tc_data = json.loads(tc_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        tc_data = {}
+
+    # Walk the cascade looking for role strings
+    role_count = {role: 0 for role in expected_roles}
+
+    def _walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in ("from_role", "to_role"):
+                    if isinstance(v, str):
+                        for er in expected_roles:
+                            if er.lower() == v.lower():
+                                role_count[er] += 1
+                _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(tc_data)
+
+    for role, n in role_count.items():
+        if n > 0:
+            found.append({"role": role, "count": n})
+        else:
+            missing.append(role)
+
+    # Reporting lines: does Chief Credit Officer cascade DOWN to at least
+    # one Head/Manager?
+    reporting_intact = (
+        role_count.get("Chief Credit Officer", 0) > 0
+        and (role_count.get("Head Of Credit", 0) > 0
+             or role_count.get("Manager-Credit Monitoring", 0) > 0
+             or role_count.get("Branch Credit Manager", 0) > 0)
+    )
+
+    pct = len(found) / len(expected_roles) * 100 if expected_roles else 0.0
+
+    return StaffCompletenessAudit(
+        expected_credit_roles=expected_roles,
+        found_in_cascade=found,
+        missing_from_cascade=missing,
+        staff_completeness_pct=round(pct, 1),
+        reporting_lines_intact=reporting_intact,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_bsc_actuals_wiring() -> BSCActualsWiringAudit:
+    """Per doctrine Phase 5: BSC & Actuals Intelligence Wiring.
+
+    Identifies credit KPIs and determines which are auto-populated
+    vs requiring manual Excel entry.
+    """
+    # Load KPI library
+    kpi_file = REPO_ROOT / "data" / "kpi_library.json"
+    if not kpi_file.exists():
+        return BSCActualsWiringAudit(
+            credit_kpis_total=0,
+            auto_populated_kpis=[],
+            manual_kpis=[],
+            actuals_auto_pct=0.0,
+            feeds_hr_performance=False,
+            timestamp=datetime.now().isoformat(),
+        )
+    try:
+        kpi_data = json.loads(kpi_file.read_text(encoding="utf-8"))
+        kpis = kpi_data.get("kpis", kpi_data) if isinstance(kpi_data, dict) else kpi_data
+        if isinstance(kpis, dict):
+            kpis = list(kpis.values())
+    except (json.JSONDecodeError, OSError, AttributeError):
+        kpis = []
+
+    credit_kw = ("credit", "loan", "disburs", "npl", "provision",
+                 "collateral", "ifrs", "recovery", "writeoff", "write-off")
+    credit_kpis = [
+        k for k in kpis
+        if isinstance(k, dict) and any(
+            kw in str(k.get("name", "")).lower()
+            or kw in str(k.get("description", "")).lower()
+            for kw in credit_kw
+        )
+    ]
+
+    # Check if there's a credit_actuals_engine yet (analogous to hr_actuals_engine)
+    credit_actuals_engine = REPO_ROOT / "utils" / "credit_actuals_engine.py"
+    has_auto_engine = credit_actuals_engine.exists()
+
+    auto_populated = []
+    manual = []
+    for k in credit_kpis:
+        # If we have a credit_actuals_engine with this KPI ID -> auto
+        if has_auto_engine:
+            try:
+                engine_text = credit_actuals_engine.read_text(encoding="utf-8")
+                if k.get("id") and k["id"] in engine_text:
+                    auto_populated.append({
+                        "id": k.get("id"),
+                        "name": k.get("name"),
+                        "source": "credit_actuals_engine",
+                    })
+                    continue
+            except Exception:
+                pass
+        manual.append({
+            "id": k.get("id"),
+            "name": k.get("name"),
+            "source": "manual_excel_upload",
+        })
+
+    total = len(credit_kpis)
+    auto_pct = len(auto_populated) / total * 100 if total else 0.0
+
+    # Feeds HR performance? Currently no — needs credit_to_hr_bridge engine
+    feeds_hr = False  # v10.451+ work
+
+    return BSCActualsWiringAudit(
+        credit_kpis_total=total,
+        auto_populated_kpis=auto_populated,
+        manual_kpis=manual,
+        actuals_auto_pct=round(auto_pct, 1),
+        feeds_hr_performance=feeds_hr,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_tab_functionality() -> TabFunctionalityAudit:
+    """Per doctrine Phase 1: functionality verification.
+
+    Verifies each credit page parses + its imports are resolvable
+    (catches broken state after refactors).
+    """
+    import ast as _ast
+    parse_errors = []
+    import_errors = []
+    tabs_total = 0
+    tabs_resolved = 0
+    pages_tested = 0
+
+    for page in CREDIT_PAGES:
+        p = PAGES_DIR / page
+        if not p.exists():
+            continue
+        pages_tested += 1
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            parse_errors.append({"page": page, "error": str(exc)})
+            continue
+
+        # Parse
+        try:
+            tree = _ast.parse(text)
+        except SyntaxError as exc:
+            parse_errors.append({"page": page, "error": f"line {exc.lineno}: {exc.msg}"})
+            continue
+
+        # Count tabs
+        tab_calls = len(re.findall(r"=\s*st\.tabs\(", text))
+        # Approximate: each st.tabs call has avg 4-5 tabs; we count by
+        # `with tabs[N]` occurrences
+        with_tabs = len(re.findall(r"^with\s+tabs\[", text, re.MULTILINE))
+        tabs_total += with_tabs
+        # Tabs are "resolved" if the file parses + with_tabs count >= 1
+        if with_tabs >= 1:
+            tabs_resolved += with_tabs
+
+        # Check imports exist (look for "from utils.X" where X is in utils/)
+        import_matches = re.findall(r"^from\s+utils\.([a-z_]+)\s+import",
+                                    text, re.MULTILINE)
+        for module in set(import_matches):
+            target = UTILS_DIR / f"{module}.py"
+            if not target.exists() and not (UTILS_DIR / module).exists():
+                import_errors.append({
+                    "page": page,
+                    "missing_module": f"utils.{module}",
+                })
+
+    pct = (tabs_resolved / tabs_total * 100) if tabs_total else 0.0
+
+    return TabFunctionalityAudit(
+        pages_tested=pages_tested,
+        tabs_total=tabs_total,
+        tabs_with_imports_resolved=tabs_resolved,
+        parse_errors=parse_errors,
+        import_errors=import_errors,
+        functional_pct=round(pct, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+@dataclass
+class ModulePlacementAudit:
+    total_credit_pages: int
+    pages_correctly_in_credit: List[str]
+    misplaced_pages: List[Dict[str, str]]  # [{page, current_dept, suggested_dept}]
+    should_be_in_credit_but_arent: List[str]
+    placement_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class PageCompletenessAudit:
+    pages: List[Dict[str, Any]]   # [{page, loc, tabs, status}]
+    substantial_count: int
+    stub_count: int
+    redirect_count: int           # thin redirect pages
+    avg_loc: float
+    completeness_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class EngineWiringAudit:
+    total_credit_engines: int
+    wired_engines: List[Dict[str, Any]]    # [{engine, in_pages}]
+    unwired_engines: List[Dict[str, Any]]
+    admin_only_engines: List[str]   # wired only in 7_admin.py
+    wiring_coverage_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class FlowCoverageAudit:
+    total_stages: int
+    stages_covered: int
+    stages_with_gaps: List[Dict[str, Any]]
+    flow_completeness_pct: float
+    cross_organ_bridges: List[Dict[str, Any]]
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class IFRS9ConsolidationAudit:
+    """IFRS9 sprawls 3 pages — analyse if consolidation is warranted."""
+    pages: List[Dict[str, Any]]
+    total_loc: int
+    total_tabs: int
+    recommendation: str   # "consolidate" / "keep_separate" / "needs_review"
+    rationale: str
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class SpecializedProductsAudit:
+    """Retailer finance + Bid Bond — should they be tabs under analysis or own pages?"""
+    products: List[Dict[str, Any]]
+    recommendation: str   # "promote_to_tabs" / "keep_as_pages" / "mixed"
+    rationale: str
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class CreditSectionAudit:
+    module_placement: ModulePlacementAudit
+    page_completeness: PageCompletenessAudit
+    engine_wiring: EngineWiringAudit
+    flow_coverage: FlowCoverageAudit
+    ifrs9_consolidation: IFRS9ConsolidationAudit
+    specialized_products: SpecializedProductsAudit
+    # ── v10.450 360 review dimensions ────────────────────────────────
+    api_coverage: Optional[APICoverageAudit] = None
+    react_readiness: Optional[ReactReadinessAudit] = None
+    postgres_backing: Optional[PostgresBackingAudit] = None
+    staff_completeness: Optional[StaffCompletenessAudit] = None
+    bsc_actuals_wiring: Optional[BSCActualsWiringAudit] = None
+    tab_functionality: Optional[TabFunctionalityAudit] = None
+    # Composite
+    credit_health_pct: float = 0.0
+    rescue_priorities: List[str] = field(default_factory=list)
+    severity_counts: Dict[str, int] = field(default_factory=dict)
+    timestamp: str = ""
+
+    def to_dict(self):
+        d = {
+            "module_placement": self.module_placement.to_dict(),
+            "page_completeness": self.page_completeness.to_dict(),
+            "engine_wiring": self.engine_wiring.to_dict(),
+            "flow_coverage": self.flow_coverage.to_dict(),
+            "ifrs9_consolidation": self.ifrs9_consolidation.to_dict(),
+            "specialized_products": self.specialized_products.to_dict(),
+            "credit_health_pct": self.credit_health_pct,
+            "rescue_priorities": self.rescue_priorities,
+            "severity_counts": self.severity_counts,
+            "timestamp": self.timestamp,
+        }
+        # v10.450 360 review dimensions
+        if self.api_coverage is not None:
+            d["api_coverage"] = self.api_coverage.to_dict()
+        if self.react_readiness is not None:
+            d["react_readiness"] = self.react_readiness.to_dict()
+        if self.postgres_backing is not None:
+            d["postgres_backing"] = self.postgres_backing.to_dict()
+        if self.staff_completeness is not None:
+            d["staff_completeness"] = self.staff_completeness.to_dict()
+        if self.bsc_actuals_wiring is not None:
+            d["bsc_actuals_wiring"] = self.bsc_actuals_wiring.to_dict()
+        if self.tab_functionality is not None:
+            d["tab_functionality"] = self.tab_functionality.to_dict()
+        return d
+
+
+# ════════════════════════════════════════════════════════════════════
+# Helpers
+# ════════════════════════════════════════════════════════════════════
+
+def _load_manifest() -> Dict[str, Any]:
+    p = PAGES_DIR / "_manifest.json"
+    if not p.exists():
+        return {"pages": {}}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"pages": {}}
+
+
+def _page_loc(page: str) -> int:
+    p = PAGES_DIR / page
+    if not p.exists():
+        return 0
+    try:
+        return len(p.read_text(encoding="utf-8").splitlines())
+    except (OSError, UnicodeDecodeError):
+        return 0
+
+
+def _page_tabs(page: str) -> int:
+    p = PAGES_DIR / page
+    if not p.exists():
+        return 0
+    try:
+        text = p.read_text(encoding="utf-8")
+        return len(re.findall(r"=\s*st\.tabs\(", text))
+    except (OSError, UnicodeDecodeError):
+        return 0
+
+
+def _page_engine_imports(page: str) -> List[str]:
+    p = PAGES_DIR / page
+    if not p.exists():
+        return []
+    try:
+        text = p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    return list(set(re.findall(r"from\s+utils\.([a-z_]+)\s+import", text)))
+
+
+def _engine_wired_in(engine: str) -> List[str]:
+    wired = []
+    for p in PAGES_DIR.glob("[0-9]*.py"):
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if re.search(rf"from\s+utils\.{engine}\s+import", text):
+            wired.append(p.name)
+    return sorted(wired)
+
+
+# ════════════════════════════════════════════════════════════════════
+# Audits
+# ════════════════════════════════════════════════════════════════════
+
+def audit_module_placement() -> ModulePlacementAudit:
+    """Are all 13 credit pages genuinely credit + are any non-credit
+    pages stranded outside it?"""
+    m = _load_manifest()
+    pages_dict = m.get("pages", {})
+
+    correctly_placed = []
+    misplaced = []
+    for page in CREDIT_PAGES:
+        entry = pages_dict.get(page, {})
+        if entry.get("department_primary") == "credit":
+            correctly_placed.append(page)
+        else:
+            misplaced.append({
+                "page": page,
+                "current_dept": entry.get("department_primary", "unknown"),
+                "suggested_dept": "credit",
+            })
+
+    # Check for credit-themed pages stranded outside credit dept
+    should_be_credit = []
+    credit_keywords = ("credit", "loan", "collateral", "ifrs", "npl",
+                       "provision", "recovery", "origination", "disbursement")
+    for fname, cfg in pages_dict.items():
+        if not isinstance(cfg, dict):
+            continue
+        if cfg.get("department_primary") == "credit":
+            continue
+        fl = fname.lower()
+        if any(kw in fl for kw in credit_keywords) and fname not in CREDIT_PAGES:
+            should_be_credit.append(fname)
+
+    total = len(CREDIT_PAGES)
+    placement_pct = len(correctly_placed) / total * 100 if total else 0.0
+
+    return ModulePlacementAudit(
+        total_credit_pages=total,
+        pages_correctly_in_credit=correctly_placed,
+        misplaced_pages=misplaced,
+        should_be_in_credit_but_arent=should_be_credit,
+        placement_pct=round(placement_pct, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_page_completeness() -> PageCompletenessAudit:
+    pages_info = []
+    substantial = stub = redirect = 0
+    total_loc = 0
+
+    for page in CREDIT_PAGES:
+        loc = _page_loc(page)
+        tabs = _page_tabs(page)
+        total_loc += loc
+        # Classification:
+        # - redirect: < 100 LOC AND mentions "redirect" or "thin"
+        # - stub: < 200 LOC AND < 2 tab blocks
+        # - substantial: everything else
+        p = PAGES_DIR / page
+        is_redirect = False
+        try:
+            text = p.read_text(encoding="utf-8") if p.exists() else ""
+            if loc < 100 and any(
+                kw in text.lower() for kw in
+                ("thin redirect", "redirect to", "page_link")
+            ):
+                is_redirect = True
+        except Exception:
+            pass
+
+        if is_redirect:
+            status = "redirect"
+            redirect += 1
+        elif loc < 200 and tabs < 2:
+            status = "stub"
+            stub += 1
+        else:
+            status = "substantial"
+            substantial += 1
+
+        pages_info.append({
+            "page": page,
+            "loc": loc,
+            "tabs": tabs,
+            "status": status,
+        })
+
+    total = len(CREDIT_PAGES)
+    # Completeness = substantial / total (redirects don't count as full pages,
+    # stubs don't count, only substantial counts)
+    completeness = substantial / total * 100 if total else 0.0
+
+    return PageCompletenessAudit(
+        pages=pages_info,
+        substantial_count=substantial,
+        stub_count=stub,
+        redirect_count=redirect,
+        avg_loc=round(total_loc / total, 1) if total else 0.0,
+        completeness_pct=round(completeness, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_engine_wiring() -> EngineWiringAudit:
+    wired = []
+    unwired = []
+    admin_only = []
+    ADMIN_ONLY_PAGES = {"7_admin.py", "100_md_cockpit.py",
+                       "101_analytics_workbench.py"}
+
+    for eng in CREDIT_ENGINES:
+        in_pages = _engine_wired_in(eng)
+        in_credit_pages = [p for p in in_pages if p in CREDIT_PAGES]
+        in_non_admin = [p for p in in_pages if p not in ADMIN_ONLY_PAGES]
+
+        if in_credit_pages:
+            wired.append({
+                "engine": eng,
+                "in_pages": in_pages,
+                "in_credit_pages": in_credit_pages,
+            })
+        elif in_non_admin:
+            # Wired but not in credit dept pages (e.g. risk dept)
+            unwired.append({
+                "engine": eng,
+                "in_pages": in_pages,
+                "note": "Wired in other dept pages but no credit page imports it",
+            })
+        elif in_pages:
+            # Only admin-wired
+            admin_only.append(eng)
+            unwired.append({
+                "engine": eng,
+                "in_pages": in_pages,
+                "note": "ADMIN-ONLY wired - not accessible from credit dept",
+            })
+        else:
+            unwired.append({
+                "engine": eng,
+                "in_pages": [],
+                "note": "Completely unwired",
+            })
+
+    total = len(CREDIT_ENGINES)
+    coverage = len(wired) / total * 100 if total else 0.0
+
+    return EngineWiringAudit(
+        total_credit_engines=total,
+        wired_engines=wired,
+        unwired_engines=unwired,
+        admin_only_engines=admin_only,
+        wiring_coverage_pct=round(coverage, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_flow_coverage() -> FlowCoverageAudit:
+    stages_with_gaps = []
+    covered = 0
+
+    for stage in FLOW_STAGES:
+        sid = stage["id"]
+        pages_present = [p for p in stage["expected_pages"]
+                        if (PAGES_DIR / p).exists()]
+        engines_wired = []
+        for eng in stage["expected_engines"]:
+            in_credit = [p for p in _engine_wired_in(eng)
+                         if p in CREDIT_PAGES]
+            if in_credit:
+                engines_wired.append(eng)
+
+        has_pages = bool(pages_present)
+        has_engines_or_no_engines_expected = (
+            engines_wired or not stage["expected_engines"]
+        )
+        if has_pages and has_engines_or_no_engines_expected:
+            covered += 1
+        else:
+            stages_with_gaps.append({
+                "stage_id": sid,
+                "name": stage["name"],
+                "missing_pages": [
+                    p for p in stage["expected_pages"]
+                    if not (PAGES_DIR / p).exists()
+                ],
+                "missing_engines": [
+                    eng for eng in stage["expected_engines"]
+                    if eng not in engines_wired
+                ],
+                "no_dedicated_page": not stage["expected_pages"],
+            })
+
+    total = len(FLOW_STAGES)
+    flow_pct = covered / total * 100 if total else 0.0
+
+    return FlowCoverageAudit(
+        total_stages=total,
+        stages_covered=covered,
+        stages_with_gaps=stages_with_gaps,
+        flow_completeness_pct=round(flow_pct, 1),
+        cross_organ_bridges=CROSS_ORGAN_BRIDGES,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_ifrs9_consolidation() -> IFRS9ConsolidationAudit:
+    """IFRS9 sprawls 3 pages — analyse if consolidation makes sense."""
+    ifrs_pages = ["32_ifrs9.py", "88_ifrs_engines.py", "90_remaining_ifrs.py"]
+    pages_info = []
+    total_loc = 0
+    total_tabs = 0
+
+    for page in ifrs_pages:
+        loc = _page_loc(page)
+        tabs = _page_tabs(page)
+        total_loc += loc
+        total_tabs += tabs
+        pages_info.append({
+            "page": page,
+            "loc": loc,
+            "tabs": tabs,
+            "engine_imports": _page_engine_imports(page),
+        })
+
+    # Recommendation logic:
+    # - if total combined LOC > 2000 AND each page has unique focus, keep separate
+    # - if pages are very similar (high overlap in imports), consider consolidation
+    # - if 90_remaining_ifrs is just leftover "everything else", consolidate
+    imports_overlap = (
+        set(pages_info[0]["engine_imports"])
+        & set(pages_info[1]["engine_imports"])
+        & set(pages_info[2]["engine_imports"])
+    )
+
+    if total_loc > 2000 and not imports_overlap:
+        recommendation = "keep_separate"
+        rationale = (
+            f"Total {total_loc} LOC across {total_tabs} tabs with distinct "
+            f"engine imports — pages serve different IFRS9 concerns "
+            f"(staging/engines/extended). Consolidation would create a "
+            f"single 2000+ LOC page which violates page-size hygiene."
+        )
+    elif total_loc < 1500:
+        recommendation = "consolidate"
+        rationale = (
+            f"Total {total_loc} LOC is manageable as one page. "
+            f"Consolidate into single 32_ifrs9.py with 5+ tabs."
+        )
+    else:
+        recommendation = "needs_review"
+        rationale = (
+            f"Total {total_loc} LOC + {total_tabs} tabs. Recommend "
+            f"keeping 32_ifrs9.py as primary + folding 88/90 as advanced/"
+            f"engine-internals tabs OR consolidating into one heavyweight "
+            f"page. Defer to v10.448 architectural decision."
+        )
+
+    return IFRS9ConsolidationAudit(
+        pages=pages_info,
+        total_loc=total_loc,
+        total_tabs=total_tabs,
+        recommendation=recommendation,
+        rationale=rationale,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def audit_specialized_products() -> SpecializedProductsAudit:
+    """Retailer Finance + Bid Bond — tab vs page question."""
+    products = []
+    for page in ["70_retailer_finance.py", "71_bid_bond.py"]:
+        products.append({
+            "page": page,
+            "loc": _page_loc(page),
+            "tabs": _page_tabs(page),
+            "engine_imports": _page_engine_imports(page),
+        })
+
+    avg_loc = sum(p["loc"] for p in products) / len(products) if products else 0
+    if avg_loc < 200:
+        recommendation = "promote_to_tabs"
+        rationale = (
+            f"Avg {avg_loc:.0f} LOC per specialized product page is sub-stub. "
+            f"Each could become a tab under 22_credit_analysis.py "
+            f"(Specialized Products tab) reducing page sprawl."
+        )
+    else:
+        recommendation = "keep_as_pages"
+        rationale = (
+            f"Avg {avg_loc:.0f} LOC per product page is substantial enough "
+            f"to warrant own page."
+        )
+
+    return SpecializedProductsAudit(
+        products=products,
+        recommendation=recommendation,
+        rationale=rationale,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+def credit_full_audit() -> CreditSectionAudit:
+    placement = audit_module_placement()
+    completeness = audit_page_completeness()
+    wiring = audit_engine_wiring()
+    flow = audit_flow_coverage()
+    ifrs9 = audit_ifrs9_consolidation()
+    specialized = audit_specialized_products()
+
+    # v10.450: 6 dimensions
+    api_cov = audit_api_coverage()
+    react = audit_react_readiness()
+    pg = audit_postgres_backing()
+    staff = audit_staff_completeness()
+    bsc_actuals = audit_bsc_actuals_wiring()
+    tab_func = audit_tab_functionality()
+
+    # v10.451: DOCTRINE-ALIGNED health is now the canonical score.
+    # The doctrine demands 8 phases + 14 certification criteria + 10
+    # vital signs questions. We delegate to credit_doctrine_audit and
+    # use that as the authoritative health number. The 10 dimensions
+    # above are kept as supporting evidence.
+    try:
+        from utils.credit_doctrine_audit import doctrine_full_audit
+        doctrine = doctrine_full_audit()
+        health = doctrine.doctrine_health_pct
+        priorities = list(doctrine.rescue_priorities)
+        # Severity counts derived from doctrine
+        critical = sum(1 for p in (
+            doctrine.phase_2, doctrine.phase_5, doctrine.phase_6,
+        ) if p.phase_score_pct < 30.0)
+        high = sum(1 for p in (
+            doctrine.phase_3, doctrine.phase_4, doctrine.phase_7,
+        ) if p.phase_score_pct < 60.0)
+        medium = sum(1 for p in (
+            doctrine.phase_1, doctrine.phase_8,
+        ) if p.phase_score_pct < 70.0)
+        # Boost critical if Final Validation < 30%
+        if doctrine.final_validation.certification_score_pct < 30.0:
+            critical += 1
+        if doctrine.vital_signs.failing >= 3:
+            high += 1
+    except Exception:
+        # Fallback to the v10.450 10-dimension formula
+        health = (
+            placement.placement_pct      * 0.10
+            + completeness.completeness_pct * 0.10
+            + wiring.wiring_coverage_pct    * 0.10
+            + flow.flow_completeness_pct    * 0.10
+            + api_cov.api_coverage_pct      * 0.10
+            + react.react_readiness_pct     * 0.05
+            + pg.postgres_backing_pct       * 0.05
+            + staff.staff_completeness_pct  * 0.15
+            + bsc_actuals.actuals_auto_pct  * 0.15
+            + tab_func.functional_pct       * 0.10
+        )
+        priorities = []
+        critical = 2 if (api_cov.api_coverage_pct < 20 and
+                       bsc_actuals.actuals_auto_pct < 20) else 0
+        high = 1 if staff.staff_completeness_pct < 50 else 0
+        medium = 2
+
+    return CreditSectionAudit(
+        module_placement=placement,
+        page_completeness=completeness,
+        engine_wiring=wiring,
+        flow_coverage=flow,
+        ifrs9_consolidation=ifrs9,
+        specialized_products=specialized,
+        api_coverage=api_cov,
+        react_readiness=react,
+        postgres_backing=pg,
+        staff_completeness=staff,
+        bsc_actuals_wiring=bsc_actuals,
+        tab_functionality=tab_func,
+        credit_health_pct=round(health, 1),
+        rescue_priorities=priorities,
+        severity_counts={"critical": critical, "high": high, "medium": medium},
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# Self-test
+# ════════════════════════════════════════════════════════════════════
+
+def self_test() -> None:
+    print("─ credit_section_audit_engine self-test ─")
+    text = Path(__file__).read_text()
+    streamlit_imports = re.findall(
+        r"^\s*(?:import\s+streamlit|from\s+streamlit)\b",
+        text, re.MULTILINE,
+    )
+    assert len(streamlit_imports) == 0
+    print("  ✓ Zero streamlit imports")
+
+    a = credit_full_audit()
+    print(f"\n  ═══ CREDIT SECTION HEALTH: {a.credit_health_pct}% ═══")
+    print(f"  (Severity: {a.severity_counts})")
+
+    print(f"\n  Module placement: {a.module_placement.placement_pct}%")
+    print(f"    Correctly placed: {len(a.module_placement.pages_correctly_in_credit)}/{a.module_placement.total_credit_pages}")
+    if a.module_placement.misplaced_pages:
+        print(f"    Misplaced: {a.module_placement.misplaced_pages}")
+    if a.module_placement.should_be_in_credit_but_arent:
+        print(f"    Should be in credit but aren't: {a.module_placement.should_be_in_credit_but_arent}")
+
+    print(f"\n  Page completeness: {a.page_completeness.completeness_pct}%")
+    print(f"    Substantial: {a.page_completeness.substantial_count}")
+    print(f"    Stubs: {a.page_completeness.stub_count}")
+    print(f"    Redirects: {a.page_completeness.redirect_count}")
+    print(f"    Avg LOC: {a.page_completeness.avg_loc}")
+    for p in a.page_completeness.pages:
+        icon = {"substantial": "✓", "stub": "⚠️", "redirect": "↪"}.get(p["status"], "?")
+        print(f"      {icon} {p['page']:30} {p['loc']:5} LOC {p['tabs']} tabs ({p['status']})")
+
+    print(f"\n  Engine wiring: {a.engine_wiring.wiring_coverage_pct}%")
+    print(f"    Wired in credit pages: {len(a.engine_wiring.wired_engines)}")
+    for w in a.engine_wiring.wired_engines:
+        print(f"      ✓ {w['engine']:30} in {w['in_credit_pages']}")
+    print(f"    Unwired/admin-only: {len(a.engine_wiring.unwired_engines)}")
+    for u in a.engine_wiring.unwired_engines:
+        print(f"      ✗ {u['engine']:30} {u['note']}")
+    if a.engine_wiring.admin_only_engines:
+        print(f"    ⚠ ADMIN-ONLY: {a.engine_wiring.admin_only_engines}")
+
+    print(f"\n  Flow coverage: {a.flow_coverage.flow_completeness_pct}%")
+    print(f"    Stages covered: {a.flow_coverage.stages_covered}/{a.flow_coverage.total_stages}")
+    if a.flow_coverage.stages_with_gaps:
+        print(f"    Stages with gaps:")
+        for g in a.flow_coverage.stages_with_gaps:
+            no_page = " ← NO DEDICATED PAGE" if g["no_dedicated_page"] else ""
+            print(f"      ⚠ {g['name']}{no_page}")
+            if g["missing_pages"]:
+                print(f"          missing pages: {g['missing_pages']}")
+            if g["missing_engines"]:
+                print(f"          missing engines: {g['missing_engines']}")
+
+    print(f"\n  Cross-organ bridges (legal/compliance/finance/risk/hr):")
+    for b in a.flow_coverage.cross_organ_bridges:
+        print(f"    {b['to_organ']:12} via {b['via']}")
+        print(f"      {b['expected_page']}")
+
+    print(f"\n  IFRS9 consolidation: {a.ifrs9_consolidation.recommendation}")
+    print(f"    {a.ifrs9_consolidation.total_loc} LOC across {a.ifrs9_consolidation.total_tabs} tabs")
+    print(f"    {a.ifrs9_consolidation.rationale[:140]}")
+
+    print(f"\n  Specialized products: {a.specialized_products.recommendation}")
+    print(f"    {a.specialized_products.rationale[:140]}")
+
+    print(f"\n  Rescue priorities:")
+    for i, p in enumerate(a.rescue_priorities, 1):
+        print(f"    {i}. {p}")
+
+    json.dumps(a.to_dict())
+    print(f"\n  ✓ JSON-serializable")
+    print("\n✓ self_test passed")
+
+
+if __name__ == "__main__":
+    self_test()

@@ -8,8 +8,9 @@ from collections import defaultdict, Counter
 from datetime import date
 from pages._shared import load_shared_state
 from pages._access import require_access
+from utils.config import currency_symbol, regulator, bank_name, currency
 
-require_access("ra")
+require_access("operations.analytics")
 _ = audit_log("RA_PAGE_VIEWED", uname, "RA dashboard viewed") if "uname" in dir() else None
 
 def _bsc_trigger(username: str, kpi: str = ""):
@@ -108,10 +109,10 @@ with sections[0]:
                            and a["status"] not in ("approved","credit_admin","disbursed","declined"))
 
         c1,c2,c3,c4,c5 = st.columns(5)
-        c1.metric("Active Pipeline",  f"KES {sum(float(d.get('amount',0)) for d in active_deals)/1e9:.1f}B")
-        c2.metric("Won This Period",  f"KES {sum(float(d.get('amount',0)) for d in won_deals)/1e9:.1f}B")
+        c1.metric("Active Pipeline",  f"{currency_symbol()} {sum(float(d.get('amount',0)) for d in active_deals)/1e9:.1f}B")
+        c2.metric("Won This Period",  f"{currency_symbol()} {sum(float(d.get('amount',0)) for d in won_deals)/1e9:.1f}B")
         c3.metric("Apps Pending",     f"{pending_apps}")
-        c4.metric("Disbursed Vol",    f"KES {disb_vol:.1f}B")
+        c4.metric("Disbursed Vol",    f"{currency_symbol()} {disb_vol:.1f}B")
         c5.metric("SLA Breaches",     f"{sla_breach}")
         st.markdown("---")
 
@@ -133,7 +134,7 @@ with sections[0]:
         buckets = ["1.0-1.9","2.0-2.4","2.5-2.9","3.0-3.4","3.5-3.9","4.0-4.4","4.5-5.0"]
         ranges  = [(1.0,2.0),(2.0,2.5),(2.5,3.0),(3.0,3.5),(3.5,4.0),(4.0,4.5),(4.5,5.01)]
         counts  = [sum(1 for s in scores.values() if lo<=s["final_score"]<hi) for lo,hi in ranges]
-        st.bar_chart(pd.DataFrame({"Staff":counts},index=buckets))
+        st.bar_chart(pd.DataFrame({"Staf":counts},index=buckets))
 
         # ── TAB 2: BSC League Table ─────────────────────────────────────────
     with sub[1]:
@@ -144,7 +145,7 @@ with sections[0]:
             avg_u=sum(s["final_score"] for s in us.values())/max(len(us),1)
             top_s=sorted(us.items(),key=lambda x:-x[1]["final_score"])
             c1,c2,c3,c4=st.columns(4)
-            c1.metric("Staff",len(us)); c2.metric("Unit Avg",f"{avg_u:.2f}")
+            c1.metric("Staf",len(us)); c2.metric("Unit Avg",f"{avg_u:.2f}")
             c3.metric("Top Score",f"{top_s[0][1]['final_score']:.2f}" if top_s else "—")
             c4.metric("Bottom",f"{sorted(us.items(),key=lambda x:x[1]['final_score'])[0][1]['final_score']:.2f}" if us else "—")
 
@@ -192,14 +193,14 @@ with sections[0]:
 
         # Treasury snapshot
         _fd_eom   = json.loads((DATA/"treasury_fd.json").read_text()) if (DATA/"treasury_fd.json").exists() else []
-        _fd_book  = sum(r["amount"] for r in _fd_eom if r["status"] in ("approved","booked") and r["currency"]=="KES")/1e9
+        _fd_book  = sum(r["amount"] for r in _fd_eom if r["status"] in ("approved","booked") and r["currency"]==currency())/1e9
 
         # Pipeline snapshot
         _pip_active = [d for d in pipeline if d.get("stage") not in ("Closed Won","Closed Lost")]
         _pip_val    = sum(float(d.get("amount",0)) for d in _pip_active)/1e9
 
         st.markdown("---")
-        st.markdown(f"## Ecobank Kenya — {_period} Performance Summary")
+        st.markdown(f"## {bank_name()} — {_period} Performance Summary")
 
         # Row 1: Performance
         pc1,pc2,pc3,pc4 = st.columns(4)
@@ -210,9 +211,9 @@ with sections[0]:
 
         # Row 2: Financial
         fc1,fc2,fc3,fc4 = st.columns(4)
-        fc1.metric("Disbursed Volume", f"KES {_disb_vol:.1f}B")
-        fc2.metric("FD Book", f"KES {_fd_book:.1f}B")
-        fc3.metric("Active Pipeline", f"KES {_pip_val:.1f}B")
+        fc1.metric("Disbursed Volume", f"{currency_symbol()} {_disb_vol:.1f}B")
+        fc2.metric("FD Book", f"{currency_symbol()} {_fd_book:.1f}B")
+        fc3.metric("Active Pipeline", f"{currency_symbol()} {_pip_val:.1f}B")
         fc4.metric("Prop Score (avg)", f"{sum(p['proposition_score'] for p in pperf.values())/max(len(pperf),1):.2f}")
 
         st.markdown("---")
@@ -234,7 +235,7 @@ with sections[0]:
 
                     # Sheet 2: Credit Portfolio
                     _cr_rows = [{"ID":a["id"],"Client":a["client_name"][:25],"Product":a["product"],
-                                  "Amount (KES M)":round(a.get("amount",0)/1e6,2),"Status":a["status"],
+                                  f"Amount ({currency_symbol()} M)":round(a.get("amount",0)/1e6,2),"Status":a["status"],
                                   "RM":a.get("rm_name","")[:20]}
                                  for a in _apps_eom[:500]]
                     _pd_eom.DataFrame(_cr_rows).to_excel(_writer, sheet_name="Credit Portfolio", index=False)
@@ -270,7 +271,7 @@ with sections[1]:
         "🎯 Proposition vs Portfolio",
     ])
     with sub[0]:
-        _view = st.selectbox("View by", ["All Staff","By Unit (avg)","By Role Group","Top 50","Bottom 50"], key="lt_view")
+        _view = st.selectbox("View by", ["All Staf","By Unit (avg)","By Role Group","Top 50","Bottom 50"], key="lt_view")
         rows = []
         for sc_v, s in scores.items():
             rl = s["role"].lower()
@@ -319,7 +320,7 @@ with sections[1]:
                                "Score":perf.get("proposition_score",0),
                                "Band":("🟢" if perf.get("proposition_score",0)>=3.5 else "🟡" if perf.get("proposition_score",0)>=2.5 else "🔴"),
                                "Tagged Customers":perf.get("total_tagged_customers",0),
-                               "Pipeline":len(pdp),"LMS Apps":len(pap),"Disbursed (KES M)":round(pvol/1e6,1)})
+                               "Pipeline":len(pdp),"LMS Apps":len(pap),f"Disbursed ({currency_symbol()} M)":round(pvol/1e6,1)})
         st.dataframe(pd.DataFrame(prop_rows).sort_values("Score",ascending=False),use_container_width=True,hide_index=True)
 
         sel_p=st.selectbox("Drill into:",
@@ -367,7 +368,7 @@ with sections[2]:
 
         c1,c2,c3,c4,c5=st.columns(5)
         c1.metric("Active Deals",    len(active))
-        c2.metric("Pipeline Value",  f"KES {sum(float(d.get('amount',0)) for d in active)/1e9:.1f}B")
+        c2.metric("Pipeline Value",  f"{currency_symbol()} {sum(float(d.get('amount',0)) for d in active)/1e9:.1f}B")
         c3.metric("Won",             len(won))
         c4.metric("Conversion Rate", f"{conv_r}%")
         c5.metric("Lost",            len(lost))
@@ -375,7 +376,7 @@ with sections[2]:
         st.markdown("**By stage:**")
         STAGES=["Lead","Prospecting","Needs Analysis","Proposal","Negotiation","Credit Review","Credit Approval","Credit Committee","Disbursed"]
         sc2=Counter(d.get("stage","") for d in active)
-        df_st=pd.DataFrame([{"Stage":s,"Deals":sc2.get(s,0),"Value (KES M)":round(sum(float(x.get("amount",0)) for x in active if x.get("stage")==s)/1e6,0)} for s in STAGES if sc2.get(s,0)>0])
+        df_st=pd.DataFrame([{"Stage":s,"Deals":sc2.get(s,0),f"Value ({currency_symbol()} M)":round(sum(float(x.get("amount",0)) for x in active if x.get("stage")==s)/1e6,0)} for s in STAGES if sc2.get(s,0)>0])
         st.dataframe(df_st,use_container_width=True,hide_index=True)
 
         st.markdown("**By proposition:**")
@@ -383,7 +384,7 @@ with sections[2]:
         pval=defaultdict(float)
         for d in active:
             if d.get("proposition_tag"): pval[d["proposition_tag"]]+=float(d.get("amount",0))
-        df_pp=pd.DataFrame([{"Prop":pcfg.get("propositions",{}).get(t,{}).get("icon","")+" "+pcfg.get("propositions",{}).get(t,{}).get("name",t),"Deals":n,"Value (KES B)":round(pval[t]/1e9,2)} for t,n in ptag.most_common()])
+        df_pp=pd.DataFrame([{"Prop":pcfg.get("propositions",{}).get(t,{}).get("icon","")+" "+pcfg.get("propositions",{}).get(t,{}).get("name",t),"Deals":n,f"Value ({currency_symbol()} B)":round(pval[t]/1e9,2)} for t,n in ptag.most_common()])
         if not df_pp.empty: st.dataframe(df_pp,use_container_width=True,hide_index=True)
 
         # ── TAB 4: Credit Portfolio ─────────────────────────────────────────
@@ -396,7 +397,7 @@ with sections[2]:
         tb=sum(float(i.get("budget",0)) for i in ei)/1e9
         ts=sum(float(i.get("spent",0)) for i in ei)/1e9
         c1,c2,c3,c4=st.columns(4)
-        c1.metric("Budget",f"KES {tb:.1f}B"); c2.metric("Spent",f"KES {ts:.1f}B")
+        c1.metric("Budget",f"{currency_symbol()} {tb:.1f}B"); c2.metric("Spent",f"{currency_symbol()} {ts:.1f}B")
         c3.metric("Utilised",f"{ts/max(tb,0.001)*100:.1f}%"); c4.metric("Active",sum(1 for i in ei if i.get("status","Active")=="Active"))
         df_ei=pd.DataFrame([{"Gate":i.get("current_gate") or i.get("gate",""),
             "Name":i.get("name","")[:45],"Status":i.get("status",""),
@@ -429,15 +430,15 @@ with sections[3]:
         else:
             tc=sum(r.get("total_commission",0) for r in commission)/1e6
             c1,c2,c3,c4=st.columns(4)
-            c1.metric("Total Payable",f"KES {tc:.1f}M"); c2.metric("Records",len(commission))
+            c1.metric("Total Payable",f"{currency_symbol()} {tc:.1f}M"); c2.metric("Records",len(commission))
             c3.metric("Approved",sum(1 for r in commission if r.get("status")=="Approved"))
-            c4.metric("Avg per RM",f"KES {tc/max(len(commission),1)*1e6:,.0f}")
+            c4.metric("Avg per RM",f"{currency_symbol()} {tc/max(len(commission),1)*1e6:,.0f}")
             tiers=Counter(r.get("tier","") for r in commission)
             st.markdown("**Tiers:** "+" | ".join(f"**{t}** {n}" for t,n in sorted(tiers.items())))
             df_cm=pd.DataFrame([{"Name":r["staff_name"][:25],"Tier":r["tier"],
-                "BSC":r["bsc_score"],"Perf (KES)":f"{r.get('performance_commission',0):,.0f}",
-                "Sales (KES)":f"{r.get('sales_commission',0):,.0f}",
-                "Total (KES)":f"{r.get('total_commission',0):,.0f}","Status":r.get("status","")}
+                "BSC":r["bsc_score"],f"Perf ({currency_symbol()})":f"{r.get('performance_commission',0):,.0f}",
+                f"Sales ({currency_symbol()})":f"{r.get('sales_commission',0):,.0f}",
+                f"Total ({currency_symbol()})":f"{r.get('total_commission',0):,.0f}","Status":r.get("status","")}
                 for r in sorted(commission,key=lambda x:-x.get("total_commission",0))[:50]])
             st.dataframe(df_cm,use_container_width=True,hide_index=True)
 

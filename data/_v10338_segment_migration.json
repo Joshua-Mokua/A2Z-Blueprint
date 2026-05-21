@@ -1,0 +1,5421 @@
+{
+  "shipped": "v10.338",
+  "ts": "2026-05-12T09:54:24.106893+00:00",
+  "migrated_count": 1078,
+  "skipped_count": 1922,
+  "mapping_used": {
+    "Mass": {
+      "code": "MASS",
+      "display": "Mass"
+    },
+    "Mass Affluent": {
+      "code": "CORE_MIDDLE",
+      "display": "Core Middle"
+    },
+    "Core Middle": {
+      "code": "CORE_MIDDLE",
+      "display": "Core Middle"
+    },
+    "Affluent": {
+      "code": "AFFLUENT",
+      "display": "Affluent"
+    },
+    "Premium": {
+      "code": "AFFLUENT",
+      "display": "Affluent"
+    }
+  },
+  "diff": {
+    "100247595": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100647783": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164937": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100416856": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100623322": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100156656": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100577503": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100443594": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100671398": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100606485": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100549194": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100265352": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100326414": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100375665": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100434796": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100384876": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100605034": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100289879": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100409307": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100653484": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100065318": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100127587": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100553147": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100279334": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100409811": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100665552": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100516687": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100391505": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100372743": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100007309": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100206407": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100439014": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100021353": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100125774": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100623251": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100101081": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100600371": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100678707": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100011518": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100204045": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100493471": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100616712": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100422379": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100174541": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100232216": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100246892": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100657944": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100123550": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100088230": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100486581": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100159741": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100268394": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100267505": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100174787": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100621479": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100656432": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100646590": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100165974": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100415365": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100618904": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100669301": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100392186": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100308394": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100511208": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100393010": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100120843": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100581147": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100635855": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100396911": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100370966": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100338844": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100360925": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100258107": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100203938": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100451966": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100178816": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100514082": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100696850": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100355354": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100074982": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100357310": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100030766": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100147411": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100490157": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100436042": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100206421": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100216799": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100682065": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100495350": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100658395": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100546923": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100034941": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100468048": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100237238": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100237494": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100665975": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100565689": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100038970": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100100313": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100124700": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100198363": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100228463": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100699676": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100014462": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100320025": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100390591": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100489737": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100054273": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100519523": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100311681": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100225956": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100046464": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100264994": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100276412": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100139468": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100384120": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100523585": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100247590": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100520947": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100465034": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100010731": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100217178": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100566253": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100114075": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100534490": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100276259": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100367388": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100654049": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100198316": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100673377": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100496984": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100012520": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100502414": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100137985": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100675915": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100398925": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100225484": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100353255": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100218856": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100233609": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100221902": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100554778": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100389886": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100353697": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100105412": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100476970": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100332945": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100323712": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100050768": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100536136": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100082855": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100511482": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100270595": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100581215": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100646335": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100512647": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100423605": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100086168": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100066904": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100119267": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100087121": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100655107": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100603250": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100441874": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100506016": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100184212": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100676875": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100099013": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100311273": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100339109": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100238081": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100223796": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100187757": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100040037": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100398309": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100252177": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100402469": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100125615": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100221796": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100274393": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100160997": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100159816": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100232843": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100618035": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100024953": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100599385": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100690968": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100445572": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100173031": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100197518": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100389575": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100071314": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100151627": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100515820": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100522304": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100537682": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100521167": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100300018": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100152364": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100694684": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100494130": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100129845": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100374176": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100599204": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100360315": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100454226": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100676315": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100522905": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100070534": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100188172": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164895": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100498019": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100074853": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100668088": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100507654": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100601725": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100122318": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100464334": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100326468": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100177196": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100371629": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100661796": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100150520": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100511570": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100511387": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100137707": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100131895": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100159970": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100240777": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100410980": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100263644": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100656392": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100520701": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100094514": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100399317": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100066011": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100376554": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164155": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100389285": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100667678": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100131043": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100489298": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100577203": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100355587": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100070392": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100331875": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100051462": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100172399": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100592213": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100283029": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100667572": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100252827": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100226585": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100227255": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100123164": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100136516": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100273520": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100037058": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100448693": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100219286": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100592014": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100666765": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100402024": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100097667": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100081700": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100462785": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100076624": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100023218": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100403336": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100143302": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100150501": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100374345": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100427072": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100505036": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100467220": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100378886": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100592137": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100207604": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100537761": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100425333": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100383161": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100300368": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100551234": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100153774": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100089899": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100134502": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100366155": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100020012": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100611640": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100555830": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100463034": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100038534": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100131725": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100028490": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100027740": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100571807": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100451994": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100017510": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100274420": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100650245": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100416700": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100104709": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100652052": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100183080": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100615992": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100470353": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100067076": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100347093": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100590434": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100621015": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100508660": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100344041": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100393941": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100262402": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100524784": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100599553": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100435266": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100362235": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100561922": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100162085": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100350429": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100279280": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100456861": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100441696": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100274028": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100054626": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100214406": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100675146": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100475826": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100237537": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100088984": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100031871": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100298980": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100273799": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100131254": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100268423": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100385870": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100445651": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100019845": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100216196": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100494540": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100595805": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100645096": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100148459": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100100293": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100500771": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100165543": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100666134": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100420661": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100630693": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100244344": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100045822": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100609774": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100518269": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100147028": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100611362": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100192182": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100634725": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100370910": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100337009": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100125022": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100397063": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100566213": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100311176": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100033001": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100173660": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100214716": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100684714": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100186815": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100095753": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100508592": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100627258": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100528547": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100541591": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100039181": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100179331": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100326203": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100173949": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100080641": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100079872": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100206085": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100424921": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100094571": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100594567": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100469467": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100157955": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100043666": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100370777": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100399309": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100085039": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100082450": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100246405": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100302585": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100474104": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100531890": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100144169": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100371788": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100565054": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100191329": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100001140": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100395400": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100690738": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100351462": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100048367": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100593840": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100012221": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100619158": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100233855": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100293700": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100112639": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100515924": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100638236": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100526030": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100302044": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100377762": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100291560": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100432090": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100202568": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100151411": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100651799": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100424546": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100097658": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100150745": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100489600": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100397907": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100312716": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100147205": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100298973": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100628103": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100207722": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100222345": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100111697": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100302398": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100686902": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100314226": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100205241": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100083702": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100524410": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100499131": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100287898": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100123186": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100519607": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100285674": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100475970": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100334783": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100132410": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100440815": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100075930": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100058860": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100485575": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100167558": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164370": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100252782": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100111661": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100568406": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100627581": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100539394": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100629528": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100533513": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100452107": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100689956": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100449888": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100251101": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100262823": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100680444": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100349743": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100631954": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100025049": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100353771": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100491044": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100563023": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100281056": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100660720": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100694782": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100121146": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100275821": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100649028": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100051882": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100461828": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100567063": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100074841": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100291551": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100051651": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100098581": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100628570": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100573645": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100069728": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100502967": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100114803": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100063490": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100655817": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100425897": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100631568": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100535562": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100055921": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100525974": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100307637": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100481926": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100189795": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100252067": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100035604": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100317866": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100049497": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100037648": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100264709": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100113205": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100437832": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100075331": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100227705": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100221213": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100274173": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100184676": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100024199": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100603967": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100568202": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100446290": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100205071": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100579946": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100247694": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100666818": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100350107": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100446712": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100456871": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100564602": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100538471": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100257297": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100684362": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100649991": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100575063": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100095044": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100263057": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100118315": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100055521": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100264208": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100540567": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100410132": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100007841": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100182967": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100653698": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100192442": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100306557": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100531546": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100550660": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100468472": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100208333": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100397815": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100064837": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100119840": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100598526": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100219868": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100019590": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100240732": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100269149": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100614296": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164561": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100441883": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100694536": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100059948": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100307503": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100520711": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100343050": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100466464": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100198773": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100001145": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100440900": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100660423": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100491529": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100165135": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100096063": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100026820": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100472981": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100027606": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100610760": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100334931": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100090756": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100120825": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100635731": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100334959": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100365538": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100571627": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100159318": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100217915": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100062449": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100191461": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100641707": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100551060": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100356182": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100415735": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100585001": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100431557": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100180180": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100109904": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100316323": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100618519": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100334831": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100108378": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100690231": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100270838": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100385106": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100371954": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100278471": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100592108": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100462058": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100691357": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100036008": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100636850": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100149442": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100694640": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100128708": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100002428": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100317613": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100055350": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100687872": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100208064": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100207168": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100688460": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100015764": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100551249": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100195334": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100495263": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100607644": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100436064": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100194156": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100657767": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100210296": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100196049": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100591071": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100628006": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100474253": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100244419": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100393681": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100493893": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100459520": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100572358": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100433515": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100288217": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100150884": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100008151": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100080271": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100118195": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100502276": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100670390": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100253601": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100646853": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100316431": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100250196": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100557858": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100042173": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100309851": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100330149": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100368260": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100275497": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100153286": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100353151": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164608": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100612539": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100500847": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100266375": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100271099": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100498935": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100110115": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100171429": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100131610": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100133946": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100432099": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100473181": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100007677": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100565905": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100018776": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100146412": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100591638": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100686162": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100546811": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100449620": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100216819": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100443773": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100671294": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100573262": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100415405": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100631110": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100121416": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100613653": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100239293": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100059419": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100546679": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100010766": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100500050": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100410951": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100520133": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100532175": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100613277": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100172774": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100309124": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100058711": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100502375": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100281868": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100443725": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100462496": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100667467": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100470328": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100674774": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100511988": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100141426": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100677522": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100373407": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100159572": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100168045": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100254669": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100084034": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100364429": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100143720": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100101188": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100163622": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100387178": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100198465": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100468849": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100437532": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100654831": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100421069": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100358524": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100322649": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100300632": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100043739": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100188861": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100361150": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100454494": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100345247": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100688907": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100144774": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100653250": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100326125": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100130037": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100498912": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100346675": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100574440": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100345823": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100074344": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100245594": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100587187": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100149990": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100181592": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100395249": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100420557": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100326445": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100644909": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100283895": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100012035": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100373000": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100052527": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100203265": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100232002": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100278646": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100664475": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100103327": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100019242": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100551485": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100067185": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100134548": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100259110": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100186742": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100100646": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100330399": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100343761": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100684346": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100338826": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100068289": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100293388": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100352437": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100390573": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100699976": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100452512": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100145240": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100531065": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100292697": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100335729": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100156824": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100151353": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100636634": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100558436": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100300613": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100156690": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100089119": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100646265": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100069366": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100375183": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100224676": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100253439": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100098276": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100593733": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100528004": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100176283": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100236924": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100618698": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100354221": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100071255": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100676459": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100246566": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100328752": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100317526": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100373130": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100412761": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100248027": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100405235": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100344202": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100474124": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100145152": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100125312": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100122554": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100331312": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100071343": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100386672": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100370390": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100209828": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100377462": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100225752": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100609010": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100116177": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100397263": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100688861": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100151479": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100223957": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100674456": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100130923": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100119632": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100697944": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100144916": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100170138": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100691595": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100290771": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100600398": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100422343": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100249388": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100259571": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100041170": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100563729": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100495637": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100670959": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100399430": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100014477": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100302592": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100485628": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100092313": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100568642": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100338796": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100598711": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100607350": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100385497": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100110719": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100172640": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100018898": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100493611": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100372308": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100617109": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100044155": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100279611": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100074219": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100329960": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100483333": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100149122": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100521200": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100164406": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100086505": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100689867": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100515144": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100688496": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100152972": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100248626": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100212549": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100557729": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100403728": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100013860": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100275116": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100622490": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100058289": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100529562": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100136253": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100187393": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100615815": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100398460": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100028400": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100160998": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100068891": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100432644": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100682074": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100027533": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100542060": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100486167": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100180805": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100211826": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100277870": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100538576": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100532777": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100030506": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100366618": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100359726": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100612135": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100694329": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100596143": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100043259": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100116890": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100508934": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100489574": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100242595": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100084058": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100682203": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100203478": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100570923": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100190227": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100430899": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100548545": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100378217": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100233751": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100229339": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100051096": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100415330": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100572915": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100042243": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100637678": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100086408": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100117012": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100153522": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100602047": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100377563": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100283388": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100037833": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100181234": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100196363": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100302133": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100644586": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100270823": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100548061": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100137737": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100551946": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100228122": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100488112": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100447394": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100068137": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100146298": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100001620": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100018068": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100092543": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100596352": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100382512": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100562895": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100205140": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100650321": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100394976": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100398917": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100513347": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100288664": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100489279": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100160870": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100384503": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100061114": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100476453": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100422733": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100351517": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100042155": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100039645": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100292971": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100207037": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100552933": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100131729": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100253621": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100174827": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100245768": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100036679": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100635955": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100477749": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100574509": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100644496": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100572192": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100177304": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100048509": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100633410": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100231714": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100464426": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100427182": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100114410": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100424911": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100125162": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100127213": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100359881": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100597346": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100242099": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100085988": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100354537": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100516573": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100312399": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100595833": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100240029": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100167446": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100672499": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100021779": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100441229": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100456580": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100261867": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100151504": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100479871": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100407066": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100465133": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100434267": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100119205": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100539217": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100308649": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100600875": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100201363": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100392035": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100603268": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100441448": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100549625": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100231868": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100414066": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100454933": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100280475": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100434336": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100521305": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100017115": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100633628": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100029518": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100316005": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100299418": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100227501": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100202857": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100026048": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100009755": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100384730": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100354889": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100331779": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100598076": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100385340": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100152085": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100410247": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100292152": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100045018": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100213727": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100699018": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100404139": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100597951": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100140656": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100422979": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100118681": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100404591": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100467782": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100034662": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100059205": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100082242": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100359604": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100233014": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100636920": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100615005": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100562126": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100504934": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100239480": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100578695": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100562251": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100482052": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100006590": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100123581": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100017830": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100006773": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100465299": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100602450": {
+      "from": "Premium",
+      "to": "Affluent",
+      "code": "AFFLUENT"
+    },
+    "100272399": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100061335": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100121966": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100143336": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100448540": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100615227": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100150348": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100586729": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100066966": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100239389": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100293523": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100025917": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100193344": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100003419": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    },
+    "100120119": {
+      "from": "Mass Affluent",
+      "to": "Core Middle",
+      "code": "CORE_MIDDLE"
+    }
+  },
+  "rationale": "Migrated customer_intelligence.json from 4-tier (Mass/Mass Affluent/Affluent/Premium) to canonical 3-tier (Mass/Core Middle/Affluent) per v10.338 spec Q1. Premium folded into Affluent; Mass Affluent renamed to Core Middle. Reversible via _v10338_previous_segment tag on each migrated record."
+}

@@ -1,0 +1,17 @@
+# A2Z MIS 360 — Development and CI dependencies
+#
+# Tools used in CI / local dev only. NEVER installed in production.
+# Production installs only requirements.txt.
+#
+# To get a full dev environment:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0   # coverage measurement (Standard #4, v5.33)
+
+# Dependency security scanners (Standard #9, v5.37)
+# These are in DEV deps because pip-audit and safety scan the
+# requirements file at CI time — they don't ship to production.
+pip-audit>=2.6.0
+safety>=3.0.0

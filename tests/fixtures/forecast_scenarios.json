@@ -1,0 +1,302 @@
+[
+  {
+    "id": "F001-steady-on-pace",
+    "description": "Steady deposit growth, on pace at half-period. Linear extrapolation should land within ±15%.",
+    "input": {
+      "current_value": 50,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 100,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F002-steady-behind",
+    "description": "Behind pace, stays behind. Linear should predict the miss correctly.",
+    "input": {
+      "current_value": 30,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 60,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F003-steady-ahead",
+    "description": "Ahead pace, stays ahead. Predicted=130 actual=125 → within 15%.",
+    "input": {
+      "current_value": 65,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 125,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F004-late-period-accurate",
+    "description": "Day 18 of 22 — pace is well established. Predicted should be close to actual.",
+    "input": {
+      "current_value": 85,
+      "target": 100,
+      "days_elapsed": 18,
+      "total_days": 22
+    },
+    "actual_at_period_end": 105,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F005-early-period-accurate-by-luck",
+    "description": "Day 5 of 22 — early signal of an even pace. predicted ≈ actual.",
+    "input": {
+      "current_value": 22,
+      "target": 100,
+      "days_elapsed": 5,
+      "total_days": 22
+    },
+    "actual_at_period_end": 95,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F006-high-achiever",
+    "description": "Top performer well above target. Linear extrapolation tracks well.",
+    "input": {
+      "current_value": 80,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 158,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F007-modest-overshoot",
+    "description": "Linear says 120, actual lands at 110 — within tolerance.",
+    "input": {
+      "current_value": 60,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 110,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F008-modest-undershoot",
+    "description": "Linear says 80, actual lands at 90 — within 15%.",
+    "input": {
+      "current_value": 40,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 90,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F009-large-numbers-on-pace",
+    "description": "KES-scale (1.5B target). Linear math should work cleanly.",
+    "input": {
+      "current_value": 750000000,
+      "target": 1500000000,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 1480000000,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F010-large-numbers-overshoot",
+    "description": "KES-scale on track to overshoot. Linear correctly predicts >target.",
+    "input": {
+      "current_value": 1000000000,
+      "target": 1500000000,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 1900000000,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F011-end-of-period-accurate",
+    "description": "Day 21 of 22. Pace is fully established → predicted ≈ actual.",
+    "input": {
+      "current_value": 95,
+      "target": 100,
+      "days_elapsed": 21,
+      "total_days": 22
+    },
+    "actual_at_period_end": 100,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F012-quarterly-mid",
+    "description": "Quarterly period mid-flight. Linear scales to longer periods.",
+    "input": {
+      "current_value": 200,
+      "target": 600,
+      "days_elapsed": 32,
+      "total_days": 64
+    },
+    "actual_at_period_end": 420,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F013-low-baseline",
+    "description": "Small target (NPS=10), linear extrapolation tracks.",
+    "input": {
+      "current_value": 5,
+      "target": 10,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 11,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F014-decimal-target",
+    "description": "Fractional target (NPL ratio 4.5%). Math should still work.",
+    "input": {
+      "current_value": 2.0,
+      "target": 4.5,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 4.0,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F015-acceleration-over-prediction",
+    "description": "REPRESENTATIVE OF NON-LINEAR REALITY: month-end push beats linear prediction. Linear says 100 but actual lands at 130. Within ±15% tolerance? 30/130 = 23% — outside tolerance, expected to FAIL.",
+    "input": {
+      "current_value": 50,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 130,
+    "expected_within_tolerance": false
+  },
+  {
+    "id": "F016-deceleration-over-prediction",
+    "description": "REPRESENTATIVE: client base saturated mid-period, growth flattens. Linear says 100, actual lands at 75 (-25%). Outside ±15% tolerance, expected to FAIL.",
+    "input": {
+      "current_value": 50,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 75,
+    "expected_within_tolerance": false
+  },
+  {
+    "id": "F017-very-high-achiever-tracks",
+    "description": "150% achiever stays at that pace. Linear predicts 150, actual lands at 145 (within 15%).",
+    "input": {
+      "current_value": 75,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 145,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F018-day-1-heavy-deal",
+    "description": "Big early deal then quiet. Day 5: actual=40 (one big deal already booked). Linear extrapolates to 176 but real EOM=85 — major over-prediction. Expected FAIL — represents lumpy KPIs.",
+    "input": {
+      "current_value": 40,
+      "target": 100,
+      "days_elapsed": 5,
+      "total_days": 22
+    },
+    "actual_at_period_end": 85,
+    "expected_within_tolerance": false
+  },
+  {
+    "id": "F019-near-target-mild-undershoot",
+    "description": "Almost on track but ends slightly under. Linear=110, actual=98 — within 15%.",
+    "input": {
+      "current_value": 55,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 98,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F020-near-target-mild-overshoot",
+    "description": "Slightly behind but finish line push gets across. Linear=88, actual=102 — within ±15%.",
+    "input": {
+      "current_value": 44,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 102,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F021-stable-mid-deciles",
+    "description": "Mid-deciles performer at 70% of target. Linear says 140, actual lands at 132 (within 15%).",
+    "input": {
+      "current_value": 70,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 132,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F022-end-of-week-snapshot",
+    "description": "Day 5 of 22 (one full week elapsed). Pace already steady. Linear and actual agree.",
+    "input": {
+      "current_value": 23,
+      "target": 100,
+      "days_elapsed": 5,
+      "total_days": 22
+    },
+    "actual_at_period_end": 100,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F023-quarterly-end-of-month-1",
+    "description": "Quarterly KPI at end of month 1 (~22/64 days). Linear scales.",
+    "input": {
+      "current_value": 200,
+      "target": 600,
+      "days_elapsed": 22,
+      "total_days": 64
+    },
+    "actual_at_period_end": 565,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F024-low-volume-actual-tracks",
+    "description": "Low-volume KPI (target 20). Linear works.",
+    "input": {
+      "current_value": 9,
+      "target": 20,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 19,
+    "expected_within_tolerance": true
+  },
+  {
+    "id": "F025-massive-over-target-tracks",
+    "description": "Outlier high achiever (300% pace). Linear extrapolation still works at the upper end.",
+    "input": {
+      "current_value": 150,
+      "target": 100,
+      "days_elapsed": 11,
+      "total_days": 22
+    },
+    "actual_at_period_end": 295,
+    "expected_within_tolerance": true
+  }
+]

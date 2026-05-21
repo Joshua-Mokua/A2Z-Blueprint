@@ -1,0 +1,1517 @@
+"""utils/credit_doctrine_audit.py — v10.451 Doctrine-Aligned 360 Audit.
+
+Maps line-by-line to:
+
+  1. Credit MODULE REVIVAL doctrine (8 phases + 14 final validation criteria)
+  2. Continuous System Revival & Vital Signs (10 health questions + 5 principles)
+
+Per Joshua: "the second paste is our call, i also need you to review
+it line by line and align 100% to the critical mission."
+
+The HONEST credit health number lives in this engine. The earlier
+55.5% from v10.450 measured 10 dimensions. The doctrine demands 8
+phases + 14 certification criteria + 10 vital health questions = 32
+distinct compliance points.
+
+API-first; zero streamlit imports.
+"""
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field, asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+REPO_ROOT = Path(__file__).parent.parent
+PAGES_DIR = REPO_ROOT / "pages"
+UTILS_DIR = REPO_ROOT / "utils"
+DATA_DIR  = REPO_ROOT / "data"
+DOCS_DIR  = REPO_ROOT / "docs"
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE-BY-PHASE AUDIT DATACLASSES
+# ════════════════════════════════════════════════════════════════════
+
+@dataclass
+class PhaseAudit:
+    """Generic phase audit result."""
+    phase: str                   # e.g. "Phase 1"
+    name: str                    # e.g. "Deep Organ Diagnostic"
+    sub_criteria: List[Dict[str, Any]]   # [{criterion, met, evidence}]
+    phase_score_pct: float
+    critical_gaps: List[str]
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class FinalValidationCertification:
+    """The 14-criteria certification check (line-by-line from doctrine)."""
+    criteria: List[Dict[str, Any]]   # [{number, name, met, evidence}]
+    fully_met: int
+    partially_met: int
+    not_met: int
+    certification_score_pct: float
+    certified: bool                  # True only if all 14 fully met
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class VitalSignsForCredit:
+    """The 10 Vital Health Questions applied to Credit."""
+    questions: List[Dict[str, Any]]   # [{number, question, status, evidence}]
+    passing: int
+    failing: int
+    partial: int
+    vital_signs_score_pct: float
+    timestamp: str
+
+    def to_dict(self): return asdict(self)
+
+
+@dataclass
+class DoctrineAudit:
+    """Master doctrine-aligned audit for Credit."""
+    phase_1: PhaseAudit
+    phase_2: PhaseAudit
+    phase_3: PhaseAudit
+    phase_4: PhaseAudit
+    phase_5: PhaseAudit
+    phase_6: PhaseAudit
+    phase_7: PhaseAudit
+    phase_8: PhaseAudit
+    final_validation: FinalValidationCertification
+    vital_signs: VitalSignsForCredit
+    doctrine_health_pct: float
+    rescue_priorities: List[str]
+    timestamp: str
+
+    def to_dict(self):
+        return {
+            "phase_1": self.phase_1.to_dict(),
+            "phase_2": self.phase_2.to_dict(),
+            "phase_3": self.phase_3.to_dict(),
+            "phase_4": self.phase_4.to_dict(),
+            "phase_5": self.phase_5.to_dict(),
+            "phase_6": self.phase_6.to_dict(),
+            "phase_7": self.phase_7.to_dict(),
+            "phase_8": self.phase_8.to_dict(),
+            "final_validation": self.final_validation.to_dict(),
+            "vital_signs": self.vital_signs.to_dict(),
+            "doctrine_health_pct": self.doctrine_health_pct,
+            "rescue_priorities": self.rescue_priorities,
+            "timestamp": self.timestamp,
+        }
+
+
+# ════════════════════════════════════════════════════════════════════
+# Helpers
+# ════════════════════════════════════════════════════════════════════
+
+def _credit_pages() -> List[str]:
+    """List of credit dept pages — sourced from credit_section_audit_engine."""
+    try:
+        from utils.credit_section_audit_engine import CREDIT_PAGES
+        return list(CREDIT_PAGES)
+    except Exception:
+        return []
+
+
+def _credit_engines() -> List[str]:
+    try:
+        from utils.credit_section_audit_engine import CREDIT_ENGINES
+        return list(CREDIT_ENGINES)
+    except Exception:
+        return []
+
+
+def _read_text(p: Path) -> str:
+    try:
+        return p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+
+def _all_credit_text() -> str:
+    """Concatenated text of all credit pages + engines (for cross-cutting checks)."""
+    chunks = []
+    for page in _credit_pages():
+        chunks.append(_read_text(PAGES_DIR / page))
+    for eng in _credit_engines():
+        chunks.append(_read_text(UTILS_DIR / f"{eng}.py"))
+    return "\n".join(chunks)
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 1 — Deep Organ Diagnostic & Existing State Assessment
+# ════════════════════════════════════════════════════════════════════
+# Doctrine requires: Functional + Technical + Data + Operational health.
+# Tech health specifically calls out: "ensure any item that is supposed
+# to be configured is not hard coded and that the ADMIN module is
+# enhanced to handle the configurations."
+
+def audit_phase_1_diagnostic() -> PhaseAudit:
+    sub = []
+    gaps = []
+    text = _all_credit_text()
+
+    # 1a. Existing features inventoried
+    pages = _credit_pages()
+    sub.append({
+        "criterion": "Existing features inventoried (page registry)",
+        "met": len(pages) >= 10,
+        "evidence": f"{len(pages)} credit pages registered in CREDIT_PAGES",
+    })
+
+    # 1b. Business logic completeness (engines wired)
+    engines = _credit_engines()
+    sub.append({
+        "criterion": "Business logic engines present",
+        "met": len(engines) >= 8,
+        "evidence": f"{len(engines)} credit engines in CREDIT_ENGINES",
+    })
+
+    # 1c. Approval flows present (committee + workflow engines)
+    has_approval = ("CommitteeVote" in text and
+                    "evaluate_committee_decision" in text and
+                    "ApplicationState" in text)
+    sub.append({
+        "criterion": "Approval flows present (committee + state machine)",
+        "met": has_approval,
+        "evidence": "CommitteeVote + state machine wired" if has_approval else "MISSING",
+    })
+
+    # 1d. Exception handling present (try/except in pages)
+    pages_with_try = 0
+    for p in pages:
+        t = _read_text(PAGES_DIR / p)
+        if "try:" in t and "except" in t:
+            pages_with_try += 1
+    exception_pct = pages_with_try / len(pages) * 100 if pages else 0
+    has_exc = exception_pct >= 50
+    sub.append({
+        "criterion": "Exception handling present (>=50% pages have try/except)",
+        "met": has_exc,
+        "evidence": f"{pages_with_try}/{len(pages)} pages have try/except ({exception_pct:.1f}%)",
+    })
+    if not has_exc:
+        gaps.append(f"Only {exception_pct:.1f}% of credit pages have exception handling")
+
+    # 1e. Audit trail quality (audit_log calls)
+    audit_calls = len(re.findall(r"\baudit_log\(", text))
+    sub.append({
+        "criterion": "Audit trail wired (audit_log calls)",
+        "met": audit_calls >= 5,
+        "evidence": f"{audit_calls} audit_log() calls in credit pages/engines",
+    })
+    if audit_calls < 5:
+        gaps.append(f"Only {audit_calls} audit_log calls — Phase 1 audit trail under-instrumented")
+
+    # 1f. Configuration NOT hard-coded (per Joshua: ADMIN handles configs)
+    # Detect hardcoded thresholds in pages (numeric literals for amounts,
+    # thresholds, scoring bands that should be admin-config'able)
+    hardcoded_amounts = len(re.findall(
+        r"\b(?:tier|threshold|limit)\s*=\s*[\"']?[\d_]{5,}[\"']?",
+        text, re.IGNORECASE,
+    ))
+    sub.append({
+        "criterion": "Configurations not hardcoded (ADMIN module handles)",
+        "met": hardcoded_amounts < 20,
+        "evidence": f"{hardcoded_amounts} potential hardcoded thresholds/limits detected",
+    })
+    if hardcoded_amounts >= 20:
+        gaps.append(
+            f"{hardcoded_amounts} hardcoded thresholds detected — should be admin-configurable"
+        )
+
+    # 1g. Manual workarounds (TODO/FIXME/HACK markers)
+    todos = len(re.findall(r"#\s*(?:TODO|FIXME|HACK|XXX)\b", text))
+    sub.append({
+        "criterion": "Manual workarounds minimal (TODO/FIXME/HACK count)",
+        "met": todos < 50,
+        "evidence": f"{todos} TODO/FIXME/HACK markers in credit code",
+    })
+    if todos >= 50:
+        gaps.append(f"{todos} TODO/FIXME/HACK markers — operational debt")
+
+    # 1h. Data flow integrity (engines have docstrings + return types)
+    documented_engines = 0
+    for eng in engines:
+        t = _read_text(UTILS_DIR / f"{eng}.py")
+        if '"""' in t[:500]:  # module docstring
+            documented_engines += 1
+    sub.append({
+        "criterion": "Engine documentation (module docstrings present)",
+        "met": documented_engines == len(engines),
+        "evidence": f"{documented_engines}/{len(engines)} engines have module docstrings",
+    })
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 1",
+        name="Deep Organ Diagnostic & Existing State Assessment",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 2 — QA Standards Compliance Validation
+# ════════════════════════════════════════════════════════════════════
+# Doctrine requires: score against PRIOR QA standards.
+
+def audit_phase_2_qa_compliance() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    # Look for active credit standards in the standards registry
+    standards_paths = [
+        UTILS_DIR / "standards_registry.py",
+        DATA_DIR / "active_standards.json",
+    ]
+    standards_text = ""
+    for sp in standards_paths:
+        if sp.exists():
+            standards_text += _read_text(sp)
+
+    # Count credit-related standards
+    credit_std_keywords = (
+        "ENH-12", "ENH-13", "ENH-CRD", "credit_workflow", "credit_committee",
+        "ifrs9", "credit_risk", "credit_underwriting", "alt_scoring",
+    )
+    credit_std_count = sum(
+        len(re.findall(rf"\b{re.escape(kw)}\b", standards_text, re.IGNORECASE))
+        for kw in credit_std_keywords
+    )
+
+    sub.append({
+        "criterion": "Credit standards present in registry",
+        "met": credit_std_count >= 10,
+        "evidence": f"{credit_std_count} credit standard keyword hits in registry",
+    })
+
+    # Does a credit-specific QA gate exist?
+    audit_text = _read_text(REPO_ROOT / "scripts" / "audit.py")
+    credit_gates = len(re.findall(
+        r"def gate_v10[\d_]+_credit_\w+", audit_text,
+    ))
+    sub.append({
+        "criterion": "Credit-specific audit gates registered",
+        "met": credit_gates >= 5,
+        "evidence": f"{credit_gates} credit audit gates in scripts/audit.py",
+    })
+
+    # Has any QA gap analysis document been produced?
+    qa_doc = DOCS_DIR / "credit_qa_gap_analysis.md"
+    sub.append({
+        "criterion": "Credit QA gap analysis document exists",
+        "met": qa_doc.exists(),
+        "evidence": "docs/credit_qa_gap_analysis.md" if qa_doc.exists() else "MISSING",
+    })
+    if not qa_doc.exists():
+        gaps.append("Phase 2 QA Standards gap analysis document missing")
+
+    # Has compliance score been recorded?
+    compliance_recorded = qa_doc.exists() and "compliance" in _read_text(qa_doc).lower()
+    sub.append({
+        "criterion": "Compliance score recorded",
+        "met": compliance_recorded,
+        "evidence": "compliance score in QA doc" if compliance_recorded else "NOT recorded",
+    })
+    if not compliance_recorded:
+        gaps.append("Credit compliance score never formally recorded")
+
+    # Has recovery priority matrix been published?
+    has_priority_matrix = (qa_doc.exists()
+                          and "priority" in _read_text(qa_doc).lower())
+    sub.append({
+        "criterion": "Recovery priority matrix published",
+        "met": has_priority_matrix,
+        "evidence": "priority matrix present" if has_priority_matrix else "MISSING",
+    })
+
+    # Has full remediation roadmap been published?
+    has_roadmap = (qa_doc.exists()
+                  and "roadmap" in _read_text(qa_doc).lower())
+    sub.append({
+        "criterion": "Full remediation roadmap published",
+        "met": has_roadmap,
+        "evidence": "roadmap present" if has_roadmap else "MISSING",
+    })
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+    if pct < 50:
+        gaps.append(f"Phase 2 QA Compliance only {pct:.1f}% — major remediation needed")
+
+    return PhaseAudit(
+        phase="Phase 2",
+        name="QA Standards Compliance Validation",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 3 — Recovery & Modernization Roadmap
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: React-ready, FastAPI, API-first, PostgreSQL, Modularized,
+# Containerization ready, Event-driven capable, Cloud deployable,
+# Integration scalable; Flexcube compatibility; Workflow engine;
+# Notifications; Reporting engine; RBAC; Audit & compliance.
+
+def audit_phase_3_modernization() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    # Reuse existing 360 audit functions
+    try:
+        from utils.credit_section_audit_engine import (
+            audit_api_coverage, audit_react_readiness, audit_postgres_backing,
+        )
+        api = audit_api_coverage()
+        react = audit_react_readiness()
+        pg = audit_postgres_backing()
+    except Exception:
+        api = react = pg = None
+
+    sub.append({
+        "criterion": "API-first / FastAPI standardized",
+        "met": (api and api.api_coverage_pct >= 80.0) if api else False,
+        "evidence": (f"{api.api_coverage_pct}% engines wired to API"
+                    if api else "audit unavailable"),
+    })
+    if api and api.api_coverage_pct < 80:
+        gaps.append(f"Phase 3 FastAPI: only {api.api_coverage_pct}% engines wired")
+
+    sub.append({
+        "criterion": "React migration ready",
+        "met": (react and react.react_readiness_pct >= 90.0) if react else False,
+        "evidence": (f"{react.react_readiness_pct}% pages React-clean"
+                    if react else "audit unavailable"),
+    })
+
+    sub.append({
+        "criterion": "Fully on PostgreSQL",
+        "met": (pg and pg.postgres_backing_pct >= 90.0) if pg else False,
+        "evidence": (f"{pg.postgres_backing_pct}% pages use PG adapter"
+                    if pg else "audit unavailable"),
+    })
+    if pg and pg.postgres_backing_pct < 90:
+        gaps.append(f"Phase 3 PostgreSQL: only {pg.postgres_backing_pct}% pages PG-backed")
+
+    # Flexcube integration compatibility
+    text = _all_credit_text()
+    has_flexcube = bool(re.search(
+        r"flexcube|FLEXCUBE|fcubs|FCUBS|fc_adapter", text,
+    ))
+    sub.append({
+        "criterion": "Flexcube integration compatibility",
+        "met": has_flexcube,
+        "evidence": "Flexcube reference found" if has_flexcube else "NO Flexcube references in credit code",
+    })
+    if not has_flexcube:
+        gaps.append("Phase 3 CRITICAL: zero Flexcube integration references in credit code")
+
+    # Containerization readiness (Dockerfile in repo)
+    has_dockerfile = (REPO_ROOT / "Dockerfile").exists()
+    sub.append({
+        "criterion": "Containerization ready (Dockerfile present)",
+        "met": has_dockerfile,
+        "evidence": "Dockerfile exists" if has_dockerfile else "NO Dockerfile",
+    })
+
+    # Event-driven capability (event bus / triggers / async)
+    has_events = bool(re.search(
+        r"event_bus|publish_event|EventEmitter|asyncio|@app\.on_event", text,
+    ))
+    sub.append({
+        "criterion": "Event-driven capable",
+        "met": has_events,
+        "evidence": "event/async hooks present" if has_events else "no event-driven hooks in credit",
+    })
+    if not has_events:
+        gaps.append("Phase 3 no event-driven architecture in credit module")
+
+    # Cloud deployable (config separation)
+    has_env_config = (REPO_ROOT / ".env.example").exists() or \
+                     bool(re.search(r"os\.getenv\(", text))
+    sub.append({
+        "criterion": "Cloud deployable (env-based config)",
+        "met": has_env_config,
+        "evidence": "env-based config" if has_env_config else "config not externalized",
+    })
+
+    # BSC engine integration
+    bsc_integrated = "bsc_audit_engine" in text or "balanced_scorecard" in text or \
+                     "_bsc_trigger" in text
+    sub.append({
+        "criterion": "BSC engine integration",
+        "met": bsc_integrated,
+        "evidence": "BSC triggers/engine wired" if bsc_integrated else "BSC NOT integrated",
+    })
+
+    # Workflow engine integration
+    workflow_integrated = "credit_workflow" in text and "CreditWorkflowEngine" in text
+    sub.append({
+        "criterion": "Workflow engine integration",
+        "met": workflow_integrated,
+        "evidence": "CreditWorkflowEngine wired" if workflow_integrated else "MISSING",
+    })
+
+    # Notification systems
+    has_notifications = bool(re.search(
+        r"notify|notification|send_email|sms_send|push_notification", text,
+    ))
+    sub.append({
+        "criterion": "Notification systems wired",
+        "met": has_notifications,
+        "evidence": "notification hooks present" if has_notifications else "NO notification hooks in credit",
+    })
+    if not has_notifications:
+        gaps.append("Phase 3 no notification system wired into credit")
+
+    # Reporting engine
+    has_reporting = bool(re.search(
+        r"reporting_engine|report_generator|export_to_pdf|export_to_excel", text,
+    ))
+    sub.append({
+        "criterion": "Reporting engine integration",
+        "met": has_reporting,
+        "evidence": "reporting hooks present" if has_reporting else "NO reporting engine integration",
+    })
+
+    # Authentication & RBAC
+    has_rbac = "require_access" in text
+    sub.append({
+        "criterion": "Authentication & RBAC integration",
+        "met": has_rbac,
+        "evidence": "require_access gates present" if has_rbac else "NO RBAC gates",
+    })
+
+    # Audit and compliance systems
+    audit_calls = len(re.findall(r"\baudit_log\(", text))
+    sub.append({
+        "criterion": "Audit & compliance system integration",
+        "met": audit_calls >= 5,
+        "evidence": f"{audit_calls} audit_log calls",
+    })
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 3",
+        name="Recovery & Modernization Roadmap",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 4 — Human Workflow & Organizational Alignment
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: every role (Chief → Officer) workflows aligned, access
+# rights, reporting lines, approval authority, operational outputs,
+# accountability, workload, escalation. SUPER USER for module.
+
+def audit_phase_4_workflow_alignment() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    try:
+        from utils.credit_section_audit_engine import audit_staff_completeness
+        staff = audit_staff_completeness()
+    except Exception:
+        staff = None
+
+    # All credit roles present in cascade
+    sub.append({
+        "criterion": "All expected credit roles in target_cascade",
+        "met": (staff and staff.staff_completeness_pct >= 90.0) if staff else False,
+        "evidence": (f"{staff.staff_completeness_pct}% roles present"
+                    if staff else "audit unavailable"),
+    })
+    if staff and staff.staff_completeness_pct < 90:
+        gaps.append(
+            f"Phase 4 staff completeness: only {staff.staff_completeness_pct}% of credit "
+            f"roles in cascade; missing: {staff.missing_from_cascade[:3]}"
+        )
+
+    # Reporting lines intact (Chief → Manager chain exists)
+    sub.append({
+        "criterion": "Reporting lines intact (Chief Credit cascades down)",
+        "met": staff.reporting_lines_intact if staff else False,
+        "evidence": "Chief Credit → Manager chain present"
+                   if (staff and staff.reporting_lines_intact)
+                   else "reporting line broken",
+    })
+
+    # Approval authority mapped (committee tiers)
+    text = _all_credit_text()
+    approval_mapped = ("COMMITTEE_REQUIREMENTS" in text and
+                      "determine_tier" in text and
+                      "TIER_4" in text)
+    sub.append({
+        "criterion": "Approval authority mapped (tiers + committees)",
+        "met": approval_mapped,
+        "evidence": "4-tier committee mapping present" if approval_mapped else "MISSING",
+    })
+
+    # SUPER USER for credit dept (per Joshua doctrine)
+    super_user_marker = ("super_user" in text.lower() or
+                        "is_credit_super_user" in text or
+                        "credit_admin_super" in text)
+    # Also check users.json + manifest for credit super user role
+    users_text = _read_text(DATA_DIR / "users.json")
+    has_credit_super = ('"is_dept_super_user": true' in users_text and
+                       'credit' in users_text.lower())
+    sub.append({
+        "criterion": "Credit dept SUPER USER configured (per doctrine)",
+        "met": super_user_marker or has_credit_super,
+        "evidence": ("super_user role found"
+                    if (super_user_marker or has_credit_super)
+                    else "NO super user for credit dept"),
+    })
+    if not (super_user_marker or has_credit_super):
+        gaps.append("Phase 4 CRITICAL: no SUPER USER configured for credit dept")
+
+    # Per-role visibility/access (require_access in pages)
+    pages = _credit_pages()
+    pages_with_rbac = 0
+    for p in pages:
+        t = _read_text(PAGES_DIR / p)
+        if "require_access" in t:
+            pages_with_rbac += 1
+    rbac_pct = pages_with_rbac / len(pages) * 100 if pages else 0
+    sub.append({
+        "criterion": "Per-role access rights enforced (>=80% pages have require_access)",
+        "met": rbac_pct >= 80.0,
+        "evidence": f"{pages_with_rbac}/{len(pages)} pages have require_access ({rbac_pct:.1f}%)",
+    })
+    if rbac_pct < 80:
+        gaps.append(f"Phase 4 RBAC: only {rbac_pct:.1f}% credit pages gated")
+
+    # Operational outputs (each page has business actions, not just display)
+    pages_with_actions = 0
+    for p in pages:
+        t = _read_text(PAGES_DIR / p)
+        if "st.button" in t or "st.form_submit_button" in t or "st.download_button" in t:
+            pages_with_actions += 1
+    action_pct = pages_with_actions / len(pages) * 100 if pages else 0
+    sub.append({
+        "criterion": "Operational outputs (pages have actions, not display-only)",
+        "met": action_pct >= 70.0,
+        "evidence": f"{pages_with_actions}/{len(pages)} pages have buttons/actions ({action_pct:.1f}%)",
+    })
+
+    # Escalation handling (committee referral path exists)
+    has_escalation = ("REFERRED_TO_COMMITTEE" in text and
+                     "TIER_4" in text)
+    sub.append({
+        "criterion": "Escalation paths present (committee referral)",
+        "met": has_escalation,
+        "evidence": "committee referral + TIER_4 escalation" if has_escalation else "MISSING",
+    })
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 4",
+        name="Human Workflow & Organizational Alignment",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 5 — BSC & Actuals Intelligence Wiring
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: KPI generation, target mapping, actuals auto-pop, perf calc,
+# dept aggregation, individual productivity, auditability, historical
+# trend, exception reporting, performance alerting.
+
+def audit_phase_5_bsc_intelligence() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    try:
+        from utils.credit_section_audit_engine import audit_bsc_actuals_wiring
+        bsc = audit_bsc_actuals_wiring()
+    except Exception:
+        bsc = None
+
+    # KPI generation capability
+    sub.append({
+        "criterion": "Credit KPIs generated and tracked",
+        "met": (bsc and bsc.credit_kpis_total >= 30) if bsc else False,
+        "evidence": (f"{bsc.credit_kpis_total} credit KPIs in library"
+                    if bsc else "audit unavailable"),
+    })
+
+    # Actuals auto-population
+    auto_ok = bsc and bsc.actuals_auto_pct >= 60.0
+    sub.append({
+        "criterion": "Actuals auto-populated (>=60% of credit KPIs)",
+        "met": auto_ok,
+        "evidence": (f"{bsc.actuals_auto_pct}% auto-populated"
+                    if bsc else "audit unavailable"),
+    })
+    if not auto_ok and bsc:
+        gaps.append(
+            f"Phase 5 CRITICAL: only {bsc.actuals_auto_pct}% of credit KPIs "
+            f"auto-populate. People are keying actuals."
+        )
+
+    # Target mapping (credit KPIs have targets in cascade)
+    cascade_text = _read_text(DATA_DIR / "target_cascade.json")
+    has_credit_targets = ("Chief Credit Officer" in cascade_text and
+                         "NPL" in cascade_text.upper())
+    sub.append({
+        "criterion": "Target mapping per role (credit roles have targets)",
+        "met": has_credit_targets,
+        "evidence": "credit targets in cascade" if has_credit_targets else "MISSING",
+    })
+
+    # Performance calculation logic
+    bsc_engine = UTILS_DIR / "bsc_audit_engine.py"
+    bsc_calc = UTILS_DIR / "core.py"
+    has_perf_calc = bsc_engine.exists() and bsc_calc.exists()
+    sub.append({
+        "criterion": "Performance calculation logic present",
+        "met": has_perf_calc,
+        "evidence": "bsc_audit_engine + core.py both present" if has_perf_calc else "MISSING",
+    })
+
+    # Auditability of actuals (audit_log + actuals files)
+    actuals_files = list(DATA_DIR.glob("actuals_*.xlsx"))
+    sub.append({
+        "criterion": "Auditability of actuals (historical files preserved)",
+        "met": len(actuals_files) >= 1,
+        "evidence": f"{len(actuals_files)} actuals_*.xlsx files preserved",
+    })
+
+    # Historical trend preservation
+    bsc_history = DATA_DIR / "balanced_scorecards.json"
+    sub.append({
+        "criterion": "Historical trend preservation (BSC history file)",
+        "met": bsc_history.exists(),
+        "evidence": "balanced_scorecards.json present"
+                   if bsc_history.exists() else "MISSING",
+    })
+
+    # Exception reporting (NPL alerts, breach alerts)
+    text = _all_credit_text()
+    has_excp_reporting = bool(re.search(
+        r"breach|sla_breach|NPL_alert|st\.warning|st\.error", text,
+    ))
+    sub.append({
+        "criterion": "Exception reporting (breach/alert mechanisms)",
+        "met": has_excp_reporting,
+        "evidence": "breach/alert hooks present"
+                   if has_excp_reporting else "MISSING",
+    })
+
+    # Performance alerting (real-time alerts in pages)
+    has_alerts = bool(re.search(
+        r"st\.error\(.*breach|near_breach|sla_breach", text, re.IGNORECASE,
+    ))
+    sub.append({
+        "criterion": "Performance alerting (proactive alerts to users)",
+        "met": has_alerts,
+        "evidence": "performance alerts present" if has_alerts else "weak alerting",
+    })
+
+    # Feeds HR performance (credit officer BSCs include credit metrics)
+    sub.append({
+        "criterion": "Credit performance feeds HR (officer BSCs reflect credit)",
+        "met": bsc.feeds_hr_performance if bsc else False,
+        "evidence": ("credit→HR bridge active"
+                    if (bsc and bsc.feeds_hr_performance)
+                    else "credit→HR bridge MISSING"),
+    })
+    if not (bsc and bsc.feeds_hr_performance):
+        gaps.append("Phase 5: credit→HR performance bridge not built")
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 5",
+        name="BSC & Actuals Intelligence Wiring",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 6 — Departmental Command Centre Construction
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: Chief Credit 360 Command Centre with Executive Visibility +
+# Strategic Intelligence + Organ Health Monitoring.
+
+def audit_phase_6_command_centre() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    # Does the Chief Credit Centre page exist?
+    candidate_pages = [
+        "85_chief_credit_centre.py",
+        "84_chief_credit_centre.py",
+        "83_chief_credit_centre.py",
+    ]
+    chief_centre = None
+    for p in candidate_pages:
+        if (PAGES_DIR / p).exists():
+            chief_centre = p
+            break
+
+    sub.append({
+        "criterion": "Chief Credit 360 Command Centre page exists",
+        "met": chief_centre is not None,
+        "evidence": chief_centre if chief_centre else "PAGE DOES NOT EXIST",
+    })
+    if chief_centre is None:
+        gaps.append(
+            "Phase 6 CRITICAL: Chief Credit 360 Command Centre page does "
+            "not exist. Required per doctrine."
+        )
+
+    if chief_centre is None:
+        # No further checks possible
+        for criterion in (
+            "Executive visibility (KPIs, bottlenecks, approvals)",
+            "Strategic intelligence (trends, forecasting, variance)",
+            "Organ health monitoring (module health, integration)",
+            "Staff performance tab (per HR Centre pattern)",
+            "Operational health status (real-time KPIs)",
+            "Risk indicators + SLA breaches",
+        ):
+            sub.append({
+                "criterion": criterion,
+                "met": False,
+                "evidence": "Command Centre missing — N/A",
+            })
+            gaps.append(f"Phase 6: {criterion} cannot be assessed (centre missing)")
+    else:
+        # If centre exists, check its content
+        ctr_text = _read_text(PAGES_DIR / chief_centre)
+        sub.append({
+            "criterion": "Executive visibility (KPIs, bottlenecks, approvals)",
+            "met": ("metric" in ctr_text.lower() and
+                   "kpi" in ctr_text.lower()),
+            "evidence": "KPI/metric widgets present" if "metric" in ctr_text.lower() else "weak",
+        })
+        sub.append({
+            "criterion": "Strategic intelligence (trends, forecasting)",
+            "met": ("trend" in ctr_text.lower() or
+                   "forecast" in ctr_text.lower()),
+            "evidence": "trend/forecast present" if "trend" in ctr_text.lower() else "MISSING",
+        })
+        sub.append({
+            "criterion": "Organ health monitoring",
+            "met": "health" in ctr_text.lower(),
+            "evidence": "health monitoring present" if "health" in ctr_text.lower() else "MISSING",
+        })
+        sub.append({
+            "criterion": "Staff performance tab (per HR Centre pattern)",
+            "met": ("My Staff Performance" in ctr_text or
+                   "staff_performance" in ctr_text.lower()),
+            "evidence": "staff performance tab" if "My Staff" in ctr_text else "MISSING",
+        })
+        sub.append({
+            "criterion": "Operational health status (real-time)",
+            "met": "real-time" in ctr_text.lower() or "live" in ctr_text.lower(),
+            "evidence": "real-time/live indicators" if "real-time" in ctr_text.lower() else "weak",
+        })
+        sub.append({
+            "criterion": "Risk indicators + SLA breaches",
+            "met": "sla" in ctr_text.lower() or "breach" in ctr_text.lower(),
+            "evidence": "SLA breaches surfaced" if "sla" in ctr_text.lower() else "MISSING",
+        })
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 6",
+        name="Departmental Command Centre Construction",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 7 — Cross-Organ Harmonization & Enterprise Wiring
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: end-to-end process continuity, cross-module workflow sync,
+# shared master data, trigger/event integrity, reporting consistency,
+# unified audit trails, shared KPI contribution, system-wide balance.
+
+def audit_phase_7_cross_organ() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    text = _all_credit_text()
+
+    # Credit → HR bridge (loans affect HR performance KPIs)
+    has_credit_hr = "hr_actuals_engine" in text or "credit_to_hr" in text
+    sub.append({
+        "criterion": "Credit → HR bridge (officer BSC affected by credit)",
+        "met": has_credit_hr,
+        "evidence": "credit→HR bridge wired" if has_credit_hr else "MISSING",
+    })
+    if not has_credit_hr:
+        gaps.append("Phase 7: credit→HR bridge not built")
+
+    # Credit → Risk & Compliance (NPL feeds into risk monitoring)
+    has_credit_risk = ("risk_compliance" in text or
+                      "risk_factor" in text or
+                      "ifrs9" in text.lower())
+    sub.append({
+        "criterion": "Credit → Risk/Compliance integration (NPL/IFRS9)",
+        "met": has_credit_risk,
+        "evidence": "risk/IFRS9 integration" if has_credit_risk else "MISSING",
+    })
+
+    # Credit → Operations (disbursement → ops queue)
+    has_credit_ops = ("disbursement" in text.lower() and
+                     ("operations" in text.lower() or "ops_queue" in text.lower()))
+    sub.append({
+        "criterion": "Credit → Operations (disbursement → ops queue)",
+        "met": has_credit_ops,
+        "evidence": "disbursement→ops link" if has_credit_ops else "weak",
+    })
+
+    # Credit → Finance/Treasury (provisions, write-offs)
+    has_credit_finance = ("provision" in text.lower() and
+                         ("finance" in text.lower() or "treasury" in text.lower()))
+    sub.append({
+        "criterion": "Credit → Finance/Treasury (provisions, write-offs)",
+        "met": has_credit_finance,
+        "evidence": "provisions wired" if has_credit_finance else "weak",
+    })
+
+    # Credit → CRM (customer 360 includes credit history)
+    has_credit_crm = ("customer" in text.lower() and
+                    ("customer_360" in text.lower() or "client" in text.lower()))
+    sub.append({
+        "criterion": "Credit → CRM (customer 360 includes credit)",
+        "met": has_credit_crm,
+        "evidence": "customer 360 link" if has_credit_crm else "MISSING",
+    })
+
+    # Credit → Pipeline (pipeline opportunities convert to loans)
+    has_credit_pipeline = "pipeline" in text.lower() and \
+                         ("pipeline_deal_id" in text or "pipeline" in text)
+    sub.append({
+        "criterion": "Credit ↔ Pipeline (pipeline → loan application)",
+        "met": has_credit_pipeline,
+        "evidence": "pipeline link" if has_credit_pipeline else "MISSING",
+    })
+
+    # Shared master data consistency (customer CIF, branch, RM)
+    has_master_data = ("client_cif" in text and "branch" in text and
+                      "rm_name" in text)
+    sub.append({
+        "criterion": "Shared master data (CIF, branch, RM)",
+        "met": has_master_data,
+        "evidence": "CIF + branch + RM consistent" if has_master_data else "fragmented",
+    })
+
+    # Unified audit trails
+    audit_in_credit = len(re.findall(r"\baudit_log\(", text)) >= 5
+    sub.append({
+        "criterion": "Unified audit trails (audit_log across modules)",
+        "met": audit_in_credit,
+        "evidence": "audit_log consistent" if audit_in_credit else "weak",
+    })
+
+    # End-to-end process continuity (Pipeline → Application → Approval → Disburse → Monitor)
+    end_to_end = ("pipeline_deal_id" in text and
+                 "ApplicationState" in text and
+                 "DISBURSED" in text and
+                 "credit_monitoring" in text)
+    sub.append({
+        "criterion": "End-to-end continuity (Pipeline→Apply→Approve→Disburse→Monitor)",
+        "met": end_to_end,
+        "evidence": "full chain wired" if end_to_end else "broken chain",
+    })
+    if not end_to_end:
+        gaps.append("Phase 7: end-to-end credit chain has gaps")
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 7",
+        name="Cross-Organ Harmonization & Enterprise Wiring",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# PHASE 8 — Anti-Deterioration & Long-Term Stability
+# ════════════════════════════════════════════════════════════════════
+# Doctrine: automated health monitoring, error detection, performance,
+# dependency, audit controls, data integrity, recovery, backup, failover,
+# usage, security, tech debt, version governance, documentation.
+
+def audit_phase_8_anti_deterioration() -> PhaseAudit:
+    sub = []
+    gaps = []
+
+    # Automated health monitoring (G330 body health includes credit?)
+    body_eng = UTILS_DIR / "body_health_engine.py"
+    has_body_health = body_eng.exists()
+    if has_body_health:
+        body_text = _read_text(body_eng)
+        credit_in_body = "credit" in body_text.lower() and "ORGAN_REGISTRY" in body_text
+    else:
+        credit_in_body = False
+    sub.append({
+        "criterion": "Credit included in body_health_engine monitoring",
+        "met": credit_in_body,
+        "evidence": "credit organ registered" if credit_in_body else "MISSING",
+    })
+
+    # Error detection (logging + exception handlers)
+    text = _all_credit_text()
+    has_logging = "logging.getLogger" in text or "logger." in text
+    sub.append({
+        "criterion": "Error detection (logging instrumented)",
+        "met": has_logging,
+        "evidence": "logger instrumented" if has_logging else "weak",
+    })
+
+    # Audit controls (per-action audit_log)
+    audit_calls = len(re.findall(r"\baudit_log\(", text))
+    sub.append({
+        "criterion": "Audit controls (>=10 audit_log calls)",
+        "met": audit_calls >= 10,
+        "evidence": f"{audit_calls} audit_log calls",
+    })
+
+    # Data integrity checks (validation in engines)
+    has_validation = bool(re.search(
+        r"\.validate\(|validate_\w+|ValidationError|raise\s+ValueError", text,
+    ))
+    sub.append({
+        "criterion": "Data integrity checks (validation in engines)",
+        "met": has_validation,
+        "evidence": "validation present" if has_validation else "weak",
+    })
+
+    # Backup validation (backups directory + data integrity)
+    backups_dir = DATA_DIR
+    backup_subdirs = list(backups_dir.glob("_v10*_backups"))
+    sub.append({
+        "criterion": "Backup directories preserved",
+        "met": len(backup_subdirs) >= 3,
+        "evidence": f"{len(backup_subdirs)} v10.xxx backup directories",
+    })
+
+    # Failover readiness (graceful degradation)
+    has_failover = bool(re.search(
+        r"try:.*except.*continue|graceful|fallback|defensively", text,
+    ))
+    sub.append({
+        "criterion": "Failover readiness (graceful degradation)",
+        "met": has_failover,
+        "evidence": "graceful degradation hooks" if has_failover else "weak",
+    })
+
+    # Technical debt tracking (TODO/FIXME registry or DEFER_TO note)
+    has_debt_tracking = ("DEFER_TO" in text or "TECHNICAL_DEBT" in text or
+                       "SPEC_DEVIATION" in text)
+    sub.append({
+        "criterion": "Technical debt tracking (DEFER_TO / SPEC_DEVIATION)",
+        "met": has_debt_tracking,
+        "evidence": "tech debt markers" if has_debt_tracking else "no tracking",
+    })
+
+    # Version governance (G162 baseline)
+    audit_text = _read_text(REPO_ROOT / "scripts" / "audit.py")
+    has_version_gov = "G162" in audit_text and "baseline" in audit_text.lower()
+    sub.append({
+        "criterion": "Version governance (G162 baseline mechanism)",
+        "met": has_version_gov,
+        "evidence": "G162 baseline active" if has_version_gov else "MISSING",
+    })
+
+    # Documentation governance (CHANGELOG + Master Prompt updated per batch)
+    changelogs = list(REPO_ROOT.glob("CHANGELOG_v10.4*.md"))
+    sub.append({
+        "criterion": "Documentation governance (CHANGELOGs per batch)",
+        "met": len(changelogs) >= 5,
+        "evidence": f"{len(changelogs)} v10.4xx CHANGELOGs",
+    })
+
+    # Continuous deterioration scan (stale logic detection)
+    has_drift_check = bool(re.search(
+        r"stale|orphaned|unused|deprecated", text, re.IGNORECASE,
+    ))
+    sub.append({
+        "criterion": "Stale/deprecated marker scan present",
+        "met": has_drift_check,
+        "evidence": "drift markers present" if has_drift_check else "no scan",
+    })
+
+    # Recovery protocols (G162 + verifier)
+    has_recovery = (REPO_ROOT / "scripts" / "verify_local_state.py").exists()
+    sub.append({
+        "criterion": "Recovery protocols (verifier script)",
+        "met": has_recovery,
+        "evidence": "verify_local_state.py present" if has_recovery else "MISSING",
+    })
+
+    if not credit_in_body:
+        gaps.append(
+            "Phase 8: credit not registered in body_health_engine ORGAN_REGISTRY"
+        )
+    if not has_logging:
+        gaps.append("Phase 8: credit module not instrumented with logger")
+
+    met = sum(1 for s in sub if s["met"])
+    pct = met / len(sub) * 100 if sub else 0
+
+    return PhaseAudit(
+        phase="Phase 8",
+        name="Anti-Deterioration & Long-Term Stability Controls",
+        sub_criteria=sub,
+        phase_score_pct=round(pct, 1),
+        critical_gaps=gaps,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# FINAL VALIDATION — 14 CERTIFICATION CRITERIA
+# ════════════════════════════════════════════════════════════════════
+# Line-by-line from the doctrine.
+
+def final_validation_certification(
+    phase_audits: Dict[str, PhaseAudit],
+) -> FinalValidationCertification:
+    """The 14 doctrine criteria - line-by-line."""
+    text = _all_credit_text()
+    # Call individual audit functions directly to avoid circular dep
+    # with credit_full_audit (which now calls us via doctrine_full_audit).
+    try:
+        from utils.credit_section_audit_engine import (
+            audit_api_coverage, audit_react_readiness, audit_postgres_backing,
+            audit_bsc_actuals_wiring, audit_tab_functionality,
+        )
+        api_cov = audit_api_coverage()
+        react = audit_react_readiness()
+        pg = audit_postgres_backing()
+        bsc = audit_bsc_actuals_wiring()
+        tab_func = audit_tab_functionality()
+    except Exception:
+        api_cov = react = pg = bsc = tab_func = None
+
+    criteria = []
+
+    # 1. Functional integrity is confirmed
+    crit_1_met = (phase_audits["phase_1"].phase_score_pct >= 80.0
+                  and tab_func is not None
+                  and tab_func.functional_pct >= 95.0)
+    criteria.append({
+        "number": 1,
+        "name": "Functional integrity confirmed",
+        "met": crit_1_met,
+        "partial": phase_audits["phase_1"].phase_score_pct >= 50.0,
+        "evidence": (f"Phase 1: {phase_audits['phase_1'].phase_score_pct}% + "
+                    f"tabs: {tab_func.functional_pct if tab_func else 'N/A'}%"),
+    })
+
+    # 2. Technical modernization is complete
+    crit_2_met = phase_audits["phase_3"].phase_score_pct >= 90.0
+    criteria.append({
+        "number": 2,
+        "name": "Technical modernization complete",
+        "met": crit_2_met,
+        "partial": phase_audits["phase_3"].phase_score_pct >= 50.0,
+        "evidence": f"Phase 3: {phase_audits['phase_3'].phase_score_pct}%",
+    })
+
+    # 3. QA compliance is achieved
+    crit_3_met = phase_audits["phase_2"].phase_score_pct >= 90.0
+    criteria.append({
+        "number": 3,
+        "name": "QA compliance achieved",
+        "met": crit_3_met,
+        "partial": phase_audits["phase_2"].phase_score_pct >= 30.0,
+        "evidence": f"Phase 2: {phase_audits['phase_2'].phase_score_pct}%",
+    })
+
+    # 4. React migration readiness AND PostgreSQL is validated
+    react_ok = (react and react.react_readiness_pct >= 90.0)
+    pg_ok = (pg and pg.postgres_backing_pct >= 90.0)
+    crit_4_met = react_ok and pg_ok
+    criteria.append({
+        "number": 4,
+        "name": "React readiness + PostgreSQL validated",
+        "met": crit_4_met,
+        "partial": (react_ok or pg_ok),
+        "evidence": (f"React: {react.react_readiness_pct if tab_func else 'N/A'}% "
+                    f"+ PG: {pg.postgres_backing_pct if tab_func else 'N/A'}%"),
+    })
+
+    # 5. FastAPI architecture compliance is achieved
+    api_pct = api_cov.api_coverage_pct if tab_func else 0.0
+    crit_5_met = api_pct >= 90.0
+    criteria.append({
+        "number": 5,
+        "name": "FastAPI architecture compliance",
+        "met": crit_5_met,
+        "partial": api_pct >= 30.0,
+        "evidence": f"API coverage: {api_pct}%",
+    })
+
+    # 6. Flexcube integration compatibility is validated
+    has_flexcube = bool(re.search(r"flexcube|fcubs|FCUBS", text, re.IGNORECASE))
+    criteria.append({
+        "number": 6,
+        "name": "Flexcube integration compatibility",
+        "met": has_flexcube,
+        "partial": has_flexcube,
+        "evidence": "Flexcube references present" if has_flexcube else "MISSING",
+    })
+
+    # 7. BSC auto-population is operational
+    bsc_pct = bsc.actuals_auto_pct if tab_func else 0.0
+    crit_7_met = bsc_pct >= 60.0
+    criteria.append({
+        "number": 7,
+        "name": "BSC auto-population operational",
+        "met": crit_7_met,
+        "partial": bsc_pct >= 20.0,
+        "evidence": f"BSC actuals auto: {bsc_pct}%",
+    })
+
+    # 8. Department command centre is functional
+    crit_8_met = phase_audits["phase_6"].phase_score_pct >= 80.0
+    criteria.append({
+        "number": 8,
+        "name": "Department command centre functional",
+        "met": crit_8_met,
+        "partial": phase_audits["phase_6"].phase_score_pct >= 30.0,
+        "evidence": f"Phase 6: {phase_audits['phase_6'].phase_score_pct}%",
+    })
+
+    # 9. Cross-organ harmonization is stable
+    crit_9_met = phase_audits["phase_7"].phase_score_pct >= 80.0
+    criteria.append({
+        "number": 9,
+        "name": "Cross-organ harmonization stable",
+        "met": crit_9_met,
+        "partial": phase_audits["phase_7"].phase_score_pct >= 50.0,
+        "evidence": f"Phase 7: {phase_audits['phase_7'].phase_score_pct}%",
+    })
+
+    # 10. Stress testing is passed
+    has_stress_test = bool(re.search(
+        r"stress_test|load_test|perf_test|benchmark_credit", text, re.IGNORECASE,
+    ))
+    criteria.append({
+        "number": 10,
+        "name": "Stress testing passed",
+        "met": has_stress_test,
+        "partial": False,
+        "evidence": "stress tests present" if has_stress_test else "NO stress tests for credit",
+    })
+
+    # 11. Anti-deterioration controls are active
+    crit_11_met = phase_audits["phase_8"].phase_score_pct >= 80.0
+    criteria.append({
+        "number": 11,
+        "name": "Anti-deterioration controls active",
+        "met": crit_11_met,
+        "partial": phase_audits["phase_8"].phase_score_pct >= 50.0,
+        "evidence": f"Phase 8: {phase_audits['phase_8'].phase_score_pct}%",
+    })
+
+    # 12. Documentation is complete
+    changelogs = list(REPO_ROOT.glob("CHANGELOG_v10.4*.md"))
+    has_module_doc = (DOCS_DIR / "credit_module_revival.md").exists()
+    crit_12_met = len(changelogs) >= 8 and has_module_doc
+    criteria.append({
+        "number": 12,
+        "name": "Documentation complete",
+        "met": crit_12_met,
+        "partial": len(changelogs) >= 5,
+        "evidence": f"{len(changelogs)} CHANGELOGs + module doc: {has_module_doc}",
+    })
+
+    # 13. Operational adoption is validated
+    has_adoption = (DOCS_DIR / "credit_adoption_report.md").exists()
+    criteria.append({
+        "number": 13,
+        "name": "Operational adoption validated",
+        "met": has_adoption,
+        "partial": False,
+        "evidence": "adoption report present" if has_adoption else "NO adoption report",
+    })
+
+    # 14. Long-term scalability is confirmed
+    has_scalability = bool(re.search(
+        r"horizontal_scale|scale_test|capacity_plan", text, re.IGNORECASE,
+    ))
+    criteria.append({
+        "number": 14,
+        "name": "Long-term scalability confirmed",
+        "met": has_scalability,
+        "partial": False,
+        "evidence": "scalability evidence" if has_scalability else "NO scalability plan",
+    })
+
+    fully = sum(1 for c in criteria if c["met"])
+    partial = sum(1 for c in criteria if not c["met"] and c.get("partial"))
+    not_met = sum(1 for c in criteria if not c["met"] and not c.get("partial"))
+    pct = fully / len(criteria) * 100 if criteria else 0
+    certified = fully == len(criteria)
+
+    return FinalValidationCertification(
+        criteria=criteria,
+        fully_met=fully,
+        partially_met=partial,
+        not_met=not_met,
+        certification_score_pct=round(pct, 1),
+        certified=certified,
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# VITAL SIGNS — 10 Health Questions applied to Credit
+# ════════════════════════════════════════════════════════════════════
+
+def vital_signs_for_credit(
+    phase_audits: Dict[str, PhaseAudit],
+    final_validation: FinalValidationCertification,
+) -> VitalSignsForCredit:
+    questions = []
+
+    # Q1: Healthy in isolation?
+    p1 = phase_audits["phase_1"].phase_score_pct
+    q1 = ("pass" if p1 >= 80 else ("partial" if p1 >= 50 else "fail"))
+    questions.append({
+        "number": 1,
+        "question": "Is credit healthy in isolation?",
+        "status": q1,
+        "evidence": f"Phase 1 diagnostic: {p1}%",
+    })
+
+    # Q2: Healthy when connected to body?
+    p7 = phase_audits["phase_7"].phase_score_pct
+    q2 = "pass" if p7 >= 80 else ("partial" if p7 >= 50 else "fail")
+    questions.append({
+        "number": 2,
+        "question": "Is credit healthy when connected to the rest of the body?",
+        "status": q2,
+        "evidence": f"Phase 7 cross-organ: {p7}%",
+    })
+
+    # Q3: Hidden stress from new development?
+    p1_gaps = len(phase_audits["phase_1"].critical_gaps)
+    q3 = "pass" if p1_gaps == 0 else "partial"
+    questions.append({
+        "number": 3,
+        "question": "Hidden stress / dependency conflicts / bottlenecks?",
+        "status": q3,
+        "evidence": f"{p1_gaps} Phase 1 gaps surfaced",
+    })
+
+    # Q4: Reviving credit while weakening another?
+    # Check that body health hasn't regressed
+    try:
+        from utils.cascade_bsc_360_engine import cascade_bsc_360_audit
+        c360 = cascade_bsc_360_audit()
+        body_intact = c360.overall_harmony_pct >= 100.0
+    except Exception:
+        body_intact = False
+    q4 = "pass" if body_intact else "fail"
+    questions.append({
+        "number": 4,
+        "question": "Are we reviving credit while weakening another organ?",
+        "status": q4,
+        "evidence": "360 harmony 100%" if body_intact else "harmony regressed",
+    })
+
+    # Q5: Information flowing efficiently?
+    p3 = phase_audits["phase_3"].phase_score_pct
+    q5 = "pass" if p3 >= 80 else "fail"
+    questions.append({
+        "number": 5,
+        "question": "Information flowing efficiently? (APIs, events, sync)",
+        "status": q5,
+        "evidence": f"Phase 3 modernization: {p3}%",
+    })
+
+    # Q6: Toxic feedback loops / silos?
+    # No automated detection yet; flag if cross-organ < 50%
+    q6 = "partial" if p7 >= 50 else "fail"
+    questions.append({
+        "number": 6,
+        "question": "Toxic feedback loops / data silos / broken pathways?",
+        "status": q6,
+        "evidence": (f"Phase 7 cross-organ {p7}% - silos likely below 50%"
+                    if p7 < 80 else "no silos detected"),
+    })
+
+    # Q7: Synchronized organism?
+    overall_sync = (phase_audits["phase_3"].phase_score_pct
+                   + phase_audits["phase_7"].phase_score_pct) / 2
+    q7 = "pass" if overall_sync >= 80 else ("partial" if overall_sync >= 50 else "fail")
+    questions.append({
+        "number": 7,
+        "question": "One synchronized organism or fragmented systems?",
+        "status": q7,
+        "evidence": f"Sync = (Phase3 + Phase7)/2 = {overall_sync:.1f}%",
+    })
+
+    # Q8: Stress-tested?
+    stress_crit = next((c for c in final_validation.criteria
+                       if c["number"] == 10), None)
+    q8 = "pass" if (stress_crit and stress_crit["met"]) else "fail"
+    questions.append({
+        "number": 8,
+        "question": "Stress-tested under normal/peak/failure/error/scale?",
+        "status": q8,
+        "evidence": "stress tests run" if q8 == "pass" else "NO stress tests for credit",
+    })
+
+    # Q9: Controls / safeguards / fallback / recovery?
+    p8 = phase_audits["phase_8"].phase_score_pct
+    q9 = "pass" if p8 >= 80 else ("partial" if p8 >= 50 else "fail")
+    questions.append({
+        "number": 9,
+        "question": "Controls, safeguards, fallback, recovery in place?",
+        "status": q9,
+        "evidence": f"Phase 8 anti-deterioration: {p8}%",
+    })
+
+    # Q10: If credit fails — body survives / self-heals / alerts?
+    has_failover = phase_audits["phase_8"].phase_score_pct >= 60.0
+    has_alerts = phase_audits["phase_5"].phase_score_pct >= 50.0
+    q10_pass = has_failover and has_alerts
+    q10 = "pass" if q10_pass else ("partial" if has_failover or has_alerts else "fail")
+    questions.append({
+        "number": 10,
+        "question": "If credit fails — does the body survive / self-heal / alert?",
+        "status": q10,
+        "evidence": f"failover capable: {has_failover}, alerts: {has_alerts}",
+    })
+
+    passing = sum(1 for q in questions if q["status"] == "pass")
+    partial = sum(1 for q in questions if q["status"] == "partial")
+    failing = sum(1 for q in questions if q["status"] == "fail")
+    # Score: pass=1.0, partial=0.5, fail=0.0
+    score = (passing + 0.5 * partial) / len(questions) * 100 if questions else 0
+
+    return VitalSignsForCredit(
+        questions=questions,
+        passing=passing,
+        failing=failing,
+        partial=partial,
+        vital_signs_score_pct=round(score, 1),
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# MASTER DOCTRINE AUDIT
+# ════════════════════════════════════════════════════════════════════
+
+def doctrine_full_audit() -> DoctrineAudit:
+    """Master audit aligning credit to the full 8-phase doctrine."""
+    phases = {
+        "phase_1": audit_phase_1_diagnostic(),
+        "phase_2": audit_phase_2_qa_compliance(),
+        "phase_3": audit_phase_3_modernization(),
+        "phase_4": audit_phase_4_workflow_alignment(),
+        "phase_5": audit_phase_5_bsc_intelligence(),
+        "phase_6": audit_phase_6_command_centre(),
+        "phase_7": audit_phase_7_cross_organ(),
+        "phase_8": audit_phase_8_anti_deterioration(),
+    }
+
+    final = final_validation_certification(phases)
+    vitals = vital_signs_for_credit(phases, final)
+
+    # Doctrine health: weighted composite
+    # 8 phases (equal weight = 8% each = 64% total)
+    # + Final validation 14 criteria: 24%
+    # + Vital signs 10 questions: 12%
+    phase_avg = sum(p.phase_score_pct for p in phases.values()) / 8
+    doctrine_health = (
+        phase_avg * 0.64
+        + final.certification_score_pct * 0.24
+        + vitals.vital_signs_score_pct * 0.12
+    )
+
+    # Rescue priorities (from gaps across phases, ordered by severity)
+    priorities = []
+    for phase_key in ("phase_5", "phase_3", "phase_6", "phase_7", "phase_8",
+                     "phase_4", "phase_2", "phase_1"):
+        for gap in phases[phase_key].critical_gaps:
+            priorities.append(f"[{phases[phase_key].phase}] {gap}")
+
+    return DoctrineAudit(
+        phase_1=phases["phase_1"],
+        phase_2=phases["phase_2"],
+        phase_3=phases["phase_3"],
+        phase_4=phases["phase_4"],
+        phase_5=phases["phase_5"],
+        phase_6=phases["phase_6"],
+        phase_7=phases["phase_7"],
+        phase_8=phases["phase_8"],
+        final_validation=final,
+        vital_signs=vitals,
+        doctrine_health_pct=round(doctrine_health, 1),
+        rescue_priorities=priorities[:15],  # top 15
+        timestamp=datetime.now().isoformat(),
+    )
+
+
+if __name__ == "__main__":  # pragma: no cover
+    import sys
+    sys.path.insert(0, str(REPO_ROOT))
+    a = doctrine_full_audit()
+    print(f"═══ CREDIT DOCTRINE HEALTH: {a.doctrine_health_pct}% ═══\n")
+    for k in ("phase_1", "phase_2", "phase_3", "phase_4",
+              "phase_5", "phase_6", "phase_7", "phase_8"):
+        p = getattr(a, k)
+        print(f"  {p.phase} ({p.name}): {p.phase_score_pct}%")
+    print(f"\n  Final Validation Certification: "
+          f"{a.final_validation.certification_score_pct}% "
+          f"({a.final_validation.fully_met}/14 fully met)")
+    print(f"  Vital Signs Score: {a.vital_signs.vital_signs_score_pct}% "
+          f"({a.vital_signs.passing} pass / {a.vital_signs.partial} partial / "
+          f"{a.vital_signs.failing} fail)")
+    print(f"\n  Certified: {a.final_validation.certified}")

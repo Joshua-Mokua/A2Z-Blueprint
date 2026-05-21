@@ -1,8 +1,8 @@
 {
-  "_version": "5.2",
+  "_version": "5.3",
   "_description": "Master organisational configuration \u2014 editable via Admin without code",
-  "_last_modified": "2026-04-18",
-  "_modified_by": "System",
+  "_last_modified": "2026-05-11",
+  "_modified_by": "v10.318",
   "departments": [
     {
       "id": "retail",
@@ -3356,42 +3356,147 @@
     "Rift Valley"
   ],
   "hierarchy": {
-    "Chief Executive & Managing Director": [],
+    "Managing Director": [],
     "Chief Retail Banking Officer": [
-      "Chief Executive & Managing Director"
-    ],
-    "Chief Commercial Officer": [
-      "Chief Executive & Managing Director"
-    ],
-    "Chief Financial Officer": [
-      "Chief Executive & Managing Director"
+      "Managing Director"
     ],
     "Chief Credit Officer": [
-      "Chief Executive & Managing Director"
-    ],
-    "Chief Risk Officer": [
-      "Chief Executive & Managing Director"
-    ],
-    "Chief Information Officer": [
-      "Chief Executive & Managing Director"
+      "Managing Director"
     ],
     "Chief Operating Officer": [
-      "Chief Executive & Managing Director"
+      "Managing Director"
+    ],
+    "Chief Financial Officer": [
+      "Managing Director"
+    ],
+    "Chief Information Officer": [
+      "Managing Director"
+    ],
+    "Chief Risk Officer": [
+      "Managing Director"
+    ],
+    "Chief Compliance Officer": [
+      "Managing Director"
+    ],
+    "Chief Internal Auditor": [
+      "Managing Director"
     ],
     "Chief Human Resource Officer": [
-      "Chief Executive & Managing Director"
+      "Managing Director"
     ],
-    "Company Secretary and Chief Legal Officer": [
-      "Chief Executive & Managing Director"
+    "Chief Commercial Officer": [
+      "Managing Director"
+    ],
+    "General Manager - Bancassurance": [
+      "Managing Director"
     ],
     "Head of Branches": [
       "Chief Retail Banking Officer"
+    ],
+    "Head Of Women Banking": [
+      "Chief Retail Banking Officer"
+    ],
+    "Head of Retail Banking": [
+      "Chief Retail Banking Officer"
+    ],
+    "Head of Operations": [
+      "Chief Operating Officer"
+    ],
+    "Head of Procurement": [
+      "Chief Operating Officer"
+    ],
+    "Head Of ICT": [
+      "Chief Information Officer"
+    ],
+    "Head of Digital Financial Services": [
+      "Chief Information Officer"
+    ],
+    "Head of Cybersecurity": [
+      "Chief Information Officer"
+    ],
+    "Head of Treasury": [
+      "Chief Financial Officer"
+    ],
+    "Head of Strategy": [
+      "Chief Financial Officer"
+    ],
+    "Head of MSME": [
+      "Chief Commercial Officer"
+    ],
+    "Head Of Corporates & Trade Finance": [
+      "Chief Commercial Officer"
+    ],
+    "Head of Trade Finance": [
+      "Chief Commercial Officer"
+    ],
+    "Head of SME": [
+      "Chief Commercial Officer"
+    ],
+    "Head of Digital Banking": [
+      "Chief Commercial Officer"
+    ],
+    "Head of Government & Institutional Banking": [
+      "Chief Commercial Officer"
+    ],
+    "Head Of Marketing and Corporate Communication": [
+      "Chief Commercial Officer"
+    ],
+    "Head Of Marketing and Corporate Communications": [
+      "Chief Commercial Officer"
+    ],
+    "Head of Risk": [
+      "Chief Risk Officer"
+    ],
+    "Head of Compliance": [
+      "Chief Compliance Officer"
+    ],
+    "Head, Customer Experience": [
+      "Chief Operating Officer"
     ],
     "Area Manager": [
       "Head of Branches"
     ],
     "Senior Branch Manager": [
-      "Area Manager"
+      "Head of Branches"
+    ],
+    "Senior Manager Direct Sales Force": [
+      "Head of Branches"
+    ],
+    "Senior Manager Diaspora Banking": [
+      "Chief Retail Banking Officer"
+    ],
+    "Senior Manager -Credit Analysis": [
+      "Chief Credit Officer"
+    ],
+    "Senior Manager-Collections & Recoveries": [
+      "Chief Credit Officer"
+    ],
+    "Senior Manager- Compliance": [
+      "Chief Compliance Officer"
+    ],
+    "Senior Manager Internal Audit": [
+      "Chief Internal Auditor"
+    ],
+    "Senior Manager Treasury": [
+      "Head of Treasury"
+    ],
+    "Senior Relationship Manager - Corporate Banking": [
+      "Head Of Corporates & Trade Finance"
+    ],
+    "Senior Relationship Manager- SME": [
+      "Head of MSME"
+    ],
+    "Senior Relationship Manager-Trade Finance Specialist": [
+      "Head of Trade Finance"
+    ],
+    "Manager Agency Banking": [
+      "Head of Digital Financial Services"
+    ],
+    "Risk Manager": [
+      "Chief Risk Officer"
+    ],
+    "Financial Controller-Senior Manager": [
+      "Chief Financial Officer"
     ],
     "Branch Manager": [
       "Area Manager"
@@ -3402,41 +3507,77 @@
     "Branch Relationship Manager": [
       "Branch Manager"
     ],
-    "Head Of Corporates & Trade Finance": [
-      "Chief Commercial Officer"
-    ],
-    "Head of MSME": [
-      "Chief Commercial Officer"
-    ],
-    "Head of Digital Financial Services": [
-      "Chief Operating Officer"
-    ],
-    "Head of Operations": [
-      "Chief Operating Officer"
-    ],
-    "Head, Customer Experience": [
-      "Chief Operating Officer"
-    ],
-    "Manager Agency Banking": [
+    "Manager Mobile Banking": [
       "Head of Digital Financial Services"
     ],
-    "Head of Treasury": [
-      "Chief Financial Officer"
+    "Manager Underwriting": [
+      "General Manager - Bancassurance"
     ],
-    "Financial Controller-Senior Manager": [
-      "Chief Financial Officer"
+    "Manager - Clearing": [
+      "Head of Operations"
     ],
-    "Risk Manager": [
-      "Chief Risk Officer"
+    "Credit Manager": [
+      "Chief Credit Officer"
     ],
-    "Head Of ICT": [
-      "Chief Information Officer"
+    "Compliance Manager": [
+      "Head of Compliance"
     ],
-    "General Manager - Bancassurance": [
-      "Chief Commercial Officer"
+    "Relationship Manager - Corporate Banking": [
+      "Senior Relationship Manager - Corporate Banking"
     ],
-    "Senior Manager Internal Audit": [
-      "Chief Executive & Managing Director"
+    "Relationship Manager - SME": [
+      "Senior Relationship Manager- SME"
+    ],
+    "Relationship Manager - Agribusiness": [
+      "Head of MSME"
+    ],
+    "Relationship Manager - Diaspora": [
+      "Senior Manager Diaspora Banking"
+    ],
+    "Relationship Manager- Public Sector": [
+      "Head of Government & Institutional Banking"
+    ],
+    "Relationship Manager- Trade Finance": [
+      "Senior Relationship Manager-Trade Finance Specialist"
+    ],
+    "Relationship Manager - Institutional Banking": [
+      "Head of Government & Institutional Banking"
+    ],
+    "Branch Operations Supervisor": [
+      "Branch Operations Manager"
+    ],
+    "Branch Senior Relationship Officer": [
+      "Branch Relationship Manager"
+    ],
+    "Relationship Officer-Business Banker": [
+      "Branch Relationship Manager"
+    ],
+    "Relationship Officer-Personal Banker": [
+      "Branch Relationship Manager"
+    ],
+    "Relationship Officer Bancassurance": [
+      "Manager Underwriting"
+    ],
+    "Credit Analyst": [
+      "Credit Manager"
+    ],
+    "Contact Centre Officer": [
+      "Head, Customer Experience"
+    ],
+    "Senior Digital Channels Officer": [
+      "Head of Digital Financial Services"
+    ],
+    "Teller": [
+      "Branch Operations Supervisor"
+    ],
+    "Customer Service Officer": [
+      "Branch Operations Supervisor"
+    ],
+    "Direct Sales Representative - Assets & Liabilities": [
+      "Branch Operations Supervisor"
+    ],
+    "Direct Sales Representative": [
+      "Branch Operations Supervisor"
     ]
   },
   "bank_name": "Ecobank Kenya",
@@ -3445,12 +3586,6 @@
   "country": "Kenya",
   "currency": "KES",
   "currency_symbol": "KES",
-  "pillar_weights": {
-    "Financial": 0.4,
-    "Customer Focus": 0.25,
-    "Operational Excellence": 0.25,
-    "People & Learning": 0.1
-  },
   "role_module_assignments": {
     "Managing Director": [
       "flexcube_integration"
@@ -3515,5 +3650,10 @@
     "System Administrator": [
       "flexcube_integration"
     ]
-  }
+  },
+  "regulator": "CBK",
+  "regulator_full": "Central Bank of Kenya",
+  "cbs_name": "Oracle FLEXCUBE v12",
+  "tax_authority": "KRA",
+  "tax_authority_full": "Kenya Revenue Authority"
 }

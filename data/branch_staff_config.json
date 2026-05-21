@@ -1,0 +1,116 @@
+{
+  "_schema_version": "v10.337",
+  "_description": "Branch-level individual scorecards for retail branch staff. Covers Customer Service Officers (service role) and 5 branch sales roles (BB / PB / BRM / BSRO / DSR). For sales roles, the producer submits non-pipeline KPIs (CX, audit, compliance, productivity, new customers); pipeline_to_bsc supplies the sales/pipeline KPIs through its enhanced activity bridge. The two paths interlock — neither role gets a complete scorecard from either alone.",
+  "_design_principles": [
+    "Pipeline is the canonical source for sales KPIs (DISB_*, NFI, PIPELINE_*)",
+    "Branch staff generator owns operational / service / behavioural KPIs",
+    "Customer Service Officers: full service scorecard from this generator",
+    "Branch sales roles: service + operational KPIs here, pipeline-fed sales KPIs elsewhere",
+    "Deterministic per (staff_code, period, kpi_id)",
+    "Direction-aware (dormancy/TAT INVERT)",
+    "Scale-aware (CCY_M sentinel where used)"
+  ],
+  "performance_bands": {
+    "HIGH": {
+      "weight": 0.22,
+      "factor_range": [1.05, 1.15],
+      "description": "Top performers"
+    },
+    "MID": {
+      "weight": 0.60,
+      "factor_range": [0.92, 1.05],
+      "description": "On-track"
+    },
+    "LOW": {
+      "weight": 0.18,
+      "factor_range": [0.78, 0.90],
+      "description": "Below target"
+    }
+  },
+  "buckets": {
+    "CUSTOMER_SERVICE": {
+      "name": "Customer Service",
+      "scope_filter": "role in [Customer Service Officer]",
+      "staff_count_target": 142,
+      "_note": "Branch counter service — onboarding, account ops, complaint handling. Full scorecard from this generator (no pipeline activity expected)."
+    },
+    "BRANCH_SALES": {
+      "name": "Branch Sales",
+      "scope_filter": "role in [BB / PB / BRM / BSRO / DSR]",
+      "staff_count_target": 348,
+      "_note": "Sales-active branch roles. This generator covers non-pipeline KPIs (CX/audit/compliance/staff productivity/new customers). Pipeline-fed sales KPIs (DISB_*, NFI, PIPELINE_*) arrive via pipeline_to_bsc's activity bridge."
+    }
+  },
+  "role_kpi_bases": {
+    "Customer Service Officer": {
+      "bucket": "CUSTOMER_SERVICE",
+      "kpi_bases": {
+        "NEW_ACCOUNTS": {"base": 72, "unit": "count", "direction": "higher"},
+        "ACCOUNT_OPENING_TAT": {"base": 4.5, "unit": "hours", "direction": "lower"},
+        "COMPLAINT_RESOLUTION_RATE": {"base": 92, "unit": "%", "direction": "higher"},
+        "Account Dormancy": {"base": 12, "unit": "%", "direction": "lower"},
+        "CX Score": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"},
+        "Staff Productivity": {"base": 70, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Relationship Officer-Business Banker": {
+      "bucket": "BRANCH_SALES",
+      "kpi_bases": {
+        "NEW_CUSTOMERS_ACQUIRED": {"base": 24, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.0, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 75, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 70, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Relationship Officer-Personal Banker": {
+      "bucket": "BRANCH_SALES",
+      "kpi_bases": {
+        "NEW_CUSTOMERS_ACQUIRED": {"base": 32, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.0, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 75, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 70, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Branch Relationship Manager": {
+      "bucket": "BRANCH_SALES",
+      "kpi_bases": {
+        "NEW_CUSTOMERS_ACQUIRED": {"base": 18, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.0, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 78, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 72, "unit": "score_100", "direction": "higher"},
+        "Number of Business Borrowers": {"base": 22, "unit": "count", "direction": "higher"}
+      }
+    },
+    "Branch Senior Relationship Officer": {
+      "bucket": "BRANCH_SALES",
+      "kpi_bases": {
+        "NEW_CUSTOMERS_ACQUIRED": {"base": 28, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 77, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 72, "unit": "score_100", "direction": "higher"},
+        "Number of Business Borrowers": {"base": 18, "unit": "count", "direction": "higher"}
+      }
+    },
+    "Direct Sales Representative - Assets & Liabilities": {
+      "bucket": "BRANCH_SALES",
+      "kpi_bases": {
+        "NEW_CUSTOMERS_ACQUIRED": {"base": 42, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 3.9, "unit": "score_5", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 72, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 75, "unit": "score_100", "direction": "higher"}
+      }
+    }
+  },
+  "noise_range_pct": 0.05,
+  "_rationale": {
+    "split_with_pipeline": "Sales staff have a split scorecard by design: pipeline owns the canonical sales KPIs (won deals → DISB_*, Total NFI). This generator covers what pipeline doesn't — operational quality, customer experience, compliance discipline. The same role can get inputs from both producers because the BSC engine indexes on (staff_code, kpi_id) without collision when KPIs differ.",
+    "csos_full_coverage": "CSOs have no pipeline footprint by role definition. They get a full scorecard from this generator alone.",
+    "no_disbursement_values_for_sales": "This generator deliberately does NOT submit DISB_RETAIL / DISB_MSME / Total NFI for sales staff — pipeline_to_bsc owns those. Submitting both would cause last-write-wins ambiguity. Each producer has a clearly-defined slice of the KPI vocabulary."
+  }
+}

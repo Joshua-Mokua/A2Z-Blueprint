@@ -13,7 +13,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("pip")
+require_access("people_hr.pip")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     """Non-blocking BSC update — called after every save action."""
@@ -53,7 +53,7 @@ m2.metric("Completed - Improved",status_ct.get("Completed - Improved",0))
 m3.metric("Extended",         status_ct.get("Extended",0))
 m4.metric("Total PIPs",       len(pips))
 
-tabs = st.tabs(["📋 Active PIPs","✅ Completed","➕ Initiate PIP","📊 Analytics"])
+tabs = st.tabs(["📋 Active PIPs","✅ Completed","➕ Initiate PIP","📊 Analytics","⚡ Efficiency Insights"])
 
 def _render_pips(pip_list):
     if not pip_list:
@@ -133,3 +133,112 @@ with tabs[3]:
         st.markdown("**PIP outcomes:**")
         for s,n in outcome_ct.most_common():
             st.markdown(f"  {s}: {n}")
+
+
+# ════════════════════════════════════════════════════════════════════
+# v10.440 — Wire Std #18 EfficiencyEngine into PIP
+# ════════════════════════════════════════════════════════════════════
+
+with tabs[4]:
+    st.markdown("**⚡ Efficiency Insights — Per-KPI efficiency vs peer average**")
+    st.caption(
+        "Efficiency = KPI achievement per minute of micro-task time. "
+        "Higher = more output per unit of effort. Std #18 "
+        "(EfficiencyEngine). Used to inform PIP improvement targets."
+    )
+    try:
+        from utils.efficiency import EfficiencyEngine
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Efficiency engine unavailable: {exc}")
+    else:
+        # Period selector
+        from datetime import datetime as _dt
+        now = _dt.now()
+        period_options = [
+            now.strftime("%Y-%m"),                           # current month
+            (now.replace(day=1) - timedelta(days=1)).strftime("%Y-%m"),  # last month
+            f"{now.year}-Q{(now.month - 1) // 3 + 1}",       # current quarter
+        ]
+        col1, col2 = st.columns([2, 3])
+        sel_period = col1.selectbox(
+            "Period", period_options, key="pip_eff_period",
+        )
+
+        # Staff selector: HR/Admin pick any; staff sees self
+        if is_hr or is_admin:
+            # List PIP staff for convenience
+            active_pip_codes = [
+                p.get("staff_code", "") for p in pips
+                if p.get("status") == "Active"
+            ]
+            options = [sc] + sorted(set(active_pip_codes) - {sc})
+            sel_staff = col2.selectbox(
+                "Staff code", options, key="pip_eff_staff",
+                help="Defaults to you; HR can review PIP staff",
+            )
+        else:
+            sel_staff = sc
+            col2.write(f"Showing your scores: **{sc}**")
+
+        if st.button("Calculate efficiency", key="pip_eff_calc"):
+            try:
+                engine = EfficiencyEngine()
+                scores = engine.calculate_efficiency_scores(
+                    staff_code=str(sel_staff), period=sel_period,
+                )
+                if not scores:
+                    st.info(
+                        f"No efficiency data for {sel_staff} in {sel_period}. "
+                        "Need both BSC outputs and completed micro-tasks "
+                        "for that period."
+                    )
+                else:
+                    personal = scores.get("personal_efficiency", {}) or {}
+                    vs_peer = scores.get("vs_peer_average", {}) or {}
+                    meta = scores.get("meta", {}) or {}
+
+                    # Summary
+                    if personal:
+                        n_kpis = len(personal)
+                        st.metric("KPIs measured", n_kpis)
+
+                        rows = []
+                        for kpi_id, eff_per_min in personal.items():
+                            ratio = vs_peer.get(kpi_id)
+                            ratio_str = (
+                                f"{ratio:.2f}x" if ratio is not None
+                                else "no peers"
+                            )
+                            status = (
+                                "🟢 Above peers" if ratio and ratio > 1.0
+                                else "🟡 Near peers" if ratio and ratio > 0.8
+                                else "🔴 Below peers" if ratio is not None
+                                else "—"
+                            )
+                            rows.append({
+                                "KPI": kpi_id,
+                                "Efficiency (per min)": round(eff_per_min, 4),
+                                "vs Peer Average": ratio_str,
+                                "Status": status,
+                            })
+                        st.dataframe(pd.DataFrame(rows),
+                                    use_container_width=True, hide_index=True)
+
+                        # Below-peer flag for PIP improvement
+                        below_peer = [
+                            r for r in rows
+                            if "Below" in r["Status"]
+                        ]
+                        if below_peer:
+                            st.warning(
+                                f"⚠️ {len(below_peer)} KPI(s) below peer average — "
+                                f"candidates for PIP improvement targets."
+                            )
+                    else:
+                        st.info("No personal_efficiency computed for this period.")
+
+                    if meta:
+                        with st.expander("Method & traceability"):
+                            st.json(meta)
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Calculation failed: {exc}")

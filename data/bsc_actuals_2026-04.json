@@ -1,0 +1,23 @@
+[
+  {
+    "staff_code": "300001",
+    "kpi_id": "DEP_GROWTH",
+    "value": {
+      "nested": "dict"
+    },
+    "period": "2026-04",
+    "source_module": "test",
+    "submitted_at": "2026-04-01T00:00:00Z",
+    "idem_hash": "fake-hash"
+  },
+  {
+    "staff_code": "300001",
+    "kpi_id": "DEP_GROWTH",
+    "value": 1.0,
+    "period": "2026-04",
+    "source_module": "test",
+    "submitted_at": "2026-05-11T05:44:23.008781+00:00",
+    "actor": "t",
+    "idem_hash": "b44c88567529c22c"
+  }
+]

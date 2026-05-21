@@ -1,0 +1,414 @@
+[
+  {
+    "id": "C001-strong-performer",
+    "description": "Top performer on one KPI → script references the win",
+    "input": {
+      "manager_code": "M1", "staff_code": "S100",
+      "is_report": true,
+      "staff": {"full_name": "Jane Doe", "role": "Personal Banker", "unit": "Nairobi"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 130, "target": 100, "achievement_pct": 130, "status": "exceeding"}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH", "exceeding"],
+      "agenda_min": 3
+    }
+  },
+  {
+    "id": "C002-struggling-staff",
+    "description": "All KPIs behind pace → script discusses challenges",
+    "input": {
+      "manager_code": "M1", "staff_code": "S200",
+      "is_report": true,
+      "staff": {"full_name": "Bob Smith", "role": "Personal Banker", "unit": "Nairobi"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 40, "target": 100, "achievement_pct": 40, "status": "behind"},
+        {"kpi_id": "NPL_PCT",    "current": 30, "target": 100, "achievement_pct": 30, "status": "behind"}
+      ],
+      "nudges": [{"kpi_id": "DEP_GROWTH", "type": "alert"}],
+      "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_any_of": ["DEP_GROWTH", "NPL_PCT"],
+      "talking_points_must_contain": ["blockers"]
+    }
+  },
+  {
+    "id": "C003-mixed-with-skill-gap",
+    "description": "Mixed KPIs + growth plan with skill gap → covers both",
+    "input": {
+      "manager_code": "M1", "staff_code": "S300",
+      "is_report": true,
+      "staff": {"full_name": "Carol Jones", "role": "RM", "unit": "Mombasa"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 95, "target": 100, "achievement_pct": 95, "status": "on_pace"},
+        {"kpi_id": "LOAN_GROWTH", "current": 60, "target": 100, "achievement_pct": 60, "status": "behind"}
+      ],
+      "nudges": [],
+      "growth_plan": {
+        "promotion_readiness": 0.55,
+        "skill_gaps": [{"skill": "Credit Analysis", "current": 2.5, "required": 4.0}],
+        "recommended_actions": ["CISI Credit Foundation"]
+      },
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["LOAN_GROWTH", "Credit Analysis"]
+    }
+  },
+  {
+    "id": "C004-with-microtasks",
+    "description": "High-priority micro-tasks pending → talking points reference them",
+    "input": {
+      "manager_code": "M1", "staff_code": "S400",
+      "is_report": true,
+      "staff": {"full_name": "Dan Kim", "role": "Personal Banker", "unit": "Kisumu"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 60, "target": 100, "achievement_pct": 60, "status": "behind"}
+      ],
+      "nudges": [], "growth_plan": {},
+      "microtasks": [
+        {"priority": "High", "kpi_id": "DEP_GROWTH", "task": "Make 5 prospect calls"},
+        {"priority": "High", "kpi_id": "DEP_GROWTH", "task": "Follow up with 3 hot leads"},
+        {"priority": "High", "kpi_id": "DEP_GROWTH", "task": "Schedule client visits"}
+      ],
+      "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["high-priority"],
+      "actions_must_contain": ["3"]
+    }
+  },
+  {
+    "id": "C005-with-learning-card",
+    "description": "Behind on KPI + learning card → recommended action mentions peer",
+    "input": {
+      "manager_code": "M1", "staff_code": "S500",
+      "is_report": true,
+      "staff": {"full_name": "Eve Lee", "role": "Personal Banker", "unit": "Nakuru"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 50, "target": 100, "achievement_pct": 50, "status": "behind"}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [],
+      "learning_cards": [
+        {"card_type": "kpi", "kpi_id": "DEP_GROWTH",
+         "performer_staff_code": "S999", "achievement_pct": 145,
+         "requesting_staff": "S500"}
+      ]
+    },
+    "expected": {
+      "non_empty": true,
+      "actions_any_of": ["S999", "share approach"]
+    }
+  },
+  {
+    "id": "C006-no-signals-fallback",
+    "description": "New joiner with no data → fallback talking points",
+    "input": {
+      "manager_code": "M1", "staff_code": "S600",
+      "is_report": true,
+      "staff": {"full_name": "Frank Park", "role": "Trainee", "unit": "Nairobi"},
+      "kpi_status": [], "nudges": [], "growth_plan": {},
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_min": 1,
+      "agenda_min": 3
+    }
+  },
+  {
+    "id": "C007-cross-team-rejection",
+    "description": "Staff isn't in manager's report chain → empty",
+    "input": {
+      "manager_code": "M1", "staff_code": "S700",
+      "is_report": false,
+      "staff": {"full_name": "Other Branch Staff", "role": "Personal Banker", "unit": "Eldoret"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 130, "target": 100, "achievement_pct": 130}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "empty": true
+    }
+  },
+  {
+    "id": "C008-self-coaching-rejected",
+    "description": "Manager == staff_code → empty",
+    "input": {
+      "manager_code": "M1", "staff_code": "M1",
+      "is_report": true,
+      "staff": {"full_name": "Manager One", "role": "Branch Manager", "unit": "Mombasa"},
+      "kpi_status": [], "nudges": [], "growth_plan": {},
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "empty": true
+    }
+  },
+  {
+    "id": "C009-unknown-staff-rejected",
+    "description": "Unknown staff_code → empty (defensive)",
+    "input": {
+      "manager_code": "M1", "staff_code": "UNKNOWN",
+      "is_report": true,
+      "staff": null,
+      "kpi_status": [], "nudges": [], "growth_plan": {},
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "empty": true
+    }
+  },
+  {
+    "id": "C010-multiple-wins-prioritised",
+    "description": "Multiple exceeding KPIs → top 2 referenced (not all of them)",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1000",
+      "is_report": true,
+      "staff": {"full_name": "Grace Wong", "role": "RM Corporate", "unit": "Nairobi"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 152, "target": 100, "achievement_pct": 152},
+        {"kpi_id": "LOAN_GROWTH", "current": 138, "target": 100, "achievement_pct": 138},
+        {"kpi_id": "NFI",          "current": 125, "target": 100, "achievement_pct": 125},
+        {"kpi_id": "NPS",          "current": 115, "target": 100, "achievement_pct": 115}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH", "LOAN_GROWTH"],
+      "talking_points_max": 8
+    }
+  },
+  {
+    "id": "C011-recognition-nudge-corroboration",
+    "description": "KPI exceeding + recognition nudge → both signals contribute",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1100",
+      "is_report": true,
+      "staff": {"full_name": "Henry Otieno", "role": "Personal Banker", "unit": "Kisumu"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 130, "target": 100, "achievement_pct": 130}
+      ],
+      "nudges": [{"kpi_id": "DEP_GROWTH", "type": "recognition"}],
+      "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH"]
+    }
+  },
+  {
+    "id": "C012-medium-priority-tasks",
+    "description": "Only medium-priority tasks → script mentions them but differently",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1200",
+      "is_report": true,
+      "staff": {"full_name": "Irene Mboto", "role": "Personal Banker", "unit": "Mombasa"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 75, "target": 100, "achievement_pct": 75, "status": "behind"}
+      ],
+      "nudges": [], "growth_plan": {},
+      "microtasks": [
+        {"priority": "Medium", "kpi_id": "DEP_GROWTH", "task": "Review pipeline"}
+      ],
+      "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH"]
+    }
+  },
+  {
+    "id": "C013-large-skill-gaps",
+    "description": "Multiple skill gaps → top 2 in talking points",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1300",
+      "is_report": true,
+      "staff": {"full_name": "John Mwangi", "role": "Senior RM", "unit": "Nairobi"},
+      "kpi_status": [],
+      "nudges": [],
+      "growth_plan": {
+        "promotion_readiness": 0.30,
+        "skill_gaps": [
+          {"skill": "Risk Management", "current": 2.0, "required": 4.5},
+          {"skill": "Leadership",      "current": 2.5, "required": 4.5},
+          {"skill": "Credit Analysis", "current": 3.0, "required": 4.0}
+        ],
+        "recommended_actions": ["CISI Risk Foundation"]
+      },
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["Risk Management", "Leadership"]
+    }
+  },
+  {
+    "id": "C014-borderline-on-pace",
+    "description": "On-pace KPI (90%) → no behind-pace talking point fired",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1400",
+      "is_report": true,
+      "staff": {"full_name": "Karen Otieno", "role": "Personal Banker", "unit": "Eldoret"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 90, "target": 100, "achievement_pct": 90, "status": "on_pace"}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_not_contain": ["blockers"]
+    }
+  },
+  {
+    "id": "C015-very-large-numbers",
+    "description": "KES-scale targets → no math overflow, talking points still reference KPI",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1500",
+      "is_report": true,
+      "staff": {"full_name": "Leo Kihara", "role": "Director", "unit": "Nairobi HQ"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 1900000000, "target": 1500000000, "achievement_pct": 126.7}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH"]
+    }
+  },
+  {
+    "id": "C016-many-microtasks-cap",
+    "description": "10+ pending micro-tasks → talking point handles cleanly",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1600",
+      "is_report": true,
+      "staff": {"full_name": "Mary Aoko", "role": "Personal Banker", "unit": "Kisumu"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 30, "target": 100, "achievement_pct": 30, "status": "behind"}
+      ],
+      "nudges": [], "growth_plan": {},
+      "microtasks": [
+        {"priority": "High",   "kpi_id": "DEP_GROWTH", "task": "T1"},
+        {"priority": "High",   "kpi_id": "DEP_GROWTH", "task": "T2"},
+        {"priority": "High",   "kpi_id": "DEP_GROWTH", "task": "T3"},
+        {"priority": "High",   "kpi_id": "NPL_PCT",    "task": "T4"},
+        {"priority": "Medium", "kpi_id": "AML_SLA",    "task": "T5"},
+        {"priority": "Medium", "kpi_id": "AML_SLA",    "task": "T6"},
+        {"priority": "Medium", "kpi_id": "NPS",        "task": "T7"},
+        {"priority": "Medium", "kpi_id": "NPS",        "task": "T8"},
+        {"priority": "Medium", "kpi_id": "NPS",        "task": "T9"},
+        {"priority": "Medium", "kpi_id": "NPS",        "task": "T10"}
+      ],
+      "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["high-priority"]
+    }
+  },
+  {
+    "id": "C017-zero-target-kpi-skipped",
+    "description": "KPI with zero target → engine skips (no division-by-zero, no fake content)",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1700",
+      "is_report": true,
+      "staff": {"full_name": "Nick Wafula", "role": "Personal Banker", "unit": "Nairobi"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 50, "target": 0, "achievement_pct": 0, "status": "no_data"},
+        {"kpi_id": "LOAN_GROWTH", "current": 130, "target": 100, "achievement_pct": 130, "status": "exceeding"}
+      ],
+      "nudges": [], "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["LOAN_GROWTH"]
+    }
+  },
+  {
+    "id": "C018-very-low-promotion-readiness",
+    "description": "Low promotion readiness + skill gaps → development discussion",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1800",
+      "is_report": true,
+      "staff": {"full_name": "Olive Kimutai", "role": "Junior Banker", "unit": "Nairobi"},
+      "kpi_status": [],
+      "nudges": [],
+      "growth_plan": {
+        "promotion_readiness": 0.20,
+        "skill_gaps": [
+          {"skill": "Customer Service", "current": 2.0, "required": 4.0}
+        ],
+        "recommended_actions": ["NPS Champions e-learning"]
+      },
+      "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["Customer Service"],
+      "actions_must_contain": ["NPS"]
+    }
+  },
+  {
+    "id": "C019-mixed-signals-coherent",
+    "description": "All four signals present → script is coherent (uses each)",
+    "input": {
+      "manager_code": "M1", "staff_code": "S1900",
+      "is_report": true,
+      "staff": {"full_name": "Peter Njoroge", "role": "RM", "unit": "Mombasa"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH",  "current": 130, "target": 100, "achievement_pct": 130},
+        {"kpi_id": "LOAN_GROWTH", "current": 60,  "target": 100, "achievement_pct": 60, "status": "behind"}
+      ],
+      "nudges": [
+        {"kpi_id": "DEP_GROWTH",  "type": "recognition"},
+        {"kpi_id": "LOAN_GROWTH", "type": "alert"}
+      ],
+      "growth_plan": {
+        "promotion_readiness": 0.65,
+        "skill_gaps": [{"skill": "Credit Analysis", "current": 3.0, "required": 4.0}],
+        "recommended_actions": ["CISI Credit"]
+      },
+      "microtasks": [
+        {"priority": "High", "kpi_id": "LOAN_GROWTH", "task": "Visit clients"}
+      ],
+      "learning_cards": [
+        {"card_type": "kpi", "kpi_id": "LOAN_GROWTH",
+         "performer_staff_code": "S2000", "achievement_pct": 152,
+         "requesting_staff": "S1900"}
+      ]
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH", "LOAN_GROWTH"],
+      "actions_any_of": ["S2000", "share approach"]
+    }
+  },
+  {
+    "id": "C020-staff-with-only-acknowledged-nudges",
+    "description": "Active nudges all acknowledged → no nudge-driven talking point fires",
+    "input": {
+      "manager_code": "M1", "staff_code": "S2100",
+      "is_report": true,
+      "staff": {"full_name": "Rose Wanjiku", "role": "Personal Banker", "unit": "Nairobi"},
+      "kpi_status": [
+        {"kpi_id": "DEP_GROWTH", "current": 60, "target": 100, "achievement_pct": 60, "status": "behind"}
+      ],
+      "nudges": [],
+      "growth_plan": {}, "microtasks": [], "learning_cards": []
+    },
+    "expected": {
+      "non_empty": true,
+      "talking_points_must_contain": ["DEP_GROWTH"]
+    }
+  }
+]

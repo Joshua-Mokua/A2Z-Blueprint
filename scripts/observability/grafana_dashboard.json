@@ -1,0 +1,208 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "title": "A2Z MIS 360 — Observability Dashboard (v9.18)",
+  "description": "Per docs/OBSERVABILITY_DASHBOARD_RUNBOOK.md. Surfaces v9.6-v9.16 state-backend metrics into Grafana. Importable into Grafana 9.x+. Requires Prometheus datasource scraping a2z_* metrics.",
+  "tags": ["a2z", "banking", "observability", "v9.18"],
+  "timezone": "Africa/Nairobi",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-3h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Circuit Breaker State (per endpoint)",
+      "description": "1 = open (FLEXCUBE failing); 0 = closed (healthy)",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
+      "targets": [
+        {
+          "expr": "a2z_circuit_open",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "background",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 1}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "CLOSED"}}},
+            {"type": "value", "options": {"1": {"text": "OPEN"}}}
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Consecutive Failures (per endpoint)",
+      "description": "Approaches threshold (5) → circuit will trip",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "a2z_circuit_consecutive_failures",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 3},
+              {"color": "red", "value": 5}
+            ]
+          },
+          "custom": {"drawStyle": "line", "lineInterpolation": "stepAfter"}
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Retry Recovery Rate (per endpoint, %)",
+      "description": "% of failed-then-retried requests that ultimately succeeded. Below 50% = persistent issue",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "a2z_retry_recovery_rate_pct",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "green", "value": 80}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Latency p95 (per endpoint, ms)",
+      "description": "95th percentile latency. > 1000ms = degraded",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "a2z_latency_p95_ms",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 500},
+              {"color": "red", "value": 1000}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Latency p99 (per endpoint, ms)",
+      "description": "99th percentile latency. > 10000ms = critical (10s)",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "a2z_latency_p99_ms",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 2000},
+              {"color": "red", "value": 10000}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Unacknowledged Alert Backlog",
+      "description": "Alerts awaiting operator acknowledgement",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 20, "w": 8, "h": 6},
+      "targets": [
+        {
+          "expr": "a2z_alerts_unacknowledged",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 10},
+              {"color": "red", "value": 50}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Alert Volume (rate per minute)",
+      "description": "New alerts per tier per minute",
+      "type": "timeseries",
+      "gridPos": {"x": 8, "y": 20, "w": 16, "h": 6},
+      "targets": [
+        {
+          "expr": "rate(a2z_alerts_total[5m]) * 60",
+          "legendFormat": "{{tier}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "/min",
+          "custom": {"drawStyle": "bars", "stacking": {"mode": "normal"}}
+        }
+      }
+    }
+  ]
+}

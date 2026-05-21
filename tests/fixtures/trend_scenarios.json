@@ -1,0 +1,137 @@
+[
+  {
+    "id": "T001-clear-up-trend",
+    "description": "Steadily rising PBT over 6 months: 100→150 (+50%).",
+    "input": {
+      "values": [100, 110, 120, 130, 140, 150],
+      "ftp_modes": ["on", "on", "on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "up",
+      "percentage_approx": 0.50,
+      "alert_fired": false,
+      "alert_suppressed": false,
+      "warning_present": false
+    }
+  },
+  {
+    "id": "T002-down-20pct-alert-fires",
+    "description": "20% decline triggers alert.",
+    "input": {
+      "values": [100, 95, 90, 85, 80],
+      "ftp_modes": ["on", "on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "down",
+      "percentage_approx": -0.20,
+      "alert_fired": true,
+      "alert_message_substring": "20.0%"
+    }
+  },
+  {
+    "id": "T003-down-10pct-no-alert",
+    "description": "10% decline does NOT trigger alert (threshold is 15%).",
+    "input": {
+      "values": [100, 98, 96, 94, 90],
+      "ftp_modes": ["on", "on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "down",
+      "percentage_approx": -0.10,
+      "alert_fired": false
+    }
+  },
+  {
+    "id": "T004-flat",
+    "description": "Constant PBT → flat.",
+    "input": {
+      "values": [100, 100, 100, 100],
+      "ftp_modes": ["on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "flat",
+      "percentage_approx": 0.0,
+      "alert_fired": false
+    }
+  },
+  {
+    "id": "T005-mixed-modes-suppress-alert",
+    "description": "30% decline detected but alert SUPPRESSED — periods used mixed FTP modes.",
+    "input": {
+      "values": [100, 95, 80, 75, 70],
+      "ftp_modes": ["off", "off", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "down",
+      "alert_fired": false,
+      "alert_suppressed": true,
+      "alert_reason_substring": "Mandatory Standard #11",
+      "warning_present": true
+    }
+  },
+  {
+    "id": "T006-insufficient-data",
+    "description": "Single period — direction='insufficient_data'.",
+    "input": {
+      "values": [100],
+      "ftp_modes": ["on"]
+    },
+    "expected": {
+      "direction": "insufficient_data",
+      "alert_fired": false
+    }
+  },
+  {
+    "id": "T007-missing-periods-tracked",
+    "description": "Half the periods missing — engine tracks but trend still computed on what's available.",
+    "input": {
+      "values": [100, null, 90, null, 80],
+      "ftp_modes": ["on", null, "on", null, "on"]
+    },
+    "expected": {
+      "direction": "down",
+      "periods_with_data": 3
+    }
+  },
+  {
+    "id": "T008-down-50pct-extreme-alert",
+    "description": "50% decline — alert fires with strong message.",
+    "input": {
+      "values": [200, 180, 150, 120, 100],
+      "ftp_modes": ["on", "on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "down",
+      "percentage_approx": -0.50,
+      "alert_fired": true,
+      "alert_message_substring": "50.0%"
+    }
+  },
+  {
+    "id": "T009-all-ftp-off-warning",
+    "description": "All periods FTP-off → warning surfaces, alert suppressed.",
+    "input": {
+      "values": [100, 80, 60, 40],
+      "ftp_modes": ["off", "off", "off", "off"]
+    },
+    "expected": {
+      "direction": "down",
+      "alert_fired": false,
+      "alert_suppressed": true,
+      "warning_present": true
+    }
+  },
+  {
+    "id": "T010-zero-first-pbt-percentage-none",
+    "description": "First-period PBT is 0 → percentage undefined (None), alert cannot fire.",
+    "input": {
+      "values": [0, 50, 100, 150],
+      "ftp_modes": ["on", "on", "on", "on"]
+    },
+    "expected": {
+      "direction": "up",
+      "percentage_approx": null,
+      "alert_fired": false
+    }
+  }
+]

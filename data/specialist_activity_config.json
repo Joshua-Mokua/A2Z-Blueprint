@@ -1,0 +1,215 @@
+{
+  "_schema_version": "v10.336",
+  "_description": "Specialist department activity generator config. Brings Treasury, Trade Finance specialists, and Marketing departments into the BSC cascade — three subtrees that previously had K-coded role_kpis with no producer feeding them. Mirrors v10.317 Teller / v10.327 Credit / v10.328 Support / v10.334 Propositions pattern. Closes the majority of B-027 (department coverage gap).",
+  "_design_principles": [
+    "Specialist KPIs reflect departmental discipline (Treasury = liquidity + FX + NIM; TF = trade revenue + doc TAT + LC volume; Marketing = campaign ROI + brand + lead gen)",
+    "Deterministic per (staff_code, period, kpi_id)",
+    "Direction-aware (TAT lower-is-better; revenue/ROI higher-is-better)",
+    "Scale-aware (currency-M bases convert to raw currency at output)",
+    "Heads receive aggregate KPIs that mirror their department's collective performance"
+  ],
+  "performance_bands": {
+    "HIGH": {
+      "weight": 0.25,
+      "factor_range": [1.05, 1.15],
+      "description": "Top performers — beat targets"
+    },
+    "MID": {
+      "weight": 0.55,
+      "factor_range": [0.92, 1.05],
+      "description": "On-track — within band"
+    },
+    "LOW": {
+      "weight": 0.20,
+      "factor_range": [0.78, 0.90],
+      "description": "Below target"
+    }
+  },
+  "departments": {
+    "TREASURY": {
+      "name": "Treasury",
+      "scope_filter": "department == 'Treasury'",
+      "staff_count_target": 7,
+      "head_role": "Head of Treasury",
+      "head_band_weights": {"HIGH": 0.30, "MID": 0.55, "LOW": 0.15},
+      "_note": "Treasury covers ALM, FX dealing, money markets, and intraday liquidity. Head of Treasury already scores via support_function_generator (300164); specialist generator adds the dealing-room and operations staff."
+    },
+    "TRADE_FINANCE": {
+      "name": "Trade Finance Specialists",
+      "scope_filter": "department == 'Trade Finance'",
+      "staff_count_target": 10,
+      "head_role": "Trade Finance Back Office Manager",
+      "head_band_weights": {"HIGH": 0.30, "MID": 0.55, "LOW": 0.15},
+      "_note": "TF specialists sit under Head Corp & TF (300017) who already scores via products_to_bsc + pipeline_bridge. This generator brings the operations + back-office + 3 RMs into the cascade with TF-specific KPIs."
+    },
+    "MARKETING": {
+      "name": "Marketing",
+      "scope_filter": "department == 'Marketing'",
+      "staff_count_target": 4,
+      "head_role": "Head Of Marketing and Corporate Communication",
+      "head_band_weights": {"HIGH": 0.25, "MID": 0.55, "LOW": 0.20},
+      "_note": "Marketing reports to CCO. KPIs reflect campaign-driven revenue, brand health, and qualified lead generation — connecting to pipeline_to_bsc downstream where leads become deals."
+    }
+  },
+  "role_kpi_bases": {
+    "Senior Manager Treasury": {
+      "department": "TREASURY",
+      "kpi_bases": {
+        "LIQUIDITY_COVERAGE_RATIO": {"base": 132, "unit": "%", "direction": "higher"},
+        "NET_STABLE_FUNDING_RATIO": {"base": 118, "unit": "%", "direction": "higher"},
+        "NET_INTEREST_MARGIN": {"base": 5.4, "unit": "%", "direction": "higher"},
+        "FX_TRADING_INCOME": {"base": 220, "unit": "CCY_M", "direction": "higher"},
+        "Total NFI": {"base": 380, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 82, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.4, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Manager Forex Trader": {
+      "department": "TREASURY",
+      "kpi_bases": {
+        "FX_TRADING_INCOME": {"base": 140, "unit": "CCY_M", "direction": "higher"},
+        "NET_INTEREST_MARGIN": {"base": 5.2, "unit": "%", "direction": "higher"},
+        "Total NFI": {"base": 165, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 80, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Corporate Sales Dealer": {
+      "department": "TREASURY",
+      "kpi_bases": {
+        "FX_TRADING_INCOME": {"base": 95, "unit": "CCY_M", "direction": "higher"},
+        "Total NFI": {"base": 110, "unit": "CCY_M", "direction": "higher"},
+        "CX Score": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 78, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Treasury Dealer": {
+      "department": "TREASURY",
+      "kpi_bases": {
+        "FX_TRADING_INCOME": {"base": 75, "unit": "CCY_M", "direction": "higher"},
+        "NET_INTEREST_MARGIN": {"base": 5.0, "unit": "%", "direction": "higher"},
+        "Total NFI": {"base": 88, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 77, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Treasury Front Office Officer": {
+      "department": "TREASURY",
+      "kpi_bases": {
+        "FX_TRADING_INCOME": {"base": 45, "unit": "CCY_M", "direction": "higher"},
+        "Total NFI": {"base": 52, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 75, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "Staff Productivity": {"base": 70, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Trade Finance Back Office Manager": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_FINANCE_REVENUE": {"base": 380, "unit": "CCY_M", "direction": "higher"},
+        "TRADE_DOC_TAT": {"base": 28, "unit": "hours", "direction": "lower"},
+        "LC_VOLUME": {"base": 215, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 220, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 80, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Senior Trade Finance Officer": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_FINANCE_REVENUE": {"base": 175, "unit": "CCY_M", "direction": "higher"},
+        "TRADE_DOC_TAT": {"base": 30, "unit": "hours", "direction": "lower"},
+        "LC_VOLUME": {"base": 95, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 110, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 78, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Trade Finance Officer": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_FINANCE_REVENUE": {"base": 95, "unit": "CCY_M", "direction": "higher"},
+        "TRADE_DOC_TAT": {"base": 32, "unit": "hours", "direction": "lower"},
+        "LC_VOLUME": {"base": 55, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 65, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 76, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.1, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Trade Finance Operations Officer": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_DOC_TAT": {"base": 26, "unit": "hours", "direction": "lower"},
+        "LC_VOLUME": {"base": 75, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 42, "unit": "CCY_M", "direction": "higher"},
+        "Audit Score": {"base": 78, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.2, "unit": "score_5", "direction": "higher"},
+        "Staff Productivity": {"base": 72, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Relationship Manager- Trade Finance": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_FINANCE_REVENUE": {"base": 240, "unit": "CCY_M", "direction": "higher"},
+        "LC_VOLUME": {"base": 80, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 145, "unit": "CCY_M", "direction": "higher"},
+        "Number of Business Borrowers": {"base": 38, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.0, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 76, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Senior Relationship Manager-Trade Finance Specialist": {
+      "department": "TRADE_FINANCE",
+      "kpi_bases": {
+        "TRADE_FINANCE_REVENUE": {"base": 420, "unit": "CCY_M", "direction": "higher"},
+        "LC_VOLUME": {"base": 145, "unit": "count", "direction": "higher"},
+        "Total NFI": {"base": 240, "unit": "CCY_M", "direction": "higher"},
+        "Number of Business Borrowers": {"base": 62, "unit": "count", "direction": "higher"},
+        "CX Score": {"base": 4.1, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 78, "unit": "score_100", "direction": "higher"},
+        "COMPLIANCE_SCORE": {"base": 4.3, "unit": "score_5", "direction": "higher"}
+      }
+    },
+    "Head Of Marketing and Corporate Communication": {
+      "department": "MARKETING",
+      "kpi_bases": {
+        "CAMPAIGN_ROI": {"base": 285, "unit": "%", "direction": "higher"},
+        "BRAND_AWARENESS": {"base": 72, "unit": "%", "direction": "higher"},
+        "MARKETING_QUALIFIED_LEADS": {"base": 1850, "unit": "count", "direction": "higher"},
+        "MARKETING_DRIVEN_REVENUE": {"base": 320, "unit": "CCY_M", "direction": "higher"},
+        "CX Score": {"base": 4.0, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 79, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 74, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Marketing Assistant Manager": {
+      "department": "MARKETING",
+      "kpi_bases": {
+        "CAMPAIGN_ROI": {"base": 220, "unit": "%", "direction": "higher"},
+        "MARKETING_QUALIFIED_LEADS": {"base": 720, "unit": "count", "direction": "higher"},
+        "MARKETING_DRIVEN_REVENUE": {"base": 115, "unit": "CCY_M", "direction": "higher"},
+        "CX Score": {"base": 3.9, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 76, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 71, "unit": "score_100", "direction": "higher"}
+      }
+    },
+    "Marketing Officer": {
+      "department": "MARKETING",
+      "kpi_bases": {
+        "CAMPAIGN_ROI": {"base": 165, "unit": "%", "direction": "higher"},
+        "MARKETING_QUALIFIED_LEADS": {"base": 420, "unit": "count", "direction": "higher"},
+        "MARKETING_DRIVEN_REVENUE": {"base": 58, "unit": "CCY_M", "direction": "higher"},
+        "CX Score": {"base": 3.8, "unit": "score_5", "direction": "higher"},
+        "Audit Score": {"base": 74, "unit": "score_100", "direction": "higher"},
+        "Staff Productivity": {"base": 68, "unit": "score_100", "direction": "higher"}
+      }
+    }
+  },
+  "noise_range_pct": 0.04,
+  "_rationale": {
+    "why_new_canonical_kpis": "Treasury/TF/Marketing roles previously had K-coded role_kpis (K001..K025) that no producer was submitting. Mirrors v10.324 + v10.328 + v10.334 K→canonical migration pattern.",
+    "kpi_scope": "11 new canonical KPIs added (5 Treasury + 3 TF + 4 Marketing -1 shared) plus reuse of Total NFI, Audit Score, CX Score, COMPLIANCE_SCORE, Staff Productivity, Number of Business Borrowers",
+    "trade_doc_tat_lower": "Document check TAT is direction=lower per BCBS d268 trade finance operational risk standards — faster checks = better"
+  }
+}

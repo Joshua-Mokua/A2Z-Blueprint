@@ -1,0 +1,376 @@
+{
+  "2025_baseline_cycle": {
+    "strategy_cycle_id": "2025_baseline_cycle",
+    "what_worked": {
+      "initiatives": [
+        {
+          "id": "INIT0007",
+          "name": "Strategic Initiative 7",
+          "pillar": "Operational Excellence",
+          "department": "IT",
+          "type": "Cost Reduction",
+          "sponsor": "MD",
+          "completion_pct": 91,
+          "rag_status": "Green",
+          "expected_roi_pct": 51.6,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0012",
+          "name": "Strategic Initiative 12",
+          "pillar": "Digital Transformation",
+          "department": "Retail",
+          "type": "Innovation",
+          "sponsor": "MD",
+          "completion_pct": 92,
+          "rag_status": "Green",
+          "expected_roi_pct": 56.2,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0019",
+          "name": "Strategic Initiative 19",
+          "pillar": "Operational Excellence",
+          "department": "Executive",
+          "type": "Risk Management",
+          "sponsor": "Director Commercial",
+          "completion_pct": 97,
+          "rag_status": "Green",
+          "expected_roi_pct": 56.9,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0021",
+          "name": "Strategic Initiative 21",
+          "pillar": "Operational Excellence",
+          "department": "Risk",
+          "type": "Compliance",
+          "sponsor": "Director Retail",
+          "completion_pct": 93,
+          "rag_status": "Green",
+          "expected_roi_pct": 51.2,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0024",
+          "name": "Strategic Initiative 24",
+          "pillar": "Risk & Compliance",
+          "department": "Strategy",
+          "type": "Cost Reduction",
+          "sponsor": "Director IT",
+          "completion_pct": 92,
+          "rag_status": "Green",
+          "expected_roi_pct": 68.8,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0025",
+          "name": "Strategic Initiative 25",
+          "pillar": "People & Culture",
+          "department": "Retail",
+          "type": "Growth",
+          "sponsor": "Director Risk",
+          "completion_pct": 97,
+          "rag_status": "Green",
+          "expected_roi_pct": 66.3,
+          "actual_roi_pct": 0
+        }
+      ],
+      "common_factors": {
+        "n_initiatives": 6,
+        "label": "success",
+        "by_dimension": {
+          "department": [
+            {
+              "value": "Retail",
+              "count": 2,
+              "ratio": 0.333
+            }
+          ],
+          "type": [
+            {
+              "value": "Cost Reduction",
+              "count": 2,
+              "ratio": 0.333
+            }
+          ],
+          "sponsor": [
+            {
+              "value": "MD",
+              "count": 2,
+              "ratio": 0.333
+            }
+          ],
+          "pillar": [
+            {
+              "value": "Operational Excellence",
+              "count": 3,
+              "ratio": 0.5
+            }
+          ]
+        }
+      },
+      "key_insights": [
+        "Department='Retail' featured in 2/6 successful initiatives (33.3%) — pattern worth replicating in next cycle.",
+        "Type='Cost Reduction' featured in 2/6 successful initiatives (33.3%) — pattern worth replicating in next cycle.",
+        "Sponsor='MD' featured in 2/6 successful initiatives (33.3%) — pattern worth replicating in next cycle.",
+        "Pillar='Operational Excellence' featured in 3/6 successful initiatives (50.0%) — pattern worth replicating in next cycle."
+      ]
+    },
+    "what_didnt_work": {
+      "initiatives": [
+        {
+          "id": "INIT0004",
+          "name": "Strategic Initiative 4",
+          "pillar": "Financial Performance",
+          "department": "IT",
+          "type": "Risk Management",
+          "sponsor": "Director Retail",
+          "completion_pct": 53,
+          "rag_status": "Amber",
+          "expected_roi_pct": 53.6,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0009",
+          "name": "Strategic Initiative 9",
+          "pillar": "Risk & Compliance",
+          "department": "Retail",
+          "type": "Compliance",
+          "sponsor": "Director IT",
+          "completion_pct": 22,
+          "rag_status": "Red",
+          "expected_roi_pct": 79.0,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0014",
+          "name": "Strategic Initiative 14",
+          "pillar": "Operational Excellence",
+          "department": "Risk",
+          "type": "Compliance",
+          "sponsor": "MD",
+          "completion_pct": 42,
+          "rag_status": "Amber",
+          "expected_roi_pct": 39.8,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0016",
+          "name": "Strategic Initiative 16",
+          "pillar": "People & Culture",
+          "department": "Executive",
+          "type": "Customer",
+          "sponsor": "Director Retail",
+          "completion_pct": 25,
+          "rag_status": "Red",
+          "expected_roi_pct": 77.4,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0017",
+          "name": "Strategic Initiative 17",
+          "pillar": "People & Culture",
+          "department": "Retail",
+          "type": "Risk Management",
+          "sponsor": "MD",
+          "completion_pct": 49,
+          "rag_status": "Amber",
+          "expected_roi_pct": 47.3,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0018",
+          "name": "Strategic Initiative 18",
+          "pillar": "Operational Excellence",
+          "department": "IT",
+          "type": "Cost Reduction",
+          "sponsor": "CFO",
+          "completion_pct": 42,
+          "rag_status": "Amber",
+          "expected_roi_pct": 22.1,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0020",
+          "name": "Strategic Initiative 20",
+          "pillar": "Financial Performance",
+          "department": "Retail",
+          "type": "Innovation",
+          "sponsor": "Director Retail",
+          "completion_pct": 53,
+          "rag_status": "Amber",
+          "expected_roi_pct": 29.1,
+          "actual_roi_pct": 0
+        },
+        {
+          "id": "INIT0022",
+          "name": "Strategic Initiative 22",
+          "pillar": "Risk & Compliance",
+          "department": "Strategy",
+          "type": "Risk Management",
+          "sponsor": "Director Risk",
+          "completion_pct": 24,
+          "rag_status": "Red",
+          "expected_roi_pct": 72.7,
+          "actual_roi_pct": 0
+        }
+      ],
+      "common_factors": {
+        "n_initiatives": 8,
+        "label": "failure",
+        "by_dimension": {
+          "department": [
+            {
+              "value": "Retail",
+              "count": 3,
+              "ratio": 0.375
+            },
+            {
+              "value": "IT",
+              "count": 2,
+              "ratio": 0.25
+            }
+          ],
+          "type": [
+            {
+              "value": "Risk Management",
+              "count": 3,
+              "ratio": 0.375
+            },
+            {
+              "value": "Compliance",
+              "count": 2,
+              "ratio": 0.25
+            }
+          ],
+          "sponsor": [
+            {
+              "value": "Director Retail",
+              "count": 3,
+              "ratio": 0.375
+            },
+            {
+              "value": "MD",
+              "count": 2,
+              "ratio": 0.25
+            }
+          ],
+          "pillar": [
+            {
+              "value": "Financial Performance",
+              "count": 2,
+              "ratio": 0.25
+            },
+            {
+              "value": "Risk & Compliance",
+              "count": 2,
+              "ratio": 0.25
+            },
+            {
+              "value": "Operational Excellence",
+              "count": 2,
+              "ratio": 0.25
+            },
+            {
+              "value": "People & Culture",
+              "count": 2,
+              "ratio": 0.25
+            }
+          ]
+        }
+      },
+      "key_learnings": [
+        "Department='Retail' featured in 3/8 failed initiatives (37.5%) — investigate as risk factor.",
+        "Department='IT' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor.",
+        "Type='Risk Management' featured in 3/8 failed initiatives (37.5%) — investigate as risk factor.",
+        "Type='Compliance' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor.",
+        "Sponsor='Director Retail' featured in 3/8 failed initiatives (37.5%) — investigate as risk factor.",
+        "Sponsor='MD' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor.",
+        "Pillar='Financial Performance' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor.",
+        "Pillar='Risk & Compliance' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor.",
+        "Pillar='Operational Excellence' featured in 2/8 failed initiatives (25.0%) — investigate as risk factor."
+      ]
+    },
+    "recommendations_for_next_cycle": [
+      {
+        "rec_id": "REC-LOOP-DISCRIM-department-Retail",
+        "type": "discriminator",
+        "dimension": "department",
+        "title": "Prefer department='Retail' (2 successes) over 'IT' (2 failures) for next cycle",
+        "evidence": {
+          "success_pattern": {
+            "value": "Retail",
+            "count": 2,
+            "ratio": 0.333
+          },
+          "failure_pattern": {
+            "value": "IT",
+            "count": 2,
+            "ratio": 0.25
+          }
+        }
+      },
+      {
+        "rec_id": "REC-LOOP-DISCRIM-type-Cost Reduction",
+        "type": "discriminator",
+        "dimension": "type",
+        "title": "Prefer type='Cost Reduction' (2 successes) over 'Risk Management' (3 failures) for next cycle",
+        "evidence": {
+          "success_pattern": {
+            "value": "Cost Reduction",
+            "count": 2,
+            "ratio": 0.333
+          },
+          "failure_pattern": {
+            "value": "Risk Management",
+            "count": 3,
+            "ratio": 0.375
+          }
+        }
+      },
+      {
+        "rec_id": "REC-LOOP-DISCRIM-sponsor-MD",
+        "type": "discriminator",
+        "dimension": "sponsor",
+        "title": "Prefer sponsor='MD' (2 successes) over 'Director Retail' (3 failures) for next cycle",
+        "evidence": {
+          "success_pattern": {
+            "value": "MD",
+            "count": 2,
+            "ratio": 0.333
+          },
+          "failure_pattern": {
+            "value": "Director Retail",
+            "count": 3,
+            "ratio": 0.375
+          }
+        }
+      },
+      {
+        "rec_id": "REC-LOOP-DISCRIM-pillar-Operational Excellence",
+        "type": "discriminator",
+        "dimension": "pillar",
+        "title": "Prefer pillar='Operational Excellence' (3 successes) over 'Financial Performance' (2 failures) for next cycle",
+        "evidence": {
+          "success_pattern": {
+            "value": "Operational Excellence",
+            "count": 3,
+            "ratio": 0.5
+          },
+          "failure_pattern": {
+            "value": "Financial Performance",
+            "count": 2,
+            "ratio": 0.25
+          }
+        }
+      }
+    ],
+    "n_successful": 6,
+    "n_failed": 8,
+    "n_total": 25,
+    "generated_at": "2026-05-05T16:13:44.045382+00:00",
+    "basis": "rule_based",
+    "stored_at": "2026-05-05T16:13:44.045453+00:00"
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "fixtures": [
+    {
+      "id": "II001",
+      "label": "Completed initiative with positive growth",
+      "input": {
+        "initiative_id": "I1", "kpi_id": "K1",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I1", "status": "COMPLETED",
+                       "initiative_type": "REVENUE_GENERATION", "linked_kpi_id": "K1"},
+        "actuals": {"2026-Q1": 100000000, "2026-Q2": 125000000}
+      },
+      "expected": {
+        "status": "computed", "delta": 25000000.00, "delta_pct": 25.0,
+        "baseline_value": 100000000.00, "comparison_value": 125000000.00
+      }
+    },
+    {
+      "id": "II002",
+      "label": "Completed initiative with negative delta (e.g. cost reduction)",
+      "input": {
+        "initiative_id": "I2", "kpi_id": "K2",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I2", "status": "COMPLETED",
+                       "initiative_type": "COST_REDUCTION", "linked_kpi_id": "K2"},
+        "actuals": {"2026-Q1": 50000000, "2026-Q2": 42000000}
+      },
+      "expected": {
+        "status": "computed", "delta": -8000000.00, "delta_pct": -16.0,
+        "baseline_value": 50000000.00, "comparison_value": 42000000.00
+      }
+    },
+    {
+      "id": "II003",
+      "label": "In-progress initiative → status=in_progress",
+      "input": {
+        "initiative_id": "I3", "kpi_id": "K3",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I3", "status": "IN_PROGRESS",
+                       "linked_kpi_id": "K3"},
+        "actuals": {}
+      },
+      "expected": {
+        "status": "in_progress", "delta": null, "delta_pct": null
+      }
+    },
+    {
+      "id": "II004",
+      "label": "Actuals missing for baseline → status=actuals_missing",
+      "input": {
+        "initiative_id": "I4", "kpi_id": "K4",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I4", "status": "COMPLETED",
+                       "linked_kpi_id": "K4"},
+        "actuals": {"2026-Q2": 200000}
+      },
+      "expected": {
+        "status": "actuals_missing", "delta": null, "delta_pct": null
+      }
+    },
+    {
+      "id": "II005",
+      "label": "Baseline = 0 → delta computed but pct=None (Rule 1)",
+      "input": {
+        "initiative_id": "I5", "kpi_id": "K5",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I5", "status": "COMPLETED",
+                       "linked_kpi_id": "K5"},
+        "actuals": {"2026-Q1": 0, "2026-Q2": 1000000}
+      },
+      "expected": {
+        "status": "computed", "delta": 1000000.00, "delta_pct": null,
+        "baseline_value": 0.00, "comparison_value": 1000000.00
+      }
+    },
+    {
+      "id": "II006",
+      "label": "Initiative not found → status=not_found",
+      "input": {
+        "initiative_id": "I_BOGUS", "kpi_id": "K1",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": null,
+        "actuals": {}
+      },
+      "expected": {
+        "status": "not_found"
+      }
+    },
+    {
+      "id": "II007",
+      "label": "Initiative without linked_kpi_id → status=no_kpi_link",
+      "input": {
+        "initiative_id": "I7", "kpi_id": "",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I7", "status": "COMPLETED"},
+        "actuals": {}
+      },
+      "expected": {
+        "status": "no_kpi_link", "delta": null, "delta_pct": null
+      }
+    },
+    {
+      "id": "II008",
+      "label": "KES-billion precision preserved",
+      "input": {
+        "initiative_id": "I8", "kpi_id": "K8",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I8", "status": "COMPLETED",
+                       "linked_kpi_id": "K8"},
+        "actuals": {"2026-Q1": "11500000000.50", "2026-Q2": "11500000000.51"}
+      },
+      "expected": {
+        "status": "computed",
+        "baseline_value": 11500000000.50,
+        "comparison_value": 11500000000.51,
+        "delta": 0.01
+      }
+    },
+    {
+      "id": "II009",
+      "label": "Negative baseline (e.g. PBT loss) → delta_pct vs absolute",
+      "input": {
+        "initiative_id": "I9", "kpi_id": "K9",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I9", "status": "COMPLETED",
+                       "linked_kpi_id": "K9"},
+        "actuals": {"2026-Q1": -100000, "2026-Q2": 50000}
+      },
+      "expected": {
+        "status": "computed", "delta": 150000.00, "delta_pct": 150.0,
+        "baseline_value": -100000.00, "comparison_value": 50000.00
+      }
+    },
+    {
+      "id": "II010",
+      "label": "CANCELLED initiative → status=in_progress (treated as not done)",
+      "input": {
+        "initiative_id": "I10", "kpi_id": "K10",
+        "baseline_period": "2026-Q1", "comparison_period": "2026-Q2",
+        "initiative": {"initiative_id": "I10", "status": "CANCELLED",
+                       "linked_kpi_id": "K10"},
+        "actuals": {}
+      },
+      "expected": {
+        "status": "in_progress", "delta": null, "delta_pct": null
+      }
+    }
+  ]
+}

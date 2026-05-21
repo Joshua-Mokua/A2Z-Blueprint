@@ -11,7 +11,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("digital_channels")
+require_access("sales_customer.digital_channels")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -119,3 +119,12 @@ with tabs[5]:
     if trend:
         st.line_chart(pd.DataFrame({"Mobile MAU":[t["mau"] for t in trend]},
                                     index=[t["month"] for t in trend]))
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

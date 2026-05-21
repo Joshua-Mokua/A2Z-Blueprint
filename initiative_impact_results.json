@@ -1,0 +1,71 @@
+{
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "results": [
+    {
+      "id": "II001",
+      "label": "Completed initiative with positive growth",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II002",
+      "label": "Completed initiative with negative delta (e.g. cost reduction)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II003",
+      "label": "In-progress initiative \u00e2\u2020\u2019 status=in_progress",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II004",
+      "label": "Actuals missing for baseline \u00e2\u2020\u2019 status=actuals_missing",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II005",
+      "label": "Baseline = 0 \u00e2\u2020\u2019 delta computed but pct=None (Rule 1)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II006",
+      "label": "Initiative not found \u00e2\u2020\u2019 status=not_found",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II007",
+      "label": "Initiative without linked_kpi_id \u00e2\u2020\u2019 status=no_kpi_link",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II008",
+      "label": "KES-billion precision preserved",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II009",
+      "label": "Negative baseline (e.g. PBT loss) \u00e2\u2020\u2019 delta_pct vs absolute",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "II010",
+      "label": "CANCELLED initiative \u00e2\u2020\u2019 status=in_progress (treated as not done)",
+      "matched": true,
+      "diffs": []
+    }
+  ],
+  "fixtures_total": 10,
+  "fixtures_matched": 10,
+  "match_rate_pct": 100.0
+}

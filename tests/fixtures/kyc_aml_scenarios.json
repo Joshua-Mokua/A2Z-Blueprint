@@ -1,0 +1,114 @@
+[
+  {
+    "id": "KY001",
+    "expected_band": "LOW",
+    "customer": {
+      "customer_id": "KY001",
+      "country_code": "KE",
+      "citizenship_code": "KE",
+      "products": ["SAVINGS"],
+      "customer_type": "INDIVIDUAL_LOCAL",
+      "onboarding_channel": "FACE_TO_FACE_BRANCH"
+    }
+  },
+  {
+    "id": "KY002",
+    "expected_band": "HIGH",
+    "customer": {
+      "customer_id": "KY002",
+      "country_code": "KE",
+      "citizenship_code": "PK",
+      "products": ["PRIVATE_BANKING"],
+      "customer_type": "PEP_FOREIGN",
+      "onboarding_channel": "INTRODUCED_THIRD_PARTY",
+      "pep_flag": true
+    }
+  },
+  {
+    "id": "KY003",
+    "expected_band": "PROHIBITED",
+    "customer": {
+      "customer_id": "KY003",
+      "country_code": "KP",
+      "customer_type": "INDIVIDUAL_LOCAL"
+    }
+  },
+  {
+    "id": "KY004",
+    "expected_band": "PROHIBITED",
+    "customer": {
+      "customer_id": "KY004",
+      "country_code": "KE",
+      "sanctions_hit": true,
+      "customer_type": "INDIVIDUAL_LOCAL"
+    }
+  },
+  {
+    "id": "KY005",
+    "expected_band": "MEDIUM",
+    "customer": {
+      "customer_id": "KY005",
+      "country_code": null,
+      "citizenship_code": null,
+      "products": ["SAVINGS"],
+      "customer_type": "INDIVIDUAL_LOCAL",
+      "onboarding_channel": "AGENT_BANKING"
+    }
+  },
+  {
+    "id": "KY006",
+    "expected_band": "MEDIUM",
+    "customer": {
+      "customer_id": "KY006",
+      "country_code": "TR",
+      "products": ["TRADE_FINANCE"],
+      "customer_type": "CORPORATE_PRIVATE",
+      "onboarding_channel": "FACE_TO_FACE_BRANCH"
+    }
+  },
+  {
+    "id": "KY007",
+    "expected_band": "MEDIUM",
+    "customer": {
+      "customer_id": "KY007",
+      "country_code": "KE",
+      "products": ["UNKNOWN_EXOTIC"],
+      "customer_type": "UNKNOWN_TYPE",
+      "onboarding_channel": "AGENT_BANKING"
+    }
+  },
+  {
+    "id": "KY008",
+    "expected_band": "HIGH",
+    "customer": {
+      "customer_id": "KY008",
+      "country_code": "MM",
+      "products": ["CORRESPONDENT_BANKING"],
+      "customer_type": "CORPORATE_PRIVATE",
+      "onboarding_channel": "NON_FACE_TO_FACE"
+    }
+  },
+  {
+    "id": "KY009",
+    "expected_band": "PROHIBITED",
+    "customer": {
+      "customer_id": "KY009",
+      "country_code": "IR",
+      "citizenship_code": "IR",
+      "products": ["SAVINGS"],
+      "customer_type": "INDIVIDUAL_LOCAL"
+    }
+  },
+  {
+    "id": "KY010",
+    "expected_band": "LOW",
+    "customer": {
+      "customer_id": "KY010",
+      "country_code": "KE",
+      "citizenship_code": "KE",
+      "products": ["PAYROLL"],
+      "customer_type": "CORPORATE_LISTED",
+      "onboarding_channel": "FACE_TO_FACE_BRANCH"
+    }
+  }
+]

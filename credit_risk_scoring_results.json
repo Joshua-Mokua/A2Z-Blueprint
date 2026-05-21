@@ -1,0 +1,71 @@
+{
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "results": [
+    {
+      "id": "CR001",
+      "label": "Pristine borrower \u00e2\u2020\u2019 BBB grade (baseline)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR002",
+      "label": "High DTI only \u00e2\u2020\u2019 +0.10 \u00e2\u2020\u2019 0.11 \u00e2\u2020\u2019 CCC",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR003",
+      "label": "Poor payment history only \u00e2\u2020\u2019 +0.15 \u00e2\u2020\u2019 0.16 \u00e2\u2020\u2019 B",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR004",
+      "label": "All risk factors \u00e2\u2020\u2019 0.46 \u00e2\u2020\u2019 CC",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR005",
+      "label": "Subordinated debt \u00e2\u2020\u2019 LGD 75%",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR006",
+      "label": "Low collateral coverage \u00e2\u2020\u2019 +0.08 \u00e2\u2020\u2019 0.09 \u00e2\u2020\u2019 BB",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR007",
+      "label": "New loan + high utilization \u00e2\u2020\u2019 +0.05 + 0.07 = 0.13 \u00e2\u2020\u2019 B",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR008",
+      "label": "Empty features \u00e2\u2020\u2019 baseline 0.01 \u00e2\u2020\u2019 BBB",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR009",
+      "label": "Default-territory: PD = 0.99 \u00e2\u2020\u2019 D grade",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "CR010",
+      "label": "KES-billion outstanding preserved",
+      "matched": true,
+      "diffs": []
+    }
+  ],
+  "fixtures_total": 10,
+  "fixtures_matched": 10,
+  "match_rate_pct": 100.0
+}

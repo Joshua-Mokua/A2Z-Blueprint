@@ -24,7 +24,7 @@ def _safe_date(s, fallback=None):
 
 
 
-require_access("edms")
+require_access("compliance_regulatory.edms")
 DATA = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]

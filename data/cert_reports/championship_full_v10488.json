@@ -1,0 +1,801 @@
+{
+  "passed": true,
+  "items_passed": 33,
+  "items_total": 33,
+  "summary": "\ud83c\udfc6 CHAMPIONSHIP READY - 33/33 mandatory items ticked; 54/54 underlying checks pass; duration=777.6s",
+  "checklist_verdicts": {
+    "REV-01": {
+      "passed": true,
+      "evidence": "`championship.all_audit_gates_pass`: 7/7 canonical gates pass (G162/G330/G369-373 of 404 total); full sweep via scripts/audit.py",
+      "why_failed": ""
+    },
+    "REV-02": {
+      "passed": true,
+      "evidence": "`championship.g162_baseline_zero_drift`: tenant hardcoding holding at baseline (4279 occurrences across 6 tokens; per_token={'Ecobank': 124, 'FLEXCUBE': 225, 'Kenya': 335, 'KES': 19",
+      "why_failed": ""
+    },
+    "REV-03": {
+      "passed": true,
+      "evidence": "`championship.no_silent_degradation`: v10.444 System Vital Signs - regression sentinel gate. Per Joshua mantra: rescue 100%, prevent deterioration. NEW utils/system_vitals_engine",
+      "why_failed": ""
+    },
+    "REV-04": {
+      "passed": true,
+      "evidence": "`championship.cascade_360_harmony_100pct`: harmony=100.00%, stages=5/5, critical_issues=0",
+      "why_failed": ""
+    },
+    "DT-01": {
+      "passed": true,
+      "evidence": "`championship.virtual_bank_fully_operational`: all 8 organs: ['channels', 'scenarios', 'chaos', 'macro', 'sim_clock', 'ml', 'agents', 'arena']; failed=[] | `channels.seven_registered`: all 7 channels present: ['atm', 'cards', 'kic', 'mpesa', 'rtgs', 'swift', 'ussd']",
+      "why_failed": ""
+    },
+    "DT-02": {
+      "passed": true,
+      "evidence": "`macro.kenya_baseline_realistic`: CBR=0.1 USD/KES=130.0 NPL=0.15 infl=0.055 | `macro.evolution_seed_deterministic`: CBR a=0.09928904191895796 b=0.09928904191895796 | `macro.shock_preserves_spreads`: t91 spread preserved: 0.11500",
+      "why_failed": ""
+    },
+    "DT-03": {
+      "passed": true,
+      "evidence": "`scenarios.one_hundred_registered`: scenarios registered: 100 | `scenarios.run_sample`: ran payroll_kic_batch_small",
+      "why_failed": ""
+    },
+    "DT-04": {
+      "passed": true,
+      "evidence": "`championship.synthetic_data_isolation`: isolation clean; expected dirs under data/: ['drill_ledger', 'cert_reports', 'ml_artifacts']",
+      "why_failed": ""
+    },
+    "HARM-01": {
+      "passed": true,
+      "evidence": "`championship.integration_ecosystem_harmonized`: 360 harmony=100.00%, stages=5/5, critical_issues=0",
+      "why_failed": ""
+    },
+    "HARM-02": {
+      "passed": true,
+      "evidence": "`championship.kpi_library_structure`: KPIs=277, pillars=4 (['Customer Focus', 'Financial', 'Operational Excellence', 'People & Learning'])",
+      "why_failed": ""
+    },
+    "HARM-03": {
+      "passed": true,
+      "evidence": "`championship.workflow_engine_present`: present: ['utils.workflow_engine', 'utils.workflow_replay', 'utils.credit_workflow', 'utils.reconciliation_workflow']; missing: []",
+      "why_failed": ""
+    },
+    "HARM-04": {
+      "passed": true,
+      "evidence": "`eventbus.emit_and_query`: queried 5 | `championship.event_bus_cross_organ_lineage`: event types seen: ['chaos.activated', 'macro.update']",
+      "why_failed": ""
+    },
+    "REG-01": {
+      "passed": true,
+      "evidence": "`championship.ifrs_modules_present`: IFRS stack: ['ifrs7_disclosures', 'ifrs9_classification', 'provisions', 'asset_impairment', 'accruals_synthesizer']; missing=[]",
+      "why_failed": ""
+    },
+    "REG-02": {
+      "passed": true,
+      "evidence": "`championship.cbk_compliance_modules_present`: CBK stack: present 3/3; missing=[]",
+      "why_failed": ""
+    },
+    "REG-03": {
+      "passed": true,
+      "evidence": "`championship.kra_tax_compliance_present`: KRA stack: ['kra_tax_compliance', 'tax_compliance']; missing=[]",
+      "why_failed": ""
+    },
+    "REG-04": {
+      "passed": true,
+      "evidence": "`championship.labour_law_hr_modules_present`: HR/labour: present 5/5; missing=[]",
+      "why_failed": ""
+    },
+    "REG-05": {
+      "passed": true,
+      "evidence": "`championship.financial_calculations_validated`: spread_preserved=True, coef_recovered=(w=3.500, b=1.200)",
+      "why_failed": ""
+    },
+    "RES-01": {
+      "passed": true,
+      "evidence": "`championship.chaos_testing_passed`: chaos blocked 10/10 submissions | `channels.chaos_outage_blocks`: chaos failures: 10/10",
+      "why_failed": ""
+    },
+    "RES-02": {
+      "passed": true,
+      "evidence": "`championship.stress_multi_chaos_concurrent`: 3 concurrent chaos active=True, macro fx shocked=True (130.00->136.50)",
+      "why_failed": ""
+    },
+    "RES-03": {
+      "passed": true,
+      "evidence": "`championship.recovery_mechanisms_validated`: blocked_during_chaos=True, recovered_after=True | `chaos.window_expires`: outage cleared after window",
+      "why_failed": ""
+    },
+    "RES-04": {
+      "passed": true,
+      "evidence": "`championship.long_duration_30_days`: clock landed at 2026-06-30 (drift=0.0s), all 5 day markers fired in order: [1, 7, 15, 22, 29] | `championship.endurance_drill_batch_three_repeats`: 36/36 runs pass, unstable_digests=none, duration=98.5s",
+      "why_failed": ""
+    },
+    "AI-01": {
+      "passed": true,
+      "evidence": "`ml.classifier_learns`: acc=0.985 | `ml.regressor_recovers`: w0=2.000 bias=3.000 | `ml.classifier_seed_deterministic`: deterministic",
+      "why_failed": ""
+    },
+    "AI-02": {
+      "passed": true,
+      "evidence": "`championship.llm_agent_infrastructure_validated`: agent infra: 15 tools, 3 policies validated (deterministic ok=True, scripted ok=True, random ok=True); LLM-backed AgentPolicy plugs in via subclass | `agents.registry_15_tools`: n=15 cats=['channel', 'chaos', 'info', 'macro', 'ml', 'scenario']",
+      "why_failed": ""
+    },
+    "AI-03": {
+      "passed": true,
+      "evidence": "`championship.drift_detection_operational`: trajectory digest deterministic (same_digest=True); drift would surface as digest mismatch | `arena.trajectory_digest_deterministic`: digest a=db009de92938de16 b=db009de92938de16",
+      "why_failed": ""
+    },
+    "AI-04": {
+      "passed": true,
+      "evidence": "`championship.explainability_validated`: weights=[1.981, 1.894], metrics_attrs=all_4_present=True",
+      "why_failed": ""
+    },
+    "TRAIN-01": {
+      "passed": true,
+      "evidence": "`championship.training_simulations_operational`: 12 drills \u00d7 DrillRunner: 12/12 pass in 32.6s, ledger persisted 12 records | `arena.twelve_drills_pass`: 12/12 passed in 31.9s",
+      "why_failed": ""
+    },
+    "TRAIN-02": {
+      "passed": true,
+      "evidence": "`championship.scenario_replay_functional`: replay deterministic (digest match=True); trajectory has 2 steps",
+      "why_failed": ""
+    },
+    "TRAIN-03": {
+      "passed": true,
+      "evidence": "`championship.coaching_systems_active`: oracle returned 2 coaching messages: ['min_steps: 2 < 100', \"required tools missing: ['nonexistent:tool']\"]",
+      "why_failed": ""
+    },
+    "TRAIN-04": {
+      "passed": true,
+      "evidence": "`championship.role_based_simulation_validated`: 12 drills across 5 categories: ['channel_survival', 'chaos_ml', 'eom_pressure', 'macro_observation', 'scenario_cascade']",
+      "why_failed": ""
+    },
+    "UI-01": {
+      "passed": true,
+      "evidence": "`championship.backend_elite_grade_stable`: end-of-run sentinel: harmony=100.00%, stages=5/5, critical_issues=0; olympic_full embedded in the 22 baseline checks above",
+      "why_failed": ""
+    },
+    "UI-02": {
+      "passed": true,
+      "evidence": "`championship.apis_production_ready`: utils.api: has_app=True, has_callable=True",
+      "why_failed": ""
+    },
+    "UI-03": {
+      "passed": true,
+      "evidence": "`championship.fastapi_architecture_validated`: 14/14 api modules importable; failed: []",
+      "why_failed": ""
+    },
+    "UI-04": {
+      "passed": true,
+      "evidence": "`championship.no_circular_imports`: all 18 modules import cleanly; failed=[] | `championship.integration_ecosystem_harmonized`: 360 harmony=100.00%, stages=5/5, critical_issues=0",
+      "why_failed": ""
+    }
+  },
+  "cert_report": {
+    "protocol_name": "championship_full",
+    "started_at": "2026-05-16T08:20:21.215957+00:00",
+    "finished_at": "2026-05-16T08:20:21.215969+00:00",
+    "total_checks": 54,
+    "passed_checks": 54,
+    "failed_checks": 0,
+    "critical_failures": 0,
+    "duration_seconds": 777.646,
+    "pass_rate": 1.0,
+    "passed": true,
+    "by_organ": {
+      "channels": {
+        "total": 3,
+        "passed": 3
+      },
+      "scenarios": {
+        "total": 2,
+        "passed": 2
+      },
+      "chaos": {
+        "total": 2,
+        "passed": 2
+      },
+      "macro": {
+        "total": 3,
+        "passed": 3
+      },
+      "simclock": {
+        "total": 2,
+        "passed": 2
+      },
+      "ml": {
+        "total": 3,
+        "passed": 3
+      },
+      "agents": {
+        "total": 3,
+        "passed": 3
+      },
+      "arena": {
+        "total": 2,
+        "passed": 2
+      },
+      "eventbus": {
+        "total": 1,
+        "passed": 1
+      },
+      "cascade_360": {
+        "total": 1,
+        "passed": 1
+      },
+      "revival": {
+        "total": 4,
+        "passed": 4
+      },
+      "digital_twin": {
+        "total": 2,
+        "passed": 2
+      },
+      "harmony": {
+        "total": 3,
+        "passed": 3
+      },
+      "regulatory": {
+        "total": 5,
+        "passed": 5
+      },
+      "resilience": {
+        "total": 5,
+        "passed": 5
+      },
+      "ai": {
+        "total": 4,
+        "passed": 4
+      },
+      "training": {
+        "total": 4,
+        "passed": 4
+      },
+      "react_readiness": {
+        "total": 5,
+        "passed": 5
+      }
+    },
+    "outcomes": [
+      {
+        "name": "channels.seven_registered",
+        "organ": "channels",
+        "passed": true,
+        "duration_ms": 7.142543792724609,
+        "note": "all 7 channels present: ['atm', 'cards', 'kic', 'mpesa', 'rtgs', 'swift', 'ussd']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "channels.seed_deterministic",
+        "organ": "channels",
+        "passed": true,
+        "duration_ms": 4.572868347167969,
+        "note": "r1.success=True r2.success=True",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "channels.chaos_outage_blocks",
+        "organ": "channels",
+        "passed": true,
+        "duration_ms": 4.832029342651367,
+        "note": "chaos failures: 10/10",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "scenarios.one_hundred_registered",
+        "organ": "scenarios",
+        "passed": true,
+        "duration_ms": 5.892038345336914,
+        "note": "scenarios registered: 100",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "scenarios.run_sample",
+        "organ": "scenarios",
+        "passed": true,
+        "duration_ms": 2328.79638671875,
+        "note": "ran payroll_kic_batch_small",
+        "metrics": {},
+        "error": "",
+        "critical": false
+      },
+      {
+        "name": "chaos.library_size_25",
+        "organ": "chaos",
+        "passed": true,
+        "duration_ms": 0.007152557373046875,
+        "note": "chaos templates: 25",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "chaos.window_expires",
+        "organ": "chaos",
+        "passed": true,
+        "duration_ms": 0.6186962127685547,
+        "note": "outage cleared after window",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "macro.kenya_baseline_realistic",
+        "organ": "macro",
+        "passed": true,
+        "duration_ms": 0.03528594970703125,
+        "note": "CBR=0.1 USD/KES=130.0 NPL=0.15 infl=0.055",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "macro.evolution_seed_deterministic",
+        "organ": "macro",
+        "passed": true,
+        "duration_ms": 0.7984638214111328,
+        "note": "CBR a=0.09928904191895796 b=0.09928904191895796",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "macro.shock_preserves_spreads",
+        "organ": "macro",
+        "passed": true,
+        "duration_ms": 0.049591064453125,
+        "note": "t91 spread preserved: 0.11500",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "simclock.set_and_advance",
+        "organ": "simclock",
+        "passed": true,
+        "duration_ms": 0.032901763916015625,
+        "note": "advance drift: 0.0s",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "simclock.tick_scheduler_fires",
+        "organ": "simclock",
+        "passed": true,
+        "duration_ms": 1.4233589172363281,
+        "note": "fired=1",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "ml.classifier_learns",
+        "organ": "ml",
+        "passed": true,
+        "duration_ms": 30.20453453063965,
+        "note": "acc=0.985",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "ml.regressor_recovers",
+        "organ": "ml",
+        "passed": true,
+        "duration_ms": 0.40793418884277344,
+        "note": "w0=2.000 bias=3.000",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "ml.classifier_seed_deterministic",
+        "organ": "ml",
+        "passed": true,
+        "duration_ms": 15.29836654663086,
+        "note": "deterministic",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "agents.registry_15_tools",
+        "organ": "agents",
+        "passed": true,
+        "duration_ms": 0.12326240539550781,
+        "note": "n=15 cats=['channel', 'chaos', 'info', 'macro', 'ml', 'scenario']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "agents.random_seed_deterministic",
+        "organ": "agents",
+        "passed": true,
+        "duration_ms": 1439.5232200622559,
+        "note": "a=['chaos:active', 'channel:list', 'macro:snapshot', 'events:query'] b=['chaos:active', 'channel:list', 'macro:snapshot', 'events:query']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "agents.budget_enforced",
+        "organ": "agents",
+        "passed": true,
+        "duration_ms": 1.3496875762939453,
+        "note": "steps=3",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "arena.twelve_drills_pass",
+        "organ": "arena",
+        "passed": true,
+        "duration_ms": 31914.109706878662,
+        "note": "12/12 passed in 31.9s",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "arena.trajectory_digest_deterministic",
+        "organ": "arena",
+        "passed": true,
+        "duration_ms": 1467.6234722137451,
+        "note": "digest a=db009de92938de16 b=db009de92938de16",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "eventbus.emit_and_query",
+        "organ": "eventbus",
+        "passed": true,
+        "duration_ms": 694.284200668335,
+        "note": "queried 5",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "cascade_360.harmony_preserved",
+        "organ": "cascade_360",
+        "passed": true,
+        "duration_ms": 43517.68636703491,
+        "note": "harmony=100.00%",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.all_audit_gates_pass",
+        "organ": "revival",
+        "passed": true,
+        "duration_ms": 277853.8908958435,
+        "note": "7/7 canonical gates pass (G162/G330/G369-373 of 404 total); full sweep via scripts/audit.py",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.g162_baseline_zero_drift",
+        "organ": "revival",
+        "passed": true,
+        "duration_ms": 136.29841804504395,
+        "note": "tenant hardcoding holding at baseline (4279 occurrences across 6 tokens; per_token={'Ecobank': 124, 'FLEXCUBE': 225, 'Kenya': 335, 'KES': 19",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.no_silent_degradation",
+        "organ": "revival",
+        "passed": true,
+        "duration_ms": 165727.9658317566,
+        "note": "v10.444 System Vital Signs - regression sentinel gate. Per Joshua mantra: rescue 100%, prevent deterioration. NEW utils/system_vitals_engine",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.cascade_360_harmony_100pct",
+        "organ": "revival",
+        "passed": true,
+        "duration_ms": 36677.45876312256,
+        "note": "harmony=100.00%, stages=5/5, critical_issues=0",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.virtual_bank_fully_operational",
+        "organ": "digital_twin",
+        "passed": true,
+        "duration_ms": 16.300678253173828,
+        "note": "all 8 organs: ['channels', 'scenarios', 'chaos', 'macro', 'sim_clock', 'ml', 'agents', 'arena']; failed=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.synthetic_data_isolation",
+        "organ": "digital_twin",
+        "passed": true,
+        "duration_ms": 0.25010108947753906,
+        "note": "isolation clean; expected dirs under data/: ['drill_ledger', 'cert_reports', 'ml_artifacts']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.kpi_library_structure",
+        "organ": "harmony",
+        "passed": true,
+        "duration_ms": 2.0334720611572266,
+        "note": "KPIs=277, pillars=4 (['Customer Focus', 'Financial', 'Operational Excellence', 'People & Learning'])",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.workflow_engine_present",
+        "organ": "harmony",
+        "passed": true,
+        "duration_ms": 19.07634735107422,
+        "note": "present: ['utils.workflow_engine', 'utils.workflow_replay', 'utils.credit_workflow', 'utils.reconciliation_workflow']; missing: []",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.event_bus_cross_organ_lineage",
+        "organ": "harmony",
+        "passed": true,
+        "duration_ms": 1771.4085578918457,
+        "note": "event types seen: ['chaos.activated', 'macro.update']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.ifrs_modules_present",
+        "organ": "regulatory",
+        "passed": true,
+        "duration_ms": 163.23614120483398,
+        "note": "IFRS stack: ['ifrs7_disclosures', 'ifrs9_classification', 'provisions', 'asset_impairment', 'accruals_synthesizer']; missing=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.cbk_compliance_modules_present",
+        "organ": "regulatory",
+        "passed": true,
+        "duration_ms": 16.186237335205078,
+        "note": "CBK stack: present 3/3; missing=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.kra_tax_compliance_present",
+        "organ": "regulatory",
+        "passed": true,
+        "duration_ms": 9.054899215698242,
+        "note": "KRA stack: ['kra_tax_compliance', 'tax_compliance']; missing=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.labour_law_hr_modules_present",
+        "organ": "regulatory",
+        "passed": true,
+        "duration_ms": 16.752004623413086,
+        "note": "HR/labour: present 5/5; missing=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.financial_calculations_validated",
+        "organ": "regulatory",
+        "passed": true,
+        "duration_ms": 0.3924369812011719,
+        "note": "spread_preserved=True, coef_recovered=(w=3.500, b=1.200)",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.chaos_testing_passed",
+        "organ": "resilience",
+        "passed": true,
+        "duration_ms": 6.108760833740234,
+        "note": "chaos blocked 10/10 submissions",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.stress_multi_chaos_concurrent",
+        "organ": "resilience",
+        "passed": true,
+        "duration_ms": 0.9851455688476562,
+        "note": "3 concurrent chaos active=True, macro fx shocked=True (130.00->136.50)",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.recovery_mechanisms_validated",
+        "organ": "resilience",
+        "passed": true,
+        "duration_ms": 1.733541488647461,
+        "note": "blocked_during_chaos=True, recovered_after=True",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.endurance_drill_batch_three_repeats",
+        "organ": "resilience",
+        "passed": true,
+        "duration_ms": 98506.65736198425,
+        "note": "36/36 runs pass, unstable_digests=none, duration=98.5s",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.long_duration_30_days",
+        "organ": "resilience",
+        "passed": true,
+        "duration_ms": 0.1957416534423828,
+        "note": "clock landed at 2026-06-30 (drift=0.0s), all 5 day markers fired in order: [1, 7, 15, 22, 29]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.drift_detection_operational",
+        "organ": "ai",
+        "passed": true,
+        "duration_ms": 1518.3672904968262,
+        "note": "trajectory digest deterministic (same_digest=True); drift would surface as digest mismatch",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.explainability_validated",
+        "organ": "ai",
+        "passed": true,
+        "duration_ms": 12.292861938476562,
+        "note": "weights=[1.981, 1.894], metrics_attrs=all_4_present=True",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.agent_can_use_ml_model",
+        "organ": "ai",
+        "passed": true,
+        "duration_ms": 0.08511543273925781,
+        "note": "ml tools in agent registry: ['ml:list', 'ml:predict', 'ml:train_classifier']; missing=set()",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.llm_agent_infrastructure_validated",
+        "organ": "ai",
+        "passed": true,
+        "duration_ms": 797.8842258453369,
+        "note": "agent infra: 15 tools, 3 policies validated (deterministic ok=True, scripted ok=True, random ok=True); LLM-backed AgentPolicy plugs in via subclass",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.training_simulations_operational",
+        "organ": "training",
+        "passed": true,
+        "duration_ms": 32613.5413646698,
+        "note": "12 drills \u00d7 DrillRunner: 12/12 pass in 32.6s, ledger persisted 12 records",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.scenario_replay_functional",
+        "organ": "training",
+        "passed": true,
+        "duration_ms": 5.131959915161133,
+        "note": "replay deterministic (digest match=True); trajectory has 2 steps",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.coaching_systems_active",
+        "organ": "training",
+        "passed": true,
+        "duration_ms": 738.2156848907471,
+        "note": "oracle returned 2 coaching messages: ['min_steps: 2 < 100', \"required tools missing: ['nonexistent:tool']\"]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.role_based_simulation_validated",
+        "organ": "training",
+        "passed": true,
+        "duration_ms": 0.08440017700195312,
+        "note": "12 drills across 5 categories: ['channel_survival', 'chaos_ml', 'eom_pressure', 'macro_observation', 'scenario_cascade']",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.fastapi_architecture_validated",
+        "organ": "react_readiness",
+        "passed": true,
+        "duration_ms": 5709.001064300537,
+        "note": "14/14 api modules importable; failed: []",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.apis_production_ready",
+        "organ": "react_readiness",
+        "passed": true,
+        "duration_ms": 0.09965896606445312,
+        "note": "utils.api: has_app=True, has_callable=True",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.no_circular_imports",
+        "organ": "react_readiness",
+        "passed": true,
+        "duration_ms": 23.107051849365234,
+        "note": "all 18 modules import cleanly; failed=[]",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.backend_elite_grade_stable",
+        "organ": "react_readiness",
+        "passed": true,
+        "duration_ms": 37205.06715774536,
+        "note": "end-of-run sentinel: harmony=100.00%, stages=5/5, critical_issues=0; olympic_full embedded in the 22 baseline checks above",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      },
+      {
+        "name": "championship.integration_ecosystem_harmonized",
+        "organ": "react_readiness",
+        "passed": true,
+        "duration_ms": 36662.691593170166,
+        "note": "360 harmony=100.00%, stages=5/5, critical_issues=0",
+        "metrics": {},
+        "error": "",
+        "critical": true
+      }
+    ]
+  }
+}

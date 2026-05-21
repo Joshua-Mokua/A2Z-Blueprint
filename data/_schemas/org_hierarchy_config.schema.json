@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "org_hierarchy_config.json",
+  "description": "Canonical organisational hierarchy + role tier configuration. Defines the chain MD → Director → Head → Regional Head → Branch Manager → Branch Operations Manager → (Teller, CSO, BOS, etc). Producer is the Org Hierarchy admin tab.",
+  "type": "object",
+  "required": [
+    "synthetic_top",
+    "department_chief_mapping",
+    "chiefs",
+    "role_tiers",
+    "default_max_span_of_control",
+    "default_max_chain_depth"
+  ],
+  "properties": {
+    "synthetic_top": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "department_chief_mapping": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "chiefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": {"type": "string", "minLength": 1},
+          "synthetic_staff_code": {"type": "string"},
+          "primary_department": {"type": "string"},
+          "band": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "role_tiers": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "role_tier_keyword_fallback": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "role_manager_whitelist": {
+      "oneOf": [
+        {"type": "array"},
+        {"type": "object"}
+      ]
+    },
+    "default_max_span_of_control": {"type": "integer", "minimum": 1},
+    "default_max_chain_depth": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": true,
+  "_lock_version": "v10.343",
+  "_canonical_producer": "data/org_hierarchy_config.json (admin-editable in pages/7_admin.py)",
+  "_consumers": [
+    "utils/org_hierarchy.py",
+    "utils/branch_staff_generator.py",
+    "utils/specialist_activity_generator.py"
+  ],
+  "_note": "Schema allows polymorphic values in mapping dicts (e.g. _note documentation strings alongside actual mappings) — that's a deliberate self-documenting pattern in this codebase, not drift."
+}

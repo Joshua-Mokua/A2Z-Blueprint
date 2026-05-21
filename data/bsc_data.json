@@ -1,0 +1,41 @@
+{
+  "as_at": "2026-05-07",
+  "period": "March 2026",
+  "scaffolded": true,
+  "overall_score": 87.5,
+  "overall_target": 85.0,
+  "perspectives": {
+    "Financial": {
+      "score": 91.2,
+      "target": 90.0,
+      "weight": 0.35,
+      "kpi_count": 8,
+      "kpis_on_target": 7,
+      "narrative": "PBT tracking +5% vs budget, NIM stable at 5.8%, CIR holding at 53.7% (within target band)."
+    },
+    "Customer": {
+      "score": 84.8,
+      "target": 85.0,
+      "weight": 0.25,
+      "kpi_count": 6,
+      "kpis_on_target": 4,
+      "narrative": "NPS at 42 (target 45), digital adoption 67% (target 70%), retention strong at 92%."
+    },
+    "Internal Process": {
+      "score": 88.1,
+      "target": 85.0,
+      "weight": 0.2,
+      "kpi_count": 7,
+      "kpis_on_target": 6,
+      "narrative": "Loan TAT 3.2 days (target 3.5), branch productivity ahead of plan, one TB risk of slippage."
+    },
+    "Learning & Growth": {
+      "score": 86.0,
+      "target": 80.0,
+      "weight": 0.2,
+      "kpi_count": 5,
+      "kpis_on_target": 5,
+      "narrative": "Training hours per FTE 28 (target 24), engagement score 79%, all KPIs above floor."
+    }
+  }
+}

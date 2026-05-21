@@ -1,0 +1,145 @@
+{
+  "_meta": {
+    "shipped": "v10.323",
+    "description": "Default per-staff QUARTERLY targets per role for sales/volume KPIs. Used when no per-staff cascaded target exists in target_cascade.json. Admin-editable: tune per-role expectations without touching code.",
+    "currency": "Per org_config.json \u2014 values are raw amounts in the org's configured currency.",
+    "scope": "Quarterly targets \u2014 appropriate scale for 1 staff member over 3 months",
+    "fallback_order": "fixed \u2192 cascaded \u2192 role_default \u2192 missing"
+  },
+  "quarterly_targets_by_role": {
+    "Managing Director": {
+      "Disbursements Retail Loans": 50000000000,
+      "Disbursements MSME Loans": 500000000000,
+      "Disbursements Corporate Loans": 3000000000,
+      "Total NFI": 32500000000,
+      "Retail & MSME Deposit Growth": 100000000000
+    },
+    "Chief Retail Banking Officer": {
+      "Disbursements Retail Loans": 50000000000,
+      "Disbursements MSME Loans": 400000000000,
+      "Retail & MSME Deposit Growth": 100000000000,
+      "Total NFI": 20000000000
+    },
+    "Branch Manager": {
+      "PBT": 65000000,
+      "Total NFI": 28000000,
+      "Retail & MSME Deposit Growth": 11,
+      "Commercial Deposit Growth": 8,
+      "Top 100 Customers Deposit": 1850000000,
+      "Collection Throughput": 320000000,
+      "Number of Business Borrowers": 145,
+      "Disbursements Retail Loans": 280000000,
+      "Disbursements MSME Loans": 180000000,
+      "Disbursements Corporate Loans": 95000000,
+      "Loan Book Growth": 9,
+      "NEW_ACCOUNTS": 425
+    },
+    "Area Manager": {
+      "Disbursements Retail Loans": 1500000000,
+      "Disbursements MSME Loans": 2000000000,
+      "Disbursements Corporate Loans": 500000000,
+      "Total NFI": 300000000,
+      "Retail & MSME Deposit Growth": 3000000000
+    },
+    "Branch Relationship Manager": {
+      "Disbursements Retail Loans": 50000000,
+      "Disbursements MSME Loans": 100000000,
+      "Total NFI": 15000000,
+      "Retail & MSME Deposit Growth": 80000000
+    },
+    "Branch Senior Relationship Officer": {
+      "Disbursements Retail Loans": 40000000,
+      "Disbursements MSME Loans": 80000000,
+      "Total NFI": 12000000,
+      "Retail & MSME Deposit Growth": 60000000
+    },
+    "Relationship Officer-Personal Banker": {
+      "Disbursements Retail Loans": 25000000,
+      "Total NFI": 5000000,
+      "Retail & MSME Deposit Growth": 30000000
+    },
+    "Relationship Officer-Business Banker": {
+      "Disbursements MSME Loans": 60000000,
+      "Total NFI": 10000000,
+      "Retail & MSME Deposit Growth": 40000000
+    },
+    "Relationship Officer Bancassurance": {
+      "Total NFI": 8000000,
+      "Disbursements Retail Loans": 10000000,
+      "Disbursements MSME Loans": 20000000,
+      "Disbursements Corporate Loans": 80000000
+    },
+    "Direct Sales Representative - Assets & Liabilities": {
+      "Disbursements Retail Loans": 20000000,
+      "Total NFI": 3000000,
+      "Retail & MSME Deposit Growth": 25000000
+    },
+    "Relationship Manager - Institutional Banking": {
+      "Disbursements Corporate Loans": 500000000,
+      "Total NFI": 100000000,
+      "Retail & MSME Deposit Growth": 500000000
+    },
+    "Senior Relationship Manager - Corporate Banking": {
+      "Disbursements Corporate Loans": 800000000,
+      "Total NFI": 150000000,
+      "Retail & MSME Deposit Growth": 800000000
+    },
+    "Relationship Manager- Public Sector": {
+      "Disbursements Corporate Loans": 400000000,
+      "Total NFI": 80000000,
+      "Retail & MSME Deposit Growth": 400000000
+    },
+    "Relationship Manager - Agribusiness": {
+      "Disbursements MSME Loans": 150000000,
+      "Total NFI": 20000000
+    },
+    "Senior Relationship Manager- SME": {
+      "Disbursements MSME Loans": 200000000,
+      "Total NFI": 30000000
+    },
+    "Relationship Manager- Trade Finance": {
+      "Total NFI": 50000000,
+      "Disbursements Corporate Loans": 300000000
+    },
+    "Assistant Relationship Manager-Corporate": {
+      "Disbursements Corporate Loans": 200000000,
+      "Disbursements Retail Loans": 20000000,
+      "Total NFI": 30000000
+    },
+    "Teller": {
+      "Retail & MSME Deposit Growth": 5000000,
+      "Disbursements Retail Loans": 2000000
+    },
+    "Relationship Manager - SME": {
+      "Disbursements MSME Loans": 100000000,
+      "Total NFI": 15000000
+    },
+    "Relationship Manager - Corporate Banking": {
+      "Disbursements Corporate Loans": 400000000,
+      "Total NFI": 80000000
+    },
+    "Senior Branch Manager": {
+      "PBT": 145000000,
+      "Total NFI": 62000000,
+      "Retail & MSME Deposit Growth": 12,
+      "Commercial Deposit Growth": 10,
+      "Top 100 Customers Deposit": 4200000000,
+      "Collection Throughput": 720000000,
+      "Number of Business Borrowers": 310,
+      "Disbursements Retail Loans": 580000000,
+      "Disbursements MSME Loans": 420000000,
+      "Disbursements Corporate Loans": 260000000,
+      "Loan Book Growth": 11,
+      "NEW_ACCOUNTS": 920
+    }
+  },
+  "_v10325_additions": [
+    "Relationship Manager - SME",
+    "Relationship Manager - Corporate Banking"
+  ],
+  "_v10329_branch_manager_targets": {
+    "shipped": "v10.329",
+    "rationale": "Branch Manager + Senior Branch Manager targets extended to cover all 21 role_kpis. Targets align with branch_manager_config.json bases (KES M raw values).",
+    "ts": "2026-05-11"
+  }
+}

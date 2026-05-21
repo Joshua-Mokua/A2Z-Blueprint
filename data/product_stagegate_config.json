@@ -1,0 +1,30 @@
+{
+  "_doc": "Stage-gate config for ENH-132 ProductLifecycleEngine. Bank-overridable thresholds + approval matrix. Defaults reflect Tier-2 Kenya bank baseline; banks tune per their governance maturity.",
+  "_schema_version": "v10.143",
+  "_last_reviewed": "2026-05-05",
+
+  "launch_to_growth_book_threshold_kes": 1000000000,
+  "launch_to_growth_customer_threshold": 1000,
+  "growth_to_maturity_growth_rate_pct": 5.0,
+  "maturity_to_decline_negative_periods": 2,
+  "sunset_loss_periods": 3,
+  "sunset_book_decline_pct": -20.0,
+  "pending_approval_ttl_days": 14,
+
+  "approval_matrix": {
+    "IDEATION->BUSINESS_CASE":     ["product_head"],
+    "BUSINESS_CASE->DEVELOPMENT":  ["product_head", "risk_head", "finance_head"],
+    "DEVELOPMENT->LAUNCH":         ["product_head", "compliance_head", "ops_head"],
+    "LAUNCH->GROWTH":              [],
+    "GROWTH->MATURITY":            [],
+    "MATURITY->DECLINE":           [],
+    "DECLINE->SUNSET":             ["product_head", "ceo"]
+  },
+
+  "_notes": [
+    "Pre-launch transitions (IDEATION/BUSINESS_CASE/DEVELOPMENT) are governed entirely by the approval matrix; no quantitative criteria.",
+    "LAUNCH->GROWTH / GROWTH->MATURITY / MATURITY->DECLINE auto-transition when criteria met (no approval required).",
+    "DECLINE->SUNSET requires Product Head + CEO approval per CBK product-rationalization governance expectations.",
+    "Sunset is RECOMMENDED by criteria; the engine never auto-sunsets a product."
+  ]
+}

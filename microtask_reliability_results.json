@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:01.019028+00:00",
+  "total_scenarios": 20,
+  "matches": 20,
+  "misses": 0,
+  "reliability_pct": 100.0,
+  "spec_target_pct": 90.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "M001-clear-behind-pace",
+      "description": "20% achievement, 50% through period \u00e2\u2020\u2019 should fire High-priority task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "id": "M002-on-pace-no-task",
+      "description": "On pace exactly, no task emitted",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M003-target-met-no-task",
+      "description": "Already met target \u00e2\u2020\u2019 no task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M004-target-exceeded-no-task",
+      "description": "Above target, definitely no task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M005-no-target-no-task",
+      "description": "KPI has no target \u00e2\u2020\u2019 engine refuses to reason \u00e2\u2020\u2019 no task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M006-zero-target-no-task",
+      "description": "Target = 0 (misconfig) \u00e2\u2020\u2019 no task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M007-end-of-period-no-task",
+      "description": "0 working days remaining \u00e2\u2020\u2019 no task even if behind",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M008-multiple-kpis-mixed",
+      "description": "Three KPIs: one ahead, one behind High, one on pace \u00e2\u2020\u2019 1 task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "NPL_PCT",
+          "priority": "High",
+          "task": "Call the 3 oldest delinquent accounts today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "NPL_PCT"
+        }
+      ]
+    },
+    {
+      "id": "M009-aml-task-routing",
+      "description": "AML KPI \u00e2\u2020\u2019 task text mentions AML alerts",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "AML_SLA",
+          "priority": "High",
+          "task": "Clear at least 2 AML alerts today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "AML_SLA",
+          "task_must_contain": "AML"
+        }
+      ]
+    },
+    {
+      "id": "M010-npl-task-routing",
+      "description": "NPL KPI \u00e2\u2020\u2019 task mentions delinquent accounts",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "NPL_PCT",
+          "priority": "High",
+          "task": "Call the 3 oldest delinquent accounts today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "NPL_PCT",
+          "task_must_contain": "delinquent"
+        }
+      ]
+    },
+    {
+      "id": "M011-deposit-task-routing",
+      "description": "Deposit KPI \u00e2\u2020\u2019 task mentions outbound calls",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "task_must_contain": "prospect"
+        }
+      ]
+    },
+    {
+      "id": "M012-borderline-just-below-threshold",
+      "description": "current_pace \u00e2\u2030\u02c6 daily_req * 0.85 (just below 0.9 gate) \u00e2\u2020\u2019 fires Medium task. With target=100, actual=44, days_elapsed=11, working_days_remaining=12: pace=4.0, daily_req=56/12\u00e2\u2030\u02c64.67, ratio\u00e2\u2030\u02c60.86.",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "Medium",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "Medium"
+        }
+      ]
+    },
+    {
+      "id": "M013-clearly-above-threshold",
+      "description": "current_pace > daily_req * 0.9 (well above gate) \u00e2\u2020\u2019 no task. With target=100, actual=53, days_elapsed=11, working_days_remaining=12: pace=4.82, daily_req=47/12\u00e2\u2030\u02c63.92, ratio\u00e2\u2030\u02c61.23 (above pace).",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M014-day-one-of-period",
+      "description": "Day 1, no actuals yet \u00e2\u2020\u2019 fires task (everything is behind on day 1)",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "id": "M015-no-active-kpis-no-tasks",
+      "description": "Staff has no KPIs assigned \u00e2\u2020\u2019 no tasks",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [],
+      "expected": null
+    },
+    {
+      "id": "M016-large-numbers",
+      "description": "KES-scale (1.5B target) \u00e2\u20ac\u201d math should not overflow / lose precision",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "id": "M017-five-kpis-cap-applies",
+      "description": "Six KPIs all severely behind \u00e2\u2020\u2019 engine returns at most 5 tasks",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        },
+        {
+          "kpi_id": "LOAN_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        },
+        {
+          "kpi_id": "NPL_PCT",
+          "priority": "High",
+          "task": "Call the 3 oldest delinquent accounts today"
+        },
+        {
+          "kpi_id": "AML_SLA",
+          "priority": "High",
+          "task": "Clear at least 2 AML alerts today"
+        },
+        {
+          "kpi_id": "NPS",
+          "priority": "High",
+          "task": "Resolve any open customer complaints in your queue today"
+        }
+      ],
+      "expected": 5
+    },
+    {
+      "id": "M018-very-low-pace-high-priority",
+      "description": "Pace at <50% of daily_req \u00e2\u2020\u2019 High priority",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "id": "M019-medium-pace-medium-priority",
+      "description": "Pace between 50% and 80% of daily_req \u00e2\u2020\u2019 Medium priority",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "Medium",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "DEP_GROWTH",
+          "priority": "Medium"
+        }
+      ]
+    },
+    {
+      "id": "M020-mid-quarter-period",
+      "description": "Quarterly period mid-flight, behind pace \u00e2\u2020\u2019 fires task",
+      "matched": true,
+      "reason": "ok",
+      "actual_tasks": [
+        {
+          "kpi_id": "LOAN_GROWTH",
+          "priority": "High",
+          "task": "Make 5 outbound prospect calls today"
+        }
+      ],
+      "expected": [
+        {
+          "kpi_id": "LOAN_GROWTH"
+        }
+      ]
+    }
+  ]
+}

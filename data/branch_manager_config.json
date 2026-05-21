@@ -1,0 +1,88 @@
+{
+  "_schema_version": "v10.329",
+  "_description": "Branch Manager activity generator config. Per banking convention, branch performance IS the Branch Manager's performance. PBT/NPL/PAR/CIR are the BM's OWN KPIs, not recursive aggregates from team. Mirrors v10.317 Teller / v10.327 Credit / v10.328 Support generator pattern.",
+  "_design_principle": "Each Branch Manager owns one branch. Their scorecard reflects the branch's strategic + operational performance. Senior Branch Managers have stretched targets (HIGH band weight up).",
+  "performance_bands": {
+    "HIGH": {
+      "weight": 0.25,
+      "factor_range": [1.10, 1.20],
+      "description": "Top quartile branches — exceed targets"
+    },
+    "MID": {
+      "weight": 0.55,
+      "factor_range": [0.92, 1.05],
+      "description": "Middle 50% — within performance band"
+    },
+    "LOW": {
+      "weight": 0.20,
+      "factor_range": [0.72, 0.88],
+      "description": "Bottom quartile — below target"
+    }
+  },
+  "senior_bm_band_weights": {
+    "HIGH": 0.35,
+    "MID": 0.55,
+    "LOW": 0.10
+  },
+  "roles": {
+    "Branch Manager": {
+      "description": "Standard branch — retail-led with MSME pipeline",
+      "kpis": [
+        {"id": "PBT",                   "base": 65,    "unit": "CCY M",  "direction": "higher"},
+        {"id": "Total NFI",             "base": 28,    "unit": "CCY M",  "direction": "higher"},
+        {"id": "Retail & MSME Deposit Growth", "base": 11,    "unit": "%",      "direction": "higher"},
+        {"id": "Commercial Deposit Growth",    "base": 8,     "unit": "%",      "direction": "higher"},
+        {"id": "CASA Ratio",            "base": 62,    "unit": "%",      "direction": "higher"},
+        {"id": "Top 100 Customers Deposit",    "base": 1850,  "unit": "CCY M",  "direction": "higher"},
+        {"id": "Collection Throughput", "base": 320,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Number of Business Borrowers", "base": 145,   "unit": "count",  "direction": "higher"},
+        {"id": "Disbursements Retail Loans",   "base": 280,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Disbursements MSME Loans",     "base": 180,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Disbursements Corporate Loans","base": 95,    "unit": "CCY M",  "direction": "higher"},
+        {"id": "Loan Book Growth",      "base": 9,     "unit": "%",      "direction": "higher"},
+        {"id": "NPL_RATIO",             "base": 8.5,   "unit": "%",      "direction": "lower"},
+        {"id": "PAR",                   "base": 6.2,   "unit": "%",      "direction": "lower"},
+        {"id": "Account Dormancy",      "base": 14,    "unit": "%",      "direction": "lower"},
+        {"id": "Channel Dormancy",      "base": 18,    "unit": "%",      "direction": "lower"},
+        {"id": "NEW_ACCOUNTS",          "base": 425,   "unit": "count",  "direction": "higher"},
+        {"id": "CX Score",              "base": 3.8,   "unit": "score_5","direction": "higher"},
+        {"id": "COMPLIANCE_SCORE",      "base": 4.2,   "unit": "score_5","direction": "higher"},
+        {"id": "Audit Score",           "base": 76,    "unit": "score_100","direction": "higher"},
+        {"id": "Staff Productivity",    "base": 68,    "unit": "score_100","direction": "higher"}
+      ]
+    },
+    "Senior Branch Manager": {
+      "description": "Flagship branch — larger book, stretched targets",
+      "kpis": [
+        {"id": "PBT",                   "base": 145,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Total NFI",             "base": 62,    "unit": "CCY M",  "direction": "higher"},
+        {"id": "Retail & MSME Deposit Growth", "base": 12,    "unit": "%",      "direction": "higher"},
+        {"id": "Commercial Deposit Growth",    "base": 10,    "unit": "%",      "direction": "higher"},
+        {"id": "CASA Ratio",            "base": 65,    "unit": "%",      "direction": "higher"},
+        {"id": "Top 100 Customers Deposit",    "base": 4200, "unit": "CCY M",  "direction": "higher"},
+        {"id": "Collection Throughput", "base": 720,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Number of Business Borrowers", "base": 310,   "unit": "count",  "direction": "higher"},
+        {"id": "Disbursements Retail Loans",   "base": 580,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Disbursements MSME Loans",     "base": 420,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Disbursements Corporate Loans","base": 260,   "unit": "CCY M",  "direction": "higher"},
+        {"id": "Loan Book Growth",      "base": 11,    "unit": "%",      "direction": "higher"},
+        {"id": "NPL_RATIO",             "base": 7.0,   "unit": "%",      "direction": "lower"},
+        {"id": "PAR",                   "base": 5.0,   "unit": "%",      "direction": "lower"},
+        {"id": "Account Dormancy",      "base": 11,    "unit": "%",      "direction": "lower"},
+        {"id": "Channel Dormancy",      "base": 14,    "unit": "%",      "direction": "lower"},
+        {"id": "NEW_ACCOUNTS",          "base": 920,   "unit": "count",  "direction": "higher"},
+        {"id": "CX Score",              "base": 4.0,   "unit": "score_5","direction": "higher"},
+        {"id": "COMPLIANCE_SCORE",      "base": 4.3,   "unit": "score_5","direction": "higher"},
+        {"id": "Audit Score",           "base": 80,    "unit": "score_100","direction": "higher"},
+        {"id": "Staff Productivity",    "base": 72,    "unit": "score_100","direction": "higher"}
+      ]
+    }
+  },
+  "deterministic_seed_strategy": "hash(staff_code + period + kpi_id)",
+  "noise_range_pct": 0.04,
+  "_rationale": {
+    "branch_owns_kpis": "Banking convention — branch P&L, NPL ratio, PAR, CIR are at branch level and roll up to the Branch Manager directly. Not team aggregates.",
+    "senior_bm_skew": "Senior Branch Managers run flagship branches (Westgate, CBD, Industrial Area). Higher HIGH-band weight reflects better-equipped branches with stronger portfolios.",
+    "direction_handling": "NPL Ratio, PAR, Account Dormancy, Channel Dormancy are lower-is-better — generator INVERTS factor (1.0/factor) so HIGH performers get lower (better) values."
+  }
+}

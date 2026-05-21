@@ -1,0 +1,455 @@
+"""pages/98_platform_health.py — v10.74 platform health dashboard.
+
+Operator-facing single-page health view of the platform. Runs the
+three diagnostic checks that determine whether the platform is in
+a known-good state:
+
+  1. Audit gates       — `python scripts/audit.py` (136 ratchet gates)
+  2. Structural checks — `python scripts/structure_audit.py` (HARD/SOFT)
+  3. Engine self-tests — `python scripts/run_engine_self_tests.py`
+                         (140+ diagnostic engines, ~3-4 seconds total)
+
+Plus inventory tabs:
+  4. Standards summary  — by status / arc / priority tier
+  5. Scenarios summary  — by category / requires_engines
+
+Why a Streamlit page instead of just CLI: operators (business analysts,
+auditors, the bank's IT manager) need a 30-second confidence check
+they can run without opening a terminal. The CLI scripts always run
+the same checks; this page is the one-click surface.
+
+Per Rule 7, the page surfaces results — it never auto-fixes
+violations, never restarts services, never modifies the registry,
+never gates downstream pages. If something is red, the operator
+investigates; the page just makes the red visible.
+
+Caches: subprocess outputs cached for 60 seconds via
+@st.cache_data(ttl=60) to avoid re-running on every interaction.
+Manual `Run check` button bypasses cache via cache.clear().
+"""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import streamlit as st
+
+from pages._access import require_access
+from utils.core_audit import audit_log
+
+# ───── Page setup ──────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Platform Health",
+    page_icon="🩺",
+    layout="wide")
+
+# Access guard: aligns with existing pattern. Module name
+# 'platform_health' should be added to MODULE_ACCESS in utils.core
+# for whoever should see this page (typically Admin + IT Manager).
+# Falling back to silent=True when module isn't registered yet so
+# the page is still discoverable during initial deployment.
+if not require_access("platform_health", silent=True):
+    require_access("it_platform.platform_health")    # fallback to admin role
+
+ud = st.session_state.get("user_data", {}) or {}
+username = ud.get("username", "anonymous")
+audit_log(
+    "PLATFORM_HEALTH_VIEWED",
+    username=username,
+    detail="opened platform health dashboard")
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# ───── Header ──────────────────────────────────────────────────────────
+st.title("🩺 Platform Health")
+st.caption(
+    f"Operator confidence check · v10.74 · "
+    f"{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+st.markdown(
+    "Each tab runs a real diagnostic against the running platform. "
+    "Results are cached for 60 seconds to keep the page snappy. Press "
+    "**Refresh all checks** to re-run from scratch.")
+
+if st.button("🔄 Refresh all checks", help="Bypass 60-second cache"):
+    st.cache_data.clear()
+    audit_log(
+        "PLATFORM_HEALTH_REFRESHED",
+        username=username,
+        detail="manually cleared health cache")
+    st.rerun()
+
+
+# ───── Helpers (cached) ────────────────────────────────────────────────
+@st.cache_data(ttl=60)
+def run_audit() -> Dict[str, object]:
+    """Run scripts/audit.py and return parsed result."""
+    try:
+        r = subprocess.run(
+            [sys.executable, "scripts/audit.py"],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+            timeout=180)
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False, "score": "n/a",
+            "passed": 0, "total": 0,
+            "raw_output": "TIMEOUT after 180s",
+            "ran_at": datetime.now().isoformat()}
+    raw = (r.stdout or "") + "\n" + (r.stderr or "")
+    score_line = next(
+        (line for line in raw.splitlines()
+         if "Score:" in line),
+        "")
+    # Parse "Score: 136/136 gates = 100.0% — PASS"
+    passed = total = 0
+    ok = False
+    if "/" in score_line and "Score:" in score_line:
+        try:
+            frag = score_line.split("Score:")[1].split("gates")[0]
+            passed_str, total_str = frag.strip().split("/")
+            passed = int(passed_str.strip())
+            total = int(total_str.strip())
+            ok = passed == total and "PASS" in score_line
+        except (ValueError, IndexError):
+            pass
+    return {
+        "ok": ok and r.returncode == 0,
+        "score": f"{passed}/{total}" if total else "n/a",
+        "passed": passed, "total": total,
+        "raw_output": raw,
+        "returncode": r.returncode,
+        "ran_at": datetime.now().isoformat()}
+
+
+@st.cache_data(ttl=60)
+def run_structure_audit() -> Dict[str, object]:
+    """Run scripts/structure_audit.py and parse for STABLE marker."""
+    try:
+        r = subprocess.run(
+            [sys.executable, "scripts/structure_audit.py"],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+            timeout=60)
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False, "stable": False,
+            "raw_output": "TIMEOUT after 60s",
+            "ran_at": datetime.now().isoformat()}
+    raw = (r.stdout or "") + "\n" + (r.stderr or "")
+    stable = "STABLE" in raw and "match baseline" in raw
+    # Parse module/import counts
+    modules = imports = hard = 0
+    for line in raw.splitlines():
+        if "Modules scanned:" in line:
+            try:
+                # "Modules scanned: 338 | Imports: 867 | Findings: 68 (HARD=3)"
+                parts = line.split("|")
+                modules = int(
+                    parts[0].split(":")[1].strip())
+                imports = int(
+                    parts[1].split(":")[1].strip())
+                if "HARD=" in line:
+                    hard = int(
+                        line.split("HARD=")[1].split(")")[0])
+            except (ValueError, IndexError):
+                pass
+    return {
+        "ok": stable and r.returncode == 0,
+        "stable": stable,
+        "modules": modules, "imports": imports,
+        "hard": hard,
+        "raw_output": raw,
+        "returncode": r.returncode,
+        "ran_at": datetime.now().isoformat()}
+
+
+@st.cache_data(ttl=60)
+def run_engine_self_tests() -> Dict[str, object]:
+    """Run scripts/run_engine_self_tests.py --json and return summary."""
+    try:
+        r = subprocess.run(
+            [sys.executable,
+             "scripts/run_engine_self_tests.py", "--json"],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+            timeout=600)
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False, "total": 0,
+            "passed": 0, "failed": 0, "skipped": 0,
+            "raw_output": "TIMEOUT after 600s",
+            "results": [],
+            "ran_at": datetime.now().isoformat()}
+    raw = r.stdout or ""
+    summary: Dict[str, object] = {
+        "ok": False,
+        "total": 0, "passed": 0, "failed": 0, "skipped": 0,
+        "results": [],
+        "raw_output": (r.stdout or "") + "\n" + (r.stderr or ""),
+        "returncode": r.returncode,
+        "ran_at": datetime.now().isoformat()}
+    try:
+        data = json.loads(raw)
+        summary.update(data)
+        summary["ok"] = (
+            r.returncode == 0 and data.get("failed", 1) == 0)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return summary
+
+
+def _status_metric(label: str, ok: bool, value: str) -> None:
+    """Render a metric with color-coded status emoji."""
+    icon = "🟢" if ok else "🔴"
+    st.metric(label, f"{icon}  {value}")
+
+
+# ───── Tabs ────────────────────────────────────────────────────────────
+tab_overview, tab_audit, tab_structure, tab_engines, \
+    tab_standards, tab_scenarios = st.tabs([
+        "Overview",
+        "Audit gates",
+        "Structural integrity",
+        "Engine self-tests",
+        "Standards inventory",
+        "Scenarios inventory",
+    ])
+
+# ───── Overview ────────────────────────────────────────────────────────
+with tab_overview:
+    st.subheader("Platform health summary")
+    with st.spinner("Running 3 health checks..."):
+        audit_r = run_audit()
+        structure_r = run_structure_audit()
+        engines_r = run_engine_self_tests()
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        _status_metric(
+            "Audit gates",
+            audit_r["ok"],
+            audit_r["score"])
+    with col2:
+        _status_metric(
+            "Structural integrity",
+            structure_r["ok"],
+            "STABLE" if structure_r["stable"] else "DRIFT")
+    with col3:
+        _status_metric(
+            "Engine self-tests",
+            engines_r["ok"],
+            f"{engines_r['passed']}/{engines_r['total']}")
+
+    overall_ok = (
+        audit_r["ok"]
+        and structure_r["ok"]
+        and engines_r["ok"])
+    st.markdown("---")
+    if overall_ok:
+        st.success(
+            "**All systems green.** Platform is in a known-good "
+            "state. Last checked: "
+            f"{datetime.now().strftime('%H:%M:%S')}")
+    else:
+        st.error(
+            "**Attention required.** One or more checks failed. "
+            "See the per-tab detail below for diagnosis.")
+
+    st.caption(
+        "Per Rule 7, this page surfaces health state only — it "
+        "never auto-fixes, never restarts services, never modifies "
+        "the registry. If a check is red, the operator investigates "
+        "via the per-tab raw output and applies a remediation drop.")
+
+# ───── Audit gates ─────────────────────────────────────────────────────
+with tab_audit:
+    st.subheader("🔒 Audit gates (`scripts/audit.py`)")
+    audit_r = run_audit()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        _status_metric(
+            "Result",
+            audit_r["ok"],
+            "PASS" if audit_r["ok"] else "FAIL")
+    with col2:
+        st.metric("Gates passed", str(audit_r["passed"]))
+    with col3:
+        st.metric("Gates total", str(audit_r["total"]))
+
+    st.caption(
+        f"Last run: {audit_r['ran_at'][:19].replace('T', ' ')} · "
+        f"return code {audit_r.get('returncode', 'n/a')}")
+
+    with st.expander(
+        "Raw audit output (click to expand)",
+        expanded=not audit_r["ok"],
+    ):
+        st.code(audit_r["raw_output"], language="text")
+
+# ───── Structural integrity ────────────────────────────────────────────
+with tab_structure:
+    st.subheader("🧱 Structural integrity (`scripts/structure_audit.py`)")
+    sa = run_structure_audit()
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        _status_metric(
+            "Status",
+            sa["ok"],
+            "STABLE" if sa["stable"] else "DRIFT")
+    with col2:
+        st.metric("Modules scanned", str(sa.get("modules", 0)))
+    with col3:
+        st.metric("Imports analyzed", str(sa.get("imports", 0)))
+    with col4:
+        st.metric("HARD findings", str(sa.get("hard", 0)))
+
+    st.caption(
+        f"Last run: {sa['ran_at'][:19].replace('T', ' ')} · "
+        f"return code {sa.get('returncode', 'n/a')}")
+
+    with st.expander(
+        "Raw structure audit output (click to expand)",
+        expanded=not sa["ok"],
+    ):
+        st.code(sa["raw_output"], language="text")
+
+# ───── Engine self-tests ───────────────────────────────────────────────
+with tab_engines:
+    st.subheader(
+        "⚙️ Engine self-tests "
+        "(`scripts/run_engine_self_tests.py`)")
+    er = run_engine_self_tests()
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        _status_metric(
+            "Status",
+            er["ok"],
+            "PASS" if er["ok"] else "FAIL")
+    with col2:
+        st.metric("Engines passed", str(er["passed"]))
+    with col3:
+        st.metric("Engines failed", str(er["failed"]))
+    with col4:
+        st.metric("Engines total", str(er["total"]))
+
+    st.caption(
+        f"Last run: {er['ran_at'][:19].replace('T', ' ')} · "
+        f"return code {er.get('returncode', 'n/a')}")
+
+    if er.get("results"):
+        # Sort: failures first, then by name
+        results_sorted = sorted(
+            er["results"],
+            key=lambda r: (r["status"] != "failed", r["engine"]))
+        st.markdown("**Per-engine results:**")
+        # Render in 2 columns to keep page compact
+        col_a, col_b = st.columns(2)
+        for i, r in enumerate(results_sorted):
+            target = col_a if i % 2 == 0 else col_b
+            icon = (
+                "🟢" if r["status"] == "passed"
+                else "🔴" if r["status"] == "failed"
+                else "⚪")
+            target.write(
+                f"{icon} `{r['engine']}` "
+                f"({r['duration_seconds']}s)")
+            if r["status"] == "failed":
+                target.warning(
+                    f"  detail: {r.get('detail', '')}")
+
+    with st.expander(
+        "Raw orchestrator output (click to expand)",
+        expanded=not er["ok"],
+    ):
+        st.code(er.get("raw_output", ""), language="text")
+
+# ───── Standards inventory ─────────────────────────────────────────────
+with tab_standards:
+    st.subheader("📋 Standards inventory")
+    try:
+        from utils.standards_registry import STANDARDS_REGISTRY
+        total = len(STANDARDS_REGISTRY)
+        active = [
+            s for s in STANDARDS_REGISTRY if s.status == "active"]
+        planned = [
+            s for s in STANDARDS_REGISTRY if s.status == "planned"]
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total standards", str(total))
+        with col2:
+            st.metric("Active", str(len(active)))
+        with col3:
+            st.metric("Planned", str(len(planned)))
+
+        # Breakdown by subcategory
+        from collections import Counter
+        sub_active = Counter(s.subcategory for s in active)
+        sub_planned = Counter(s.subcategory for s in planned)
+        all_subs = sorted(
+            set(sub_active) | set(sub_planned))
+        st.markdown("**Per-subcategory breakdown:**")
+        rows = []
+        for sub in all_subs:
+            rows.append({
+                "Subcategory": sub,
+                "Active": sub_active.get(sub, 0),
+                "Planned": sub_planned.get(sub, 0),
+                "Total": (
+                    sub_active.get(sub, 0)
+                    + sub_planned.get(sub, 0)),
+            })
+        import pandas as pd
+        df = pd.DataFrame(rows).sort_values(
+            "Total", ascending=False)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+        # By priority tier
+        tier_counts = Counter(
+            s.priority_tier for s in STANDARDS_REGISTRY)
+        st.markdown("**By priority tier:**")
+        st.write(dict(sorted(tier_counts.items())))
+    except ImportError as e:
+        st.error(f"Could not load standards_registry: {e}")
+
+# ───── Scenarios inventory ─────────────────────────────────────────────
+with tab_scenarios:
+    st.subheader("🎬 Scenarios inventory")
+    try:
+        from utils.scenario_simulator import (
+            TREASURY_SCENARIO_LIBRARY)
+        total = len(TREASURY_SCENARIO_LIBRARY)
+        st.metric("Total scenarios", str(total))
+
+        from collections import Counter
+        cat_counts = Counter(
+            s.category.value for s in TREASURY_SCENARIO_LIBRARY)
+        st.markdown("**By category:**")
+        st.write(dict(cat_counts))
+
+        # Group by scenario_id prefix to show arc coverage
+        prefix_counts = Counter()
+        for s in TREASURY_SCENARIO_LIBRARY:
+            prefix = s.scenario_id.split("-", 1)[0]
+            prefix_counts[prefix] += 1
+        st.markdown("**By scenario family (prefix):**")
+        rows = [
+            {"Prefix": k, "Count": v}
+            for k, v in sorted(
+                prefix_counts.items(),
+                key=lambda x: (-x[1], x[0]))]
+        import pandas as pd
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    except ImportError as e:
+        st.error(f"Could not load scenario_simulator: {e}")
+
+# ───── Footer ──────────────────────────────────────────────────────────
+st.markdown("---")
+st.caption(
+    "v10.74 ops hygiene drop · health checks per Rule 7 — surfacing "
+    "only · audit + structure + engines orthogonal verification "
+    "stack · cached 60s for snappy navigation, refresh button "
+    "above for fresh runs")

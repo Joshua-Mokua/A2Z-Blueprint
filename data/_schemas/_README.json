@@ -1,0 +1,19 @@
+{
+  "_purpose": "JSON Schema definitions for protected data files. Locked by audit gate G230. Producers writing to these files MUST conform; consumers can rely on the documented shape.",
+  "_audit_gate": "G230 (utils/schema_validator.py + scripts/audit.py)",
+  "_pattern": "Each schema is a minimal JSON Schema document. Fields marked 'required' must be present on every record. Optional fields are allowed but not enforced. Adding a new required field is a breaking change — must be migrated across existing records first.",
+  "_history": [
+    "v10.342 — schemas introduced (5 files: strategic_initiatives, execute_initiatives, bank_targets, cost_allocation_rules, segment_config)",
+    "v10.343 — schema lock extended (3 more files: kpi_library, org_hierarchy_config, pipeline). 8 files protected total. Surfaced kpi.direction divergence (4 values across 2 naming conventions) — flagged as Option E consolidation candidate."
+  ],
+  "_files": [
+    "bank_targets.schema.json — locked v10.341 (mixed shape fixed in that batch)",
+    "strategic_initiatives.schema.json — locks the 31-universal-field shape from pages/83_strategy.py",
+    "execute_initiatives.schema.json — locks the 5 universal fields; optional fields allowed",
+    "cost_allocation_rules.schema.json — locks the v10.339 rule shape",
+    "segment_config.schema.json — locks v10.338 canonical segment vocabulary",
+    "kpi_library.schema.json — locks v10.343 the 5 canonical top-level keys + nested kpis array; documents direction-naming divergence",
+    "org_hierarchy_config.schema.json — locks v10.343 the 6 canonical hierarchy keys",
+    "pipeline.schema.json — locks v10.343 the 10 universal deal fields"
+  ]
+}

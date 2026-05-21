@@ -10,7 +10,7 @@ from pages._access import require_access
 from utils.core_audit import audit_log, requires_dual_approval, submit_for_approval
 from utils.core import LoanApplicationManager
 
-require_access("loan_applications")
+require_access("credit.loan_applications")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     try:
@@ -89,7 +89,7 @@ for col, lbl, val, color in [
 st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
 # ── Tabs ───────────────────────────────────────────────────────────
-tab_labels = ["📥 All Applications","✅ Completeness Check","🏊 Swim Lanes","📤 Submit to Credit"]
+tab_labels = ["📥 All Applications","✅ Completeness Check","🏊 Swim Lanes","📤 Submit to Credit","📋 Workflow Lifecycle"]
 if is_credit or is_admin:
     tab_labels.append("📊 Analytics")
 # ── SLA breach banner ────────────────────────────────────────────
@@ -470,6 +470,169 @@ if len(tabs) > 4:
                         f"<div style='width:{pct:.0f}%;background:#DC2626;height:100%;border-radius:4px'></div>"
                         f"</div><div style='font-size:12px;width:40px;text-align:right'>{cnt}</div>"
                         f"</div>", unsafe_allow_html=True)
+
+# ── Workflow Lifecycle (v10.447 — SWIM LANE engine wired) ────────────
+# Wires utils/credit_workflow.py (ENH-125 End-to-End Digital Workflow,
+# ENH-130 Credit Committee Automation, ENH-CRD-R7 80/20 Automation).
+# Maps the data-status field to the formal 19-state ApplicationState
+# lifecycle and surfaces the swim lane / transition graph.
+with tabs[4]:
+    from utils.credit_workflow import (
+        ApplicationState, ALLOWED_TRANSITIONS, is_terminal_state,
+        evaluate_automation, AutomationPolicy, AutomationDecision,
+        determine_tier,
+    )
+    from decimal import Decimal
+
+    st.subheader("📋 Application Workflow Lifecycle (Swim Lane)")
+    st.caption(
+        "Formal 19-state lifecycle from ENH-125 Digital Workflow Orchestration. "
+        "Maps data-statuses to ApplicationState enum. See ALLOWED_TRANSITIONS "
+        "for the swim lane graph."
+    )
+
+    # Map data-status → ApplicationState (lifecycle)
+    STATUS_TO_LIFECYCLE = {
+        "draft":        ApplicationState.DRAFT,
+        "submitted":    ApplicationState.SUBMITTED,
+        "completeness": ApplicationState.EKYC_PENDING,
+        "assigned":     ApplicationState.BUREAU_PULL_PENDING,
+        "analysis":     ApplicationState.DECISION_PENDING,
+        "committee":    ApplicationState.COMMITTEE_PENDING,
+        "approved":     ApplicationState.APPROVED,
+        "credit_admin": ApplicationState.DOCUMENTATION_PENDING,
+        "disbursed":    ApplicationState.DISBURSED,
+        "declined":     ApplicationState.DECLINED,
+        "returned":     ApplicationState.WITHDRAWN_BY_APPLICANT,
+    }
+
+    # Aggregate visible applications by ApplicationState
+    from collections import Counter as _Ctr
+    lifecycle_counts = _Ctr()
+    untransitioned = []
+    for a in visible:
+        s = STATUS_TO_LIFECYCLE.get(a.get("status", ""))
+        if s is None:
+            untransitioned.append(a.get("status", "unknown"))
+        else:
+            lifecycle_counts[s] += 1
+
+    # ── Lifecycle distribution
+    st.markdown("##### Lifecycle state distribution")
+    lc1, lc2, lc3, lc4 = st.columns(4)
+    in_intake = (lifecycle_counts[ApplicationState.DRAFT]
+                + lifecycle_counts[ApplicationState.SUBMITTED]
+                + lifecycle_counts[ApplicationState.EKYC_PENDING])
+    in_analysis = (lifecycle_counts[ApplicationState.BUREAU_PULL_PENDING]
+                  + lifecycle_counts[ApplicationState.DECISION_PENDING])
+    in_committee = (lifecycle_counts[ApplicationState.COMMITTEE_PENDING]
+                   + lifecycle_counts[ApplicationState.REFERRED_TO_COMMITTEE])
+    in_admin = (lifecycle_counts[ApplicationState.APPROVED]
+               + lifecycle_counts[ApplicationState.DOCUMENTATION_PENDING]
+               + lifecycle_counts[ApplicationState.DISBURSEMENT_PENDING])
+    lc1.metric("🟦 In intake (Draft/Submitted/eKYC)", in_intake)
+    lc2.metric("🟧 In analysis", in_analysis)
+    lc3.metric("🟪 In committee", in_committee)
+    lc4.metric("🟩 In admin (approved → disburse)", in_admin)
+
+    # ── Swim lane (transitions) — table form
+    st.markdown("##### Swim Lane — allowed transitions from each state")
+    lane_rows = []
+    for state, allowed in ALLOWED_TRANSITIONS.items():
+        if is_terminal_state(state):
+            continue
+        n_here = lifecycle_counts.get(state, 0)
+        lane_rows.append({
+            "From state":         state.value,
+            "Apps here":          n_here,
+            "Can transition to":  ", ".join(s.value for s in allowed) or "(terminal)",
+            "Terminal?":          "—",
+        })
+    # Add terminal states for completeness
+    for state in ALLOWED_TRANSITIONS:
+        if is_terminal_state(state):
+            n_here = lifecycle_counts.get(state, 0)
+            lane_rows.append({
+                "From state":         state.value,
+                "Apps here":          n_here,
+                "Can transition to":  "(terminal)",
+                "Terminal?":          "✅",
+            })
+    import pandas as _pd_wf
+    df_lane = _pd_wf.DataFrame(lane_rows)
+    st.dataframe(df_lane, use_container_width=True, hide_index=True)
+
+    # ── 80/20 Automation simulation
+    st.markdown("##### 80/20 Automation outlook (ENH-CRD-R7)")
+    st.caption(
+        "Per AutomationPolicy: high-confidence decisions auto-approve up to "
+        "the policy threshold; others go to human review or committee."
+    )
+    if visible:
+        auto = manual = committee = 0
+        _decisions_in_decision_pending = [
+            a for a in visible if a.get("status") == "analysis"
+        ]
+        policy = AutomationPolicy()
+        from random import Random as _Rand
+        _r = _Rand(42)  # deterministic preview
+        for a in _decisions_in_decision_pending[:200]:
+            try:
+                amount = Decimal(str(a.get("amount", 0)))
+                # Synthetic confidence (real value would come from
+                # ai_underwriting; here we estimate from amount tier)
+                conf = Decimal("0.92") if amount < 10_000_000 else (
+                    Decimal("0.70") if amount < 50_000_000 else Decimal("0.55"))
+                # Tier-1 sector ok; tier-2 sector requires HR
+                sector_risk = "TIER_2" if a.get("swim_lane") == "Complex" else "TIER_1"
+                d = evaluate_automation(
+                    confidence=conf,
+                    amount_kes=amount,
+                    sector_risk_tier=sector_risk,
+                    policy=policy,
+                )
+                if d == AutomationDecision.AUTO_APPROVE:
+                    auto += 1
+                elif d == AutomationDecision.HUMAN_REVIEW:
+                    manual += 1
+                else:
+                    committee += 1
+            except Exception:
+                manual += 1
+        ac1, ac2, ac3 = st.columns(3)
+        ac1.metric("🤖 Auto-approve candidates", auto)
+        ac2.metric("👤 Human review", manual)
+        ac3.metric("🏛️ Committee referral", committee)
+        if (auto + manual + committee) > 0:
+            auto_rate = auto / (auto + manual + committee) * 100
+            st.progress(min(int(auto_rate), 100),
+                       text=f"Automation rate: {auto_rate:.1f}% (target 80%)")
+        if committee > 0:
+            st.info(
+                f"💡 {committee} application(s) flagged for committee — "
+                f"see Credit Analysis → Decisions tab"
+            )
+
+    # ── Committee tier preview
+    st.markdown("##### Committee tier preview (by amount)")
+    st.caption("Per ENH-130 Credit Committee Automation: tier determined by exposure.")
+    tier_counts = _Ctr()
+    for a in visible:
+        try:
+            amount = Decimal(str(a.get("amount", 0)))
+            tier_counts[determine_tier(amount)] += 1
+        except Exception:
+            continue
+    tier_rows = [{"Tier": t, "Apps": n}
+                 for t, n in sorted(tier_counts.items())]
+    if tier_rows:
+        st.dataframe(_pd_wf.DataFrame(tier_rows),
+                     use_container_width=True, hide_index=True)
+
+    if untransitioned:
+        with st.expander(f"⚠️ {len(untransitioned)} unmappable statuses"):
+            st.write(_Ctr(untransitioned).most_common())
+
 
 # ── Credit Team Capacity Dashboard ─────────────────────────────────
 with tabs[-1]:

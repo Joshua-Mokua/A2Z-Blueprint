@@ -10,7 +10,7 @@ from pages._shared import load_shared_state, get_user_proposition
 from pages._access import require_access
 from utils.core_audit import audit_log, requires_dual_approval, submit_for_approval
 
-require_access("legal")
+require_access("legal.dashboard")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     try:
@@ -132,6 +132,7 @@ sections = st.tabs([
     "📋 Operational",
     "📊 Reporting",
     "🔧 Admin",
+    "🤖 Arc Engines",
 ])
 
 # ── Section 0: 📋 Operational ─────────────────────────────
@@ -605,3 +606,212 @@ with sections[2]:
         else:
             st.info("No title deed custody records match your search.")
 
+
+# ──────────────────────────────────────────────────────────────────────
+# Section 3: 🤖 Arc Engines (absorbed from 28_legal_arc_cockpit.py
+# in v10.206 per the architectural reorganization sub-campaign.
+# 9 Legal engines (ENH-222..230, with ENH-221 as META_ONLY) presented
+# as 7 nested sub-tabs spanning the legal arc: Dashboard, Matters,
+# Spend + Counsel, Obligations, Holds + Docs, Clauses, Analytics.
+# Read-only display except for state-mutating workflows that go through
+# utils/api_legal.py FastAPI endpoints. Mirrors v10.202..v10.205
+# absorption patterns.
+# ──────────────────────────────────────────────────────────────────────
+with sections[3]:
+    from datetime import datetime as _dt_la, timezone as _tz_la
+
+    try:
+        from utils.obligation_tracking import ObligationTrackingEngine
+        from utils.legal_case_management import LegalCaseManagementEngine
+        from utils.legal_spend_management import LegalSpendManagementEngine
+        from utils.outside_counsel_portal import OutsideCounselPortalEngine
+        from utils.clause_library import ClauseLibraryEngine
+        from utils.legal_hold_management import LegalHoldManagementEngine
+        from utils.legal_dashboard import LegalDashboardEngine
+        from utils.legal_document_management import (
+            LegalDocumentManagementEngine)
+        from utils.legal_analytics import LegalAnalyticsEngine
+        _ARC_LEGAL_AVAILABLE = True
+    except ImportError as _ie:
+        st.error(f"Legal arc engines unavailable: {_ie}")
+        _ARC_LEGAL_AVAILABLE = False
+
+    try:
+        from pages._cockpit_render import render_summary as _render_summary
+    except ImportError:
+        def _render_summary(summary, *, exclude=()):
+            st.json(summary if summary else {})
+
+    if _ARC_LEGAL_AVAILABLE:
+        st.caption(
+            "v10.206 absorbed from 28_legal_arc_cockpit.py — 9 engines "
+            "(ENH-222..230, ENH-221 META_ONLY) spanning obligation "
+            "tracking, case management, outside counsel coordination, "
+            "spend management, clause library, legal holds, dashboard "
+            "rollup, document management, and analytics. All engines "
+            "read-only here; state-mutating workflows go through the "
+            "FastAPI POST endpoints in utils/api_legal.py.")
+
+        # The dashboard and analytics engines depend on the other 7 as
+        # constructor arguments — match the cockpit's instantiation order.
+        @st.cache_resource
+        def _get_arc_legal_engines():
+            ob = ObligationTrackingEngine()
+            ca = LegalCaseManagementEngine()
+            sp = LegalSpendManagementEngine()
+            co = OutsideCounselPortalEngine()
+            cl = ClauseLibraryEngine()
+            ho = LegalHoldManagementEngine()
+            da = LegalDashboardEngine(
+                obligation_engine=ob, case_engine=ca, spend_engine=sp,
+                counsel_engine=co, clause_engine=cl, hold_engine=ho)
+            do = LegalDocumentManagementEngine()
+            an = LegalAnalyticsEngine(
+                obligation_engine=ob, case_engine=ca, spend_engine=sp,
+                counsel_engine=co, clause_engine=cl, hold_engine=ho,
+                dashboard_engine=da, document_engine=do)
+            return (ob, ca, sp, co, cl, ho, da, do, an)
+
+        # Cockpit's body unpacks engines by tuple position — preserve
+        (ob, ca, sp, co, cl, ho, da, do, an) = _get_arc_legal_engines()
+
+        arc_tabs = st.tabs([
+            "📊 Dashboard",
+            "⚖️ Matters",
+            "💰 Spend + Counsel",
+            "📜 Obligations",
+            "🔒 Holds + Docs",
+            "📚 Clauses",
+            "📈 Analytics",
+        ])
+
+        with arc_tabs[0]:
+            st.subheader("Legal Health Dashboard (ENH-228)")
+            st.caption(
+                "Cross-engine composition. ENH-221 contract review is "
+                "META_ONLY at v10.179.")
+            b = da.board_summary()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Overall Health",
+                       f"{b['overall_health']}",
+                       delta=b["health_band"])
+            c2.metric("Sections Reporting",
+                       f"{b['n_sections_full']}/6")
+            c3.metric("Partial Data",
+                       "YES" if b["partial_data"] else "NO")
+            st.markdown("**Per-section snapshot:**")
+            for sec in b["sections"]:
+                st.write(
+                    f"- **{sec['section']}**: {sec['health']} "
+                    f"({sec['severity']}) — {sec['headline']}")
+            st.markdown("**Risk heatmap:**")
+            _render_summary(b["heatmap"])
+
+        with arc_tabs[1]:
+            st.subheader("Matter / Case Management (ENH-223)")
+            b = ca.board_summary()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Cases", b.get("n_cases_total", 0))
+            c2.metric("Open", b.get("n_open", 0))
+            c3.metric("Critical Open", b.get("n_critical_open", 0))
+            st.markdown("**Stage counts:**")
+            _render_summary(b.get("stage_counts", {}))
+            st.markdown("**Materiality counts:**")
+            _render_summary(b.get("materiality_counts", {}))
+            st.markdown("**Outcome counts:**")
+            _render_summary(b.get("outcome_counts", {}))
+
+        with arc_tabs[2]:
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("Legal Spend (ENH-225)")
+                sb = sp.board_summary()
+                st.metric("Budgets", sb.get("n_budgets_total", 0))
+                st.metric("At/Over Limit",
+                           sb.get("n_budgets_at_or_over_limit", 0))
+                st.markdown("**Spend by currency:**")
+                _render_summary(sb.get("total_spend_by_currency", {}))
+            with c2:
+                st.subheader("Outside Counsel (ENH-224)")
+                cb = co.board_summary()
+                st.metric("Total Counsel",
+                           cb.get("n_counsel_total", 0))
+                st.metric("Active",
+                           cb.get("n_counsel_active", 0))
+                st.metric("Submissions Under Review",
+                           cb.get("n_submissions_under_review", 0))
+
+        with arc_tabs[3]:
+            st.subheader("Obligation Tracking (ENH-222)")
+            ob_b = ob.board_summary()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total", ob_b.get("n_obligations_total", 0))
+            c2.metric("Active", ob_b.get("n_active", 0))
+            c3.metric("Breached", ob_b.get("n_breached", 0))
+            st.markdown("**Alert counts:**")
+            _render_summary(ob_b.get("alert_counts", {}))
+            st.markdown("**Kind counts:**")
+            _render_summary(ob_b.get("kind_counts", {}))
+
+        with arc_tabs[4]:
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("Legal Holds (ENH-227)")
+                hb = ho.board_summary()
+                st.metric("Total Holds", hb.get("n_holds_total", 0))
+                st.metric("Active", hb.get("n_holds_active", 0))
+                st.metric("Overdue Acks",
+                           hb.get("n_acknowledgments_overdue", 0))
+            with c2:
+                st.subheader("Legal Documents (ENH-229)")
+                db_b = do.board_summary()
+                st.metric("Total Documents",
+                           db_b.get("n_documents_total", 0))
+                st.metric("Privileged",
+                           db_b.get("n_privileged_documents", 0))
+                st.metric("Purgeable Now",
+                           db_b.get("n_documents_purgeable_now", 0))
+                st.metric("Open Discovery Requests",
+                           db_b.get("n_discovery_requests_open", 0))
+
+        with arc_tabs[5]:
+            st.subheader("Clause Library & Playbooks (ENH-226)")
+            cl_b = cl.board_summary()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Clauses",
+                       cl_b.get("n_clauses_total", 0))
+            c2.metric("Approved",
+                       cl_b.get("n_clauses_approved", 0))
+            c3.metric("Prohibited",
+                       cl_b.get("n_prohibited_clauses", 0))
+            st.metric("Playbooks Published",
+                       f"{cl_b.get('n_playbooks_published', 0)}/"
+                       f"{cl_b.get('n_playbooks_total', 0)}")
+            st.markdown("**Clause classification:**")
+            _render_summary(cl_b.get("clause_classification_counts", {}))
+
+        with arc_tabs[6]:
+            st.subheader("Legal Analytics & Reporting (ENH-230)")
+            an_b = an.board_summary()
+            ph = an_b.get("portfolio_health_score")
+            st.metric("Portfolio Health Score",
+                       f"{round(ph, 1) if ph is not None else 'N/A'}")
+            st.markdown("**KPI snapshot:**")
+            if pd is not None:
+                df = pd.DataFrame(an_b.get("kpis", []))
+                st.dataframe(df, use_container_width=True)
+            else:
+                _render_summary(an_b.get("kpis", []))
+            st.markdown("**Efficiency metrics:**")
+            _render_summary(an_b.get("efficiency", {}))
+
+
+        # Footer audit log
+        try:
+            audit_log(
+                action="legal_arc_engines.view",
+                username=ud.get("username", "anonymous"),
+                detail=f"viewed_at={_dt_la.now(_tz_la.utc).isoformat()}",
+                module="legal")
+        except Exception:
+            pass

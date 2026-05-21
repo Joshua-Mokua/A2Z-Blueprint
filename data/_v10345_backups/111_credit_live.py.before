@@ -1,0 +1,463 @@
+"""
+Phase 3 — Credit Live Cockpit (pages/111)
+=================================================================
+v10.300 — third Phase 3 cockpit integration arc. Composes the
+Credit module engines (#119-#130 + CRD-R1..R7 + KESONIA) into a
+read-side cockpit showing the bank-wide credit book health,
+loan pipeline, IFRS9 stages, and watchlist.
+
+Pattern: Treasury-style (compute + JSON state), not CIMS-style
+(record registry). Credit engines are stateful compute classes
+(AIUnderwritingEngine, CreditCommitteeEngine, IRBCapitalEngine,
+etc.) that operate on data loaded from JSON files.
+
+Tab map (7 tabs at G4 ceiling):
+  1. Open work pulse        — bank-wide credit landscape NOW
+  2. Loan pipeline          — applications by swim_lane
+  3. IFRS9 stages           — performing / sig-increase / NPL
+  4. NPL & watchlist        — Stage 3 detail + monitoring
+  5. Credit admin           — approved book stats
+  6. Portfolio analytics    — placeholder for Cat A composer
+  7. Audit trail            — credit decisions log placeholder
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+import streamlit as st
+
+from utils.core_audit import audit_log
+from utils.cockpit_read import (
+    credit_open_work, credit_loan_applications,
+    credit_ifrs9_loans, credit_watchlist,
+    load_records, count_by, latest_n,
+)
+
+# Phase 3 standing rule: hard require_access, no silent try/except
+from pages._access import require_access
+require_access("credit.credit_live")
+
+
+# ---- Live data caching (10s TTL) ----
+@st.cache_data(ttl=10)
+def _cached_open_work():
+    return credit_open_work(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_loan_apps():
+    return credit_loan_applications(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_ifrs9():
+    return credit_ifrs9_loans(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_watchlist():
+    return credit_watchlist(data_dir="data")
+
+
+@st.cache_data(ttl=10)
+def _cached_credit_admin():
+    return load_records(
+        "data/credit_admin.json",
+        "credit_admin", ("id",),
+    )
+
+
+@st.cache_data(ttl=60)  # Portfolio analytics is heavier — cache 60s
+def _cached_portfolio_analytics():
+    """v10.309 Cat A composer — wraps credit_portfolio_analytics
+    composing AI underwriting + PD distribution + IRB capital."""
+    from utils.cockpit_read import credit_portfolio_analytics
+    return credit_portfolio_analytics(data_dir="data")
+
+
+def main():
+    st.title("💳 Credit Live Cockpit")
+    st.caption(
+        "v10.300 · Read-side composition of Credit module "
+        "engines (#119-#130 + CRD-R1..R7 + KESONIA) · "
+        "Auto-refreshes every 10s · CBK Prudential reporting "
+        "context"
+    )
+
+    actor = st.session_state.get("user", {}).get(
+        "username", "anonymous",
+    )
+
+    cols = st.columns([4, 1])
+    cols[0].caption(
+        f"Loaded at: "
+        f"{datetime.utcnow().isoformat(timespec='seconds')} UTC"
+    )
+    if cols[1].button("🔄 Refresh now"):
+        st.cache_data.clear()
+        audit_log(
+            action="cockpit_cache_clear",
+            username=actor,
+            module="credit_live",
+        )
+        st.rerun()
+
+    tabs = st.tabs([
+        "📊 Open work pulse",
+        "📥 Loan pipeline",
+        "📈 IFRS9 stages",
+        "🚨 NPL & watchlist",
+        "✅ Credit admin",
+        "📋 Portfolio analytics",
+        "📜 Audit trail",
+    ])
+
+    # ---------- Tab 1: Open work pulse ----------
+    with tabs[0]:
+        st.subheader("Bank-wide Credit landscape")
+        st.caption(
+            "Live counts across loan applications, IFRS9 loans, "
+            "and the credit monitoring watchlist."
+        )
+
+        snap = _cached_open_work()
+
+        cols = st.columns(5)
+        cols[0].metric(
+            "Applications total",
+            snap["applications_total"],
+        )
+        cols[1].metric(
+            "Applications open",
+            snap["applications_open"],
+        )
+        cols[2].metric(
+            "IFRS9 records",
+            snap["ifrs9_total"],
+        )
+
+        npl_display = (
+            f"{snap['npl_pct']:.2f}%"
+            if snap["npl_pct"] is not None
+            else "—"
+        )
+        cols[3].metric(
+            "NPL ratio",
+            npl_display,
+            delta=(
+                "above 5%" if (snap["npl_pct"] or 0) > 5 else None
+            ),
+            delta_color="inverse",
+        )
+        cols[4].metric(
+            "Watchlist",
+            snap["watchlist_count"],
+        )
+
+        # IFRS9 stage breakdown row
+        st.markdown("---")
+        st.markdown("**IFRS9 stage distribution:**")
+        scols = st.columns(3)
+        scols[0].metric(
+            "Stage 1 (performing)",
+            snap["ifrs9_stage1"],
+        )
+        scols[1].metric(
+            "Stage 2 (sig. credit increase)",
+            snap["ifrs9_stage2"],
+            delta_color="inverse",
+        )
+        scols[2].metric(
+            "Stage 3 (NPL)",
+            snap["ifrs9_stage3"],
+            delta_color="inverse",
+        )
+
+        # Triage banners
+        if snap["npl_pct"] is not None and snap["npl_pct"] > 5.0:
+            st.error(
+                f"🛑 NPL ratio is {snap['npl_pct']:.2f}%, above "
+                f"the 5% advisory threshold. Escalate to Credit "
+                f"Risk + Recovery."
+            )
+        if snap["ifrs9_stage2"] > 0:
+            st.warning(
+                f"⚠ {snap['ifrs9_stage2']} loans in Stage 2 "
+                f"(significant credit increase). Watch for "
+                f"Stage 3 migration."
+            )
+
+    # ---------- Tab 2: Loan pipeline ----------
+    with tabs[1]:
+        st.subheader("Loan application pipeline")
+        apps = _cached_loan_apps()
+        st.metric("Total applications", len(apps))
+
+        if not apps:
+            st.info(
+                "No applications in data/loan_applications.json."
+            )
+        else:
+            snap = _cached_open_work()
+            st.markdown("**By swim lane:**")
+            for lane, n in sorted(
+                snap["applications_by_stage"].items(),
+                key=lambda x: -x[1],
+            ):
+                st.write(f"  {lane}: {n}")
+
+            st.markdown("---")
+            by_product = count_by(apps, "product")
+            by_currency = count_by(apps, "currency")
+            pcols = st.columns(2)
+            pcols[0].write("**By product:**")
+            for k, v in sorted(by_product.items(),
+                                  key=lambda x: -x[1])[:10]:
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+            pcols[1].write("**By currency:**")
+            for k, v in sorted(by_currency.items(),
+                                  key=lambda x: -x[1]):
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown("**Recent applications (top 20):**")
+            recent = latest_n(apps, n=20,
+                                 by_field="application_date")
+            for r in recent:
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"{r.get('client_name', '?')} · "
+                    f"{r.get('product', '?')} · "
+                    f"{r.get('currency', 'KES')} "
+                    f"{r.get('amount', 0):,} · "
+                    f"lane={r.get('swim_lane', '?')}"
+                )
+
+    # ---------- Tab 3: IFRS9 stages ----------
+    with tabs[2]:
+        st.subheader("IFRS9 loan staging")
+        st.caption(
+            "Per IFRS9 / CBK Prudential Guidelines: Stage 1 = "
+            "12-month ECL, Stage 2 = lifetime ECL (significant "
+            "credit increase), Stage 3 = lifetime ECL (NPL / "
+            "credit-impaired)."
+        )
+        loans = _cached_ifrs9()
+        st.metric("Total IFRS9 records", len(loans))
+
+        if not loans:
+            st.info("No data in data/ifrs9_loans.json.")
+        else:
+            snap = _cached_open_work()
+            scols = st.columns(3)
+            scols[0].metric("Stage 1", snap["ifrs9_stage1"])
+            scols[1].metric("Stage 2", snap["ifrs9_stage2"])
+            scols[2].metric("Stage 3 (NPL)",
+                              snap["ifrs9_stage3"])
+
+            # Aggregate outstanding by stage
+            stage_outstanding = {1: 0.0, 2: 0.0, 3: 0.0}
+            for r in loans:
+                if not isinstance(r, dict):
+                    continue
+                try:
+                    s = int(r.get("stage", 0))
+                except (ValueError, TypeError):
+                    continue
+                if s in stage_outstanding:
+                    try:
+                        stage_outstanding[s] += float(
+                            r.get("outstanding", 0))
+                    except (ValueError, TypeError):
+                        pass
+
+            st.markdown("---")
+            st.markdown("**Outstanding by stage:**")
+            for stage, total in stage_outstanding.items():
+                st.write(f"  Stage {stage}: {total:,.0f}")
+
+    # ---------- Tab 4: NPL & watchlist ----------
+    with tabs[3]:
+        st.subheader("Non-Performing Loans & Watchlist")
+        loans = _cached_ifrs9()
+        npl_records = [
+            r for r in loans
+            if isinstance(r, dict)
+            and r.get("stage") == 3
+        ]
+        st.metric("Stage 3 (NPL) accounts", len(npl_records))
+
+        if npl_records:
+            st.markdown("**Top 20 NPL accounts by outstanding:**")
+            try:
+                npl_sorted = sorted(
+                    npl_records,
+                    key=lambda r: float(r.get("outstanding", 0)),
+                    reverse=True,
+                )
+            except Exception:
+                npl_sorted = npl_records
+            for r in npl_sorted[:20]:
+                st.write(
+                    f"• `{r.get('account_id', '?')}` "
+                    f"{r.get('client_name', '?')} · "
+                    f"outstanding={r.get('outstanding', 0):,} · "
+                    f"npl_days={r.get('npl_days', '?')} · "
+                    f"pd_12m={r.get('pd_12m', '?')}"
+                )
+
+        st.markdown("---")
+        st.markdown("**Credit monitoring watchlist:**")
+        wl = _cached_watchlist()
+        st.metric("Watchlist entries", len(wl))
+        for entry in wl[:20]:
+            st.write(
+                f"• {entry.get('client', '?')} — "
+                f"{entry.get('reason', 'no reason recorded')}"
+            )
+
+    # ---------- Tab 5: Credit admin ----------
+    with tabs[4]:
+        st.subheader("Approved credit book")
+        admin = _cached_credit_admin()
+        st.metric("Approved facilities", len(admin))
+
+        if admin:
+            by_product = count_by(admin, "product")
+            pcols = st.columns(2)
+            pcols[0].write("**By product (top 10):**")
+            for k, v in sorted(by_product.items(),
+                                  key=lambda x: -x[1])[:10]:
+                pcols[0].write(f"  {k or '(unset)'}: {v}")
+
+            by_rm = count_by(admin, "rm_code")
+            pcols[1].write("**Top 5 RMs by deal count:**")
+            for k, v in sorted(by_rm.items(),
+                                  key=lambda x: -x[1])[:5]:
+                pcols[1].write(f"  {k or '(unset)'}: {v}")
+
+            st.markdown("---")
+            st.markdown("**Recent approvals (top 10):**")
+            recent = latest_n(admin, n=10,
+                                 by_field="approval_date")
+            for r in recent:
+                st.write(
+                    f"• `{r.get('id', '?')}` "
+                    f"app={r.get('application_id', '?')} · "
+                    f"{r.get('client_name', '?')} · "
+                    f"{r.get('product', '?')} · "
+                    f"{r.get('amount', 0):,} · "
+                    f"RM={r.get('rm_code', '?')}"
+                )
+
+    # ---------- Tab 6: Portfolio analytics ----------
+    with tabs[5]:
+        st.subheader("Portfolio analytics (Cat A composer)")
+        st.caption(
+            "v10.309 — composes AI underwriting + PD "
+            "distribution + IRB capital into a single report. "
+            "Refresh cached 60s."
+        )
+
+        from utils.cockpit_read import credit_portfolio_analytics
+        report = _cached_portfolio_analytics()
+
+        audit_log(
+            action="credit_portfolio_analytics_view",
+            username=actor,
+            module="credit_live",
+        )
+
+        # Header row
+        kcols = st.columns(3)
+        kcols[0].metric("Report ID", report["report_id"])
+        kcols[1].metric("Sections", report["n_sections"])
+        kcols[2].metric("Status", report["status"])
+
+        # Section rendering
+        st.markdown("---")
+        st.markdown("**Sections:**")
+        for s in report["sections"]:
+            status_icon = {
+                "ok": "✅", "warning": "⚠", "breach": "🛑",
+                "no_data": "⚪", "error": "❌",
+            }.get(s["status"], "•")
+            st.markdown(
+                f"**{status_icon} {s['section_title']}** · "
+                f"`{s['section_id']}` · status: {s['status']}"
+            )
+            if s.get("notes"):
+                st.caption(s["notes"])
+            if s.get("metrics"):
+                # Compact metric display
+                metric_pairs = [
+                    f"{k}={v}" for k, v in s["metrics"].items()
+                ]
+                st.write("  " + " · ".join(metric_pairs))
+
+    # ---------- Tab 7: Audit trail ----------
+    with tabs[6]:
+        st.subheader("Credit decisions audit trail")
+        audit_log(
+            action="credit_audit_view",
+            username=actor,
+            module="credit_live",
+        )
+
+        # v10.305 — wired to the platform-wide audit_log.json
+        # via the audit_log_records composer. Pre-filtered to
+        # the credit_live module so operators see decisions
+        # from this cockpit (and other credit-tagged actions).
+        from utils.cockpit_read import audit_log_records
+
+        # Operator filter UI
+        fcols = st.columns(3)
+        action_filter = fcols[0].text_input(
+            "Filter by action (exact match)",
+            value="", key="credit_audit_action_filter",
+        ) or None
+        user_filter = fcols[1].text_input(
+            "Filter by user",
+            value="", key="credit_audit_user_filter",
+        ) or None
+        limit_choice = fcols[2].selectbox(
+            "Show last", [25, 50, 100, 250],
+            index=1,
+            key="credit_audit_limit",
+        )
+
+        trail = audit_log_records(
+            data_dir="data",
+            module="credit_live",
+            action=action_filter,
+            user=user_filter,
+            limit=limit_choice,
+        )
+
+        mcols = st.columns(2)
+        mcols[0].metric("Filtered records", trail["count"])
+        mcols[1].metric(
+            "Showing",
+            min(trail["count"], limit_choice),
+        )
+
+        if not trail["records"]:
+            st.info(
+                "No audit records match the filter. Note: "
+                "only credit_live-tagged actions appear here. "
+                "Use the platform audit module page for the "
+                "full audit log including SAR filings + BSC "
+                "submissions + admin operations."
+            )
+        else:
+            for r in trail["records"]:
+                st.write(
+                    f"• {r.get('ts', '?')[:19]} · "
+                    f"{r.get('user', '?')} · "
+                    f"`{r.get('action', '?')}` · "
+                    f"{r.get('detail', '')[:80]}"
+                )
+
+
+main()

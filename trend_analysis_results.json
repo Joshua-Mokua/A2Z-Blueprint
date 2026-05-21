@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:12.041540+00:00",
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "T001-clear-up-trend",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T002-down-20pct-alert-fires",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T003-down-10pct-no-alert",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T004-flat",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T005-mixed-modes-suppress-alert",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T006-insufficient-data",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T007-missing-periods-tracked",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T008-down-50pct-extreme-alert",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T009-all-ftp-off-warning",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "T010-zero-first-pbt-percentage-none",
+      "matched": true,
+      "diffs": []
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+[
+  {
+    "id": "H001-platinum-clear",
+    "description": "Clear platinum: margin 0.95, revenue 5M, FTP-on. Top tier without question.",
+    "input": {
+      "pnl": {"pbt": 4750000, "pbt_margin": 0.95, "total_revenue": 5000000,
+              "meta": {"ftp_mode": "on", "balance_basis": "average"}}
+    },
+    "expected": {"tier": "platinum", "action": "Retain at all costs"}
+  },
+  {
+    "id": "H002-platinum-boundary-exact",
+    "description": "Exactly at platinum threshold (0.80). The ≥ rule means this IS platinum.",
+    "input": {
+      "pnl": {"pbt": 800000, "pbt_margin": 0.80, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "platinum", "action": "Retain at all costs"}
+  },
+  {
+    "id": "H003-platinum-just-below",
+    "description": "Just below platinum (0.7999). Should be gold, not platinum.",
+    "input": {
+      "pnl": {"pbt": 799900, "pbt_margin": 0.7999, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "gold", "action": "Deepen relationship"}
+  },
+  {
+    "id": "H004-gold-mid",
+    "description": "Mid-gold: margin 0.65.",
+    "input": {
+      "pnl": {"pbt": 650000, "pbt_margin": 0.65, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "gold", "action": "Deepen relationship"}
+  },
+  {
+    "id": "H005-gold-boundary-exact",
+    "description": "Exactly at gold threshold (0.50).",
+    "input": {
+      "pnl": {"pbt": 500000, "pbt_margin": 0.50, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "gold", "action": "Deepen relationship"}
+  },
+  {
+    "id": "H006-gold-just-below",
+    "description": "Just below gold (0.4999). Should be silver.",
+    "input": {
+      "pnl": {"pbt": 499900, "pbt_margin": 0.4999, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "silver", "action": "Maintain"}
+  },
+  {
+    "id": "H007-silver-mid",
+    "description": "Mid-silver: margin 0.35.",
+    "input": {
+      "pnl": {"pbt": 350000, "pbt_margin": 0.35, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "silver", "action": "Maintain"}
+  },
+  {
+    "id": "H008-silver-boundary-exact",
+    "description": "Exactly at silver threshold (0.20).",
+    "input": {
+      "pnl": {"pbt": 200000, "pbt_margin": 0.20, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "silver", "action": "Maintain"}
+  },
+  {
+    "id": "H009-silver-just-below",
+    "description": "Just below silver (0.1999). Should be bronze.",
+    "input": {
+      "pnl": {"pbt": 199900, "pbt_margin": 0.1999, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "bronze", "action": "Improve or maintain"}
+  },
+  {
+    "id": "H010-bronze-mid",
+    "description": "Mid-bronze: margin 0.10.",
+    "input": {
+      "pnl": {"pbt": 100000, "pbt_margin": 0.10, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "bronze", "action": "Improve or maintain"}
+  },
+  {
+    "id": "H011-bronze-boundary-exact-zero",
+    "description": "Exactly zero margin. The ≥0 rule means this IS bronze, not negative.",
+    "input": {
+      "pnl": {"pbt": 0, "pbt_margin": 0.00, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "bronze", "action": "Improve or maintain"}
+  },
+  {
+    "id": "H012-negative-just-below-zero",
+    "description": "Just below zero (-0.0001). Should be negative.",
+    "input": {
+      "pnl": {"pbt": -100, "pbt_margin": -0.0001, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "negative", "action": "Exit relationship"}
+  },
+  {
+    "id": "H013-negative-mid",
+    "description": "Customer truly losing money under FTP-correct math.",
+    "input": {
+      "pnl": {"pbt": -500000, "pbt_margin": -0.50, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "negative", "action": "Exit relationship"}
+  },
+  {
+    "id": "H014-negative-extreme",
+    "description": "Extreme loss-maker.",
+    "input": {
+      "pnl": {"pbt": -10000000, "pbt_margin": -10.0, "total_revenue": 1000000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "negative", "action": "Exit relationship"}
+  },
+  {
+    "id": "H015-unclassified-none-margin",
+    "description": "Margin is None (revenue ≤ 0). Must be unclassified — refuses to drop to negative.",
+    "input": {
+      "pnl": {"pbt": -100, "pbt_margin": null, "total_revenue": 0,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "unclassified", "action": "Re-evaluate when upstream data is complete"}
+  },
+  {
+    "id": "H016-unclassified-ftp-off-deposit-trap",
+    "description": "THE CANONICAL #21→#22 HONESTY DEMONSTRATION. ftp_mode='off', PBT negative, revenue positive — the deposit-funder customer mis-priced by naive gross-interest math. Engine refuses to tag 'negative'.",
+    "input": {
+      "pnl": {"pbt": -6500, "pbt_margin": -3.25, "total_revenue": 2000,
+              "meta": {"ftp_mode": "off"}}
+    },
+    "expected": {"tier": "unclassified", "action": "Re-evaluate when upstream data is complete",
+                 "reason_contains": "Mandatory Standard #11"}
+  },
+  {
+    "id": "H017-ftp-off-positive-pbt-still-classifies",
+    "description": "ftp_mode='off' but PBT IS positive. Classification proceeds normally (the FTP-blind heuristic only triggers on negative PBT).",
+    "input": {
+      "pnl": {"pbt": 50000, "pbt_margin": 0.30, "total_revenue": 166666.67,
+              "meta": {"ftp_mode": "off"}}
+    },
+    "expected": {"tier": "silver", "action": "Maintain"}
+  },
+  {
+    "id": "H018-ftp-on-negative-classifies-as-negative",
+    "description": "Same situation as H016 but with ftp_mode='on' — now classification proceeds and customer gets 'negative' tier honestly.",
+    "input": {
+      "pnl": {"pbt": -2500, "pbt_margin": -0.04, "total_revenue": 60000,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "negative", "action": "Exit relationship"}
+  },
+  {
+    "id": "H019-large-corporate-platinum",
+    "description": "Bank-scale corporate customer. KES 100M revenue, KES 90M PBT, 90% margin.",
+    "input": {
+      "pnl": {"pbt": 90000000, "pbt_margin": 0.90, "total_revenue": 100000000,
+              "meta": {"ftp_mode": "on", "balance_basis": "average"}}
+    },
+    "expected": {"tier": "platinum", "action": "Retain at all costs"}
+  },
+  {
+    "id": "H020-tiny-customer-still-platinum-without-secondary",
+    "description": "KES 100 revenue, 80 PBT (80% margin). Without min_revenue_for_tier, this still counts as platinum (margin-only classification). Test ensures the engine doesn't sneak in a hidden secondary criterion.",
+    "input": {
+      "pnl": {"pbt": 80, "pbt_margin": 0.80, "total_revenue": 100,
+              "meta": {"ftp_mode": "on"}}
+    },
+    "expected": {"tier": "platinum", "action": "Retain at all costs"}
+  }
+]

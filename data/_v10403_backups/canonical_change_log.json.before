@@ -1,0 +1,134 @@
+[
+  {
+    "ts": "2026-05-13T19:12:14.257442",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:12:54.620589",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:19:57.491621",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:35:59.611660",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:37:22.625767",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:38:29.770967",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:55:35.880300",
+    "who": "test_user",
+    "action": "test_action",
+    "target": "test_target",
+    "old": "old_val",
+    "new": "new_val",
+    "reason": "v10.400 test"
+  },
+  {
+    "ts": "2026-05-13T19:56:19.562964",
+    "who": "deep_test",
+    "action": "set_role_managers",
+    "target": "_v10403_test_role",
+    "old": [],
+    "new": [
+      "Chief Executive & Managing Director"
+    ],
+    "reason": "v10.403 deep test"
+  },
+  {
+    "ts": "2026-05-13T19:56:19.565876",
+    "who": "deep_test",
+    "action": "remove_role",
+    "target": "_v10403_test_role",
+    "old": {
+      "in_rmw": true,
+      "in_tiers": false
+    },
+    "new": null,
+    "reason": "cleanup"
+  },
+  {
+    "ts": "2026-05-13T19:56:52.603069",
+    "who": "deep_test_2",
+    "action": "set_role_managers",
+    "target": "_v10403_persist_test",
+    "old": [],
+    "new": [
+      "Chief Executive & Managing Director"
+    ],
+    "reason": "persistence test"
+  },
+  {
+    "ts": "2026-05-13T19:56:52.607018",
+    "who": "cleanup_2",
+    "action": "remove_role",
+    "target": "_v10403_persist_test",
+    "old": {
+      "in_rmw": true,
+      "in_tiers": false
+    },
+    "new": null,
+    "reason": "cleanup persistence test"
+  },
+  {
+    "ts": "2026-05-13T19:57:26.262761",
+    "who": "deep_test_3",
+    "action": "set_role_managers",
+    "target": "DeepTestRole2026",
+    "old": [],
+    "new": [
+      "Chief Executive & Managing Director"
+    ],
+    "reason": "persistence retest"
+  },
+  {
+    "ts": "2026-05-13T19:57:26.265750",
+    "who": "cleanup",
+    "action": "remove_role",
+    "target": "DeepTestRole2026",
+    "old": {
+      "in_rmw": true,
+      "in_tiers": false
+    },
+    "new": null,
+    "reason": "cleanup retest"
+  }
+]

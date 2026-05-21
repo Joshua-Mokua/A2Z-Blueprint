@@ -1,0 +1,75 @@
+{
+  "_note": "v10.410 — Co-KPI chief pairing map per Joshua's directive. Lists KPIs naturally shared by 2+ chief-level roles so MD can pair recipients during cascade. Auto-generated from kpi_library.json role_kpis intersections plus manual curation. primary_owners = checked by default in pairing UI; secondary_owners = available but unchecked.",
+  "_version": "v10.410",
+  "_generated_at": "2026-05-14",
+
+  "LOAN_GROWTH": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Credit Officer"],
+    "secondary_owners": ["Chief Risk Officer"],
+    "default_pairing": "by_prior_year",
+    "note": "Loan growth split between RB and CB; Credit Officer co-owns underwriting quality"
+  },
+  "NPL_RATIO": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Credit Officer"],
+    "secondary_owners": ["Chief Risk Officer"],
+    "default_pairing": "equal_split",
+    "note": "Asset quality is co-owned; rate KPIs should not be summed"
+  },
+  "FEES_COMM": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "secondary_owners": [],
+    "default_pairing": "by_prior_year",
+    "note": "Fee income split between RB and CB"
+  },
+  "NEW_CUST": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "secondary_owners": [],
+    "default_pairing": "by_prior_year",
+    "note": "Customer acquisition split between RB and CB"
+  },
+  "DILIGENCE": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Compliance Officer"],
+    "secondary_owners": [],
+    "default_pairing": "equal_split",
+    "note": "KYC/diligence co-owned across business lines"
+  },
+  "PBT": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "secondary_owners": ["Chief Financial Officer"],
+    "default_pairing": "by_prior_year",
+    "note": "Profit before tax — main shared bank-wide KPI"
+  },
+  "Total NFI": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "secondary_owners": ["Chief Financial Officer"],
+    "default_pairing": "by_prior_year",
+    "note": "Non-funded income — heavily shared"
+  },
+  "Total Deposits": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "secondary_owners": ["Chief Financial Officer"],
+    "default_pairing": "by_prior_year",
+    "note": "Deposit mobilization split RB vs CB"
+  },
+  "K001": {
+    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Retail Banking Officer"],
+    "secondary_owners": ["Chief Commercial Officer"],
+    "default_pairing": "by_prior_year",
+    "note": "PBT proxy K001 shared by primary business chiefs"
+  },
+  "K002": {
+    "primary_owners": ["Director Retail Banking", "Chief Retail Banking Officer"],
+    "secondary_owners": ["Chief Commercial Officer"],
+    "default_pairing": "by_prior_year"
+  },
+  "K003": {
+    "primary_owners": ["Director Commercial Banking", "Chief Commercial Officer"],
+    "secondary_owners": ["Chief Financial Officer"],
+    "default_pairing": "by_prior_year"
+  },
+  "K007": {
+    "primary_owners": ["Chief Retail Banking Officer", "Chief Commercial Officer"],
+    "secondary_owners": [],
+    "default_pairing": "equal_split"
+  }
+}

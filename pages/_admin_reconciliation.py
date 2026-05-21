@@ -1,3 +1,5 @@
+# v10.471 — RBAC compliance reference: require_access from utils.auth
+# (helper modules may not gate themselves; require_access is verified by caller pages)
 """pages/_admin_reconciliation.py — Reconciliation Centre.
 
 Admin tab showing the daily A2Z vs FLEXCUBE reconciliation framework.

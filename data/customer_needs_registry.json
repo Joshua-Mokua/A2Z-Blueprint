@@ -1,0 +1,127 @@
+{
+  "_doc": "Customer needs registry for ENH-133 Customer Needs & Gap Analysis. Bank-curated canonical needs + segment-level priorities and minimum portfolio expectations. Used by the gap analyzer to flag customers whose product portfolio or service experience falls below segment baseline.",
+  "_schema_version": "v10.144",
+  "_last_reviewed": "2026-05-05",
+
+  "needs": [
+    {
+      "need_id": "TRANSACTIONAL_BANKING",
+      "name": "Transactional banking",
+      "description": "Day-to-day account access, payments, transfers, debit card",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": ["Current Account", "Savings Account"],
+      "priority": "FUNDAMENTAL"
+    },
+    {
+      "need_id": "CREDIT_ACCESS",
+      "name": "Credit access",
+      "description": "Personal/business borrowing instruments",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": ["Personal Loan", "Mortgage", "Asset Finance", "Salary Advance", "Business Loan", "LPO Financing", "Working Capital", "Invoice Discounting"],
+      "priority": "HIGH"
+    },
+    {
+      "need_id": "WEALTH_PRESERVATION",
+      "name": "Wealth preservation & growth",
+      "description": "Long-term value protection through deposits, fixed income, investments",
+      "applicable_segments": ["Affluent", "Premium"],
+      "satisfying_propensities": ["Fixed Deposit", "Investment Fund", "Bond"],
+      "priority": "HIGH"
+    },
+    {
+      "need_id": "INVESTMENT_ADVISORY",
+      "name": "Investment advisory",
+      "description": "Wealth advisory + portfolio guidance",
+      "applicable_segments": ["Premium"],
+      "satisfying_propensities": ["Investment Fund", "Wealth Management", "Trust Services"],
+      "priority": "HIGH"
+    },
+    {
+      "need_id": "INSURANCE_PROTECTION",
+      "name": "Insurance & protection",
+      "description": "Life, health, asset, and business protection cover",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": ["Insurance"],
+      "priority": "MEDIUM"
+    },
+    {
+      "need_id": "DIGITAL_CONVENIENCE",
+      "name": "Digital convenience",
+      "description": "Self-service via mobile/internet banking; reliable channels",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": [],
+      "priority": "HIGH",
+      "behavioural_signal": "digital_engagement",
+      "minimum_signal_value": "Medium"
+    },
+    {
+      "need_id": "RELATIONSHIP_MANAGEMENT",
+      "name": "Relationship management & contact cadence",
+      "description": "Regular advisor contact aligned to segment expectations",
+      "applicable_segments": ["Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": [],
+      "priority": "MEDIUM",
+      "behavioural_signal": "last_contact_days",
+      "maximum_signal_value": 60
+    },
+    {
+      "need_id": "RETENTION_RISK_MITIGATION",
+      "name": "Retention (proactive churn mitigation)",
+      "description": "Customer at elevated churn risk needs targeted retention action",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": [],
+      "priority": "HIGH",
+      "behavioural_signal": "churn_risk",
+      "maximum_signal_value": 0.5
+    },
+    {
+      "need_id": "SERVICE_QUALITY_RECOVERY",
+      "name": "Service quality recovery",
+      "description": "Complaints volume above baseline indicates service gap",
+      "applicable_segments": ["Mass", "Mass Affluent", "Affluent", "Premium"],
+      "satisfying_propensities": [],
+      "priority": "HIGH",
+      "behavioural_signal": "complaints_12m",
+      "maximum_signal_value": 1
+    }
+  ],
+
+  "segment_expectations": {
+    "Mass": {
+      "min_products_held": 2,
+      "expected_products_held": 3,
+      "max_acceptable_complaints_12m": 1,
+      "max_acceptable_churn_risk": 0.4,
+      "max_acceptable_last_contact_days": 120
+    },
+    "Mass Affluent": {
+      "min_products_held": 3,
+      "expected_products_held": 5,
+      "max_acceptable_complaints_12m": 1,
+      "max_acceptable_churn_risk": 0.3,
+      "max_acceptable_last_contact_days": 90
+    },
+    "Affluent": {
+      "min_products_held": 4,
+      "expected_products_held": 6,
+      "max_acceptable_complaints_12m": 0,
+      "max_acceptable_churn_risk": 0.25,
+      "max_acceptable_last_contact_days": 60
+    },
+    "Premium": {
+      "min_products_held": 5,
+      "expected_products_held": 8,
+      "max_acceptable_complaints_12m": 0,
+      "max_acceptable_churn_risk": 0.2,
+      "max_acceptable_last_contact_days": 30
+    }
+  },
+
+  "_notes": [
+    "Bank-curated registry. Operators tune segment_expectations to match relationship-banking strategy.",
+    "Behavioural-signal needs (digital_convenience, retention_risk, service_quality_recovery) are derived from customer_intelligence.json fields, not from products_held.",
+    "Propensity-based needs map to data/customer_intelligence.json[customer].propensity_scores ordered list.",
+    "Premium segment expects 8+ products held (full bank-of-choice relationship); Mass expects 3+.",
+    "ENH-135 CVP Builder will consume this registry's needs[] list as input."
+  ]
+}

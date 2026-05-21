@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state, get_user_proposition
 from pages._access import require_access, get_my_scope
-require_access("sla")
+require_access("operations.sla_tracker")
 
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()

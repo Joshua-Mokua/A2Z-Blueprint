@@ -1,0 +1,29 @@
+"""
+Phase 3 — CIMS Live Cockpit (pages/109)
+=================================================================
+v10.345 — refactored to call utils.live_cockpit_render.
+
+This page's body is now a thin call to render_cims_cockpit().
+The render function in utils.live_cockpit_render contains the same
+logic that was previously here. This page remains the bookmark
+target for users with cims_live access.
+
+The consolidated entry point is pages/115_live_cockpits.py — same
+functionality plus Treasury / Credit / Compliance under one selector.
+
+Audience: Operations head, compliance lead, customer experience
+team, internal audit, examiners (read-only via role gating).
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("operations.cims_live")
+
+from utils.live_cockpit_render import render_cims_cockpit
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_cims_cockpit(actor)

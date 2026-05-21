@@ -1,0 +1,27 @@
+"""pages/93_competitor_intelligence.py — Competitor Intelligence Workbench.
+
+v10.348 — refactored to call utils.competitor_hub_render.
+
+User-facing page exposing the v10.278 Competitor Intelligence cluster
+end-to-end (8 engines, 10 standards): data collection, rates, digital
+intel, gap analysis, alerts, strategic response, exec radar, API.
+Body now in utils.competitor_hub_render.render_competitor_workbench().
+
+The consolidated entry point is pages/118_competitor_hub.py.
+
+Audience: Heavy operational page — strategy / competitive intel team
+running the catalog, alerts, gap analysis, executive radar.
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("shared.customer_360")
+
+from utils.competitor_hub_render import render_competitor_workbench
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_competitor_workbench(actor)

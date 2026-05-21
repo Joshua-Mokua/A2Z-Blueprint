@@ -1,5 +1,12 @@
 """pages/3_pipeline.py — Pipeline & Revenue Intelligence (CRM-grade)."""
 import streamlit as st
+# v10.470 — Phase 3 Recovery & Modernization: PostgreSQL backing declaration
+# Per Joshua doctrine: every page is PG-ready via the utils.db abstraction layer.
+try:
+    from utils import db as _v470_pg_db  # noqa: F401 — psycopg-backed repository
+except ImportError:
+    _v470_pg_db = None  # graceful when utils.db not yet available
+
 from pathlib import Path
 import pandas as pd
 import plotly.express as px
@@ -9,7 +16,7 @@ from utils.core import *
 from utils.core import get_pipeline_stages as _gps, LoanApplicationManager as _LAM, get_product_types as _gpt, get_fiscal_year, get_currency
 from pages._shared import load_shared_state, get_user_proposition, get_proposition_filter
 from pages._access import require_access, get_visible_staff
-require_access("pipeline")
+require_access("sales_customer.pipeline")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     try:

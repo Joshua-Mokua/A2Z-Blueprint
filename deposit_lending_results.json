@@ -1,0 +1,71 @@
+{
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "results": [
+    {
+      "id": "DL001",
+      "label": "Single segment single product KES",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL002",
+      "label": "Multi-segment multi-product",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL003",
+      "label": "Unknown segment exposed in UNKNOWN bucket",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL004",
+      "label": "KES-billion precision",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL005",
+      "label": "Empty snapshots \u00e2\u2020\u2019 zero total no fabrication",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL006",
+      "label": "Lending: clean disbursement vs target",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL007",
+      "label": "Lending: zero target \u00e2\u2020\u2019 variance_pct=None",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL008",
+      "label": "Lending NPL: with mixed dpd",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL009",
+      "label": "Lending NPL: zero outstanding \u00e2\u2020\u2019 ratio=None (Rule 1)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DL010",
+      "label": "Lending interest income: even split",
+      "matched": true,
+      "diffs": []
+    }
+  ],
+  "fixtures_total": 10,
+  "fixtures_matched": 10,
+  "match_rate_pct": 100.0
+}

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, date
 from utils.core import *
 from pages._shared import load_shared_state, safe_html
 from pages._access import require_access, get_my_scope
-require_access("cims")
+require_access("operations.cims")
 
 def _bsc_trigger(username, kpi=""):
     try:

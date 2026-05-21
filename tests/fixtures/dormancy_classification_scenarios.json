@@ -1,0 +1,74 @@
+{
+  "fixtures": [
+    {
+      "id": "DI001",
+      "label": "Recent transaction → ACTIVE",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A001", "last_transaction_date": "2026-04-15"},
+      "expected": {"status": "ACTIVE", "days_inactive": 14, "days_to_dormancy": 351}
+    },
+    {
+      "id": "DI002",
+      "label": "Just under warning threshold (299 days) → ACTIVE",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A002", "last_transaction_date": "2025-07-04"},
+      "expected": {"status": "ACTIVE", "days_inactive": 299, "days_to_dormancy": 66}
+    },
+    {
+      "id": "DI003",
+      "label": "Exactly at warning threshold (300 days) → WARNING",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A003", "last_transaction_date": "2025-07-03"},
+      "expected": {"status": "WARNING", "days_inactive": 300, "days_to_dormancy": 65}
+    },
+    {
+      "id": "DI004",
+      "label": "Mid-warning (340 days) → WARNING",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A004", "last_transaction_date": "2025-05-24"},
+      "expected": {"status": "WARNING", "days_inactive": 340, "days_to_dormancy": 25}
+    },
+    {
+      "id": "DI005",
+      "label": "Just under dormancy (364 days) → WARNING",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A005", "last_transaction_date": "2025-04-30"},
+      "expected": {"status": "WARNING", "days_inactive": 364, "days_to_dormancy": 1}
+    },
+    {
+      "id": "DI006",
+      "label": "Exactly at dormancy (365 days) → DORMANT",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A006", "last_transaction_date": "2025-04-29"},
+      "expected": {"status": "DORMANT", "days_inactive": 365, "days_to_dormancy": 0}
+    },
+    {
+      "id": "DI007",
+      "label": "Mid-dormancy (500 days) → DORMANT",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A007", "last_transaction_date": "2024-12-16"},
+      "expected": {"status": "DORMANT", "days_inactive": 499, "days_to_dormancy": 0}
+    },
+    {
+      "id": "DI008",
+      "label": "Just under restricted (729 days) → DORMANT",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A008", "last_transaction_date": "2024-04-30"},
+      "expected": {"status": "DORMANT", "days_inactive": 729, "days_to_dormancy": 0}
+    },
+    {
+      "id": "DI009",
+      "label": "Exactly at restricted (730 days) → RESTRICTED",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A009", "last_transaction_date": "2024-04-29"},
+      "expected": {"status": "RESTRICTED", "days_inactive": 730, "days_to_dormancy": 0}
+    },
+    {
+      "id": "DI010",
+      "label": "Long-restricted (1000 days) → RESTRICTED",
+      "as_of_date": "2026-04-29",
+      "account": {"account_number": "A010", "last_transaction_date": "2023-08-03"},
+      "expected": {"status": "RESTRICTED", "days_inactive": 1000, "days_to_dormancy": 0}
+    }
+  ]
+}

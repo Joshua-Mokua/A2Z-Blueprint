@@ -1,12 +1,27 @@
+# A2Z MIS 360 — Runtime dependencies
+#
+# Runtime-only (production) dependencies. Scanned by `pip-audit` and
+# `safety` per Standard #9 — `scripts/run_dependency_audit.py` reads
+# this file specifically.
+#
+# Test/dev dependencies live in requirements-dev.txt.
+# Install both for a development environment:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+# UI
 streamlit>=1.29.0
 pandas>=2.0.0
 numpy>=1.24.0
 plotly>=5.15.0
 openpyxl>=3.1.0
-requests>=2.31.0
-bcrypt>=4.0.0
 
+# HTTP client (used by the FLEXCUBE adapter, scripts, and Streamlit pages)
+requests>=2.31.0
+
+# Auth (V-004 mitigation: bcrypt for password storage)
+bcrypt>=4.0.0
+PyJWT>=2.8.0
+
+# API tier
 fastapi>=0.100.0
 uvicorn>=0.23.0
-requests>=2.31.0
-PyJWT>=2.8.0

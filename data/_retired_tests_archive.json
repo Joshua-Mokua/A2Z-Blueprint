@@ -1,0 +1,159 @@
+{
+  "_doc": "v10.422 - Retired test archive. Tests retired via the _retired_v10XXX_ prefix convention. This archive preserves metadata for searchability; the original functions remain in their source files for in-context historical reference.",
+  "shipped": "v10.422",
+  "generated_at": "2026-05-14T14:02:30.929223",
+  "total_retired": 12,
+  "by_retired_version": {
+    "v10397": 6,
+    "v10399": 2,
+    "v10398": 2,
+    "v10402": 1,
+    "v10403": 1
+  },
+  "by_original_version": {
+    "v10391": 4,
+    "v10393": 6,
+    "v10394": 1,
+    "v10397": 1
+  },
+  "by_file": {
+    "tests/integration/test_v10391_cascade_diagnosis.py": 4,
+    "tests/integration/test_v10393_cascade_structure_engine.py": 6,
+    "tests/integration/test_v10394_hierarchy_and_fixed_kpi_review.py": 1,
+    "tests/integration/test_v10397_staff_code_dedup.py": 1
+  },
+  "tests": {
+    "_retired_v10397_test_v10391_tc26_ratio_kpi_summed_across_subordinates": {
+      "function_name": "_retired_v10397_test_v10391_tc26_ratio_kpi_summed_across_subordinates",
+      "original_test": "test_v10391_tc26_ratio_kpi_summed_across_subordinates",
+      "retired_by_version": 10397,
+      "original_version": 10391,
+      "file_path": "tests/integration/test_v10391_cascade_diagnosis.py",
+      "line_number": 87,
+      "body_lines": 15,
+      "docstring": "TC26: Ratio KPIs being summed (e.g. CASA Ratio 60% \u2192 23,160%).",
+      "body": "def _retired_v10397_test_v10391_tc26_ratio_kpi_summed_across_subordinates():\n    \"\"\"TC26: Ratio KPIs being summed (e.g. CASA Ratio 60% \u2192 23,160%).\"\"\"\n    tc = _load(\"target_cascade.json\")\n    # Find CASA Ratio entries with allocated_sum >> total_target\n    extreme_over = 0\n    for k, v in tc.items():\n        if not isinstance(v, dict): continue\n        if v.get(\"kpi\") in (\"CASA Ratio\", \"NPL Ratio\", \"PAR\"):\n            tgt = v.get(\"total_target\") or 0\n            alloc = v.get(\"allocated_sum\") or 0\n            if tgt > 0 and alloc / tgt > 100:  # 100\u00d7 over\n                extreme_over += 1\n    assert extreme_over > 0, (\n        \"TC26 should find ratio KPIs over-allocated by 100\u00d7+\"\n    )"
+    },
+    "_retired_v10397_test_v10391_tc25_over_allocation_majority": {
+      "function_name": "_retired_v10397_test_v10391_tc25_over_allocation_majority",
+      "original_test": "test_v10391_tc25_over_allocation_majority",
+      "retired_by_version": 10397,
+      "original_version": 10391,
+      "file_path": "tests/integration/test_v10391_cascade_diagnosis.py",
+      "line_number": 104,
+      "body_lines": 19,
+      "docstring": "TC25: Most cascade entries over-allocated (>1.05\u00d7 target).",
+      "body": "def _retired_v10397_test_v10391_tc25_over_allocation_majority():\n    \"\"\"TC25: Most cascade entries over-allocated (>1.05\u00d7 target).\"\"\"\n    tc = _load(\"target_cascade.json\")\n    over = 0\n    total = 0\n    for k, v in tc.items():\n        if not isinstance(v, dict): continue\n        if not v.get(\"kpi\"): continue\n        tgt = v.get(\"total_target\") or 0\n        alloc = v.get(\"allocated_sum\") or 0\n        if tgt > 0:\n            total += 1\n            if alloc / tgt > 1.05:\n                over += 1\n    assert total > 100, \"need a meaningful sample\"\n    over_pct = over / total\n    assert over_pct > 0.5, (\n        f\"TC25 expects >50% over-allocated, got {over_pct:.1%}\"\n    )"
+    },
+    "_retired_v10399_test_v10391_tc6_two_md_roles_in_users": {
+      "function_name": "_retired_v10399_test_v10391_tc6_two_md_roles_in_users",
+      "original_test": "test_v10391_tc6_two_md_roles_in_users",
+      "retired_by_version": 10399,
+      "original_version": 10391,
+      "file_path": "tests/integration/test_v10391_cascade_diagnosis.py",
+      "line_number": 178,
+      "body_lines": 9,
+      "docstring": "TC6: Both 'Chief Executive & Managing Director' AND 'Managing Director'.",
+      "body": "def _retired_v10399_test_v10391_tc6_two_md_roles_in_users():\n    \"\"\"TC6: Both 'Chief Executive & Managing Director' AND 'Managing Director'.\"\"\"\n    users = _load(\"users.json\")\n    has_ceo_md = any(u.get(\"role\") == \"Chief Executive & Managing Director\"\n                     for u in users.values())\n    has_md = any(u.get(\"role\") == \"Managing Director\"\n                 for u in users.values())\n    assert has_ceo_md, \"expected 'Chief Executive & Managing Director'\"\n    assert has_md, \"expected 'Managing Director'\""
+    },
+    "_retired_v10399_test_v10391_tc7_synthetic_csuite_isolated_from_cascade": {
+      "function_name": "_retired_v10399_test_v10391_tc7_synthetic_csuite_isolated_from_cascade",
+      "original_test": "test_v10391_tc7_synthetic_csuite_isolated_from_cascade",
+      "retired_by_version": 10399,
+      "original_version": 10391,
+      "file_path": "tests/integration/test_v10391_cascade_diagnosis.py",
+      "line_number": 189,
+      "body_lines": 26,
+      "docstring": "TC7: EXEC-* synthetic chiefs don't appear in cascade.",
+      "body": "def _retired_v10399_test_v10391_tc7_synthetic_csuite_isolated_from_cascade():\n    \"\"\"TC7: EXEC-* synthetic chiefs don't appear in cascade.\"\"\"\n    users = _load(\"users.json\")\n    tc = _load(\"target_cascade.json\")\n\n    # Find EXEC-* coded users\n    exec_codes = {u.get(\"staff_code\") for u in users.values()\n                  if u.get(\"staff_code\", \"\").startswith(\"EXEC-\")}\n\n    if not exec_codes:\n        return  # synthetic system disabled \u2014 finding moot\n\n    # Check none of these appear as cascade senders or receivers\n    cascade_participants = set()\n    for k, v in tc.items():\n        if not isinstance(v, dict): continue\n        if v.get(\"from_code\"):\n            cascade_participants.add(v[\"from_code\"])\n        for a in v.get(\"allocations\", []) or []:\n            if a.get(\"to_code\"):\n                cascade_participants.add(a[\"to_code\"])\n    isolated_exec = exec_codes - cascade_participants\n    assert len(isolated_exec) > 0, (\n        f\"TC7 expects EXEC-* synthetic chiefs isolated; \"\n        f\"all {len(exec_codes)} are in cascade \u2014 possibly fixed?\"\n    )"
+    },
+    "_retired_v10398_test_v10393_detect_representative_sender_finds_tc32": {
+      "function_name": "_retired_v10398_test_v10393_detect_representative_sender_finds_tc32",
+      "original_test": "test_v10393_detect_representative_sender_finds_tc32",
+      "retired_by_version": 10398,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 88,
+      "body_lines": 9,
+      "docstring": "TC32 \u2014 bank-wide representative-sender pattern should surface.",
+      "body": "def _retired_v10398_test_v10393_detect_representative_sender_finds_tc32():\n    \"\"\"TC32 \u2014 bank-wide representative-sender pattern should surface.\"\"\"\n    rep = detect_representative_sender_pattern()\n    assert isinstance(rep, list)\n    assert len(rep) > 0\n    critical = [r for r in rep if r.severity == \"critical\"]\n    assert len(critical) >= 5, (\n        f\"TC32 expects many critical roles; got {len(critical)}\"\n    )"
+    },
+    "_retired_v10398_test_v10393_tellers_have_zero_sender_coverage": {
+      "function_name": "_retired_v10398_test_v10393_tellers_have_zero_sender_coverage",
+      "original_test": "test_v10393_tellers_have_zero_sender_coverage",
+      "retired_by_version": 10398,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 99,
+      "body_lines": 7,
+      "docstring": "Tellers are leaves \u2014 no Teller should be a cascade sender.",
+      "body": "def _retired_v10398_test_v10393_tellers_have_zero_sender_coverage():\n    \"\"\"Tellers are leaves \u2014 no Teller should be a cascade sender.\"\"\"\n    rep = detect_representative_sender_pattern()\n    teller = next((r for r in rep if r.role == \"Teller\"), None)\n    assert teller is not None\n    assert teller.coverage_pct == 0.0\n    assert teller.severity == \"critical\""
+    },
+    "_retired_v10397_test_v10393_branch_managers_have_tc32_pattern": {
+      "function_name": "_retired_v10397_test_v10393_branch_managers_have_tc32_pattern",
+      "original_test": "test_v10393_branch_managers_have_tc32_pattern",
+      "retired_by_version": 10397,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 108,
+      "body_lines": 9,
+      "docstring": "86 Branch Managers exist; only ~1 should be a sender (TC32).",
+      "body": "def _retired_v10397_test_v10393_branch_managers_have_tc32_pattern():\n    \"\"\"86 Branch Managers exist; only ~1 should be a sender (TC32).\"\"\"\n    rep = detect_representative_sender_pattern()\n    bm = next((r for r in rep if r.role == \"Branch Manager\"), None)\n    assert bm is not None\n    assert bm.total_staff == 86\n    assert bm.sender_count <= 5, (\n        f\"Branch Manager sender coverage too high; got {bm.sender_count}\"\n    )"
+    },
+    "_retired_v10397_test_v10393_detect_cross_branch_returns_many_violations": {
+      "function_name": "_retired_v10397_test_v10393_detect_cross_branch_returns_many_violations",
+      "original_test": "test_v10393_detect_cross_branch_returns_many_violations",
+      "retired_by_version": 10397,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 119,
+      "body_lines": 7,
+      "docstring": "v10.391 TC18 \u2014 cross-branch within-branch-role-pair violations.",
+      "body": "def _retired_v10397_test_v10393_detect_cross_branch_returns_many_violations():\n    \"\"\"v10.391 TC18 \u2014 cross-branch within-branch-role-pair violations.\"\"\"\n    cb = detect_cross_branch_violations()\n    assert isinstance(cb, list)\n    assert len(cb) > 1000, (\n        f\"Many cross-branch violations expected; got {len(cb)}\"\n    )"
+    },
+    "_retired_v10397_test_v10393_detect_multi_sender_ambiguity": {
+      "function_name": "_retired_v10397_test_v10393_detect_multi_sender_ambiguity",
+      "original_test": "test_v10393_detect_multi_sender_ambiguity",
+      "retired_by_version": 10397,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 139,
+      "body_lines": 6,
+      "docstring": "Many staff receive cascade from multiple senders (TC22).",
+      "body": "def _retired_v10397_test_v10393_detect_multi_sender_ambiguity():\n    \"\"\"Many staff receive cascade from multiple senders (TC22).\"\"\"\n    ms = detect_multi_sender_ambiguity()\n    assert isinstance(ms, list)\n    # TC22 \u2014 multi-sender expected due to representative-sender pattern\n    assert len(ms) > 100, f\"TC22 multi-senders expected; got {len(ms)}\""
+    },
+    "_retired_v10397_test_v10393_full_audit_aggregates_all": {
+      "function_name": "_retired_v10397_test_v10393_full_audit_aggregates_all",
+      "original_test": "test_v10393_full_audit_aggregates_all",
+      "retired_by_version": 10397,
+      "original_version": 10393,
+      "file_path": "tests/integration/test_v10393_cascade_structure_engine.py",
+      "line_number": 151,
+      "body_lines": 7,
+      "docstring": "",
+      "body": "def _retired_v10397_test_v10393_full_audit_aggregates_all():\n    findings = full_audit()\n    assert isinstance(findings, CascadeStructureFindings)\n    assert findings.summary[\"cycles_count\"] == 0\n    assert findings.summary[\"rep_critical_count\"] >= 5\n    assert findings.summary[\"cross_branch_count\"] > 1000\n    assert findings.summary[\"multi_sender_count\"] > 100"
+    },
+    "_retired_v10402_test_v10394_npl_uppercase_naming_contradiction": {
+      "function_name": "_retired_v10402_test_v10394_npl_uppercase_naming_contradiction",
+      "original_test": "test_v10394_npl_uppercase_naming_contradiction",
+      "retired_by_version": 10402,
+      "original_version": 10394,
+      "file_path": "tests/integration/test_v10394_hierarchy_and_fixed_kpi_review.py",
+      "line_number": 67,
+      "body_lines": 14,
+      "docstring": "TC39: NPL_RATIO (uppercase) IS in current fixed list \u2014 contradicts",
+      "body": "def _retired_v10402_test_v10394_npl_uppercase_naming_contradiction():\n    \"\"\"TC39: NPL_RATIO (uppercase) IS in current fixed list \u2014 contradicts\n    NPL Ratio (human) being removed. Naming bug.\"\"\"\n    fk = _load(\"fixed_kpis.json\")\n    found_uppercase = False\n    for k in fk.keys():\n        if k.startswith(\"2026\"):\n            kpis = fk[k].get(\"kpis\", []) if isinstance(fk[k], dict) else []\n            if \"NPL_RATIO\" in kpis:\n                found_uppercase = True\n    assert found_uppercase, (\n        \"TC39: NPL_RATIO uppercase variant in fixed list \"\n        \"(contradicts NPL Ratio being removed)\"\n    )"
+    },
+    "_retired_v10403_test_v10397_total_unique_codes_increased": {
+      "function_name": "_retired_v10403_test_v10397_total_unique_codes_increased",
+      "original_test": "test_v10397_total_unique_codes_increased",
+      "retired_by_version": 10403,
+      "original_version": 10397,
+      "file_path": "tests/integration/test_v10397_staff_code_dedup.py",
+      "line_number": 164,
+      "body_lines": 7,
+      "docstring": "After dedup, total unique codes should be 10 more than before",
+      "body": "def _retired_v10403_test_v10397_total_unique_codes_increased():\n    \"\"\"After dedup, total unique codes should be 10 more than before\n    (each duplicate becomes a unique entry).\"\"\"\n    users = _load_users()\n    codes = set(v.get(\"staff_code\") for v in users.values() if v.get(\"staff_code\"))\n    # 1449 staff entries; before dedup 1439 unique; after 1449\n    assert len(codes) == 1449"
+    }
+  }
+}

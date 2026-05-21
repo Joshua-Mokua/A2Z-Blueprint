@@ -1,0 +1,21 @@
+{
+  "_schema_version": "v10.369",
+  "_last_updated_iso": "2026-05-13T00:00:00+00:00",
+  "_last_updated_by": "v10.369 initial",
+  "_purpose": "Per-branch OpEx allocation rules (Rule N1, admin-editable). Used by utils.branch_pbt_allocator.compute_pbt_by_branch to distribute bank.total_opex_kes_b across branches.",
+  "default_rule": "fte_weighted",
+  "hybrid_fte_weight": 0.5,
+  "hybrid_revenue_weight": 0.5,
+  "_available_rules": {
+    "fte_weighted": "Allocate by branch FTE share (default per Q3 v10.367 decision). Falls back to 'accounts per branch' proxy if FTE data unavailable.",
+    "revenue_weighted": "Allocate by branch operating-income share. Each branch's share of total OpEx = its share of total income.",
+    "equal": "Split equally across all branches with any activity. Useful for sanity-check / fallback.",
+    "hybrid": "50% FTE-weighted + 50% revenue-weighted. Weights configurable above (hybrid_fte_weight + hybrid_revenue_weight must sum to 1.0)."
+  },
+  "_fte_source_chain": [
+    "1. Caller-provided branch_fte_lookup dict (production from FLEXCUBE/HCM)",
+    "2. data/branch_fte.json if it exists (admin can populate)",
+    "3. Proxy: accounts per branch (degraded, flagged in notes)",
+    "4. Equal: if all branches have 0 accounts (terminal fallback)"
+  ]
+}

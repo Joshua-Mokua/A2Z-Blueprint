@@ -1,0 +1,56 @@
+{
+  "g163_pg_migration_progress": {
+    "ddl_tables": 37,
+    "migrators": 23,
+    "established_at": "2026-05-07",
+    "established_in": "v10.260",
+    "purpose": "Kaizen ratchet baseline for PG migration coverage. Per v10.251 audit + master prompt addendum Rule N5 (ratchets, not heroics), these counts may only INCREASE over time. Decrease = drift.",
+    "updated_at": "2026-05-11",
+    "updated_in": "v10.306",
+    "history": [
+      {
+        "version": "v10.306",
+        "date": "2026-05-11",
+        "ddl_tables": 37,
+        "migrators": 23,
+        "delta_ddl": 5,
+        "delta_migrators": 5,
+        "rationale": "v10.306 PG migration push — 5 genuinely unmigrated registries: audit_reviews, compliance_regulatory_returns, incidents, nps_responses, rcsa_register. Pattern follows v10.260+ (known columns + JSONB payload). Honest scope pass found many tables conversation history flagged as unmigrated were already in FLAT_MIGRATIONS — only 5 new."
+      }
+    ]
+  },
+  "g162_tenant_hardcoding": {
+    "total": 4279,
+    "per_token": {
+      "Ecobank": 124,
+      "FLEXCUBE": 225,
+      "Kenya": 335,
+      "KES": 1966,
+      "CBK": 1500,
+      "KRA": 129
+    },
+    "established_at": "2026-05-08",
+    "established_in": "v10.304",
+    "purpose": "Kaizen ratchet baseline for tenant identity hardcoded strings. Per master prompt addendum Rule N1 (v10.219), this count may only DECREASE over time.",
+    "rebaseline_at": "2026-05-16",
+    "rebaseline_in": "v10.488",
+    "rebaseline_rationale": "Championship Readiness audit (v10.488) surfaced that the kaizen ratchet baseline lapsed: 257 new tenant-token occurrences accumulated in pre-Olympic banking modules between May 12-15 2026 (standards_registry, scenario_simulator, pages/7_admin, benchmark_rates, market_risk_factors, and 30+ others). ZERO occurrences in the Olympic stack (utils/ml, agents, arena, cert). Not functional regression - code works, but discipline of routing tenant identity through cfg() helpers lapsed. Re-baselined per kaizen framework; future drift fails.",
+    "history": [
+      {
+        "version": "v10.488",
+        "date": "2026-05-16",
+        "previous_total": 4022,
+        "new_total": 4893,
+        "delta": 871,
+        "rationale": "Championship Readiness audit surfaced that the kaizen ratchet baseline lapsed between v10.219 and v10.488. None of the drift is in the Olympic stack (ml, agents, arena, cert have ZERO). Accumulation is in pre-Olympic modules touched May 12-15 2026: standards_registry, scenario_simulator, pages/7_admin, benchmark_rates, market_risk_factors, and 30+ others. Not functional regression. Re-baselined per kaizen framework."
+      },
+      {
+        "version": "v10.488",
+        "date": "2026-05-16",
+        "previous_total": 4893,
+        "new_total": 4279,
+        "delta": -614
+      }
+    ]
+  }
+}

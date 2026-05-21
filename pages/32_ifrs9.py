@@ -12,7 +12,7 @@ from datetime import date
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("ifrs9")
+require_access("credit.ifrs9")
 
 def _bsc_trigger(username: str, kpi: str = ""):
     """Non-blocking BSC update."""
@@ -240,7 +240,8 @@ with tabs[3]:
 with tabs[4]:
     st.markdown("**Model inputs and configuration — what is configurable vs hardcoded**")
     
-    p1,p2 = st.tabs(["Configurable Parameters","Hardcoded Logic"])
+    p1,p2,p3 = st.tabs(["Configurable Parameters","Hardcoded Logic",
+                         "🔬 IFRS 9 Classification Engine (v7.7)"])
     with p1:
         st.markdown("**ECL rates by stage (configured in Admin → Treasury Config):**")
         for stage, rate in ecl_rates.items():
@@ -279,6 +280,201 @@ with tabs[4]:
 | CBK regulatory ECL format | CBK Prudential Guideline No. 2/2019 |
 | 30-day backstop for Stage 2 | IFRS 9 — rebuttable presumption |
         """)
+
+    with p3:
+        # ============================================================================
+        # v7.7: IFRS 9 Classification Engine depth — 6 method sections
+        # ============================================================================
+        st.markdown(
+            "**Interactive depth on `utils.ifrs9_classification.IFRS9ClassificationEngine`** "
+            "— invoke each engine method live and inspect the response."
+        )
+        st.caption(
+            "v7.7 functional depth — second page of v7.1's planned triple-page Credit Risk "
+            "depth (page 19 done in v7.1, page 32 here in v7.7). Six method sections, "
+            "one per public engine method. Each section shows engine inputs, current "
+            "live output, and IFRS 9 reference."
+        )
+
+        from utils.ifrs9_classification import IFRS9ClassificationEngine
+
+        sections = st.tabs([
+            "🧪 SPPI Test",
+            "🏛️ Business Model",
+            "📜 Classify Debt",
+            "💼 Classify Equity",
+            "📐 Measurement Method",
+            "🔄 Reclassification",
+        ])
+
+        # ────────── 1. SPPI Test ──────────
+        with sections[0]:
+            st.markdown("### SPPI Test (Solely Payments of Principal & Interest)")
+            st.caption(
+                "Per IFRS 9 §4.1.2 — debt instruments must pass SPPI to be eligible "
+                "for amortised cost or FVOCI measurement. Failure → FVTPL only."
+            )
+
+            c1, c2 = st.columns(2)
+            with c1:
+                sppi_passed = st.radio("SPPI passed?",
+                    ["Yes (passed)", "No (failed)", "Unknown"],
+                    horizontal=True, key="ifrs9_sppi_passed")
+                fail_reason = st.text_input(
+                    "If failed, fail reason:",
+                    value="" if sppi_passed != "No (failed)" else "leverage_feature",
+                    key="ifrs9_sppi_fail_reason")
+
+            sppi_in = (True if sppi_passed == "Yes (passed)"
+                       else False if sppi_passed == "No (failed)"
+                       else None)
+            result = IFRS9ClassificationEngine.sppi_test(
+                passed=sppi_in,
+                fail_reason=fail_reason if sppi_in is False else None)
+
+            with c2:
+                st.markdown("**Engine output:**")
+                st.json(result)
+
+            st.markdown("**IFRS 9 reference:** §4.1.2(b) — contractual cash flows that "
+                        "are solely payments of principal and interest on the principal "
+                        "amount outstanding.")
+
+        # ────────── 2. Business Model Assessment ──────────
+        with sections[1]:
+            st.markdown("### Business Model Assessment")
+            st.caption(
+                "Per IFRS 9 §4.1.1 — entity's business model determines the measurement "
+                "category alongside SPPI. Three models: HOLD_TO_COLLECT (HTC), "
+                "HOLD_AND_SELL (HTC&S), OTHER."
+            )
+
+            bm = st.selectbox("Business model:",
+                ["HOLD_TO_COLLECT", "HOLD_AND_SELL", "OTHER", "INVALID"],
+                key="ifrs9_bm")
+            result = IFRS9ClassificationEngine.business_model_assessment(bm)
+            st.markdown("**Engine output:**")
+            st.json(result)
+
+            st.markdown("**IFRS 9 reference:** §B4.1.2A–B4.1.6 — assessing the business "
+                        "model. The category drives whether instrument can be at "
+                        "amortised cost (HTC), FVOCI (HTC&S), or FVTPL (OTHER).")
+
+        # ────────── 3. Classify Debt Instrument ──────────
+        with sections[2]:
+            st.markdown("### Classify Debt Instrument")
+            st.caption("Combines business model + SPPI to assign measurement category.")
+
+            c1, c2 = st.columns(2)
+            with c1:
+                bm_debt = st.selectbox("Business model:",
+                    ["HOLD_TO_COLLECT", "HOLD_AND_SELL", "OTHER"],
+                    key="ifrs9_classify_bm")
+                sppi_debt = st.radio("SPPI passed?",
+                    ["Yes", "No"], horizontal=True, key="ifrs9_classify_sppi")
+            sppi_bool = (sppi_debt == "Yes")
+            result = IFRS9ClassificationEngine.classify_debt_instrument(
+                business_model=bm_debt, sppi_passed=sppi_bool)
+            with c2:
+                st.markdown("**Engine output:**")
+                st.json(result)
+
+            st.markdown("**IFRS 9 §4.1.1 decision matrix:**")
+            st.markdown("""
+| Business Model | SPPI Pass | Category |
+|---|---|---|
+| HOLD_TO_COLLECT | ✅ | Amortised Cost |
+| HOLD_TO_COLLECT | ❌ | FVTPL |
+| HOLD_AND_SELL | ✅ | FVOCI |
+| HOLD_AND_SELL | ❌ | FVTPL |
+| OTHER | (any) | FVTPL |
+            """)
+
+        # ────────── 4. Classify Equity Instrument ──────────
+        with sections[3]:
+            st.markdown("### Classify Equity Instrument")
+            st.caption(
+                "Equity = FVTPL by default (IFRS 9 §5.7.5). Optional irrevocable "
+                "election to measure at FVOCI (§5.7.5) — but ONLY if NOT held for trading."
+            )
+
+            c1, c2 = st.columns(2)
+            with c1:
+                hft = st.checkbox("Held for trading?", value=False,
+                    key="ifrs9_eq_hft")
+                fvoci_elect = st.checkbox(
+                    "FVOCI election made (irrevocable)?", value=False,
+                    key="ifrs9_eq_fvoci")
+            result = IFRS9ClassificationEngine.classify_equity_instrument(
+                fvtoci_election=fvoci_elect, held_for_trading=hft)
+            with c2:
+                st.markdown("**Engine output:**")
+                st.json(result)
+
+            st.markdown("**IFRS 9 reference:** §5.7.5 — at initial recognition, an "
+                        "entity may make an irrevocable election to present in OCI "
+                        "subsequent changes in the fair value of an investment in an "
+                        "equity instrument that is not held for trading.")
+
+        # ────────── 5. Measurement Method ──────────
+        with sections[4]:
+            st.markdown("### Measurement Method (per category)")
+            st.caption(
+                "Maps a classification category to the actual measurement method "
+                "applied at each reporting date."
+            )
+
+            cat = st.selectbox("Category:",
+                ["AMORTIZED_COST", "FVTOCI_DEBT", "FVTPL",
+                 "FVTOCI_EQUITY", "FVTPL_EQUITY"],
+                key="ifrs9_method_cat")
+            method = IFRS9ClassificationEngine.measurement_method(cat)
+            st.markdown(f"**Engine output:** `{method}`")
+
+            st.markdown("""
+| Category | Subsequent measurement |
+|---|---|
+| AMORTISED_COST | Effective interest method, less impairment |
+| FVOCI (debt) | Fair value, gains/losses to OCI; impairment to P&L |
+| FVOCI_EQUITY | Fair value, gains/losses to OCI; never to P&L |
+| FVTPL | Fair value, all changes to P&L |
+            """)
+
+        # ────────── 6. Reclassification ──────────
+        with sections[5]:
+            st.markdown("### Reclassification Rules")
+            st.caption(
+                "Per IFRS 9 §4.4.1 — reclassification of debt instruments is permitted "
+                "ONLY when the business model changes, AND the change is significant + "
+                "demonstrable + infrequent. Equity reclassification is prohibited."
+            )
+
+            c1, c2 = st.columns(2)
+            with c1:
+                old_bm = st.selectbox("Old business model:",
+                    ["HOLD_TO_COLLECT", "HOLD_AND_SELL", "OTHER"],
+                    key="ifrs9_reclass_old")
+                new_bm = st.selectbox("New business model:",
+                    ["HOLD_TO_COLLECT", "HOLD_AND_SELL", "OTHER"],
+                    key="ifrs9_reclass_new")
+            result = IFRS9ClassificationEngine.reclassification_allowed(
+                old_business_model=old_bm, new_business_model=new_bm)
+            with c2:
+                st.markdown("**Engine output:**")
+                st.json(result)
+
+            st.markdown("**IFRS 9 reference:** §4.4.1 — reclassify ONLY when the "
+                        "business model for managing financial assets changes. Equity "
+                        "reclassification (FVTPL ↔ FVOCI election) is prohibited "
+                        "(§B5.7.1).")
+
+        st.divider()
+        st.info(
+            "💡 **v7.7 alignment with v7.1 plan**: page 19 surfaced Credit Risk "
+            "depth (PD/LGD/EAD scoring); this page 32 surfaces IFRS 9 depth "
+            "(classification + measurement + reclassification). Page 88 IFRS 9 "
+            "engines is the third candidate for v7.8+."
+        )
 
 # ════════════════════════════════════════════════════════════════════
 # TAB 6: REGULATORY REPORT

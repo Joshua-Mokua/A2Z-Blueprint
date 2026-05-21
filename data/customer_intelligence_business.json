@@ -1,0 +1,5152 @@
+{
+  "CIF841036": {
+    "cif": "CIF841036",
+    "client_name": "Nanyuki Airfield Services",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 552000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301018",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01001"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF645276": {
+    "cif": "CIF645276",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1206000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301163",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01005"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF311783": {
+    "cif": "CIF311783",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 3190000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301163",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01006"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF235569": {
+    "cif": "CIF235569",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 796000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300497",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01007"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF535986": {
+    "cif": "CIF535986",
+    "client_name": "Kamau Farmers Cooperative",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1178000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300497",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01008"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF590471": {
+    "cif": "CIF590471",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 107400000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300497",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01009"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF341488": {
+    "cif": "CIF341488",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 541000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300457",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01011"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF682193": {
+    "cif": "CIF682193",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 796000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300457",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01012"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF389976": {
+    "cif": "CIF389976",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 1448000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300428",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01013"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF817877": {
+    "cif": "CIF817877",
+    "client_name": "Western Sugarcane Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 851000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300428",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01014"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF293077": {
+    "cif": "CIF293077",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 28500000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300304",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01016"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF668699": {
+    "cif": "CIF668699",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 216500000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300304",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01017"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF162830": {
+    "cif": "CIF162830",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 192600000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301161",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01018"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF318868": {
+    "cif": "CIF318868",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 30150000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301161",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01019"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF787969": {
+    "cif": "CIF787969",
+    "client_name": "Kamau Farmers Cooperative",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1178000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300256",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01020"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF487307": {
+    "cif": "CIF487307",
+    "client_name": "Mombasa Steel Works",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 131000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300256",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01021"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF646089": {
+    "cif": "CIF646089",
+    "client_name": "Kakamega Telecoms",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 838000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301069",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01022"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF818165": {
+    "cif": "CIF818165",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 835000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301424",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01024"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF873201": {
+    "cif": "CIF873201",
+    "client_name": "Embu Horticulture",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 82600000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301380",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01027"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF901562": {
+    "cif": "CIF901562",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 72050000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300887",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01028"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF202665": {
+    "cif": "CIF202665",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 36200000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300887",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01029"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF459826": {
+    "cif": "CIF459826",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 856000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300237",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01031"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF369019": {
+    "cif": "CIF369019",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 144100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300947",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01032"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF206193": {
+    "cif": "CIF206193",
+    "client_name": "Kisumu Port Authority",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 36825000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300712",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01035"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF683935": {
+    "cif": "CIF683935",
+    "client_name": "Ochieng Transport",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 193500000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300033",
+    "tagged_rm_role": "Relationship Manager - SME",
+    "deal_ids": [
+      "DEAL01036"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF127714": {
+    "cif": "CIF127714",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 214000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300032",
+    "tagged_rm_role": "Senior Relationship Manager- SME",
+    "deal_ids": [
+      "DEAL01037"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF539376": {
+    "cif": "CIF539376",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 173550000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300032",
+    "tagged_rm_role": "Senior Relationship Manager- SME",
+    "deal_ids": [
+      "DEAL01038"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF811926": {
+    "cif": "CIF811926",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 5700000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300240",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01039"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF889312": {
+    "cif": "CIF889312",
+    "client_name": "Western Sugarcane Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 42550000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300240",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01040"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF550796": {
+    "cif": "CIF550796",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 6380000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300416",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01042"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF593099": {
+    "cif": "CIF593099",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 1990000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300442",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01044"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF459437": {
+    "cif": "CIF459437",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 796000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300442",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01045"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF681204": {
+    "cif": "CIF681204",
+    "client_name": "Industrial Area Warehousing",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 10720000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300442",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01046"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF877097": {
+    "cif": "CIF877097",
+    "client_name": "Nakuru County Government",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 108800000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300442",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01047"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF666535": {
+    "cif": "CIF666535",
+    "client_name": "Nanyuki Airfield Services",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 110400000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300829",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01048"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF689823": {
+    "cif": "CIF689823",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 1387500000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300829",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01049"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF903813": {
+    "cif": "CIF903813",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 144100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300967",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01050"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF116437": {
+    "cif": "CIF116437",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 42800000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300967",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01051"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF151644": {
+    "cif": "CIF151644",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 6420000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300030",
+    "tagged_rm_role": "Assistant Relationship Manager-Corporate",
+    "deal_ids": [
+      "DEAL01053"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF686256": {
+    "cif": "CIF686256",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 555000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300904",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01055"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF977347": {
+    "cif": "CIF977347",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 1448000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300904",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01056"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF131193": {
+    "cif": "CIF131193",
+    "client_name": "Migori County Council",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 121700000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300388",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01057"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF600340": {
+    "cif": "CIF600340",
+    "client_name": "Mount Kenya Coffee",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 16000000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301125",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01059"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF425318": {
+    "cif": "CIF425318",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 188250000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301030",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01060"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF442231": {
+    "cif": "CIF442231",
+    "client_name": "Industrial Area Warehousing",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 160800000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301030",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01061"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF766235": {
+    "cif": "CIF766235",
+    "client_name": "Machakos Stone Quarries",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Financial Services",
+    "annual_turnover_kes": 101100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301109",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01062"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF477725": {
+    "cif": "CIF477725",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 740000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301109",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01063"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF161166": {
+    "cif": "CIF161166",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 370000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301393",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01064"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF324006": {
+    "cif": "CIF324006",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 11400000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300703",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01066"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF387030": {
+    "cif": "CIF387030",
+    "client_name": "Mount Kenya Coffee",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 6400000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300745",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01068"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF773826": {
+    "cif": "CIF773826",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 5410000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300745",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01069"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF756655": {
+    "cif": "CIF756655",
+    "client_name": "Kisumu Grain Millers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 60750000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300946",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01070"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF411323": {
+    "cif": "CIF411323",
+    "client_name": "Ochieng Transport",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 3225000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300946",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01071"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF157160": {
+    "cif": "CIF157160",
+    "client_name": "Embu Horticulture",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 123900000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300946",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01073"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF576751": {
+    "cif": "CIF576751",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 277500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300506",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01076"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF188470": {
+    "cif": "CIF188470",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 3015000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301265",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01077"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF238672": {
+    "cif": "CIF238672",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 4175000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301265",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01079"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF287164": {
+    "cif": "CIF287164",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 866000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300020",
+    "tagged_rm_role": "Senior Relationship Manager - Corporate Banking",
+    "deal_ids": [
+      "DEAL01080"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF987935": {
+    "cif": "CIF987935",
+    "client_name": "Western Sugarcane Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 85100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300020",
+    "tagged_rm_role": "Senior Relationship Manager - Corporate Banking",
+    "deal_ids": [
+      "DEAL01081"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF193845": {
+    "cif": "CIF193845",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 603000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301192",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01082"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF842565": {
+    "cif": "CIF842565",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 44650000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301192",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01083"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF202277": {
+    "cif": "CIF202277",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 1480000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301192",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01084"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF215647": {
+    "cif": "CIF215647",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 642000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301254",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01085"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF212034": {
+    "cif": "CIF212034",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 3190000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300332",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01086"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF785497": {
+    "cif": "CIF785497",
+    "client_name": "Mombasa Steel Works",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 1310000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300332",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01087"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF544267": {
+    "cif": "CIF544267",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 362000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301098",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01089"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF253951": {
+    "cif": "CIF253951",
+    "client_name": "Mombasa Steel Works",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 1310000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301098",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01090"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF629663": {
+    "cif": "CIF629663",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 5410000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301098",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01091"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF303715": {
+    "cif": "CIF303715",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 2850000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301383",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01092"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF685107": {
+    "cif": "CIF685107",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 31900000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300596",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01093"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF694547": {
+    "cif": "CIF694547",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 42800000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300596",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01094"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF229579": {
+    "cif": "CIF229579",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 2232500000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300596",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01095"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF599129": {
+    "cif": "CIF599129",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 4175000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301339",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01097"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF273742": {
+    "cif": "CIF273742",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 417500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300330",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01099"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF538173": {
+    "cif": "CIF538173",
+    "client_name": "Westlands Law Chambers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 32550000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300330",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01100"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF627817": {
+    "cif": "CIF627817",
+    "client_name": "Embu Horticulture",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 826000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300415",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01102"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF856771": {
+    "cif": "CIF856771",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 724000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300415",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01103"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF743193": {
+    "cif": "CIF743193",
+    "client_name": "Kakamega Telecoms",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 419000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300415",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01104"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF974410": {
+    "cif": "CIF974410",
+    "client_name": "Nakuru County Government",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 108800000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301194",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01105"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF219637": {
+    "cif": "CIF219637",
+    "client_name": "Embu Horticulture",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 8260000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301194",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01106"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF507212": {
+    "cif": "CIF507212",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 144100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301194",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01107"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF530447": {
+    "cif": "CIF530447",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 537000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301194",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01108"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF101771": {
+    "cif": "CIF101771",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 1480000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300587",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01109"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF664961": {
+    "cif": "CIF664961",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1206000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301404",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01110"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF675827": {
+    "cif": "CIF675827",
+    "client_name": "Kisumu Port Authority",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 736500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301394",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01111"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF286083": {
+    "cif": "CIF286083",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 753000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301394",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01112"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF353902": {
+    "cif": "CIF353902",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 57850000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301394",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01113"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF858775": {
+    "cif": "CIF858775",
+    "client_name": "Kakamega Telecoms",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 20950000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300648",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01114"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF533163": {
+    "cif": "CIF533163",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 642000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300648",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01115"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF122228": {
+    "cif": "CIF122228",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 214000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300648",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01116"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF833304": {
+    "cif": "CIF833304",
+    "client_name": "Kisumu Port Authority",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 220950000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300242",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01117"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF101467": {
+    "cif": "CIF101467",
+    "client_name": "Wanjiku Supermarkets Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 90500000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300619",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01119"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF270985": {
+    "cif": "CIF270985",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 214000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300619",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01120"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF880365": {
+    "cif": "CIF880365",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 7530000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300619",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01121"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF243439": {
+    "cif": "CIF243439",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 319000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300598",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01122"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF978379": {
+    "cif": "CIF978379",
+    "client_name": "Industrial Area Warehousing",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 160800000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300968",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01123"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF285453": {
+    "cif": "CIF285453",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 37650000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300968",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01124"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF815123": {
+    "cif": "CIF815123",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 2165000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300968",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01125"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF203866": {
+    "cif": "CIF203866",
+    "client_name": "Meru Tea Growers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 301500000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300968",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01126"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF778390": {
+    "cif": "CIF778390",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 31900000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300485",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01128"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF525994": {
+    "cif": "CIF525994",
+    "client_name": "Safari Tours & Travel",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 318000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301255",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01130"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF636039": {
+    "cif": "CIF636039",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 54100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300039",
+    "tagged_rm_role": "Relationship Manager - Agribusiness",
+    "deal_ids": [
+      "DEAL01131"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF911038": {
+    "cif": "CIF911038",
+    "client_name": "Kisumu Grain Millers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 607500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300039",
+    "tagged_rm_role": "Relationship Manager - Agribusiness",
+    "deal_ids": [
+      "DEAL01132"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF717896": {
+    "cif": "CIF717896",
+    "client_name": "Kamau Farmers Cooperative",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 294500000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300039",
+    "tagged_rm_role": "Relationship Manager - Agribusiness",
+    "deal_ids": [
+      "DEAL01133"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF804051": {
+    "cif": "CIF804051",
+    "client_name": "Kisumu Grain Millers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 60750000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301148",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01135"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF644461": {
+    "cif": "CIF644461",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 14800000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300760",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01136"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF275232": {
+    "cif": "CIF275232",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 1480000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300760",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01137"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF800295": {
+    "cif": "CIF800295",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 28925000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300760",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01138"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF219506": {
+    "cif": "CIF219506",
+    "client_name": "Ochieng Transport",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 129000000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300760",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01139"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF810730": {
+    "cif": "CIF810730",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 192600000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300868",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01140"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF413536": {
+    "cif": "CIF413536",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 79600000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300287",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01141"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF685777": {
+    "cif": "CIF685777",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 161100000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300287",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01142"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF749609": {
+    "cif": "CIF749609",
+    "client_name": "Westlands Law Chambers",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 65100000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300647",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01143"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF450428": {
+    "cif": "CIF450428",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 37000000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300647",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01144"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF731706": {
+    "cif": "CIF731706",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 7400000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300647",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01145"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF107995": {
+    "cif": "CIF107995",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 7400000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300183",
+    "tagged_rm_role": "Bancassurance Officer",
+    "deal_ids": [
+      "DEAL01146"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF624064": {
+    "cif": "CIF624064",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 724000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300530",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01149"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF567982": {
+    "cif": "CIF567982",
+    "client_name": "Nakuru County Government",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 108800000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300530",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01150"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF175790": {
+    "cif": "CIF175790",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 57850000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301005",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01152"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF540240": {
+    "cif": "CIF540240",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 95700000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301005",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01153"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF383314": {
+    "cif": "CIF383314",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 4465000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300991",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01156"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF242363": {
+    "cif": "CIF242363",
+    "client_name": "Mount Kenya Coffee",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 640000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300991",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01157"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF856642": {
+    "cif": "CIF856642",
+    "client_name": "Western Sugarcane Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 85100000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300621",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01158"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF210961": {
+    "cif": "CIF210961",
+    "client_name": "Wanjiku Supermarkets Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 90500000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300621",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01159"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF561171": {
+    "cif": "CIF561171",
+    "client_name": "Nanyuki Airfield Services",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 27600000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300926",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01160"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF580849": {
+    "cif": "CIF580849",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 125250000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300926",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01162"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF990154": {
+    "cif": "CIF990154",
+    "client_name": "Ochieng Transport",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 129000000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300385",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01165"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF528336": {
+    "cif": "CIF528336",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 15950000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301110",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01166"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF325835": {
+    "cif": "CIF325835",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 37000000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300168",
+    "tagged_rm_role": "Corporate Sales Dealer",
+    "deal_ids": [
+      "DEAL01167"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF224855": {
+    "cif": "CIF224855",
+    "client_name": "Machakos Stone Quarries",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Financial Services",
+    "annual_turnover_kes": 5055000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300040",
+    "tagged_rm_role": "Relationship Manager- Trade Finance",
+    "deal_ids": [
+      "DEAL01168"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF707151": {
+    "cif": "CIF707151",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 223250000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300040",
+    "tagged_rm_role": "Relationship Manager- Trade Finance",
+    "deal_ids": [
+      "DEAL01169"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF973776": {
+    "cif": "CIF973776",
+    "client_name": "Nakuru Dairy Farmers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 125250000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301050",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01170"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF834671": {
+    "cif": "CIF834671",
+    "client_name": "Industrial Area Warehousing",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 268000000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300430",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01171"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF609020": {
+    "cif": "CIF609020",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 26850000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301208",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01173"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF183228": {
+    "cif": "CIF183228",
+    "client_name": "Safari Tours & Travel",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 12720000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301208",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01174"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF693659": {
+    "cif": "CIF693659",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 1387500000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300521",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01175"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF284609": {
+    "cif": "CIF284609",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 720500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301371",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01179"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF766541": {
+    "cif": "CIF766541",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 14410000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301371",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01180"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF211397": {
+    "cif": "CIF211397",
+    "client_name": "Migori County Council",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 1217000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300255",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01181"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF154585": {
+    "cif": "CIF154585",
+    "client_name": "Mombasa Steel Works",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 78600000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301289",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01182"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF343875": {
+    "cif": "CIF343875",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 223250000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301289",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01183"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF607095": {
+    "cif": "CIF607095",
+    "client_name": "Nanyuki Airfield Services",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 110400000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301312",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01184"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF623922": {
+    "cif": "CIF623922",
+    "client_name": "Kasarani Stadium Caterers",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 5630000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300757",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01186"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF379064": {
+    "cif": "CIF379064",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 21400000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301009",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01187"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF120017": {
+    "cif": "CIF120017",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 13525000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301009",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01189"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF634057": {
+    "cif": "CIF634057",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 398000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300631",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01191"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF254807": {
+    "cif": "CIF254807",
+    "client_name": "Kenya Textile Mills",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Manufacturing",
+    "annual_turnover_kes": 135250000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300343",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01192"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF590096": {
+    "cif": "CIF590096",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 5700000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300343",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01193"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF813489": {
+    "cif": "CIF813489",
+    "client_name": "Tech Innovations Kenya",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 1352000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300343",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01194"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF241505": {
+    "cif": "CIF241505",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 37650000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300610",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01196"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF416707": {
+    "cif": "CIF416707",
+    "client_name": "Family Logistics Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 128400000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300610",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01197"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF946825": {
+    "cif": "CIF946825",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 28500000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300412",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01198"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF774808": {
+    "cif": "CIF774808",
+    "client_name": "Migori County Council",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 3042500000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301066",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01199"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF327606": {
+    "cif": "CIF327606",
+    "client_name": "Embu Horticulture",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 206500000.0,
+    "max_facility_kes": 25000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300486",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01200"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF104245": {
+    "cif": "CIF104245",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 2685000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301354",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01201"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF282634": {
+    "cif": "CIF282634",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 57850000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301354",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01202"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF329200": {
+    "cif": "CIF329200",
+    "client_name": "Wanjiku Supermarkets Ltd",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 90500000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301029",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01204"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF351077": {
+    "cif": "CIF351077",
+    "client_name": "Nairobi Real Estate Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 222000000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300178",
+    "tagged_rm_role": "General Manager - Bancassurance",
+    "deal_ids": [
+      "DEAL01205"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF558442": {
+    "cif": "CIF558442",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 570000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300178",
+    "tagged_rm_role": "General Manager - Bancassurance",
+    "deal_ids": [
+      "DEAL01206"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF681064": {
+    "cif": "CIF681064",
+    "client_name": "Ochieng Transport",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Transport & Communication",
+    "annual_turnover_kes": 64500000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300970",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01207"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF569768": {
+    "cif": "CIF569768",
+    "client_name": "Westlands Law Chambers",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 6510000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301300",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01209"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF957420": {
+    "cif": "CIF957420",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 376500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301300",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01210"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF293588": {
+    "cif": "CIF293588",
+    "client_name": "Migori County Council",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 182550000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301300",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01211"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF132741": {
+    "cif": "CIF132741",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 192600000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300356",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01212"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF112069": {
+    "cif": "CIF112069",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 433000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300867",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01213"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF287046": {
+    "cif": "CIF287046",
+    "client_name": "Kisumu Grain Millers",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 6075000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300867",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01214"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF484949": {
+    "cif": "CIF484949",
+    "client_name": "Kitui Crafts Exporters",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Real Estate & Business Services",
+    "annual_turnover_kes": 36200000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301267",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01215"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF323726": {
+    "cif": "CIF323726",
+    "client_name": "Kasarani Stadium Caterers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 168900000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301267",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01217"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF240277": {
+    "cif": "CIF240277",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 107400000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301415",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01218"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF475696": {
+    "cif": "CIF475696",
+    "client_name": "Tech Innovations Kenya",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 1352000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301415",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01219"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF199081": {
+    "cif": "CIF199081",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 398000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301325",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01220"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF480602": {
+    "cif": "CIF480602",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 129900000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300770",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01221"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF276430": {
+    "cif": "CIF276430",
+    "client_name": "Safari Tours & Travel",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 31800000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300770",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01222"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF223158": {
+    "cif": "CIF223158",
+    "client_name": "Lamu Fishing Cooperative",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 26850000.0,
+    "max_facility_kes": 2500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301206",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01223"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF256153": {
+    "cif": "CIF256153",
+    "client_name": "Kasarani Stadium Caterers",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 2815000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301206",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01224"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF219986": {
+    "cif": "CIF219986",
+    "client_name": "Safari Tours & Travel",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 1272000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300495",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01227"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF203337": {
+    "cif": "CIF203337",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 43300000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301427",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01229"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF397317": {
+    "cif": "CIF397317",
+    "client_name": "Garissa Livestock Traders",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1595000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301084",
+    "tagged_rm_role": "Direct Sales Representative - Assets & Liabilities",
+    "deal_ids": [
+      "DEAL01232"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF366935": {
+    "cif": "CIF366935",
+    "client_name": "Thika Road Motors",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 893000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300902",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01233"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF594479": {
+    "cif": "CIF594479",
+    "client_name": "Mombasa Steel Works",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 5240000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300902",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01234"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF589101": {
+    "cif": "CIF589101",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 83250000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301342",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01235"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF426077": {
+    "cif": "CIF426077",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 5550000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301342",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01236"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF252957": {
+    "cif": "CIF252957",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 75300000.0,
+    "max_facility_kes": 10000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301082",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01237"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF118781": {
+    "cif": "CIF118781",
+    "client_name": "Rift Valley Flowers",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 119400000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301082",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01238"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF103613": {
+    "cif": "CIF103613",
+    "client_name": "Karen Riding Club",
+    "customer_type": "business",
+    "segment_code": "SMALL",
+    "cbk_sector": "Tourism, Restaurant & Hotels",
+    "annual_turnover_kes": 43300000.0,
+    "max_facility_kes": 5000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300574",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01240"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF988651": {
+    "cif": "CIF988651",
+    "client_name": "Eldoret Agro Processors",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 6420000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300045",
+    "tagged_rm_role": "Relationship Manager- Public Sector",
+    "deal_ids": [
+      "DEAL01241"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF684495": {
+    "cif": "CIF684495",
+    "client_name": "Nakuru County Government",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 5440000.0,
+    "max_facility_kes": 500000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300440",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01242"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF915653": {
+    "cif": "CIF915653",
+    "client_name": "Nakuru County Government",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 163200000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300440",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01244"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF251089": {
+    "cif": "CIF251089",
+    "client_name": "Kisii Gold Mining",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 1441000000.0,
+    "max_facility_kes": 100000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300555",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01247"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF742258": {
+    "cif": "CIF742258",
+    "client_name": "Nyeri County Hospital",
+    "customer_type": "business",
+    "segment_code": "MICRO",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 11570000.0,
+    "max_facility_kes": 1000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300680",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01248"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF264771": {
+    "cif": "CIF264771",
+    "client_name": "Limuru Tea Estate",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 1882500000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300494",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01250"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF681531": {
+    "cif": "CIF681531",
+    "client_name": "Kikuyu Hardware",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 277500000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300050",
+    "tagged_rm_role": "Relationship Manager - Institutional Banking",
+    "deal_ids": [
+      "DEAL01251"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF991500": {
+    "cif": "CIF991500",
+    "client_name": "Bungoma Schools Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 2850000000.0,
+    "max_facility_kes": 250000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300050",
+    "tagged_rm_role": "Relationship Manager - Institutional Banking",
+    "deal_ids": [
+      "DEAL01252"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF546503": {
+    "cif": "CIF546503",
+    "client_name": "Kisumu Port Authority",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 220950000.0,
+    "max_facility_kes": 15000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300050",
+    "tagged_rm_role": "Relationship Manager - Institutional Banking",
+    "deal_ids": [
+      "DEAL01254"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF787982": {
+    "cif": "CIF787982",
+    "client_name": "Overseas Kenyans Ltd",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Electricity, Gas & Water Supply",
+    "annual_turnover_kes": 1042360000.0,
+    "max_facility_kes": 92000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301111",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01261"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF309220": {
+    "cif": "CIF309220",
+    "client_name": "Kenya Diaspora Remit",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Building & Construction",
+    "annual_turnover_kes": 710080000.0,
+    "max_facility_kes": 56000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "301236",
+    "tagged_rm_role": "Branch Senior Relationship Officer",
+    "deal_ids": [
+      "DEAL01264"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF509916": {
+    "cif": "CIF509916",
+    "client_name": "Msomi Traders",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Trade (Wholesale & Retail)",
+    "annual_turnover_kes": 1289140000.0,
+    "max_facility_kes": 86000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300302",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01265"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF403817": {
+    "cif": "CIF403817",
+    "client_name": "Msomi Traders",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Trade (Wholesale & Retail)",
+    "annual_turnover_kes": 1334110000.0,
+    "max_facility_kes": 89000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300619",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01266"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF356356": {
+    "cif": "CIF356356",
+    "client_name": "Msomi Traders",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Trade (Wholesale & Retail)",
+    "annual_turnover_kes": 164890000.0,
+    "max_facility_kes": 11000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300855",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01267"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF436432": {
+    "cif": "CIF436432",
+    "client_name": "Msomi Traders",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Trade (Wholesale & Retail)",
+    "annual_turnover_kes": 299800000.0,
+    "max_facility_kes": 20000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300608",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01268"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF985800": {
+    "cif": "CIF985800",
+    "client_name": "Biashara Capital",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Other / Not Classified",
+    "annual_turnover_kes": 385650000.0,
+    "max_facility_kes": 45000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300274",
+    "tagged_rm_role": "Relationship Officer-Business Banker",
+    "deal_ids": [
+      "DEAL01269"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF286815": {
+    "cif": "CIF286815",
+    "client_name": "Kilimo Fresh Produce",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Mining & Quarrying",
+    "annual_turnover_kes": 697500000.0,
+    "max_facility_kes": 62000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300981",
+    "tagged_rm_role": "Relationship Officer Bancassurance",
+    "deal_ids": [
+      "DEAL01270"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF803620": {
+    "cif": "CIF803620",
+    "client_name": "Mavuno Farm",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 717000000.0,
+    "max_facility_kes": 50000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300809",
+    "tagged_rm_role": "Relationship Officer-Personal Banker",
+    "deal_ids": [
+      "DEAL01272"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF174617": {
+    "cif": "CIF174617",
+    "client_name": "Dairy Farmers Coop",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Agriculture, Forestry & Fishing",
+    "annual_turnover_kes": 473230000.0,
+    "max_facility_kes": 37000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300563",
+    "tagged_rm_role": "Branch Relationship Manager",
+    "deal_ids": [
+      "DEAL01273"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF905602": {
+    "cif": "CIF905602",
+    "client_name": "Import Masters Ltd",
+    "customer_type": "business",
+    "segment_code": "MEDIUM",
+    "cbk_sector": "Community, Social & Personal Services",
+    "annual_turnover_kes": 430560000.0,
+    "max_facility_kes": 36000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300171",
+    "tagged_rm_role": "Trade Finance Back Office Manager",
+    "deal_ids": [
+      "DEAL01276"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  },
+  "CIF311296": {
+    "cif": "CIF311296",
+    "client_name": "Export Champions",
+    "customer_type": "business",
+    "segment_code": "CORPORATE",
+    "cbk_sector": "Government & Public Sector",
+    "annual_turnover_kes": 545480000.0,
+    "max_facility_kes": 52000000.0,
+    "facility_count": 1,
+    "currencies": [
+      "KES"
+    ],
+    "tagged_rm_staff_code": "300175",
+    "tagged_rm_role": "Trade Finance Officer",
+    "deal_ids": [
+      "DEAL01279"
+    ],
+    "_v10338_synthesis": {
+      "shipped": "v10.338",
+      "ts": "2026-05-12T09:55:24.286018+00:00",
+      "turnover_method": "max_facility × deterministic_multiplier (5 + hash(name) % 1000 / 100)",
+      "sector_method": "keyword_match_or_hash_fallback",
+      "replace_with": "FLEXCUBE CIF turnover field when integrated"
+    }
+  }
+}

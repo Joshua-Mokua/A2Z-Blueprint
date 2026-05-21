@@ -1,0 +1,98 @@
+{
+  "_doc": "Teller activity generator config — admin-editable. Drives the Teller Activity Generator (utils/teller_activity_generator.py) which simulates a quarter of operational activity per Teller and submits BSC actuals via the verified bsc_engine path. Edit this file to tune target levels, performance band distributions, and noise factors. Run `python scripts/generate_teller_activity.py --period 2026-Q2` after edits.",
+  "_schema_version": "v10.317",
+  "_last_reviewed": "2026-05-11",
+  "_owner": "Admin / Retail Operations",
+
+  "performance_bands": {
+    "_note": "Distribution of Tellers across performance bands. Determined deterministically by hash(staff_code) so the same Teller always lands in the same band. Sum must equal 1.0.",
+    "high_performer": {"share": 0.10, "factor_range": [1.05, 1.20], "description": "Top 10% — exceeds target by 5-20%"},
+    "above_average": {"share": 0.30, "factor_range": [0.95, 1.05], "description": "Next 30% — within ±5% of target"},
+    "on_target": {"share": 0.40, "factor_range": [0.85, 0.95], "description": "Middle 40% — slightly below target (85-95%)"},
+    "below_target": {"share": 0.20, "factor_range": [0.65, 0.85], "description": "Bottom 20% — clear underperformers (65-85%)"}
+  },
+
+  "kpi_targets": {
+    "_note": "Target values per KPI. Teller's actual value is target × performance_factor + small noise. Higher-is-better KPIs scale up with factor; lower-is-better (none in this list) scale down.",
+    "CX Score": {
+      "target": 4.2,
+      "scale": "1-5",
+      "noise_pct": 5,
+      "direction": "higher",
+      "description": "Customer experience score from post-interaction surveys"
+    },
+    "Staff Productivity": {
+      "target": 85,
+      "scale": "0-100",
+      "noise_pct": 8,
+      "direction": "higher",
+      "description": "Composite staff productivity index — transactions/hour + accuracy + attendance"
+    },
+    "Audit Score": {
+      "target": 92,
+      "scale": "0-100",
+      "noise_pct": 4,
+      "direction": "higher",
+      "description": "Audit compliance score — branch-level audit findings + Teller-level cash handling"
+    },
+    "K007": {
+      "target": 88,
+      "scale": "0-100",
+      "noise_pct": 6,
+      "direction": "higher",
+      "description": "Customer Satisfaction Score (NPS-style)"
+    },
+    "K013": {
+      "target": 95,
+      "scale": "0-100",
+      "noise_pct": 3,
+      "direction": "higher",
+      "description": "Branch Daily Log Completion — % of daily logs completed correctly"
+    },
+    "K014": {
+      "target": 96,
+      "scale": "0-100",
+      "noise_pct": 3,
+      "direction": "higher",
+      "description": "AML/CFT Compliance Score — STR filings + KYC completeness + sanctions screening"
+    },
+    "K012": {
+      "target": 65,
+      "scale": "0-100",
+      "noise_pct": 10,
+      "direction": "higher",
+      "description": "Digital Transactions (%) — % of total transactions migrated to digital channels"
+    }
+  },
+
+  "quarter_drift": {
+    "_note": "Small quarter-over-quarter improvement trend (most Tellers improve slightly). Each subsequent quarter applies this multiplier to the base value (compounding).",
+    "drift_pct_per_quarter": 0.5,
+    "max_drift_pct": 3.0
+  },
+
+  "band_movement": {
+    "_note": "Quarter-over-quarter movement between bands. Most Tellers stay in their band; ~5% move up or down each quarter. Movement is deterministic by hash(staff_code, period_index).",
+    "stay_pct": 90,
+    "move_up_pct": 5,
+    "move_down_pct": 5
+  },
+
+  "_simulation_metadata": {
+    "_note": "Internal — used by the generator for tagging submissions.",
+    "source_module": "teller_activity_generator",
+    "metadata_template": {
+      "synthetic": true,
+      "generator_version": "v10.317",
+      "purpose": "demo_cascade_simulation"
+    }
+  },
+
+  "_validation_rules": {
+    "_note": "Hardcoded — NOT admin-configurable. The generator enforces these regardless of config edits.",
+    "performance_band_shares_must_sum_to_1.0": true,
+    "all_factor_ranges_must_have_2_elements": true,
+    "all_kpi_targets_must_be_numeric_and_positive": true,
+    "noise_pct_must_be_in_0_to_30_range": true
+  }
+}

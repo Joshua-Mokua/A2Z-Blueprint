@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:11.232718+00:00",
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "R001-exact-match-all-three",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R002-customer-count-off-by-one",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R003-deposit-within-1000-threshold",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R004-deposit-above-1000-break",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R005-loan-above-threshold-break",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R006-stale-extract-all-not-run",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R007-missing-flexcube-side",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R008-missing-a2z-side",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R009-kes-billion-precision",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "R010-all-three-broken",
+      "matched": true,
+      "diffs": []
+    }
+  ]
+}

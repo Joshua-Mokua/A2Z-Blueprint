@@ -1,0 +1,98 @@
+{
+  "_schema_version": "v10.338",
+  "_description": "Canonical segment configuration for A2Z MIS 360. Codes are FIXED and used by all engines; display_name + thresholds are admin-editable to accommodate tenant terminology (banks use Mass / Personal / Standard interchangeably; Core Middle / Mass Affluent / Emerging Affluent interchangeably; Corporate / Premier / Wholesale interchangeably). Multi-tenant ready — codes survive renaming.",
+  "_last_reviewed": "2026-05-12",
+  "_locked_codes": [
+    "AFFLUENT", "CORE_MIDDLE", "MASS",
+    "MICRO", "SMALL", "MEDIUM", "CORPORATE"
+  ],
+  "individual_tiers": [
+    {
+      "code": "AFFLUENT",
+      "display_name": "Affluent",
+      "owner_role": "Chief Retail Banking Officer",
+      "trb_min_kes": 5000000,
+      "trb_max_kes": null,
+      "_note": "TRB ≥ 5M. Tier-2 Kenya bank-typical band. Override per tenant via admin."
+    },
+    {
+      "code": "CORE_MIDDLE",
+      "display_name": "Core Middle",
+      "owner_role": "Chief Retail Banking Officer",
+      "trb_min_kes": 500000,
+      "trb_max_kes": 5000000,
+      "_note": "TRB 500K–5M. Sometimes called Mass Affluent / Emerging Affluent at other banks."
+    },
+    {
+      "code": "MASS",
+      "display_name": "Mass",
+      "owner_role": "Chief Retail Banking Officer",
+      "trb_min_kes": 0,
+      "trb_max_kes": 500000,
+      "_note": "TRB < 500K. Sometimes called Personal / Standard / Retail at other banks."
+    }
+  ],
+  "business_tiers": [
+    {
+      "code": "MICRO",
+      "display_name": "Micro Enterprise",
+      "owner_role": "Chief Commercial Officer",
+      "in_msme": true,
+      "turnover_min_kes": 0,
+      "turnover_max_kes": 20000000,
+      "_note": "Joshua-specified band: turnover < 20M = Micro."
+    },
+    {
+      "code": "SMALL",
+      "display_name": "Small Enterprise",
+      "owner_role": "Chief Commercial Officer",
+      "in_msme": true,
+      "turnover_min_kes": 20000000,
+      "turnover_max_kes": 100000000,
+      "_note": "Turnover 20M–100M. Tier-2 Kenya bank-typical band."
+    },
+    {
+      "code": "MEDIUM",
+      "display_name": "Medium Enterprise",
+      "owner_role": "Chief Commercial Officer",
+      "in_msme": true,
+      "turnover_min_kes": 100000000,
+      "turnover_max_kes": 500000000,
+      "_note": "Turnover 100M–500M. Tier-2 Kenya bank-typical band."
+    },
+    {
+      "code": "CORPORATE",
+      "display_name": "Corporate",
+      "owner_role": "Chief Commercial Officer",
+      "in_msme": false,
+      "turnover_min_kes": 500000000,
+      "turnover_max_kes": null,
+      "_note": "Turnover ≥ 500M. Standalone above MSME per Joshua's v10.338 spec."
+    }
+  ],
+  "cbk_sectors": [
+    "Agriculture, Forestry & Fishing",
+    "Mining & Quarrying",
+    "Manufacturing",
+    "Electricity, Gas & Water Supply",
+    "Building & Construction",
+    "Trade (Wholesale & Retail)",
+    "Tourism, Restaurant & Hotels",
+    "Transport & Communication",
+    "Real Estate & Business Services",
+    "Financial Services",
+    "Community, Social & Personal Services",
+    "Government & Public Sector",
+    "Non-Profit / NGO",
+    "Other / Not Classified"
+  ],
+  "_cbk_sector_applies_to": ["MICRO", "SMALL", "MEDIUM", "CORPORATE"],
+  "propositions_overlay": {
+    "_rationale": "Propositions (Women / Youth / Diaspora / Asset Banking / Agri / SME-specialist) are ORTHOGONAL tags on customers, not a primary segmentation. Per v10.338 design Q3 option (a), proposition P&L is VIEW-ONLY — it may overlap and does NOT reconcile to bank total. The Retail / Commercial SBU rollups are the audited truth.",
+    "view_only": true,
+    "reconciles_to_bank_total": false,
+    "propositions": [
+      "WOMEN", "DIASPORA", "ASSET_FINANCE", "AGRI", "YOUTH", "SME"
+    ]
+  }
+}

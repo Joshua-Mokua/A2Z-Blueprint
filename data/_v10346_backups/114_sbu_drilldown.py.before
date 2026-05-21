@@ -1,0 +1,427 @@
+"""pages/114_sbu_drilldown.py — Customer-Value SBU Drill-Down (v10.338).
+
+Sibling to pages/9_sbu.py. The existing 9_sbu is BRANCH-level P&L
+(branch as the unit of P&L). This page is CUSTOMER-VALUE SBU drill-
+down: Retail SBU broken into Affluent / Core Middle / Mass; Commercial
+SBU broken into MSME (Micro/Small/Medium) and Corporate, both × CBK
+sector. Tagged-RM P&L exposes which Relationship Managers own which
+revenue. Propositions overlay is view-only (does not reconcile).
+
+Per v10.338 design — Q1/Q2/Q3/Q5 all settled:
+  - Codes fixed, display names + thresholds admin-editable
+  - MSME = Micro + Small + Medium (turnover-banded); Corporate standalone
+  - Both Business segments × CBK sector as second dimension
+  - Propositions overlay: view-only, may overlap, does not reconcile
+  - Rollup approach — aggregates customer_profitability per-customer PBT
+
+Tab budget: 6 of 7 (G4 ≤7 ceiling). One slot reserved for partnerships
+/ ecosystem banking when that data lands.
+"""
+
+import streamlit as st
+import pandas as pd
+from pages._access import require_access
+from pages._shared import load_shared_state
+
+
+require_access("finance.sbu_performance")
+
+
+_um, _ud, _uname, _em, _ri_pm, _prod_m, _pm, _lm, _hr_m, _casc, _vm, _rlm = (
+    load_shared_state()
+)
+
+
+st.markdown("# 🏦 SBU Drill-Down — Customer-Value View")
+st.markdown(
+    "Drill into bank performance by customer segment, economic sector, "
+    "tagged RM, or proposition overlay. Branch-level P&L lives on "
+    "the existing **SBU Performance** page (pages/9_sbu.py)."
+)
+
+st.info(
+    "**v10.340 — Cost source: MATRIX.** Indirect costs now come from "
+    "the admin-editable allocation matrix (Admin → Performance → Cost "
+    "Matrix), not the v10.338 proxy split. Revenue + direct costs "
+    "remain customer-level proxies until real GL data integrates. "
+    "**Negative PBT in retail tiers is honest** — synthesized "
+    "virtual-bank revenue is undersized vs real Tier-2 bank opex; "
+    "Corporate + Medium subsidise the rest. Real GL data closes the gap."
+)
+
+
+# ────────────────────────────────────────────────────────────────────
+# Cached rollups
+# ────────────────────────────────────────────────────────────────────
+
+@st.cache_data(ttl=60)
+def _seg_rollup(period: str):
+    from utils.sbu_pnl_rollup import rollup_by_segment
+    return rollup_by_segment(period)
+
+
+@st.cache_data(ttl=60)
+def _sector_rollup(period: str):
+    from utils.sbu_pnl_rollup import rollup_by_cbk_sector
+    return rollup_by_cbk_sector(period)
+
+
+@st.cache_data(ttl=60)
+def _rm_rollup(period: str):
+    from utils.sbu_pnl_rollup import rollup_by_tagged_rm
+    return rollup_by_tagged_rm(period)
+
+
+@st.cache_data(ttl=60)
+def _prop_rollup(period: str):
+    from utils.sbu_pnl_rollup import rollup_by_proposition
+    return rollup_by_proposition(period)
+
+
+@st.cache_data(ttl=60)
+def _bank_pnl(period: str):
+    from utils.sbu_pnl_rollup import bank_total_pnl, rollup_meta
+    return bank_total_pnl(period), rollup_meta()
+
+
+@st.cache_data(ttl=60)
+def _bs(period: str):
+    from utils.segment_balance_sheet import (
+        balance_sheet_by_segment, bank_balance_sheet,
+        capital_adequacy_check, bs_meta,
+    )
+    return (
+        balance_sheet_by_segment(period),
+        bank_balance_sheet(period),
+        capital_adequacy_check(period),
+        bs_meta(),
+    )
+
+
+# ────────────────────────────────────────────────────────────────────
+# Period selector
+# ────────────────────────────────────────────────────────────────────
+
+period = st.selectbox(
+    "Period",
+    options=["2026-Q2", "2026-Q1", "2025-Q4", "2025-Q3"],
+    index=0,
+)
+
+
+# ────────────────────────────────────────────────────────────────────
+# Helper formatters
+# ────────────────────────────────────────────────────────────────────
+
+def _fmt_b(x):
+    if x is None:
+        return "—"
+    return f"KES {x/1e9:.3f}B"
+
+
+def _fmt_m(x):
+    if x is None:
+        return "—"
+    return f"KES {x/1e6:.1f}M"
+
+
+def _fmt_pct(x):
+    if x is None:
+        return "—"
+    return f"{x:.2f}%"
+
+
+# ────────────────────────────────────────────────────────────────────
+# Tabs
+# ────────────────────────────────────────────────────────────────────
+
+tab_bank, tab_retail, tab_commercial, tab_sector, tab_rm, tab_prop, tab_bs = st.tabs([
+    "📊 Bank P&L",
+    "🏘️ Retail (Affluent / Core / Mass)",
+    "🏢 Commercial (MSME / Corporate)",
+    "🌾 CBK Sector",
+    "🧑‍💼 RM-Tagged",
+    "🎯 Propositions (view-only)",
+    "💰 Balance Sheet",
+])
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 1 — Bank P&L
+# ════════════════════════════════════════════════════════════════
+with tab_bank:
+    bank, meta = _bank_pnl(period)
+    segments = _seg_rollup(period)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Revenue", _fmt_b(bank["revenue"]))
+    c2.metric("Direct Costs", _fmt_b(bank["direct_cost"]))
+    c3.metric("Indirect Costs", _fmt_b(bank["indirect_cost"]))
+    c4.metric("PBT", _fmt_b(bank["pbt"]))
+
+    st.caption(
+        f"Customers: {bank['customer_count']}  ·  PBT margin: "
+        f"{_fmt_pct(bank.get('pbt_margin_pct'))}"
+    )
+
+    st.markdown("### Segment composition")
+    rows = []
+    for seg, b in segments.items():
+        rows.append({
+            "Segment":     seg,
+            "Customers":   b["customer_count"],
+            "Revenue (B)": round(b["revenue"]/1e9, 3),
+            "PBT (B)":     round(b["pbt"]/1e9, 3),
+            "Margin %":    b.get("pbt_margin_pct"),
+        })
+    df = pd.DataFrame(rows).sort_values("PBT (B)", ascending=False)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    with st.expander("Data source"):
+        st.json(meta)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 2 — Retail (Individual segments)
+# ════════════════════════════════════════════════════════════════
+with tab_retail:
+    st.markdown("### Retail SBU — Chief Retail Banking Officer")
+    st.caption(
+        "Three Individual tiers: Affluent (TRB ≥ 5M) · "
+        "Core Middle (500K–5M) · Mass (< 500K). "
+        "Tier thresholds + display names admin-editable."
+    )
+    segments = _seg_rollup(period)
+    retail_codes = ["AFFLUENT", "CORE_MIDDLE", "MASS"]
+
+    cols = st.columns(len(retail_codes))
+    for i, code in enumerate(retail_codes):
+        b = segments.get(code)
+        if not b:
+            cols[i].metric(code, "—")
+            continue
+        cols[i].metric(
+            code,
+            _fmt_b(b["pbt"]),
+            f"{b['customer_count']} customers · {_fmt_pct(b.get('pbt_margin_pct'))} margin",
+        )
+
+    rows = []
+    for code in retail_codes:
+        b = segments.get(code, {})
+        rows.append({
+            "Tier":         code,
+            "Customers":    b.get("customer_count", 0),
+            "Revenue":      _fmt_b(b.get("revenue")),
+            "Direct cost":  _fmt_b(b.get("direct_cost")),
+            "Indirect":     _fmt_b(b.get("indirect_cost")),
+            "PBT":          _fmt_b(b.get("pbt")),
+            "Margin":       _fmt_pct(b.get("pbt_margin_pct")),
+        })
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 3 — Commercial (Business segments)
+# ════════════════════════════════════════════════════════════════
+with tab_commercial:
+    st.markdown("### Commercial SBU — Chief Commercial Officer")
+    st.caption(
+        "MSME = Micro + Small + Medium (turnover-banded). "
+        "Corporate is standalone. Both apply CBK sectors as a "
+        "second dimension. Turnover bands: Micro <20M · Small "
+        "20–100M · Medium 100–500M · Corporate ≥500M."
+    )
+
+    segments = _seg_rollup(period)
+    msme_codes = ["MICRO", "SMALL", "MEDIUM"]
+    corp_codes = ["CORPORATE"]
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**MSME**")
+        msme_total_pbt = sum(
+            segments.get(c, {}).get("pbt", 0) for c in msme_codes
+        )
+        msme_n = sum(
+            segments.get(c, {}).get("customer_count", 0) for c in msme_codes
+        )
+        st.metric("MSME total PBT", _fmt_b(msme_total_pbt), f"{msme_n} customers")
+        rows = []
+        for code in msme_codes:
+            b = segments.get(code, {})
+            rows.append({
+                "Tier":      code,
+                "Customers": b.get("customer_count", 0),
+                "Revenue":   _fmt_b(b.get("revenue")),
+                "PBT":       _fmt_b(b.get("pbt")),
+                "Margin":    _fmt_pct(b.get("pbt_margin_pct")),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    with c2:
+        st.markdown("**Corporate**")
+        b = segments.get("CORPORATE", {})
+        st.metric(
+            "Corporate PBT",
+            _fmt_b(b.get("pbt")),
+            f"{b.get('customer_count', 0)} customers · {_fmt_pct(b.get('pbt_margin_pct'))}",
+        )
+        st.dataframe(pd.DataFrame([{
+            "Customers":    b.get("customer_count", 0),
+            "Revenue":      _fmt_b(b.get("revenue")),
+            "Direct cost":  _fmt_b(b.get("direct_cost")),
+            "Indirect":     _fmt_b(b.get("indirect_cost")),
+            "PBT":          _fmt_b(b.get("pbt")),
+        }]), use_container_width=True, hide_index=True)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 4 — CBK Sector heatmap
+# ════════════════════════════════════════════════════════════════
+with tab_sector:
+    st.markdown("### CBK Economic Sector view (Business customers)")
+    st.caption(
+        "14 CBK economic sectors × 4 business tiers. Cells show "
+        "PBT (KES Millions). Empty = no customers tagged in that "
+        "cell. Sectors per CBK Prudential Guideline classification."
+    )
+    sectors = _sector_rollup(period)
+    if not sectors:
+        st.info("No business customers tagged with CBK sectors for this period.")
+    else:
+        # Build a heatmap-style pivot
+        rows = []
+        for (seg, sector), b in sectors.items():
+            rows.append({
+                "Segment":     seg,
+                "CBK sector":  sector,
+                "Customers":   b["customer_count"],
+                "Revenue (M)": round(b["revenue"]/1e6, 1),
+                "PBT (M)":     round(b["pbt"]/1e6, 1),
+            })
+        df = pd.DataFrame(rows)
+        pivot = df.pivot_table(
+            index="CBK sector",
+            columns="Segment",
+            values="PBT (M)",
+            fill_value=0,
+        )
+        st.dataframe(
+            pivot.style.background_gradient(cmap="Greens"),
+            use_container_width=True,
+        )
+        st.markdown("#### Detailed breakdown")
+        st.dataframe(
+            df.sort_values("PBT (M)", ascending=False),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 5 — RM-tagged P&L
+# ════════════════════════════════════════════════════════════════
+with tab_rm:
+    st.markdown("### Tagged-RM Profitability")
+    st.caption(
+        "Each business customer is tagged to a Relationship Manager "
+        "by staff_code (not name — per Joshua's spec). The same "
+        "staff_code that owns the BSC scorecard owns the revenue "
+        "rollup. Individual-customer RM tagging not yet in the "
+        "virtual bank dataset (Rule 7 — surfaced honestly)."
+    )
+    rms = _rm_rollup(period)
+    if not rms:
+        st.info("No tagged-RM profitability yet for this period.")
+    else:
+        rows = []
+        for code, b in rms.items():
+            rows.append({
+                "Staff code":  code,
+                "Customers":   b["customer_count"],
+                "Revenue (M)": round(b["revenue"]/1e6, 1),
+                "PBT (M)":     round(b["pbt"]/1e6, 1),
+                "Margin %":    b.get("pbt_margin_pct"),
+            })
+        df = pd.DataFrame(rows).sort_values("PBT (M)", ascending=False)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption(f"Total RMs with tagged business customers: {len(rms)}")
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 6 — Proposition overlay (VIEW-ONLY)
+# ════════════════════════════════════════════════════════════════
+with tab_prop:
+    st.warning(
+        "🔍 **View-only overlay.** Per design Q3, propositions "
+        "(Women / Diaspora / Asset Finance / Agri / Youth / SME) "
+        "are orthogonal tags — a customer can carry multiple. "
+        "Proposition P&L **does NOT reconcile to bank total** by "
+        "design. Use Retail / Commercial SBU tabs for the audited "
+        "primary view."
+    )
+    props = _prop_rollup(period)
+    if not props:
+        st.info("No proposition tags found in current customer data.")
+    else:
+        rows = []
+        bank_pbt = _bank_pnl(period)[0]["pbt"]
+        for code, b in props.items():
+            rows.append({
+                "Proposition": code,
+                "Customers":   b["customer_count"],
+                "Revenue (M)": round(b["revenue"]/1e6, 1),
+                "PBT (M)":     round(b["pbt"]/1e6, 1),
+                "Share of bank PBT %": (
+                    round(100 * b["pbt"] / bank_pbt, 1)
+                    if bank_pbt else None
+                ),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+# ════════════════════════════════════════════════════════════════
+# TAB 7 — Balance Sheet
+# ════════════════════════════════════════════════════════════════
+with tab_bs:
+    bs_by_seg, bs_bank, ca, bs_metadata = _bs(period)
+    st.markdown("### Balance Sheet by Segment")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Loan book", _fmt_b(bs_bank["assets_total"]))
+    c2.metric("Deposit book", _fmt_b(bs_bank["liabilities_total"]))
+    c3.metric("Allocated equity (RWA × 12.5%)", _fmt_b(bs_bank["equity"]))
+
+    rows = []
+    for seg, b in bs_by_seg.items():
+        rows.append({
+            "Segment":         seg,
+            "Customers":       b["customer_count"],
+            "Loans (B)":       round(b["loan_balance"]/1e9, 3),
+            "Deposits (B)":    round(b["deposit_balance"]/1e9, 3),
+            "RWA (B)":         round(b["rwa"]/1e9, 3),
+            "Equity (B)":      round(b["equity"]/1e9, 3),
+            "Net assets (B)":  round(b["net_assets"]/1e9, 3),
+        })
+    df = pd.DataFrame(rows).sort_values("Loans (B)", ascending=False)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.markdown("#### Capital adequacy")
+    st.metric(
+        "CAR (Tier 1 + Tier 2)",
+        _fmt_pct(ca["ratio_pct"]),
+        f"Min: {_fmt_pct(ca['minimum_pct'])} · "
+        f"Adequate: {'✓' if ca['adequate'] else '✗'}",
+    )
+
+    with st.expander("Balance sheet data sources"):
+        st.json(bs_metadata)
+
+
+st.divider()
+st.caption(
+    "v10.338 — Customer-value SBU drill-down. Backed by canonical "
+    "segment classifier + customer_profitability rollup + BCBS "
+    "standardised capital allocation. Segment config admin-editable "
+    "via the Admin module (Performance section)."
+)

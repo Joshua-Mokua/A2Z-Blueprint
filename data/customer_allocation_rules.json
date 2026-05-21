@@ -1,0 +1,21 @@
+{
+  "_schema_version": "v10.370",
+  "_last_updated_iso": "2026-05-13T00:00:00+00:00",
+  "_last_updated_by": "v10.370 initial",
+  "_purpose": "Per-customer OpEx allocation rules (Rule N1, admin-editable). Used by utils.customer_pbt_allocator.compute_pbt_by_customer to distribute bank.total_opex_kes_b across individual customers. Per-customer is the atomic profitability unit; all other rollups (Bank, SBU, Branch, Staff) derive from this.",
+  "default_rule": "revenue_weighted",
+  "hybrid_revenue_weight": 0.5,
+  "hybrid_balance_weight": 0.5,
+  "_available_rules": {
+    "revenue_weighted": "Customer's OpEx share = their revenue (interest + fee income) share of total. Standard activity-based costing. Default — aligns OpEx attribution with value generated.",
+    "balance_weighted": "Customer's OpEx share = their balance footprint (deposits + loan_outstanding) share of total. Reflects capital tied up / oversight need.",
+    "equal": "Split evenly across customers with any activity. Useful for sanity-check / diagnostic only — doesn't reflect real cost drivers.",
+    "hybrid": "50% revenue + 50% balance, weights configurable above. Compromise between value-based and footprint-based attribution."
+  },
+  "_design_notes": {
+    "atomic_unit": "Per-customer is the foundational profitability unit. Σ(customer PBT) = Bank PBT (G256). Σ(customer PBT for customers in SBU/branch/staff portfolio) = SBU/Branch/Staff PBT respectively.",
+    "drift_absorption": "OpEx allocation drift (from Decimal share-fraction rounding) is absorbed by the largest-revenue customer, ensuring Σ(customer OpEx) = bank.total_opex EXACTLY.",
+    "staff_aggregation": "Per-staff PBT (compute_pbt_by_staff) is Σ over customers tagged to that staff via customers.csv::rm_code. The function returns ALL tagged staff without filtering by role — portfolio owners (BRM/SRO/RO) and service staff (Tellers/CSOs) appear together. Role-based filtering is a UI concern handled by joining staff_code → role from users.json or hr.json.",
+    "future_evolution": "When per-transaction staff tags are available in CBS (currently only one rm_code per account), service-cost attribution can separate from portfolio attribution via cost_allocation_rules.json::matrix mode."
+  }
+}

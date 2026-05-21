@@ -138,7 +138,17 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             detail="Missing or malformed Authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = authorization.split(None, 1)[1].strip()
+    # Bearer scheme followed by no token (e.g. "Bearer " or "Bearer  ")
+    # passes the startswith check but split(None, 1) returns a 1-element
+    # list, so [1] would IndexError. Defend explicitly.
+    parts = authorization.split(None, 1)
+    if len(parts) < 2 or not parts[1].strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or malformed Authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = parts[1].strip()
     payload = decode_token(token)
     return {
         "username": payload.get("sub"),

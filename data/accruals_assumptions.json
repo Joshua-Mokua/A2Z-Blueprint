@@ -1,0 +1,22 @@
+{
+  "_schema_version": "v10.366",
+  "_last_updated_iso": "2026-05-13T00:00:00+00:00",
+  "_last_updated_by": "v10.366 initial defaults",
+  "_purpose": "CBS accruals synthesizer factors. Used by utils/accruals_synthesizer.py to populate interest_income_ytd and fee_income_ytd in dev/mock environments where FLEXCUBE isn't connected. Per Rule N1, all factors are configured here, not hardcoded.",
+  "as_of_date": "2026-04-30",
+  "default_loan_rate_pct": 14.0,
+  "monthly_account_fee_savings": 50,
+  "monthly_account_fee_current": 200,
+  "monthly_account_fee_term": 0,
+  "monthly_account_fee_loan": 100,
+  "min_account_age_days": 30,
+  "_documentation": {
+    "as_of_date": "Date for elapsed-time calculations. Synthesizer accrues from each account's open_date to this date. In production this would be 'today'; in dev it's configurable so scenarios can simulate different YTD points.",
+    "default_loan_rate_pct": "Fallback interest rate when an account's own rate_pct is 0 (the seeded bank may not always populate it). Kenyan retail-loan typical 12-18%.",
+    "monthly_account_fee_savings": "Monthly maintenance fee (KES) for savings accounts. Used as: fee_income_ytd = monthly_fee × months_elapsed.",
+    "monthly_account_fee_current": "Monthly maintenance fee for current accounts. Higher than savings (200 vs 50).",
+    "monthly_account_fee_term": "Monthly fee for fixed/term deposits. Typically 0 — FDs don't carry monthly maintenance fees.",
+    "monthly_account_fee_loan": "Monthly service fee for loan accounts (loan management fee).",
+    "min_account_age_days": "Skip accruals for accounts younger than this. Prevents tiny accruals from very fresh accounts that would round to noise."
+  }
+}

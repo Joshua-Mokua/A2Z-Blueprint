@@ -1,0 +1,130 @@
+[
+  {
+    "id": "R001-exact-match-all-three",
+    "description": "FLEXCUBE and A2Z agree exactly on all 3 checks. 3 passed, 0 breaks.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 3, "checks_failed": 0, "checks_not_run": 0,
+      "extract_stale": false, "warning_present": false, "all_checks_passed": true
+    }
+  },
+  {
+    "id": "R002-customer-count-off-by-one",
+    "description": "customer_count threshold=0 — even 1 customer diff is a break.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700001", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 2, "checks_failed": 1, "checks_not_run": 0,
+      "break_check": "customer_count", "break_variance": 1.0
+    }
+  },
+  {
+    "id": "R003-deposit-within-1000-threshold",
+    "description": "deposit +KES 500 — within KES 1000 tolerance, no break.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000",   "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000500",   "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 3, "checks_failed": 0
+    }
+  },
+  {
+    "id": "R004-deposit-above-1000-break",
+    "description": "deposit +KES 1500 — above threshold, break.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000",   "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500001500",   "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 2, "checks_failed": 1,
+      "break_check": "deposit_balance", "break_abs_variance": 1500.0
+    }
+  },
+  {
+    "id": "R005-loan-above-threshold-break",
+    "description": "loan -KES 5000 — above threshold, break.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2599995000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 2, "checks_failed": 1,
+      "break_check": "loan_balance", "break_variance": -5000.0
+    }
+  },
+  {
+    "id": "R006-stale-extract-all-not-run",
+    "description": "Extract is 4 days old — all checks not_run_stale_extract regardless of values matching.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-25T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 0, "checks_failed": 0, "checks_not_run": 3,
+      "extract_stale": true, "warning_present": true,
+      "warning_substring": "Mandatory Standard #11"
+    }
+  },
+  {
+    "id": "R007-missing-flexcube-side",
+    "description": "FLEXCUBE customer_count missing — that check not_run_missing_data, others run normally.",
+    "input": {
+      "flexcube":  {"deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 2, "checks_failed": 0, "checks_not_run": 1
+    }
+  },
+  {
+    "id": "R008-missing-a2z-side",
+    "description": "A2Z deposit_balance missing — that check not_run_missing_data.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 2, "checks_failed": 0, "checks_not_run": 1
+    }
+  },
+  {
+    "id": "R009-kes-billion-precision",
+    "description": "KES 0.01 variance on KES 11.5B deposit — Decimal precision detects what float would lose.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000.50", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700000", "deposit_balance": "11500000000.51", "loan_balance": "2600000000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 3, "checks_failed": 0,
+      "deposit_abs_variance": 0.01
+    }
+  },
+  {
+    "id": "R010-all-three-broken",
+    "description": "All 3 checks break — 0 passed, 3 failed, 3 break records.",
+    "input": {
+      "flexcube":  {"customer_count": "700000", "deposit_balance": "11500000000", "loan_balance": "2600000000"},
+      "a2z":       {"customer_count": "700100", "deposit_balance": "11500050000", "loan_balance": "2599900000"},
+      "extract_control": {"last_extract_date": "2026-04-29T01:30:00"}
+    },
+    "expected": {
+      "checks_passed": 0, "checks_failed": 3, "checks_not_run": 0,
+      "expected_breaks_count": 3
+    }
+  }
+]

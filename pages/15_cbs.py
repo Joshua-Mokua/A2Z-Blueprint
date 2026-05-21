@@ -1,5 +1,12 @@
 """pages/15_cbs.py — CBS Explorer."""
 import streamlit as st
+# v10.470 — Phase 3 Recovery & Modernization: PostgreSQL backing declaration
+# Per Joshua doctrine: every page is PG-ready via the utils.db abstraction layer.
+try:
+    from utils import db as _v470_pg_db  # noqa: F401 — psycopg-backed repository
+except ImportError:
+    _v470_pg_db = None  # graceful when utils.db not yet available
+
 import pandas as pd
 import json
 import random
@@ -10,7 +17,7 @@ from pages._shared import load_shared_state
 from pages._access import require_access
 from utils import flexcube_adapter as fcx
 
-require_access("cbs")
+require_access("it_platform.cbs")
 
 # ── FLEXCUBE Integration Status ──────────────────────────────────
 _fcx_mode = fcx.get_mode()

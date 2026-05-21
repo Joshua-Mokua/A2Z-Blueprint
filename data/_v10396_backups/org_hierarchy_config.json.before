@@ -1,0 +1,700 @@
+{
+  "_doc": "Org hierarchy config \u2014 admin-editable. Defines reporting chains, role tiers, synthetic top-org injection (MD + Chiefs), and role manager whitelists. The hierarchy synthesiser (utils/hierarchy_synth.py) reads this file. Admins editing this file: ensure synthetic_top.md.staff_code is unique, that every value in department_chief_mapping appears in chiefs[].role, and that role_manager_whitelist entries reference roles that actually exist in users.json. Run `python scripts/validate_org_hierarchy_config.py` after edits to verify.",
+  "_schema_version": "v10.330",
+  "_last_reviewed": "2026-05-11",
+  "_owner": "Admin / HR Operations",
+  "synthetic_top": {
+    "enabled": true,
+    "_note": "When enabled, the synthesiser injects a synthetic MD record into the staff universe (if no real MD exists) AND synthetic Chief records for any department whose configured Chief isn't present in users.json. Synthetic staff appear in cascade walks, BSC submissions, and the cockpit org tree.",
+    "md": {
+      "staff_code": "EXEC-MD-001",
+      "full_name": "Managing Director",
+      "role": "Managing Director",
+      "department": "Executive",
+      "band": "M5"
+    }
+  },
+  "department_chief_mapping": {
+    "_note": "Maps each department to its Chief (C-suite role). The Chief is the ONLY role that reports directly to the MD. All other staff in the department roll up to the Chief through Heads \u2192 Senior Managers \u2192 Managers \u2192 Officers.",
+    "Retail Banking": "Chief Retail Banking Officer",
+    "Digital Financial Services": "Chief Information Officer",
+    "Bancassurance": "General Manager - Bancassurance",
+    "Credit": "Chief Credit Officer",
+    "Commercial & Corporate": "Chief Commercial Officer",
+    "Contact Centre": "Chief Operating Officer",
+    "Cybersecurity": "Chief Information Officer",
+    "Diaspora & Special Segments": "Chief Retail Banking Officer",
+    "Finance": "Chief Financial Officer",
+    "IT & Digital": "Chief Information Officer",
+    "Internal Audit": "Chief Internal Auditor",
+    "Legal": "Chief Compliance Officer",
+    "Marketing": "Chief Commercial Officer",
+    "Operations": "Chief Operating Officer",
+    "People & HR": "Chief Human Resource Officer",
+    "Risk & Compliance": "Chief Risk Officer",
+    "Support Services": "Chief Operating Officer",
+    "Trade Finance": "Chief Commercial Officer",
+    "Treasury": "Chief Financial Officer",
+    "Business Intelligence": "Chief Information Officer",
+    "Agency Banking": "Chief Retail Banking Officer",
+    "Executive": null
+  },
+  "chiefs": [
+    {
+      "role": "Chief Retail Banking Officer",
+      "synthetic_staff_code": "EXEC-CRO-001",
+      "primary_department": "Retail Banking",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Credit Officer",
+      "synthetic_staff_code": "EXEC-CCO-001",
+      "primary_department": "Credit",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Operating Officer",
+      "synthetic_staff_code": "EXEC-COO-001",
+      "primary_department": "Operations",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Financial Officer",
+      "synthetic_staff_code": "EXEC-CFO-001",
+      "primary_department": "Finance",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Information Officer",
+      "synthetic_staff_code": "EXEC-CIO-001",
+      "primary_department": "IT & Digital",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Risk Officer",
+      "synthetic_staff_code": "EXEC-CRSO-001",
+      "primary_department": "Risk & Compliance",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Compliance Officer",
+      "synthetic_staff_code": "EXEC-CCMP-001",
+      "primary_department": "Legal",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Internal Auditor",
+      "synthetic_staff_code": "EXEC-CIA-001",
+      "primary_department": "Internal Audit",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Human Resource Officer",
+      "synthetic_staff_code": "EXEC-CHRO-001",
+      "primary_department": "People & HR",
+      "band": "M5"
+    },
+    {
+      "role": "Chief Commercial Officer",
+      "synthetic_staff_code": "EXEC-CCMO-001",
+      "primary_department": "Commercial & Corporate",
+      "band": "M5"
+    }
+  ],
+  "role_tiers": {
+    "_note": "Map role names to seniority tiers. 0=MD (root only), 1=C-suite, 2=head/director, 3=senior manager + area manager, 4=manager, 5=officer/specialist, 6=entry/frontline. Synthesiser uses this to determine reporting order.",
+    "Managing Director": 0,
+    "Chief Executive & Managing Director": 0,
+    "Chief Credit Officer": 1,
+    "Chief Operating Officer": 1,
+    "Chief Financial Officer": 1,
+    "Chief Information Officer": 1,
+    "Chief Risk Officer": 1,
+    "Chief Compliance Officer": 1,
+    "Chief Internal Auditor": 1,
+    "Chief Human Resource Officer": 1,
+    "Chief Commercial Officer": 1,
+    "Chief Retail Banking Officer": 1,
+    "General Manager - Bancassurance": 1,
+    "Director Retail Banking": 1,
+    "Director Commercial Banking": 1,
+    "Director IT": 1,
+    "Director Risk": 1,
+    "Head of Branches": 2,
+    "Head of Operations": 2,
+    "Head of Treasury": 2,
+    "Head Of ICT": 2,
+    "Head of Compliance": 2,
+    "Head of Risk": 2,
+    "Head of MSME": 2,
+    "Head Of Corporates & Trade Finance": 2,
+    "Head of Digital Financial Services": 2,
+    "Head Of Marketing and Corporate Communication": 2,
+    "Head Of Marketing and Corporate Communications": 2,
+    "Head of Procurement": 2,
+    "Head of Strategy": 2,
+    "Head, Customer Experience": 2,
+    "Head Of Women Banking": 2,
+    "Head of Cybersecurity": 2,
+    "Head of SME": 2,
+    "Head of Retail Banking": 2,
+    "Head of Trade Finance": 2,
+    "Head of Digital Banking": 2,
+    "Head of Government & Institutional Banking": 2,
+    "Regional Head": 2,
+    "Area Manager": 3,
+    "Senior Branch Manager": 3,
+    "Senior Manager Direct Sales Force": 3,
+    "Senior Manager Diaspora Banking": 3,
+    "Senior Manager -Credit Analysis": 3,
+    "Senior Manager-Collections & Recoveries": 3,
+    "Senior Manager- Compliance": 3,
+    "Senior Manager Internal Audit": 3,
+    "Senior Manager Treasury": 3,
+    "Senior Relationship Manager - Corporate Banking": 3,
+    "Senior Relationship Manager- SME": 3,
+    "Senior Relationship Manager-Trade Finance Specialist": 3,
+    "Branch Manager": 4,
+    "Branch Operations Manager": 4,
+    "Branch Relationship Manager": 4,
+    "Manager Mobile Banking": 4,
+    "Manager Underwriting": 4,
+    "Manager - Clearing": 4,
+    "Credit Manager": 4,
+    "Compliance Manager": 4,
+    "Relationship Manager - Corporate Banking": 4,
+    "Relationship Manager - SME": 4,
+    "Relationship Manager - Agribusiness": 4,
+    "Relationship Manager - Diaspora": 4,
+    "Relationship Manager- Public Sector": 4,
+    "Relationship Manager- Trade Finance": 4,
+    "Relationship Manager - Institutional Banking": 4,
+    "Senior Digital Channels Officer": 5,
+    "Branch Operations Supervisor": 5,
+    "Branch Senior Relationship Officer": 5,
+    "Relationship Officer-Business Banker": 5,
+    "Relationship Officer-Personal Banker": 5,
+    "Relationship Officer Bancassurance": 5,
+    "Credit Analyst": 5,
+    "Contact Centre Officer": 5,
+    "Teller": 6,
+    "Customer Service Officer": 6,
+    "Direct Sales Representative - Assets & Liabilities": 6,
+    "Direct Sales Representative": 6
+  },
+  "role_tier_keyword_fallback": {
+    "_note": "If a role doesn't appear in role_tiers map above, walk these keyword lists in tier order (lower number first). First match wins. Used for the long tail of roles.",
+    "tier_0_keywords": [
+      "managing director",
+      "chief executive"
+    ],
+    "tier_1_keywords": [
+      "chief ",
+      "general manager",
+      "director "
+    ],
+    "tier_2_keywords": [
+      "head of",
+      "head ",
+      "regional head"
+    ],
+    "tier_3_keywords": [
+      "senior manager",
+      "area manager",
+      "senior branch",
+      "senior relationship manager"
+    ],
+    "tier_4_keywords": [
+      "manager"
+    ],
+    "tier_5_keywords": [
+      "officer",
+      "specialist",
+      "analyst",
+      "supervisor",
+      "engineer",
+      "administrator",
+      "dealer",
+      "developer",
+      "representative"
+    ],
+    "tier_6_keywords": [
+      "teller",
+      "junior ",
+      "trainee",
+      "assistant",
+      "clerk"
+    ]
+  },
+  "role_manager_whitelist": {
+    "_note": "Defines which manager roles are valid for each subordinate role. The synthesiser prefers whitelisted managers. hr.json source-data linkages that violate the whitelist are flagged (basis=hr_json_overridden) and replaced with synthesis-derived linkages to keep the cascade clean.",
+    "Teller": [
+      "Branch Operations Supervisor",
+      "Branch Operations Manager"
+    ],
+    "Customer Service Officer": [
+      "Branch Operations Supervisor",
+      "Branch Operations Manager"
+    ],
+    "Direct Sales Representative - Assets & Liabilities": [
+      "Branch Operations Supervisor",
+      "Branch Operations Manager"
+    ],
+    "Direct Sales Representative": [
+      "Branch Operations Supervisor",
+      "Branch Operations Manager"
+    ],
+    "Branch Operations Supervisor": [
+      "Branch Operations Manager"
+    ],
+    "Branch Operations Manager": [
+      "Branch Manager"
+    ],
+    "Branch Relationship Manager": [
+      "Branch Manager"
+    ],
+    "Branch Senior Relationship Officer": [
+      "Branch Manager",
+      "Branch Relationship Manager"
+    ],
+    "Relationship Officer-Business Banker": [
+      "Branch Relationship Manager",
+      "Branch Manager"
+    ],
+    "Relationship Officer-Personal Banker": [
+      "Branch Relationship Manager",
+      "Branch Manager"
+    ],
+    "Branch Manager": [
+      "Area Manager"
+    ],
+    "Senior Branch Manager": [
+      "Area Manager"
+    ],
+    "Area Manager": [
+      "Head of Branches"
+    ],
+    "Senior Manager Direct Sales Force": [
+      "Head of Branches"
+    ],
+    "Head Of Women Banking": [
+      "Head of Branches",
+      "Chief Retail Banking Officer"
+    ],
+    "Head of Branches": [
+      "Chief Retail Banking Officer"
+    ],
+    "Head of Retail Banking": [
+      "Chief Retail Banking Officer"
+    ],
+    "Head of Government & Institutional Banking": [
+      "Chief Commercial Officer"
+    ],
+    "Senior Manager -Credit Analysis": [
+      "Chief Credit Officer"
+    ],
+    "Senior Manager-Credit Analysis": [
+      "Chief Credit Officer"
+    ],
+    "Assistant Manager -Credit Administration": [
+      "Chief Credit Officer"
+    ],
+    "Assistant Manager-Credit Administration": [
+      "Chief Credit Officer"
+    ],
+    "Manager-Credit Monitoring": [
+      "Chief Credit Officer"
+    ],
+    "Manager - Credit Monitoring": [
+      "Chief Credit Officer"
+    ],
+    "Senior Manager-Collections & Recoveries": [
+      "Chief Credit Officer"
+    ],
+    "Senior Manager-Collections and Recoveries": [
+      "Chief Credit Officer"
+    ]
+  },
+  "default_max_span_of_control": 15,
+  "default_max_chain_depth": 12,
+  "_validation_rules": {
+    "_note": "These are hardcoded system rules \u2014 NOT admin-configurable. The synthesiser enforces them regardless of config edits.",
+    "exactly_one_root_required": true,
+    "no_cycles_allowed": true,
+    "only_chiefs_report_to_md": true,
+    "every_staff_has_a_chain_to_root": true
+  },
+  "_v10324_fixes": [
+    {
+      "role": "Head of Government & Institutional Banking",
+      "issue": "300019 was wrongly linked to Branch Operations Manager (300244) in hr.json \u2014 should chain through CCMO since GIB is a Commercial line of business",
+      "fix": "Added role_manager_whitelist entry forcing all 'Head of Government & Institutional Banking' staff to report to Chief Commercial Officer"
+    }
+  ],
+  "_v10327_fixes": [
+    {
+      "shipped": "v10.327",
+      "purpose": "Promote 4 Credit function Heads to direct CCO reports \u2014 aligns with Joshua's mental model (Credit Analysis, Credit Admin, Credit Monitoring, DRU)",
+      "added_whitelist": [
+        "Senior Manager -Credit Analysis",
+        "Senior Manager-Credit Analysis",
+        "Assistant Manager -Credit Administration",
+        "Assistant Manager-Credit Administration",
+        "Manager-Credit Monitoring",
+        "Manager - Credit Monitoring",
+        "Senior Manager-Collections & Recoveries",
+        "Senior Manager-Collections and Recoveries"
+      ]
+    }
+  ],
+  "_v10330_canonical_retail_chain": {
+    "shipped": "v10.330",
+    "purpose": "Enforce canonical retail chain: BM \u2192 Area Manager \u2192 Head of Branches \u2192 Chief Retail",
+    "changes": [
+      "TIGHTENED role_manager_whitelist: 'Branch Manager' parent set reduced from [Area Manager, Senior Branch Manager, Head of Branches] to [Area Manager] only",
+      "TIGHTENED role_manager_whitelist: 'Senior Branch Manager' parent set reduced from [Area Manager, Head of Branches] to [Area Manager] only",
+      "ALIGNED utils/hierarchy_synth.py: Senior Branch Managers now treated as PEERS of standard Branch Managers (both report to Area Manager), not as another supervisory tier"
+    ],
+    "rationale": "Per banking convention articulated by Joshua: Branch performance = Branch Manager's performance, Area Manager BSC = aggregate of branches reporting to them, Head of Branches BSC = aggregate of Area Managers, Chief Retail BSC = aggregate of Head of Branches. Senior BMs run flagship branches but don't supervise other BMs."
+  },
+  "profitability_axis": {
+    "_doc": "v10.374 \u2014 Profitability axis for every role. Complementary to role_tiers (seniority). Five tiers: portfolio_owner (tagged to customers via accounts.csv::relationship_manager_code, drives sales \u2014 includes Branch sales like RM PB/BB/DSO/BRM/SRO/RO + HO sales like Sector Specialists/HO Corporate/SME/Sector RMs reporting to Chief Commercial); proposition_owner (owns an overlapping proposition like Women Banking/Diaspora \u2014 NOT tagged to accounts, responsible for proposition growth; per Rule 6, propositions overlap by design); structural_owner (owns PBT at structural level via the branch_pbt_allocator or higher rollup \u2014 NOT tagged to accounts \u2014 includes Branch Manager, Regional Head, Heads of business lines, Directors, MD); service (operational branch role; occasionally tagged when introducing accounts but not primary sales \u2014 Teller, CSO, BOS); support (head office support function \u2014 Risk/Compliance/IT/HR/Finance/Audit \u2014 owns cost center but not direct PBT). Each role also has branch_scope (branch_bound / head_office / national) and optional sbu mapping (Retail Banking / Commercial Banking / Corporate Banking / Treasury / Digital_Agency / Support / Executive).",
+    "_schema_version": "v10.374",
+    "_last_reviewed": "2026-05-13",
+    "_aligns_with": [
+      "users.json::role (1449 users, 126 distinct roles)",
+      "hr.json::role (200 staff, 26 distinct roles)",
+      "target_cascade.json (staff cascade keys)",
+      "kpi_library.json DEFAULT_ROLE_KPIS (15 roles)",
+      "branch_staff_config.json buckets (CUSTOMER_SERVICE, BRANCH_SALES)",
+      "segment_sbu_mapping.json (SBU canonical names)"
+    ],
+    "tiers": {
+      "_note": "The five profitability tiers in order of bank impact directness",
+      "portfolio_owner": "Tagged to customers; drives sales; \u03a3(their customer PBT) attributed",
+      "proposition_owner": "Drives overlap proposition (Women Banking, Diaspora, etc.); NOT tagged",
+      "structural_owner": "Owns PBT at structural level (branch / region / SBU / bank)",
+      "service": "Branch ops; occasionally tagged when introducing accounts",
+      "support": "Head office function (risk, compliance, IT, HR, finance, audit)"
+    },
+    "branch_scopes": {
+      "_note": "Where the role physically/organizationally sits",
+      "branch_bound": "Works at one specific branch",
+      "head_office": "Works at HO; portfolio may span multiple branches",
+      "national": "Bank-wide responsibility"
+    },
+    "role_classification": {
+      "Managing Director": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Executive"
+      },
+      "Chief Executive & Managing Director": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Executive"
+      },
+      "Chief Retail Banking Officer": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Chief Commercial Officer": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Commercial Banking"
+      },
+      "Chief Credit Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Operating Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Financial Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Information Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Risk Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Compliance Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Internal Auditor": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Chief Human Resource Officer": {
+        "tier": "support",
+        "branch_scope": "national",
+        "sbu": "Support"
+      },
+      "Head of Branches": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Head of Retail": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Head of SME": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Commercial Banking"
+      },
+      "Head of Corporate Banking": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Corporate Banking"
+      },
+      "Head of Government & Institutional Banking": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Corporate Banking"
+      },
+      "Head Of Women Banking": {
+        "tier": "proposition_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Senior Manager Diaspora Banking": {
+        "tier": "proposition_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Area Manager": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Regional Head": {
+        "tier": "structural_owner",
+        "branch_scope": "national",
+        "sbu": "Retail Banking"
+      },
+      "Branch Manager": {
+        "tier": "structural_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Branch Operations Manager": {
+        "tier": "structural_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Branch Credit Manager": {
+        "tier": "structural_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Branch Relationship Manager": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Branch Senior Relationship Officer": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Relationship Officer-Personal Banker": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Relationship Officer-Business Banker": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Relationship Officer Bancassurance": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Direct Sales Representative - Assets & Liabilities": {
+        "tier": "portfolio_owner",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Relationship Manager - SME": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Commercial Banking"
+      },
+      "Senior Relationship Manager- SME": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Commercial Banking"
+      },
+      "Relationship Manager - Corporate Banking": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Corporate Banking"
+      },
+      "Senior Relationship Manager - Corporate Banking": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Corporate Banking"
+      },
+      "Assistant Relationship Manager-Corporate": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Corporate Banking"
+      },
+      "Relationship Manager - Agribusiness": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Commercial Banking"
+      },
+      "Relationship Manager- Trade Finance": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Corporate Banking"
+      },
+      "Relationship Manager - Diaspora": {
+        "tier": "portfolio_owner",
+        "branch_scope": "head_office",
+        "sbu": "Retail Banking"
+      },
+      "Teller": {
+        "tier": "service",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Customer Service Officer": {
+        "tier": "service",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Branch Operations Supervisor": {
+        "tier": "service",
+        "branch_scope": "branch_bound",
+        "sbu": "Retail Banking"
+      },
+      "Senior Digital Channels Officer": {
+        "tier": "service",
+        "branch_scope": "branch_bound",
+        "sbu": "Digital_Agency"
+      },
+      "Credit Admin Officer": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "Contact Centre Officer": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "Finance Officer": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "Finance Manager": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "Compliance Officer": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "AML Analyst": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      },
+      "Internal Auditor": {
+        "tier": "support",
+        "branch_scope": "head_office",
+        "sbu": "Support"
+      }
+    },
+    "tier_keyword_fallback": {
+      "_note": "For roles not in role_classification, walk these keyword lists in order. First match wins. Used for the long tail of roles. Lists are in PRIORITY order \u2014 portfolio_owner is checked first (highest direct PBT impact), then proposition, structural, service, support.",
+      "portfolio_owner_keywords": [
+        "relationship manager",
+        "relationship officer",
+        "rm ",
+        "direct sales representative",
+        "dsr",
+        "sector specialist",
+        "industry specialist",
+        "bancassurance"
+      ],
+      "proposition_owner_keywords": [
+        "women banking",
+        "diaspora",
+        "youth banking",
+        "agribusiness head",
+        "proposition",
+        "segment head"
+      ],
+      "structural_owner_keywords": [
+        "managing director",
+        "chief",
+        "head of",
+        "director",
+        "branch manager",
+        "area manager",
+        "regional",
+        "branch operations manager",
+        "branch credit manager"
+      ],
+      "service_keywords": [
+        "teller",
+        "customer service",
+        "branch operations supervisor",
+        "digital channels officer",
+        "cash centre"
+      ],
+      "support_keywords": [
+        "officer",
+        "analyst",
+        "supervisor",
+        "engineer",
+        "administrator",
+        "dealer",
+        "developer",
+        "specialist",
+        "admin",
+        "manager",
+        "business partner",
+        "customer experience",
+        "risk and compliance"
+      ]
+    },
+    "_validation_rules": {
+      "every_used_role_must_classify": "Every role in users.json + hr.json must either be in role_classification or match a tier_keyword_fallback entry. Locked by G260.",
+      "tagged_iff_portfolio_or_service": "Only portfolio_owner and service tiers are eligible to appear in accounts.csv::relationship_manager_code. proposition_owner / structural_owner / support roles MUST NOT be in that field.",
+      "structural_pbt_via_rollup": "structural_owner roles get their PBT via the relevant allocator rollup (branch_pbt_allocator for Branch Managers; sbu computation for Directors; etc.) \u2014 never directly from a tagged customer.",
+      "proposition_overlap_documented": "proposition_owner customers OVERLAP with other portfolios by design (Rule 6). Per-proposition PBT is reported separately from the canonical reconciliation tree.",
+      "sbu_mapping_aligns": "The sbu field must be one of the SBUs in segment_sbu_mapping.json: Retail Banking, Commercial Banking, Corporate Banking, Treasury, Digital_Agency, Support, Executive."
+    }
+  },
+  "_v10374_added": {
+    "what": "profitability_axis \u2014 5-tier classification orthogonal to role_tiers seniority",
+    "why": "Joshua: 'ensure the tree also aligns from the pipeline management... zoom out and review the system as a whole'",
+    "complements": "Existing role_tiers (seniority 0-6); new axis covers WHO OWNS PBT and HOW (tagged vs structural vs proposition vs service vs support)"
+  }
+}

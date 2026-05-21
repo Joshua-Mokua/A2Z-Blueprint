@@ -1,0 +1,71 @@
+{
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "results": [
+    {
+      "id": "PP001",
+      "label": "Empty portfolio \u00e2\u2020\u2019 warning + zero PnL",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP002",
+      "label": "Clean portfolio: all FTP-on, no warning",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP003",
+      "label": "Mixed FTP <50% off: warning + provisional=False",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP004",
+      "label": "Majority off-mode: provisional=True (>50% threshold)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP005",
+      "label": "All off-mode: provisional=True at 100%",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP006",
+      "label": "Zero revenue \u00e2\u2020\u2019 pbt_margin=None (Rule 1)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP007",
+      "label": "Unknown ftp_mode \u00e2\u2020\u2019 counted as 'unknown'",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP008",
+      "label": "KES-billion precision preserved",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP009",
+      "label": "Boundary: exactly 50% off (NOT provisional, threshold is strict >)",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "PP010",
+      "label": "Single customer 100% off: provisional=True, warning cites Rule 2",
+      "matched": true,
+      "diffs": []
+    }
+  ],
+  "fixtures_total": 10,
+  "fixtures_matched": 10,
+  "match_rate_pct": 100.0
+}

@@ -18,7 +18,7 @@ def _safe_date(s, fallback=None):
         return fallback or _d.today()
 
 
-require_access("perform")
+require_access("shared.home")
 
 um, ud, uname, em, ri_pm, prod_m, pm, lm, hr_m, casc, vm, rlm = load_shared_state()
 
@@ -673,3 +673,12 @@ with n2:
         "<span style='color:#F5A623;font-weight:700'>A2Z Blueprint</span> — "
         "Perform · Execute · Integrate</div>",
         unsafe_allow_html=True)
+
+# v10.465 — Phase 4 WF4 operational output (admin re-homed page)
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

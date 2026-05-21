@@ -1,0 +1,1420 @@
+{
+  "_meta": {
+    "version": 1,
+    "domains": {
+      "strategy_execution": {
+        "description": "Strategic planning, target cascade, BSC, profitability, performance scoring",
+        "patterns": [
+          "bsc_engine",
+          "kpi_library",
+          "cascade",
+          "strategy",
+          "okr",
+          "target_",
+          "performance",
+          "scorecard",
+          "execute",
+          "initiative",
+          "allocation_optimizer",
+          "board_reporting"
+        ]
+      },
+      "customer_relationship": {
+        "description": "Customer 360, behavioural intelligence, CRM/pipeline, churn, digital origination, cards",
+        "patterns": [
+          "pipeline",
+          "opportunity",
+          "customer",
+          "crm",
+          "origination",
+          "kyc",
+          "churn",
+          "cards",
+          "segment"
+        ]
+      },
+      "credit_lending": {
+        "description": "Underwriting, alternative scoring, collections, NPL, ecosystem finance, retailer, value chain, SME",
+        "patterns": [
+          "credit_",
+          "lending",
+          "collections",
+          "underwriting",
+          "scoring",
+          "npl",
+          "kesonia",
+          "retailer",
+          "value_chain",
+          "asset_impairment",
+          "sme",
+          "micro",
+          "mortgage",
+          "overdraft",
+          "ifrs9",
+          "ifrs_9"
+        ]
+      },
+      "products_propositions": {
+        "description": "Product catalogue, propositions, bancassurance, deposits, savings, current accounts",
+        "patterns": [
+          "product_",
+          "proposition",
+          "bancassurance",
+          "bundle",
+          "deposit",
+          "savings",
+          "current_account"
+        ]
+      },
+      "risk_compliance": {
+        "description": "ERM, climate risk, AML/KYC/sanctions, data protection, model governance, audit GRC",
+        "patterns": [
+          "climate_",
+          "aml",
+          "sanctions",
+          "compliance",
+          "erm",
+          "rcsa",
+          "model_governance",
+          "audit_core",
+          "audit_universe",
+          "audit_controls",
+          "audit_dashboards",
+          "audit_reporting",
+          "audit_trail",
+          "audit_analytics",
+          "data_protection",
+          "consent",
+          "fraud",
+          "risk_appetite",
+          "operational_risk",
+          "rcsa",
+          "business_intelligence"
+        ]
+      },
+      "finance_treasury": {
+        "description": "GL, treasury (ALM/IRRBB/liquidity), FTP, reconciliation, Islamic, agentic, capital, asset/liability",
+        "patterns": [
+          "treasury_",
+          "islamic_",
+          "ftp",
+          "fund_transfer",
+          "rwa_",
+          "cash_forecast",
+          "cash_flow",
+          "reconciliation",
+          "climate_treasury",
+          "gl_",
+          "capital_adequacy",
+          "asset_liability",
+          "general_ledger",
+          "journals",
+          "balance_sheet",
+          "cost_allocation",
+          "channel_income",
+          "profitability",
+          "benchmark_rates"
+        ]
+      },
+      "operations_support": {
+        "description": "Contact centre, procurement, SLA, CIMS, EDMS, dormancy, branch operations, channels",
+        "patterns": [
+          "cims",
+          "edms",
+          "dormancy",
+          "sla",
+          "procurement",
+          "contact_",
+          "branch_",
+          "channels_",
+          "helpdesk",
+          "incident",
+          "service_request",
+          "document_management",
+          "standing_order",
+          "mandate"
+        ]
+      },
+      "marketing_sales": {
+        "description": "Customer + staff campaigns, competitor intel, partnerships, cross-sell",
+        "patterns": [
+          "campaign",
+          "competitor",
+          "partnership",
+          "cross_sell",
+          "next_best",
+          "offer",
+          "incentive",
+          "rewards"
+        ]
+      },
+      "it_devops": {
+        "description": "ITSM, security, observability, vendor adapters",
+        "patterns": [
+          "itsm",
+          "security",
+          "observability",
+          "flexcube_adapter",
+          "devops",
+          "devsecops",
+          "sre",
+          "cyber",
+          "vulnerability",
+          "penetration"
+        ]
+      },
+      "cross_arc_infra": {
+        "description": "Cross-arc infrastructure: scenario harness, virtual bank, registry, structure audit, API layer",
+        "patterns": [
+          "scenario_simulator",
+          "virtual_bank",
+          "standards_registry",
+          "structure_audit",
+          "admin_registry",
+          "api",
+          "auth_jwt",
+          "applicant_data_sources"
+        ]
+      },
+      "people_hr": {
+        "description": "People management: coaching, compensation, training, RBAC",
+        "patterns": [
+          "coaching",
+          "compensation",
+          "training",
+          "learning",
+          "people",
+          "staff",
+          "rbac",
+          "employee",
+          "recruitment"
+        ]
+      },
+      "shared_base": {
+        "description": "Shared foundations: db, config, core utilities, audit logging hooks",
+        "patterns": [
+          "^db$",
+          "^config$",
+          "^core$",
+          "core_audit",
+          "core_kpi",
+          "^_shared$",
+          "^_access$",
+          "common_",
+          "utilities",
+          "helpers"
+        ]
+      }
+    }
+  },
+  "modules": {
+    "utils.__init__": {
+      "domain": "shared_base",
+      "lines": 2
+    },
+    "utils.actuals_engine": {
+      "domain": "unclassified",
+      "lines": 1153
+    },
+    "utils.api": {
+      "domain": "cross_arc_infra",
+      "lines": 743
+    },
+    "utils.api_client": {
+      "domain": "cross_arc_infra",
+      "lines": 243
+    },
+    "utils.config": {
+      "domain": "shared_base",
+      "lines": 87
+    },
+    "utils.core": {
+      "domain": "shared_base",
+      "lines": 6346
+    },
+    "utils.db": {
+      "domain": "shared_base",
+      "lines": 1674
+    },
+    "utils.notifications": {
+      "domain": "unclassified",
+      "lines": 127
+    },
+    "utils.treasury_connectivity": {
+      "domain": "finance_treasury",
+      "lines": 724
+    },
+    "utils.rwa_optimization": {
+      "domain": "finance_treasury",
+      "lines": 789
+    },
+    "utils.islamic_treasury": {
+      "domain": "finance_treasury",
+      "lines": 805
+    },
+    "utils.treasury_digital_assets": {
+      "domain": "finance_treasury",
+      "lines": 705
+    },
+    "utils.treasury_unified_platform": {
+      "domain": "finance_treasury",
+      "lines": 498
+    },
+    "utils.treasury_products": {
+      "domain": "finance_treasury",
+      "lines": 931
+    },
+    "utils.scenario_simulator": {
+      "domain": "cross_arc_infra",
+      "lines": 1770
+    },
+    "utils.virtual_bank_simulator": {
+      "domain": "cross_arc_infra",
+      "lines": 1324
+    },
+    "utils.fund_transfer_pricing": {
+      "domain": "finance_treasury",
+      "lines": 653
+    },
+    "utils.cash_forecasting": {
+      "domain": "finance_treasury",
+      "lines": 871
+    },
+    "utils.treasury_dashboard": {
+      "domain": "finance_treasury",
+      "lines": 756
+    },
+    "utils.treasury_alm": {
+      "domain": "finance_treasury",
+      "lines": 1222
+    },
+    "utils.virtual_bank_core": {
+      "domain": "cross_arc_infra",
+      "lines": 1168
+    },
+    "utils.treasury_agents": {
+      "domain": "finance_treasury",
+      "lines": 863
+    },
+    "utils.climate_treasury_limits": {
+      "domain": "risk_compliance",
+      "lines": 578
+    },
+    "utils.cross_sell_bandit": {
+      "domain": "marketing_sales",
+      "lines": 1277
+    },
+    "utils.structure_audit_core": {
+      "domain": "risk_compliance",
+      "lines": 1159
+    },
+    "utils.standards_registry": {
+      "domain": "cross_arc_infra",
+      "lines": 3139
+    },
+    "utils.ai_underwriting": {
+      "domain": "credit_lending",
+      "lines": 1094
+    },
+    "utils.allocation_optimizer": {
+      "domain": "strategy_execution",
+      "lines": 706
+    },
+    "utils.applicant_data_sources": {
+      "domain": "cross_arc_infra",
+      "lines": 1078
+    },
+    "utils.asset_impairment": {
+      "domain": "credit_lending",
+      "lines": 567
+    },
+    "utils.audit_analytics_vendor": {
+      "domain": "risk_compliance",
+      "lines": 1217
+    },
+    "utils.audit_controls_issues": {
+      "domain": "risk_compliance",
+      "lines": 1138
+    },
+    "utils.audit_core": {
+      "domain": "risk_compliance",
+      "lines": 1123
+    },
+    "utils.audit_dashboards_portal": {
+      "domain": "risk_compliance",
+      "lines": 1201
+    },
+    "utils.audit_trail_cert": {
+      "domain": "risk_compliance",
+      "lines": 1379
+    },
+    "utils.audit_trail_certification": {
+      "domain": "risk_compliance",
+      "lines": 1124
+    },
+    "utils.audit_universe": {
+      "domain": "risk_compliance",
+      "lines": 685
+    },
+    "utils.benchmark_rates": {
+      "domain": "finance_treasury",
+      "lines": 869
+    },
+    "utils.branch_performance": {
+      "domain": "strategy_execution",
+      "lines": 502
+    },
+    "utils.capital_adequacy": {
+      "domain": "finance_treasury",
+      "lines": 697
+    },
+    "utils.cards": {
+      "domain": "customer_relationship",
+      "lines": 342
+    },
+    "utils.cash_flow_statement": {
+      "domain": "finance_treasury",
+      "lines": 482
+    },
+    "utils.channel_performance": {
+      "domain": "strategy_execution",
+      "lines": 399
+    },
+    "utils.channels_reliability": {
+      "domain": "operations_support",
+      "lines": 210
+    },
+    "utils.climate_ecl_adjustment": {
+      "domain": "risk_compliance",
+      "lines": 952
+    },
+    "utils.climate_risk": {
+      "domain": "risk_compliance",
+      "lines": 1239
+    },
+    "utils.composite_scores": {
+      "domain": "unclassified",
+      "lines": 543
+    },
+    "utils.credit_risk_scoring": {
+      "domain": "credit_lending",
+      "lines": 429
+    },
+    "utils.credit_workflow": {
+      "domain": "credit_lending",
+      "lines": 898
+    },
+    "utils.cross_sell_nba": {
+      "domain": "marketing_sales",
+      "lines": 738
+    },
+    "utils.customer_segmentation": {
+      "domain": "customer_relationship",
+      "lines": 637
+    },
+    "utils.customer_value_segments": {
+      "domain": "customer_relationship",
+      "lines": 494
+    },
+    "utils.deferred_tax": {
+      "domain": "unclassified",
+      "lines": 537
+    },
+    "utils.document_management": {
+      "domain": "operations_support",
+      "lines": 819
+    },
+    "utils.earnings_per_share": {
+      "domain": "unclassified",
+      "lines": 641
+    },
+    "utils.employee_benefits": {
+      "domain": "people_hr",
+      "lines": 546
+    },
+    "utils.esg_intelligence": {
+      "domain": "unclassified",
+      "lines": 1165
+    },
+    "utils.esg_reporting": {
+      "domain": "unclassified",
+      "lines": 471
+    },
+    "utils.esg_reporting_outputs": {
+      "domain": "unclassified",
+      "lines": 874
+    },
+    "utils.event_bus": {
+      "domain": "unclassified",
+      "lines": 565
+    },
+    "utils.fair_value_measurement": {
+      "domain": "unclassified",
+      "lines": 476
+    },
+    "utils.fairness_testing": {
+      "domain": "unclassified",
+      "lines": 686
+    },
+    "utils.financial_close": {
+      "domain": "unclassified",
+      "lines": 479
+    },
+    "utils.flexcube_adapter": {
+      "domain": "it_devops",
+      "lines": 1548
+    },
+    "utils.flexcube_aggregator": {
+      "domain": "unclassified",
+      "lines": 520
+    },
+    "utils.funds_transfer_pricing": {
+      "domain": "unclassified",
+      "lines": 391
+    },
+    "utils.group_consolidation": {
+      "domain": "unclassified",
+      "lines": 563
+    },
+    "utils.group_exposure": {
+      "domain": "unclassified",
+      "lines": 787
+    },
+    "utils.held_for_sale": {
+      "domain": "unclassified",
+      "lines": 481
+    },
+    "utils.ias1_presentation": {
+      "domain": "unclassified",
+      "lines": 606
+    },
+    "utils.ias8_policies": {
+      "domain": "unclassified",
+      "lines": 522
+    },
+    "utils.ifrs7_disclosures": {
+      "domain": "unclassified",
+      "lines": 574
+    },
+    "utils.ifrs9_classification": {
+      "domain": "credit_lending",
+      "lines": 432
+    },
+    "utils.lease_accounting": {
+      "domain": "unclassified",
+      "lines": 408
+    },
+    "utils.liquidity_risk": {
+      "domain": "unclassified",
+      "lines": 610
+    },
+    "utils.model_governance": {
+      "domain": "risk_compliance",
+      "lines": 1710
+    },
+    "utils.model_governance_runtime": {
+      "domain": "risk_compliance",
+      "lines": 1106
+    },
+    "utils.operating_segments": {
+      "domain": "customer_relationship",
+      "lines": 517
+    },
+    "utils.operational_risk": {
+      "domain": "risk_compliance",
+      "lines": 579
+    },
+    "utils.portfolio_monitoring": {
+      "domain": "unclassified",
+      "lines": 904
+    },
+    "utils.procurement_workflow": {
+      "domain": "operations_support",
+      "lines": 534
+    },
+    "utils.product_profitability": {
+      "domain": "products_propositions",
+      "lines": 659
+    },
+    "utils.product_raroc": {
+      "domain": "products_propositions",
+      "lines": 414
+    },
+    "utils.provisions": {
+      "domain": "unclassified",
+      "lines": 632
+    },
+    "utils.reconciliation_matching": {
+      "domain": "finance_treasury",
+      "lines": 973
+    },
+    "utils.reconciliation_realtime": {
+      "domain": "finance_treasury",
+      "lines": 985
+    },
+    "utils.reconciliation_specialized": {
+      "domain": "finance_treasury",
+      "lines": 1046
+    },
+    "utils.reconciliation_workflow": {
+      "domain": "finance_treasury",
+      "lines": 1290
+    },
+    "utils.regulatory_reporting": {
+      "domain": "unclassified",
+      "lines": 438
+    },
+    "utils.related_party": {
+      "domain": "unclassified",
+      "lines": 503
+    },
+    "utils.revenue_recognition": {
+      "domain": "unclassified",
+      "lines": 592
+    },
+    "utils.risk_based_pricing": {
+      "domain": "unclassified",
+      "lines": 473
+    },
+    "utils.smart_alerts": {
+      "domain": "unclassified",
+      "lines": 517
+    },
+    "utils.smart_alerts_i18n": {
+      "domain": "unclassified",
+      "lines": 178
+    },
+    "utils.state_backend": {
+      "domain": "unclassified",
+      "lines": 716
+    },
+    "utils.strategic_planning": {
+      "domain": "unclassified",
+      "lines": 587
+    },
+    "utils.stress_testing": {
+      "domain": "unclassified",
+      "lines": 592
+    },
+    "utils.system_flows": {
+      "domain": "unclassified",
+      "lines": 560
+    },
+    "utils.system_invariants": {
+      "domain": "unclassified",
+      "lines": 380
+    },
+    "utils.system_stocks": {
+      "domain": "unclassified",
+      "lines": 631
+    },
+    "utils.tax_compliance": {
+      "domain": "risk_compliance",
+      "lines": 601
+    },
+    "utils.transaction_monitoring": {
+      "domain": "unclassified",
+      "lines": 731
+    },
+    "utils.treasury_intelligence": {
+      "domain": "finance_treasury",
+      "lines": 482
+    },
+    "utils.vendor_risk": {
+      "domain": "unclassified",
+      "lines": 546
+    },
+    "utils.workforce_analytics": {
+      "domain": "unclassified",
+      "lines": 593
+    },
+    "utils.admin_registry": {
+      "domain": "cross_arc_infra",
+      "lines": 150
+    },
+    "utils.api_crud": {
+      "domain": "cross_arc_infra",
+      "lines": 538
+    },
+    "utils.audit_reporting": {
+      "domain": "risk_compliance",
+      "lines": 499
+    },
+    "utils.auth_jwt": {
+      "domain": "cross_arc_infra",
+      "lines": 198
+    },
+    "utils.board_reporting": {
+      "domain": "strategy_execution",
+      "lines": 472
+    },
+    "utils.branch_ops_excellence": {
+      "domain": "operations_support",
+      "lines": 501
+    },
+    "utils.bsc_engine": {
+      "domain": "strategy_execution",
+      "lines": 608
+    },
+    "utils.business_intelligence": {
+      "domain": "risk_compliance",
+      "lines": 496
+    },
+    "utils.channel_income": {
+      "domain": "finance_treasury",
+      "lines": 419
+    },
+    "utils.channel_sla": {
+      "domain": "operations_support",
+      "lines": 508
+    },
+    "utils.churn_prediction": {
+      "domain": "customer_relationship",
+      "lines": 473
+    },
+    "utils.coaching_intelligence": {
+      "domain": "people_hr",
+      "lines": 815
+    },
+    "utils.compensation_equity": {
+      "domain": "people_hr",
+      "lines": 431
+    },
+    "utils.core_audit": {
+      "domain": "shared_base",
+      "lines": 423
+    },
+    "utils.core_kpi": {
+      "domain": "shared_base",
+      "lines": 82
+    },
+    "utils.cost_allocation": {
+      "domain": "finance_treasury",
+      "lines": 443
+    },
+    "utils.customer_lifetime_value": {
+      "domain": "customer_relationship",
+      "lines": 439
+    },
+    "utils.customer_profitability": {
+      "domain": "customer_relationship",
+      "lines": 954
+    },
+    "utils.deposit_intelligence": {
+      "domain": "products_propositions",
+      "lines": 414
+    },
+    "utils.dormancy_intelligence": {
+      "domain": "operations_support",
+      "lines": 688
+    },
+    "utils.edms": {
+      "domain": "operations_support",
+      "lines": 788
+    },
+    "utils.efficiency": {
+      "domain": "unclassified",
+      "lines": 463
+    },
+    "utils.employee_engagement": {
+      "domain": "people_hr",
+      "lines": 558
+    },
+    "utils.fatca_crs": {
+      "domain": "unclassified",
+      "lines": 547
+    },
+    "utils.flexcube_connection": {
+      "domain": "unclassified",
+      "lines": 359
+    },
+    "utils.flexcube_etl_dag": {
+      "domain": "unclassified",
+      "lines": 521
+    },
+    "utils.flexcube_mappings": {
+      "domain": "unclassified",
+      "lines": 305
+    },
+    "utils.flexcube_staging": {
+      "domain": "unclassified",
+      "lines": 282
+    },
+    "utils.fx_position": {
+      "domain": "unclassified",
+      "lines": 434
+    },
+    "utils.gamification": {
+      "domain": "unclassified",
+      "lines": 646
+    },
+    "utils.growth_path_engine": {
+      "domain": "unclassified",
+      "lines": 606
+    },
+    "utils.initiative_dependency": {
+      "domain": "strategy_execution",
+      "lines": 458
+    },
+    "utils.initiative_impact": {
+      "domain": "strategy_execution",
+      "lines": 520
+    },
+    "utils.initiative_resource": {
+      "domain": "strategy_execution",
+      "lines": 508
+    },
+    "utils.interface_routing": {
+      "domain": "unclassified",
+      "lines": 305
+    },
+    "utils.internal_controls": {
+      "domain": "unclassified",
+      "lines": 610
+    },
+    "utils.investment_portfolio": {
+      "domain": "unclassified",
+      "lines": 603
+    },
+    "utils.irrbb": {
+      "domain": "unclassified",
+      "lines": 486
+    },
+    "utils.issue_management": {
+      "domain": "unclassified",
+      "lines": 644
+    },
+    "utils.kyc_aml_risk": {
+      "domain": "customer_relationship",
+      "lines": 586
+    },
+    "utils.lending_intelligence": {
+      "domain": "credit_lending",
+      "lines": 477
+    },
+    "utils.management_reporting": {
+      "domain": "unclassified",
+      "lines": 430
+    },
+    "utils.market_risk": {
+      "domain": "unclassified",
+      "lines": 355
+    },
+    "utils.microtask_engine": {
+      "domain": "credit_lending",
+      "lines": 624
+    },
+    "utils.nudge_engine": {
+      "domain": "unclassified",
+      "lines": 627
+    },
+    "utils.operations_dashboard": {
+      "domain": "unclassified",
+      "lines": 361
+    },
+    "utils.peer_learning": {
+      "domain": "people_hr",
+      "lines": 983
+    },
+    "utils.performance_insights": {
+      "domain": "strategy_execution",
+      "lines": 377
+    },
+    "utils.performance_talent": {
+      "domain": "strategy_execution",
+      "lines": 444
+    },
+    "utils.pillar3_disclosure": {
+      "domain": "unclassified",
+      "lines": 558
+    },
+    "utils.predictive_performance": {
+      "domain": "strategy_execution",
+      "lines": 634
+    },
+    "utils.profitability_heatmap": {
+      "domain": "finance_treasury",
+      "lines": 257
+    },
+    "utils.profitability_hierarchy": {
+      "domain": "finance_treasury",
+      "lines": 721
+    },
+    "utils.profitability_integration": {
+      "domain": "finance_treasury",
+      "lines": 560
+    },
+    "utils.profitability_trends": {
+      "domain": "finance_treasury",
+      "lines": 511
+    },
+    "utils.queue_analytics": {
+      "domain": "unclassified",
+      "lines": 541
+    },
+    "utils.reconciliation": {
+      "domain": "finance_treasury",
+      "lines": 501
+    },
+    "utils.reconciliation_engine": {
+      "domain": "finance_treasury",
+      "lines": 596
+    },
+    "utils.regulatory_returns": {
+      "domain": "unclassified",
+      "lines": 598
+    },
+    "utils.risk_weighted_assets": {
+      "domain": "unclassified",
+      "lines": 544
+    },
+    "utils.rm_profitability": {
+      "domain": "finance_treasury",
+      "lines": 810
+    },
+    "utils.sanctions_screening": {
+      "domain": "risk_compliance",
+      "lines": 502
+    },
+    "utils.stage_gate": {
+      "domain": "unclassified",
+      "lines": 414
+    },
+    "utils.submission_workflow": {
+      "domain": "unclassified",
+      "lines": 521
+    },
+    "utils.websocket_manager": {
+      "domain": "unclassified",
+      "lines": 405
+    },
+    "utils.wellness": {
+      "domain": "unclassified",
+      "lines": 610
+    },
+    "pages.0_home": {
+      "domain": "ui_pages",
+      "lines": 676
+    },
+    "pages.10_opex": {
+      "domain": "ui_pages",
+      "lines": 178
+    },
+    "pages.11_competitor": {
+      "domain": "ui_pages",
+      "lines": 169
+    },
+    "pages.12_cascade": {
+      "domain": "ui_pages",
+      "lines": 2934
+    },
+    "pages.13_sla": {
+      "domain": "ui_pages",
+      "lines": 837
+    },
+    "pages.14_branch_log": {
+      "domain": "ui_pages",
+      "lines": 1267
+    },
+    "pages.15_cbs": {
+      "domain": "ui_pages",
+      "lines": 185
+    },
+    "pages.15_optimize": {
+      "domain": "ui_pages",
+      "lines": 477
+    },
+    "pages.16_commission": {
+      "domain": "ui_pages",
+      "lines": 534
+    },
+    "pages.17_campaigns": {
+      "domain": "ui_pages",
+      "lines": 483
+    },
+    "pages.18_cims": {
+      "domain": "ui_pages",
+      "lines": 1592
+    },
+    "pages.19_credit_monitoring": {
+      "domain": "ui_pages",
+      "lines": 1161
+    },
+    "pages.1_perform": {
+      "domain": "ui_pages",
+      "lines": 1909
+    },
+    "pages.20_debt_recovery": {
+      "domain": "ui_pages",
+      "lines": 627
+    },
+    "pages.21_loan_applications": {
+      "domain": "ui_pages",
+      "lines": 520
+    },
+    "pages.22_credit_analysis": {
+      "domain": "ui_pages",
+      "lines": 387
+    },
+    "pages.23_credit_admin": {
+      "domain": "ui_pages",
+      "lines": 113
+    },
+    "pages.24_compliance": {
+      "domain": "ui_pages",
+      "lines": 263
+    },
+    "pages.25_treasury": {
+      "domain": "ui_pages",
+      "lines": 780
+    },
+    "pages.26_legal": {
+      "domain": "ui_pages",
+      "lines": 608
+    },
+    "pages.27_propositions": {
+      "domain": "ui_pages",
+      "lines": 291
+    },
+    "pages.28_ra": {
+      "domain": "ui_pages",
+      "lines": 446
+    },
+    "pages.29_revenue_assurance": {
+      "domain": "ui_pages",
+      "lines": 200
+    },
+    "pages.2_people": {
+      "domain": "ui_pages",
+      "lines": 3784
+    },
+    "pages.30_rms": {
+      "domain": "ui_pages",
+      "lines": 216
+    },
+    "pages.31_edms": {
+      "domain": "ui_pages",
+      "lines": 238
+    },
+    "pages.32_ifrs9": {
+      "domain": "ui_pages",
+      "lines": 577
+    },
+    "pages.33_statement_analyzer": {
+      "domain": "ui_pages",
+      "lines": 491
+    },
+    "pages.34_customer360": {
+      "domain": "ui_pages",
+      "lines": 3314
+    },
+    "pages.35_stress_testing": {
+      "domain": "ui_pages",
+      "lines": 1000
+    },
+    "pages.36_smart_alerts": {
+      "domain": "ui_pages",
+      "lines": 1215
+    },
+    "pages.37_approvals": {
+      "domain": "ui_pages",
+      "lines": 151
+    },
+    "pages.38_nps": {
+      "domain": "ui_pages",
+      "lines": 112
+    },
+    "pages.39_ews": {
+      "domain": "ui_pages",
+      "lines": 132
+    },
+    "pages.3_pipeline": {
+      "domain": "ui_pages",
+      "lines": 2029
+    },
+    "pages.40_collateral": {
+      "domain": "ui_pages",
+      "lines": 110
+    },
+    "pages.41_budget": {
+      "domain": "ui_pages",
+      "lines": 110
+    },
+    "pages.42_lms": {
+      "domain": "ui_pages",
+      "lines": 110
+    },
+    "pages.43_pip": {
+      "domain": "ui_pages",
+      "lines": 136
+    },
+    "pages.44_incidents": {
+      "domain": "ui_pages",
+      "lines": 137
+    },
+    "pages.45_crosssell": {
+      "domain": "ui_pages",
+      "lines": 1090
+    },
+    "pages.46_trade_finance": {
+      "domain": "ui_pages",
+      "lines": 104
+    },
+    "pages.47_digital_channels": {
+      "domain": "ui_pages",
+      "lines": 122
+    },
+    "pages.48_contact_centre": {
+      "domain": "ui_pages",
+      "lines": 92
+    },
+    "pages.49_bancassurance": {
+      "domain": "ui_pages",
+      "lines": 120
+    },
+    "pages.4_execute": {
+      "domain": "ui_pages",
+      "lines": 1635
+    },
+    "pages.50_cybersecurity": {
+      "domain": "ui_pages",
+      "lines": 119
+    },
+    "pages.51_agency_banking": {
+      "domain": "ui_pages",
+      "lines": 104
+    },
+    "pages.52_mgmt_accounts": {
+      "domain": "ui_pages",
+      "lines": 189
+    },
+    "pages.53_irrbb": {
+      "domain": "ui_pages",
+      "lines": 102
+    },
+    "pages.54_rcsa": {
+      "domain": "ui_pages",
+      "lines": 1455
+    },
+    "pages.55_aml": {
+      "domain": "ui_pages",
+      "lines": 1241
+    },
+    "pages.56_ftp": {
+      "domain": "ui_pages",
+      "lines": 84
+    },
+    "pages.57_deal_room": {
+      "domain": "ui_pages",
+      "lines": 135
+    },
+    "pages.58_workforce": {
+      "domain": "ui_pages",
+      "lines": 87
+    },
+    "pages.59_cab": {
+      "domain": "ui_pages",
+      "lines": 140
+    },
+    "pages.5_products": {
+      "domain": "ui_pages",
+      "lines": 370
+    },
+    "pages.60_disciplinary": {
+      "domain": "ui_pages",
+      "lines": 111
+    },
+    "pages.61_projects": {
+      "domain": "ui_pages",
+      "lines": 636
+    },
+    "pages.62_p2p": {
+      "domain": "ui_pages",
+      "lines": 247
+    },
+    "pages.63_assets": {
+      "domain": "ui_pages",
+      "lines": 191
+    },
+    "pages.64_vendors": {
+      "domain": "ui_pages",
+      "lines": 599
+    },
+    "pages.65_contracts": {
+      "domain": "ui_pages",
+      "lines": 144
+    },
+    "pages.66_partnerships": {
+      "domain": "ui_pages",
+      "lines": 617
+    },
+    "pages.67_fraud": {
+      "domain": "ui_pages",
+      "lines": 262
+    },
+    "pages.6_integrate": {
+      "domain": "ui_pages",
+      "lines": 310
+    },
+    "pages.7_admin": {
+      "domain": "ui_pages",
+      "lines": 4761
+    },
+    "pages.8_export": {
+      "domain": "ui_pages",
+      "lines": 256
+    },
+    "pages.9_sbu": {
+      "domain": "ui_pages",
+      "lines": 810
+    },
+    "pages.__init__": {
+      "domain": "ui_pages",
+      "lines": 1
+    },
+    "pages._access": {
+      "domain": "ui_pages",
+      "lines": 53
+    },
+    "pages._admin_org": {
+      "domain": "ui_pages",
+      "lines": 400
+    },
+    "pages._admin_sprint": {
+      "domain": "ui_pages",
+      "lines": 272
+    },
+    "pages._login": {
+      "domain": "ui_pages",
+      "lines": 321
+    },
+    "pages._shared": {
+      "domain": "ui_pages",
+      "lines": 90
+    },
+    "pages._sidebar": {
+      "domain": "ui_pages",
+      "lines": 352
+    },
+    "pages.73_channels": {
+      "domain": "ui_pages",
+      "lines": 1271
+    },
+    "pages.74_cbk_returns": {
+      "domain": "ui_pages",
+      "lines": 597
+    },
+    "pages.81_alm": {
+      "domain": "ui_pages",
+      "lines": 458
+    },
+    "pages.88_ifrs_engines": {
+      "domain": "ui_pages",
+      "lines": 858
+    },
+    "pages.89_capital_risk_engines": {
+      "domain": "ui_pages",
+      "lines": 948
+    },
+    "pages.90_remaining_ifrs": {
+      "domain": "ui_pages",
+      "lines": 1209
+    },
+    "pages.91_systems_view": {
+      "domain": "ui_pages",
+      "lines": 1327
+    },
+    "pages.92_climate_esg": {
+      "domain": "ui_pages",
+      "lines": 363
+    },
+    "pages.68_clearing": {
+      "domain": "ui_pages",
+      "lines": 293
+    },
+    "pages.69_consent": {
+      "domain": "ui_pages",
+      "lines": 173
+    },
+    "pages.70_retailer_finance": {
+      "domain": "ui_pages",
+      "lines": 167
+    },
+    "pages.71_bid_bond": {
+      "domain": "ui_pages",
+      "lines": 178
+    },
+    "pages.72_observability": {
+      "domain": "ui_pages",
+      "lines": 196
+    },
+    "pages.75_data_protection": {
+      "domain": "ui_pages",
+      "lines": 199
+    },
+    "pages.76_sanctions": {
+      "domain": "ui_pages",
+      "lines": 199
+    },
+    "pages.77_capital": {
+      "domain": "ui_pages",
+      "lines": 239
+    },
+    "pages.78_onboarding": {
+      "domain": "ui_pages",
+      "lines": 197
+    },
+    "pages.79_cards": {
+      "domain": "ui_pages",
+      "lines": 180
+    },
+    "pages.80_merchant": {
+      "domain": "ui_pages",
+      "lines": 157
+    },
+    "pages.82_oprisk": {
+      "domain": "ui_pages",
+      "lines": 176
+    },
+    "pages.83_strategy": {
+      "domain": "ui_pages",
+      "lines": 172
+    },
+    "pages.84_board": {
+      "domain": "ui_pages",
+      "lines": 171
+    },
+    "pages.85_esg": {
+      "domain": "ui_pages",
+      "lines": 189
+    },
+    "pages.86_flexcube": {
+      "domain": "ui_pages",
+      "lines": 325
+    },
+    "pages.87_benchmarking": {
+      "domain": "ui_pages",
+      "lines": 414
+    },
+    "pages._admin_cutover": {
+      "domain": "ui_pages",
+      "lines": 262
+    },
+    "pages._admin_etl": {
+      "domain": "ui_pages",
+      "lines": 234
+    },
+    "pages._admin_module_config": {
+      "domain": "ui_pages",
+      "lines": 393
+    },
+    "pages._admin_module_renderer": {
+      "domain": "ui_pages",
+      "lines": 221
+    },
+    "pages._admin_module_specs": {
+      "domain": "ui_pages",
+      "lines": 479
+    },
+    "pages._admin_postgres": {
+      "domain": "ui_pages",
+      "lines": 240
+    },
+    "pages._admin_reconciliation": {
+      "domain": "ui_pages",
+      "lines": 171
+    },
+    "scripts.audit": {
+      "domain": "tooling_scripts",
+      "lines": 15942
+    },
+    "scripts.etl_flexcube": {
+      "domain": "tooling_scripts",
+      "lines": 494
+    },
+    "scripts.export_openapi": {
+      "domain": "tooling_scripts",
+      "lines": 48
+    },
+    "scripts.generate_growth_plans": {
+      "domain": "tooling_scripts",
+      "lines": 259
+    },
+    "scripts.generate_learning_cards": {
+      "domain": "tooling_scripts",
+      "lines": 196
+    },
+    "scripts.migrate_to_postgres": {
+      "domain": "tooling_scripts",
+      "lines": 246
+    },
+    "scripts.preflight_flexcube": {
+      "domain": "tooling_scripts",
+      "lines": 294
+    },
+    "scripts.run_dependency_audit": {
+      "domain": "tooling_scripts",
+      "lines": 439
+    },
+    "scripts.run_load_tests": {
+      "domain": "tooling_scripts",
+      "lines": 245
+    },
+    "scripts.test_flexcube_pipeline": {
+      "domain": "tooling_scripts",
+      "lines": 741
+    },
+    "scripts.structure_audit": {
+      "domain": "tooling_scripts",
+      "lines": 117
+    },
+    "scripts.generate_all_docs": {
+      "domain": "tooling_scripts",
+      "lines": 130
+    },
+    "scripts.generate_cbs_aggregates": {
+      "domain": "tooling_scripts",
+      "lines": 579
+    },
+    "scripts.load_test_multi_instance": {
+      "domain": "tooling_scripts",
+      "lines": 477
+    },
+    "scripts.redis_admin": {
+      "domain": "tooling_scripts",
+      "lines": 443
+    },
+    "scripts.docgen.__init__": {
+      "domain": "tooling_scripts",
+      "lines": 26
+    },
+    "scripts.docgen._claim_validator": {
+      "domain": "tooling_scripts",
+      "lines": 241
+    },
+    "scripts.docgen._honest_section": {
+      "domain": "tooling_scripts",
+      "lines": 104
+    },
+    "scripts.docgen._registry_loader": {
+      "domain": "tooling_scripts",
+      "lines": 378
+    },
+    "scripts.docgen._theme": {
+      "domain": "tooling_scripts",
+      "lines": 104
+    },
+    "scripts.docgen.magazine_generator": {
+      "domain": "tooling_scripts",
+      "lines": 621
+    },
+    "scripts.docgen.ppt_generator": {
+      "domain": "tooling_scripts",
+      "lines": 862
+    },
+    "scripts.docgen.whitepaper_generator": {
+      "domain": "tooling_scripts",
+      "lines": 469
+    }
+  }
+}

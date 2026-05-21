@@ -1,0 +1,49 @@
+[
+  {
+    "minutes_id": "MIN-2026-Q1-CLOSE",
+    "date": "2026-03-30",
+    "type": "QUARTERLY",
+    "attendees": ["Board", "CEO", "CSO", "CFO", "CRO", "CTO", "STO Lead", "Department Heads"],
+    "key_decisions": [
+      "Approved Q2 budget reallocation: KES 12M from Operational Excellence to Digital & Data Transformation pillar (ENH-151 simulation showed +5 progress points net).",
+      "Endorsed ENH-148 lessons-learned recommendations: prefer cross-functional initiatives sponsored at MD level over Director-Retail for next cycle.",
+      "Mandated ENH-149 pulse survey rollout to all 22 departments quarterly."
+    ],
+    "action_items": [
+      "STO Lead: implement ENH-149 pulse survey across all departments by 2026-04-30.",
+      "CTO: lead recruitment for 2 senior data engineers per ENH-151 reallocation by 2026-05-15.",
+      "CFO: calibrate ENH-155 LTV / productivity constants against actual Q1 measurements by 2026-06-30."
+    ],
+    "next_review_date": "2026-06-30"
+  },
+  {
+    "minutes_id": "MIN-2026-FEB-MONTHLY",
+    "date": "2026-02-25",
+    "type": "MONTHLY",
+    "attendees": ["CEO", "CSO", "CFO", "CRO", "CTO", "STO Lead"],
+    "key_decisions": [
+      "Reviewed ENH-150 health dashboard: overall health 51.69/100 (AT_RISK); 1 systemic gap UNDER_RESOURCED across 3 pillars.",
+      "Approved ENH-147 corrective actions for top 3 HIGH severity gaps."
+    ],
+    "action_items": [
+      "STO Lead: present ENH-148 lessons-learned at Q1 board review.",
+      "CTO: review skill-gap signals from ENH-145 cascade by next month."
+    ],
+    "next_review_date": "2026-03-30"
+  },
+  {
+    "minutes_id": "MIN-2026-JAN-MONTHLY",
+    "date": "2026-01-28",
+    "type": "MONTHLY",
+    "attendees": ["CEO", "CSO", "CFO", "CRO", "CTO", "STO Lead"],
+    "key_decisions": [
+      "Endorsed FY2026 strategic pillars per ENH-143: Customer Experience / Digital & Data / Operational Excellence / Risk & Compliance / Sustainable Growth.",
+      "Approved 25-initiative portfolio per ENH-144 with KES 250M total budget (knapsack optimized)."
+    ],
+    "action_items": [
+      "All Department Heads: cascade pillar OKRs to teams within 2 weeks per ENH-145.",
+      "STO Lead: stand up ENH-153 daily strategy integration for all 1438 staff."
+    ],
+    "next_review_date": "2026-02-25"
+  }
+]

@@ -1,0 +1,231 @@
+[
+  {
+    "id": "T001-clear-recognition",
+    "description": "115% of target with steadily-accelerating history → recognition",
+    "input": {
+      "staff_code": "S001",
+      "kpi_id": "DEP_GROWTH",
+      "new_value": 115,
+      "period": "2026-04",
+      "today": "2026-04-30",
+      "target": 100,
+      "history": [60, 80, 90],
+      "period_progress": 1.0
+    },
+    "expected_nudges": [{"type": "recognition"}]
+  },
+  {
+    "id": "T002-clear-alert",
+    "description": "39% of target halfway through period (pace=50, threshold=40) → alert",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 39,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 100, "history": [10, 20, 30],
+      "period_progress": 0.5
+    },
+    "expected_nudges": [{"type": "alert"}]
+  },
+  {
+    "id": "T003-on-pace-no-nudge",
+    "description": "Exactly on pace, neither extreme → no nudge",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 50,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 100, "history": [10, 20, 40],
+      "period_progress": 0.5
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T004-above-110-but-not-accelerating",
+    "description": "115% of target but flat history → NO recognition (only fires when accelerating)",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 115,
+      "period": "2026-04", "today": "2026-04-30",
+      "target": 100, "history": [110, 110, 110],
+      "period_progress": 1.0
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T005-zero-target",
+    "description": "Target = 0 (misconfig) → no nudge (engine refuses to reason)",
+    "input": {
+      "staff_code": "S001", "kpi_id": "MISCONFIG_KPI", "new_value": 100,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 0, "history": [10, 20, 30],
+      "period_progress": 0.5
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T006-missing-target",
+    "description": "Target = None → no nudge",
+    "input": {
+      "staff_code": "S001", "kpi_id": "MISSING", "new_value": 100,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": null, "history": [10, 20, 30],
+      "period_progress": 0.5
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T007-period-just-started",
+    "description": "Day 1 of period, value low — pace target ≈ 0, no alert (threshold not meaningful)",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 1,
+      "period": "2026-04", "today": "2026-04-01",
+      "target": 100, "history": [10, 20, 30],
+      "period_progress": 0.03
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T008-strong-recognition",
+    "description": "200% of target with rapidly accelerating history → recognition",
+    "input": {
+      "staff_code": "S002", "kpi_id": "LOAN_GROWTH", "new_value": 200,
+      "period": "2026-Q2", "today": "2026-06-30",
+      "target": 100, "history": [40, 60, 90],
+      "period_progress": 1.0
+    },
+    "expected_nudges": [{"type": "recognition"}]
+  },
+  {
+    "id": "T009-just-below-recognition-threshold",
+    "description": "109% of target — under the 110% bar — no recognition",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 109,
+      "period": "2026-04", "today": "2026-04-30",
+      "target": 100, "history": [60, 80, 100],
+      "period_progress": 1.0
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T010-just-below-alert-threshold",
+    "description": "Pace=50, value=41 (82% of pace, above 80% threshold) → no alert",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 41,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 100, "history": [10, 20, 30],
+      "period_progress": 0.5
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T011-deep-decline-clear-alert",
+    "description": "Strong negative trajectory and well below pace → alert",
+    "input": {
+      "staff_code": "S003", "kpi_id": "SALES", "new_value": 20,
+      "period": "2026-04", "today": "2026-04-22",
+      "target": 100, "history": [60, 50, 30],
+      "period_progress": 0.7
+    },
+    "expected_nudges": [{"type": "alert"}]
+  },
+  {
+    "id": "T012-aml-alert-action-items",
+    "description": "AML KPI alert should include AML-class action items",
+    "input": {
+      "staff_code": "S004", "kpi_id": "AML_SLA", "new_value": 30,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 100, "history": [10, 15, 20],
+      "period_progress": 0.5
+    },
+    "expected_nudges": [
+      {"type": "alert", "action_items_must_contain": "Clear the oldest"}
+    ]
+  },
+  {
+    "id": "T013-npl-alert-action-items",
+    "description": "NPL KPI alert should include credit-recovery actions",
+    "input": {
+      "staff_code": "S005", "kpi_id": "NPL_PCT", "new_value": 30,
+      "period": "2026-04", "today": "2026-04-22",
+      "target": 100, "history": [10, 15, 20],
+      "period_progress": 0.7
+    },
+    "expected_nudges": [
+      {"type": "alert", "action_items_must_contain": "delinquent accounts"}
+    ]
+  },
+  {
+    "id": "T014-insufficient-history-suppresses-recognition",
+    "description": "115% of target but only 1 prior datapoint → recognition suppressed",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 115,
+      "period": "2026-04", "today": "2026-04-30",
+      "target": 100, "history": [80],
+      "period_progress": 1.0
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T015-recognition-and-alert-mutually-exclusive",
+    "description": "When pace is high (e.g. 95% of period) and value < 80% pace, fires alert. The recognition path requires >110% of target, which can't simultaneously be <80% of pace. Verifies the elif gate.",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 70,
+      "period": "2026-04", "today": "2026-04-29",
+      "target": 100, "history": [10, 20, 30],
+      "period_progress": 0.95
+    },
+    "expected_nudges": [{"type": "alert"}]
+  },
+  {
+    "id": "T016-large-numbers",
+    "description": "KES-scale figures (e.g. 1.5B target, 1.7B actual) with accelerating growth",
+    "input": {
+      "staff_code": "S006", "kpi_id": "DEP_GROWTH", "new_value": 1700000000,
+      "period": "2026-04", "today": "2026-04-30",
+      "target": 1500000000,
+      "history": [800000000, 1000000000, 1300000000],
+      "period_progress": 1.0
+    },
+    "expected_nudges": [{"type": "recognition"}]
+  },
+  {
+    "id": "T017-zero-value",
+    "description": "Zero value with non-zero pace → alert",
+    "input": {
+      "staff_code": "S007", "kpi_id": "DEP_GROWTH", "new_value": 0,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 100, "history": [10, 20, 30],
+      "period_progress": 0.5
+    },
+    "expected_nudges": [{"type": "alert"}]
+  },
+  {
+    "id": "T018-q4-recognition",
+    "description": "Quarterly KPI (2026-Q4) at end-of-Q4 with strong (non-linear) acceleration",
+    "input": {
+      "staff_code": "S008", "kpi_id": "LOAN_GROWTH", "new_value": 130,
+      "period": "2026-Q4", "today": "2026-12-30",
+      "target": 100, "history": [40, 60, 90],
+      "period_progress": 1.0
+    },
+    "expected_nudges": [{"type": "recognition"}]
+  },
+  {
+    "id": "T019-accelerating-but-still-below-target",
+    "description": "Accelerating BUT current value still below 110% target → no recognition (only fires above 110%)",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 105,
+      "period": "2026-04", "today": "2026-04-30",
+      "target": 100, "history": [60, 80, 90],
+      "period_progress": 1.0
+    },
+    "expected_nudges": []
+  },
+  {
+    "id": "T020-below-pace-but-target-zero",
+    "description": "Target = 0 means no nudge regardless of pace",
+    "input": {
+      "staff_code": "S001", "kpi_id": "DEP_GROWTH", "new_value": 0,
+      "period": "2026-04", "today": "2026-04-15",
+      "target": 0, "history": [],
+      "period_progress": 0.5
+    },
+    "expected_nudges": []
+  }
+]

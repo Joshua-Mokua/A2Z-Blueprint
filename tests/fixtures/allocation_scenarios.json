@@ -1,0 +1,225 @@
+[
+  {
+    "id": "A001-simple-3x2-known-optimal",
+    "description": "3 customers, 2 RMs, capacity 2 each. Known optimal: C1→RM1(100), C2→RM1(90), C3→RM2(50). Total=240.",
+    "input": {
+      "segment": "Mass",
+      "customers": ["C1", "C2", "C3"],
+      "rms": ["RM1", "RM2"],
+      "rm_capacity": {"RM1": 2, "RM2": 2},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C1__RM2": {"projected_pbt": 80, "ftp_mode": "on"},
+        "C2__RM1": {"projected_pbt": 90, "ftp_mode": "on"},
+        "C2__RM2": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C3__RM1": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C3__RM2": {"projected_pbt": 50, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "total_projected_pbt": 240.0,
+      "assignments_made": 3,
+      "provisional": false,
+      "warning_present": false
+    }
+  },
+  {
+    "id": "A002-tight-capacity",
+    "description": "RM1 capacity=2 forces 1 customer unassignable.",
+    "input": {
+      "segment": "SME",
+      "customers": ["C1", "C2", "C3"],
+      "rms": ["RM1"],
+      "rm_capacity": {"RM1": 2},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C2__RM1": {"projected_pbt": 90, "ftp_mode": "on"},
+        "C3__RM1": {"projected_pbt": 60, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "total_projected_pbt": 190.0,
+      "assignments_made": 2,
+      "unassignable_count": 1,
+      "provisional": false
+    }
+  },
+  {
+    "id": "A003-empty-segment",
+    "description": "Empty segment returns 0 totals + warning.",
+    "input": {
+      "segment": "Empty",
+      "customers": [],
+      "rms": ["RM1"],
+      "rm_capacity": {"RM1": 5},
+      "projections": {}
+    },
+    "expected": {
+      "total_projected_pbt": 0.0,
+      "assignments_made": 0,
+      "warning_present": true,
+      "warning_substring": "no customers"
+    }
+  },
+  {
+    "id": "A004-no-rms-in-segment",
+    "description": "No RMs available — warning, no assignments.",
+    "input": {
+      "segment": "OrphanSeg",
+      "customers": ["C1"],
+      "rms": [],
+      "rm_capacity": {},
+      "projections": {}
+    },
+    "expected": {
+      "total_projected_pbt": 0.0,
+      "assignments_made": 0,
+      "warning_present": true,
+      "warning_substring": "no eligible RMs"
+    }
+  },
+  {
+    "id": "A005-honesty-ftp-mixed-warning",
+    "description": "Mixed FTP modes — warning surfaces, not provisional.",
+    "input": {
+      "segment": "Mixed",
+      "customers": ["C1", "C2"],
+      "rms": ["RM1"],
+      "rm_capacity": {"RM1": 5},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C2__RM1": {"projected_pbt": 50, "ftp_mode": "off"}
+      }
+    },
+    "expected": {
+      "total_projected_pbt": 150.0,
+      "assignments_made": 2,
+      "provisional": false,
+      "warning_present": true,
+      "warning_substring": "Mandatory Standard #11"
+    }
+  },
+  {
+    "id": "A006-honesty-provisional-flag",
+    "description": "67% FTP-off → provisional=True.",
+    "input": {
+      "segment": "MostlyOff",
+      "customers": ["C1", "C2", "C3"],
+      "rms": ["RM1"],
+      "rm_capacity": {"RM1": 5},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "off"},
+        "C2__RM1": {"projected_pbt": 90, "ftp_mode": "off"},
+        "C3__RM1": {"projected_pbt": 80, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "total_projected_pbt": 270.0,
+      "assignments_made": 3,
+      "provisional": true,
+      "warning_present": true
+    }
+  },
+  {
+    "id": "A007-customer-no-projections",
+    "description": "C_ISOLATED has no projection from any RM → unassignable.",
+    "input": {
+      "segment": "Mass",
+      "customers": ["C1", "C_ISOLATED"],
+      "rms": ["RM1"],
+      "rm_capacity": {"RM1": 5},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "total_projected_pbt": 100.0,
+      "assignments_made": 1,
+      "unassignable_count": 1
+    }
+  },
+  {
+    "id": "A008-large-roster",
+    "description": "10 customers, 3 RMs (capacity 4 each = 12 slots) — all assignable.",
+    "input": {
+      "segment": "Retail",
+      "customers": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10"],
+      "rms": ["RM1", "RM2", "RM3"],
+      "rm_capacity": {"RM1": 4, "RM2": 4, "RM3": 4},
+      "projections": {
+        "C01__RM1": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C01__RM2": {"projected_pbt": 80, "ftp_mode": "on"},
+        "C01__RM3": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C02__RM1": {"projected_pbt": 90, "ftp_mode": "on"},
+        "C02__RM2": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C02__RM3": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C03__RM1": {"projected_pbt": 80, "ftp_mode": "on"},
+        "C03__RM2": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C03__RM3": {"projected_pbt": 90, "ftp_mode": "on"},
+        "C04__RM1": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C04__RM2": {"projected_pbt": 80, "ftp_mode": "on"},
+        "C04__RM3": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C05__RM1": {"projected_pbt": 50, "ftp_mode": "on"},
+        "C05__RM2": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C05__RM3": {"projected_pbt": 80, "ftp_mode": "on"},
+        "C06__RM1": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C06__RM2": {"projected_pbt": 50, "ftp_mode": "on"},
+        "C06__RM3": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C07__RM1": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C07__RM2": {"projected_pbt": 70, "ftp_mode": "on"},
+        "C07__RM3": {"projected_pbt": 50, "ftp_mode": "on"},
+        "C08__RM1": {"projected_pbt": 40, "ftp_mode": "on"},
+        "C08__RM2": {"projected_pbt": 50, "ftp_mode": "on"},
+        "C08__RM3": {"projected_pbt": 60, "ftp_mode": "on"},
+        "C09__RM1": {"projected_pbt": 50, "ftp_mode": "on"},
+        "C09__RM2": {"projected_pbt": 30, "ftp_mode": "on"},
+        "C09__RM3": {"projected_pbt": 40, "ftp_mode": "on"},
+        "C10__RM1": {"projected_pbt": 30, "ftp_mode": "on"},
+        "C10__RM2": {"projected_pbt": 40, "ftp_mode": "on"},
+        "C10__RM3": {"projected_pbt": 35, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "assignments_made": 10,
+      "unassignable_count": 0
+    }
+  },
+  {
+    "id": "A009-marginal-gain-from-current",
+    "description": "C1 is currently with RM2 (suboptimal). Greedy moves C1 to RM1 for marginal gain.",
+    "input": {
+      "segment": "Mass",
+      "customers": ["C1"],
+      "rms": ["RM1", "RM2"],
+      "rm_capacity": {"RM1": 5, "RM2": 5},
+      "current_allocation": {"C1": "RM2"},
+      "projections": {
+        "C1__RM1": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C1__RM2": {"projected_pbt": 80, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "assignments_made": 1,
+      "total_projected_pbt": 100.0,
+      "total_potential_gain": 20.0
+    }
+  },
+  {
+    "id": "A010-determinism-tie-breaking",
+    "description": "Two RMs with identical projections — lex tie-break on rm_code.",
+    "input": {
+      "segment": "Tied",
+      "customers": ["C1"],
+      "rms": ["RMB", "RMA"],
+      "rm_capacity": {"RMA": 5, "RMB": 5},
+      "projections": {
+        "C1__RMA": {"projected_pbt": 100, "ftp_mode": "on"},
+        "C1__RMB": {"projected_pbt": 100, "ftp_mode": "on"}
+      }
+    },
+    "expected": {
+      "assignments_made": 1,
+      "first_assignment_rm": "RMA"
+    }
+  }
+]

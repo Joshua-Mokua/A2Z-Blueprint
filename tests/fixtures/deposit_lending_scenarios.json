@@ -1,0 +1,203 @@
+{
+  "fixtures": [
+    {
+      "id": "DL001",
+      "label": "Single segment single product KES",
+      "engine": "deposit",
+      "method": "aggregate",
+      "input": {
+        "period": "2026-04",
+        "dimensions": ["segment", "product"],
+        "snapshots": [
+          {"balance": 1000000, "segment": "CORPORATE", "product": "FD", "currency": "KES"}
+        ]
+      },
+      "expected": {
+        "buckets": {"CORPORATE|FD": 1000000.00},
+        "total": 1000000.00,
+        "row_count": 1,
+        "unknown_buckets": 0
+      }
+    },
+    {
+      "id": "DL002",
+      "label": "Multi-segment multi-product",
+      "engine": "deposit",
+      "method": "aggregate",
+      "input": {
+        "period": "2026-04",
+        "dimensions": ["segment", "product"],
+        "snapshots": [
+          {"balance": 1000000, "segment": "CORPORATE", "product": "FD",      "currency": "KES"},
+          {"balance":  500000, "segment": "CORPORATE", "product": "CURRENT", "currency": "KES"},
+          {"balance":  300000, "segment": "RETAIL",    "product": "SAVINGS", "currency": "KES"},
+          {"balance":  200000, "segment": "RETAIL",    "product": "CURRENT", "currency": "KES"}
+        ]
+      },
+      "expected": {
+        "buckets": {
+          "CORPORATE|FD": 1000000.00,
+          "CORPORATE|CURRENT": 500000.00,
+          "RETAIL|SAVINGS": 300000.00,
+          "RETAIL|CURRENT": 200000.00
+        },
+        "total": 2000000.00,
+        "row_count": 4,
+        "unknown_buckets": 0
+      }
+    },
+    {
+      "id": "DL003",
+      "label": "Unknown segment exposed in UNKNOWN bucket",
+      "engine": "deposit",
+      "method": "aggregate",
+      "input": {
+        "period": "2026-04",
+        "dimensions": ["segment", "product"],
+        "snapshots": [
+          {"balance": 1000000, "segment": "CORPORATE", "product": "FD", "currency": "KES"},
+          {"balance":   50000,                          "product": "FD", "currency": "KES"}
+        ]
+      },
+      "expected": {
+        "buckets": {
+          "CORPORATE|FD": 1000000.00,
+          "UNKNOWN|FD": 50000.00
+        },
+        "total": 1050000.00,
+        "row_count": 2,
+        "unknown_buckets": 1
+      }
+    },
+    {
+      "id": "DL004",
+      "label": "KES-billion precision",
+      "engine": "deposit",
+      "method": "aggregate",
+      "input": {
+        "period": "2026-04",
+        "dimensions": ["segment"],
+        "snapshots": [
+          {"balance": "11500000000.50", "segment": "CORPORATE", "currency": "KES"},
+          {"balance": "11500000000.51", "segment": "CORPORATE", "currency": "KES"}
+        ]
+      },
+      "expected": {
+        "buckets": {"CORPORATE": 23000000001.01},
+        "total": 23000000001.01,
+        "row_count": 1,
+        "unknown_buckets": 0
+      }
+    },
+    {
+      "id": "DL005",
+      "label": "Empty snapshots → zero total no fabrication",
+      "engine": "deposit",
+      "method": "aggregate",
+      "input": {
+        "period": "2026-04",
+        "dimensions": ["segment"],
+        "snapshots": []
+      },
+      "expected": {
+        "buckets": {},
+        "total": 0.00,
+        "row_count": 0,
+        "unknown_buckets": 0
+      }
+    },
+    {
+      "id": "DL006",
+      "label": "Lending: clean disbursement vs target",
+      "engine": "lending",
+      "method": "disbursement_by_product",
+      "input": {
+        "period": "2026-04",
+        "disbursements": [
+          {"amount": 1000000000, "product": "MORTGAGE"},
+          {"amount":  500000000, "product": "PERSONAL"}
+        ],
+        "targets": {
+          "MORTGAGE": 1200000000,
+          "PERSONAL":  500000000
+        }
+      },
+      "expected": {
+        "MORTGAGE": {"actual": 1000000000.00, "target": 1200000000.00, "variance": -200000000.00, "variance_pct": -16.67},
+        "PERSONAL": {"actual":  500000000.00, "target":  500000000.00, "variance": 0.00, "variance_pct": 0.00},
+        "totals":   {"actual": 1500000000.00, "target": 1700000000.00, "variance": -200000000.00}
+      }
+    },
+    {
+      "id": "DL007",
+      "label": "Lending: zero target → variance_pct=None",
+      "engine": "lending",
+      "method": "disbursement_by_product",
+      "input": {
+        "period": "2026-04",
+        "disbursements": [
+          {"amount": 100000, "product": "MORTGAGE"}
+        ],
+        "targets": {"MORTGAGE": 0}
+      },
+      "expected": {
+        "MORTGAGE": {"actual": 100000.00, "target": 0.00, "variance": 100000.00, "variance_pct": null}
+      }
+    },
+    {
+      "id": "DL008",
+      "label": "Lending NPL: with mixed dpd",
+      "engine": "lending",
+      "method": "npl_by_product",
+      "input": {
+        "as_of_date": "2026-04-29",
+        "outstanding": [
+          {"outstanding": 1000000000, "product": "MORTGAGE", "days_past_due": 0},
+          {"outstanding":  100000000, "product": "MORTGAGE", "days_past_due": 95},
+          {"outstanding":   50000000, "product": "MORTGAGE", "days_past_due": 45},
+          {"outstanding":  500000000, "product": "PERSONAL", "days_past_due": 0},
+          {"outstanding":  100000000, "product": "PERSONAL", "days_past_due": 120}
+        ]
+      },
+      "expected": {
+        "MORTGAGE": {"outstanding": 1150000000.00, "npl_amount": 100000000.00, "npl_ratio": 8.6957},
+        "PERSONAL": {"outstanding":  600000000.00, "npl_amount": 100000000.00, "npl_ratio": 16.6667},
+        "totals":   {"outstanding": 1750000000.00, "npl_amount": 200000000.00, "npl_ratio": 11.4286}
+      }
+    },
+    {
+      "id": "DL009",
+      "label": "Lending NPL: zero outstanding → ratio=None (Rule 1)",
+      "engine": "lending",
+      "method": "npl_by_product",
+      "input": {
+        "as_of_date": "2026-04-29",
+        "outstanding": []
+      },
+      "expected": {
+        "MORTGAGE": {"outstanding": 0.00, "npl_amount": 0.00, "npl_ratio": null},
+        "totals":   {"outstanding": 0.00, "npl_amount": 0.00, "npl_ratio": null}
+      }
+    },
+    {
+      "id": "DL010",
+      "label": "Lending interest income: even split",
+      "engine": "lending",
+      "method": "interest_income_breakdown",
+      "input": {
+        "period": "2026-04",
+        "interest": [
+          {"interest_income": 500000000, "product": "MORTGAGE"},
+          {"interest_income": 300000000, "product": "PERSONAL"},
+          {"interest_income": 200000000, "product": "BUSINESS"}
+        ]
+      },
+      "expected": {
+        "MORTGAGE": {"interest_income": 500000000.00, "share_pct": 50.00},
+        "PERSONAL": {"interest_income": 300000000.00, "share_pct": 30.00},
+        "BUSINESS": {"interest_income": 200000000.00, "share_pct": 20.00},
+        "total_interest_income": 1000000000.00
+      }
+    }
+  ]
+}

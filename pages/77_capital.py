@@ -12,7 +12,7 @@ from pages._access import require_access
 from utils.core_audit import audit_log
 from utils.db import db as a2z_db
 
-require_access("regulatory_capital")
+require_access("treasury_alm.capital")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]

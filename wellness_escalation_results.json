@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:12.948912+00:00",
+  "total_scenarios": 10,
+  "high_risk_total": 5,
+  "high_risk_escalated": 5,
+  "escalation_pct": 100.0,
+  "spec_target_pct": 100.0,
+  "fixture_accuracy_pct": 100.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "W001",
+      "expected_level": "High",
+      "actual_level": "High",
+      "expected_alert": true,
+      "actual_alert": true,
+      "matched": true
+    },
+    {
+      "id": "W002",
+      "expected_level": "Low",
+      "actual_level": "Low",
+      "expected_alert": false,
+      "actual_alert": false,
+      "matched": true
+    },
+    {
+      "id": "W003",
+      "expected_level": "Moderate",
+      "actual_level": "Moderate",
+      "expected_alert": false,
+      "actual_alert": false,
+      "matched": true
+    },
+    {
+      "id": "W004",
+      "expected_level": null,
+      "actual_level": null,
+      "expected_alert": false,
+      "actual_alert": false,
+      "matched": true
+    },
+    {
+      "id": "W005",
+      "expected_level": "High",
+      "actual_level": "High",
+      "expected_alert": true,
+      "actual_alert": true,
+      "matched": true
+    },
+    {
+      "id": "W006",
+      "expected_level": "High",
+      "actual_level": "High",
+      "expected_alert": true,
+      "actual_alert": true,
+      "matched": true
+    },
+    {
+      "id": "W007",
+      "expected_level": "Low",
+      "actual_level": "Low",
+      "expected_alert": false,
+      "actual_alert": false,
+      "matched": true
+    },
+    {
+      "id": "W008",
+      "expected_level": "High",
+      "actual_level": "High",
+      "expected_alert": true,
+      "actual_alert": true,
+      "matched": true
+    },
+    {
+      "id": "W009",
+      "expected_level": "Low",
+      "actual_level": "Low",
+      "expected_alert": false,
+      "actual_alert": false,
+      "matched": true
+    },
+    {
+      "id": "W010",
+      "expected_level": "High",
+      "actual_level": "High",
+      "expected_alert": true,
+      "actual_alert": true,
+      "matched": true
+    }
+  ]
+}

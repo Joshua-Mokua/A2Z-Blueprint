@@ -1,0 +1,474 @@
+"""
+Phase 2A — IT/Digital Foundation pt 1 (pages/96)
+=================================================================
+v10.281 — covers Standards #291-#295 (5 standards across 5 engines)
+
+Audience: CTO, CIO, IT ops, SRE, security, compliance.
+
+Tab map (7 tabs covering 5 standards + 2 supplementary):
+  1. ITSM Incidents              — #291
+  2. ITSM Changes & Assets       — #291
+  3. Cloud Architecture          — #292
+  4. Observability (SLI/SLO)     — #293
+  5. Disaster Recovery           — #294
+  6. API Gateway                 — #295
+  7. Knowledge Base              — #291 (KB articles)
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from decimal import Decimal
+
+import streamlit as st
+
+from utils.core_audit import audit_log
+from utils.it_itsm import (
+    ITSMFrameworkEngine,
+    ITSM_INCIDENT_PRIORITIES, ITSM_INCIDENT_STATES,
+    CHANGE_TYPES, CHANGE_STATES,
+    ASSET_TYPES, ASSET_STATES,
+    KNOWLEDGE_ARTICLE_STATES,
+)
+from utils.it_cloud_architecture import (
+    CloudArchitectureEngine,
+    CLOUD_PROVIDERS, CONTAINER_RUNTIMES,
+    DEPLOYMENT_STRATEGIES, DEPLOYMENT_STATES,
+    TWELVE_FACTOR_CRITERIA,
+)
+from utils.it_observability import (
+    ObservabilityEngine,
+    SLI_TYPES, SLO_TIME_WINDOWS, SLO_STATES,
+    ERROR_BUDGET_POLICIES, DEFAULT_BUDGET_BURN_THRESHOLD_PCT,
+)
+from utils.it_disaster_recovery import (
+    DisasterRecoveryEngine,
+    DR_PLAN_TIERS, DR_PLAN_STATES,
+    DRILL_TYPES, DRILL_STATES,
+    DEFAULT_RTO_TARGET_HOURS, DEFAULT_RPO_TARGET_MINUTES,
+    CBK_DR_REGULATORY_REFERENCE,
+)
+from utils.it_api_gateway import (
+    APIGatewayEngine,
+    API_VERSION_STATES, RATE_LIMIT_WINDOWS,
+    AUTH_SCHEMES, API_KEY_STATES,
+)
+
+try:
+    from pages._access import require_access
+    require_access("it_platform.it_digital_pt1")
+except Exception:
+    pass
+
+
+@st.cache_resource
+def _engines():
+    return {
+        "itsm": ITSMFrameworkEngine(),
+        "cloud": CloudArchitectureEngine(),
+        "obs": ObservabilityEngine(),
+        "dr": DisasterRecoveryEngine(),
+        "api": APIGatewayEngine(),
+    }
+
+
+def main():
+    st.title("⚙️ IT/Digital Foundation — pt 1")
+    st.caption(
+        "v10.281 · Standards #291-#295 · ITSM · Cloud-Native · "
+        "Observability · DR/BCP · API Gateway"
+    )
+    eng = _engines()
+
+    tabs = st.tabs([
+        "🎫 ITSM Incidents",
+        "🔧 Changes & Assets",
+        "☁️ Cloud Architecture",
+        "📡 Observability",
+        "🔥 Disaster Recovery",
+        "🔌 API Gateway",
+        "📖 Knowledge Base",
+    ])
+
+    # Tab 1: ITSM Incidents (#291)
+    with tabs[0]:
+        st.subheader("🎫 ITSM Incident Management — #291")
+        st.caption(
+            "ITIL v4 incident lifecycle: OPEN → IN_PROGRESS → RESOLVED → "
+            "CLOSED with re-open path."
+        )
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            opens = eng["itsm"].open_incidents()
+            st.metric("Open incidents", len(opens))
+            for i in opens[:20]:
+                st.markdown(
+                    f"**[{i['priority']}]** {i['title']} "
+                    f"_state: {i['state']}_ "
+                    f"<small>assigned: {i.get('assigned_to', '-')}</small>",
+                    unsafe_allow_html=True,
+                )
+        with col2:
+            with st.expander("➕ Raise incident", expanded=False):
+                with st.form("raise_inc"):
+                    iid = st.text_input("Incident ID")
+                    title = st.text_input("Title")
+                    priority = st.selectbox(
+                        "Priority", ITSM_INCIDENT_PRIORITIES,
+                    )
+                    affected = st.text_input("Affected service")
+                    assigned = st.text_input("Assigned to")
+                    if st.form_submit_button("Raise"):
+                        if iid and title:
+                            r = eng["itsm"].raise_incident(
+                                {"incident_id": iid, "title": title,
+                                  "priority": priority,
+                                  "affected_service": affected,
+                                  "assigned_to": assigned},
+                                actor="ops",
+                            )
+                            if r["raised"]:
+                                audit_log(
+                                    action="raise_incident",
+                                    username="ops",
+                                    module="it_digital_pt1",
+                                )
+                                st.success(f"Raised {iid}.")
+                                st.rerun()
+                            else:
+                                st.error(f"Failed: {r.get('error', '?')}")
+
+    # Tab 2: Changes + Assets (#291)
+    with tabs[1]:
+        st.subheader("🔧 ITSM Changes & Assets — #291")
+        sub_chg, sub_ast = st.tabs(["Changes", "Assets"])
+        with sub_chg:
+            with st.expander("➕ Raise change request", expanded=False):
+                with st.form("raise_chg"):
+                    cid = st.text_input("Change ID")
+                    ctitle = st.text_input("Title")
+                    ctype = st.selectbox("Change type", CHANGE_TYPES)
+                    cplan = st.text_area("Implementation plan")
+                    cback = st.text_area("Rollback plan")
+                    csched = st.text_input("Scheduled for", value="2026-06-01")
+                    if st.form_submit_button("Raise"):
+                        if cid and ctitle:
+                            r = eng["itsm"].raise_change_request(
+                                {"change_id": cid, "title": ctitle,
+                                  "change_type": ctype,
+                                  "implementation_plan": cplan,
+                                  "rollback_plan": cback,
+                                  "scheduled_for": csched},
+                                actor="cto",
+                            )
+                            if r["raised"]:
+                                audit_log(
+                                    action="raise_change_request",
+                                    username="cto",
+                                    module="it_digital_pt1",
+                                )
+                                st.success(f"Raised {cid}.")
+                                st.rerun()
+                            else:
+                                st.error(f"Failed: {r.get('error', '?')}")
+
+        with sub_ast:
+            with st.expander("➕ Register asset", expanded=False):
+                with st.form("reg_asset"):
+                    aid = st.text_input("Asset ID")
+                    aname = st.text_input("Asset name")
+                    atype = st.selectbox("Asset type", ASSET_TYPES)
+                    aown = st.text_input("Owner team")
+                    aloc = st.text_input("Location")
+                    areason = st.text_input("Reason")
+                    if st.form_submit_button("Register"):
+                        if aid and aname and areason:
+                            r = eng["itsm"].register_asset(
+                                {"asset_id": aid, "asset_name": aname,
+                                  "asset_type": atype, "owner_team": aown,
+                                  "location": aloc},
+                                actor="ops", reason=areason,
+                            )
+                            if r["registered"]:
+                                audit_log(
+                                    action="register_asset",
+                                    username="ops",
+                                    module="it_digital_pt1",
+                                )
+                                st.success(f"Registered {aid}.")
+                                st.rerun()
+                            else:
+                                st.error(f"Failed: {r.get('error', '?')}")
+
+    # Tab 3: Cloud Architecture (#292)
+    with tabs[2]:
+        st.subheader("☁️ Cloud-Native & Container Architecture — #292")
+        st.caption(
+            "Microservices, Kubernetes-native, multi-cloud (AWS/Azure/GCP) "
+            "portability, 12-factor compliance."
+        )
+        services = eng["cloud"].list_active_services()
+        st.metric("Registered services", len(services))
+        with st.expander("➕ Register microservice", expanded=False):
+            with st.form("reg_svc"):
+                sid = st.text_input("Service ID")
+                sname = st.text_input("Service name")
+                sown = st.text_input("Owner team")
+                sruntime = st.selectbox("Runtime", CONTAINER_RUNTIMES)
+                sprimary = st.selectbox("Primary provider", CLOUD_PROVIDERS)
+                ssecondary = st.multiselect(
+                    "Secondary providers", CLOUD_PROVIDERS,
+                )
+                sreason = st.text_input("Reason")
+                if st.form_submit_button("Register"):
+                    if sid and sname and sown and sreason:
+                        r = eng["cloud"].register_microservice(
+                            {"service_id": sid, "service_name": sname,
+                              "owner_team": sown,
+                              "container_runtime": sruntime,
+                              "primary_provider": sprimary,
+                              "secondary_providers": ssecondary,
+                              "twelve_factor_compliance": {}},
+                            actor="cto", reason=sreason,
+                        )
+                        if r["registered"]:
+                            audit_log(
+                                action="register_microservice",
+                                username="cto",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Registered {sid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+        with st.expander("📊 Portability assessment", expanded=False):
+            check_id = st.text_input("Service ID to assess",
+                                          value="SVC-AUTH")
+            if st.button("Assess") and check_id:
+                a = eng["cloud"].portability_assessment(check_id)
+                if a.get("found"):
+                    st.metric(
+                        "Portability score",
+                        f"{a['portability_score']}",
+                        delta=f"Grade {a['portability_grade']}",
+                    )
+                    st.write(
+                        f"12-factor: {a['twelve_factor_passed']}/"
+                        f"{a['twelve_factor_total']} = "
+                        f"{a['compliance_pct']}%"
+                    )
+                    st.write(
+                        f"Primary: **{a['primary_provider']}** · "
+                        f"Secondary: {', '.join(a['secondary_providers']) or 'none'}"
+                    )
+
+    # Tab 4: Observability (#293)
+    with tabs[3]:
+        st.subheader("📡 Observability — SLI/SLO/Error Budget — #293")
+        st.caption(
+            "Prometheus + Grafana + Loki + Jaeger. Error budget burns at "
+            f"≥{DEFAULT_BUDGET_BURN_THRESHOLD_PCT}% trigger oversight."
+        )
+        with st.expander("➕ Register SLI", expanded=False):
+            with st.form("reg_sli"):
+                lid = st.text_input("SLI ID")
+                lname = st.text_input("SLI name")
+                ltype = st.selectbox("SLI type", SLI_TYPES)
+                lsvc = st.text_input("Service ID")
+                lunit = st.text_input("Unit", value="%")
+                lreason = st.text_input("Reason")
+                if st.form_submit_button("Register"):
+                    if lid and lname and lsvc and lreason:
+                        r = eng["obs"].register_sli(
+                            {"sli_id": lid, "sli_name": lname,
+                              "sli_type": ltype, "service_id": lsvc,
+                              "unit": lunit},
+                            actor="sre", reason=lreason,
+                        )
+                        if r["registered"]:
+                            audit_log(
+                                action="register_sli",
+                                username="sre",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Registered {lid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+
+        with st.expander("➕ Register SLO", expanded=False):
+            with st.form("reg_slo"):
+                oid = st.text_input("SLO ID")
+                oname = st.text_input("SLO name")
+                osli = st.text_input("Linked SLI ID")
+                otarget = st.text_input("Target %", value="99.9")
+                owindow = st.selectbox("Time window", SLO_TIME_WINDOWS)
+                opolicy = st.selectbox("Budget policy",
+                                              ERROR_BUDGET_POLICIES, index=1)
+                oreason = st.text_input("Reason", key="slo_reason")
+                if st.form_submit_button("Register"):
+                    if oid and oname and osli and oreason:
+                        r = eng["obs"].register_slo(
+                            {"slo_id": oid, "slo_name": oname,
+                              "sli_id": osli, "target_pct": otarget,
+                              "time_window": owindow,
+                              "budget_policy": opolicy},
+                            actor="sre", reason=oreason,
+                        )
+                        if r["registered"]:
+                            audit_log(
+                                action="register_slo",
+                                username="sre",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Registered {oid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+
+    # Tab 5: DR/BCP (#294)
+    with tabs[4]:
+        st.subheader("🔥 Disaster Recovery & Business Continuity — #294")
+        st.caption(
+            f"CBK target: RTO ≤ {DEFAULT_RTO_TARGET_HOURS}h, "
+            f"RPO ≤ {DEFAULT_RPO_TARGET_MINUTES}min. "
+            f"Reference: {CBK_DR_REGULATORY_REFERENCE}."
+        )
+        with st.expander("➕ Register DR plan", expanded=False):
+            with st.form("reg_dr"):
+                pid = st.text_input("Plan ID")
+                pname = st.text_input("Plan name")
+                psvc = st.text_input("Service ID")
+                ptier = st.selectbox("Tier", DR_PLAN_TIERS)
+                prto = st.text_input("RTO target hours", value="4")
+                prpo = st.text_input("RPO target minutes", value="15")
+                pprim = st.text_input("Primary region", value="af-south-1")
+                pdr = st.text_input("DR region", value="eu-west-2")
+                preason = st.text_input("Reason")
+                if st.form_submit_button("Register"):
+                    if pid and pname and psvc and preason:
+                        r = eng["dr"].register_dr_plan(
+                            {"plan_id": pid, "plan_name": pname,
+                              "service_id": psvc, "tier": ptier,
+                              "rto_target_hours": prto,
+                              "rpo_target_minutes": prpo,
+                              "primary_region": pprim,
+                              "dr_region": pdr},
+                            actor="cto", reason=preason,
+                        )
+                        if r["registered"]:
+                            audit_log(
+                                action="register_dr_plan",
+                                username="cto",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Registered {pid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+        with st.expander("📊 RTO/RPO Compliance Check", expanded=False):
+            chk = st.text_input("Plan ID to check", value="DR-CORE")
+            if st.button("Check") and chk:
+                c = eng["dr"].rto_rpo_compliance(chk)
+                if c.get("found"):
+                    if c.get("no_data"):
+                        st.warning("No measurements yet.")
+                    else:
+                        compliant_label = (
+                            "✅ COMPLIANT" if c["cbk_compliant"]
+                            else "❌ NON-COMPLIANT"
+                        )
+                        st.metric("CBK status", compliant_label)
+                        st.write(
+                            f"Target RTO: {c['target_rto_hours']}h · "
+                            f"Target RPO: {c['target_rpo_minutes']}min"
+                        )
+                        st.write(
+                            f"RTO breaches: {c['rto_breach_count']} · "
+                            f"RPO breaches: {c['rpo_breach_count']}"
+                        )
+
+    # Tab 6: API Gateway (#295)
+    with tabs[5]:
+        st.subheader("🔌 API Gateway & Developer Portal — #295")
+        st.caption(
+            "Kong/Tyk gateway, OAuth2/OIDC, rate limiting, OpenAPI docs, "
+            "developer onboarding."
+        )
+        with st.expander("➕ Register API", expanded=False):
+            with st.form("reg_api"):
+                aid = st.text_input("API ID")
+                aname = st.text_input("API name")
+                avers = st.text_input("Version", value="v1")
+                aauth = st.selectbox("Auth scheme", AUTH_SCHEMES)
+                abase = st.text_input("Base path", value="/api/v1")
+                aown = st.text_input("Owner team")
+                arate = st.text_input("Rate limit policy ID")
+                areason = st.text_input("Reason", key="api_reason")
+                if st.form_submit_button("Register"):
+                    if aid and aname and abase and areason:
+                        r = eng["api"].register_api(
+                            {"api_id": aid, "api_name": aname,
+                              "version": avers, "auth_scheme": aauth,
+                              "base_path": abase, "owner_team": aown,
+                              "rate_limit_policy_id": arate},
+                            actor="cto", reason=areason,
+                        )
+                        if r["registered"]:
+                            audit_log(
+                                action="register_api",
+                                username="cto",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Registered {aid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+        with st.expander("📊 Rate-limit check", expanded=False):
+            rai = st.text_input("API ID")
+            rkey = st.text_input("Key ID")
+            if st.button("Check") and rai and rkey:
+                c = eng["api"].rate_limit_check(rai, rkey)
+                if c.get("checked"):
+                    st.metric("Remaining", c["remaining"])
+                    st.write(
+                        f"Limit: {c['limit']} per {c['window']} · "
+                        f"Burst: {c['burst_limit']} · "
+                        f"Current: {c['current_count']}"
+                    )
+                    if not c["within_limit"]:
+                        st.error("Rate limit exceeded.")
+
+    # Tab 7: KB Articles (#291)
+    with tabs[6]:
+        st.subheader("📖 Knowledge Base — #291")
+        st.caption("ITIL knowledge management — runbooks, FAQs, postmortems.")
+        with st.expander("➕ Publish article", expanded=False):
+            with st.form("pub_kb"):
+                kid = st.text_input("Article ID")
+                ktitle = st.text_input("Title")
+                kcat = st.text_input("Category")
+                kcontent = st.text_area("Content", height=200)
+                kreason = st.text_input("Publication reason")
+                if st.form_submit_button("Publish"):
+                    if kid and ktitle and kcontent and kreason:
+                        r = eng["itsm"].publish_knowledge_article(
+                            {"article_id": kid, "title": ktitle,
+                              "content": kcontent, "category": kcat,
+                              "tags": []},
+                            actor="ops", reason=kreason,
+                        )
+                        if r["published"]:
+                            audit_log(
+                                action="publish_kb_article",
+                                username="ops",
+                                module="it_digital_pt1",
+                            )
+                            st.success(f"Published {kid}.")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed: {r.get('error', '?')}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,30 @@
+"""pages/114_sbu_drilldown.py — Customer-Value SBU Drill-Down (v10.338).
+
+v10.346 — refactored to call utils.finance_hub_render.
+
+Sibling to pages/9_sbu.py. The existing 9_sbu is BRANCH-level P&L
+(branch as the unit of P&L). This page is CUSTOMER-VALUE SBU drill-
+down: Retail SBU broken into Affluent / Core Middle / Mass; Commercial
+SBU broken into MSME (Micro/Small/Medium) and Corporate, both × CBK
+sector. Tagged-RM P&L exposes which Relationship Managers own which
+revenue. Propositions overlay is view-only (does not reconcile).
+
+Body now in utils.finance_hub_render.render_sbu_drilldown().
+
+The consolidated entry point is pages/116_finance_hub.py.
+
+Audience: Customer value strategists, segment heads.
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("finance.sbu_performance")
+
+from utils.finance_hub_render import render_sbu_drilldown
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_sbu_drilldown(actor)

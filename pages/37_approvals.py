@@ -12,7 +12,7 @@ from pages._shared import load_shared_state, safe_html
 from pages._access import require_access
 from utils.core_audit import audit_log
 
-require_access("approvals")
+require_access("shared.approvals")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 
@@ -148,3 +148,12 @@ with tabs[3]:
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     else:
         st.info("No approval history yet.")
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

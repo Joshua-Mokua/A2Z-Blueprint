@@ -1,0 +1,71 @@
+{
+  "total_scenarios": 10,
+  "correct": 10,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 99.0,
+  "results": [
+    {
+      "id": "DI001",
+      "label": "Recent transaction \u00e2\u2020\u2019 ACTIVE",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI002",
+      "label": "Just under warning threshold (299 days) \u00e2\u2020\u2019 ACTIVE",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI003",
+      "label": "Exactly at warning threshold (300 days) \u00e2\u2020\u2019 WARNING",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI004",
+      "label": "Mid-warning (340 days) \u00e2\u2020\u2019 WARNING",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI005",
+      "label": "Just under dormancy (364 days) \u00e2\u2020\u2019 WARNING",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI006",
+      "label": "Exactly at dormancy (365 days) \u00e2\u2020\u2019 DORMANT",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI007",
+      "label": "Mid-dormancy (500 days) \u00e2\u2020\u2019 DORMANT",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI008",
+      "label": "Just under restricted (729 days) \u00e2\u2020\u2019 DORMANT",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI009",
+      "label": "Exactly at restricted (730 days) \u00e2\u2020\u2019 RESTRICTED",
+      "matched": true,
+      "diffs": []
+    },
+    {
+      "id": "DI010",
+      "label": "Long-restricted (1000 days) \u00e2\u2020\u2019 RESTRICTED",
+      "matched": true,
+      "diffs": []
+    }
+  ],
+  "fixtures_total": 10,
+  "fixtures_matched": 10,
+  "match_rate_pct": 100.0
+}

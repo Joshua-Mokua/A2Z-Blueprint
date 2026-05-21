@@ -1,0 +1,111 @@
+# deployment/pgbouncer/docker-compose.pgbouncer.yml
+#
+# v10.74 ops hygiene — PgBouncer connection pooling for the
+# A2Z MIS 360 Postgres backend. This is a STANDALONE compose file
+# you can layer in when you need connection pooling — apply when
+# concurrent users approach 50+ or when Streamlit + FastAPI + ETL
+# workers start exhausting Postgres's default 100 connections.
+#
+# WHEN TO APPLY
+#   - Production deployment with multiple Streamlit instances
+#   - Heavy ETL or batch jobs running alongside interactive UI
+#   - Connection-exhaustion errors in postgres logs
+#     ("FATAL: sorry, too many clients already")
+#
+# WHEN NOT TO APPLY
+#   - Single-user development environment (overkill)
+#   - Small Ecobank pilot (≤10 concurrent users) on dedicated DB
+#
+# HOW TO APPLY
+#   1. Configure userlist.txt with your Postgres credentials
+#      (md5-hashed — see HASHING_GUIDE in README.md)
+#   2. Adjust pgbouncer.ini for your pool sizing (defaults are
+#      tier-2-bank-conservative)
+#   3. Update your application connection strings to point at
+#      pgbouncer:6432 instead of postgres:5432
+#   4. Run alongside your existing compose:
+#        docker compose -f docker-compose.yml \
+#                       -f deployment/pgbouncer/docker-compose.pgbouncer.yml up
+#
+# SCOPE BOUNDARY (per Rule 7)
+#   PgBouncer is a CONNECTION POOL, not a query router. It does not
+#   inspect SQL, does not enforce row-level security, does not modify
+#   transactions. Authentication still flows through Postgres roles.
+#   The pool is transparent to application code — same SQL works
+#   identically.
+
+version: "3.8"
+
+services:
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.1
+    container_name: a2z-pgbouncer
+    restart: unless-stopped
+
+    # PgBouncer reads Postgres config via env vars + mounted files.
+    # Override these to match your environment.
+    environment:
+      DB_HOST: ${POSTGRES_HOST:-postgres}
+      DB_PORT: ${POSTGRES_PORT:-5432}
+      DB_USER: ${POSTGRES_USER:-a2z_app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DB_NAME: ${POSTGRES_DB:-a2z}
+
+      # Pool mode: 'transaction' is the recommended default for
+      # web apps. Application code must not rely on session-level
+      # state (SET, prepared statements at session level).
+      POOL_MODE: transaction
+
+      # Pool sizing — tuned for tier-2 bank workload (≤200
+      # concurrent web users, mixed light queries + occasional
+      # heavy reports).
+      MAX_CLIENT_CONN: ${MAX_CLIENT_CONN:-500}
+      DEFAULT_POOL_SIZE: ${DEFAULT_POOL_SIZE:-25}
+      RESERVE_POOL_SIZE: ${RESERVE_POOL_SIZE:-5}
+      RESERVE_POOL_TIMEOUT: 5
+
+      # Auth method. md5 is widely supported; scram-sha-256 is
+      # stronger if your Postgres version supports it. trust is
+      # acceptable only on isolated networks.
+      AUTH_TYPE: md5
+      AUTH_FILE: /etc/pgbouncer/userlist.txt
+
+      # Stats user — optional, lets you connect to the special
+      # 'pgbouncer' database to inspect pool state via SQL.
+      STATS_USERS: ${STATS_USERS:-stats_user}
+
+    ports:
+      - "${PGBOUNCER_PORT:-6432}:5432"
+
+    volumes:
+      # Mount your hashed userlist + custom ini if you have one.
+      # Templates in this directory show the expected format.
+      - ./deployment/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+      - ./deployment/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+
+    # Health check — uses pg_isready against pgbouncer's stats DB
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "5432"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    # Light resource limits — pgbouncer is C, single-process,
+    # very efficient. 128MB is generous.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+
+    networks:
+      - a2z_net
+
+# Use the same network as your application + postgres services
+networks:
+  a2z_net:
+    external: true
+    name: ${COMPOSE_NETWORK:-a2z_default}

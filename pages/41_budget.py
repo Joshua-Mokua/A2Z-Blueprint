@@ -11,7 +11,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("budget")
+require_access("finance.budget")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -107,3 +107,12 @@ with tabs[3]:
                             key="bvs_dl")
     else:
         st.info("Export available to Finance team and Admin.")
+
+# v10.465 — Phase 4 WF4 operational output (admin re-homed page)
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

@@ -13,6 +13,7 @@ from pages._shared import load_shared_state
 from utils.core_audit import audit_log, requires_dual_approval, submit_for_approval
 from pages._access import require_access
 from utils.core import fmt_kpi_value
+from utils.config import currency_symbol, regulator, currency, country, core_banking_system
 
 def _safe_date(s, fallback=None):
     """Safe date parsing — returns fallback on invalid/None input."""
@@ -25,7 +26,7 @@ def _safe_date(s, fallback=None):
 
 
 
-require_access("treasury")
+require_access("treasury_alm.dashboard")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 
@@ -72,8 +73,8 @@ st.markdown(
 st.markdown(
     f"<div style='background:var(--color-background-secondary);border-radius:8px;"
     f"padding:8px 16px;font-size:12px;display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px'>"
-    f"<span>🏦 <b>CBK Rate:</b> {cbk_rate:.2f}%</span>"
-    + "".join(f"<span>💱 <b>{ccy}/KES:</b> {rate:.2f}</span>" for ccy,rate in fx_rates.items())
+    f"<span>🏦 <b>{regulator()} Rate:</b> {cbk_rate:.2f}%</span>"
+    + "".join(f"<span>💱 <b>{ccy}/{currency()}:</b> {rate:.2f}</span>" for ccy,rate in fx_rates.items())
     + f"<span style='color:var(--color-text-tertiary)'>Updated: {alm.get('last_updated',str(today))}</span>"
     + "</div>",
     unsafe_allow_html=True)
@@ -86,12 +87,13 @@ sections = st.tabs([
     "📊 Overview",
     "💼 Products",
     "⚖️ Risk & Control",
+    "🤖 Arc Engines",
 ])
 
 # ── Section 0: 📊 Overview ─────────────────────────────
 with sections[0]:
     st.markdown("**Treasury at a glance:**")
-    fd_book = sum(r["amount"] for r in fd if r["currency"]=="KES" and r["status"] in ("approved","booked"))/1e9
+    fd_book = sum(r["amount"] for r in fd if r["currency"] == currency() and r["status"] in ("approved","booked"))/1e9
     fx_vol  = sum(d["kes_amount"] for d in fx_deals if d["status"] in ("Confirmed","Settled"))/1e9
     mm_book = sum(r["principal"] for r in mm if r["status"]=="Active")/1e9
     gs_face = sum(s["face_value"] for s in gs if not s["is_matured"])/1e9
@@ -99,11 +101,11 @@ with sections[0]:
     unreal_gl= sum(s["unrealised_gl"] for s in gs if not s["is_matured"])/1e6
 
     c1,c2,c3,c4,c5 = st.columns(5)
-    c1.metric("FD Book",          f"KES {fd_book:.1f}B")
-    c2.metric("FX Dealt (YTD)",   f"KES {fx_vol:.1f}B")
-    c3.metric("MM Placements",    f"KES {mm_book:.1f}B")
-    c4.metric("Gov Securities",   f"KES {gs_face:.1f}B face")
-    c5.metric("Unrealised G/L",   f"KES {unreal_gl:.0f}M",
+    c1.metric("FD Book",          f"{currency_symbol()} {fd_book:.1f}B")
+    c2.metric("FX Dealt (YTD)",   f"{currency_symbol()} {fx_vol:.1f}B")
+    c3.metric("MM Placements",    f"{currency_symbol()} {mm_book:.1f}B")
+    c4.metric("Gov Securities",   f"{currency_symbol()} {gs_face:.1f}B face")
+    c5.metric("Unrealised G/L",   f"{currency_symbol()} {unreal_gl:.0f}M",
               delta_color="normal" if unreal_gl >= 0 else "inverse")
 
     st.markdown("---")
@@ -131,9 +133,9 @@ with sections[0]:
         st.markdown("---")
         st.error(f"🔴 **Maturing within 7 days:** {len(fd_mat7)} FDs + {len(mm_mat7)} MM placements — arrange rollover or settlement")
         for r in fd_mat7:
-            st.markdown(f"  • FD `{r['id']}` {r['client_name'][:25]} · KES {r['amount']/1e6:.1f}M · Matures {r['maturity_date']}")
+            st.markdown(f"  • FD `{r['id']}` {r['client_name'][:25]} · {currency_symbol()} {r['amount']/1e6:.1f}M · Matures {r['maturity_date']}")
         for r in mm_mat7:
-            st.markdown(f"  • MM `{r['id']}` {r['counterparty'][:25]} · KES {r['principal']/1e6:.1f}M · Matures {r['maturity_date']}")
+            st.markdown(f"  • MM `{r['id']}` {r['counterparty'][:25]} · {currency_symbol()} {r['principal']/1e6:.1f}M · Matures {r['maturity_date']}")
 
     # ════════════════════════════════════════════════════════════════════
     # TAB 2: FIXED DEPOSITS
@@ -153,7 +155,7 @@ with sections[1]:
         with fd_tabs[0]:
             f1,f2,f3 = st.columns(3)
             sel_s = f1.selectbox("Status",["All","pending","approved","booked","counter_offered","rejected"],key="fd_s")
-            sel_c = f2.selectbox("Currency",["All","KES","USD","EUR"],key="fd_c")
+            sel_c = f2.selectbox("Currency",["All", currency(), "USD", "EUR"],key="fd_c")
             sel_p = f3.selectbox("Product",["All"]+sorted(set(r["product"] for r in fd)),key="fd_p")
             vis=[r for r in fd if (sel_s=="All" or r["status"]==sel_s)
                  and (sel_c=="All" or r["currency"]==sel_c)
@@ -170,7 +172,7 @@ with sections[1]:
             pending_fd=[r for r in fd if r["status"]=="pending"]
             if not pending_fd: st.success("✅ No FDs pending ratification.")
             else:
-                st.warning(f"⏳ {len(pending_fd)} FD requests pending — KES {sum(r['amount'] for r in pending_fd if r['currency']=='KES')/1e9:.2f}B")
+                st.warning(f"⏳ {len(pending_fd)} FD requests pending — KES {sum(r['amount'] for r in pending_fd if r['currency'] == currency())/1e9:.2f}B")
                 # Batch ratify by tenure
                 from collections import defaultdict as _dd
                 by_tenure=_dd(list)
@@ -232,7 +234,7 @@ with sections[1]:
             elif fd_mat30: st.warning(f"⚠️ {len(fd_mat30)} FDs maturing within 30 days")
             c1,c2,c3,c4=st.columns(4)
             c1.metric("Booked FDs",len(booked))
-            c2.metric("Total KES",f"KES {sum(r['amount'] for r in booked if r['currency']=='KES')/1e9:.2f}B")
+            c2.metric("Total KES",f"{currency_symbol()} {sum(r['amount'] for r in booked if r['currency'] == currency())/1e9:.2f}B")
             avg_r=sum(r.get('ratified_rate',r['proposed_rate']) for r in booked)/max(len(booked),1)
             c3.metric("Avg Rate",f"{avg_r:.2f}%")
             c4.metric("Maturing ≤30d",len(fd_mat30))
@@ -257,9 +259,9 @@ with sections[1]:
     with sub[1]:
         c1,c2,c3,c4,c5=st.columns(5)
         c1.metric("FX Deals",len(fx_deals))
-        c2.metric("Buy Vol",  f"KES {sum(d['kes_amount'] for d in fx_deals if d['direction']=='Buy')/1e9:.1f}B")
-        c3.metric("Sell Vol", f"KES {sum(d['kes_amount'] for d in fx_deals if d['direction']=='Sell')/1e9:.1f}B")
-        c4.metric("Total Margin",f"KES {sum(d.get('margin_kes',0) for d in fx_deals)/1e6:.1f}M")
+        c2.metric("Buy Vol",  f"{currency_symbol()} {sum(d['kes_amount'] for d in fx_deals if d['direction']=='Buy')/1e9:.1f}B")
+        c3.metric("Sell Vol", f"{currency_symbol()} {sum(d['kes_amount'] for d in fx_deals if d['direction']=='Sell')/1e9:.1f}B")
+        c4.metric("Total Margin",f"{currency_symbol()} {sum(d.get('margin_kes',0) for d in fx_deals)/1e6:.1f}M")
         fwd_count=sum(1 for d in fx_deals if d["deal_type"]=="Forward")
         c5.metric("Forwards",fwd_count)
 
@@ -274,7 +276,7 @@ with sections[1]:
                     and (sel_ft=="All" or d["deal_type"]==sel_ft)
                     and (sel_fs=="All" or d["status"]==sel_fs)]
             rows=[{"ID":d["id"],"Type":d["deal_type"],"Dir":d["direction"],"CCY":d["currency"],
-                   "FCY Amt":f"{d['fcy_amount']:,.0f}","Rate":d["rate"],"KES Amt (M)":round(d["kes_amount"]/1e6,1),
+                   "FCY Amt":f"{d['fcy_amount']:,.0f}","Rate":d["rate"],f"{currency()} Amt (M)":round(d["kes_amount"]/1e6,1),
                    "Counterparty":d["counterparty"][:20],"Value Date":d["value_date"][:10],"Status":d["status"]}
                   for d in sorted(vis_fx,key=lambda x:(x.get("trade_date") or "9999"),reverse=True)[:50]]
             if rows: st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
@@ -286,8 +288,8 @@ with sections[1]:
                 if d["status"]!="Settled":
                     ccy_exp[d["currency"]]["buy" if d["direction"]=="Buy" else "sell"]+=d["fcy_amount"]
             exp_rows=[{"Currency":ccy,"Buy FCY":f"{v['buy']:,.0f}","Sell FCY":f"{v['sell']:,.0f}",
-                       "Net FCY":f"{v['buy']-v['sell']:,.0f}","Net KES (M)":round((v["buy"]-v["sell"])*fx_rates.get(ccy,1)/1e6,1),
-                       "Limit KES (M)":round(tcfg.get("counterparty_limits",{}).get("net_open",500e6)/1e6,0)}
+                       "Net FCY":f"{v['buy']-v['sell']:,.0f}",f"Net {currency()} (M)":round((v["buy"]-v["sell"])*fx_rates.get(ccy,1)/1e6,1),
+                       f"Limit {currency()} (M)":round(tcfg.get("counterparty_limits",{}).get("net_open",500e6)/1e6,0)}
                       for ccy,v in ccy_exp.items()]
             if exp_rows: st.dataframe(pd.DataFrame(exp_rows),use_container_width=True,hide_index=True)
 
@@ -299,14 +301,14 @@ with sections[1]:
         matured_mm=[r for r in mm if r["status"]=="Matured"]
         c1,c2,c3,c4=st.columns(4)
         c1.metric("Active Placements",len(active_mm))
-        c2.metric("Total Outstanding",f"KES {sum(r['principal'] for r in active_mm)/1e9:.1f}B")
+        c2.metric("Total Outstanding",f"{currency_symbol()} {sum(r['principal'] for r in active_mm)/1e9:.1f}B")
         c3.metric("Avg Rate",f"{sum(r['rate'] for r in active_mm)/max(len(active_mm),1):.2f}%")
-        c4.metric("Interest Earned (Total)",f"KES {sum(r['interest_earned'] for r in mm)/1e6:.0f}M")
+        c4.metric("Interest Earned (Total)",f"{currency_symbol()} {sum(r['interest_earned'] for r in mm)/1e6:.0f}M")
 
         rows=[{"ID":r["id"],"Type":r["type"],"Counterparty":r["counterparty"][:25],
                "Principal (M)":round(r["principal"]/1e6,1),"Rate%":r["rate"],
                "Tenor":r["tenor_days"],"Matures":r["maturity_date"][:10],
-               "Interest (KES K)":round(r["interest_earned"]/1e3,0),"Status":r["status"]}
+               f"Interest ({currency()} K)":round(r["interest_earned"]/1e3,0),"Status":r["status"]}
               for r in sorted(mm,key=lambda x:(x.get("maturity_date") or "9999"))]
         if rows: st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
 
@@ -324,10 +326,10 @@ with sections[1]:
         accrued   =sum(s.get("accrued_interest",0) for s in active_gs)/1e6
 
         c1,c2,c3,c4,c5=st.columns(5)
-        c1.metric("Total Portfolio",f"KES {total_face:.1f}B face")
-        c2.metric("Market Value",   f"KES {total_mkt:.1f}B")
-        c3.metric("Unrealised G/L", f"KES {total_gl:.0f}M",delta_color="normal" if total_gl>=0 else "inverse")
-        c4.metric("Accrued Interest",f"KES {accrued:.0f}M")
+        c1.metric("Total Portfolio",f"{currency_symbol()} {total_face:.1f}B face")
+        c2.metric("Market Value",   f"{currency_symbol()} {total_mkt:.1f}B")
+        c3.metric("Unrealised G/L", f"{currency_symbol()} {total_gl:.0f}M",delta_color="normal" if total_gl>=0 else "inverse")
+        c4.metric("Accrued Interest",f"{currency_symbol()} {accrued:.0f}M")
         c5.metric("Holdings",       len(active_gs))
 
         st.markdown("**By IFRS 9 classification:**")
@@ -338,7 +340,7 @@ with sections[1]:
             val=sum(s["face_value"] for s in items)/1e9
             mkt=sum(s["market_value"] for s in items)/1e9
             gl =sum(s["unrealised_gl"] for s in items)/1e6
-            st.markdown(f"  **{clf}** ({desc}): {len(items)} securities · KES {val:.1f}B face · "
+            st.markdown(f"  **{clf}** ({desc}): {len(items)} securities · {currency_symbol()} {val:.1f}B face · "
                         f"KES {mkt:.1f}B MtM · G/L: KES {gl:.0f}M")
 
         st.markdown("---")
@@ -359,16 +361,17 @@ with sections[2]:
         "📊 ALM & Liquidity",
         "🔒 Limits & Blotter",
         "📐 IFRS 9",
+        "💱 FX Position Monitoring",
     ])
     with sub[0]:
         if not alm:
             st.info("ALM data not available.")
         else:
             st.markdown(f"**Asset-Liability Management — as at {alm.get('as_at_date',str(today))}**")
-            st.markdown(f"CBK Rate: **{alm.get('cbk_rate',13.00):.2f}%**  |  Interbank: **{alm.get('interbank_rate',12.5):.2f}%**")
+            st.markdown(f"{regulator()} Rate: **{alm.get('cbk_rate',13.00):.2f}%**  |  Interbank: **{alm.get('interbank_rate',12.5):.2f}%**")
 
             st.markdown("---")
-            st.markdown("**Liquidity ratios (CBK Prudential Guidelines):**")
+            st.markdown(f"**Liquidity ratios ({regulator()} Prudential Guidelines):**")
             liq=alm.get("liquidity_ratios",{})
             for key,info in liq.items():
                 val=info.get("value",0); tgt=info.get("minimum",info.get("maximum",100))
@@ -400,9 +403,9 @@ with sections[2]:
             if hqla:
                 st.markdown("**HQLA composition (LCR buffer):**")
                 ch1,ch2,ch3=st.columns(3)
-                ch1.metric("Level 1 HQLA",f"KES {hqla.get('level_1',0)/1e9:.1f}B","Gov securities, CBK cash")
-                ch2.metric("Level 2A",     f"KES {hqla.get('level_2a',0)/1e9:.1f}B","AAA-rated securities")
-                ch3.metric("Level 2B",     f"KES {hqla.get('level_2b',0)/1e9:.1f}B","Listed equities, etc")
+                ch1.metric("Level 1 HQLA",f"{currency_symbol()} {hqla.get('level_1',0)/1e9:.1f}B",f"Gov securities, {regulator()} cash")
+                ch2.metric("Level 2A",     f"{currency_symbol()} {hqla.get('level_2a',0)/1e9:.1f}B","AAA-rated securities")
+                ch3.metric("Level 2B",     f"{currency_symbol()} {hqla.get('level_2b',0)/1e9:.1f}B","Listed equities, etc")
 
         # ════════════════════════════════════════════════════════════════════
         # TAB 7: LIMITS & BLOTTER
@@ -509,7 +512,7 @@ with sections[2]:
         - SPPI test logic (contractual cash flows = principal + interest only)
         - Amortised cost effective interest rate calculation
         - OCI recycling treatment for AFS instruments
-        - CBK IFRS 9 regulatory reporting format
+        - regulatory IFRS 9 reporting format
 
         **What is configurable via Admin:**
         - ECL rates per stage (default 1% / 15% / 50%)
@@ -518,3 +521,551 @@ with sections[2]:
         - Probability of Default curves
             """)
 
+
+    # ── FX Position Monitoring (Standard #75, integrated v5.76) ──
+    with sub[3]:
+        from utils.fx_position import (
+            FxPositionMonitoringEngine, FxPosition,
+            SUPPORTED_CURRENCIES, AGGREGATE_FX_LIMIT_PCT,
+            SINGLE_CURRENCY_LIMIT_PCT, AGGREGATION_METHODS,
+        )
+        from decimal import Decimal as _D_fx
+
+        st.markdown(
+            f"**Standard #75 — FX Position Monitoring** ({regulator()} PG/03). "
+            f"Single-currency limit: ≤ **{SINGLE_CURRENCY_LIMIT_PCT}% of core capital**. "
+            f"Aggregate limit: ≤ **{AGGREGATE_FX_LIMIT_PCT}% of core capital**."
+        )
+        st.caption(
+            f"Engine `FxPositionMonitoringEngine`. "
+            f"{len(SUPPORTED_CURRENCIES)} supported currencies. "
+            f"2 aggregation methods (SHORTHAND vs SUM_ABSOLUTE)."
+        )
+
+        fx_sub_tabs = st.tabs([
+            "📊 Net Open Position",
+            "🚧 Limit Compliance Check",
+            "🔍 Aggregation Method Comparison",
+        ])
+
+        # ---- Net Open Position per currency ----
+        with fx_sub_tabs[0]:
+            st.markdown("**Net Open Position per Currency** = FX assets − FX liabilities (KES-equivalent)")
+            st.caption(
+                "Uses the page's `treasury_fx.json` deal data if available; "
+                "falls back to default 3-currency demo (USD / EUR / GBP).")
+
+            # Aggregate FX deals by currency to derive positions
+            fx_aggregated = {}
+            for d in fx_deals:
+                ccy = d.get("currency", "USD") or "USD"
+                if ccy == "KES":
+                    continue
+                amt = float(d.get("kes_amount", 0) or 0)
+                side = (d.get("side", "") or "").upper()
+                if ccy not in fx_aggregated:
+                    fx_aggregated[ccy] = {"assets": 0, "liabilities": 0,
+                                            "spot": float(d.get("spot_rate",
+                                                                  fx_rates.get(ccy, 0)) or 0)}
+                # Buy → asset; Sell → liability (simplified)
+                if "BUY" in side:
+                    fx_aggregated[ccy]["assets"] += amt
+                elif "SELL" in side:
+                    fx_aggregated[ccy]["liabilities"] += amt
+                else:
+                    # Unspecified side → split 50/50 as net-zero contribution proxy
+                    fx_aggregated[ccy]["assets"] += amt / 2
+                    fx_aggregated[ccy]["liabilities"] += amt / 2
+
+            # Allow the user to override / add positions
+            st.markdown("**Position inputs** (KES-equivalent, in KES B):")
+            position_rows = []
+            default_positions = [
+                ("USD", 10.0, 8.0, 130.0),
+                ("EUR", 5.0, 5.5, 141.0),
+                ("GBP", 3.0, 2.5, 165.0),
+            ]
+            for i, (default_ccy, default_a, default_l, default_spot) in enumerate(default_positions):
+                # If we have aggregated data for this ccy, prefer it
+                agg = fx_aggregated.get(default_ccy, {})
+                a_val = agg.get("assets", 0) / 1e9 if agg.get("assets") else default_a
+                l_val = agg.get("liabilities", 0) / 1e9 if agg.get("liabilities") else default_l
+                s_val = agg.get("spot", default_spot) or default_spot
+                fx_c1, fx_c2, fx_c3, fx_c4 = st.columns([1, 1.5, 1.5, 1])
+                with fx_c1:
+                    ccy = st.selectbox(f"Currency {i+1}",
+                                         list(SUPPORTED_CURRENCIES),
+                                         index=list(SUPPORTED_CURRENCIES).index(default_ccy),
+                                         key=f"fx_pos_ccy_{i}")
+                with fx_c2:
+                    a = st.number_input("FX assets (KES B)",
+                                          min_value=0.0, value=float(a_val),
+                                          step=0.5, key=f"fx_pos_a_{i}")
+                with fx_c3:
+                    l = st.number_input("FX liabilities (KES B)",
+                                          min_value=0.0, value=float(l_val),
+                                          step=0.5, key=f"fx_pos_l_{i}")
+                with fx_c4:
+                    sp = st.number_input("Spot",
+                                           min_value=0.0, value=float(s_val),
+                                           step=1.0, key=f"fx_pos_sp_{i}")
+                position_rows.append({"ccy": ccy, "a": a, "l": l, "sp": sp})
+
+            if st.button("Compute net open positions", key="fx_pos_btn",
+                          type="primary"):
+                positions = [
+                    FxPosition(
+                        position_id=f"P{i+1}",
+                        currency=row["ccy"],
+                        fx_assets_kes_equivalent=_D_fx(str(row["a"])) * _D_fx("1000000000"),
+                        fx_liabilities_kes_equivalent=_D_fx(str(row["l"])) * _D_fx("1000000000"),
+                        spot_rate_to_kes=_D_fx(str(row["sp"])))
+                    for i, row in enumerate(position_rows)
+                ]
+                r = FxPositionMonitoringEngine.net_open_position_per_currency(positions)
+                if r.get("currency_count", 0) > 0:
+                    rows_disp = []
+                    for p in r.get("positions", []):
+                        nop = _D_fx(str(p.get("net_open_position_kes", 0)))
+                        rows_disp.append({
+                            "Currency": p.get("currency"),
+                            "Assets (KES B)": float(_D_fx(str(p.get("fx_assets_kes", 0)))/_D_fx("1000000000")),
+                            "Liabilities (KES B)": float(_D_fx(str(p.get("fx_liabilities_kes", 0)))/_D_fx("1000000000")),
+                            "Net Open Position (KES B)": float(nop / _D_fx("1000000000")),
+                            "Type": p.get("position_type"),
+                        })
+                    st.dataframe(pd.DataFrame(rows_disp),
+                                 use_container_width=True, hide_index=True)
+                    if r.get("unknown_currencies"):
+                        st.warning(
+                            f"⚠ Unknown currencies excluded (Rule 6): "
+                            f"{', '.join(r['unknown_currencies'])}")
+                    audit_log("IFRS_ENGINE_USED", uname,
+                               f"FX #75: NOP per ccy, count={r['currency_count']}")
+                else:
+                    st.error("No valid currencies in input.")
+
+        # ---- Limit compliance check ----
+        with fx_sub_tabs[1]:
+            st.markdown(
+                f"**Limit Compliance Check** ({regulator()} PG/03). "
+                f"Single ≤ {SINGLE_CURRENCY_LIMIT_PCT}% / aggregate ≤ {AGGREGATE_FX_LIMIT_PCT}% of core capital.")
+            core_cap = st.number_input("Core capital (KES B)",
+                                         min_value=0.0, value=15.0, step=1.0,
+                                         key="fx_core_cap",
+                                         help="Tier 1 capital.")
+            st.caption("Uses the same position inputs as the Net Open Position tab.")
+
+            if st.button("Check compliance", key="fx_limit_btn",
+                          type="primary"):
+                positions = []
+                for i in range(3):
+                    ccy = st.session_state.get(f"fx_pos_ccy_{i}", "USD")
+                    a = st.session_state.get(f"fx_pos_a_{i}", 1.0)
+                    l = st.session_state.get(f"fx_pos_l_{i}", 1.0)
+                    sp = st.session_state.get(f"fx_pos_sp_{i}", 130.0)
+                    positions.append(FxPosition(
+                        position_id=f"P{i+1}", currency=ccy,
+                        fx_assets_kes_equivalent=_D_fx(str(a)) * _D_fx("1000000000"),
+                        fx_liabilities_kes_equivalent=_D_fx(str(l)) * _D_fx("1000000000"),
+                        spot_rate_to_kes=_D_fx(str(sp))))
+                r = FxPositionMonitoringEngine.fx_exposure_limit_check(
+                    positions,
+                    _D_fx(str(core_cap)) * _D_fx("1000000000"))
+                status = r.get("status")
+                agg_pct = r.get("aggregate_pct")
+                agg_breach = r.get("aggregate_breach")
+                single_breaches = r.get("single_currency_breaches", [])
+                color = {"GREEN":"#10B981","AMBER":"#F59E0B","RED":"#DC2626"}.get(status, "#6B7280")
+
+                k1, k2, k3 = st.columns(3)
+                k1.metric("Aggregate FX %", f"{agg_pct}%",
+                           delta=f"vs {AGGREGATE_FX_LIMIT_PCT}% limit")
+                k2.metric("Single-currency breaches",
+                           str(len(single_breaches)))
+                with k3:
+                    st.markdown(
+                        f"<div style='padding:12px;background:{color}22;"
+                        f"border-left:6px solid {color};border-radius:10px;text-align:center'>"
+                        f"<div style='font-size:11px;letter-spacing:1.5px;opacity:0.7'>STATUS</div>"
+                        f"<div style='font-size:24px;font-weight:800;color:{color}'>{status}</div></div>",
+                        unsafe_allow_html=True)
+
+                if not agg_breach and not single_breaches:
+                    st.success(
+                        f"✅ All FX limits within {regulator()} PG/03 thresholds.")
+                else:
+                    if agg_breach:
+                        st.error(
+                            f"⛔ **Aggregate FX limit BREACHED** at {agg_pct}% "
+                            f"(limit {AGGREGATE_FX_LIMIT_PCT}%).")
+                    if single_breaches:
+                        st.error(
+                            f"⛔ **{len(single_breaches)} single-currency breach(es):**")
+                        for b in single_breaches:
+                            st.write(
+                                f"- **{b['currency']}** at {b['limit_pct']}% "
+                                f"(limit {SINGLE_CURRENCY_LIMIT_PCT}%)")
+
+                # Per-currency table
+                per = r.get("per_currency", [])
+                if per:
+                    with st.expander("Per-currency limit detail"):
+                        st.dataframe(pd.DataFrame([
+                            {"Currency": p["currency"],
+                             "NOP (KES B)": float(_D_fx(str(p["net_open_position_kes"]))/_D_fx("1000000000")),
+                             "Type": p["position_type"],
+                             "Limit %": p["limit_pct"],
+                             "Breach": "🔴" if p["breach"] else "✅"}
+                            for p in per]),
+                            use_container_width=True, hide_index=True)
+
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"FX #75: Limit check core_cap={core_cap}B, "
+                           f"agg_pct={agg_pct}%, status={status}, "
+                           f"single_breaches={len(single_breaches)}")
+
+        # ---- Aggregation method comparison ----
+        with fx_sub_tabs[2]:
+            st.markdown(
+                "**Aggregation Method Comparison**: SHORTHAND vs SUM_ABSOLUTE")
+            st.caption(
+                "**SHORTHAND** = max(|sum of long positions|, |sum of short positions|) — Basel default. "
+                "**SUM_ABSOLUTE** = sum of absolute NOPs across all currencies — more conservative. "
+                "Banks may use either; SHORTHAND is more permissive.")
+
+            if st.button("Compare methods", key="fx_agg_btn",
+                          type="primary"):
+                positions = []
+                for i in range(3):
+                    ccy = st.session_state.get(f"fx_pos_ccy_{i}", "USD")
+                    a = st.session_state.get(f"fx_pos_a_{i}", 1.0)
+                    l = st.session_state.get(f"fx_pos_l_{i}", 1.0)
+                    sp = st.session_state.get(f"fx_pos_sp_{i}", 130.0)
+                    positions.append(FxPosition(
+                        position_id=f"P{i+1}", currency=ccy,
+                        fx_assets_kes_equivalent=_D_fx(str(a)) * _D_fx("1000000000"),
+                        fx_liabilities_kes_equivalent=_D_fx(str(l)) * _D_fx("1000000000"),
+                        spot_rate_to_kes=_D_fx(str(sp))))
+                r_short = FxPositionMonitoringEngine.aggregate_net_open_position(
+                    positions, "SHORTHAND_METHOD")
+                r_abs = FxPositionMonitoringEngine.aggregate_net_open_position(
+                    positions, "SUM_ABSOLUTE")
+
+                k1, k2 = st.columns(2)
+                with k1:
+                    st.metric("SHORTHAND aggregate (KES B)",
+                               f"{_D_fx(str(r_short['aggregate_net_open_position_kes']))/_D_fx('1000000000'):.2f}")
+                    st.caption(
+                        f"Long: {_D_fx(str(r_short['sum_long_kes']))/_D_fx('1000000000'):.2f}B / "
+                        f"Short: {_D_fx(str(r_short['sum_short_kes']))/_D_fx('1000000000'):.2f}B")
+                with k2:
+                    st.metric("SUM_ABSOLUTE aggregate (KES B)",
+                               f"{_D_fx(str(r_abs['aggregate_net_open_position_kes']))/_D_fx('1000000000'):.2f}")
+                    st.caption(
+                        f"Sum of absolute NOPs across "
+                        f"{r_abs['currency_count']} currencies")
+
+                short_v = float(_D_fx(str(r_short['aggregate_net_open_position_kes'])))
+                abs_v = float(_D_fx(str(r_abs['aggregate_net_open_position_kes'])))
+                if short_v < abs_v:
+                    st.info(
+                        f"ℹ SHORTHAND ({short_v/1e9:.2f}B) is lower than "
+                        f"SUM_ABSOLUTE ({abs_v/1e9:.2f}B) — long and short positions "
+                        f"partially offset. SHORTHAND gives a more permissive view.")
+                else:
+                    st.info(
+                        "ℹ Both methods produce the same aggregate (no offsetting between long and short).")
+
+                audit_log("IFRS_ENGINE_USED", uname,
+                           f"FX #75: Method compare SHORT={short_v}, ABS={abs_v}")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Section 3: 🤖 Arc Engines (absorbed from 26_treasury_arc_cockpit.py
+# in v10.202 per the architectural reorganization sub-campaign.
+# 12 Treasury-arc engines (ENH-231..240, ENH-LR-001, ENH-TRS-R1..R6,
+# regulatory LCR — see ENH-LR-001) presented as 7 thematic sub-tabs grouping engines
+# per workflow logic. Read-only display except for state-mutating
+# buttons that go through utils/api_treasury.py FastAPI endpoints.
+# ──────────────────────────────────────────────────────────────────────
+with sections[3]:
+    from datetime import datetime, timezone
+
+    # Lazy-import engines so the rest of the page renders even if any
+    # engine module fails to import. Match the cockpit's defensive style.
+    try:
+        from utils.treasury_intelligence import TreasuryIntelligenceEngine
+        from utils.treasury_alm import TreasuryALMEngine
+        from utils.treasury_dashboard import TreasuryDashboardEngine
+        from utils.treasury_products import TreasuryProductsEngine
+        from utils.treasury_agents import AgentOrchestrator
+        from utils.treasury_connectivity import TreasuryConnectivityEngine
+        from utils.treasury_digital_assets import DigitalAssetTreasuryEngine
+        from utils.treasury_unified_platform import UnifiedTreasuryPlatform
+        from utils.liquidity_risk import LiquidityRiskEngine
+        from utils.liquidity_stress import LiquidityStressEngine
+        from utils.islamic_treasury import IslamicTreasuryEngine
+        from utils.climate_treasury_limits import ClimateTreasuryLimitsEngine
+        _ARC_ENGINES_AVAILABLE = True
+    except ImportError as _ie:
+        st.error(f"Arc engines unavailable: {_ie}")
+        _ARC_ENGINES_AVAILABLE = False
+
+    try:
+        from pages._cockpit_render import render_summary as _render_summary
+    except ImportError:
+        def _render_summary(summary, *, exclude=()):
+            st.json(summary if summary else {})
+
+    if _ARC_ENGINES_AVAILABLE:
+        st.caption(
+            "v10.202 absorbed from 26_treasury_arc_cockpit.py — 12 engines "
+            f"(ENH-231..240, ENH-LR-001, ENH-TRS-R1..R6, {regulator()}-PG-05-LCR) "
+            "spanning intelligence, ALM, products, agents, connectivity, "
+            "digital assets, climate, Islamic, and unified cross-asset "
+            "rollup. All engines read-only here; state-mutating workflows "
+            "go through the FastAPI POST endpoints in utils/api_treasury.py.")
+
+        # Engine instances cached at session level
+        @st.cache_resource
+        def _get_arc_engines():
+            return {
+                "intel":            TreasuryIntelligenceEngine(),
+                "alm":              TreasuryALMEngine(),
+                "dashboard":        TreasuryDashboardEngine(),
+                "products":         TreasuryProductsEngine(),
+                "agents":           AgentOrchestrator(),
+                "connectivity":     TreasuryConnectivityEngine(),
+                "digital_assets":   DigitalAssetTreasuryEngine(),
+                "unified":          UnifiedTreasuryPlatform(),
+                "liquidity_stress": LiquidityStressEngine(),
+                "islamic":          IslamicTreasuryEngine(),
+                "climate":          ClimateTreasuryLimitsEngine(),
+            }
+
+        engines = _get_arc_engines()
+
+        # 7 thematic nested sub-tabs grouping the 12 engines per workflow.
+        # G4 7-tab limit respected: top-level rows have 4 tabs, this nested
+        # row has 7 — both within the cap.
+        arc_tabs = st.tabs([
+            "📊 Dashboard",
+            "💧 Liquidity & ALM",
+            "💰 Products",
+            "🤖 Agents",
+            "🔌 Connectivity",
+            "🌐 Digital & Climate",
+            "🕌 Islamic & Unified",
+        ])
+
+        # Sub-tab 1: Dashboard (intelligence + dashboard board pack)
+        with arc_tabs[0]:
+            st.subheader("Treasury Intelligence (ENH-231..234, 236)")
+            st.caption(
+                "Yield curves, liquidity metrics, income by instrument, "
+                "ALM dashboard data — read directly from FLEXCUBE-shaped "
+                "feeds via TreasuryIntelligenceEngine.")
+            try:
+                _today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                _cur_period = datetime.now(timezone.utc).strftime("%Y-%m")
+
+                with st.expander("Yield curve (KES, today)", expanded=True):
+                    yc = engines["intel"].yield_curve(
+                        as_of_date=_today, currency="KES")
+                    _render_summary(yc)
+
+                with st.expander("Liquidity metrics (today)"):
+                    lm = engines["intel"].liquidity_metrics(as_of_date=_today)
+                    _render_summary(lm)
+
+                with st.expander(f"Income by instrument ({_cur_period})"):
+                    inc = engines["intel"].income_by_instrument(period=_cur_period)
+                    _render_summary(inc)
+            except Exception as e:
+                st.error(f"Intelligence load failed: {type(e).__name__}: {e}")
+
+            st.divider()
+            st.subheader("Dashboard board pack (ENH-238)")
+            try:
+                bp = engines["dashboard"].board_summary()
+                _render_summary(bp)
+            except Exception as e:
+                st.error(f"Dashboard board pack failed: {type(e).__name__}: {e}")
+
+        # Sub-tab 2: Liquidity & ALM (ENH-233 + ENH-LR-001 + ENH-232)
+        with arc_tabs[1]:
+            st.subheader(f"Liquidity Risk Engine ({regulator()}-PG-05-LCR)")
+            st.caption(
+                "LCR/NSFR computations require posted state (HQLA holdings, "
+                "cash flow items, funding components). Use the explicit POST "
+                "endpoints in /api/treasury/* with typed Pydantic models. "
+                "This tab shows ALM board summary + outlier scenarios.")
+            try:
+                ab = engines["alm"].board_summary()
+                st.subheader("ALM board summary (ENH-233)")
+                _render_summary(ab)
+            except Exception as e:
+                st.error(f"ALM board summary failed: {type(e).__name__}: {e}")
+
+            st.divider()
+            try:
+                outliers = engines["alm"].outlier_scenarios()
+                if outliers:
+                    st.subheader(f"Outlier IRRBB scenarios (n={len(outliers)})")
+                    rows = []
+                    for o in outliers:
+                        if hasattr(o, "__dataclass_fields__"):
+                            rows.append({k: getattr(o, k)
+                                          for k in o.__dataclass_fields__.keys()})
+                        else:
+                            rows.append({"value": str(o)})
+                    if rows:
+                        st.dataframe(pd.DataFrame(rows),
+                                      use_container_width=True, hide_index=True)
+                else:
+                    st.info("No outlier scenarios — engine reports all "
+                              "IRRBB scenarios within tolerance.")
+            except Exception as e:
+                st.error(f"Outlier scenarios failed: {type(e).__name__}: {e}")
+
+        # Sub-tab 3: Products (ENH-234)
+        with arc_tabs[2]:
+            st.subheader("Treasury Products (ENH-234)")
+            st.caption(
+                "FD, FX, MM, Bonds with MTM and yield curves. Position "
+                "registration goes through POST endpoints; this tab shows "
+                "the board summary which rolls up positions already in "
+                "the engine state.")
+            try:
+                pb = engines["products"].board_summary()
+                _render_summary(pb)
+            except Exception as e:
+                st.error(f"Products board summary failed: {type(e).__name__}: {e}")
+
+        # Sub-tab 4: Agents (ENH-240)
+        with arc_tabs[3]:
+            st.subheader("Treasury Agents Orchestration (ENH-240)")
+            st.caption(
+                "AgentOrchestrator + 5 agents (Cash, FX, MM, Risk, "
+                "Compliance). Recommendations lifecycle: pending → "
+                "approve/reject. This tab shows the current board summary.")
+            try:
+                ab = engines["agents"].board_summary()
+                _render_summary(ab)
+            except Exception as e:
+                st.error(f"Agents board summary failed: {type(e).__name__}: {e}")
+
+        # Sub-tab 5: Connectivity (ENH-TRS-R1, R3, R5)
+        with arc_tabs[4]:
+            st.subheader("Treasury Connectivity (ENH-TRS-R1, R3, R5)")
+            st.caption(
+                "9900+ bank connections + MMF direct access + ERP-to-Bank "
+                "payment journeys. Currently shows board summary of "
+                "registered connectors and counterparties.")
+            try:
+                cb = engines["connectivity"].board_summary()
+                _render_summary(cb)
+            except Exception as e:
+                st.error(f"Connectivity board summary failed: "
+                          f"{type(e).__name__}: {e}")
+
+        # Sub-tab 6: Digital & Climate (ENH-TRS-R2 + ENH-TRS-R6)
+        with arc_tabs[5]:
+            st.subheader("Digital Asset Treasury (ENH-TRS-R2)")
+            st.caption(
+                "Stablecoin and digital asset treasury integration. "
+                "Wallet whitelisting + holdings + spot rates.")
+            try:
+                if hasattr(engines["digital_assets"], "board_summary"):
+                    db_ = engines["digital_assets"].board_summary()
+                    _render_summary(db_)
+                else:
+                    st.info("DigitalAssetTreasuryEngine has no board_summary "
+                              "method. Engine present and instantiable; "
+                              "integration is by direct method calls only.")
+            except Exception as e:
+                st.error(f"Digital Assets failed: {type(e).__name__}: {e}")
+
+            st.divider()
+            st.subheader("Climate-Adjusted Treasury Limits (ENH-TRS-R6)")
+            st.caption(
+                "Climate-overlay adjustments to treasury exposure limits "
+                "by asset class. Read-only — limits are computed from the "
+                "configured climate engine at request time.")
+            try:
+                cb_ = engines["climate"].board_summary()
+                _render_summary(cb_)
+
+                st.subheader("All adjusted limits")
+                _arc_limits = engines["climate"].compute_all_limits()
+                if _arc_limits:
+                    rows = []
+                    for li in _arc_limits:
+                        if hasattr(li, "__dataclass_fields__"):
+                            rows.append({k: getattr(li, k)
+                                          for k in li.__dataclass_fields__.keys()})
+                    if rows:
+                        st.dataframe(pd.DataFrame(rows),
+                                      use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.error(f"Climate limits failed: {type(e).__name__}: {e}")
+
+        # Sub-tab 7: Islamic & Unified (ENH-239 + ENH-TRS-R4)
+        with arc_tabs[6]:
+            st.subheader("Islamic Treasury (ENH-239)")
+            st.caption(
+                "Sharia-compliant treasury products. board_summary + "
+                "non-compliant products surfaced for review.")
+            try:
+                ib = engines["islamic"].board_summary()
+                _render_summary(ib)
+
+                non_compliant = engines["islamic"].non_compliant_products()
+                if non_compliant:
+                    st.subheader(f"⚠️ Non-compliant products (n={len(non_compliant)})")
+                    rows = []
+                    for p in non_compliant:
+                        if hasattr(p, "__dataclass_fields__"):
+                            rows.append({k: getattr(p, k)
+                                          for k in p.__dataclass_fields__.keys()})
+                    if rows:
+                        st.dataframe(pd.DataFrame(rows),
+                                      use_container_width=True, hide_index=True)
+                else:
+                    st.success("All Islamic products Sharia-compliant.")
+            except Exception as e:
+                st.error(f"Islamic Treasury failed: {type(e).__name__}: {e}")
+
+            st.divider()
+            st.subheader("Unified Treasury Platform (ENH-TRS-R4)")
+            st.caption(
+                "MX.3-class cross-asset rollup combining FX, MM, Bonds, "
+                "Liquidity. Single source of truth for board reporting.")
+            try:
+                ub = engines["unified"].board_summary()
+                _render_summary(ub)
+
+                positions = engines["unified"].positions()
+                if positions:
+                    st.subheader(f"Positions (n={len(positions)})")
+                    rows = []
+                    for p in positions:
+                        if hasattr(p, "__dataclass_fields__"):
+                            rows.append({k: getattr(p, k)
+                                          for k in p.__dataclass_fields__.keys()})
+                    if rows:
+                        st.dataframe(pd.DataFrame(rows),
+                                      use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.error(f"Unified Platform failed: {type(e).__name__}: {e}")
+
+        # Footer audit log
+        try:
+            audit_log(
+                action="treasury_arc_engines.view",
+                username=ud.get("username", "anonymous"),
+                detail=f"viewed_at={datetime.now(timezone.utc).isoformat()}",
+                module="alm_liquidity")
+        except Exception:
+            pass

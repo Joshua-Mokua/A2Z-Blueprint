@@ -88,7 +88,7 @@ TABLE_USE_DB = {
     "ews_cases":        True,
     "collateral":       False,
     "recoveries":       False,
-    "compliance_cases": False,
+    "compliance_cases": True,    # v10.93: schema added v10.91, PG-migrated
     "aml_alerts":       True,
     "rcsa_risks":       True,
     # Tier 4 — Procurement / HR / Projects
@@ -104,7 +104,7 @@ TABLE_USE_DB = {
     "initiatives":      False,
     # New modules v5.3
     "partnerships":     False,
-    "referrals":        False,
+    "referrals":        True,    # v10.93: schema added v10.91, PG-migrated
     "agent_fraud":      False,
     "mou_categories":   False,
     "sponsored_events": False,
@@ -131,6 +131,38 @@ TABLE_USE_DB = {
     "flexcube_events":          False,
     "flexcube_config":          False,
     "module_config":            False,
+    # ─── v10.93 — register v10.88-v10.91 PG-migrated tables (Phase 1B prep) ──
+    # These all have CREATE TABLE schemas in this file plus FLAT_MIGRATIONS
+    # entries in scripts/migrate_to_postgres.py. Setting True since they're
+    # PG-ready; the JSON fallback in db.execute() still works if the table
+    # is empty.
+    "agent_fraud_alerts":       True,    # v10.88
+    "agents_data":              True,    # v10.88
+    "agent_transactions":       True,    # v10.88
+    "asset_register":           True,    # v10.88
+    "bid_bonds":                True,    # v10.88
+    "ifrs9_loans":              True,    # v10.89
+    "legal_matters":            True,    # v10.89
+    "rms_reconciliations":      True,    # v10.89
+    "debt_recovery":            True,    # v10.89
+    "cims_tickets":             True,    # v10.89
+    "treasury_fd":              True,    # v10.89
+    "bnc_policies":             True,    # v10.89
+    "bank_targets":             True,    # v10.89 (SPECIAL)
+    "baselines":                True,    # v10.89 (SPECIAL)
+    "staff_history":            True,    # v10.90
+    "pipeline":                 True,    # v10.90
+    "lms_enrollments":          True,    # v10.90
+    "edms_documents":           True,    # v10.90
+    "revenue_assurance":        True,    # v10.90
+    "treasury_fx":              True,    # v10.90
+    "credit_admin":             True,    # v10.90
+    "consent_register":         True,    # v10.91
+    "collateral_register":      True,    # v10.91
+    "execute_initiatives":      True,    # v10.91
+    "clearing_records":         True,    # v10.91
+    "commission_records":       True,    # v10.91
+    "trade_finance":            True,    # v10.91
 }
 
 # ── SQL identifier safety (V-002 mitigation) ──────────────────────────────
@@ -976,8 +1008,20 @@ CREATE TABLE IF NOT EXISTS loan_applications (
     tat_days            INT,
     sla_target_days     INT,
     last_updated        TIMESTAMPTZ DEFAULT now(),
-    metadata            JSONB DEFAULT '{}'
+    metadata            JSONB DEFAULT '{}',
+    -- v10.89: columns added for migrate_to_postgres compatibility.
+    -- The existing 'metadata' column is kept for backward compat
+    -- with code that wrote to it; new migration writes to 'data'.
+    clean_repayment_history    BOOLEAN DEFAULT false,
+    compliance_type            VARCHAR(50),
+    appraisal_notes            TEXT,
+    proposition_tag            VARCHAR(50),
+    data                       JSONB DEFAULT '{}'
 );
+-- v10.89: indexes for query performance after migration
+CREATE INDEX IF NOT EXISTS idx_loan_apps_status ON loan_applications (status);
+CREATE INDEX IF NOT EXISTS idx_loan_apps_application_date ON loan_applications (application_date);
+CREATE INDEX IF NOT EXISTS idx_loan_apps_rm ON loan_applications (rm_code);
 
 -- ── Disciplinary register (row-level security) ────────────────────────────
 CREATE TABLE IF NOT EXISTS disciplinary (
@@ -1022,6 +1066,7 @@ CREATE TABLE IF NOT EXISTS aml_alerts (
     str_filed       BOOLEAN DEFAULT false,
     str_reference   VARCHAR(50),
     notes           TEXT,
+    data            JSONB DEFAULT '{}',         -- v10.88: added for migrate_to_postgres compatibility
     created_at      TIMESTAMPTZ DEFAULT now(),
     updated_at      TIMESTAMPTZ DEFAULT now()
 );
@@ -1029,6 +1074,10 @@ ALTER TABLE aml_alerts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY aml_compliance_only ON aml_alerts FOR ALL
     USING (current_setting('app.dept', true) IN ('Risk & Compliance', 'Internal Audit')
            OR current_setting('app.is_admin', true)::boolean);
+-- v10.88: indexes added for query performance after migration
+CREATE INDEX IF NOT EXISTS idx_aml_alerts_status ON aml_alerts (status);
+CREATE INDEX IF NOT EXISTS idx_aml_alerts_risk ON aml_alerts (risk_level);
+CREATE INDEX IF NOT EXISTS idx_aml_alerts_str_filed ON aml_alerts (str_filed) WHERE str_filed = TRUE;
 
 -- ── Sessions table ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sessions (
@@ -1622,6 +1671,1039 @@ CREATE INDEX IF NOT EXISTS idx_break_ts   ON audit.recon_breaks (break_ts DESC);
 
 -- Recon results are append-only (no UPDATE/DELETE on recon_runs)
 -- audit.recon_breaks allows status updates as breaks get investigated/resolved
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- v10.88 — PG migration batch 1 (anti-drift Phase 1A; +6 tables)
+-- ════════════════════════════════════════════════════════════════════════
+-- Pattern matches existing migrated tables: VARCHAR ids, data JSONB
+-- catch-all for fields outside flat_cols, created_at/updated_at
+-- timestamps. The insert_records() helper in migrate_to_postgres.py
+-- already populates data with nested fields; this lets us migrate
+-- list/dict fields (e.g. txn_ids, amounts on agent_fraud_alerts)
+-- without forcing per-table JSONB column proliferation.
+
+-- agent_fraud_alerts: agent banking fraud alerts (15 records → ~150 in prod)
+-- Note: txn_ids and amounts are list fields on each record; the data
+-- JSONB column on this table receives them via the standard nested-fields
+-- catch-all pattern.
+CREATE TABLE IF NOT EXISTS agent_fraud_alerts (
+    id                  VARCHAR(50) PRIMARY KEY,
+    alert_type          VARCHAR(100),
+    severity            VARCHAR(20),
+    agent_id            VARCHAR(50),
+    agent_name          VARCHAR(200),
+    branch              VARCHAR(100),
+    customer_ref        VARCHAR(100),
+    txn_date            DATE,
+    txn_count           INTEGER,
+    total_amount_kes    NUMERIC(18, 2),
+    threshold_kes       INTEGER,
+    commission_earned   NUMERIC(14, 2),
+    excess_commission   NUMERIC(14, 2),
+    status              VARCHAR(50),
+    assigned_to         VARCHAR(200),
+    detected_at         DATE,
+    action_taken        TEXT,
+    notes               TEXT,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_agent_fraud_alerts_agent ON agent_fraud_alerts (agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_fraud_alerts_status ON agent_fraud_alerts (status);
+
+-- agents_data: agent banking master data (150 active agents)
+CREATE TABLE IF NOT EXISTS agents_data (
+    id                          VARCHAR(50) PRIMARY KEY,
+    name                        VARCHAR(200),
+    town                        VARCHAR(100),
+    float_balance               NUMERIC(14, 2),
+    float_limit                 INTEGER,
+    txn_count_today             INTEGER,
+    txn_value_today_kes         NUMERIC(18, 2),
+    status                      VARCHAR(20),
+    uptime_30d_pct              NUMERIC(5, 2),
+    float_utilisation_pct       NUMERIC(6, 2),
+    last_txn                    DATE,
+    onboarding_date             DATE,
+    compliance_docs_complete    BOOLEAN,
+    data                        JSONB DEFAULT '{}',
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_agents_data_status ON agents_data (status);
+
+-- agent_transactions: high-volume agent transaction log (679 records → millions)
+CREATE TABLE IF NOT EXISTS agent_transactions (
+    id              VARCHAR(50) PRIMARY KEY,
+    agent_id        VARCHAR(50),
+    agent_name      VARCHAR(200),
+    branch          VARCHAR(100),
+    txn_date        DATE,
+    txn_hour        INTEGER,
+    txn_minute      INTEGER,
+    txn_type        VARCHAR(50),
+    amount_kes      NUMERIC(18, 2),
+    customer_ref    VARCHAR(100),
+    commission_kes  NUMERIC(14, 2),
+    fraud_flag      BOOLEAN,
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_agent_transactions_agent ON agent_transactions (agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_transactions_date ON agent_transactions (txn_date);
+CREATE INDEX IF NOT EXISTS idx_agent_transactions_fraud ON agent_transactions (fraud_flag) WHERE fraud_flag = TRUE;
+
+-- aml_alerts: data column added to pre-existing table (line ~1010) via
+-- the section below — see "v10.88: data column extension for pre-existing
+-- aml_alerts" near the original CREATE TABLE statement.
+
+-- asset_register: fixed asset register (200 records)
+CREATE TABLE IF NOT EXISTS asset_register (
+    id                       VARCHAR(50) PRIMARY KEY,
+    name                     VARCHAR(200),
+    category                 VARCHAR(100),
+    make_model               VARCHAR(200),
+    serial_number            VARCHAR(100),
+    location                 VARCHAR(100),
+    assigned_to_dept         VARCHAR(100),
+    custodian                VARCHAR(200),
+    purchase_date            DATE,
+    purchase_cost_kes        NUMERIC(18, 2),
+    vendor                   VARCHAR(200),
+    useful_life_years        INTEGER,
+    depreciation_rate_pct    NUMERIC(5, 2),
+    accumulated_dep_kes      NUMERIC(18, 2),
+    net_book_value_kes       NUMERIC(18, 2),
+    condition                VARCHAR(50),
+    warranty_expiry          DATE,
+    last_inspection          DATE,
+    next_inspection          DATE,
+    insurance_policy         VARCHAR(50),
+    disposal_date            VARCHAR(20),
+    disposal_reason          VARCHAR(200),
+    barcode                  VARCHAR(50),
+    notes                    TEXT,
+    data                     JSONB DEFAULT '{}',
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_asset_register_dept ON asset_register (assigned_to_dept);
+CREATE INDEX IF NOT EXISTS idx_asset_register_condition ON asset_register (condition);
+
+-- bid_bonds: trade-finance bid/performance/retention bonds (50 records)
+CREATE TABLE IF NOT EXISTS bid_bonds (
+    id                   VARCHAR(50) PRIMARY KEY,
+    reference            VARCHAR(50),
+    bond_type            VARCHAR(50),
+    customer_name        VARCHAR(200),
+    customer_cif         VARCHAR(50),
+    beneficiary          VARCHAR(200),
+    project_name         VARCHAR(200),
+    amount_kes           NUMERIC(18, 2),
+    currency             VARCHAR(10),
+    commission_pct       NUMERIC(5, 2),
+    commission_kes       NUMERIC(14, 2),
+    issue_date           DATE,
+    expiry_date          DATE,
+    status               VARCHAR(50),
+    collateral_type      VARCHAR(100),
+    collateral_value     NUMERIC(18, 2),
+    rm_code              VARCHAR(50),
+    credit_approved_by   VARCHAR(100),
+    cbk_reported         BOOLEAN,
+    called               BOOLEAN,
+    called_amount        NUMERIC(18, 2),
+    extended_count       INTEGER,
+    notes                TEXT,
+    officer_username     VARCHAR(100),
+    cbk_reportable       BOOLEAN,
+    principal            VARCHAR(200),
+    data                 JSONB DEFAULT '{}',
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_bid_bonds_status ON bid_bonds (status);
+CREATE INDEX IF NOT EXISTS idx_bid_bonds_called ON bid_bonds (called) WHERE called = TRUE;
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- v10.89 — PG migration batch 2 (anti-drift Phase 1A; +10 tables)
+-- ════════════════════════════════════════════════════════════════════════
+-- Coverage push: 24/52 → 34/52 (~65%). 8 standard flat migrations plus
+-- two special-case tables (bank_targets, baselines) that don't fit the
+-- standard FLAT_MIGRATIONS pattern — see migrate_to_postgres.py for the
+-- custom transform handlers.
+
+-- ifrs9_loans: IFRS 9 expected credit loss data (5045 records — high volume)
+CREATE TABLE IF NOT EXISTS ifrs9_loans (
+    account_id          VARCHAR(50) PRIMARY KEY,
+    client_name         VARCHAR(300),
+    product             VARCHAR(100),
+    outstanding         NUMERIC(18, 2),
+    stage               VARCHAR(20),
+    ecl_basis           VARCHAR(50),
+    npl_days            INTEGER,
+    pd_12m              NUMERIC(8, 6),
+    lgd                 NUMERIC(8, 6),
+    ead                 NUMERIC(18, 2),
+    ecl_amount          NUMERIC(18, 2),
+    sicr_flag           BOOLEAN,
+    reporting_date      DATE,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_ifrs9_stage ON ifrs9_loans (stage);
+CREATE INDEX IF NOT EXISTS idx_ifrs9_reporting_date ON ifrs9_loans (reporting_date);
+CREATE INDEX IF NOT EXISTS idx_ifrs9_npl ON ifrs9_loans (npl_days) WHERE npl_days > 0;
+CREATE INDEX IF NOT EXISTS idx_ifrs9_sicr ON ifrs9_loans (sicr_flag) WHERE sicr_flag = TRUE;
+
+-- loan_applications: data column added to pre-existing table (line ~957)
+-- via the section below — see "v10.89: data column extension for pre-
+-- existing loan_applications" near the original CREATE TABLE statement.
+
+-- legal_matters: legal arc litigation/advisory tracking (362 records)
+-- Note: completed_date and next_action_date have many empty strings; stored
+-- as VARCHAR for tolerance. legal_officer dict + step_history/documents
+-- lists flow through data JSONB.
+CREATE TABLE IF NOT EXISTS legal_matters (
+    id                  VARCHAR(50) PRIMARY KEY,
+    matter_type         VARCHAR(100),
+    status              VARCHAR(50),
+    priority            VARCHAR(20),
+    opened_date         DATE,
+    sla_due_date        DATE,
+    completed_date      VARCHAR(20),
+    days_elapsed        INTEGER,
+    days_to_sla         INTEGER,
+    sla_days            INTEGER,
+    sla_breached        BOOLEAN,
+    sla_kpi             VARCHAR(100),
+    client_name         VARCHAR(300),
+    client_cif          VARCHAR(50),
+    application_id      VARCHAR(50),
+    product             VARCHAR(100),
+    amount              NUMERIC(18, 2),
+    attorney            VARCHAR(200),
+    attorney_ref        VARCHAR(100),
+    steps_total         INTEGER,
+    steps_completed     INTEGER,
+    current_step        VARCHAR(100),
+    next_step           VARCHAR(100),
+    next_action_date    VARCHAR(20),
+    notes               TEXT,
+    last_updated        DATE,
+    proposition_tag     VARCHAR(50),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_legal_matters_status ON legal_matters (status);
+CREATE INDEX IF NOT EXISTS idx_legal_matters_breached ON legal_matters (sla_breached) WHERE sla_breached = TRUE;
+CREATE INDEX IF NOT EXISTS idx_legal_matters_priority ON legal_matters (priority);
+
+-- rms_reconciliations: GL reconciliation tracking (400 records, RMS arc)
+CREATE TABLE IF NOT EXISTS rms_reconciliations (
+    id              VARCHAR(50) PRIMARY KEY,
+    recon_type      VARCHAR(100),
+    account_code    VARCHAR(50),
+    account_name    VARCHAR(200),
+    account_type    VARCHAR(50),
+    period          VARCHAR(20),
+    cbs_balance     NUMERIC(18, 2),
+    gl_balance      NUMERIC(18, 2),
+    variance        NUMERIC(18, 2),
+    abs_variance    NUMERIC(18, 2),
+    currency        VARCHAR(10),
+    status          VARCHAR(50),
+    breaker_type    VARCHAR(100),
+    assigned_to     VARCHAR(200),
+    raised_date     DATE,
+    due_date        DATE,
+    resolved_date   VARCHAR(20),
+    ageing_days     INTEGER,
+    notes           TEXT,
+    last_updated    DATE,
+    amount          NUMERIC(18, 2),
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rms_recon_status ON rms_reconciliations (status);
+CREATE INDEX IF NOT EXISTS idx_rms_recon_period ON rms_reconciliations (period);
+CREATE INDEX IF NOT EXISTS idx_rms_recon_recon_type ON rms_reconciliations (recon_type);
+
+-- debt_recovery: NPL recovery tracking (150 records)
+CREATE TABLE IF NOT EXISTS debt_recovery (
+    id                       VARCHAR(50) PRIMARY KEY,
+    account_number           VARCHAR(50),
+    client_cif               VARCHAR(50),
+    debtor_name              VARCHAR(300),
+    outstanding              NUMERIC(18, 2),
+    loan_amount              NUMERIC(18, 2),
+    dpd                      INTEGER,
+    npl_days                 INTEGER,
+    product                  VARCHAR(100),
+    branch                   VARCHAR(100),
+    rm_code                  VARCHAR(50),
+    recovery_stage           VARCHAR(100),
+    collateral_type          VARCHAR(100),
+    collateral_value         NUMERIC(18, 2),
+    ltvr                     NUMERIC(8, 2),
+    recovery_officer         VARCHAR(200),
+    recovery_officer_code    VARCHAR(50),
+    last_contact             DATE,
+    next_action              DATE,
+    settlement_offer         NUMERIC(18, 2),
+    amount_recovered         NUMERIC(18, 2),
+    legal_referral           BOOLEAN,
+    legal_firm               VARCHAR(200),
+    demand_letters_sent      INTEGER,
+    status                   VARCHAR(50),
+    created_date             DATE,
+    last_updated             DATE,
+    notes                    TEXT,
+    data                     JSONB DEFAULT '{}',
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_status ON debt_recovery (status);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_stage ON debt_recovery (recovery_stage);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_legal ON debt_recovery (legal_referral) WHERE legal_referral = TRUE;
+
+-- cims_tickets: customer instruction management system tickets (200 records)
+-- Note: resolved_date has 118 empty strings → VARCHAR. audit_trail list →
+-- data JSONB.
+CREATE TABLE IF NOT EXISTS cims_tickets (
+    id                  VARCHAR(50) PRIMARY KEY,
+    instruction_type    VARCHAR(100),
+    client_name         VARCHAR(300),
+    client_cif          VARCHAR(50),
+    account_number      VARCHAR(50),
+    branch              VARCHAR(100),
+    rm_code             VARCHAR(50),
+    rm_name             VARCHAR(200),
+    priority            VARCHAR(20),
+    opened_date         DATE,
+    sla_hours           INTEGER,
+    due_date            DATE,
+    status              VARCHAR(50),
+    resolved_date       VARCHAR(20),
+    escalated_to        VARCHAR(200),
+    notes               TEXT,
+    last_updated        DATE,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cims_status ON cims_tickets (status);
+CREATE INDEX IF NOT EXISTS idx_cims_priority ON cims_tickets (priority);
+CREATE INDEX IF NOT EXISTS idx_cims_branch ON cims_tickets (branch);
+
+-- treasury_fd: fixed deposit pipeline (184 records)
+-- Note: ratified_date 23 empty + booked_date 96 empty → VARCHAR.
+CREATE TABLE IF NOT EXISTS treasury_fd (
+    id                  VARCHAR(50) PRIMARY KEY,
+    pipeline_deal_id    VARCHAR(50),
+    client_name         VARCHAR(300),
+    client_cif          VARCHAR(50),
+    product             VARCHAR(100),
+    amount              NUMERIC(18, 2),
+    currency            VARCHAR(10),
+    tenure_days         INTEGER,
+    proposed_rate       NUMERIC(8, 4),
+    ratified_rate       NUMERIC(8, 4),
+    market_rate_ref     NUMERIC(8, 4),
+    status              VARCHAR(50),
+    rm_code             VARCHAR(50),
+    rm_name             VARCHAR(200),
+    rm_unit             VARCHAR(100),
+    submitted_date      DATE,
+    ratified_date       VARCHAR(20),
+    treasury_officer    VARCHAR(200),
+    counter_rate        NUMERIC(8, 4),
+    notes               TEXT,
+    booked_date         VARCHAR(20),
+    maturity_date       DATE,
+    proposition_tag     VARCHAR(50),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_treasury_fd_status ON treasury_fd (status);
+CREATE INDEX IF NOT EXISTS idx_treasury_fd_currency ON treasury_fd (currency);
+
+-- bnc_policies: bancassurance policies (200 records — bancassurance subcategory
+-- is otherwise 0/10 active in standards; this gives operations a data
+-- foundation when the planned standards activate)
+CREATE TABLE IF NOT EXISTS bnc_policies (
+    id                  VARCHAR(50) PRIMARY KEY,
+    product             VARCHAR(100),
+    insurer             VARCHAR(200),
+    category            VARCHAR(50),
+    premium_annual      NUMERIC(14, 2),
+    commission_pct      NUMERIC(5, 2),
+    commission_kes      NUMERIC(14, 2),
+    client_cif          VARCHAR(50),
+    branch              VARCHAR(100),
+    rm_code             VARCHAR(50),
+    inception_date      DATE,
+    expiry_date         DATE,
+    status              VARCHAR(50),
+    claim_raised        BOOLEAN,
+    claim_status        VARCHAR(50),
+    claim_amount        NUMERIC(14, 2),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_bnc_policies_status ON bnc_policies (status);
+CREATE INDEX IF NOT EXISTS idx_bnc_policies_insurer ON bnc_policies (insurer);
+CREATE INDEX IF NOT EXISTS idx_bnc_policies_claim ON bnc_policies (claim_raised) WHERE claim_raised = TRUE;
+
+-- bank_targets: strategic targets (special-case migration — source JSON is a
+-- DICT keyed by composite "metric|year" pattern; transform splits the key
+-- into separate metric + year columns. See migrate_to_postgres.py
+-- migrate_bank_targets() handler.)
+CREATE TABLE IF NOT EXISTS bank_targets (
+    metric          VARCHAR(200) NOT NULL,
+    year            INTEGER NOT NULL,
+    target          NUMERIC(20, 2),
+    buffer_pct      NUMERIC(5, 2),
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (metric, year)
+);
+CREATE INDEX IF NOT EXISTS idx_bank_targets_year ON bank_targets (year);
+
+-- baselines: period snapshot (special-case migration — source JSON is an
+-- atypical DICT with branch/rm sub-DICTs that don't fit relational shape
+-- well. Stored as a single row per (period, date) with the sub-DICTs as
+-- JSONB. See migrate_to_postgres.py migrate_baselines() handler.)
+CREATE TABLE IF NOT EXISTS baselines (
+    period          VARCHAR(20) NOT NULL,
+    snapshot_date   DATE NOT NULL,
+    branch_data     JSONB DEFAULT '{}',
+    rm_data         JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (period, snapshot_date)
+);
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- v10.90 — PG migration batch 3 (anti-drift Phase 1A; +7 tables)
+-- ════════════════════════════════════════════════════════════════════════
+-- Coverage push: 34/52 → 41/52 (~79%). All 7 are standard FLAT migrations.
+
+-- staff_history: HR staff movement history (394 records)
+-- Note: no `id` field in source — using staff_code+effective_date as natural
+-- composite. To keep the FLAT_MIGRATIONS pattern (single PK column), we
+-- generate a synthetic VARCHAR id at schema level only via NOT NULL +
+-- application-side concatenation. For now, no PK constraint (allows
+-- multiple movements per staff_code).
+CREATE TABLE IF NOT EXISTS staff_history (
+    staff_code      VARCHAR(50) NOT NULL,
+    staff_name      VARCHAR(200),
+    movement_type   VARCHAR(50),
+    from_role       VARCHAR(200),
+    to_role         VARCHAR(200),
+    from_unit       VARCHAR(200),
+    to_unit         VARCHAR(200),
+    effective_date  DATE,
+    approved_by     VARCHAR(200),
+    letter_ref      VARCHAR(50),
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_staff_history_code ON staff_history (staff_code);
+CREATE INDEX IF NOT EXISTS idx_staff_history_effective ON staff_history (effective_date);
+CREATE INDEX IF NOT EXISTS idx_staff_history_movement ON staff_history (movement_type);
+
+-- pipeline: sales pipeline / deal tracking (294 records)
+-- Note: backup_staff_codes (list), actions_due (list of dicts),
+-- win_probability_ai_factors (dict) all flow through data JSONB catch-all.
+CREATE TABLE IF NOT EXISTS pipeline (
+    id                          VARCHAR(50) PRIMARY KEY,
+    staff_code                  VARCHAR(50),
+    staff_name                  VARCHAR(200),
+    unit                        VARCHAR(100),
+    role                        VARCHAR(200),
+    client_name                 VARCHAR(300),
+    product                     VARCHAR(100),
+    stage                       VARCHAR(100),
+    amount                      NUMERIC(18, 2),
+    currency                    VARCHAR(10),
+    open_date                   DATE,
+    expected_close              DATE,
+    probability                 INTEGER,
+    notes                       TEXT,
+    last_updated                DATE,
+    conflict_status             VARCHAR(50),
+    proposition_tag             VARCHAR(50),
+    win_probability_ai          NUMERIC(5, 4),
+    is_repeat_borrower          BOOLEAN,
+    deal_category               VARCHAR(100),
+    existing_facility_id        VARCHAR(50),
+    client_cif                  VARCHAR(50),
+    top_up_amount               NUMERIC(18, 2),
+    original_facility_amount    NUMERIC(18, 2),
+    repayment_history           VARCHAR(50),
+    data                        JSONB DEFAULT '{}',
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pipeline_stage ON pipeline (stage);
+CREATE INDEX IF NOT EXISTS idx_pipeline_staff ON pipeline (staff_code);
+CREATE INDEX IF NOT EXISTS idx_pipeline_expected_close ON pipeline (expected_close);
+
+-- lms_enrollments: training / learning management (1146 records — high volume)
+-- Note: completion_date 530/1146 empty + due_date 616/1146 empty → VARCHAR.
+-- score is nullable (NoneType in some records).
+CREATE TABLE IF NOT EXISTS lms_enrollments (
+    staff_code      VARCHAR(50) NOT NULL,
+    staff_name      VARCHAR(200),
+    role            VARCHAR(200),
+    dept            VARCHAR(100),
+    course_id       VARCHAR(50) NOT NULL,
+    course_title    VARCHAR(300),
+    cbk_mandatory   BOOLEAN,
+    status          VARCHAR(50),
+    completion_date VARCHAR(20),
+    score           NUMERIC(5, 2),
+    due_date        VARCHAR(20),
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (staff_code, course_id)
+);
+CREATE INDEX IF NOT EXISTS idx_lms_enrollments_status ON lms_enrollments (status);
+CREATE INDEX IF NOT EXISTS idx_lms_enrollments_cbk ON lms_enrollments (cbk_mandatory) WHERE cbk_mandatory = TRUE;
+CREATE INDEX IF NOT EXISTS idx_lms_enrollments_dept ON lms_enrollments (dept);
+
+-- edms_documents: document management (500 records)
+-- Note: review_date is 500/500 empty (always empty) → VARCHAR. Several other
+-- VARCHAR fields can be empty strings (linked_type, linked_id, uploaded_by,
+-- reviewed_by, notes). tags is list → data JSONB.
+CREATE TABLE IF NOT EXISTS edms_documents (
+    id                  VARCHAR(50) PRIMARY KEY,
+    category            VARCHAR(100),
+    document_type       VARCHAR(100),
+    title               VARCHAR(500),
+    client_name         VARCHAR(300),
+    client_cif          VARCHAR(50),
+    linked_type         VARCHAR(50),
+    linked_id           VARCHAR(50),
+    file_name           VARCHAR(500),
+    file_size_kb        INTEGER,
+    pages               INTEGER,
+    uploaded_date       DATE,
+    uploaded_by         VARCHAR(200),
+    branch              VARCHAR(100),
+    access_level        VARCHAR(50),
+    status              VARCHAR(50),
+    expiry_date         DATE,
+    is_expired          BOOLEAN,
+    requires_review     BOOLEAN,
+    reviewed_by         VARCHAR(200),
+    review_date         VARCHAR(20),
+    version             VARCHAR(20),
+    notes               TEXT,
+    last_updated        DATE,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_edms_status ON edms_documents (status);
+CREATE INDEX IF NOT EXISTS idx_edms_category ON edms_documents (category);
+CREATE INDEX IF NOT EXISTS idx_edms_review ON edms_documents (requires_review) WHERE requires_review = TRUE;
+CREATE INDEX IF NOT EXISTS idx_edms_expired ON edms_documents (is_expired) WHERE is_expired = TRUE;
+
+-- revenue_assurance: revenue leakage / assurance tracking (300 records,
+-- revenue_assurance arc data — that arc closed at G133+G134)
+CREATE TABLE IF NOT EXISTS revenue_assurance (
+    id                  VARCHAR(50) PRIMARY KEY,
+    type                VARCHAR(50),
+    fee_type            VARCHAR(100),
+    branch              VARCHAR(100),
+    amount              NUMERIC(18, 2),
+    currency            VARCHAR(10),
+    date_raised         DATE,
+    period              VARCHAR(20),
+    reason              VARCHAR(200),
+    client_name         VARCHAR(300),
+    client_cif          VARCHAR(50),
+    raised_by           VARCHAR(200),
+    raised_code         VARCHAR(50),
+    status              VARCHAR(50),
+    recovered           BOOLEAN,
+    recovered_amount    NUMERIC(18, 2),
+    authorised_by       VARCHAR(200),
+    notes               TEXT,
+    last_updated        DATE,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_revenue_assurance_status ON revenue_assurance (status);
+CREATE INDEX IF NOT EXISTS idx_revenue_assurance_type ON revenue_assurance (type);
+CREATE INDEX IF NOT EXISTS idx_revenue_assurance_period ON revenue_assurance (period);
+CREATE INDEX IF NOT EXISTS idx_revenue_assurance_recovered ON revenue_assurance (recovered);
+
+-- treasury_fx: treasury FX deals (200 records)
+CREATE TABLE IF NOT EXISTS treasury_fx (
+    id                  VARCHAR(50) PRIMARY KEY,
+    deal_type           VARCHAR(50),
+    direction           VARCHAR(20),
+    currency            VARCHAR(10),
+    fcy_amount          NUMERIC(18, 2),
+    rate                NUMERIC(12, 4),
+    kes_amount          NUMERIC(18, 2),
+    counterparty        VARCHAR(300),
+    counterparty_type   VARCHAR(50),
+    dealer              VARCHAR(200),
+    trade_date          DATE,
+    value_date          DATE,
+    status              VARCHAR(50),
+    margin_kes          NUMERIC(14, 2),
+    notes               TEXT,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_treasury_fx_status ON treasury_fx (status);
+CREATE INDEX IF NOT EXISTS idx_treasury_fx_currency ON treasury_fx (currency);
+CREATE INDEX IF NOT EXISTS idx_treasury_fx_trade_date ON treasury_fx (trade_date);
+
+-- credit_admin: credit admin tracking — disbursement readiness, conditions
+-- precedent (214 records)
+-- Note: disbursement_date 175/214 empty (NoneType in source); stored as
+-- VARCHAR for tolerance. conditions is list of dicts → data JSONB.
+CREATE TABLE IF NOT EXISTS credit_admin (
+    id                          VARCHAR(50) PRIMARY KEY,
+    application_id              VARCHAR(50),
+    client_name                 VARCHAR(300),
+    product                     VARCHAR(100),
+    amount                      NUMERIC(18, 2),
+    rm_code                     VARCHAR(50),
+    rm_name                     VARCHAR(200),
+    approval_date               DATE,
+    all_conditions_met          BOOLEAN,
+    ready_for_disbursement      BOOLEAN,
+    disbursed                   BOOLEAN,
+    disbursement_date           VARCHAR(20),
+    last_updated                DATE,
+    data                        JSONB DEFAULT '{}',
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_credit_admin_disbursed ON credit_admin (disbursed);
+CREATE INDEX IF NOT EXISTS idx_credit_admin_ready ON credit_admin (ready_for_disbursement) WHERE ready_for_disbursement = TRUE;
+CREATE INDEX IF NOT EXISTS idx_credit_admin_app ON credit_admin (application_id);
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- v10.91 — PG migration batch 4 (anti-drift Phase 1A close-out; +9 tables)
+-- ════════════════════════════════════════════════════════════════════════
+-- Coverage push: 41/52 → 50/52 (~96%). All 9 are standard FLAT migrations.
+
+-- referrals: customer referral tracking (200 records)
+-- Note: conversion_date 85/200 empty → VARCHAR.
+CREATE TABLE IF NOT EXISTS referrals (
+    id                  VARCHAR(50) PRIMARY KEY,
+    referral_date       DATE,
+    referral_source     VARCHAR(50),
+    referrer_name       VARCHAR(200),
+    referrer_code       VARCHAR(50),
+    referee_name        VARCHAR(200),
+    referee_phone       VARCHAR(20),
+    product_interested  VARCHAR(100),
+    mou_id              VARCHAR(50),
+    branch              VARCHAR(100),
+    rm_assigned         VARCHAR(50),
+    status              VARCHAR(50),
+    converted           BOOLEAN,
+    conversion_date     VARCHAR(20),
+    account_opened      VARCHAR(50),
+    referral_fee_kes    NUMERIC(14, 2),
+    fee_paid            BOOLEAN,
+    notes               TEXT,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_referrals_status ON referrals (status);
+CREATE INDEX IF NOT EXISTS idx_referrals_converted ON referrals (converted) WHERE converted = TRUE;
+CREATE INDEX IF NOT EXISTS idx_referrals_source ON referrals (referral_source);
+
+-- consent_register: customer consent tracking — DPO compliance (200 records)
+-- Note: granted_date 51, withdrawn_date 176, expiry_date 51 all have empty
+-- strings → VARCHAR for all date fields.
+CREATE TABLE IF NOT EXISTS consent_register (
+    id              VARCHAR(50) PRIMARY KEY,
+    customer_cif    VARCHAR(50),
+    customer_name   VARCHAR(200),
+    consent_type    VARCHAR(100),
+    status          VARCHAR(50),
+    channel         VARCHAR(50),
+    granted         BOOLEAN,
+    granted_date    VARCHAR(20),
+    withdrawn_date  VARCHAR(20),
+    expiry_date     VARCHAR(20),
+    purpose         TEXT,
+    legal_basis     VARCHAR(100),
+    data_processor  VARCHAR(100),
+    cbk_category    VARCHAR(100),
+    version         VARCHAR(20),
+    reviewed_by     VARCHAR(100),
+    notes           TEXT,
+    data            JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_consent_status ON consent_register (status);
+CREATE INDEX IF NOT EXISTS idx_consent_customer ON consent_register (customer_cif);
+CREATE INDEX IF NOT EXISTS idx_consent_type ON consent_register (consent_type);
+
+-- collateral_register: credit collateral inventory (200 records)
+CREATE TABLE IF NOT EXISTS collateral_register (
+    id                  VARCHAR(50) PRIMARY KEY,
+    account_number      VARCHAR(50),
+    client_cif          VARCHAR(50),
+    collateral_type     VARCHAR(100),
+    description         TEXT,
+    market_value        NUMERIC(18, 2),
+    forced_sale_value   NUMERIC(18, 2),
+    loan_outstanding    NUMERIC(18, 2),
+    ltv                 NUMERIC(8, 2),
+    last_valuation      DATE,
+    next_valuation      DATE,
+    insurance_expiry    DATE,
+    valuer              VARCHAR(200),
+    status              VARCHAR(50),
+    rm                  VARCHAR(200),
+    branch              VARCHAR(100),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_collateral_status ON collateral_register (status);
+CREATE INDEX IF NOT EXISTS idx_collateral_account ON collateral_register (account_number);
+CREATE INDEX IF NOT EXISTS idx_collateral_client ON collateral_register (client_cif);
+CREATE INDEX IF NOT EXISTS idx_collateral_type ON collateral_register (collateral_type);
+
+-- execute_initiatives: strategic initiatives execution (61 records)
+-- Note: JSON has created_at/updated_at as ISO timestamp strings (with 60/61
+-- empty); the schema's standard created_at/updated_at TIMESTAMPTZ DEFAULT
+-- columns conflict with these. Resolution: the JSON values flow into the
+-- data JSONB catch-all (not in flat_cols), and the schema's standard
+-- TIMESTAMPTZ columns get DEFAULT now() at insert time. Many other lists/
+-- dicts (impact_kpis, tags, gate_history, approvals, business_case,
+-- milestones, milestone_confirmations, monthly_impacts, impact_kpis_tracked)
+-- also flow through data JSONB.
+CREATE TABLE IF NOT EXISTS execute_initiatives (
+    id                  VARCHAR(50) PRIMARY KEY,
+    name                VARCHAR(500),
+    objective           TEXT,
+    category            VARCHAR(100),
+    workstream          VARCHAR(200),
+    sub_workstream      VARCHAR(200),
+    io                  VARCHAR(200),
+    io_backup           VARCHAR(200),
+    estimated_impact    NUMERIC(18, 2),
+    created_by          VARCHAR(200),
+    gate                VARCHAR(20),
+    status              VARCHAR(50),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_execute_initiatives_status ON execute_initiatives (status);
+CREATE INDEX IF NOT EXISTS idx_execute_initiatives_gate ON execute_initiatives (gate);
+CREATE INDEX IF NOT EXISTS idx_execute_initiatives_workstream ON execute_initiatives (workstream);
+
+-- projects: project management tracking (40 records)
+-- Note: actual_end_date 35/40 empty → VARCHAR. milestones/stakeholders/
+-- action_items/linked_modules lists flow through data JSONB.
+CREATE TABLE IF NOT EXISTS projects (
+    id                  VARCHAR(50) PRIMARY KEY,
+    name                VARCHAR(500),
+    description         TEXT,
+    initiative_id       VARCHAR(50),
+    category            VARCHAR(100),
+    priority            VARCHAR(20),
+    status              VARCHAR(50),
+    project_manager     VARCHAR(200),
+    sponsor             VARCHAR(200),
+    department          VARCHAR(100),
+    start_date          DATE,
+    planned_end_date    DATE,
+    actual_end_date     VARCHAR(20),
+    budget_m            NUMERIC(14, 2),
+    spent_m             NUMERIC(14, 2),
+    pct_complete        INTEGER,
+    pct_budget_used     NUMERIC(8, 2),
+    rag_status          VARCHAR(20),
+    risks               INTEGER,
+    open_issues         INTEGER,
+    last_updated        DATE,
+    notes               TEXT,
+    owner_username      VARCHAR(100),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects (status);
+CREATE INDEX IF NOT EXISTS idx_projects_priority ON projects (priority);
+CREATE INDEX IF NOT EXISTS idx_projects_rag ON projects (rag_status);
+
+-- clearing_records: clearing house settlement tracking (120 records)
+-- Note: reconciled_at 20/120 empty → VARCHAR.
+CREATE TABLE IF NOT EXISTS clearing_records (
+    id                      VARCHAR(50) PRIMARY KEY,
+    value_date              DATE,
+    settlement_date         DATE,
+    system                  VARCHAR(50),
+    transaction_ref         VARCHAR(50),
+    debit_account           VARCHAR(50),
+    credit_account          VARCHAR(50),
+    amount_kes              NUMERIC(18, 2),
+    currency                VARCHAR(10),
+    status                  VARCHAR(50),
+    failure_reason          TEXT,
+    settled_by              VARCHAR(100),
+    nostro_account          VARCHAR(50),
+    cbk_batch_ref           VARCHAR(50),
+    reconciled              BOOLEAN,
+    reconciled_at           VARCHAR(30),
+    discrepancy_kes         NUMERIC(14, 2),
+    notes                   TEXT,
+    officer_username        VARCHAR(100),
+    settlement_tat_met      BOOLEAN,
+    reconciled_by           VARCHAR(100),
+    exception_reason        TEXT,
+    data                    JSONB DEFAULT '{}',
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_clearing_status ON clearing_records (status);
+CREATE INDEX IF NOT EXISTS idx_clearing_value_date ON clearing_records (value_date);
+CREATE INDEX IF NOT EXISTS idx_clearing_reconciled ON clearing_records (reconciled);
+
+-- compliance_cases: compliance case tracking (115 records)
+-- Note: cleared_date 80/115 empty (NoneType) → VARCHAR. documents_required
+-- list → data JSONB.
+CREATE TABLE IF NOT EXISTS compliance_cases (
+    id                      VARCHAR(50) PRIMARY KEY,
+    source                  VARCHAR(100),
+    source_ref              VARCHAR(50),
+    client_name             VARCHAR(300),
+    client_cif              VARCHAR(50),
+    flag_type               VARCHAR(100),
+    risk_level              VARCHAR(20),
+    status                  VARCHAR(50),
+    raised_by               VARCHAR(200),
+    raised_date             DATE,
+    assigned_officer        VARCHAR(200),
+    officer_code            VARCHAR(50),
+    review_notes            TEXT,
+    cleared_date            VARCHAR(20),
+    escalated_to            VARCHAR(200),
+    last_updated            DATE,
+    proposition_tag         VARCHAR(50),
+    case_type               VARCHAR(100),
+    amount                  NUMERIC(18, 2),
+    data                    JSONB DEFAULT '{}',
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_compliance_status ON compliance_cases (status);
+CREATE INDEX IF NOT EXISTS idx_compliance_risk ON compliance_cases (risk_level);
+CREATE INDEX IF NOT EXISTS idx_compliance_flag ON compliance_cases (flag_type);
+
+-- commission_records: staff commission payouts (118 records)
+-- Note: no id field — use (staff_code, period) composite PK.
+CREATE TABLE IF NOT EXISTS commission_records (
+    staff_code              VARCHAR(50) NOT NULL,
+    staff_name              VARCHAR(200),
+    role                    VARCHAR(200),
+    unit                    VARCHAR(100),
+    bsc_score               NUMERIC(5, 2),
+    tier                    VARCHAR(50),
+    base_salary             NUMERIC(14, 2),
+    performance_commission  NUMERIC(14, 2),
+    sales_commission        NUMERIC(14, 2),
+    total_commission        NUMERIC(14, 2),
+    disbursed_apps          INTEGER,
+    period                  VARCHAR(20) NOT NULL,
+    status                  VARCHAR(50),
+    approved_by             VARCHAR(200),
+    payment_date            DATE,
+    data                    JSONB DEFAULT '{}',
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (staff_code, period)
+);
+CREATE INDEX IF NOT EXISTS idx_commission_status ON commission_records (status);
+CREATE INDEX IF NOT EXISTS idx_commission_tier ON commission_records (tier);
+CREATE INDEX IF NOT EXISTS idx_commission_period ON commission_records (period);
+
+-- trade_finance: trade finance LC instruments (80 records — supplements the
+-- closed trade_finance arc engines with operational data)
+CREATE TABLE IF NOT EXISTS trade_finance (
+    id                  VARCHAR(50) PRIMARY KEY,
+    lc_type             VARCHAR(50),
+    applicant           VARCHAR(300),
+    beneficiary         VARCHAR(300),
+    currency            VARCHAR(10),
+    amount              NUMERIC(18, 2),
+    kes_equivalent      NUMERIC(18, 2),
+    issuing_bank        VARCHAR(200),
+    confirming_bank     VARCHAR(200),
+    correspondent       VARCHAR(200),
+    issue_date          DATE,
+    expiry_date         DATE,
+    latest_shipment     DATE,
+    status              VARCHAR(50),
+    documents_required  TEXT,
+    discrepancies       INTEGER,
+    rm_code             VARCHAR(50),
+    branch              VARCHAR(100),
+    commission_earned   NUMERIC(14, 2),
+    utilised_pct        NUMERIC(8, 2),
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_trade_finance_status ON trade_finance (status);
+CREATE INDEX IF NOT EXISTS idx_trade_finance_lc_type ON trade_finance (lc_type);
+CREATE INDEX IF NOT EXISTS idx_trade_finance_currency ON trade_finance (currency);
+
+-- ── SLA Tickets (Phase 1D operational — v10.122 seed, K039 + K040 rules) ──
+-- v10.129: First operational table from the integration layer's wired-39 set
+-- to get a PG schema. Read path goes through the v10.116 _data_source shim
+-- in utils/actuals_engine._read_operational_table() — set
+-- _data_source.per_table.sla_tickets = "pg_view" in
+-- integration_layer_config.json to switch reads from JSON → PG.
+-- The shim continues to support 'auto' (PG with JSON fallback) and 'json'
+-- (default) modes per-table.
+CREATE TABLE IF NOT EXISTS sla_tickets (
+    id                  VARCHAR(50) PRIMARY KEY,
+    title               VARCHAR(300),
+    category            VARCHAR(100),
+    priority            VARCHAR(50),
+    sla_target_hours    NUMERIC(10, 2),
+    sla_target_days     NUMERIC(10, 4),
+    assignee            VARCHAR(50),
+    requester           VARCHAR(50),
+    department          VARCHAR(100),
+    branch              VARCHAR(100),
+    status              VARCHAR(50),
+    raised_date         TIMESTAMPTZ,
+    resolved_date       TIMESTAMPTZ,
+    actual_hours        NUMERIC(10, 2),
+    actual_days         NUMERIC(10, 4),
+    within_sla          BOOLEAN,
+    escalation_count    INT DEFAULT 0,
+    description         TEXT,
+    last_updated        TIMESTAMPTZ,
+    data                JSONB DEFAULT '{}',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sla_tickets_assignee  ON sla_tickets (assignee);
+CREATE INDEX IF NOT EXISTS idx_sla_tickets_status    ON sla_tickets (status);
+CREATE INDEX IF NOT EXISTS idx_sla_tickets_priority  ON sla_tickets (priority);
+CREATE INDEX IF NOT EXISTS idx_sla_tickets_lastupd   ON sla_tickets (last_updated);
+
+-- ── Debt Recovery (Phase 1D operational — K027/K113/K044/Collection Throughput) ──
+-- v10.130: Second integration-layer operational table to land in PG schema.
+-- 4 wired rules including the v10.121-wired Collection Throughput non-K-coded
+-- library entry. Higher rule density than sla_tickets (1) — proves the
+-- v10.116 _data_source shim handles multi-rule tables identically.
+-- Read path goes through utils/actuals_engine._read_operational_table().
+-- Set _data_source.per_table.debt_recovery = "pg_view" / "auto" in
+-- integration_layer_config.json to opt-in.
+CREATE TABLE IF NOT EXISTS debt_recovery (
+    id                      VARCHAR(50) PRIMARY KEY,
+    account_number          VARCHAR(100),
+    client_cif              VARCHAR(50),
+    debtor_name             VARCHAR(200),
+    outstanding             NUMERIC(18, 2),
+    loan_amount             NUMERIC(18, 2),
+    dpd                     INT,
+    npl_days                INT,
+    product                 VARCHAR(100),
+    branch                  VARCHAR(100),
+    rm_code                 VARCHAR(50),
+    recovery_stage          VARCHAR(100),
+    collateral_type         VARCHAR(100),
+    collateral_value        NUMERIC(18, 2),
+    ltvr                    NUMERIC(8, 2),
+    recovery_officer        VARCHAR(200),
+    recovery_officer_code   VARCHAR(50),
+    last_contact            DATE,
+    next_action             DATE,
+    settlement_offer        NUMERIC(18, 2),
+    amount_recovered        NUMERIC(18, 2),
+    legal_referral          BOOLEAN DEFAULT false,
+    legal_firm              VARCHAR(200),
+    demand_letters_sent     INT DEFAULT 0,
+    status                  VARCHAR(50),
+    created_date            DATE,
+    last_updated            DATE,
+    notes                   TEXT,
+    data                    JSONB DEFAULT '{}',
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Indexes: recovery_officer_code is the primary staff_field for K027/K113;
+-- rm_code is the alternate for some rules; status, dpd, last_updated are
+-- predicate / period fields used by all 4 wired rules.
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_officer  ON debt_recovery (recovery_officer_code);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_rm       ON debt_recovery (rm_code);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_status   ON debt_recovery (status);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_dpd      ON debt_recovery (dpd);
+CREATE INDEX IF NOT EXISTS idx_debt_recovery_lastupd  ON debt_recovery (last_updated);
+
+-- ── Loan Applications (Phase 1D operational — 6 wired rules) ──
+-- v10.131: Third operational table to be designated PG-eligible by the
+-- integration layer's v10.116 _data_source shim. Unlike v10.129
+-- (sla_tickets) and v10.130 (debt_recovery), loan_applications was
+-- ALREADY a PG-backed table since v10.89 (anti-drift Phase 1A migration
+-- batch 2; CREATE TABLE at line ~989 above). v10.131 just adds the
+-- integration-layer indexes the wired rules need and updates docs.
+--
+-- This is architecturally important: it proves the v10.116 _data_source
+-- shim works with PRE-EXISTING PG tables, not only with tables newly
+-- added to PG by the migration. Banks already on PG for some tables
+-- (the 60+ pre-Phase-1D anti-drift tables) inherit the integration-
+-- layer PG path automatically when they flip the per-table config.
+--
+-- 6 wired rules:
+--   K011  TAT_DAYS      Application Approval TAT
+--   K001  SUM           Loan Disbursements
+--   K010  PERCENTAGE    Loan Approval Rate
+--   K115  COUNT         Loan Application Volume
+--   K046  MEAN_FIELD    Avg Document Completeness
+--   K045  PERCENTAGE    Compliance Flag Rate
+--
+-- Set _data_source.per_table.loan_applications = "pg_view" / "auto" in
+-- integration_layer_config.json to opt-in.
+--
+-- Additional indexes for the wired-rule query patterns. Pre-existing
+-- indexes (idx_loan_apps_status, idx_loan_apps_application_date,
+-- idx_loan_apps_rm at line ~1022) cover most of the load; these add
+-- coverage for the period_field=last_updated rules and the tat_days
+-- field that K011/K046 read directly.
+CREATE INDEX IF NOT EXISTS idx_loan_apps_lastupd      ON loan_applications (last_updated);
+CREATE INDEX IF NOT EXISTS idx_loan_apps_tat          ON loan_applications (tat_days);
+CREATE INDEX IF NOT EXISTS idx_loan_apps_complflag    ON loan_applications (compliance_flag) WHERE compliance_flag = TRUE;
 
 """
 

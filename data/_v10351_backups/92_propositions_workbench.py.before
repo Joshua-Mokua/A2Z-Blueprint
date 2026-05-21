@@ -1,0 +1,26 @@
+"""pages/92_propositions_workbench.py — Propositions Workbench.
+
+v10.347 — refactored to call utils.propositions_hub_render.
+
+User-facing page exposing the v10.277 Propositions cluster end-to-end
+(8 engines, 10 standards). Body now in utils.propositions_hub_render.
+render_propositions_workbench().
+
+The consolidated entry point is pages/117_propositions_hub.py.
+
+Audience: Heavy operational page — propositions team running the
+catalog, eligibility, pricing, NBA, A/B, cohorts, channel orchestration.
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("shared.customer_360")
+
+from utils.propositions_hub_render import render_propositions_workbench
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_propositions_workbench(actor)

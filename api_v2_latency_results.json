@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:01.488884+00:00",
+  "samples": 50,
+  "p50_ms": 0.022,
+  "p95_ms": 0.023,
+  "avg_ms": 0.022,
+  "max_ms": 0.043,
+  "spec_target_ms": 500.0,
+  "all_passed": true
+}

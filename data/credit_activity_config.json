@@ -1,0 +1,110 @@
+{
+  "_doc": "Credit activity generator config (v10.327) — admin-editable. Drives the Credit Activity Generator (utils/credit_activity_generator.py) which simulates a quarter of credit operations activity per Credit Analyst, Credit Admin Officer, Collections Officer, and Credit Monitoring staff. Submits BSC actuals via the verified bsc_engine path. Edit this file to tune target levels and noise factors. Run `python scripts/generate_credit_activity.py --period 2026-Q2` after edits.",
+  "_schema_version": "v10.327",
+  "_last_reviewed": "2026-05-11",
+  "_owner": "Admin / Credit Operations",
+
+  "performance_bands": {
+    "_note": "Distribution across performance bands. Determined deterministically by hash(staff_code) so the same staff always lands in the same band. Sum must equal 1.0.",
+    "high_performer": {"share": 0.10, "factor_range": [1.05, 1.20], "description": "Top 10% — exceeds target by 5-20%"},
+    "above_average": {"share": 0.30, "factor_range": [0.95, 1.05], "description": "Next 30% — within ±5% of target"},
+    "on_target": {"share": 0.40, "factor_range": [0.85, 0.95], "description": "Middle 40% — 85-95%"},
+    "below_target": {"share": 0.20, "factor_range": [0.65, 0.85], "description": "Bottom 20% — 65-85%"}
+  },
+
+  "_kpi_targets_doc": "Targets and noise per Credit role. The generator looks up the staff's role and picks the matching KPI set. For lower-is-better KPIs (TAT) the factor INVERTS — high performers have SHORTER TAT.",
+
+  "role_kpi_targets": {
+    "Credit Analyst": {
+      "CREDIT_APPROVAL_RATE": {"target": 72, "scale": "%", "noise_pct": 6, "direction": "higher", "description": "% of credit apps approved (vs declined or reworked)"},
+      "CREDIT_TAT_STANDARD": {"target": 5, "scale": "days", "noise_pct": 10, "direction": "lower", "description": "Days from app submission to credit decision"},
+      "CREDIT_REWORK_RATE": {"target": 12, "scale": "%", "noise_pct": 15, "direction": "lower", "description": "% of apps requiring rework (missing docs, weak analysis)"},
+      "INIT_COUNT": {"target": 65, "scale": "count", "noise_pct": 15, "direction": "higher", "description": "Number of credit applications analysed in quarter"},
+      "COMPLIANCE_SCORE": {"target": 4.2, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Adherence to credit policy + CBK guidelines"}
+    },
+    "Credit Admin Officer": {
+      "LOAN_DISBURSEMENT_TAT": {"target": 3, "scale": "days", "noise_pct": 12, "direction": "lower", "description": "Days from approval to disbursement (security perfection, doc completion)"},
+      "INIT_STATUS": {"target": 4.0, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Status of admin operational initiatives"},
+      "INIT_COUNT": {"target": 80, "scale": "count", "noise_pct": 12, "direction": "higher", "description": "Loans perfected and disbursed in quarter"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Adherence to admin & security registration policy"},
+      "AUDIT_SCORE": {"target": 92, "scale": "0-100", "noise_pct": 4, "direction": "higher", "description": "Audit findings on loan documentation completeness"}
+    },
+    "Manager-Credit Monitoring": {
+      "NPL_RATIO": {"target": 5.5, "scale": "%", "noise_pct": 10, "direction": "lower", "description": "Non-performing loan ratio for monitored portfolio"},
+      "PAR": {"target": 4.0, "scale": "%", "noise_pct": 10, "direction": "lower", "description": "Portfolio at Risk (30+ days past due)"},
+      "INIT_STATUS": {"target": 4.0, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Status of monitoring/early-warning initiatives"},
+      "INIT_COUNT": {"target": 40, "scale": "count", "noise_pct": 10, "direction": "higher", "description": "Number of portfolio reviews completed"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Compliance with CBK PG/04 classification rules"}
+    },
+    "Supervisor Credit Reporting": {
+      "INIT_STATUS": {"target": 4.1, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Status of credit reporting initiatives"},
+      "INIT_COUNT": {"target": 60, "scale": "count", "noise_pct": 12, "direction": "higher", "description": "Credit reports submitted to CRBs/internal stakeholders"},
+      "AUDIT_SCORE": {"target": 93, "scale": "0-100", "noise_pct": 3, "direction": "higher", "description": "Accuracy of credit reports"},
+      "COMPLIANCE_SCORE": {"target": 4.4, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "CRB reporting compliance"}
+    },
+    "Collections and Recoveries Officer": {
+      "COLLECTION_THROUGHPUT": {"target": 30000000, "scale": "KES", "noise_pct": 18, "direction": "higher", "description": "KES recovered per quarter from NPL portfolio"},
+      "PAR": {"target": 4.5, "scale": "%", "noise_pct": 12, "direction": "lower", "description": "Portfolio at Risk for assigned cases (lower = better recovery)"},
+      "INIT_COUNT": {"target": 50, "scale": "count", "noise_pct": 15, "direction": "higher", "description": "Recovery actions executed in quarter"},
+      "COMPLIANCE_SCORE": {"target": 4.2, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Adherence to debt-recovery legal framework"}
+    },
+    "Write-Off Officer": {
+      "COLLECTION_THROUGHPUT": {"target": 5000000, "scale": "KES", "noise_pct": 20, "direction": "higher", "description": "Post write-off recoveries"},
+      "INIT_COUNT": {"target": 35, "scale": "count", "noise_pct": 15, "direction": "higher", "description": "Write-off cases processed"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Adherence to write-off approval and tax treatment policy"}
+    },
+    "Senior Manager -Credit Analysis": {
+      "CREDIT_APPROVAL_RATE": {"target": 70, "scale": "%", "noise_pct": 4, "direction": "higher", "description": "Department-level credit approval rate"},
+      "CREDIT_TAT_STANDARD": {"target": 6, "scale": "days", "noise_pct": 6, "direction": "lower", "description": "Department-level standard TAT"},
+      "INIT_STATUS": {"target": 4.2, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Strategic credit-process initiatives"},
+      "INIT_COUNT": {"target": 4, "scale": "count", "noise_pct": 10, "direction": "higher", "description": "Strategic initiatives delivered per quarter"},
+      "AUDIT_SCORE": {"target": 94, "scale": "0-100", "noise_pct": 3, "direction": "higher", "description": "Department audit score"}
+    },
+    "Senior Manager-Collections & Recoveries": {
+      "COLLECTION_THROUGHPUT": {"target": 250000000, "scale": "KES", "noise_pct": 12, "direction": "higher", "description": "Department-level recovery throughput"},
+      "PAR": {"target": 4.2, "scale": "%", "noise_pct": 8, "direction": "lower", "description": "Department-level PAR"},
+      "NPL_RATIO": {"target": 5.2, "scale": "%", "noise_pct": 8, "direction": "lower", "description": "Department-level NPL ratio"},
+      "INIT_STATUS": {"target": 4.1, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Recovery improvement initiatives"},
+      "AUDIT_SCORE": {"target": 91, "scale": "0-100", "noise_pct": 4, "direction": "higher", "description": "Department audit score"}
+    },
+    "Assistant Manager -Credit Administration": {
+      "LOAN_DISBURSEMENT_TAT": {"target": 3, "scale": "days", "noise_pct": 8, "direction": "lower", "description": "Team-level disbursement TAT"},
+      "INIT_STATUS": {"target": 4.1, "scale": "1-5", "noise_pct": 5, "direction": "higher", "description": "Admin process initiatives"},
+      "INIT_COUNT": {"target": 5, "scale": "count", "noise_pct": 10, "direction": "higher", "description": "Process improvement initiatives"},
+      "COMPLIANCE_SCORE": {"target": 4.4, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Admin policy compliance"},
+      "AUDIT_SCORE": {"target": 93, "scale": "0-100", "noise_pct": 3, "direction": "higher", "description": "Documentation audit score"}
+    },
+    "Corporate Analysis Manager": {
+      "CREDIT_APPROVAL_RATE": {"target": 65, "scale": "%", "noise_pct": 5, "direction": "higher", "description": "Corporate credit approval rate (tougher segment)"},
+      "CREDIT_TAT_COMPLEX": {"target": 14, "scale": "days", "noise_pct": 10, "direction": "lower", "description": "Complex case TAT for corporate analysis"},
+      "INIT_COUNT": {"target": 8, "scale": "count", "noise_pct": 12, "direction": "higher", "description": "Corporate credit reviews completed"},
+      "COMPLIANCE_SCORE": {"target": 4.3, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Corporate credit policy compliance"}
+    },
+    "Consumer and Staff Loan Analysis Manager": {
+      "CREDIT_APPROVAL_RATE": {"target": 78, "scale": "%", "noise_pct": 5, "direction": "higher", "description": "Consumer/staff loan approval rate (higher than corporate)"},
+      "CREDIT_TAT_EXPRESS": {"target": 1, "scale": "days", "noise_pct": 10, "direction": "lower", "description": "Express TAT for consumer/staff loans"},
+      "INIT_COUNT": {"target": 90, "scale": "count", "noise_pct": 12, "direction": "higher", "description": "Consumer/staff loans analysed"},
+      "COMPLIANCE_SCORE": {"target": 4.2, "scale": "1-5", "noise_pct": 4, "direction": "higher", "description": "Consumer credit policy compliance"}
+    }
+  },
+
+  "quarter_drift": {
+    "_note": "Small quarter-over-quarter trend.",
+    "drift_pct_per_quarter": 0.5,
+    "max_drift_pct": 3.0
+  },
+
+  "band_movement": {
+    "_note": "Quarter-over-quarter movement between bands. ~5% move each quarter, deterministic by hash(staff_code, period_index).",
+    "stay_pct": 90,
+    "move_up_pct": 5,
+    "move_down_pct": 5
+  },
+
+  "source_module": "credit_activity_generator",
+  "metadata_template": {
+    "source": "credit_activity_generator",
+    "shipped": "v10.327",
+    "synthetic": true
+  }
+}

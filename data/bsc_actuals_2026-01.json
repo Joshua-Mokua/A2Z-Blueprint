@@ -1,0 +1,32 @@
+[
+  {
+    "staff_code": "300001",
+    "kpi_id": "K001",
+    "value": 1.0,
+    "period": "2026-01",
+    "source_module": "test_etl",
+    "submitted_at": "2026-05-11T05:44:21.649850+00:00",
+    "actor": "system",
+    "idem_hash": "0566b1b6cf41d8bc"
+  },
+  {
+    "staff_code": "300002",
+    "kpi_id": "K001",
+    "value": 2.0,
+    "period": "2026-01",
+    "source_module": "test_etl",
+    "submitted_at": "2026-05-11T05:44:21.636145+00:00",
+    "actor": "system",
+    "idem_hash": "a82b55f68a2a5bb3"
+  },
+  {
+    "staff_code": "300001",
+    "kpi_id": "K001",
+    "value": 1.0,
+    "period": "2026-01",
+    "source_module": "test",
+    "submitted_at": "2026-05-11T05:44:21.645389+00:00",
+    "actor": "system",
+    "idem_hash": "ac4276ac1cdf6dd3"
+  }
+]

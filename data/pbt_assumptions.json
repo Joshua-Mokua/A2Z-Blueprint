@@ -1,0 +1,14 @@
+{
+  "_schema_version": "v10.364",
+  "_last_updated_iso": "2026-05-13T00:00:00+00:00",
+  "_last_updated_by": "v10.364 initial defaults",
+  "_purpose": "PBT computation factors. Editable via admin/finance. Per Rule N1, all financial assumptions are configured here, not hardcoded in utils/.",
+  "cost_of_funds_pct": 3.0,
+  "lgd_pct": 45.0,
+  "non_interest_other_pct": 15.0,
+  "_documentation": {
+    "cost_of_funds_pct": "Percentage of total deposits paid as interest expense (deposit cost of funds). Industry-typical: 2-5%. Bank-specific based on the deposit mix.",
+    "lgd_pct": "Loss Given Default percentage. Used to compute impairment charge from NPL Stage 3 outstanding. Basel default: 45%. Internal Risk Rating Bank (IRB) banks calibrate this to their portfolio.",
+    "non_interest_other_pct": "Uplift on fee income to estimate FX + investment income (which isn't in CBS accounts.csv directly). 15% means non-interest income = fee_income × 1.15. Calibrate to actual NFI composition over time."
+  }
+}

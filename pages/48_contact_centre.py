@@ -11,7 +11,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("contact_centre")
+require_access("sales_customer.contact_centre")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -89,3 +89,12 @@ with tabs[3]:
         st.line_chart(pd.DataFrame({"Calls":[m["calls"] for m in monthly],
                                      "FCR%":[m["fcr"] for m in monthly]},
                                     index=[m["month"] for m in monthly]))
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

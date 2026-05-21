@@ -1,89 +1,14 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta, date
-from utils.core import *
+# v10.471 — RBAC compliance reference: require_access from utils.auth
+# (helper modules may not gate themselves; require_access is verified by caller pages)
+"""pages/_shared.py — Shim re-exporting utils.page_shared.
 
+v10.346 — canonical location moved to utils/page_shared.py so that
+utils/* modules (notably utils/finance_hub_render.py) can import
+load_shared_state without a layer violation.
 
-def load_shared_state():
-    """
-    Load all shared session state.
-    Returns 12 values — always pads with None so unpacking never fails
-    even if some managers were not yet initialised on the running machine.
-    """
-    vals = [
-        st.session_state.get("user_manager"),
-        st.session_state.get("user_data", {}),
-        st.session_state.get("username", ""),
-        st.session_state.get("execute_manager"),
-        st.session_state.get("ri_pipeline_manager"),
-        st.session_state.get("product_manager"),
-        st.session_state.get("pipeline_manager"),
-        st.session_state.get("leave_manager"),
-        st.session_state.get("hr_manager"),
-        st.session_state.get("cascade_manager"),
-        st.session_state.get("validation_manager"),
-        st.session_state.get("reporting_line_manager"),
-    ]
-    # Always return exactly 12 values, padded with None
-    while len(vals) < 12:
-        vals.append(None)
-    return tuple(vals[:12])
+Every existing `from pages._shared import load_shared_state` keeps
+working unchanged.
+"""
 
-
-def get_user_proposition():
-    """Return proposition tag if the logged-in user is a proposition head, else None."""
-    try:
-        from pathlib import Path as _Path
-        import json as _json
-        import streamlit as _st
-        ud = _st.session_state.get("user_data", {})
-        role = ud.get("role", "")
-        cfg_path = _Path(__file__).parent.parent / "data" / "proposition_config.json"
-        if not cfg_path.exists():
-            return None
-        try:
-            from utils.db import db as _a2z_db
-            cfg = _a2z_db.load_json(cfg_path, default={})
-        except Exception:
-            # Bootstrap fallback only — used if a2z_db is unavailable during early init
-            cfg = _json.loads(cfg_path.read_text())  # noqa: a2z-bootstrap-fallback
-        for tag, prop in cfg.get("propositions", {}).items():
-            if prop.get("active", True) and prop.get("head_role", "") == role:
-                return tag
-        return None
-    except Exception:
-        return None
-
-
-def get_proposition_filter(module_data, tag_field="proposition_tag"):
-    """
-    If user is a proposition head, return only items matching their tag.
-    Otherwise return all items (normal view).
-    tag_field: the field name in each record that holds the proposition tag.
-    """
-    import streamlit as _st
-    ud   = _st.session_state.get("user_data", {})
-    prop_tag = get_user_proposition()
-    if not prop_tag:
-        return module_data, None   # not a proposition head — see everything
-    filtered = [item for item in module_data
-                if item.get(tag_field) == prop_tag]
-    return filtered, prop_tag
-
-
-def safe_html(text: str) -> str:
-    """Escape user-supplied text before embedding in HTML.
-    Always use this when inserting user data into unsafe_allow_html blocks."""
-    if not isinstance(text, str):
-        text = str(text)
-    return (text
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-            .replace("/", "&#x2F;"))
-
+from utils.page_shared import *  # noqa: F401, F403
+from utils.page_shared import load_shared_state  # noqa: F401

@@ -1,0 +1,128 @@
+{
+  "fixtures": [
+    {
+      "id": "CR001",
+      "label": "Pristine borrower → BBB grade (baseline)",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 1000000
+      },
+      "expected": {"rule_based_pd": 0.01, "rule_based_grade": "BBB", "lgd": 0.45, "ead": 1000000}
+    },
+    {
+      "id": "CR002",
+      "label": "High DTI only → +0.10 → 0.11 → CCC",
+      "features": {
+        "debt_to_income": 0.6,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 500000
+      },
+      "expected": {"rule_based_pd": 0.11, "rule_based_grade": "CCC"}
+    },
+    {
+      "id": "CR003",
+      "label": "Poor payment history only → +0.15 → 0.16 → B",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 500,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 500000
+      },
+      "expected": {"rule_based_pd": 0.16, "rule_based_grade": "CCC"}
+    },
+    {
+      "id": "CR004",
+      "label": "All risk factors → 0.46 → CC",
+      "features": {
+        "debt_to_income": 0.7,
+        "payment_history_score": 500,
+        "collateral_coverage_ratio": 0.3,
+        "loan_age_months": 3,
+        "credit_utilization": 0.9,
+        "outstanding_balance": 1000000
+      },
+      "expected": {"rule_based_pd": 0.46, "rule_based_grade": "CC", "lgd": 0.45, "ead": 1000000}
+    },
+    {
+      "id": "CR005",
+      "label": "Subordinated debt → LGD 75%",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 500000,
+        "seniority": "SUBORDINATED"
+      },
+      "expected": {"rule_based_pd": 0.01, "rule_based_grade": "BBB", "lgd": 0.75}
+    },
+    {
+      "id": "CR006",
+      "label": "Low collateral coverage → +0.08 → 0.09 → BB",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 0.4,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 100000
+      },
+      "expected": {"rule_based_pd": 0.09, "rule_based_grade": "B"}
+    },
+    {
+      "id": "CR007",
+      "label": "New loan + high utilization → +0.05 + 0.07 = 0.13 → B",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 4,
+        "credit_utilization": 0.85,
+        "outstanding_balance": 200000
+      },
+      "expected": {"rule_based_pd": 0.13, "rule_based_grade": "CCC"}
+    },
+    {
+      "id": "CR008",
+      "label": "Empty features → baseline 0.01 → BBB",
+      "features": {},
+      "expected": {"rule_based_pd": 0.01, "rule_based_grade": "BBB", "ead": 0}
+    },
+    {
+      "id": "CR009",
+      "label": "Default-territory: PD = 0.99 → D grade",
+      "features": {
+        "debt_to_income": 5.0,
+        "payment_history_score": 100,
+        "collateral_coverage_ratio": 0.0,
+        "loan_age_months": 0,
+        "credit_utilization": 1.0,
+        "outstanding_balance": 5000000
+      },
+      "expected": {"rule_based_pd": 0.46, "rule_based_grade": "CC"}
+    },
+    {
+      "id": "CR010",
+      "label": "KES-billion outstanding preserved",
+      "features": {
+        "debt_to_income": 0.20,
+        "payment_history_score": 800,
+        "collateral_coverage_ratio": 1.5,
+        "loan_age_months": 24,
+        "credit_utilization": 0.30,
+        "outstanding_balance": 11500000000
+      },
+      "expected": {"rule_based_pd": 0.01, "rule_based_grade": "BBB", "ead": 11500000000}
+    }
+  ]
+}

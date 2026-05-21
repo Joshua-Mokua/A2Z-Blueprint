@@ -1,0 +1,120 @@
+# Prometheus alert rules for A2Z MIS 360 (v9.18)
+# Companion to docs/OBSERVABILITY_DASHBOARD_RUNBOOK.md
+# Import path: drop into Prometheus rule_files: directory
+
+groups:
+  - name: a2z_circuit_breaker
+    interval: 30s
+    rules:
+      - alert: A2ZCircuitOpenSustained
+        expr: a2z_circuit_open == 1
+        for: 5m
+        labels:
+          severity: warning
+          team: a2z-ops
+        annotations:
+          summary: "A2Z circuit open for {{ $labels.endpoint }}"
+          description: |
+            Circuit breaker has been open for 5+ minutes.
+            FLEXCUBE endpoint is being skipped; A2Z falling back to synthetic data.
+            Action: Check FLEXCUBE backend health.
+          runbook: "docs/OBSERVABILITY_DASHBOARD_RUNBOOK.md#61-triage-flow-alert-fires"
+
+      - alert: A2ZCircuitOpenCritical
+        expr: a2z_circuit_open == 1
+        for: 30m
+        labels:
+          severity: critical
+          team: a2z-ops
+        annotations:
+          summary: "A2Z circuit STILL open for {{ $labels.endpoint }}"
+          description: |
+            Circuit has been open for 30+ minutes — likely persistent FLEXCUBE outage.
+            Open incident with FLEXCUBE team.
+
+      - alert: A2ZCircuitFailuresApproachingThreshold
+        expr: a2z_circuit_consecutive_failures >= 3
+        for: 2m
+        labels:
+          severity: warning
+          team: a2z-ops
+        annotations:
+          summary: "Circuit close to tripping for {{ $labels.endpoint }}"
+          description: |
+            Consecutive failures = {{ $value }} (threshold = 5).
+            Investigate before circuit opens.
+
+  - name: a2z_retry_telemetry
+    interval: 30s
+    rules:
+      - alert: A2ZRecoveryRateLow
+        expr: a2z_retry_recovery_rate_pct < 50
+        for: 1h
+        labels:
+          severity: warning
+          team: a2z-ops
+        annotations:
+          summary: "Retry recovery rate {{ $value }}% for {{ $labels.endpoint }}"
+          description: |
+            Retries aren't recovering transient failures (recovery rate below 50%).
+            Indicates persistent (not transient) backend issue.
+
+      - alert: A2ZRecoveryRateCritical
+        expr: a2z_retry_recovery_rate_pct < 25
+        for: 1h
+        labels:
+          severity: critical
+          team: a2z-ops
+        annotations:
+          summary: "Retry recovery rate {{ $value }}% for {{ $labels.endpoint }} — CRITICAL"
+
+  - name: a2z_latency
+    interval: 30s
+    rules:
+      - alert: A2ZLatencyP95High
+        expr: a2z_latency_p95_ms > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: a2z-ops
+        annotations:
+          summary: "p95 latency {{ $value }}ms > 1s for {{ $labels.endpoint }}"
+          description: |
+            FLEXCUBE response times degraded.
+            User-visible slowness if p95 sustained > 1 second.
+
+      - alert: A2ZLatencyP99Critical
+        expr: a2z_latency_p99_ms > 10000
+        for: 5m
+        labels:
+          severity: critical
+          team: a2z-ops
+        annotations:
+          summary: "p99 latency {{ $value }}ms > 10s for {{ $labels.endpoint }}"
+          description: |
+            Severe latency tail; calls likely timing out.
+            Check endpoint timeout config (v8.20).
+
+  - name: a2z_alerts
+    interval: 1m
+    rules:
+      - alert: A2ZAlertsUnackedHigh
+        expr: a2z_alerts_unacknowledged > 10
+        for: 1h
+        labels:
+          severity: warning
+          team: a2z-ops
+        annotations:
+          summary: "{{ $value }} unacknowledged alerts for 1h"
+          description: |
+            Operator hasn't acknowledged alerts.
+            Check operator availability or alert volume spike.
+
+      - alert: A2ZAlertsUnackedCritical
+        expr: a2z_alerts_unacknowledged > 50
+        for: 1h
+        labels:
+          severity: critical
+          team: a2z-ops
+        annotations:
+          summary: "{{ $value }} unacknowledged alerts — operator overwhelmed"

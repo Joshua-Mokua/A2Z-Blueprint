@@ -1,0 +1,70 @@
+{
+  "_doc": "Market gaps A2Z addresses with their honest scope status. Per docs/A2Z_LIVING_DOCS_PLAN.md Part 1+3, every claim has a source_file or source_url citation; every solution has a status marker (shipped/designed/roadmap).",
+  "_schema_version": "1.0",
+  "_last_reviewed_iso": "2026-05-01",
+  "gaps": [
+    {
+      "gap_id": "GAP_001_STRATEGY_EXECUTION",
+      "category": "strategy",
+      "pain_point": "Banks struggle to translate strategic goals into individual actions. Quarterly board targets do not flow to teller-level KPIs.",
+      "current_state": "Manual cascade in Excel; targets reset quarterly without continuous adjustment.",
+      "a2z_solution": "Auto-cascade engine wiring MD → Director → Head → Regional → Branch Manager → individual roles via the system_stocks + KPI library.",
+      "solution_status": "shipped",
+      "solution_source": "utils/profitability_integration.py + data/kpi_library.json",
+      "verification_audit_gates": ["G105", "G106"]
+    },
+    {
+      "gap_id": "GAP_002_LATE_FEEDBACK",
+      "category": "performance",
+      "pain_point": "Staff receive performance feedback monthly — too late to change behaviour mid-cycle.",
+      "current_state": "Monthly BSC reviews; no real-time signal to staff.",
+      "a2z_solution": "BSC engine + KPI library (35 KPIs across 4 BSC pillars) updates from CBS aggregates; surface for daily review.",
+      "solution_status": "shipped",
+      "solution_source": "data/kpi_library.json + utils/system_flows.py L02",
+      "verification_audit_gates": ["G106"],
+      "honest_scope": "Real-time mobile alerts on KPI drift are roadmap (v9.x), not shipped. Polling-based dashboard is the current surface."
+    },
+    {
+      "gap_id": "GAP_003_FRAGMENTED_SYSTEMS",
+      "category": "integration",
+      "pain_point": "Banks run 10-15 separate systems for credit, risk, HR, finance, customer ops; each with its own truth.",
+      "current_state": "Manual data movement between FLEXCUBE, CRM, HRIS, GL.",
+      "a2z_solution": "FLEXCUBE Anti-Corruption Layer (ACL) translates GROSS_OS/SEGMENT_DIST/STAGE_DIST to A2Z's normalised vocabulary inside utils/flexcube_aggregator.py. Single source of truth flows to all engines.",
+      "solution_status": "shipped",
+      "solution_source": "utils/flexcube_aggregator.py + utils/flexcube_adapter.py",
+      "verification_audit_gates": ["G107", "G108"],
+      "honest_scope": "v8.0 shipped 5 live FLEXCUBE handlers. Temenos/T24 adapter is not built. Banks on T24 would need a sister adapter following the same ACL pattern."
+    },
+    {
+      "gap_id": "GAP_004_THIN_FILE_CREDIT",
+      "category": "credit",
+      "pain_point": "Traditional credit scoring excludes thin-file customers without formal credit history.",
+      "current_state": "Manual underwriting takes 3-7 days; thin-file customers often declined.",
+      "a2z_solution": "Alternative credit scoring engine using transaction velocity + utility-bill patterns + M-PESA history (where available).",
+      "solution_status": "designed",
+      "solution_source": "utils/alternative_credit_scoring.py (engine designed; not yet wired to UI)",
+      "honest_scope": "🟡 Engine designed in v6.x; not surfaced in UI. Production deployment requires CRB integration which is roadmap. External case studies (Zanifu 99.2% repayment) are cited industry research, not A2Z deployments."
+    },
+    {
+      "gap_id": "GAP_005_CHANNEL_OUTAGE_NOTIFICATION",
+      "category": "operations",
+      "pain_point": "When ATM/mobile-app/USSD goes down, customers discover by trying — bank loses trust.",
+      "current_state": "Reactive incident response; no proactive customer notification.",
+      "a2z_solution": "L14 streaming closure: channels_reliability PRODUCER + smart_alerts CONSUMER + event_bus generates URGENT/HIGH/INFO tiered alerts with PUSH/SMS/IN_APP_BANNER delivery channels and alternative-channel guidance.",
+      "solution_status": "shipped",
+      "solution_source": "utils/event_bus.py + utils/channels_reliability.py + utils/smart_alerts.py",
+      "verification_audit_gates": ["G106", "G109"],
+      "honest_scope": "v8.4 closed L14 with file-backed event bus. Production multi-process deployment needs Kafka or Redis pub/sub (roadmap v9.x). Twilio/Firebase delivery integration is roadmap; v8.x ships the targeting metadata, not the delivery."
+    },
+    {
+      "gap_id": "GAP_006_OPACITY_TO_REGULATORS",
+      "category": "compliance",
+      "pain_point": "Audit trails are scattered across systems; CBK reviews require manual reconstruction.",
+      "current_state": "Audit-pack assembly takes weeks each cycle.",
+      "a2z_solution": "6-gate defense-in-depth audit perimeter (G104-G109). Single command verifies every cross-cutting invariant. Per-batch CHANGELOGs preserve narrative.",
+      "solution_status": "shipped",
+      "solution_source": "scripts/audit.py + 32 CHANGELOG_v*.md files",
+      "verification_audit_gates": ["G104", "G105", "G106", "G107", "G108", "G109"]
+    }
+  ]
+}

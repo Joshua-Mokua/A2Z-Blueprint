@@ -1,0 +1,836 @@
+"""pages/52_mgmt_accounts.py — Management Accounts Pack.
+Monthly P&L, balance sheet, key ratios. Thresholds via org_config.
+"""
+import streamlit as st
+from utils.db import db as a2z_db
+import pandas as pd
+import json
+from pathlib import Path
+from datetime import date
+from utils.config import cfg, currency, regulator, tax_authority
+from pages._shared import load_shared_state
+from pages._access import require_access
+from utils.core_audit import audit_log
+
+require_access("finance.mgmt_accounts")
+DATA  = Path(__file__).parent.parent / "data"
+today = date.today()
+um, ud, uname, *_ = load_shared_state()[:12]
+role     = str(ud.get("role","")).lower()
+is_admin = ud.get("is_admin",False)
+is_fin   = any(x in role for x in ("financial","cfo","finance","controller","chief financial"))
+
+st.markdown("<div style='padding:16px 0 4px'><span style='font-size:22px;font-weight:800'>📑 Management Accounts</span>"
+            "<span style='font-size:13px;color:var(--color-text-secondary);margin-left:12px'>"
+            "Monthly P&L · Balance Sheet · Key Ratios · Trend</span></div>", unsafe_allow_html=True)
+
+@st.cache_data(ttl=60)
+def _load():
+    p = DATA/"mgmt_accounts.json"
+    return a2z_db.load_json(p) if p.exists() else {}
+
+data = _load()
+if not data: st.info("Management accounts not available."); st.stop()
+
+period = data.get("period","")
+ratios = data.get("key_ratios",{})
+inc    = data.get("income_statement",{})
+bs     = data.get("balance_sheet",{})
+cir_tgt= cfg("cir_target_pct", 55)
+
+m1,m2,m3,m4,m5,m6 = st.columns(6)
+m1.metric("NIM",f"{ratios.get('nim_pct',0):.2f}%")
+m2.metric("CIR",f"{ratios.get('cir_pct',0):.1f}%",f"Target {cir_tgt}%",
+          delta_color="normal" if ratios.get("cir_pct",99)<=cir_tgt else "inverse")
+m3.metric("ROA",f"{ratios.get('roa_pct',0):.2f}%")
+m4.metric("ROE",f"{ratios.get('roe_pct',0):.1f}%")
+m5.metric("CAR",f"{ratios.get('car_pct',0):.1f}%")
+m6.metric("NPL",f"{ratios.get('npl_pct',0):.1f}%",
+          delta_color="normal" if ratios.get("npl_pct",0)<=6 else "inverse")
+
+tabs = st.tabs(["📊 P&L","🏦 Balance Sheet","📈 Trend","📐 Ratios","♻️ OCI Recycling","📥 Export","🤖 Arc Engines"])
+
+with tabs[0]:
+    st.markdown(f"**Income Statement — {period}** ({currency()} M)")
+    PNL = [("Interest Income","interest_income"),("Interest Expense","interest_expense"),
+           ("Net Interest Income","net_interest_income"),("Fee Income","fee_income"),
+           ("Forex Income","forex_income"),("Total Income","total_income"),
+           ("Operating Expenses","opex"),("Provisions","provisions"),("PBT","pbt")]
+    rows=[]
+    for label,key in PNL:
+        d=inc.get(key,{})
+        a,b,p=d.get("actual_m",0),d.get("budget_m",0),d.get("prior_m",0)
+        rows.append({"Line item":label,"Actual (M)":a,"Budget (M)":b,"Prior (M)":p,
+                     "Variance":round(a-b,1),"Var%":f"{(a-b)/max(abs(b),1)*100:+.1f}%"})
+    st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
+
+with tabs[1]:
+    st.markdown(f"**Balance Sheet — {period}** ({currency()} B)")
+    BS=[("Net Loans","loans_net_b"),("Investments","investments_b"),("Cash","cash_b"),
+        ("Total Assets","total_assets_b"),("Customer Deposits","customer_deposits_b"),
+        ("Borrowings","borrowings_b"),("Equity","equity_b")]
+    bs_rows=[{"Item":l,"Current (B)":bs.get(k,{}).get("actual",0),
+              "Prior (B)":bs.get(k,{}).get("prior",0),
+              "Change":round(bs.get(k,{}).get("actual",0)-bs.get(k,{}).get("prior",0),2)}
+             for l,k in BS]
+    st.dataframe(pd.DataFrame(bs_rows),use_container_width=True,hide_index=True)
+
+with tabs[2]:
+    trend=data.get("monthly_trend",[])
+    if trend:
+        st.line_chart(pd.DataFrame({"NII":[t["nii_m"] for t in trend],
+                                     "PBT":[t["pbt_m"] for t in trend]},
+                                    index=[t["month"] for t in trend]))
+        st.line_chart(pd.DataFrame({"CIR%":[round(t["cir"],1) for t in trend]},
+                                    index=[t["month"] for t in trend]))
+
+with tabs[3]:
+    st.dataframe(pd.DataFrame([{"Ratio":k.replace("_pct"," (%)").replace("_"," ").title(),
+                                 "Value":f"{v:.2f}"}
+                                for k,v in ratios.items()]),
+                 use_container_width=True,hide_index=True)
+
+with tabs[4]:
+    # ── IAS 1 OCI Recycling Map (Standard #111, integrated v5.73) ─────
+    from utils.ias1_presentation import (
+        IAS1PresentationEngine, OCI_RECYCLING_MAP, OCI_LINE_ITEMS,
+        MATERIALITY_PCT_OF_EQUITY,
+    )
+    from decimal import Decimal as _D
+
+    st.markdown("**IAS 1 / IFRS 9 OCI Recycling Map**")
+    st.caption(
+        "Whether each OCI line item recycles to P&L on derecognition (per IAS 1 + IFRS 9 + IAS 16 + IAS 19R). "
+        "**This is the most error-prone area in IFRS reporting** — banks routinely "
+        "treat equity FVTOCI as recyclable (it is NOT, per IFRS 9) or treat "
+        "DB remeasurement as recyclable (it is NOT, per IAS 19R post-2013)."
+    )
+
+    # Render the recycling map deterministically
+    recycling_rows = []
+    for line_item in OCI_LINE_ITEMS:
+        r = IAS1PresentationEngine.oci_classification(line_item)
+        recycling_rows.append({
+            "OCI line item": line_item.replace("_", " ").title(),
+            "Classification": r.get("classification", "—"),
+            "Recyclable to P&L?": "✅ Yes" if r.get("recyclable") else "❌ Never",
+            "Standard ref": {
+                "REVALUATION_SURPLUS": "IAS 16 (revaluation model)",
+                "FVTOCI_DEBT_FAIR_VALUE_CHANGES": "IFRS 9 (debt FVTOCI)",
+                "FVTOCI_EQUITY_FAIR_VALUE_CHANGES": "IFRS 9 (equity FVTOCI — NEVER recycles)",
+                "CASH_FLOW_HEDGE_RESERVE": "IFRS 9 (hedge accounting)",
+                "DEFINED_BENEFIT_REMEASUREMENT": "IAS 19R (post-2013, no corridor)",
+            }.get(line_item, ""),
+        })
+    st.dataframe(pd.DataFrame(recycling_rows),
+                 use_container_width=True, hide_index=True)
+
+    audit_log("IFRS_ENGINE_USED", uname,
+               f"IAS1 #111: OCI recycling map viewed on mgmt_accounts page")
+
+    # Materiality probe — let user check if a P&L item is material
+    st.markdown("---")
+    st.markdown("**Materiality Test** (IAS 1.7 — 5% of equity / 5% of revenue / 1% of total assets)")
+    eq = bs.get("equity_b", {}).get("actual", 0) or 0
+    rev = inc.get("total_income", {}).get("actual_m", 0) or 0
+    ta  = bs.get("total_assets_b", {}).get("actual", 0) or 0
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        item_amt = st.number_input(f"Item amount ({currency()} M)",
+                                     min_value=0.0, value=5.0, step=1.0,
+                                     key="ma_mat_item")
+    with c2:
+        basis = st.selectbox("Basis", ["EQUITY", "REVENUE", "TOTAL_ASSETS"],
+                              key="ma_mat_basis")
+    with c3:
+        # Pre-fill with extracted balance-sheet/P&L value (in M)
+        default_basis_amt = {"EQUITY": float(eq) * 1000.0,    # B → M
+                              "REVENUE": float(rev),
+                              "TOTAL_ASSETS": float(ta) * 1000.0}.get(basis, 0.0)
+        basis_amt = st.number_input(f"Basis amount ({currency()} M)",
+                                      min_value=0.0,
+                                      value=max(default_basis_amt, 1.0),
+                                      step=10.0, key="ma_mat_basis_amt")
+
+    if st.button("Test materiality", key="ma_mat_btn", type="primary"):
+        r = IAS1PresentationEngine.materiality_test(
+            _D(str(item_amt)), basis, _D(str(basis_amt)))
+        if r.get("computed"):
+            material = r.get("material")
+            color = "#DC2626" if material else "#10B981"
+            verdict = "❌ MATERIAL — must be disclosed" if material else "✅ NOT MATERIAL"
+            st.markdown(
+                f"<div style='padding:12px;background:{color}22;"
+                f"border-left:4px solid {color};border-radius:8px'>"
+                f"<div style='font-size:16px;font-weight:700;color:{color}'>{verdict}</div>"
+                f"<div style='font-size:13px;margin-top:6px'>"
+                f"Item is <b>{r.get('pct_of_base')}%</b> of {basis.lower()} "
+                f"(threshold: {r.get('threshold_pct')}%).</div></div>",
+                unsafe_allow_html=True)
+            audit_log("IFRS_ENGINE_USED", uname,
+                       f"IAS1 #111: Materiality {item_amt}M vs {basis_amt}M {basis} → material={material}")
+        else:
+            st.error(f"Could not compute. Reason: {r.get('reason','unknown')}")
+
+with tabs[5]:
+    if is_fin or is_admin:
+        import io
+        rows2=[{"Line":l,"Actual_M":inc.get(k,{}).get("actual_m",0),
+                "Budget_M":inc.get(k,{}).get("budget_m",0)}
+               for l,k in PNL]
+        buf=io.BytesIO()
+        pd.DataFrame(rows2).to_excel(buf,index=False,engine="openpyxl"); buf.seek(0)
+        st.download_button("📥 Download P&L",data=buf.getvalue(),
+                           file_name=f"MgmtAccounts_{period}.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                           key="ma_dl")
+    else: st.info("Export available to Finance team.")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Section 6: 🤖 Arc Engines (absorbed from 96_finance_arc_cockpit.py
+# in v10.211 per the architectural reorganization sub-campaign.
+# 10 Finance engines presented as nested sub-tabs spanning month-end
+# close orchestration, intercompany matching, consolidated TB, regulator
+# regulatory reporting, predictive financial analytics, intelligence
+# dashboard, statement generation, tax-authority compliance, multi-entity FX,
+# and audit & compliance. All engines diagnostic.
+# This page is in the finance department alongside 9_sbu.py and
+# 29_revenue_assurance.py (reassigned in v10.210). The Finance section
+# of the sidebar now provides a substantive CFO command surface.
+# Note: 52_mgmt_accounts.py is now at G4 7-tab ceiling (6 → 7).
+# Mirrors v10.202..v10.210 absorption patterns.
+# ──────────────────────────────────────────────────────────────────────
+with tabs[6]:
+    from datetime import datetime as _dt_fa, timezone as _tz_fa
+
+    try:
+        from utils.finance_close_orchestrator import (
+            FinanceCloseOrchestrator)
+        from utils.intercompany_matching import (
+            IntercompanyMatchingEngine)
+        from utils.consolidated_tb_engine import (
+            ConsolidatedTrialBalanceEngine)
+        from utils.cbk_regulatory_reporting import (
+            CBKRegulatoryReportingEngine)
+        from utils.predictive_financial_analytics import (
+            PredictiveFinancialAnalyticsEngine)
+        from utils.finance_intelligence_dashboard import (
+            FinanceIntelligenceDashboardEngine)
+        from utils.financial_statement_generator import (
+            FinancialStatementGenerator)
+        from utils.kra_tax_compliance import KRATaxComplianceEngine
+        from utils.multi_entity_currency import MultiEntityCurrencyEngine
+        from utils.finance_audit_compliance import (
+            FinanceAuditComplianceEngine)
+        _ARC_FA_AVAILABLE = True
+    except ImportError as _ie:
+        st.error(f"Finance arc engines unavailable: {_ie}")
+        _ARC_FA_AVAILABLE = False
+
+    if _ARC_FA_AVAILABLE:
+        st.caption(
+            "v10.211 absorbed from 96_finance_arc_cockpit.py — 10 engines "
+            "spanning month-end close orchestration, intercompany matching, "
+            "consolidated TB, regulator reporting, predictive financial "
+            "analytics, intelligence dashboard, statement generation, tax-authority "
+            "tax compliance, multi-entity FX, and audit & compliance.")
+
+        arc_tabs = st.tabs([
+            "📋 Close + 🔗 IC",
+            "🌐 Consolidation + 💱 Multi-Curr",
+            f"🏛️ {regulator()} Reporting",
+            "📈 Predictive + 📊 CFO",
+            "📑 Statements + 💼 Tax",
+            "🔒 Audit & Compliance",
+            "ℹ️ About",
+        ])
+
+        with arc_tabs[0]:
+            st.subheader("Close Orchestration (ENH-249)")
+            st.caption(
+                "5 capabilities: missing recurring accruals + prepayment "
+                "amortization + IC pending + suspense balance + cutoff "
+                "timing")
+            if st.button("Run close orchestration demo", key="fco_run"):
+                eng = FinanceCloseOrchestrator()
+                gl_entries = (
+                    GLEntry(
+                        entry_id="ge1", entity_id="P",
+                        account_code="9999",
+                        account_type=AccountType.ASSET,
+                        debit_kes=Decimal("75000"),
+                        credit_kes=Decimal("0"),
+                        period="2026-04",
+                        posting_date="2026-04-15",
+                        description="suspense"),
+                )
+                report = eng.generate_close_report(
+                    period="2026-04",
+                    target_close_days=3,
+                    gl_entries=gl_entries,
+                    accrual_schedules=(),
+                    prepayment_schedules=(),
+                    ic_entries=(),
+                    cutoff_date="2026-05-05")
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "finance_close_orchestrator",
+                     "tasks": len(report.tasks)})
+                st.success(
+                    f"Close orchestration complete — {len(report.tasks)} "
+                    f"tasks ({report.target_close_days}-day target)")
+                with st.expander("Tasks (Rule 1 — full provenance)",
+                                 expanded=True):
+                    for t in report.tasks:
+                        st.write(
+                            f"**{t.severity.value}** · {t.task_type.value} "
+                            f"— {t.description}")
+
+            st.divider()
+            st.subheader("Intercompany Matching (ENH-250)")
+            st.caption(
+                "Mirror-pair IC entries across entities; 4 MatchStatus × "
+                "5 EliminationType + multi-leg chain detection")
+            if st.button("Run IC matching demo", key="icm_run"):
+                eng = IntercompanyMatchingEngine()
+                a = IcEntry(
+                    entry_id="a", entity_id="PARENT",
+                    counterparty_entity_id="SUBA",
+                    account_code="IC-1500",
+                    debit_kes=Decimal("100000"),
+                    credit_kes=Decimal("0"),
+                    period="2026-04", reference="IC-INV-001",
+                    elimination_type=EliminationType.RECEIVABLE_PAYABLE)
+                b = IcEntry(
+                    entry_id="b", entity_id="SUBA",
+                    counterparty_entity_id="PARENT",
+                    account_code="IC-2500",
+                    debit_kes=Decimal("0"),
+                    credit_kes=Decimal("100000"),
+                    period="2026-04", reference="IC-INV-001",
+                    elimination_type=EliminationType.RECEIVABLE_PAYABLE)
+                report = eng.match_all((a, b), "2026-04")
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "intercompany_matching",
+                     "matches": len(report.matches)})
+                st.success(
+                    f"IC matching complete — {len(report.matches)} "
+                    f"matches; "
+                    f"{report.total_eliminations_recommended} "
+                    f"eliminations recommended")
+                with st.expander("Matches"):
+                    for m in report.matches:
+                        st.write(
+                            f"**{m.status.value}** · {m.severity.value} "
+                            f"— {m.description}")
+
+        with arc_tabs[1]:
+            st.subheader("Group Consolidation TB (ENH-251)")
+            st.caption(
+                "4-step pipeline: aggregate → eliminate → NCI → IAS 21 "
+                "FX (CLOSING for B/S, AVERAGE for P&L)")
+            if st.button("Run consolidation demo", key="gcs_run"):
+                eng = ConsolidatedTrialBalanceEngine()
+                p = EntityProfile(
+                    entity_id="PARENT", entity_name="Parent",
+                    parent_ownership_pct=Decimal("1"),
+                    functional_currency=currency(), is_parent=True)
+                s = EntityProfile(
+                    entity_id="SUBA", entity_name="Sub A 80%",
+                    parent_ownership_pct=Decimal("0.80"),
+                    functional_currency=currency())
+                tb = (
+                    TrialBalanceLine(
+                        entity_id="PARENT", account_code="3000",
+                        account_type=AccountType.EQUITY,
+                        debit_kes=Decimal("0"),
+                        credit_kes=Decimal("5000000"),
+                        period="2026-04"),
+                    TrialBalanceLine(
+                        entity_id="SUBA", account_code="3000",
+                        account_type=AccountType.EQUITY,
+                        debit_kes=Decimal("0"),
+                        credit_kes=Decimal("1000000"),
+                        period="2026-04"),
+                )
+                result = eng.consolidate("2026-04", (p, s), tb)
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "consolidated_tb_engine",
+                     "lines": len(result.lines)})
+                st.success(
+                    f"Consolidation complete — "
+                    f"{len(result.lines)} lines, "
+                    f"{result.entities_consolidated} entities")
+                with st.expander("Lines"):
+                    for line in result.lines:
+                        st.write(
+                            f"**{line.account_code}** "
+                            f"({line.account_type.value}) — "
+                            f"NCI Cr {line.nci_share_cr}, "
+                            f"Parent Cr {line.parent_share_cr}")
+
+            st.divider()
+            st.subheader("Multi-Currency Accounting (ENH-257)")
+            st.caption(
+                "Transaction-level multi-currency journal validation + "
+                "IAS 21 §23 FX revaluation + inter-entity transfer")
+            if st.button("Run multi-currency demo", key="mec_run"):
+                eng = MultiEntityCurrencyEngine()
+                # USD journal
+                lines = (
+                    JournalLine(
+                        line_id="l1", entity_id="P",
+                        account_code="1500",
+                        debit_txn_currency=Decimal("10000"),
+                        credit_txn_currency=Decimal("0"),
+                        transaction_currency="USD"),
+                    JournalLine(
+                        line_id="l2", entity_id="P",
+                        account_code="2500",
+                        debit_txn_currency=Decimal("0"),
+                        credit_txn_currency=Decimal("10000"),
+                        transaction_currency="USD"),
+                )
+                rates = (
+                    FxSpotRate(
+                        transaction_currency="USD",
+                        functional_currency=currency(),
+                        rate=Decimal("130"),
+                        rate_date="2026-04-15"),
+                )
+                v = eng.validate_multi_currency_journal(
+                    "J-USD-001", lines, "2026-04-15", rates=rates)
+                # Revaluation
+                bal = MonetaryBalance(
+                    balance_id="USD-RCV",
+                    entity_id="P", account_code="1500",
+                    currency="USD",
+                    txn_currency_balance=Decimal("100000"),
+                    historical_functional_balance=Decimal("12500000"))
+                closing = (
+                    FxSpotRate(
+                        transaction_currency="USD",
+                        functional_currency=currency(),
+                        rate=Decimal("130"),
+                        rate_date="2026-04-30"),
+                )
+                rev = eng.revalue_monetary_balances(
+                    "2026-04-30", (bal,), closing)
+                # Inter-entity
+                rec = eng.recommend_inter_entity_transfer(
+                    InterEntityTransferRequest(
+                        request_id="REQ-1",
+                        from_entity="PARENT", to_entity="SUBA",
+                        amount_kes=Decimal("10000000"),
+                        purpose="working_capital_loan"))
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "multi_entity_currency",
+                     "valid": v.is_valid,
+                     "reval_findings": len(rev),
+                     "transfer_amount": str(rec.amount_kes)})
+                st.success("Multi-currency demos complete")
+                st.write(
+                    f"**Journal validation:** valid={v.is_valid}, "
+                    f"functional Dr={v.functional_dr}, "
+                    f"rate={v.fx_rate_used}")
+                st.write(
+                    f"**Revaluation:** {len(rev)} finding(s); "
+                    f"first severity={rev[0].severity.value if rev else 'n/a'}")
+                st.write(
+                    f"**Inter-entity transfer:** "
+                    f"{rec.debit_leg_entity}→{rec.credit_leg_entity} "
+                    f"amount {rec.amount_kes}")
+
+        with arc_tabs[2]:
+            st.subheader(f"{regulator()} Regulatory Reporting (ENH-252)")
+            st.caption(
+                "5 returns: CAR (PG 03), LIQ (PG 04), SBL (PG 05), "
+                "LXP (PG 05), FXE (PG 06)")
+            if st.button(f"Run {regulator()} returns demo", key="cbk_run"):
+                eng = CBKRegulatoryReportingEngine()
+                car = eng.generate_car(CapitalComponents(
+                    period="2026-04",
+                    tier1_capital_kes=Decimal("1500000000"),
+                    tier2_capital_kes=Decimal("300000000"),
+                    deductions_kes=Decimal("100000000"),
+                    risk_weighted_assets_kes=Decimal("10000000000")))
+                liq = eng.generate_liq(LiquidityComponents(
+                    period="2026-04",
+                    liquid_assets_kes=Decimal("3000000000"),
+                    total_deposits_kes=Decimal("10000000000")))
+                sbl = eng.generate_sbl(
+                    "2026-04", Decimal("1000000000"),
+                    (BorrowerExposure(
+                        borrower_id="MEGA",
+                        borrower_name="Mega Corp",
+                        funded_kes=Decimal("180000000"),
+                        unfunded_kes=Decimal("20000000")),))
+                fxe = eng.generate_fxe(
+                    "2026-04", Decimal("1000000000"),
+                    (CurrencyPosition(
+                        currency="USD",
+                        long_kes_equivalent=Decimal("80000000"),
+                        short_kes_equivalent=Decimal("30000000")),))
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "cbk_regulatory_reporting",
+                     "returns_generated": 4})
+                st.success(f"{regulator()} returns generated")
+                for label, pkg in (
+                    ("CAR", car), ("LIQ", liq), ("SBL", sbl),
+                    ("FXE", fxe)):
+                    st.write(
+                        f"**{label}**: severity "
+                        f"{pkg.breach_severity.value} — "
+                        f"{pkg.breach_description}")
+
+        with arc_tabs[3]:
+            st.subheader("Predictive Financial Analytics (ENH-253)")
+            st.caption(
+                "3 forecast methods + ML hook (Rule 6: ml_disabled "
+                "flag) · variance · driver decomposition · trend")
+            if st.button("Run predictive demo", key="pfa_run"):
+                eng = PredictiveFinancialAnalyticsEngine()
+                history = tuple(
+                    TimeSeriesPoint(
+                        period=f"2025-{m:02d}",
+                        value_kes=Decimal(str(1000000 + 50000 * m)))
+                    for m in range(1, 13))
+                f = eng.forecast(
+                    "monthly_revenue", history, horizon=3,
+                    method=ForecastMethod.LINEAR_TREND)
+                variance = eng.analyze_variance((
+                    ActualVsExpected(
+                        metric_name="rev", period="2026-04",
+                        actual_kes=Decimal("950000"),
+                        expected_kes=Decimal("1000000")),
+                ))
+                trend = eng.detect_trend("rev", history)
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "predictive_financial_analytics",
+                     "forecast_points": len(f.points),
+                     "variance_findings": len(variance)})
+                st.success("Predictive demos complete")
+                st.write(
+                    f"**Forecast** ({f.method_used.value}): "
+                    f"{len(f.points)} points, "
+                    f"ml_disabled={f.ml_disabled}")
+                if variance:
+                    st.write(
+                        f"**Variance:** {variance[0].materiality.value} "
+                        f"/ {variance[0].direction.value}")
+                st.write(
+                    f"**Trend:** {trend.signal.value}, "
+                    f"slope={trend.slope_per_period}")
+
+            st.divider()
+            st.subheader("CFO Dashboard (ENH-254)")
+            st.caption(
+                "6 KPI families: profitability · capital · liquidity · "
+                "growth · efficiency · asset quality. Split-implementation "
+                "pulled into this cockpit per v10.46 amendment.")
+            if st.button("Run CFO dashboard demo", key="cfo_run"):
+                eng = FinanceIntelligenceDashboardEngine()
+                fin = PeriodFinancials(
+                    period="2026-04",
+                    net_interest_income_kes=Decimal("4000000000"),
+                    non_interest_income_kes=Decimal("1000000000"),
+                    operating_expenses_kes=Decimal("2500000000"),
+                    impairment_kes=Decimal("300000000"),
+                    tax_kes=Decimal("600000000"),
+                    avg_total_assets_kes=Decimal("100000000000"),
+                    avg_equity_kes=Decimal("10000000000"),
+                    avg_earning_assets_kes=Decimal("80000000000"),
+                    closing_total_loans_kes=Decimal("60000000000"),
+                    closing_total_deposits_kes=Decimal("80000000000"),
+                    closing_npl_kes=Decimal("2400000000"),
+                    closing_provision_kes=Decimal("1800000000"),
+                    customer_count=500000, branch_count=50,
+                    transaction_count=10000000,
+                    transaction_processing_cost_kes=(
+                        Decimal("300000000")),
+                    car_ratio=Decimal("0.18"),
+                    liq_ratio=Decimal("0.25"))
+                dash = eng.build_dashboard(fin)
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "finance_intelligence_dashboard",
+                     "kpis": len(dash.kpis),
+                     "alerts": len(dash.alerts)})
+                st.success(
+                    f"Dashboard built — {len(dash.kpis)} KPIs, "
+                    f"{len(dash.alerts)} alerts")
+                for k in dash.kpis:
+                    badge = {
+                        ThresholdStatus.OK: "✅",
+                        ThresholdStatus.WARNING: "⚠️",
+                        ThresholdStatus.BREACH: "🚨",
+                        ThresholdStatus.NOT_APPLICABLE: "·"}.get(
+                        k.threshold_status, "·")
+                    st.write(
+                        f"{badge} **{k.metric_name}** "
+                        f"({k.family.value}): {k.value} {k.unit}")
+
+        with arc_tabs[4]:
+            st.subheader("Financial Statement Generator (ENH-255)")
+            st.caption(
+                "5 IFRS statements: BS (IAS 1 §54) · IS (IAS 1 §82) · "
+                "OCI (IAS 1 §82A with CTA from ENH-251) · Equity (IAS "
+                "1 §106) · CF (IAS 7)")
+            if st.button("Run statement generator demo", key="fsg_run"):
+                # Build minimal consolidated TB
+                from utils.consolidated_tb_engine import (
+                    ConsolidatedLine, ConsolidatedTrialBalance)
+                tb_lines = (
+                    ConsolidatedLine(
+                        account_code="1010",
+                        account_type=AccountType.ASSET,
+                        entity_contributions=(),
+                        pre_elimination_dr=Decimal("5000000"),
+                        pre_elimination_cr=Decimal("0"),
+                        eliminations_applied_dr=Decimal("0"),
+                        eliminations_applied_cr=Decimal("0"),
+                        post_elimination_dr=Decimal("5000000"),
+                        post_elimination_cr=Decimal("0"),
+                        nci_share_dr=Decimal("0"),
+                        nci_share_cr=Decimal("0"),
+                        parent_share_dr=Decimal("5000000"),
+                        parent_share_cr=Decimal("0"),
+                        framework_refs=("ENH-251",)),
+                    ConsolidatedLine(
+                        account_code="3000",
+                        account_type=AccountType.EQUITY,
+                        entity_contributions=(),
+                        pre_elimination_dr=Decimal("0"),
+                        pre_elimination_cr=Decimal("5000000"),
+                        eliminations_applied_dr=Decimal("0"),
+                        eliminations_applied_cr=Decimal("0"),
+                        post_elimination_dr=Decimal("0"),
+                        post_elimination_cr=Decimal("5000000"),
+                        nci_share_dr=Decimal("0"),
+                        nci_share_cr=Decimal("0"),
+                        parent_share_dr=Decimal("0"),
+                        parent_share_cr=Decimal("5000000"),
+                        framework_refs=("ENH-251",)),
+                )
+                tb = ConsolidatedTrialBalance(
+                    period="2026-04",
+                    presentation_currency=currency(),
+                    lines=tb_lines, findings=(),
+                    entities_consolidated=1,
+                    eliminations_applied_count=0,
+                    total_dr=Decimal("5000000"),
+                    total_cr=Decimal("5000000"),
+                    cumulative_translation_adjustment_kes=(
+                        Decimal("0")),
+                    framework_refs=("ENH-251",))
+                cls = (
+                    AccountClassification(
+                        account_code="1010",
+                        bs_classification=(
+                            BsClassification.CURRENT_ASSET),
+                        line_label="Cash"),
+                    AccountClassification(
+                        account_code="3000",
+                        bs_classification=(
+                            BsClassification.EQUITY_PARENT),
+                        line_label="Share Capital"),
+                )
+                eng = FinancialStatementGenerator()
+                pkg = eng.generate_package(tb, cls)
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "financial_statement_generator",
+                     "bs_total_assets": str(
+                         pkg.balance_sheet.total_assets_kes)})
+                st.success("IFRS statements generated")
+                st.write(
+                    f"**Balance Sheet:** Assets "
+                    f"{pkg.balance_sheet.total_assets_kes}, "
+                    f"Liab {pkg.balance_sheet.total_liabilities_kes}, "
+                    f"Equity {pkg.balance_sheet.total_equity_kes}")
+
+            st.divider()
+            st.subheader(f"{tax_authority()} Tax Compliance (ENH-256)")
+            st.caption(
+                "5 tax types: corporation tax · VAT · WHT · excise duty "
+                "· deferred tax (IAS 12)")
+            if st.button("Run tax compliance demo", key="tax_run"):
+                eng = KRATaxComplianceEngine()
+                ci = CorpTaxInput(
+                    period="2026",
+                    accounting_profit_kes=Decimal("100000000"),
+                    permanent_addbacks_kes=Decimal("5000000"),
+                    permanent_deductions_kes=Decimal("2000000"),
+                    timing_differences_net_kes=Decimal("3000000"),
+                    regime=CorpTaxRegime.STANDARD_RESIDENT)
+                vat = (
+                    VatTransaction(
+                        transaction_id="v1", period="2026-04",
+                        base_amount_kes=Decimal("5000000"),
+                        status=VatStatus.STANDARD),
+                )
+                wht = (
+                    WhtPayment(
+                        payment_id="w1", period="2026-04",
+                        income_type=WhtIncomeType.DIVIDEND,
+                        gross_amount_kes=Decimal("100000"),
+                        payee_residency=ResidencyStatus.RESIDENT),
+                )
+                diffs = (
+                    TemporaryDifference(
+                        description="Accelerated depreciation",
+                        period="2026-04",
+                        amount_kes=Decimal("5000000"),
+                        diff_type=TemporaryDifferenceType.TAXABLE),
+                )
+                pkg = eng.build_return_package(
+                    "2026-04",
+                    corp_tax_input=ci,
+                    vat_transactions=vat,
+                    wht_payments=wht,
+                    temp_differences=diffs)
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "kra_tax_compliance",
+                     "computations": len(pkg.computations)})
+                st.success(
+                    f"Tax return package — "
+                    f"{len(pkg.computations)} computations, "
+                    f"deferred tax {pkg.deferred_tax is not None}")
+                for tt, amt in pkg.by_tax_type.items():
+                    if amt != 0:
+                        st.write(f"**{tt}**: {amt}")
+
+        with arc_tabs[5]:
+            st.subheader("Finance Audit & Compliance (ENH-258)")
+            st.caption(
+                "5 SOX-style controls: SoD · authorization · manual "
+                "journal · period attestation · late adjustment")
+            if st.button("Run compliance report demo", key="fac_run"):
+                eng = FinanceAuditComplianceEngine()
+                journals = (
+                    JournalAudit(
+                        journal_id="J-CLEAN",
+                        period="2026-04",
+                        posting_date="2026-04-15",
+                        amount_kes=Decimal("50000"),
+                        source=JournalSource.AUTOMATED,
+                        preparer_user_id="alice",
+                        reviewer_user_id="bob",
+                        poster_user_id="carol"),
+                    JournalAudit(
+                        journal_id="J-SOD-BREACH",
+                        period="2026-04",
+                        posting_date="2026-04-20",
+                        amount_kes=Decimal("200000"),
+                        source=JournalSource.MANUAL,
+                        preparer_user_id="rogue",
+                        reviewer_user_id="rogue",
+                        poster_user_id="rogue"),
+                )
+                auths = (
+                    UserAuthorization(
+                        user_id="carol",
+                        max_journal_kes=Decimal("100000"),
+                        role="POSTER"),
+                    UserAuthorization(
+                        user_id="rogue",
+                        max_journal_kes=Decimal("500000"),
+                        role="POSTER"),
+                )
+                attestations = (
+                    PeriodAttestation(
+                        attestation_id="GL-2026-04",
+                        period="2026-04", function="GL_CLOSE",
+                        deadline_date="2026-05-05",
+                        status=AttestationStatus.OVERDUE,
+                        attestor_user_id="cfo",
+                        attested_at=None),
+                )
+                report = eng.build_compliance_report(
+                    "2026-04",
+                    journals=journals,
+                    authorizations=auths,
+                    attestations=attestations,
+                    period_cutoff_date="2026-05-05")
+                audit_log(
+                    "FINANCE_ENGINE_USED", uname,
+                    {"engine": "finance_audit_compliance",
+                     "findings": len(report.findings)})
+                st.success(
+                    f"Compliance scan complete — "
+                    f"{len(report.findings)} findings, "
+                    f"{report.journals_scanned} journals scanned")
+                for f in report.findings:
+                    badge = {
+                        FindingSeverity.CRITICAL: "🚨",
+                        FindingSeverity.HIGH: "⚠️",
+                        FindingSeverity.MEDIUM: "·",
+                        FindingSeverity.LOW: "·",
+                        FindingSeverity.INFO: "ℹ️"}.get(
+                        f.severity, "·")
+                    st.write(
+                        f"{badge} **{f.control.value}** · "
+                        f"{f.severity.value} — {f.description}")
+
+        with arc_tabs[6]:
+            st.subheader("Finance Arc Summary")
+            st.markdown("""
+**Arc closure batch:** v10.69 (this drop)
+
+**Scope:** 11 batches v10.59 → v10.69 producing 10 standards, 10 modules,
+40 scenarios across the arc, 2 closure ratchets (G135 + G136),
+1 cockpit page (this one), Engine Hub Tier 27 expansion to full
+descriptions, Master Prompt v3 line 108 update.
+
+**Closed-arc count:** 13 — finance arc joins
+- Treasury (v10.37, G127)
+- Risk (v10.46, G129+G130)
+- Credit/Model Risk (v10.49, G131+G132)
+- Revenue Assurance (v10.58, G133+G134)
+- and 8 prior closed arcs.
+
+**Discipline preserved:**
+- Per Rule 1, every result dataclass is frozen with full
+  provenance — inputs, intermediates, outputs, framework refs.
+- Per Rule 6, ML hooks surface `ml_disabled=True` with reason
+  when no caller-supplied predictor (ENH-253 explicitly tested).
+- Per Rule 7, all 10 engines are diagnostic — never auto-post,
+  never auto-revalue, never file with regulators directly,
+  never serialize statements to PDF/XBRL, never block
+  transactions, never revoke access, never auto-attest.
+- Audit gate G135 verifies the structural contract; G136 verifies
+  this cockpit imports + invokes all 10 engines.
+
+**Composition:** the 10 engines compose along clear lines —
+ENH-249 detects in-entity IC pending; ENH-250 pairs IC across
+entities; ENH-251 consumes IC eliminations + entity TBs to
+produce consolidated TB; ENH-252 reads the consolidated capital +
+liquidity to produce regulator returns; ENH-255 consumes the
+consolidated TB + classifications to produce IFRS statements;
+ENH-256 layers tax on top of accounting profit; ENH-257 handles
+transaction-level FX before TBs are extracted; ENH-258 audits
+the journal trail across all the others; ENH-253 forecasts
+metrics derived from the others; ENH-254 dashboards them.
+
+**Honest scope notes** (full detail in CHANGELOGs v10.59 through
+v10.69) — every engine ships with explicit "what it doesn't do"
+documentation. No engine pretends to be more than it is.
+""")
+
+        # Footer audit log
+        try:
+            audit_log(
+                action="finance_arc_engines.view",
+                username=ud.get("username", "anonymous"),
+                detail=f"viewed_at={_dt_fa.now(_tz_fa.utc).isoformat()}",
+                module="mgmt_accounts")
+        except Exception:
+            pass

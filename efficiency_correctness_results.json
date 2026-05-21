@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:05:40.023335+00:00",
+  "total_scenarios": 5,
+  "matches": 5,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 100.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "E001",
+      "matched": true,
+      "details": {
+        "K1": "ok"
+      }
+    },
+    {
+      "id": "E002",
+      "matched": true,
+      "details": {
+        "K1": "ok",
+        "K2": "ok"
+      }
+    },
+    {
+      "id": "E003",
+      "matched": true,
+      "details": {
+        "K1": "ok"
+      }
+    },
+    {
+      "id": "E004",
+      "matched": true,
+      "details": {
+        "K1": "ok"
+      }
+    },
+    {
+      "id": "E005",
+      "matched": true,
+      "details": {
+        "K1": "ok"
+      }
+    }
+  ]
+}

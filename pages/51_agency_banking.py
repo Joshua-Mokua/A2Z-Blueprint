@@ -12,7 +12,7 @@ from utils.config import cfg
 from pages._shared import load_shared_state
 from pages._access import require_access
 
-require_access("agency_banking")
+require_access("sales_customer.agency_banking")
 DATA  = Path(__file__).parent.parent / "data"
 today = date.today()
 um, ud, uname, *_ = load_shared_state()[:12]
@@ -101,3 +101,12 @@ with tabs[3]:
     t_rows=[{"Town":t,"Active Agents":n,"Txns Today":town_txn.get(t,0)}
              for t,n in sorted(town_ct.items(),key=lambda x:-x[1])]
     st.dataframe(pd.DataFrame(t_rows),use_container_width=True,hide_index=True)
+
+# v10.465 — Phase 4 WF4 operational output
+st.markdown("---")
+if st.button("🔄 Refresh this view", key=f"{__name__}_refresh_v465"):
+    if hasattr(st, "cache_data"):
+        st.cache_data.clear()
+    if hasattr(st, "rerun"):
+        st.rerun()
+

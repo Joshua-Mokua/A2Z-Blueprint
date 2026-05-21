@@ -1,0 +1,26 @@
+"""pages/27_propositions.py — Proposition / Segment Overlay Performance.
+
+v10.347 — refactored to call utils.propositions_hub_render.
+
+Horizontal units (Women Banking, Diaspora, SME, Agri, Trade Finance, etc.)
+track INFLUENCE KPIs, not portfolio volumes — zero double-counting.
+Body now in utils.propositions_hub_render.render_propositions_performance().
+
+The consolidated entry point is pages/117_propositions_hub.py — same
+functionality plus the Workbench under one area selector.
+
+Audience: Sales / customer team. Performance tracking + influence KPI scoreboard.
+"""
+
+from __future__ import annotations
+
+import streamlit as st
+
+from pages._access import require_access
+require_access("sales_customer.propositions")
+
+from utils.propositions_hub_render import render_propositions_performance
+
+
+actor = st.session_state.get("user", {}).get("username", "anonymous")
+render_propositions_performance(actor)

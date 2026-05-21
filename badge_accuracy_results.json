@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "run_at": "2026-05-04T18:07:00.657518+00:00",
+  "total_scenarios": 20,
+  "matches": 20,
+  "accuracy_pct": 100.0,
+  "spec_target_pct": 90.0,
+  "all_passed": true,
+  "results": [
+    {
+      "id": "B001",
+      "badge": "100_percent_achiever",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B002",
+      "badge": "100_percent_achiever",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B003",
+      "badge": "100_percent_achiever",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B004",
+      "badge": "most_improved",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B005",
+      "badge": "most_improved",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B006",
+      "badge": "most_improved",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B007",
+      "badge": "most_improved",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B008",
+      "badge": "consistent_high",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B009",
+      "badge": "consistent_high",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B010",
+      "badge": "comeback_kid",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B011",
+      "badge": "comeback_kid",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B012",
+      "badge": "comeback_kid",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B013",
+      "badge": "perfect_quarter",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B014",
+      "badge": "perfect_quarter",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B015",
+      "badge": "100_percent_achiever",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B016",
+      "badge": "most_improved",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B017",
+      "badge": "100_percent_achiever",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B018",
+      "badge": "consistent_high",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B019",
+      "badge": "100_percent_achiever",
+      "expected": true,
+      "actual": true,
+      "matched": true,
+      "reason": "ok"
+    },
+    {
+      "id": "B020",
+      "badge": "comeback_kid",
+      "expected": false,
+      "actual": false,
+      "matched": true,
+      "reason": "ok"
+    }
+  ]
+}

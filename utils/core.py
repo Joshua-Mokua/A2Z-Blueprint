@@ -618,30 +618,73 @@ BRAND = {
 }
 
 # ─── REGION MAPPING ───────────────────────────────────────────────────
-BRANCH_REGION: dict = {
-    'Mombasa Branch':        'South',
-    'Nyali Branch':          'South',
-    'Malindi Branch':        'South',
-    'Machakos Branch':       'South',
-    'Gikomba Branch':        'South',
-    'Industrial Area Branch':'South',
-    'Retail Banking':        'Central',
-    'Nairobi CBD Branch':    'Central',
-    'Thika Branch':          'Central',
-    'Nyeri Branch':          'Central',
-    'Meru Branch':           'Central',
-    'Eldoret Branch':        'North',
-    'Kisumu Branch':         'North',
-    'Nakuru Branch':         'North',
-    'Kericho Branch':        'North',
-    'Kisii Branch':          'North',
-    'Nyamira Branch':        'North',
-    'Kabsabet Branch':       'North',
-    'Kitale Branch':         'North',
-    'Bungoma Branch':        'North',
-    'Busia Branch':          'North',
-}
-REGIONS: list = ['South', 'Central', 'North']
+# ─── BRANCH_REGION (v10.361 — fully configurable, no hardcoded fallback) ──
+# Per Rule N1: tenant identity must be configured, never hardcoded.
+# v10.360 made BRANCH_REGION dynamically sourced from data/org_config.json
+# but retained a 21-entry hardcoded "_BRANCH_REGION_FALLBACK" for degraded
+# environments. v10.361 deletes that fallback — the system is bank-agnostic
+# and must not carry any tenant-specific branch list, even as a fallback.
+#
+# If org_config.json is missing or malformed, BRANCH_REGION resolves to an
+# empty dict. Downstream consumers will see "0 branches", which surfaces
+# the configuration error in the admin module rather than masking it with
+# a stale fallback list. Configuration is enforced upstream — not patched
+# downstream.
+#
+# Production integration path: pages/7_admin.py (render_branch_manager)
+# provides full CRUD (add + edit + soft-delete via active=False). Future
+# FLEXCUBE integration: utils.flexcube_adapter.fetch_branches_from_flexcube
+# pulls the branch list from core banking when mode="live"; org_config.json
+# is the authoritative source until then.
+#
+# G246 + G247 lock the configurability: no hardcoded branch dict literals
+# of >0 entries permitted in utils/.
+
+def _build_branch_region_from_org_config() -> dict:
+    """v10.361 — build BRANCH_REGION from data/org_config.json.
+
+    Returns an empty dict if the config is unavailable or malformed.
+    This is deliberate: a missing config is a configuration error that
+    should surface, not be masked by a hardcoded fallback.
+    """
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        _path = _Path(__file__).parent.parent / "data" / "org_config.json"
+        if not _path.exists():
+            return {}
+        _cfg = _json.loads(_path.read_text(encoding="utf-8"))
+        _branches = _cfg.get("branches", [])
+        if not _branches:
+            return {}
+        return {
+            b["name"]: b.get("region", "Other")
+            for b in _branches
+            if b.get("active", True) and b.get("name")
+        }
+    except Exception:
+        # Empty dict surfaces configuration errors upstream.
+        # No hardcoded tenant data — Rule N1.
+        return {}
+
+
+BRANCH_REGION: dict = _build_branch_region_from_org_config()
+def _build_regions_from_org_config() -> list:
+    """v10.361 — REGIONS derived from active branches in org_config.
+
+    Returns sorted unique regions. Empty list if config unavailable —
+    surfaces configuration errors instead of masking with stale defaults.
+    """
+    try:
+        regions = sorted(set(BRANCH_REGION.values()))
+        # Prefer non-"Other" regions where possible (better admin UX)
+        non_other = [r for r in regions if r and r != "Other"]
+        return non_other if non_other else regions
+    except Exception:
+        return []
+
+
+REGIONS: list = _build_regions_from_org_config()
 REGIONAL_HEAD_ROLE = 'Regional Head'
 
 def get_unit_region(unit: str) -> str:
@@ -2845,13 +2888,14 @@ class CascadeManager:
         if staff_name:
             sn = str(staff_name).strip().lower()
             for key, e in self.cascade.items():
+                if key.startswith("_"): continue
                 if not key.startswith("deadline|"): continue
                 if e.get("period","") != period: continue
                 from_c = clean_code(e.get("from_code",""))
                 # Check if this deadline was SET FOR this person via
                 # their to_name in any allocation
                 for ak, ae in self.cascade.items():
-                    if ak.startswith("deadline|") or ak.startswith("global_"): continue
+                    if ak.startswith("_") or ak.startswith("deadline|") or ak.startswith("global_"): continue
                     for alloc in ae.get("allocations",[]):
                         to_name = str(alloc.get("to_name","")).strip().lower()
                         to_code = clean_code(alloc.get("to_code",""))
@@ -2918,6 +2962,7 @@ class CascadeManager:
         today = datetime.now().date()
         result = []
         for key, entry in self.cascade.items():
+            if key.startswith("_"): continue
             if not key.startswith("deadline|"): continue
             if entry.get("period") != period: continue
             sc = entry.get("from_code", entry.get("staff_code", ""))
@@ -3010,7 +3055,8 @@ class CascadeManager:
             casc_date = _dt.date.fromisoformat(lvl["cascade_by"])
             # Count staff who have cascaded from this level
             done_count = sum(1 for k, e in self.cascade.items()
-                             if not k.startswith("deadline|")
+                             if not k.startswith("_")
+                             and not k.startswith("deadline|")
                              and not k.startswith("global_")
                              and e.get("period") == period)
             if casc_date < today:
@@ -3062,7 +3108,24 @@ class CascadeManager:
         if staff_code: requests = [r for r in requests if r.get("staff_code")==staff_code]
         return requests
 
-    def resolve_review(self, rr_id: str, status: str, response: str, by: str):
+    def resolve_review(self, rr_id: str, status: str, response: str, by: str,
+                       counter_target: float = None, escalate_to: str = "",
+                       escalate_to_name: str = ""):
+        """Resolve a review request — supports E4 negotiation escalation.
+
+        v10.409 — Negotiation workflow:
+          status values supported:
+            - "Approved" — manager approves the request as-is
+            - "Rejected" — manager rejects; review closes
+            - "Counter-Proposed" — manager offers counter_target; staff can accept/escalate
+            - "Escalated" — request routed to escalate_to (skip-level manager)
+
+        counter_target: If status="Counter-Proposed", the manager's
+                        proposed alternative target.
+        escalate_to:    If status="Escalated", staff_code of the skip-
+                        level manager to route to.
+        escalate_to_name: Display name of the escalation recipient.
+        """
         rr_file = DATA_DIR / "cascade_review_requests.json"
         if not rr_file.exists(): return
         try:
@@ -3075,7 +3138,61 @@ class CascadeManager:
                 r["response"]     = response
                 r["resolved_by"]  = by
                 r["resolved_at"]  = datetime.now().isoformat()
+                # v10.409 — record escalation chain
+                if status == "Counter-Proposed" and counter_target is not None:
+                    r["counter_target"] = float(counter_target)
+                if status == "Escalated":
+                    r["escalated_to"] = escalate_to
+                    r["escalated_to_name"] = escalate_to_name
+                    r["escalated_at"] = datetime.now().isoformat()
+                    # An escalated review is still actionable — reopen status
+                    # for the new resolver
+                    r["status"] = "Pending"   # pending from escalate_to
+                    r["original_status_was"] = "Escalated"
+                # Append to history
+                hist = r.get("history", [])
+                hist.append({
+                    "at": datetime.now().isoformat(),
+                    "by": by,
+                    "status": status,
+                    "response": response,
+                    "counter_target": counter_target,
+                    "escalate_to": escalate_to or None,
+                })
+                r["history"] = hist
         rr_file.write_text(json.dumps(requests, indent=2, default=str))
+
+    def auto_escalate_overdue_reviews(self, sla_days: int = 7) -> int:
+        """v10.409 — Auto-escalate Pending reviews older than `sla_days`.
+
+        Returns count of reviews escalated. Stamps `auto_escalated_at`
+        and changes status to indicate SLA breach.
+        """
+        rr_file = DATA_DIR / "cascade_review_requests.json"
+        if not rr_file.exists(): return 0
+        try:
+            requests = json.loads(rr_file.read_text())
+        except:
+            return 0
+        cutoff = datetime.now() - timedelta(days=sla_days)
+        escalated = 0
+        for r in requests:
+            if r.get("status") != "Pending": continue
+            if r.get("auto_escalated_at"): continue   # only once
+            try:
+                raised = datetime.fromisoformat(r["raised_at"])
+            except (ValueError, KeyError):
+                continue
+            if raised < cutoff:
+                r["auto_escalated_at"] = datetime.now().isoformat()
+                r["auto_escalation_reason"] = (
+                    f"SLA breach: {sla_days} days since raised without resolution"
+                )
+                r["sla_breached"] = True
+                escalated += 1
+        if escalated > 0:
+            rr_file.write_text(json.dumps(requests, indent=2, default=str))
+        return escalated
 
     # ── Target locking (on acceptance) ────────────────────────────────
     def lock_targets(self, staff_code: str, period: str):
@@ -3134,10 +3251,12 @@ class CascadeManager:
         # Scan deadline entries for a name match
         sn = str(staff_name).strip().lower()
         for key, entry in self.cascade.items():
+            if key.startswith("_"):
+                continue
             if not key.startswith("deadline|"):
                 continue
             for alloc_key, alloc_entry in self.cascade.items():
-                if alloc_key.startswith("deadline|") or alloc_key.startswith("global_"):
+                if alloc_key.startswith("_") or alloc_key.startswith("deadline|") or alloc_key.startswith("global_"):
                     continue
                 for alloc in alloc_entry.get("allocations",[]):
                     to_name = str(alloc.get("to_name","")).strip().lower()
@@ -3156,6 +3275,7 @@ class CascadeManager:
         if staff_name:
             sn = str(staff_name).strip().lower()
             for key, entry in self.cascade.items():
+                if key.startswith("_"): continue
                 if not key.startswith("deadline|"): continue
                 to_name = str(entry.get("to_name","")).strip().lower()
                 en_name = str(entry.get("staff_name","")).strip().lower()
@@ -3190,7 +3310,7 @@ class CascadeManager:
 
         # Iterate all cascade allocations
         for key, entry in self.cascade.items():
-            if key.startswith("deadline|") or key.startswith("global_"):
+            if key.startswith("_") or key.startswith("deadline|") or key.startswith("global_"):
                 continue
             kpi   = entry.get("kpi","")
             per   = entry.get("period","")
@@ -3214,14 +3334,36 @@ class CascadeManager:
     def set_bank_target(self, kpi: str, period: str, target: float, buffer_pct: float = 0):
         """MD sets the overall bank-level target for a KPI."""
         key = f"{kpi}|{period}"
-        self.bank_targets[key] = {
+        new_entry = {
             "kpi": kpi, "period": period,
             "target": target, "buffer_pct": buffer_pct,
             "stretch_target": round(target * (1 + buffer_pct/100), 2),
             "updated_at": datetime.now().isoformat(),
             "updated_by": "MD",
         }
+        # v10.343 — schema-lock check before mutating in-memory state.
+        # Refuses scalar or otherwise malformed entries (the v10.337 mistake).
+        try:
+            from utils.schema_validator import validate_value, load_schema
+            schema = load_schema("bank_targets.json")
+            if schema is not None:
+                # Schema applies to the OVERALL dict — we validate a single
+                # entry by checking its value against additionalProperties
+                entry_schema = schema.get("additionalProperties", {})
+                if entry_schema:
+                    result = validate_value(new_entry, entry_schema)
+                    if not result.get("valid", True):
+                        # Don't crash the page — log + return False, let
+                        # the caller handle. Caller is the cascade UI which
+                        # already shows a toast on save.
+                        return False
+        except Exception:
+            pass  # validator unavailable — fall through to existing behaviour
+
+        self.bank_targets[key] = new_entry
+        # noqa: a2z-bootstrap-fallback — CascadeManager bootstraps state
         self.bank_file.write_text(json.dumps(self.bank_targets, indent=2, default=str))
+        return True
 
     def get_bank_target(self, kpi: str, period: str):
         return self.bank_targets.get(f"{kpi}|{period}")
@@ -3258,10 +3400,14 @@ class CascadeManager:
         return kpi in self.get_fixed_kpis(period)
 
     def set_allocation(self, from_code: str, kpi: str, period: str,
-                       allocations: list, total_target: float):
+                       allocations: list, total_target: float,
+                       updated_by: str = None):
         """
         Set target allocations from one person to their direct reports.
         allocations = [{"to_code": "xxx", "to_name": "...", "amount": 1000000}, ...]
+
+        v10.404: stamps _v10404_manual=True + updated_by so the regenerator
+        preserves this entry on admin regen.
         """
         key = f"{from_code}|{kpi}|{period}"
         self.cascade[key] = {
@@ -3272,6 +3418,8 @@ class CascadeManager:
             "allocations":  allocations,
             "allocated_sum":sum(a["amount"] for a in allocations),
             "updated_at":   datetime.now().isoformat(),
+            "updated_by":   updated_by or from_code,
+            "_v10404_manual": True,
         }
         self._save()
         return self.cascade[key]
@@ -3284,7 +3432,8 @@ class CascadeManager:
         """What has this person cascaded down to their reports?"""
         sc = clean_code(staff_code)
         return {k: v for k, v in self.cascade.items()
-                if v.get("from_code") == sc and v.get("period") == period}
+                if not k.startswith("_") and isinstance(v, dict)
+                and v.get("from_code") == sc and v.get("period") == period}
 
     def get_what_i_was_given(self, staff_code: str, period: str,
                                staff_name: str = "") -> list:
@@ -3296,7 +3445,10 @@ class CascadeManager:
         sn     = str(staff_name).strip().lower()
         result = []
         for key, entry in self.cascade.items():
-            if key.startswith("deadline|") or key.startswith("global_"):
+            # v10.409 — skip ALL non-allocation keys (meta + deadline + global)
+            if key.startswith("_") or key.startswith("deadline|") or key.startswith("global_"):
+                continue
+            if not isinstance(entry, dict):
                 continue
             if period and entry.get("period","") != period:
                 continue
@@ -3309,13 +3461,13 @@ class CascadeManager:
                 name_match = (sn and to_name and (sn in to_name or to_name in sn))
                 if code_match or name_match:
                     result.append({
-                        "kpi":        entry["kpi"],
-                        "period":     entry["period"],
-                        "from_code":  entry["from_code"],
-                        "amount":     alloc["amount"],
-                        "total_pool": entry["total_target"],
-                        "my_share":   alloc["amount"]/entry["total_target"]*100
-                                      if entry["total_target"] else 0,
+                        "kpi":        entry.get("kpi",""),
+                        "period":     entry.get("period",""),
+                        "from_code":  entry.get("from_code",""),
+                        "amount":     alloc.get("amount",0),
+                        "total_pool": entry.get("total_target",0),
+                        "my_share":   (alloc.get("amount",0)/entry["total_target"]*100
+                                      if entry.get("total_target") else 0),
                     })
         return result
 
@@ -5093,6 +5245,13 @@ MODULE_ACCESS = {
                                                               "Chief Risk Officer","Head Of Strategy",
                                                               "Director Retail Banking","Director Commercial Banking",
                                                               "Chief Operations Officer","Head Of Internal Audit"]},
+
+    # ── MD/CEO Executive Cockpit (v10.214) ─────────────────────────
+    "md_cockpit":            {"min": "all",   "roles_all": ["Admin","Managing Director","Chief Finance Officer",
+                                                              "Chief Risk Officer","Chief Operations Officer",
+                                                              "Chief Compliance Officer","Chief Human Resources Officer",
+                                                              "Director Retail Banking","Director Commercial Banking",
+                                                              "Head Of Strategy","Head Of Internal Audit"]},
 }
 
 
