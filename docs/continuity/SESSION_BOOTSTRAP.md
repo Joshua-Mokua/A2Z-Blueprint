@@ -12,22 +12,25 @@ next session will eat rediscovery tax.
 
 ## A2Z in 3 lines
 
-A2Z Blueprint is an enterprise banking MIS for Ecobank Kenya: 700K
-customers, 35 branches, 487 staff, KES 11.5T deposits. ~25,500 LOC
-Python/Streamlit + FastAPI + emerging React UI, with a constitutional
-governance layer (~30+ docs in `docs/architecture/`) and a mechanical
-audit suite (~387 gates in `scripts/audit.py`). The system is in active
-development across multiple concurrent arcs (Stage C governance, Phase
-1 auth, React migration, virtual bank simulation).
+A2Z Blueprint is an enterprise banking MIS configurable to any bank (Ecobank Kenya
+is the prospect tenant): 700K simulated customers, 35 branches, 487 staff,
+KES 11.5T simulated deposits. ~726,896 Python LOC (Streamlit + FastAPI) +
+~1,811 TypeScript LOC (React frontend with 8 bespoke v10.496 primitives in
+`frontend/web/src/components/`). 171 Streamlit pages. Constitutional governance
+layer with 32 artifacts (16 .md + 16 .json pairs) in `docs/architecture/`,
+mechanical audit suite with 418 gates in `scripts/audit.py`. The system is in
+active development across multiple concurrent arcs (Stage C governance,
+Phase 1 auth at Step 1.4, React migration, virtual bank simulation, Olympic
+certification ladder).
 
 ---
 
 ## Current certified state
 
-**Last commit on main:** `5bbc669` (v10.498 Stage C Batch 1+1b)
+**Last commit on main:** `49e804f` (continuity layer; predecessor v10.498 Stage C Batch 1+1b at `5bbc669`)
 **Last shipped batch:** v10.498 Stage C Batch 1+1b â€” 2026-05-22
 **Governance doctrine in force:** CGR1 (reality-grounding) â€” active
-**Gate count:** 387 total; G383â€“G387 ship from this batch
+**Gate count:** 418 total (verified via `grep -c '^[[:space:]]*("G' scripts/audit.py` at commit `49e804f`); G383â€“G387 ship from this batch
 **G383 status:** passes (0 violations)
 **G384 status:** passes (0 violations) â€” pre-existing discipline validated
 **G385, G386, G387 status:** intentional FAIL (visibility-phase work backlog)
@@ -46,8 +49,11 @@ These statements describe runtime as of commit `5bbc669`:
   ~5/35 planned gates wired so far.
 - **React migration in progress, Streamlit operational.** Both transports
   coexist. Frontend at `frontend/web/src/` (Vite + React + TS + Tailwind,
-  ~16 files). Pages still in `pages/*.py` (Streamlit). Migration is
-  TRANSITIONAL, not ACTIVE.
+  24 TS/TSX files: 8 bespoke v10.496 primitives in `components/`, 4 pages,
+  3 providers, 1 hook, lib + types). 171 Streamlit pages in `pages/*.py`.
+  Migration is TRANSITIONAL, not ACTIVE. shadcn/ui pivot is ASPIRATIONAL
+  per CGR1 Batch 2a — bespoke v10.496 primitives are canonical until a
+  dedicated shadcn migration arc ships.
 - **JWT cookie auth ACTIVE; transport-layer RBAC partial.** `utils/auth_jwt.py`
   has `create_access_token`, `get_current_user`, `require_admin`. There
   is NO `require_role` factory in `auth_jwt.py` â€” that's ASPIRATIONAL
@@ -122,9 +128,14 @@ Do NOT try to read everything upfront. Read what the current task needs.
 These are things sessions repeatedly get wrong. If you find yourself
 making any of these assumptions, **stop and check reality first**:
 
-1. **Do NOT assume `require_role` exists in `utils/auth_jwt.py`.** It does
-   not. `require_admin` is what's there. `require_role` is ASPIRATIONAL
-   for future RBAC factories.
+1. **`require_role` factory in `utils/auth_jwt.py` is ACTIVE** (corrected
+   v10.499 Stage C Batch 2a — see GOVERNANCE_REALITY_INDEX). Implemented
+   at lines 391–441, returns a FastAPI Depends-compatible callable,
+   case-insensitive role matching, raises 403 on insufficient role. Use
+   it directly: `Depends(require_role(["MD", "Director Retail Banking"]))`.
+   The Streamlit-side `require_role` alias in `utils/auth.py` was renamed
+   to `require_module_access` in v10.498 Stage C Batch 1b (G383 enforces
+   the no-collision invariant).
 
 2. **Do NOT assume the Streamlit alias `require_role` still exists in
    `utils/auth.py`.** It was renamed to `require_module_access` in

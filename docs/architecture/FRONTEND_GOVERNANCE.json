@@ -5,13 +5,13 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 4",
-    "last_updated": "2026-05-22",
+    "last_updated": "2026-05-22 (revised v10.499 Stage C Batch 2a — shadcn pivot reclassified ASPIRATIONAL per CGR1)",
     "owner": "Frontend / Design System",
     "human_readable_equivalent": "FRONTEND_GOVERNANCE.md",
     "authoritative_sources": [
       "frontend/web/src/lib/tokens.ts (semantic hex)",
       "data/org_config.json (brand colors)",
-      "frontend/web/components.json (shadcn config)",
+      "frontend/web/components.json (shadcn config) — ASPIRATIONAL; file not present at commit 49e804f",
       "frontend/web/tailwind.config.js",
       "frontend/web/src/index.css"
     ],
@@ -30,11 +30,28 @@
       "framework": "React 18+",
       "build_tool": "Vite",
       "language": "TypeScript",
-      "component_primitives": "shadcn/ui (new-york style, neutral baseColor)",
+      "component_primitives": "bespoke v10.496 primitives in frontend/web/src/components/ (canonical at commit 49e804f); shadcn/ui pivot ASPIRATIONAL per CGR1 Batch 2a correction",
       "styling": "Tailwind CSS + CSS variables",
       "class_composition": "clsx + tailwind-merge via @/lib/cn",
       "icons": "lucide-react 0.383+",
-      "toasts": "sonner"
+      "toasts": "sonner",
+      "_batch_2a_correction": {
+        "doctrine_event": "CGR1 reality-check correction",
+        "batch": "v10.499 Stage C Batch 2a",
+        "date": "2026-05-22",
+        "summary": "The shadcn/ui pivot described in v10.497 P0 did not land in tree at commit 49e804f. Bespoke v10.496 primitives in frontend/web/src/components/ are canonical. shadcn pivot reclassified ASPIRATIONAL with grace window.",
+        "evidence": {
+          "components_json_present": false,
+          "components_ui_dir_present": false,
+          "bespoke_primitives_count": 8,
+          "bespoke_primitives": ["Button", "Badge", "Card", "Input", "Skeleton", "Stat", "Table", "Toast"],
+          "toast_implementation": "bespoke ToastProvider in components/Toast.tsx (not sonner)",
+          "button_variant_api": "primary | secondary | ghost | danger (bespoke, not shadcn's default | destructive | outline | secondary | ghost | link)"
+        },
+        "canonical_until_pivot_completes": "frontend/web/src/components/* bespoke v10.496 primitives",
+        "pivot_scoped_as": "Future v10.5xx arc; own batch, own gate (gate_shadcn_primitives_complete), own ledger entry",
+        "cross_reference": "GOVERNANCE_REALITY_INDEX.md::CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a) — shadcn/ui pivot in frontend/web/src/"
+      }
     },
 
     "file_structure": {

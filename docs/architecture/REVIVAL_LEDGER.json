@@ -19,7 +19,64 @@
   },
 
   "entries": [
-    {
+{
+      "date": "2026-05-22",
+      "batch_id": "v10.499-stage-c-batch-2a",
+      "title": "CGR1 reality-check + shadcn drift correction",
+      "type": "doctrine_correction",
+      "owner": "Joshua + Claude (session ground-checked against fresh repo clone at commit 49e804f)",
+      "rationale": "During session-resumption after the continuity-layer commit (49e804f), CGR1 standing inspection of the actual code revealed three doctrinal drift conditions in the Stage B constitutional artifacts and the continuity bootstrap. Per CGR1 doctrine, drifts surfaced must be remediated as their own commit before downstream work proceeds; otherwise Step 1.4 would have been authored against a wrong map.",
+      "drifts_identified_and_corrected": [
+        {
+          "drift_id": "drift-1",
+          "subject": "require_role factory in utils/auth_jwt.py",
+          "previous_classification": "ASPIRATIONAL (per SESSION_BOOTSTRAP.md Trap #1)",
+          "corrected_classification": "ACTIVE",
+          "reality": "Implemented at lines 391-441, fully self-tested, returns FastAPI Depends-compatible callable with case-insensitive role matching and 403-on-insufficient-role. Has existed since v10.497 Phase 1.",
+          "root_cause": "Bootstrap conflated the require_role symbol collision resolution in v10.498 Batch 1b (auth.py side, correctly renamed to require_module_access) with the require_role factory itself (auth_jwt.py side, already complete in v10.497 Phase 1). Collision resolution was correctly described; factory existence was incorrectly inherited as still ASPIRATIONAL."
+        },
+        {
+          "drift_id": "drift-2",
+          "subject": "shadcn/ui pivot in frontend/web/src/",
+          "previous_classification": "described as active state (per FRONTEND_GOVERNANCE.md + .json, SESSION_BOOTSTRAP.md, REVIVAL_LEDGER 2026-05-22 v10.497-p0)",
+          "corrected_classification": "ASPIRATIONAL with grace window",
+          "reality": "No frontend/web/components.json shadcn config file present. No frontend/web/src/components/ui/ subdirectory. 8 bespoke v10.496 primitives in components/ (Button, Badge, Card, Input, Skeleton, Stat, Table, Toast) with bespoke variant API (primary | secondary | ghost | danger, not shadcn's default | destructive | outline | secondary | ghost | link). Bespoke ToastProvider, not sonner.",
+          "root_cause": "Shadcn pivot was described in v10.497 P0 as having shipped (commit 4b27c1c), declared canonical in FRONTEND_GOVERNANCE, and echoed in SESSION_BOOTSTRAP. Three doctrinal sources agreed; filesystem disagreed. Either pivot was reverted before v10.498 batch landed, or P0's commit did not actually carry the file-tree changes."
+        },
+        {
+          "drift_id": "drift-3",
+          "subject": "Numerical state in SESSION_BOOTSTRAP.md",
+          "previous_classification": "stated ~25,500 LOC, 158 Streamlit pages, 387 audit gates",
+          "corrected_classification": "actual: 726,896 Python LOC, 1,811 TypeScript LOC, 171 Streamlit pages, 418 audit gates",
+          "reality": "Verified via wc -l on Python files, find on TS files, grep -c on audit.py gate registrations.",
+          "root_cause": "Numbers were stale by an order of magnitude (28x on LOC). Bootstrap was authored at an earlier moment and not maintained on each batch ship despite SESSION_DISCIPLINE.md prescribing this."
+        }
+      ],
+      "changes": [
+        "docs/architecture/REVIVAL_LEDGER.md — prepended new top entry (this entry's .md mirror)",
+        "docs/architecture/REVIVAL_LEDGER.json — this entry",
+        "docs/architecture/GOVERNANCE_REALITY_INDEX.md — appended two CGR1 reality-check correction entries (require_role + shadcn) with reality, classification, lessons",
+        "docs/architecture/FRONTEND_GOVERNANCE.md — prepended CGR1 Reality-Check Correction addendum with shadcn reclassification, declared bespoke v10.496 primitives canonical, struck through components.json from authoritative sources, updated Last updated metadata",
+        "docs/architecture/FRONTEND_GOVERNANCE.json — updated last_updated, struck through components.json in authoritative_sources, reclassified component_primitives from shadcn description to bespoke v10.496 reality, added _batch_2a_correction annotation block with structured evidence",
+        "docs/continuity/SESSION_BOOTSTRAP.md — updated last commit reference (49e804f), gate count (418), LOC and scope summary, corrected Trap #1 to reflect require_role ACTIVE status, corrected React migration paragraph to reflect bespoke v10.496 primitives + shadcn ASPIRATIONAL"
+      ],
+      "verification": [
+        "findstr /n require_role utils/auth_jwt.py matches at line 391+ (factory definition confirmed)",
+        "findstr /n require_role utils/auth.py returns no match (alias correctly removed by v10.498 Batch 1b)",
+        "dir frontend/web/components.json file not found (confirms no shadcn config)",
+        "dir frontend/web/src/components/ui directory not found (confirms no shadcn primitives directory)",
+        "Python LOC: find . -name *.py | xargs wc -l | tail -1 returns 726896",
+        "Gate count: grep -c on audit.py gate registrations returns 418",
+        "JSON parse-verification of REVIVAL_LEDGER.json and FRONTEND_GOVERNANCE.json after edits: both parse successfully"
+      ],
+      "cross_references": [
+        "SYSTEM_CONSTITUTION.md::Article CGR1 (the doctrine this batch enacts)",
+        "GOVERNANCE_REALITY_INDEX.md::CGR1 standing procedure (the canonical inspection sequence followed)",
+        "v10.498 Stage C Batch 1+1b (predecessor batch that introduced CGR1 and corrected the original require_role drift in utils/auth.py)",
+        "Phase 1 Step 1.4 (resuming next batch, now correctly grounded against actual code state)"
+      ],
+      "process_note": "This batch validates CGR1's standing procedure operationally. A new chat session, having read only the doctrinal artifacts (not the code), would have authored Step 1.4 against the shadcn-assumed file tree and the ASPIRATIONAL-labeled require_role. CGR1 standing procedure (inspect code → compare → classify → record) caught all three drifts before any line of Step 1.4 code was written. The same procedure should be the opening move of every future session until scripts/session_vitals.py (planned for v10.500 Continuity-Hardening Batch) makes it mechanical at session-open time."
+    },    {
       "date": "2026-05-22",
       "batch_id": "v10.497-stage-b",
       "title": "Constitutional governance program completion",

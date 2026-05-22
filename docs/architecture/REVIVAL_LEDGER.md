@@ -42,7 +42,9 @@ Per Article XII of `SYSTEM_CONSTITUTION.md`: constitutional changes are append-o
 
 ---
 
-## Ledger entries (reverse-chronological, newest first)
+## Ledger entries
+
+(reverse-chronological, newest first)
 
 Each entry follows this shape:
 
@@ -56,6 +58,47 @@ Each entry follows this shape:
 **Verification:** [how we know it worked]
 **Cross-references:** [related entries, gates, articles]
 ```
+
+---
+
+### 2026-05-22 v10.499 Stage C Batch 2a — CGR1 reality-check + shadcn drift correction
+
+**Type:** Doctrine correction (no code change)
+**Owner:** Joshua + Claude (session ground-checked against fresh repo clone)
+**Rationale:** During session-resumption after the continuity-layer commit (49e804f), CGR1 inspection of the actual code revealed three doctrinal drift conditions in the Stage B constitutional artifacts and the continuity bootstrap. Per CGR1 standing procedure, drifts surfaced must be remediated as their own commit before downstream work proceeds; otherwise Step 1.4 would be authored against a wrong map.
+
+**Drifts identified and corrected:**
+
+1. **`require_role` in `utils/auth_jwt.py`** — classified ASPIRATIONAL by SESSION_BOOTSTRAP.md (Trap #1) and the bootstrap's current-state section. Actual state: implemented at lines 391-441, fully self-tested, returns FastAPI Depends-compatible callable with case-insensitive role matching and 403-on-insufficient. Reclassified ACTIVE per CGR1.
+
+2. **shadcn/ui in `frontend/web/src/`** — described as active state by FRONTEND_GOVERNANCE (.md + .json) and the bootstrap. Actual state: 8 bespoke v10.496 primitives in `components/` (Button, Badge, Card, Input, Skeleton, Stat, Table, Toast); no `components.json` shadcn config; no `components/ui/` subdirectory. The shadcn pivot was described in v10.497 P0 but either reverted or never landed in tree. Reclassified ASPIRATIONAL per CGR1, with explicit pointer to the bespoke v10.496 primitives as current canonical.
+
+3. **Numerical state in `SESSION_BOOTSTRAP.md`** — bootstrap stated ~25,500 LOC, 158 Streamlit pages, 387 audit gates. Actual state per `wc -l` and `grep -c`: 726,896 Python LOC, 1,811 TypeScript LOC, 171 Streamlit pages, 418 audit gates. Numbers were stale by an order of magnitude. Updated.
+
+**Changes:**
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — appended two new CGR1 reality-check entries (require_role + shadcn)
+- `docs/architecture/FRONTEND_GOVERNANCE.md` + `.json` — reclassified shadcn pivot from active to ASPIRATIONAL, declared bespoke v10.496 primitives canonical, added explicit grace-window for any future shadcn migration
+- `docs/continuity/SESSION_BOOTSTRAP.md` — updated LOC/page/gate counts; corrected Trap #1; corrected React migration paragraph; updated last-commit SHA to 49e804f
+- `docs/architecture/REVIVAL_LEDGER.md` + `.json` — this entry
+
+**Verification:**
+
+- `findstr /n "require_role" utils\auth_jwt.py` → matches at line 391+ (factory definition confirmed)
+- `findstr /n "require_role" utils\auth.py` → no match (alias correctly removed)
+- `dir frontend\web\components.json` → file not found (confirms no shadcn config)
+- `dir frontend\web\src\components\ui` → directory not found (confirms no shadcn primitives directory)
+- Python: `find . -name "*.py" | xargs wc -l | tail -1` → 726,896
+- Gate count: `grep -c '^[[:space:]]*("G' scripts\audit.py` → 418
+
+**Cross-references:**
+
+- `SYSTEM_CONSTITUTION.md::Article CGR1` — the doctrine this batch enacts
+- `GOVERNANCE_REALITY_INDEX.md::CGR1 standing procedure` — the canonical inspection sequence followed
+- v10.498 Stage C Batch 1+1b — predecessor batch that introduced CGR1 and corrected the original `require_role` drift in `utils/auth.py`
+- Phase 1 Step 1.4 (resuming next batch) — the work this correction unblocks
+
+**Process note:** This batch validates CGR1's standing procedure operationally. A new chat session, having read only the doctrinal artifacts (not the code), would have authored Step 1.4 against the shadcn-assumed file tree and the ASPIRATIONAL-labeled `require_role`. CGR1 standing procedure (inspect code → compare → classify → record) caught both drifts before any line of Step 1.4 code was written. The same procedure should be the opening move of every future session until session_vitals.py (v10.500 Continuity-Hardening Batch) makes it mechanical.
 
 ---
 

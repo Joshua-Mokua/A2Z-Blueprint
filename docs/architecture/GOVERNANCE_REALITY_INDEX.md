@@ -161,4 +161,93 @@ revise the gate. The G383 example in this batch is canonical procedure.
 
 ---
 
-**End of GOVERNANCE_REALITY_INDEX.md (initial v10.498 Stage C Batch 1b).**
+## CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a) — `require_role` in `auth_jwt.py`
+
+**Date:** 2026-05-22
+**Inspected by:** Claude session, ground-checked against fresh repo clone (commit 49e804f)
+**Doctrine status correction:** ASPIRATIONAL → ACTIVE
+
+### Original claim (since v10.498 Stage C Batch 1b)
+
+`SESSION_BOOTSTRAP.md::Trap #1` and the bootstrap's "Current architectural reality" section asserted:
+
+> "There is NO `require_role` factory in `auth_jwt.py` — that's ASPIRATIONAL per CGR1. `require_admin` is what's there. `require_role` is ASPIRATIONAL for future RBAC factories."
+
+### Reality (inspected via repo clone)
+
+`utils/auth_jwt.py` lines 391–441 contain a fully implemented `require_role(roles: list[str])` factory:
+
+- Returns a FastAPI Depends-compatible callable
+- Normalizes role strings to lowercase for case-insensitive matching
+- Raises 403 (not 401) on insufficient role — distinguishes "token valid, role insufficient" from "no valid token"
+- Sets a readable `__name__` so FastAPI's OpenAPI docs render meaningful dependency names
+- Validates that the input role list is non-empty (raises `ValueError` on empty)
+
+The module's own docstring at line 42–43 lists `require_role` as part of the v10.497 Phase 1 additions. The module's standard import example on line 47 includes `require_role`. The factory has existed and been ACTIVE since v10.497.
+
+### Why the drift happened
+
+The bootstrap was likely authored from a mental model that conflated two distinct concerns: (a) the `require_role` _symbol collision_ between `utils/auth.py` and `utils/auth_jwt.py` (resolved by renaming `auth.py`'s alias to `require_module_access` in v10.498 Stage C Batch 1b), and (b) the `require_role` _factory implementation_ in `auth_jwt.py` (already complete in v10.497 Phase 1). The collision-resolution work in Batch 1b was correctly described; the factory's existence was incorrectly inherited as "still ASPIRATIONAL" when it was already ACTIVE.
+
+### Correction
+
+- `require_role` in `utils/auth_jwt.py` is ACTIVE per CGR1
+- `SESSION_BOOTSTRAP.md::Trap #1` rewritten (see SESSION_BOOTSTRAP changes in this batch)
+- Phase 1 Step 1.4 work consumes the existing factory rather than building a new one
+
+### Procedural lesson
+
+A new chat session that read only doctrinal artifacts (not the code) would have authored Step 1.4 against the ASPIRATIONAL classification — duplicating an existing factory or proposing it as new work. CGR1 standing procedure (inspect code → compare → classify → record) caught this drift before any Step 1.4 line was written. The procedure works as designed; the failure mode it prevents is real and would have cost real time.
+
+---
+
+## CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a) — shadcn/ui pivot in `frontend/web/src/`
+
+**Date:** 2026-05-22
+**Inspected by:** Claude session, ground-checked against fresh repo clone (commit 49e804f)
+**Doctrine status correction:** described-as-active → ASPIRATIONAL with grace window
+
+### Original claim (since v10.497 Stage B Wave 4)
+
+`FRONTEND_GOVERNANCE.md` and `FRONTEND_GOVERNANCE.json` both described the React frontend as running on **shadcn/ui (new-york style, neutral baseColor)** with 11 shadcn primitives in `frontend/web/src/components/ui/`. The `_meta.authoritative_sources` field in the .json variant lists `frontend/web/components.json (shadcn config)` as a canonical source. `SESSION_BOOTSTRAP.md` echoed: "11 shadcn-style primitives shipped in v10.496."
+
+`REVIVAL_LEDGER.md::2026-05-22 — v10.497 P0 — shadcn/ui pivot` (commit `4b27c1c`) describes the pivot as having shipped.
+
+### Reality (inspected via repo clone)
+
+The shadcn/ui pivot did not land in `frontend/web/src/` — or landed and was reverted before the v10.498 batch. Empirical findings:
+
+- **No `frontend/web/components.json`** — shadcn's canonical config marker file does not exist
+- **No `frontend/web/src/components/ui/` subdirectory** — the canonical location for shadcn primitives does not exist
+- `frontend/web/src/components/` contains **8 bespoke v10.496 primitives**: Button, Badge, Card, Input, Skeleton, Stat, Table, Toast — flat in `components/`, not in `components/ui/`
+- The bespoke components carry v10.496 file headers and define APIs that differ from shadcn:
+  - `<Button variant="primary | secondary | ghost | danger">` (bespoke API)
+  - vs shadcn's `<Button variant="default | destructive | outline | secondary | ghost | link">`
+- Toast notifications are handled by a bespoke `ToastProvider` in `components/Toast.tsx` — not by `sonner`
+- `App.tsx` provider chain references `ToastProvider`, not `Toaster` (the shadcn/sonner alias)
+
+The frontend governance artifact described an intended future state that did not materialize in the tree at commit `49e804f`.
+
+### Correction
+
+- The shadcn/ui pivot is reclassified **ASPIRATIONAL** per CGR1
+- The bespoke v10.496 primitives in `frontend/web/src/components/` are the **current canonical** React component layer
+- `FRONTEND_GOVERNANCE.md` and `.json` updated to reflect this in this batch (see FRONTEND_GOVERNANCE changes)
+- `SESSION_BOOTSTRAP.md` updated: "11 shadcn-style primitives" → "8 bespoke v10.496 primitives; shadcn pivot scoped as separate future arc"
+- `ORGANS_REGISTRY` will be updated in a follow-up batch (OI carried forward)
+
+### Grace window for the shadcn pivot
+
+If the shadcn pivot is genuinely desired going forward, it is now a scoped future arc — a discrete batch or set of batches with its own ledger entry, its own gate (`gate_shadcn_primitives_complete` or similar), and its own success criteria. Until that arc ships, the bespoke v10.496 primitives are canonical and any frontend code added in the interim consumes them, not shadcn.
+
+This is not a defeat of the v10.497 P0 doctrine — it is a more honest classification. The shadcn pivot is a real piece of future work; it just doesn't describe the current state.
+
+### Procedural lesson
+
+This drift was harder to catch than the `require_role` one because the artifact was internally consistent and confidently authored. The pivot was described in `REVIVAL_LEDGER` (commit `4b27c1c`), declared canonical in `FRONTEND_GOVERNANCE`, and echoed in the bootstrap. Three sources all agreed — and all three were wrong relative to the filesystem. Only direct inspection of the tree surfaced the gap.
+
+This is exactly the case CGR1 was authored for: when doctrinal sources are mutually consistent but collectively out of sync with reality. The procedure (inspect code → compare against claim → classify → record) is the only thing that catches this. The mechanical version of this procedure, `scripts/session_vitals.py` (planned for v10.500 Continuity-Hardening Batch), will make it impossible for shadcn-vs-bespoke drift of this kind to enter a new session unflagged.
+
+---
+
+**End of GOVERNANCE_REALITY_INDEX.md (last updated v10.499 Stage C Batch 2a — `require_role` and shadcn reclassifications).**
