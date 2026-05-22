@@ -1,0 +1,235 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_unknown_subareas",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 4",
+    "last_updated": "2026-05-22",
+    "owner": "Architecture / Doctrine + per-domain owners",
+    "human_readable_equivalent": "DATA_DICTIONARY.md",
+    "doctrine": [
+      "DD1 — Every file has an owner",
+      "DD2 — Where schema exists, it is canonical",
+      "DD3 — Backup directories are gitignored",
+      "DD4 — Append-only data has different rules than mutable data",
+      "DD5 — PII must not be in git (unless synthetic seed data)"
+    ]
+  },
+
+  "summary": {
+    "total_data_files_estimated": 250,
+    "xlsx_workbooks": 2,
+    "files_explicitly_documented_in_this_artifact": 65,
+    "files_pending_enumeration_wave_5": 185,
+    "backup_directories_pattern": "data/_v10XXX_backups/",
+    "backups_gitignored": true
+  },
+
+  "files": {
+    "auth_and_identity": [
+      {"path": "data/users.json", "owner": "UserManager", "authority": "canonical", "schema_status": "TBD", "consumers": ["all auth", "hierarchy synth", "BSC", "cascade", "role-aware engines"], "git": "tracked", "notes": "1,439 records; password SHA-256 with bcrypt migration on login (V-003)"},
+      {"path": "data/jwt_blocklist.json", "owner": "utils/auth_jwt.py::revoke_token", "authority": "canonical", "schema_status": "inline jti → exp epoch", "consumers": ["_is_revoked"], "git": "tracked", "notes": "auto-prunes expired entries"},
+      {"path": "data/pending_tokens.json", "owner": "TBD (likely auth flow)", "authority": "unknown", "schema_status": "none", "oi": "OI-25"},
+      {"path": "data/super_user_registry.json", "owner": "utils/super_user_registry.py", "authority": "canonical", "git": "tracked"}
+    ],
+
+    "org_hierarchy_and_role_taxonomy": [
+      {"path": "data/org_hierarchy_config.json", "owner": "Admin / HR Operations", "authority": "canonical", "schema_status": "inline _schema_version: v10.330", "consumers": ["utils/role_taxonomy.py", "utils/hierarchy_synth.py", "utils/profitability_hierarchy.py", "utils/cascade_hierarchy.py", "all RBAC"], "git": "tracked"},
+      {"path": "data/segment_sbu_mapping.json", "owner": "Admin / Business", "authority": "canonical", "consumers": ["role_taxonomy.py SBU alignment check per G260"], "git": "tracked"},
+      {"path": "data/org_config.json", "owner": "Admin / Tenant Onboarding", "authority": "canonical", "consumers": ["utils/config.py", "/api/branding", "all transports"], "git": "tracked"},
+      {"path": "data/hr.json", "owner": "HRManager", "authority": "canonical", "consumers": ["role_taxonomy.validate_role_coverage", "hierarchy synth", "HR engines"], "git": "tracked"},
+      {"path": "data/staff_register.xlsx", "owner": "HRManager", "authority": "canonical", "consumers": ["generate_staff.py", "staff_*_resolver.py"], "git": "tracked"},
+      {"path": "data/hr_disciplinary.json", "owner": "HRManager", "authority": "canonical", "consumers": ["HR section audit"], "git": "tracked"},
+      {"path": "data/hr_exits.json", "owner": "staff_exit_engine", "authority": "canonical", "consumers": ["HR analytics"], "git": "tracked"},
+      {"path": "data/hr_pip.json", "owner": "HRManager", "authority": "canonical", "git": "tracked"},
+      {"path": "data/hr_transfers.json", "owner": "HRManager", "authority": "canonical", "git": "tracked"},
+      {"path": "data/disciplinary_register.json", "owner": "HRManager", "authority": "canonical", "git": "tracked"},
+      {"path": "data/leave_*.json", "owner": "LeaveManager", "authority": "canonical", "git": "tracked"},
+      {"path": "data/performance_reviews.json", "owner": "HRManager + performance engines", "authority": "canonical", "git": "tracked"},
+      {"path": "data/role_skill_matrix.json", "owner": "Admin / Performance", "authority": "canonical", "schema_status": "inline default + per-role overrides", "consumers": ["Skill-gap analysis", "peer learning"], "git": "tracked", "size_bytes": 3652},
+      {"path": "data/role_default_targets.json", "owner": "Admin / Performance", "authority": "canonical", "schema_status": "inline _meta block", "consumers": ["BSC target fallback"], "git": "tracked", "size_bytes": 5361}
+    ],
+
+    "kpi_library_and_bsc": [
+      {"path": "data/kpi_library.json", "owner": "Performance / BSC governance", "authority": "canonical", "consumers": ["All BSC engines", "cascade", "actuals", "role_kpis resolver"], "git": "tracked", "notes": "harmonization batches stamped in file; _v10469_role_kpis_resolution: 1469 resolved, 0 unresolved"},
+      {"path": "data/bsc_data.json", "owner": "canonical_bsc_writer", "authority": "canonical", "consumers": ["BSC dashboards", "cascade reconciliation"], "git": "tracked"},
+      {"path": "data/bsc_scores.json", "owner": "bsc_score_computation", "authority": "derived", "computed_from": ["bsc_data", "targets"], "consumers": ["BSC dashboards"], "git": "tracked"},
+      {"path": "data/bsc_actuals_*.json (8 periods)", "owner": "actuals engines + canonical_bsc_writer", "authority": "canonical_per_period", "consumers": ["Period reports", "BSC audit"], "git": "tracked"},
+      {"path": "data/bsc_lock.json", "owner": "Admin via lock_bsc/unlock_bsc (utils/core.py)", "authority": "canonical", "schema_status": "inline", "consumers": ["BSC engine lock check"], "git": "tracked"},
+      {"path": "data/fixed_kpis.json", "owner": "Admin", "authority": "canonical", "consumers": ["BSC target fallback (top of precedence chain)"], "git": "tracked"},
+      {"path": "data/kpi_ownership_map.json", "owner": "KPI governance", "authority": "canonical", "consumers": ["Routing rules for KPI changes"], "git": "tracked"},
+      {"path": "data/pillar_weights_history.json", "owner": "pillar_weights_canonical", "authority": "append_only_canonical", "consumers": ["Audit of weight changes over time"], "git": "tracked"}
+    ],
+
+    "target_cascade": [
+      {"path": "data/bank_targets.json", "owner": "Admin (top-down)", "authority": "canonical", "consumers": ["MD BSC", "cascade root"], "git": "tracked"},
+      {"path": "data/target_cascade.json", "owner": "CascadeManager + cascade engines", "authority": "canonical", "consumers": ["Per-staff target resolution"], "git": "tracked"},
+      {"path": "data/locked_targets.json", "owner": "Cascade lock mechanism", "authority": "canonical", "consumers": ["Prevent re-cascade during period"], "git": "tracked"},
+      {"path": "data/buffer_caps.json", "owner": "cascade_buffer_engine", "authority": "canonical", "consumers": ["Buffer cap enforcement"], "git": "tracked"},
+      {"path": "data/cascade_scores_*.json (4 periods)", "owner": "Cascade engines", "authority": "derived", "computed_from": ["cascade", "actuals"], "consumers": ["Cascade audit endpoints"], "git": "tracked"}
+    ],
+
+    "cbs_virtual_bank": [
+      {"path": "data/cbs_baseline_*.json", "owner": "cbs_baseline.py + generators", "authority": "canonical", "consumers": ["Live actuals overlay"], "git": "tracked"},
+      {"path": "data/baseline_2025_Dec.json", "owner": "Generator script", "authority": "canonical", "consumers": ["Year-end snapshot"], "git": "tracked"},
+      {"path": "data/branch_actuals.json", "owner": "vb_actuals_bridge", "authority": "canonical", "consumers": ["Branch performance"], "git": "tracked"},
+      {"path": "data/accruals_assumptions.json", "owner": "accruals_synthesizer", "authority": "canonical", "consumers": ["Accruals computation"], "git": "tracked"},
+      {"path": "cbs_data/ (project-root dir)", "owner": "generate_cbs.py", "authority": "canonical", "consumers": ["CBS exploration page"], "git": "likely gitignored (large)"}
+    ],
+
+    "pipeline_crm": [
+      {"path": "data/pipeline.json", "owner": "PipelineManager", "authority": "canonical", "consumers": ["Pipeline summary/deals endpoints"], "git": "tracked"},
+      {"path": "data/deal_rooms.json", "owner": "PipelineManager", "authority": "canonical", "consumers": ["Deal room views"], "git": "tracked"},
+      {"path": "data/ri_pipeline.json", "owner": "RIPipelineManager", "authority": "canonical", "consumers": ["RI pipeline views"], "git": "tracked"}
+    ],
+
+    "credit": [
+      {"path": "data/credit_admin.json", "owner": "CreditAdminManager", "authority": "canonical", "consumers": ["Credit admin"], "git": "tracked"},
+      {"path": "data/credit_monitoring.json", "owner": "CreditAdminManager", "authority": "canonical", "consumers": ["Credit monitoring"], "git": "tracked"},
+      {"path": "data/loan_applications.json", "owner": "LoanApplicationManager", "authority": "canonical", "consumers": ["Loan workflow"], "git": "tracked"},
+      {"path": "data/loan_restructuring.json", "owner": "TBD", "authority": "canonical", "consumers": ["Restructuring tracking"], "git": "tracked"},
+      {"path": "data/ews_cases.json", "owner": "CreditAdminManager", "authority": "canonical", "consumers": ["EWS dashboards"], "notes": "EWS = Early Warning Signals", "git": "tracked"},
+      {"path": "data/collateral.json", "owner": "TBD", "authority": "canonical", "git": "tracked"},
+      {"path": "data/collateral_register.json", "owner": "TBD", "authority": "canonical", "git": "tracked"}
+    ],
+
+    "risk_compliance": [
+      {"path": "data/aml_alerts.json", "owner": "aml_monitoring", "authority": "canonical", "consumers": ["AML dashboards"], "git": "tracked"},
+      {"path": "data/compliance_cases.json", "owner": "ComplianceManager", "authority": "canonical", "consumers": ["Compliance dashboard"], "git": "tracked"},
+      {"path": "data/sanctions_register.json", "owner": "sanctions_screening", "authority": "canonical", "consumers": ["Screening checks"], "git": "tracked"},
+      {"path": "data/op_risk_losses.json", "owner": "op_risk", "authority": "canonical", "consumers": ["Op risk reporting"], "git": "tracked"},
+      {"path": "data/ifrs9_*.json", "owner": "ifrs9_classification", "authority": "canonical", "consumers": ["IFRS 9 reporting"], "git": "tracked"},
+      {"path": "data/rcsa_register.json", "owner": "Risk & Compliance", "authority": "canonical", "consumers": ["RCSA tracking"], "git": "tracked"}
+    ],
+
+    "treasury": [
+      {"path": "data/treasury_alm.json", "owner": "treasury_alm", "authority": "canonical", "consumers": ["ALM dashboards"], "git": "tracked"},
+      {"path": "data/treasury_fd.json", "owner": "TBD", "authority": "canonical", "consumers": ["Fixed deposits"], "git": "tracked"},
+      {"path": "data/treasury_fx.json", "owner": "fx_position", "authority": "canonical", "consumers": ["FX positions"], "git": "tracked"},
+      {"path": "data/treasury_gov_secs.json", "owner": "TBD", "authority": "canonical", "consumers": ["Government securities"], "git": "tracked"},
+      {"path": "data/treasury_limits.json", "owner": "market_risk_limits + climate_treasury_limits", "authority": "canonical", "consumers": ["Limit monitoring"], "git": "tracked"},
+      {"path": "data/treasury_mm.json", "owner": "TBD", "authority": "canonical", "consumers": ["Money market"], "git": "tracked"},
+      {"path": "data/liquidity_metrics.json", "owner": "liquidity_risk", "authority": "canonical", "consumers": ["Liquidity dashboards"], "git": "tracked"}
+    ],
+
+    "execute_strategic": [
+      {"path": "data/strategic_initiatives.json", "owner": "ExecuteManager", "authority": "canonical", "consumers": ["Initiative dashboard"], "git": "tracked"},
+      {"path": "data/execute_*.json", "owner": "ExecuteManager", "authority": "canonical", "consumers": ["Execute workflow"], "git": "tracked"},
+      {"path": "data/strategy_*.json", "owner": "strategy modules", "authority": "canonical", "consumers": ["Strategy dashboards"], "git": "tracked"}
+    ],
+
+    "cims": [
+      {"path": "data/cims*.json (multiple)", "owner": "CIMS engines (15 modules)", "authority": "canonical", "consumers": ["CIMS workflow"], "git": "tracked"},
+      {"path": "data/cims_docs/ (subdir)", "owner": "CIMS document store", "authority": "canonical", "consumers": ["Secure document storage"]}
+    ],
+
+    "audit_telemetry": [
+      {"path": "data/audit_log.json", "owner": "utils/api.py::_audit", "authority": "append_only_canonical", "consumers": ["Audit dashboards", "Compliance"], "git": "GITIGNORED (runtime telemetry)"},
+      {"path": "data/audit_trail.jsonl", "owner": "Various", "authority": "append_only_canonical", "schema_status": "JSONL", "git": "GITIGNORED"},
+      {"path": "data/audit_baselines.json", "owner": "Audit engines", "authority": "canonical", "consumers": ["Drift detection"], "git": "tracked"},
+      {"path": "data/audit_reviews.json", "owner": "Audit reviewers", "authority": "canonical", "consumers": ["Audit history"], "git": "tracked"},
+      {"path": "data/observability_metrics.json", "owner": "observability_monitoring", "authority": "canonical", "consumers": ["Metrics dashboards"], "git": "TBD (likely gitignored)"},
+      {"path": "audit_trail_certification outputs", "owner": "utils/audit_trail_certification", "authority": "canonical", "consumers": ["Certification ledger"]}
+    ],
+
+    "validation_schema": [
+      {"path": "data/validations.json", "owner": "ValidationManager", "authority": "canonical", "consumers": ["Validation runs"], "git": "tracked"},
+      {"path": "data/_schemas/ (directory)", "owner": "Schema authors per domain", "authority": "canonical", "schema_status": "self-describing JSON Schema", "consumers": ["Validators"], "git": "tracked", "oi": "OI-26 — contents not yet enumerated"}
+    ],
+
+    "backups_gitignored": {
+      "pattern": "data/_v10XXX_backups/",
+      "owner": "Admin (backup engine)",
+      "authority": "derived",
+      "purpose": "Pre-batch snapshots",
+      "retention_enforced_by": "/api/v1/backup-retention/audit + apply",
+      "retention_parameters": {
+        "keep_recent": 3,
+        "size_threshold_mb": 1.0
+      }
+    },
+
+    "generated_runtime_gitignored": [
+      "cookies.txt (curl test artifacts)",
+      "*_response.json (curl test artifacts)",
+      "data/audit_log.json",
+      "data/audit_trail.jsonl",
+      "cbs_data/* (likely)"
+    ]
+  },
+
+  "schema_governance": {
+    "where_schema_exists": "data/_schemas/<file>.json is canonical for shape; consumers must validate",
+    "where_schema_doesnt_exist": "Consuming module's parsing code is de facto contract (transitional)",
+    "stage_c_target": "Schemas required for all canonical data files",
+    "schema_introduction_policy_phased_rollout": [
+      "Phase 1 Visibility (LOW severity, 1 batch)",
+      "Phase 2 Grace MEDIUM (1 batch)",
+      "Phase 3 Grace HIGH (2 batches)",
+      "Phase 4 Full enforcement CRITICAL"
+    ]
+  },
+
+  "pii_and_sensitive_data": {
+    "doctrine": "PII must not be in git unless intentional and synthetic",
+    "intentional_in_git_synthetic": [
+      "data/users.json (1,439 synthetic users)",
+      "data/hr.json (synthetic HR records)",
+      "data/staff_register.xlsx (synthetic staff)"
+    ],
+    "forbidden_in_git": [
+      "data/audit_log.json (user actions)",
+      "data/audit_trail.jsonl",
+      "cookies.txt, *_response.json",
+      "any credentials/secrets — env vars only"
+    ],
+    "multi_tenant_isolation": {
+      "canonical_helper": "utils/data_isolation_guard.py",
+      "oi": "OI-27 — full contract TBD"
+    }
+  },
+
+  "data_lifecycle_states": {
+    "canonical": "Source of truth; writes go here",
+    "derived": "Computed from other canonical sources",
+    "append_only_canonical": "Canonical but never edits historical",
+    "transitional": "In use, being migrated",
+    "deprecated": "Existed, replaced, retained for legacy",
+    "unknown": "Discovered, not yet classified"
+  },
+
+  "postgresql_migration_tracking": {
+    "current_state": "JSON canonical for most domains; PG eventual target; migration transitional",
+    "audit_gates_tracking_migration": [
+      "gate_pg_migration_progress",
+      "gate_pg_migration_baseline",
+      "gate_pg_read_path_cutover",
+      "gate_pg_ready_composer_fanout",
+      "gate_pg_production_cutover",
+      "gate_pg_cutover_fanout"
+    ],
+    "high_priority_for_migration": [
+      "data/users.json (high read volume)",
+      "data/bsc_data.json + bsc_actuals_* (large per-period)",
+      "data/audit_log.json (event sourcing target)"
+    ],
+    "likely_remain_json": [
+      "data/org_hierarchy_config.json",
+      "data/kpi_library.json",
+      "data/org_config.json",
+      "data/role_default_targets.json",
+      "data/role_skill_matrix.json"
+    ],
+    "roadmap_oi": "OI-28 — REVIVAL_LEDGER (Wave 6)"
+  },
+
+  "open_items": [
+    {"id": "OI-25", "title": "pending_tokens.json purpose and lifecycle", "wave": "Stage C"},
+    {"id": "OI-26", "title": "Enumerate data/_schemas/ contents", "wave": "Wave 4 amendment"},
+    {"id": "OI-27", "title": "Survey utils/data_isolation_guard.py contract", "wave": "Stage C"},
+    {"id": "OI-28", "title": "PostgreSQL migration roadmap per file", "wave": "Wave 6 REVIVAL_LEDGER"},
+    {"id": "OI-29", "title": "Schema introduction rollout for all canonical files", "wave": "Stage C"},
+    {"id": "OI-30", "title": "Catalog remaining ~185 domain-specific data files", "wave": "Wave 5"}
+  ]
+}

@@ -1,0 +1,335 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, foundational principles",
+    "authority_level": "Constitution",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 1",
+    "last_updated": "2026-05-22",
+    "owner": "A2Z constitution maintainers (Joshua + designated reviewers)",
+    "human_readable_equivalent": "SYSTEM_CONSTITUTION.md",
+    "companion_artifacts": [
+      "CANONICAL_TRUTH_REGISTRY.md",
+      "GOVERNANCE_CLASSIFICATION_REGISTRY.md"
+    ],
+    "read_order_for_consumers": [
+      "1. SYSTEM_CONSTITUTION.md (this artifact — principles)",
+      "2. CANONICAL_TRUTH_REGISTRY.md (authoritative sources)",
+      "3. GOVERNANCE_CLASSIFICATION_REGISTRY.md (interpretation)",
+      "4. Domain-specific governance artifacts (ROLE_GOVERNANCE, API_CONTRACTS, etc.)"
+    ]
+  },
+
+  "preamble": {
+    "purpose": "A2Z Blueprint MIS 360 is the bank's operating organism. It exists so every actor — MD to Teller — makes better decisions today than yesterday.",
+    "doctrine_provenance": "141+ consecutive lockstep batches; 412 audit gates currently enforce what this document captures",
+    "intent": "Records what is enforced, not what is aspirational"
+  },
+
+  "articles": {
+    "I_living_organism": {
+      "title": "The system is a living organism",
+      "principles": [
+        "Every major capability is an organ (Manager class, _engine.py module, or coherent module family) with declared responsibilities, dependencies, inputs, outputs",
+        "Organs have vitals via /api/v1/vitals/full, /organs, /regression",
+        "Organs have certification milestones (enterprise_discharge_ready → enterprise_360_compliance → olympic_certification → championship_readiness)",
+        "Organs interconnect through cross-organ event bus (utils/event_bus.py, utils/cross_organ_event_bus.py)"
+      ],
+      "resilience_requirements": [
+        "Chaos engineering (gate_v10482_o5_chaos_engineering)",
+        "Stress testing (gate_stress_test_returns_correct, gate_v10458_stress_scalability)",
+        "Disaster recovery (utils/disaster_recovery.py, utils/it_disaster_recovery.py)",
+        "Uncertainty exposure (six phases, gate_v10489 through gate_v10494_FINAL)"
+      ],
+      "violations": [
+        "Code that doesn't belong to any organ",
+        "Code that violates an organ's contract",
+        "Code that creates a new organ without declaring its contract"
+      ],
+      "downstream_artifact": "RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md (Wave 5)"
+    },
+
+    "II_single_source_of_truth": {
+      "title": "Single source of truth per concern",
+      "principles": [
+        "Exactly one file/module DEFINES truth per domain; multiple may CONSUME",
+        "Source wins on conflict; consumer is reconciled",
+        "Canonical interface must be used; direct file reads from outside are violations",
+        "Multi-tenancy from day one: tenant identity in data/org_config.json only"
+      ],
+      "canonical_interface_examples": [
+        {"authority": "data/org_hierarchy_config.json", "canonical_interface": "utils/role_taxonomy.py", "forbidden_pattern": "Parsing role strings directly in arbitrary modules"},
+        {"authority": "data/users.json", "canonical_interface": "utils/core.py::UserManager", "forbidden_pattern": "Reading users.json directly outside UserManager"},
+        {"authority": "data/kpi_library.json", "canonical_interface": "utils/kpi_alias_resolver.py + family", "forbidden_pattern": "Hardcoded KPI ID lists in route bodies"},
+        {"authority": "JWT tokens", "canonical_interface": "utils/auth_jwt.py", "forbidden_pattern": "Decoding tokens with custom code"},
+        {"authority": "Tenant identity", "canonical_interface": "utils/config.py + /api/branding", "forbidden_pattern": "Hardcoded 'Ecobank' anywhere"}
+      ],
+      "enforcement_gates": [
+        "gate_tenant_identity_hardcoding (CRITICAL)",
+        "G381 (frontend)",
+        "G382 (design tokens)"
+      ]
+    },
+
+    "III_canonical_role_governance": {
+      "title": "Canonical role governance",
+      "two_axes": {
+        "seniority": {
+          "source": "role_tiers in org_hierarchy_config.json",
+          "tiers": {
+            "0": "MD root",
+            "1": "C-suite + Directors",
+            "2": "Head Of / Regional Head",
+            "3": "Senior Manager / Area Manager",
+            "4": "Manager / Branch Manager",
+            "5": "Officer / Specialist / RM",
+            "6": "Teller / CSO / DSR / Trainee"
+          }
+        },
+        "profitability": {
+          "source": "profitability_axis.tiers in org_hierarchy_config.json",
+          "tiers": [
+            "portfolio_owner",
+            "proposition_owner",
+            "structural_owner",
+            "service",
+            "support"
+          ]
+        }
+      },
+      "canonical_resolution_path": "utils/role_taxonomy.py",
+      "canonical_functions": [
+        "classify_role(role_string)",
+        "can_be_tagged(role_string)",
+        "get_profitability_tier(role_string)",
+        "get_branch_scope(role_string)",
+        "get_sbu(role_string)"
+      ],
+      "permitted_raw_role_strings": [
+        "Inside utils/role_taxonomy.py itself",
+        "As display strings in user-facing UI (after canonical resolution)"
+      ],
+      "hierarchy_invariants": [
+        "exactly_one_root_required",
+        "no_cycles_allowed",
+        "only_chiefs_report_to_md",
+        "every_staff_has_a_chain_to_root",
+        "default_max_span_of_control: 15",
+        "default_max_chain_depth: 12"
+      ],
+      "joshua_authored_canonical_batches": [
+        "_v10330_canonical_retail_chain",
+        "_v10396_joshua_clarification",
+        "_v10398_joshua_hq_canonical",
+        "_v10399_joshua_corrections",
+        "_v10469_role_kpis_resolution"
+      ],
+      "enforcement_gate": "G260 gate_role_taxonomy_alignment (line 36381)"
+    },
+
+    "IV_engine_purity": {
+      "title": "Engine purity",
+      "principles": [
+        "Engines (_engine.py modules, Manager classes) are pure-compute with no transport awareness",
+        "Transports (Streamlit pages, FastAPI routes) translate user/HTTP requests to engine calls with no business logic",
+        "Same engine callable from Streamlit and FastAPI; identical results",
+        "Engine tests don't require either transport"
+      ],
+      "violations": [
+        "Business rules embedded in route handlers (e.g. if user.role == 'MD' instead of role_taxonomy call)",
+        "Engines importing Streamlit or FastAPI",
+        "Engines using st.session_state or Request objects"
+      ],
+      "audit_gate_contract": {
+        "naming": "gate_<domain>_<verb> OR gate_v10XXX_<topic>",
+        "return_shape": {"id": "GXXX", "name": "gate_<topic>", "passed": "bool", "violations": "list[str]", "summary": "str"},
+        "role": "system's immune cells — continuous drift detection"
+      }
+    },
+
+    "V_authentication_authorization": {
+      "title": "Authentication and authorization",
+      "endpoint_auth_posture": {
+        "rule": "Every FastAPI endpoint except /api/health MUST declare an auth Depends",
+        "permitted_dependencies": [
+          "Depends(get_current_user) — any authenticated user",
+          "Depends(require_admin) — admin role required",
+          "Depends(require_role([...])) — specific role list required (v10.497 addition)"
+        ],
+        "only_unauthenticated_route": "/api/health",
+        "enforcement": "G12 gate_api_auth_safety (line 811)"
+      },
+      "jwt_contract": {
+        "algorithm": "HS256",
+        "lifetime_seconds": 1800,
+        "claims": ["sub", "role", "iat", "exp", "jti"],
+        "extraction_priority": "cookie wins over Authorization: Bearer header when both present",
+        "set_by": "POST /api/auth/login",
+        "cleared_by": "POST /api/auth/logout",
+        "transitional_note": "JWT 'role' claim is descriptive string; canonical contract is to resolve via role_taxonomy at consumer"
+      },
+      "logout_contract_dual_action": [
+        "Clear auth cookie client-side (response.delete_cookie)",
+        "Add token jti to blocklist with TTL = remaining lifetime"
+      ],
+      "require_role_name_collision": {
+        "status": "constitutional violation by name collision",
+        "location_a": "utils/auth.py exports require_role(module, user) -> bool (alias of require_access)",
+        "location_b": "utils/auth_jwt.py exports require_role(roles: list[str]) FastAPI Depends factory",
+        "resolution_wave": "Wave 2 RBAC_MATRIX",
+        "proposed_resolution": "Rename utils/auth.py::require_role to require_module_access",
+        "interim_classification": "transitional (severity HIGH)"
+      },
+      "password_doctrine": {
+        "v003_fix": "bcrypt hash; new accounts get bcrypt; existing SHA-256 migrate transparently on successful login via UserManager.authenticate",
+        "violations_at_critical": ["Plain-text storage", "Unsalted hashes", "Custom hashing in route handlers"]
+      }
+    },
+
+    "VI_data_dictionary_discipline": {
+      "title": "Data dictionary discipline",
+      "principles": [
+        "Every file in data/ has a declared owner",
+        "Where data/_schemas/ entry exists, it is canonical for shape",
+        "Where no schema exists, consuming module parsing is de facto contract (open item)"
+      ],
+      "backup_retention": "Pattern: data/_v10XXX_backups/; enforced by /api/v1/backup-retention/audit + apply; gitignored",
+      "downstream_artifact": "DATA_DICTIONARY.md (Wave 4)"
+    },
+
+    "VII_frontend_governance": {
+      "title": "Frontend governance",
+      "principles": [
+        "Single component system: shadcn/ui (effective v10.497 P0)",
+        "No parallel component architectures",
+        "Tokens flow from frontend/web/src/lib/tokens.ts (semantic hex, single source)",
+        "Brand colors (--brand-*) HEX, tenant-injected at runtime by BrandingProvider",
+        "shadcn theme variables (--primary etc.) HSL-component projections of tokens.ts",
+        "Tailwind config wraps with hsl(var(--token) / <alpha-value>)",
+        "Role-driven rendering via useRole() hook (Phase 2 v10.497), never direct role-string comparisons"
+      ],
+      "a2z_extensions_codified": [
+        "Button.loading prop (universal form-submit affordance)",
+        "Badge.tone variants (semantic operational signaling)",
+        "StatCard composition over shadcn Card (KPI tile pattern)"
+      ],
+      "enforcement_gates": [
+        "G381 App.tsx contract literals",
+        "G382 all primitives exist + no hardcoded hex in components",
+        "gate_v10495_react_foundations",
+        "gate_v10496_design_system"
+      ],
+      "downstream_artifact": "FRONTEND_GOVERNANCE.md (Wave 4)"
+    },
+
+    "VIII_audit_trail_and_telemetry": {
+      "title": "Audit trail and telemetry",
+      "principles": [
+        "Every state-changing API operation MUST emit _audit() event (single canonical emitter, utils/api.py line 170)",
+        "Event naming: API_<DOMAIN>_<ACTION>",
+        "Read-only operations need not emit audit events",
+        "Operations that change state without auditing are violations"
+      ],
+      "sinks": [
+        "data/audit_log.json (append-only structured)",
+        "data/audit_trail.jsonl (line-delimited)"
+      ],
+      "enforcement_gate": "gate_audit_coverage (line 251)",
+      "broader_observability_layer": [
+        "utils/observability_monitoring.py",
+        "utils/api_telemetry.py",
+        "utils/anomaly_observer.py",
+        "utils/event_bus.py",
+        "utils/cross_organ_event_bus.py"
+      ],
+      "downstream_artifact": "TELEMETRY_MAP.md (Wave 4)"
+    },
+
+    "IX_ai_ml_governance": {
+      "title": "AI and ML governance",
+      "principles": [
+        "Models registered before deployment (utils/mlops_model_registry.py)",
+        "Each has model card (utils/mlops_model_card_composer.py)",
+        "Predictions emit adjudication log entries (utils/mlops_adjudication_log.py)",
+        "Rollouts controlled by AB harness (utils/mlops_ab_harness.py)",
+        "Retraining only via retraining scheduler (utils/mlops_retraining_scheduler.py)",
+        "Models making decisions about humans require explainability + fairness testing",
+        "Accuracy drift triggers gate_anti_drift_completion_floor"
+      ],
+      "human_impact_models_require": [
+        "Explainability (utils/ai_explainability.py)",
+        "Fairness testing (utils/fairness_testing.py)"
+      ],
+      "downstream_artifact": "AI_GOVERNANCE.md (Wave 5)"
+    },
+
+    "X_versioning_and_changelog": {
+      "title": "Versioning and changelog",
+      "two_streams": {
+        "backend_batches": "v10.XXX — current v10.497",
+        "master_prompt": "v5.XX — current v5.40, will become v5.41 with this governance batch"
+      },
+      "lockstep_batch_contract": [
+        "Engine module(s) with self-tests",
+        "Audit gate(s) added",
+        "Integration tests",
+        "Doc updates",
+        "Full verification (audit + integration suite) passing",
+        "Delivery (git commit; previously ZIP)"
+      ],
+      "missing_step_severity": "CRITICAL constitutional violation",
+      "lockstep_streak_at_governance_batch_start": "141+ consecutive batches; 1153/1153 verifier",
+      "downstream_artifact": "CHANGELOG_MASTER.md (Wave 6)"
+    },
+
+    "XI_honest_doctrine_carried_forward": {
+      "title": "Honest doctrine (carried from prior batches)",
+      "carried_principles": [
+        {"source": "v10.495", "principle": "Discovered prior work → honor not destroy"},
+        {"source": "v10.496", "principle": "Phantom audit contracts → make real or remove"},
+        {"source": "v10.496", "principle": "No premature dependencies"},
+        {"source": "v10.496", "principle": "Refactor proves the abstraction"},
+        {"source": "Joshua standing directive", "principle": "Honest assessment before mechanical execution"},
+        {"source": "Joshua standing directive", "principle": "Mechanical enforcement over advisory documentation"},
+        {"source": "Joshua standing directive", "principle": "Autonomous continuation through declared scope"}
+      ]
+    },
+
+    "XII_constitutional_amendments": {
+      "title": "Constitutional amendments",
+      "amendment_process": [
+        "Author change in feature branch (e.g. feature/governance-constitution)",
+        "Update CANONICAL_TRUTH_REGISTRY.md + .json to match",
+        "Add/modify relevant audit gate(s)",
+        "Record rationale in REVIVAL_LEDGER.md",
+        "Merge develop → main with vX.YYY-constitutional tag"
+      ],
+      "read_first_order": [
+        "SYSTEM_CONSTITUTION.md",
+        "CANONICAL_TRUTH_REGISTRY.md",
+        "GOVERNANCE_CLASSIFICATION_REGISTRY.md",
+        "Domain-specific governance"
+      ],
+      "drift_detection": "gate_canonical_truth_registry_sync (Stage C) — drift between articles here and gates in scripts/audit.py is itself a violation"
+    }
+  },
+
+  "audit_gate_inventory_at_batch_start": {
+    "total_distinct_gates": 412,
+    "canonical_named": 271,
+    "versioned_batch_gates": 147,
+    "verifier_pass_status": "1153/1153 per Master Prompt v5.40",
+    "lockstep_batches": 141,
+    "new_gate_introduced_by_wave_1_planned": "gate_canonical_truth_registry_sync (Stage C, placeholder)"
+  },
+
+  "open_items_carried_to_subsequent_waves": [
+    {"id": "OI-1", "title": "require_role name collision", "wave": "2"},
+    {"id": "OI-2", "title": "v1 admin endpoint RBAC classification (53 endpoints)", "wave": "2"},
+    {"id": "OI-3", "title": "Streamlit → React migration contract", "wave": "2"},
+    {"id": "OI-4", "title": "AI/ML governance + resilience artifact authoring", "wave": "5"},
+    {"id": "OI-5", "title": "CHANGELOG governance seed (docs/CHANGELOG_*.md empty)", "wave": "6"},
+    {"id": "OI-6", "title": "9 utils subdirectories currently unknown classification", "wave": "3"},
+    {"id": "OI-7", "title": "Two v1 routes (onboarding/simulate, peer-learning/generate-cards) declare Body(...) without user Depends — surfaced from v1_route_signatures.txt during Wave 1 review", "wave": "2"}
+  ]
+}

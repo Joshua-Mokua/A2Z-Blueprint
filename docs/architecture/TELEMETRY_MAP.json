@@ -1,0 +1,212 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_transitional_subareas",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 4",
+    "last_updated": "2026-05-22",
+    "owner": "Compliance / Audit + Platform / Observability",
+    "human_readable_equivalent": "TELEMETRY_MAP.md",
+    "doctrine": [
+      "T1 — Every state change emits a signal",
+      "T2 — One canonical emitter per signal type",
+      "T3 — Telemetry is the system's nervous system",
+      "T4 — Signals must be queryable and replayable",
+      "T5 — Sensitive signals are gitignored"
+    ]
+  },
+
+  "signal_categories": {
+    "1_api_audit_events": {
+      "canonical_emitter": {"module": "utils/api.py", "function": "_audit", "line": 170, "signature": "_audit(action: str, user: dict, detail: str = \"\") -> None"},
+      "sinks": ["data/audit_log.json (append-only JSON array)", "data/audit_trail.jsonl (line-delimited JSON)"],
+      "git": "gitignored",
+      "naming_convention": "API_<DOMAIN>_<ACTION>[_<MODIFIER>]",
+      "domain_values": ["LOGIN", "LOGOUT", "BSC", "PIPELINE", "CREDIT", "AML", "USERS", "DASHBOARD", "CACHE", "INTEGRATION", "ROLE_WEIGHTS", "KPI_DEDUP", "BACKUP_RETENTION", "TEST_CLEANUP", "BSC_PILLAR", "BSC_LIBRARY", "BSC_COMPLETENESS", "BSC_WEIGHTS", "BSC_CODES", "ADMIN_VALIDATION", "CASCADE_360", "HARMONIZE", "ONBOARDING", "EXIT_RISK", "HR_AUDIT", "PEER_LEARNING", "COACHING", "PREDICT", "GAMIFICATION", "EFFICIENCY", "WELLNESS", "HR_ACTUALS", "VITALS"],
+      "events_documented_count": 36,
+      "enforcement_gate": "gate_audit_coverage (scripts/audit.py:251)",
+      "enforcement_severity": "CRITICAL"
+    },
+
+    "2_cross_organ_events": {
+      "canonical_interfaces": ["utils/event_bus.py", "utils/cross_organ_event_bus.py"],
+      "api_surface_verification_status": "OI-19 pending Stage C",
+      "expected_publisher_api": "publish(event_type, payload, source_module)",
+      "expected_subscriber_api": "@subscribe(event_type) decorator",
+      "namespaces": ["auth.*", "bsc.*", "cascade.*", "pipeline.*", "credit.*", "risk.*", "compliance.*", "hr.*", "treasury.*", "cbs.*", "api.*", "vitals.*", "mlops.*", "system.*"],
+      "publication_rules": [
+        "Only Managers and engines may publish",
+        "Transports MUST NOT publish directly",
+        "Events MUST include event_type, timestamp, actor, payload, source_module",
+        "Subscribers MUST be idempotent"
+      ],
+      "replay_engine": "utils/workflow_replay.py"
+    },
+
+    "3_observability_metrics": {
+      "canonical_interfaces": ["utils/observability_monitoring.py", "utils/api_telemetry.py", "utils/it_observability.py"],
+      "sinks": ["data/observability_metrics.json (rolling)", "external platform via OTLP (future)"],
+      "categories": [
+        "API performance (api.endpoint.duration_ms, api.endpoint.error_rate, api.cors.rejected)",
+        "Engine performance (engine.bsc.score_compute.duration_ms, engine.cascade.walk.duration_ms)",
+        "Data freshness (data.kpi_library.last_updated, data.cbs_baseline.staleness_hours)",
+        "Audit health (audit.gate.pass_rate, audit.gate.failures.count)",
+        "Org health (vitals.organ.<name>.status, vitals.regression.count)",
+        "ML drift (mlops.model.<id>.accuracy_drift, mlops.adjudication.queue_depth)"
+      ],
+      "performance_gate": "gate_performance_api_latency (scripts/audit.py:2897)",
+      "thresholds_oi": "OI-32 — exact thresholds in Stage C amendment"
+    },
+
+    "4_anomaly_detections": {
+      "canonical_interfaces": ["utils/anomaly_observer.py", "utils/analytics_anomaly_detection.py", "utils/behavioral_anomaly_detection.py", "utils/revenue_anomaly_patterns.py"],
+      "sinks": "event_bus namespace anomaly.*",
+      "alert_routing_via": "utils/command_centre_alert_routing.py",
+      "anomaly_types": [
+        {"type": "Transaction anomaly", "detector": "anomaly_observer", "trigger": "Unusual transaction pattern for customer"},
+        {"type": "AML anomaly", "detector": "aml_monitoring + behavioral", "trigger": "Velocity, structuring, smurfing"},
+        {"type": "Revenue anomaly", "detector": "revenue_anomaly_patterns", "trigger": "Sudden revenue drop in branch/SBU"},
+        {"type": "Performance anomaly", "detector": "behavioral_anomaly_detection", "trigger": "Staff productivity outside expected range"},
+        {"type": "Risk threshold", "detector": "Risk engines", "trigger": "VaR breach, limit utilization >100%"}
+      ]
+    },
+
+    "5_alerts_notifications": {
+      "canonical_interfaces": ["utils/notification_broadcaster.py", "utils/notifications.py", "utils/smart_alerts.py", "utils/smart_alerts_i18n.py", "utils/nudge_engine.py", "utils/command_centre_alert_routing.py", "utils/command_centre_crisis.py", "utils/command_centre_stakeholder_comms.py"],
+      "channels": [
+        {"channel": "Email", "implementation": "utils/core.py:71-280", "use_case": "Async escalations, welcome emails"},
+        {"channel": "In-app", "implementation": "Streamlit toasts, React sonner", "use_case": "Real-time UX feedback"},
+        {"channel": "WebSocket", "implementation": "utils/websocket_manager.py", "use_case": "Push to active sessions"},
+        {"channel": "Mobile", "implementation": "utils/mobile_app_tracking.py, utils/command_centre_mobile_board.py", "use_case": "Mobile devices"}
+      ],
+      "wellness_alert_ethical_constraints": [
+        "Go only to staff's direct manager",
+        "Never include speculative diagnoses",
+        "Direct manager receives suggestions, not directives",
+        "Subject staff has visibility into their own assessment"
+      ]
+    }
+  },
+
+  "api_audit_event_vocabulary": {
+    "auth": [
+      {"event": "API_LOGIN_SUCCESS", "trigger": "POST /api/auth/login (success)", "detail_example": "username, role, mode"},
+      {"event": "API_LOGIN_FAILED", "trigger": "POST /api/auth/login (failure)", "detail_example": "username, reason"},
+      {"event": "API_LOGOUT_SUCCESS", "trigger": "POST /api/auth/logout", "detail_example": "username, jti revoked"}
+    ],
+    "resource_summaries": [
+      "API_BSC_SUMMARY", "API_BSC_STAFF", "API_BSC_STAFF_DENIED",
+      "API_PIPELINE_SUMMARY", "API_PIPELINE_DEALS",
+      "API_CREDIT_SUMMARY", "API_CREDIT_WATCHLIST",
+      "API_AML_SUMMARY", "API_USERS_SUMMARY"
+    ],
+    "dashboard_cache": [
+      "API_DASHBOARD_MD", "API_CACHE_CLEAR", "API_CACHE_STATS"
+    ],
+    "integration": [
+      "API_INTEGRATION_RULES", "API_INTEGRATION_ACTUALS", "API_INTEGRATION_RESOLUTION_METRICS",
+      "API_INTEGRATION_RUN_PERIOD", "API_INTEGRATION_COVERAGE", "API_INTEGRATION_RULE_EXPLAIN"
+    ],
+    "v1_admin_writes": [
+      "API_ROLE_WEIGHTS_MIGRATE", "API_KPI_DEDUP_MIGRATE",
+      "API_BACKUP_RETENTION_APPLY", "API_TEST_CLEANUP_ARCHIVE",
+      "API_BSC_PILLAR_MIGRATE", "API_BSC_LIBRARY_REGISTER",
+      "API_BSC_COMPLETENESS_REPAIR", "API_BSC_WEIGHTS_RENORMALIZE",
+      "API_BSC_CODES_FIX", "API_ADMIN_VALIDATION_LEGACY_ALIASES",
+      "API_HARMONIZE_ALL", "API_HARMONIZE_STAGE"
+    ],
+    "hr_writes": [
+      "API_ONBOARDING_SIMULATE", "API_PEER_LEARNING_GENERATE", "API_GAMIFICATION_EVALUATE"
+    ]
+  },
+
+  "audit_event_schema_target": {
+    "timestamp": "ISO 8601",
+    "action": "API_<DOMAIN>_<ACTION>",
+    "username": "string",
+    "role": "string (descriptive)",
+    "detail": "string",
+    "endpoint": "string",
+    "method": "string",
+    "status_code": "integer",
+    "duration_ms": "integer",
+    "verification_oi": "OI-31 — exact schema from _audit() body"
+  },
+
+  "event_bus_namespaces": {
+    "auth.*": {"owner": "UserManager / auth modules", "examples": ["auth.login.success", "auth.login.failed", "auth.logout", "auth.token.revoked"]},
+    "bsc.*": {"owner": "BSC engines", "examples": ["bsc.score.computed", "bsc.target.cascaded", "bsc.actual.updated", "bsc.weight.renormalized"]},
+    "cascade.*": {"owner": "CascadeManager + cascade engines", "examples": ["cascade.target.locked", "cascade.harmonize.run"]},
+    "pipeline.*": {"owner": "PipelineManager", "examples": ["pipeline.deal.created", "pipeline.deal.moved", "pipeline.deal.won", "pipeline.deal.lost"]},
+    "credit.*": {"owner": "CreditAdminManager", "examples": ["credit.application.submitted", "credit.application.approved", "credit.ews.flagged"]},
+    "risk.*": {"owner": "Risk engines", "examples": ["risk.threshold.breached", "risk.limit.warning", "risk.stress.completed"]},
+    "compliance.*": {"owner": "ComplianceManager + screening", "examples": ["compliance.case.escalated", "compliance.aml.flagged", "compliance.sanctions.hit"]},
+    "hr.*": {"owner": "HRManager", "examples": ["hr.staff.registered", "hr.staff.transferred", "hr.staff.terminated", "hr.leave.requested"]},
+    "treasury.*": {"owner": "TreasuryManager", "examples": ["treasury.position.changed", "treasury.limit.warning"]},
+    "cbs.*": {"owner": "CBS modules", "examples": ["cbs.baseline.refreshed", "cbs.transaction.streamed", "cbs.account.tagged"]},
+    "api.*": {"owner": "API transports", "examples": ["api.endpoint.called", "api.audit.emitted"]},
+    "vitals.*": {"owner": "Health monitoring", "examples": ["vitals.organ.degraded", "vitals.regression.detected", "vitals.certification.advanced"]},
+    "mlops.*": {"owner": "ML governance", "examples": ["mlops.model.deployed", "mlops.prediction.adjudicated", "mlops.retrain.scheduled", "mlops.drift.detected"]},
+    "system.*": {"owner": "System-wide", "examples": ["system.batch.started", "system.batch.completed", "system.gate.failed"]}
+  },
+
+  "regulator_grade_audit_chain": [
+    "Action happens",
+    "_audit() called by transport → data/audit_log.json",
+    "Engine publishes event → event_bus → subscribers + persistence",
+    "Subscribers may write derived audit records (compliance case)",
+    "audit_trail_certification consolidates → certification ledger",
+    "gate_audit_trail_composer_wired verifies coverage",
+    "Regulator reviews via /api/v1/vitals/* or compliance dashboards"
+  ],
+
+  "audit_modules_inventory": [
+    {"module": "utils/audit_log.py", "role": "Audit log writer (lower-level than _audit)"},
+    {"module": "utils/audit_core.py", "role": "Core audit helpers"},
+    {"module": "utils/audit_universe.py", "role": "Audit universe definitions"},
+    {"module": "utils/audit_trail_certification.py", "role": "Trail certification (canonical)"},
+    {"module": "utils/audit_trail_cert.py", "role": "Trail cert (potential duplicate per OI-18)"},
+    {"module": "utils/audit_reporting.py", "role": "Audit reporting"},
+    {"module": "utils/audit_dashboards_portal.py", "role": "Audit dashboards"},
+    {"module": "utils/cbk_regulatory_reporting.py", "role": "CBK regulatory submissions"},
+    {"module": "utils/examiner_reporting.py", "role": "Examiner-facing reports"}
+  ],
+
+  "retention_policies": {
+    "api_audit_events": "Indefinite (append-only)",
+    "cross_organ_events": "Indefinite (replayable)",
+    "observability_metrics": "Rolling window (~7-30 days); auto-purge",
+    "anomaly_detections": "Indefinite (compliance)",
+    "alerts": "90 days default",
+    "jwt_blocklist": "Until natural token expiry; auto-prune in auth_jwt.py",
+    "backup_directories": "3 most recent (via /api/v1/backup-retention/apply)"
+  },
+
+  "pii_constraints_in_telemetry": {
+    "permitted_in_audit": ["username", "role", "customer CIF (system context)", "account number (system context)"],
+    "forbidden_in_audit": [
+      "Customer name, email, phone, ID number",
+      "Staff PII beyond username",
+      "Passwords (use username, never credentials)",
+      "JWT contents (use jti instead)"
+    ],
+    "enforcement_gate": "gate_password_safety (scripts/audit.py:741)"
+  },
+
+  "stage_c_gates_planned": [
+    {"gate": "gate_telemetry_event_naming", "purpose": "Verify _audit() event names match canonical vocabulary", "severity": "HIGH"},
+    {"gate": "gate_event_bus_publisher_purity", "purpose": "Verify transports don't publish events directly", "severity": "CRITICAL"},
+    {"gate": "gate_event_bus_subscriber_idempotent", "purpose": "Verify subscribers are decorated idempotent", "severity": "MEDIUM"},
+    {"gate": "gate_observability_freshness", "purpose": "Verify metrics within freshness window", "severity": "MEDIUM"},
+    {"gate": "gate_audit_event_schema_compliance", "purpose": "Verify audit events conform to canonical schema", "severity": "HIGH"}
+  ],
+
+  "open_items": [
+    {"id": "OI-19", "title": "event_bus + cross_organ_event_bus actual API surface", "wave": "Stage C"},
+    {"id": "OI-31", "title": "Audit event schema verification", "wave": "Stage C"},
+    {"id": "OI-32", "title": "Document exact performance latency thresholds", "wave": "Stage C amendment"},
+    {"id": "OI-33", "title": "Enumerate audit events from mounted routers", "wave": "Wave 4 amendment"},
+    {"id": "OI-34", "title": "Event namespace registry canonical list", "wave": "Stage C"}
+  ]
+}

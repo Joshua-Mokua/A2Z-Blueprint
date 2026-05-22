@@ -1,0 +1,262 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_transitional_subareas",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 2",
+    "last_updated": "2026-05-22",
+    "owner": "Security / Platform + Admin",
+    "human_readable_equivalent": "RBAC_MATRIX.md",
+    "companion_artifact": "API_CONTRACTS.md",
+    "doctrine": [
+      "RB1 — Capabilities are named, not anonymous",
+      "RB2 — Capabilities map to tiers, not strings (conceptually)",
+      "RB3 — Deny by default",
+      "RB4 — Two stages: authenticate, then authorize",
+      "RB5 — Destructive operations require RBAC, not just confirm=true"
+    ],
+    "transitional_subareas": [
+      "53 v1 admin endpoints with only Depends(get_current_user)",
+      "OI-7 — verify auth on /onboarding/simulate and /peer-learning/generate-cards",
+      "backup-retention/audit and test-cleanup/audit return data to any authenticated user (should be ADMIN)"
+    ]
+  },
+
+  "permission_naming_convention": "<domain>:<verb>[_<qualifier>]",
+
+  "tier_notation": {
+    "MD": "seniority tier 0",
+    "C-suite": "seniority tier 1 (Chiefs + Directors)",
+    "Head": "seniority tier 2",
+    "Sr Mgr": "seniority tier 3",
+    "Mgr": "seniority tier 4",
+    "Officer": "seniority tier 5",
+    "Entry": "seniority tier 6",
+    "[ALL_AUTHENTICATED]": "any logged-in user (Depends(get_current_user))",
+    "[ADMIN]": "is_admin=True in users.json (Depends(require_admin))",
+    "[PUBLIC]": "no auth required"
+  },
+
+  "capabilities": {
+    "auth": {
+      "auth:login": {"grant": "[PUBLIC]", "endpoint": "POST /api/auth/login"},
+      "auth:me": {"grant": "[ALL_AUTHENTICATED]", "endpoint": "GET /api/auth/me"},
+      "auth:logout": {"grant": "[ALL_AUTHENTICATED]", "endpoint": "POST /api/auth/logout"}
+    },
+
+    "bsc": {
+      "bsc:read_own": {"grant": "[ALL_AUTHENTICATED]", "scope": "own"},
+      "bsc:read_subordinates": {"grant": "Mgr+", "scope": "subordinates"},
+      "bsc:read_all_staff": {"grant": "Head+ in SBU", "scope": "SBU"},
+      "bsc:read_summary": {"grant": "[ALL_AUTHENTICATED]", "endpoint": "GET /api/bsc/summary"}
+    },
+
+    "pipeline": {
+      "pipeline:read_summary": {"grant": "[ALL_AUTHENTICATED]", "endpoint": "GET /api/pipeline/summary"},
+      "pipeline:read_own_deals": {"grant": "[ALL_AUTHENTICATED] filtered", "scope": "own"},
+      "pipeline:read_all_deals": {"grant": "MD + C-suite + Head of relevant SBU", "scope": "SBU+"}
+    },
+
+    "credit": {
+      "credit:read_summary": {"grant": "[ALL_AUTHENTICATED]", "filtered": true},
+      "credit:read_watchlist": {"grant": "Mgr+ in Credit SBU OR Head+ structural"}
+    },
+
+    "aml": {
+      "aml:read_summary": {"grant": "[ALL_AUTHENTICATED]", "filtered": true},
+      "aml:read_all": {"grant": "Compliance SBU OR MD + Chief Risk + Chief Compliance + Chief Internal Auditor"}
+    },
+
+    "users": {
+      "users:read_summary": {"grant": "[ALL_AUTHENTICATED]", "no_sensitive_data": true}
+    },
+
+    "dashboard": {
+      "dashboard:md": {"grant": "MD only", "endpoint": "GET /api/dashboard/md"}
+    },
+
+    "cache_and_system": {
+      "cache:read_stats": {"grant": "[ALL_AUTHENTICATED]"},
+      "cache:clear": {"grant": "[ADMIN]"},
+      "vitals:read": {"grant": "[ALL_AUTHENTICATED]"}
+    },
+
+    "integration": {
+      "integration:read_rules": {"grant": "[ALL_AUTHENTICATED]"},
+      "integration:read_actuals": {"grant": "[ALL_AUTHENTICATED] filtered"},
+      "integration:read_metrics": {"grant": "[ALL_AUTHENTICATED]"},
+      "integration:run_period": {
+        "target_grant": "[ADMIN] OR MD + Chief Financial Officer + Chief Risk Officer",
+        "current_state": "transitional — only confirm=true gating"
+      },
+      "integration:read_coverage": {"grant": "[ALL_AUTHENTICATED]"},
+      "integration:read_rule_explain": {"grant": "[ALL_AUTHENTICATED]"}
+    },
+
+    "v1_admin_governance": {
+      "role-weights:audit": {"target": "[ALL_AUTHENTICATED]", "current": "[ALL_AUTHENTICATED]", "ok": true},
+      "role-weights:migrate": {"target": "[ADMIN]", "current": "[ALL_AUTHENTICATED]+confirm", "transitional": true},
+      "kpi-dedup:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "kpi-dedup:migrate": {"target": "[ADMIN]", "transitional": true},
+      "backup-retention:audit": {"target": "[ADMIN]", "current": "[ALL_AUTHENTICATED]", "transitional": true},
+      "backup-retention:apply": {"target": "[ADMIN]", "transitional": true, "severity_when_remediation_overdue": "CRITICAL"},
+      "test-cleanup:audit": {"target": "[ADMIN]", "transitional": true},
+      "test-cleanup:archive": {"target": "[ADMIN]", "transitional": true},
+      "bsc-audit:full": {"target": "[ALL_AUTHENTICATED] filtered", "ok": true},
+      "bsc-audit:staff-coverage": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-audit:kpi-completeness": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-audit:pillar-canonical": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-audit:weight-normalization": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-audit:library-alignment": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-audit:cascade-linkage": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-pillar:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-pillar:migrate": {"target": "[ADMIN]", "transitional": true},
+      "bsc-library:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-library:register": {"target": "[ADMIN]", "transitional": true},
+      "bsc-completeness:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-completeness:repair": {"target": "[ADMIN]", "transitional": true},
+      "bsc-weights:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-weights:renormalize": {"target": "[ADMIN]", "transitional": true},
+      "bsc-codes:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "bsc-codes:fix": {"target": "[ADMIN]", "transitional": true},
+      "admin-validation:library": {"target": "[ADMIN]", "transitional": true},
+      "admin-validation:legacy-aliases": {"target": "[ADMIN]", "transitional": true},
+      "cascade-360:audit": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "cascade-360:stage": {"target": "[ALL_AUTHENTICATED]", "ok": true},
+      "harmonize:all": {"target": "[ADMIN]", "transitional": true, "destructive": true},
+      "harmonize:stage": {"target": "[ADMIN]", "transitional": true, "destructive": true}
+    },
+
+    "hr_and_people": {
+      "onboarding:audit": {"grant": "Head+ in HR SBU OR [ADMIN]"},
+      "onboarding:audit_staff": {"grant": "Manager of subordinate OR Head+ in HR SBU"},
+      "onboarding:simulate": {"grant": "[ADMIN]", "oi_7_verify_auth_state": true},
+      "exit-risk:audit": {"grant": "Head+ in HR SBU OR [ADMIN]"},
+      "exit-risk:audit_staff": {"grant": "Manager of subordinate OR Head+"},
+      "exit-risk:simulate_staff": {"grant": "Manager of subordinate OR Head+ in HR SBU"},
+      "hr-audit:full": {"grant": "Head+ in HR SBU OR [ADMIN]"},
+      "hr-audit:dimension": {"grant": "Head+ in HR SBU"},
+      "peer-learning:cards": {"grant": "[ALL_AUTHENTICATED] filtered to own or subordinates"},
+      "peer-learning:generate_cards": {"grant": "[ADMIN]", "oi_7_verify_auth_state": true},
+      "peer-learning:match_skill": {"grant": "[ALL_AUTHENTICATED]"},
+      "coaching:script": {"grant": "Manager of staff_code OR Head+"},
+      "predict:achievement": {"grant": "[ALL_AUTHENTICATED] filtered to own or subordinates"},
+      "gamification:badges": {"grant": "[ALL_AUTHENTICATED] filtered"},
+      "gamification:evaluate": {"grant": "Manager of subordinate OR [ADMIN]"},
+      "gamification:leaderboard": {"grant": "[ALL_AUTHENTICATED] filtered to relevant scope"},
+      "efficiency:read": {"grant": "[ALL_AUTHENTICATED] filtered to own or subordinates"},
+      "wellness:read": {"grant": "Manager of subordinate OR [ADMIN]", "subject_self_access_permitted": true},
+      "wellness:alerts": {"grant": "Manager only (manager_code matches user)"}
+    },
+
+    "hr_actuals": {
+      "hr-actuals:staff": {"grant": "[ALL_AUTHENTICATED] filtered to own or subordinates"},
+      "hr-actuals:bank_wide": {"grant": "Head+ in HR SBU OR [ADMIN]"},
+      "hr-actuals:coverage": {"grant": "[ALL_AUTHENTICATED]"}
+    },
+
+    "streamlit_pages_legacy_transitional": {
+      "bsc": {"grant": "[ALL_AUTHENTICATED] filtered"},
+      "pipeline": {"grant": "[ALL_AUTHENTICATED] filtered"},
+      "cascade": {"grant": "Mgr+"},
+      "admin": {"grant": "[ADMIN]"},
+      "cbs": {"grant": "Head+ in Finance/Operations OR [ADMIN]"},
+      "kpi_library": {"grant_read": "[ALL_AUTHENTICATED]", "grant_write": "[ADMIN]"},
+      "target_cascade": {"grant_subordinate_targets": "Mgr+", "grant_bank_targets": "[ADMIN]"},
+      "users": {"grant": "[ADMIN]"},
+      "full_enumeration_pending": "Wave 3 ORGANS_REGISTRY"
+    }
+  },
+
+  "scopes": {
+    "own": "User can access their own records (username/staff_code match)",
+    "subordinates": "User (Mgr+) can access records of direct/transitive reports (via hierarchy_synth)",
+    "sbu": "User can access records within their SBU classification (role_taxonomy.get_sbu)",
+    "national": "Unrestricted; reserved for MD, C-suite, specifically-granted Head roles"
+  },
+
+  "is_admin_flag": {
+    "field": "data/users.json::is_admin",
+    "secondary_field": "data/users.json::is_ict_admin",
+    "checked_by": ["utils/auth_jwt.require_admin", "utils/auth.is_admin"],
+    "orthogonal_to_role_classification": true,
+    "examples": [
+      "IT administrator can have is_admin=True without being MD or C-suite",
+      "MD without is_admin=True still has MD capabilities via role classification"
+    ]
+  },
+
+  "users_json_authorization_fields_transitional": {
+    "accessible_modules": "list[str] — explicit Streamlit module grants",
+    "hidden_modules": "list[str] — explicit Streamlit module denials",
+    "can_view_all": "bool — broad read scope (Streamlit)",
+    "consumed_by": "utils/auth.has_access (and require_module_access after OI-1 rename)",
+    "react_migration_target": "consolidated into capability model in Wave 4 FRONTEND_GOVERNANCE"
+  },
+
+  "transitional_gaps": {
+    "gap_a_53_v1_admin_endpoints": {
+      "current_state": "Every /api/v1/* uses Depends(get_current_user); destructive endpoints rely on confirm: bool = False",
+      "target_state": "Add Depends(require_admin) or Depends(require_role([...])) before confirm gate",
+      "migration_plan": [
+        "Stage C gate: gate_v1_admin_endpoints_have_rbac (initial severity HIGH, 3-batch grace)",
+        "Implementation batch: touch route signatures; order: backup-retention/apply first, then harmonize/all, then bsc-*/migrate variants",
+        "Verification: re-run G12 + new gate; zero violations"
+      ]
+    },
+    "gap_b_oi_7_unclear_auth_state": {
+      "routes": ["POST /api/v1/onboarding/simulate", "POST /api/v1/peer-learning/generate-cards"],
+      "extracted_signature_appears_to_lack_user_depends": true,
+      "most_likely_cause": "regex extraction artifact (captured up to first ) which closed Body(...))",
+      "verification_command": "findstr /n \"def onboarding_simulate_endpoint\\|def peer_learning_generate_endpoint\" utils\\api.py",
+      "if_unauthenticated": "CRITICAL G12 violation — immediate fix required"
+    },
+    "gap_c_audit_endpoints_too_permissive": {
+      "endpoints": ["backup-retention:audit", "test-cleanup:audit"],
+      "current_grant": "[ALL_AUTHENTICATED]",
+      "target_grant": "[ADMIN]",
+      "rationale": "Returns operationally sensitive data (backup directory sizes, retention metadata)",
+      "wave": "Stage C"
+    }
+  },
+
+  "hierarchy_aware_scope_enforcement": {
+    "current_implementation": "Route handlers call utils/core.ReportingLineManager",
+    "canonical_helper": {
+      "name": "is_manager_of(manager_user, subordinate_staff_code)",
+      "returns": "bool",
+      "logic": "manager_user.staff_code in rlm.get_chain_to_root(subordinate_staff_code)"
+    },
+    "stage_c_target": {
+      "factory": "require_manager_of(target_staff_code_path_param)",
+      "type": "FastAPI Depends factory wrapping is_manager_of"
+    }
+  },
+
+  "react_phase_2_useRole_hook_contract": {
+    "hook": "useRole()",
+    "fields": {
+      "tier": "profitability tier",
+      "seniorityTier": "seniority tier (0-6)",
+      "sbu": "SBU",
+      "branchScope": "scope",
+      "capabilities": "array of granted capability names",
+      "isAdmin": "boolean",
+      "hasCapability": "function (cap: string) => boolean"
+    },
+    "data_source_endpoint": "GET /api/roles/me (to be specified in Wave 4)",
+    "server_side_implementation": "utils/role_taxonomy.classify_role() + resolved capability list",
+    "critical_contract": "React conditional rendering MUST use role.hasCapability(), never direct string comparison"
+  },
+
+  "open_items": [
+    {"id": "OI-2", "title": "53 v1 admin endpoints classification (this matrix)", "wave": "Implementation in next governance batch"},
+    {"id": "OI-7", "title": "Verify auth state of /onboarding/simulate + /peer-learning/generate-cards", "wave": "Immediate"},
+    {"id": "OI-9", "title": "/api/roles/me endpoint contract", "wave": "Wave 4 FRONTEND_GOVERNANCE"},
+    {"id": "OI-10", "title": "require_role factory extension with tier=, sbu=, seniority_max=", "wave": "Stage C"},
+    {"id": "OI-11", "title": "require_manager_of Depends factory", "wave": "Stage C"},
+    {"id": "OI-12", "title": "gate_v1_admin_endpoints_have_rbac audit gate", "wave": "Stage C"},
+    {"id": "OI-13", "title": "Streamlit page list enumeration with per-page RBAC", "wave": "Wave 3 ORGANS_REGISTRY"}
+  ]
+}

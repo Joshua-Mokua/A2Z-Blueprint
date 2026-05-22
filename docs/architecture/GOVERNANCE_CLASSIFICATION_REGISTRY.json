@@ -1,0 +1,279 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, meta-governance layer",
+    "authority_level": "Constitution",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 1",
+    "last_updated": "2026-05-22",
+    "owner": "A2Z constitution maintainers",
+    "human_readable_equivalent": "GOVERNANCE_CLASSIFICATION_REGISTRY.md",
+    "consumed_by": [
+      "CANONICAL_TRUTH_REGISTRY.md (every domain has a classification field)",
+      "Stage C audit gates (severity assignment)",
+      "Future AI sessions (interpretation context)"
+    ],
+    "doctrine": [
+      "G1 — Every governed artifact has exactly one classification state",
+      "G2 — Classifications express intent and lifecycle, not quality",
+      "G3 — Transitions are events, not gradients",
+      "G4 — Enforcement severity is independent of classification",
+      "G5 — `unknown` is a temporary state, never a destination"
+    ]
+  },
+
+  "classification_states": {
+    "canonical": {
+      "meaning": "This artifact IS the source of truth for its domain; alternatives are violations",
+      "invariants": [
+        "Has authoritative-source declaration in CANONICAL_TRUTH_REGISTRY",
+        "Has at least one enforcement gate",
+        "Has a named owner",
+        "Documentation describes its contract"
+      ],
+      "promotion_from": ["transitional"],
+      "demotion_to": ["deprecated"],
+      "examples": [
+        "data/org_hierarchy_config.json",
+        "utils/role_taxonomy.py",
+        "utils/auth_jwt.py (post v10.497 P1.3)"
+      ]
+    },
+
+    "derived": {
+      "meaning": "Computed view, projection, or cache of one or more canonical sources; no independent authority",
+      "invariants": [
+        "Has derived_from declaration pointing at canonical sources",
+        "Has derivation mechanism declared",
+        "Has stale-detection mechanism",
+        "Can be rebuilt from sources at any time without info loss"
+      ],
+      "promotion_from": [],
+      "demotion_to": ["deprecated"],
+      "examples": [
+        "frontend/web/src/index.css shadcn HSL variables",
+        "data/audit_log.json (canonical emitter is _audit())",
+        "Cached computed BSC scores"
+      ]
+    },
+
+    "transitional": {
+      "meaning": "Exists today, used today, being actively replaced/refactored/harmonized; rules temporarily relaxed",
+      "invariants": [
+        "Has transition_target declared",
+        "Has transition_deadline OR transition_trigger declared",
+        "Has migration_required: true flag",
+        "Enforcement gates apply at reduced severity (HIGH/MEDIUM, not CRITICAL) during window"
+      ],
+      "promotion_from": ["transitional", "unknown"],
+      "promotion_to": ["canonical"],
+      "demotion_to": ["deprecated"],
+      "examples": [
+        "utils/auth.py (Streamlit-era page-access)",
+        "v1 admin endpoints with confirm: bool = False instead of require_admin",
+        "Streamlit pages/*.py awaiting React migration",
+        "data/users.json password fields (SHA-256 → bcrypt)"
+      ]
+    },
+
+    "deprecated": {
+      "meaning": "Existed, served a purpose, no longer source of truth; may exist for legacy/audit but not for writes",
+      "invariants": [
+        "Has superseded_by pointer",
+        "Has deprecated_in_version + removal_planned_in_version (or permanent_archive)",
+        "New dependencies must declare # DEPRECATED-DEP: <issue>"
+      ],
+      "promotion_from": ["canonical", "derived", "transitional"],
+      "promotion_to": [],
+      "demotion_to": ["removed"],
+      "notes": "Cannot return to canonical without explicit unretirement (constitutional event)"
+    },
+
+    "unknown": {
+      "meaning": "Discovered but role/classification/authority not yet determined; survey state only",
+      "invariants": [
+        "Has discovered_in reference (survey wave)",
+        "Has resolution_target_wave",
+        "Cannot remain unknown longer than 1 batch"
+      ],
+      "promotion_from": [],
+      "promotion_to": ["canonical", "derived", "transitional", "deprecated"],
+      "current_unknowns": [
+        "utils/agents/",
+        "utils/arena/",
+        "utils/cert/",
+        "utils/chaos/",
+        "utils/channels/",
+        "utils/ml/",
+        "utils/scenarios/",
+        "utils/sim/",
+        "utils/uncertainty/"
+      ]
+    }
+  },
+
+  "composite_classifications": {
+    "canonical_with_transitional_subareas": {
+      "meaning": "Parent canonical; one or more sub-fields/sub-functions in transitional state",
+      "required_field": "transitional_subareas: [string]",
+      "examples": [
+        {
+          "parent": "utils/api.py",
+          "transitional_subareas": ["v1 admin endpoint RBAC (confirm: bool = False instead of require_admin)"]
+        }
+      ]
+    },
+    "transitional_toward_canonical": {
+      "meaning": "Transitional, target is canonical (most common compound)"
+    },
+    "transitional_toward_deprecated": {
+      "meaning": "Transitional because being retired; use until retirement actually completes"
+    }
+  },
+
+  "state_transition_matrix": {
+    "canonical": {
+      "canonical": "—",
+      "derived": "rare — canonical becomes derived if rebuilt as computed view",
+      "transitional": "OK (refactor)",
+      "deprecated": "OK (retire)",
+      "unknown": "✗ never"
+    },
+    "derived": {
+      "canonical": "✗ — must be redesigned",
+      "derived": "—",
+      "transitional": "OK (rebuild from new source)",
+      "deprecated": "OK (retire)",
+      "unknown": "✗"
+    },
+    "transitional": {
+      "canonical": "OK (complete)",
+      "derived": "OK (after refactor)",
+      "transitional": "—",
+      "deprecated": "OK (abandon transition)",
+      "unknown": "✗"
+    },
+    "deprecated": {
+      "canonical": "✗ — unretirement is constitutional event",
+      "derived": "✗",
+      "transitional": "✗",
+      "deprecated": "—",
+      "unknown": "✗"
+    },
+    "unknown": {
+      "canonical": "OK (after survey)",
+      "derived": "OK",
+      "transitional": "OK",
+      "deprecated": "OK",
+      "unknown": "— (cannot remain)"
+    }
+  },
+
+  "transition_requirements": {
+    "all_valid_transitions_require": [
+      "Update to CANONICAL_TRUTH_REGISTRY.md + .json",
+      "Audit gate adjustment (severity, scope, or both)",
+      "Entry in REVIVAL_LEDGER.md with date and rationale"
+    ],
+    "invalid_transitions_require": "Constitutional amendment (separate governance batch)"
+  },
+
+  "enforcement_tiers": {
+    "CRITICAL": {
+      "meaning": "Compromises system integrity, security, or canonical truth",
+      "behavior": "fail immediately; blocks certification; aborts CI/CD",
+      "grace_period": "none",
+      "examples": [
+        "canonical artifact violating declared contract",
+        "Authentication/authorization bypass",
+        "Hardcoded secret",
+        "Password not bcrypt-hashed on new account",
+        "Canonical role string used outside role_taxonomy resolution path",
+        "data/org_hierarchy_config.json failing schema validation",
+        "Audit gate self-test failing",
+        "CANONICAL_TRUTH_REGISTRY.md pointer broken"
+      ]
+    },
+    "HIGH": {
+      "meaning": "Should not exist long-term; may be permitted during declared harmonization window",
+      "behavior": "during grace window — passed with warning; after deadline — behaves as CRITICAL",
+      "grace_period_default_batches": 3,
+      "examples": [
+        "transitional artifact violating target contract after deadline",
+        "untyped or partially-typed require_role call",
+        "new code path bypassing existing canonical interface",
+        "Coverage thresholds below floor",
+        "Performance API latency above threshold"
+      ]
+    },
+    "MEDIUM": {
+      "meaning": "Drift, technical debt, or governance gap; tolerable during current harmonization phase",
+      "behavior": "reported in audit summary; flagged for owner; does not block certification",
+      "escalation_threshold_batches": 5,
+      "escalation_target": "HIGH",
+      "examples": [
+        "Documentation inconsistency between code and .md artifact",
+        "canonical artifact missing owner field",
+        "Test coverage in single module below per-module target but above floor",
+        "transitional past 50% grace window with no progress",
+        "Stale backup files past retention policy"
+      ]
+    },
+    "LOW": {
+      "meaning": "Finding worth visibility — drift candidates, optimization, style — no integrity impact",
+      "behavior": "listed in audit report under advisories; does not block",
+      "examples": [
+        "Comment-style inconsistencies",
+        "Non-canonical module file naming",
+        "Optimization opportunities from static analysis",
+        "unknown artifacts past target wave but non-blocking"
+      ]
+    }
+  },
+
+  "default_severity_per_violation_type": {
+    "Authentication bypass": "CRITICAL",
+    "Authorization missing on state-changing route": "CRITICAL",
+    "Hardcoded secret": "CRITICAL",
+    "Password not bcrypt": "CRITICAL",
+    "Canonical artifact pointer broken": "CRITICAL",
+    "Canonical interface bypassed": "HIGH",
+    "Transitional artifact past grace deadline": "HIGH (escalates to CRITICAL)",
+    "Coverage threshold dropped": "HIGH",
+    "Performance threshold exceeded": "HIGH",
+    "Documentation inconsistency": "MEDIUM",
+    "Missing owner field": "MEDIUM",
+    "Style violation": "LOW",
+    "unknown artifact past resolution window": "MEDIUM"
+  },
+
+  "rollout_tolerance_windows": {
+    "phase_1_visibility": {
+      "duration_batches": "1-2",
+      "behavior": "Gate runs; violations reported at LOW regardless of inherent severity; no blocking",
+      "purpose": "Owners see scope of drift"
+    },
+    "phase_2_grace": {
+      "duration_batches": "3-5",
+      "behavior": "Severity escalates to inherent default; owners must remediate or document exception; blocking only at CRITICAL",
+      "purpose": "Active remediation period"
+    },
+    "phase_3_full_enforcement": {
+      "behavior": "Severity final; CRITICAL and HIGH block; no more soft transitions",
+      "purpose": "Steady state"
+    },
+    "permanent_exemptions": {
+      "mechanism": "# noqa: <gate_name> in code OR registry-level exemption",
+      "required_fields": ["rationale", "review_date"],
+      "verified_by": "gate_canonical_truth_registry_sync"
+    }
+  },
+
+  "open_items_for_subsequent_waves": [
+    "All Wave 5 specialty domains need canonical-interface contracts surveyed to confirm canonical status",
+    "Streamlit page-access RBAC transition timeline (Wave 2 RBAC_MATRIX)",
+    "53 v1 admin endpoints individual classification (Wave 2 API_CONTRACTS)",
+    "utils sub-directories currently unknown (Wave 3 ORGANS_REGISTRY)",
+    "CHANGELOG governance state (Wave 6 CHANGELOG_MASTER)"
+  ]
+}

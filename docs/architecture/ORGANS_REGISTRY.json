@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_unknown_subareas",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 3",
+    "last_updated": "2026-05-22",
+    "owner": "Architecture / Doctrine",
+    "authoritative_source": ["utils/core.py", "utils/*.py inventory"],
+    "human_readable_equivalent": "ORGANS_REGISTRY.md",
+    "companion_artifact": "CANONICAL_DEPENDENCY_MAP.md",
+    "doctrine": [
+      "O1 — Every module belongs to exactly one organ",
+      "O2 — Manager classes are canonical interfaces to multi-record domain logic",
+      "O3 — _engine.py modules are pure-compute single-purpose engines",
+      "O4 — _audit.py modules are read-only verifiers",
+      "O5 — No anonymous modules"
+    ]
+  },
+
+  "inventory_summary": {
+    "manager_classes_in_core_py": 15,
+    "utils_py_modules_total": 527,
+    "utils_subdirectories": 8,
+    "subdirectories_classified": 0,
+    "subdirectories_unknown": 8,
+    "modules_assigned_to_an_organ_section": 290,
+    "modules_in_long_tail_pending_classification": 237
+  },
+
+  "core_manager_organs": {
+    "_canonical_source": "utils/core.py",
+    "managers": [
+      {"name": "LeaveManager", "line": 2356, "domain": "HR leave administration", "backing_data": ["data/hr_leave.json"]},
+      {"name": "HRManager", "line": 2527, "domain": "HR staff lifecycle", "backing_data": ["data/hr.json", "data/staff_register.xlsx"]},
+      {"name": "CascadeManager", "line": 2798, "domain": "Target cascade BSC", "backing_data": ["data/target_cascade.json", "data/bank_targets.json", "data/locked_targets.json"]},
+      {"name": "ValidationManager", "line": 3688, "domain": "Cross-cutting validation"},
+      {"name": "ReportingLineManager", "line": 3728, "domain": "Reporting chains", "backing_data": ["data/org_hierarchy_config.json", "data/users.json"]},
+      {"name": "PipelineManager", "line": 3889, "domain": "CRM pipeline (deals)", "backing_data": ["data/pipeline.json", "data/deal_rooms.json"]},
+      {"name": "ExecuteManager", "line": 4079, "domain": "Strategic initiatives", "backing_data": ["data/strategic_initiatives.json", "data/execute_*.json"]},
+      {"name": "ProductManager", "line": 4686, "domain": "Product catalog"},
+      {"name": "RIPipelineManager", "line": 4810, "domain": "Relationship-intelligence pipeline", "backing_data": ["data/ri_pipeline.json"]},
+      {"name": "LoanApplicationManager", "line": 5260, "domain": "Loan workflow", "backing_data": ["data/loan_applications.json"]},
+      {"name": "CreditAdminManager", "line": 5342, "domain": "Credit administration", "backing_data": ["data/credit_admin.json", "data/credit_monitoring.json", "data/ews_cases.json"]},
+      {"name": "ComplianceManager", "line": 5390, "domain": "Compliance", "backing_data": ["data/compliance_cases.json"]},
+      {"name": "TreasuryManager", "line": 5438, "domain": "Treasury", "backing_data": ["data/treasury_*.json (6 files)"]},
+      {"name": "UserManager", "line": 5626, "domain": "Users + auth", "backing_data": ["data/users.json"]},
+      {"name": "_BranchMgmtProxy", "line": 768, "domain": "Internal helper (branch-management role proxy)"}
+    ],
+    "manager_contract": {
+      "convention": "Read methods do not audit; write methods audited upstream by transport",
+      "rationale": "Keeps Managers free of transport coupling per Engine Purity (Article IV)"
+    }
+  },
+
+  "auth_and_user_organs": [
+    {"module": "utils/auth_jwt.py", "role": "JWT mint/decode/blocklist + FastAPI Depends factories", "classification": "canonical"},
+    {"module": "utils/auth.py", "role": "Streamlit page-access RBAC", "classification": "transitional", "oi_1_collision": true, "post_rename_target": "canonical with require_module_access"}
+  ],
+
+  "bsc_organs": {
+    "primary_engines": ["utils/bsc_engine.py", "utils/bsc_score_computation.py", "utils/bsc_universal_contract.py", "utils/canonical_bsc_writer.py", "utils/canonical_pbt_bsc_view.py"],
+    "audit_engines": ["utils/bsc_audit_engine.py"],
+    "migration_engines": ["utils/bsc_pillar_normalize_engine.py", "utils/bsc_library_register_engine.py", "utils/bsc_completeness_engine.py", "utils/bsc_weight_normalize_engine.py"],
+    "cascade_bridges": ["utils/bsc_cascade_actuals_engine.py", "utils/bsc_cascade_linkage_engine.py"],
+    "admin_panel": ["utils/bsc_admin_panel.py"],
+    "cascade_subfamily": ["utils/cascade_hierarchy.py", "utils/cascade_bsc_360_engine.py", "utils/cascade_bsc_harmonize_engine.py", "utils/cascade_buffer_engine.py", "utils/cascade_health_engine.py", "utils/cascade_regenerator.py", "utils/cascade_retain_engine.py", "utils/cascade_structure_engine.py", "utils/enhanced_cascade.py"],
+    "pillar_subfamily": ["utils/pillar_impact_engine.py", "utils/pillar_weights_canonical.py", "utils/pillar3_disclosure.py"],
+    "kpi_subfamily": ["utils/kpi_aggregation_rules.py", "utils/kpi_alias_resolver.py", "utils/kpi_dedup_engine.py", "utils/kpi_ownership.py", "utils/kpi_ownership_pairing.py", "utils/core_kpi.py", "utils/aggregation_rules_loader.py", "utils/segment_kpi_library.py"]
+  },
+
+  "role_and_hierarchy_organs": [
+    {"module": "utils/role_taxonomy.py", "role": "Canonical RBAC interface", "classification": "canonical"},
+    {"module": "utils/org_hierarchy_config.py", "role": "Org config loader/validator", "classification": "canonical"},
+    {"module": "utils/hierarchy_synth.py", "role": "Hierarchy synthesizer", "classification": "canonical"},
+    {"module": "utils/profitability_hierarchy.py", "role": "Profitability axis hierarchy walker", "classification": "canonical"},
+    {"module": "utils/cascade_hierarchy.py", "role": "Cascade-aware hierarchy walker", "classification": "canonical"},
+    {"module": "utils/role_weight_engine.py", "role": "Role weight computation", "classification": "canonical"},
+    {"module": "utils/staff_role_resolver.py", "role": "staff_code → role", "classification": "canonical"},
+    {"module": "utils/staff_field_resolver.py", "role": "staff_code → field values", "classification": "canonical"},
+    {"module": "utils/staff_name_resolver.py", "role": "staff_code → display name", "classification": "canonical"}
+  ],
+
+  "actuals_engines": {
+    "count": 14,
+    "modules": [
+      {"module": "utils/actuals_engine.py", "role": "Generic dispatcher"},
+      {"module": "utils/admin_actuals_engine.py", "role": "Admin operations actuals"},
+      {"module": "utils/compliance_actuals_engine.py", "role": "Compliance KPIs"},
+      {"module": "utils/credit_actuals_engine.py", "role": "Credit KPIs"},
+      {"module": "utils/crm_actuals_engine.py", "role": "CRM/Pipeline KPIs"},
+      {"module": "utils/finance_actuals_engine.py", "role": "Finance KPIs"},
+      {"module": "utils/hr_actuals_engine.py", "role": "HR KPIs"},
+      {"module": "utils/ict_actuals_engine.py", "role": "ICT KPIs"},
+      {"module": "utils/legal_actuals_engine.py", "role": "Legal KPIs"},
+      {"module": "utils/operations_actuals_engine.py", "role": "Operations KPIs"},
+      {"module": "utils/reporting_analytics_actuals_engine.py", "role": "Reporting analytics"},
+      {"module": "utils/risk_actuals_engine.py", "role": "Risk KPIs"},
+      {"module": "utils/treasury_actuals_engine.py", "role": "Treasury KPIs"},
+      {"module": "utils/live_actuals.py", "role": "Live actuals overlay"},
+      {"module": "utils/vb_actuals_bridge.py", "role": "Virtual bank actuals bridge"}
+    ]
+  },
+
+  "risk_compliance_organs": {
+    "market_risk": ["utils/market_risk.py", "utils/market_risk_factors.py", "utils/market_risk_sensitivities.py", "utils/market_risk_var.py", "utils/market_risk_limits.py"],
+    "operational_credit": ["utils/operational_risk.py", "utils/op_risk.py", "utils/liquidity_risk.py", "utils/liquidity_stress.py", "utils/credit_risk_irb.py", "utils/credit_risk_scoring.py", "utils/credit_alt_scoring.py", "utils/risk_based_pricing.py", "utils/risk_weighted_assets.py", "utils/rwa_optimization.py", "utils/irrbb.py", "utils/stress_testing.py", "utils/stress_test_harness.py"],
+    "climate_esg": ["utils/climate_risk.py", "utils/climate_ecl_adjustment.py", "utils/climate_treasury_limits.py", "utils/esg_intelligence.py", "utils/esg_reporting.py", "utils/esg_reporting_outputs.py"],
+    "compliance": ["utils/aml_monitoring.py", "utils/sanctions_screening.py", "utils/screening_orchestrator.py", "utils/sar_filing.py", "utils/kyc_aml_risk.py", "utils/kyc_onboarding.py", "utils/fatca_crs.py", "utils/transaction_monitoring.py", "utils/compliance_dashboard.py", "utils/compliance_risk_assessment.py", "utils/compliance_training.py"]
+  },
+
+  "unknown_subdirectories": [
+    {"path": "utils/agents/", "hypothesized_purpose": "AI agent definitions", "resolution_wave": "Wave 5 AI_GOVERNANCE"},
+    {"path": "utils/arena/", "hypothesized_purpose": "Training arena", "resolution_wave": "Wave 5 RESILIENCE_AND_CERTIFICATION_GOVERNANCE", "related_gate": "gate_v10485_o7a_training_arena"},
+    {"path": "utils/cert/", "hypothesized_purpose": "Certification artifacts", "resolution_wave": "Wave 5 RESILIENCE_AND_CERTIFICATION_GOVERNANCE"},
+    {"path": "utils/channels/", "hypothesized_purpose": "Channel-specific modules", "resolution_wave": "Wave 4 DATA_DICTIONARY context"},
+    {"path": "utils/chaos/", "hypothesized_purpose": "Chaos engineering", "resolution_wave": "Wave 5 RESILIENCE_AND_CERTIFICATION_GOVERNANCE", "related_gate": "gate_v10482_o5_chaos_engineering"},
+    {"path": "utils/ml/", "hypothesized_purpose": "ML model definitions", "resolution_wave": "Wave 5 AI_GOVERNANCE"},
+    {"path": "utils/scenarios/", "hypothesized_purpose": "Scenario library", "resolution_wave": "Wave 5 DIGITAL_TWIN_ARCHITECTURE"},
+    {"path": "utils/uncertainty/", "hypothesized_purpose": "Uncertainty exposure phases", "resolution_wave": "Wave 5 RESILIENCE_AND_CERTIFICATION_GOVERNANCE", "related_gates": ["gate_v10489", "gate_v10490", "gate_v10491", "gate_v10492", "gate_v10493", "gate_v10494_FINAL"]}
+  ],
+
+  "mounted_routers_verification_pending": {
+    "confirmed_mounted_in_api_py_startup": ["utils/api_cascade.py (/api/v1/cascade/*)", "utils/api_capacity_feedback.py (/api/cascade/capacity-feedback)", "utils/api_branding.py (/api/branding)"],
+    "mount_status_unknown": ["utils/api_cockpit.py", "utils/api_compliance.py", "utils/api_legal.py", "utils/api_telemetry.py", "utils/api_treasury.py", "utils/api_strategy.py", "utils/api_product.py", "utils/api_resource_optimization.py", "utils/api_crud.py", "utils/api_gateway_developer_portal.py"],
+    "resolution_command": "findstr /n \"app.include_router\" utils\\api.py"
+  },
+
+  "frontend_organs": {
+    "react": {
+      "design_tokens": "frontend/web/src/lib/tokens.ts",
+      "class_composition": "frontend/web/src/lib/cn.ts",
+      "api_client": "frontend/web/src/lib/api.ts",
+      "shadcn_primitives_count": 11,
+      "shadcn_primitives": ["button", "badge", "card", "input", "label", "alert", "skeleton", "table", "dialog", "form", "sonner"],
+      "a2z_compositions": ["StatCard"],
+      "providers": ["BrandingProvider (canonical)", "AuthProvider (transitional - Phase 2)"],
+      "app_shell": "frontend/web/src/App.tsx",
+      "css_vars": "frontend/web/src/index.css (derived from tokens.ts)",
+      "tailwind_config": "frontend/web/tailwind.config.js",
+      "shadcn_config": "frontend/web/components.json"
+    },
+    "streamlit": {
+      "pages_declared_in_master_prompt_v5_40": 158,
+      "known_canonical_pages": [
+        {"path": "pages/1_perform.py", "purpose": "BSC scorecard"},
+        {"path": "pages/3_pipeline.py", "purpose": "CRM pipeline"},
+        {"path": "pages/7_admin.py", "purpose": "Admin + KPI Library"},
+        {"path": "pages/12_cascade.py", "purpose": "Target cascade"},
+        {"path": "pages/15_cbs.py", "purpose": "CBS explorer"}
+      ],
+      "app_entry": "app.py (with _APP_VERSION cache-invalidation stamp)",
+      "full_enumeration_oi": "OI-13"
+    }
+  },
+
+  "audit_and_telemetry_organs": {
+    "canonical_gate_registry": "scripts/audit.py (412 gates)",
+    "in_utils_audit_modules": ["utils/audit_log.py", "utils/audit_core.py", "utils/audit_universe.py", "utils/audit_dashboards_portal.py", "utils/audit_reporting.py", "utils/audit_analytics_vendor.py", "utils/audit_controls_issues.py", "utils/audit_trail_cert.py", "utils/audit_trail_certification.py", "utils/bsc_audit_engine.py", "utils/hr_section_audit_engine.py", "utils/credit_doctrine_audit.py", "utils/credit_section_audit_engine.py", "utils/standards_wiring_audit_engine.py", "utils/standards_wiring_per_module.py", "utils/admin_validation_engine.py", "utils/module_doctrine_audit.py", "utils/structure_audit_core.py", "utils/enterprise_discharge_audit.py"],
+    "telemetry_and_event_bus": ["utils/api_telemetry.py", "utils/observability_monitoring.py", "utils/anomaly_observer.py", "utils/analytics_anomaly_detection.py", "utils/event_bus.py", "utils/cross_organ_event_bus.py", "utils/notification_broadcaster.py", "utils/notifications.py", "utils/nudge_engine.py", "utils/smart_alerts.py", "utils/smart_alerts_i18n.py"]
+  },
+
+  "virtual_bank_digital_twin_organs": ["utils/virtual_bank.py", "utils/virtual_bank_core.py", "utils/virtual_bank_cbs_writer.py", "utils/virtual_bank_kpi_unifier.py", "utils/virtual_bank_readiness.py", "utils/virtual_bank_seed.py", "utils/virtual_bank_simulator.py", "utils/vb_actuals_bridge.py", "utils/cbs_baseline.py", "utils/simulation_clock.py", "utils/scenario_simulator.py", "utils/target_scenario_simulator.py", "utils/hybrid_scheduling_simulator.py", "utils/strategy_simulator.py", "utils/macro_state.py", "utils/macro_calendar.py", "utils/macro_bridge.py", "utils/macro_evolution.py"],
+
+  "ai_ml_organs": ["utils/model_governance.py", "utils/model_governance_runtime.py", "utils/mlops_model_registry.py", "utils/mlops_model_card_composer.py", "utils/mlops_adjudication_log.py", "utils/mlops_ab_harness.py", "utils/mlops_persistence.py", "utils/mlops_retraining_scheduler.py", "utils/ai_explainability.py", "utils/ai_underwriting.py", "utils/fairness_testing.py", "utils/cross_sell_bandit.py", "utils/cross_sell_nba.py", "utils/predictive_performance.py", "utils/behavioral_anomaly_detection.py"],
+
+  "resilience_certification_organs": ["utils/disaster_recovery.py", "utils/it_disaster_recovery.py", "utils/it_cicd.py", "utils/scalability_validator.py", "utils/audit_trail_certification.py", "utils/enterprise_discharge_audit.py", "utils/body_health_engine.py", "utils/system_invariants.py", "utils/system_flows.py", "utils/system_stocks.py"],
+
+  "open_items": [
+    {"id": "OI-13", "title": "Streamlit page list enumeration with per-page RBAC", "wave": "follow-up batch"},
+    {"id": "OI-14", "title": "Verify mount status of 10 router modules", "wave": "immediate (one findstr)"},
+    {"id": "OI-16", "title": "Resolve 8 utils subdirectories", "wave": "Wave 5"},
+    {"id": "OI-17", "title": "Classify ~237 modules currently in long-tail", "wave": "Waves 4-6 progressively"},
+    {"id": "OI-18", "title": "Disambiguate audit_trail_cert.py vs audit_trail_certification.py", "wave": "Wave 5 RESILIENCE"}
+  ]
+}
