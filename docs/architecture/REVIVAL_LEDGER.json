@@ -1,0 +1,286 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, system-wide governance",
+    "authority_level": "Cross-cutting (chronological index over all domains)",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 6",
+    "last_updated": "2026-05-22",
+    "owner": "Architecture / Doctrine",
+    "human_readable_equivalent": "REVIVAL_LEDGER.md",
+    "companion_artifact": "CHANGELOG_MASTER.md",
+    "doctrine": [
+      "RL1 — Append-only",
+      "RL2 — One entry per harmonization event",
+      "RL3 — Every entry has a rationale",
+      "RL4 — Forward references are valid",
+      "RL5 — The ledger is the canonical migration registry"
+    ]
+  },
+
+  "entries": [
+    {
+      "date": "2026-05-22",
+      "batch_id": "v10.497-stage-b",
+      "title": "Constitutional governance program completion",
+      "type": "governance",
+      "owner": "Joshua + Claude (collaborative authorship session)",
+      "rationale": "System had grown to 412 audit gates, 526 utils modules, 80+ API endpoints with no consolidated constitution. Mechanical enforcement gates outpaced declarative governance. The governance constitution program addresses this by authoring 32 constitutional artifacts on feature/governance-constitution branch.",
+      "changes": [
+        {"wave": 1, "commit": "185eb4c", "files": 6, "artifacts": ["CANONICAL_TRUTH_REGISTRY", "GOVERNANCE_CLASSIFICATION_REGISTRY", "SYSTEM_CONSTITUTION"]},
+        {"wave": 2, "commit": "74b4460", "files": 6, "artifacts": ["ROLE_GOVERNANCE", "RBAC_MATRIX", "API_CONTRACTS"]},
+        {"wave": 3, "commit": "7814efa", "files": 4, "artifacts": ["ORGANS_REGISTRY", "CANONICAL_DEPENDENCY_MAP"]},
+        {"wave": 4, "commit": "b503773", "files": 6, "artifacts": ["DATA_DICTIONARY", "TELEMETRY_MAP", "FRONTEND_GOVERNANCE"]},
+        {"wave": 5, "commit": "40d124e", "files": 6, "artifacts": ["DIGITAL_TWIN_ARCHITECTURE", "AI_GOVERNANCE", "RESILIENCE_AND_CERTIFICATION_GOVERNANCE"]},
+        {"wave": 6, "commit": "pending", "files": 4, "artifacts": ["REVIVAL_LEDGER", "CHANGELOG_MASTER"]}
+      ],
+      "verification": [
+        "All artifacts under docs/architecture/ on feature/governance-constitution branch",
+        "32 files (16 .md + 16 .json), ~280 KB human + ~150 KB machine",
+        "56 open items catalogued (OI-1 through OI-56)",
+        "~35 Stage C enforcement gates planned"
+      ],
+      "next_phase": "Stage C — mechanical enforcement gate wiring with tiered Visibility → Grace → Full rollout"
+    },
+    {
+      "date": "2026-05-21",
+      "batch_id": "v10.497-p1.3",
+      "title": "JWT cookie + revocation",
+      "type": "vulnerability+feature",
+      "owner": "Joshua + Claude (prior session)",
+      "rationale": "Phase 1 JWT hardening: httpOnly cookie auth, blocklist persistence, require_role(roles) factory, cookie-based login + revocation-on-logout.",
+      "changes": [
+        "utils/auth_jwt.py — cookie auth, blocklist persistence, dual-source extraction",
+        "data/jwt_blocklist.json — append-only revocation list",
+        "Test credentials: william001 / EcoStaff0001 (MD, staff_code 300001)",
+        "Commit c25a8e9 on feature/v10.497-jwt-auth"
+      ],
+      "verification": "End-to-end test: login → cookie set → logout → cookie cleared, jti blocklisted → stale token returns 401",
+      "cross_references": ["CANONICAL_TRUTH_REGISTRY::authentication_and_session_tokens", "V-001, V-003", "OI-1 (require_role collision)"]
+    },
+    {
+      "date": "2026-05-21",
+      "batch_id": "v10.497-p0",
+      "title": "shadcn/ui pivot",
+      "type": "harmonization",
+      "owner": "Joshua + Claude (prior session)",
+      "rationale": "Pre-existing bespoke React primitives (v10.496) created fragmentation. Pivoted to shadcn/ui as single component system per FE1.",
+      "changes": [
+        "11 shadcn primitives installed (button, badge, card, input, label, alert, skeleton, table, dialog, form, sonner)",
+        "A2Z extensions: Button.loading, Badge.tone (preserving shadcn API per FE6)",
+        "tokens.ts retained as hex source; index.css derived to HSL components",
+        "StatCard.tsx composition kept",
+        "Build: 107 modules, 22 KB CSS / 273 KB JS / 2.37s",
+        "Commit 4b27c1c"
+      ],
+      "verification": ["Build succeeds", "Showcase.tsx renders all primitives + extensions", "BrandingProvider injects tenant brand vars", "Opacity modifiers (bg-primary/90) render correctly"],
+      "cross_references": ["FRONTEND_GOVERNANCE.md", "Critical lesson: shadcn opacity requires HSL components, not hex"]
+    },
+    {
+      "date": "2026-05-13",
+      "batch_id": "v10.398_v10.399",
+      "title": "Joshua canonical org hierarchy resolution",
+      "type": "harmonization",
+      "owner": "Joshua",
+      "rationale": "Org hierarchy drift across multiple data sources resolved by collapsing to single source of truth (data/org_hierarchy_config.json) with explicit canonical batches.",
+      "changes": [
+        "_v10398_joshua_hq_canonical batch — 103 roles, 127 tier updates",
+        "_v10399_joshua_corrections — 7-point correction batch",
+        "MD synthetic role deleted (single canonical MD only)",
+        "role_taxonomy.py validated default: 0 across all coverage checks"
+      ],
+      "verification": [
+        "gate_role_taxonomy_alignment (G260, scripts/audit.py:36381) passes",
+        "gate_canonical_retail_chain (scripts/audit.py:31416) passes",
+        "role_taxonomy.validate_role_coverage() returns {'default': 0, ...}"
+      ],
+      "cross_references": ["ROLE_GOVERNANCE.md", "data/org_hierarchy_config.json::_v10398_joshua_hq_canonical", "_v10469_role_kpis_resolution (1469 KPI role resolutions)"]
+    },
+    {
+      "date": "implicit (pre-this-session)",
+      "batch_id": "v10.470_to_v10.494",
+      "title": "Resilience certification ladder build-out",
+      "type": "certification",
+      "owner": "Joshua + Claude (prior batches)",
+      "rationale": "Built 24-rung certification ladder G357-G380 from enterprise discharge readiness through full uncertainty exposure.",
+      "changes": "See RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md Section 'The certification ladder (24 rungs)' for full enumeration. Each rung corresponds to a v10.4xx batch.",
+      "verification": "Each rung's audit gate at scripts/audit.py; cumulative property G380 implies G379 implies ... G357 enforced",
+      "cross_references": ["RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md", "Per-rung CHANGELOG entries pending CHANGELOG_MASTER seeding"]
+    }
+  ],
+
+  "postgresql_migration_roadmap": {
+    "phases": [
+      {"phase": 0, "description": "Baseline established (current — JSON canonical)", "active_gate": "gate_pg_migration_baseline"},
+      {"phase": 1, "description": "Read path cutover (PG reads OK, JSON writes still canonical)", "active_gate": "gate_pg_read_path_cutover"},
+      {"phase": 2, "description": "Composer fan-out (PG ready, both sinks written)", "active_gate": "gate_pg_ready_composer_fanout"},
+      {"phase": 3, "description": "Cutover fan-out (PG canonical, JSON shadow)", "active_gate": "gate_pg_cutover_fanout"},
+      {"phase": 4, "description": "Production cutover (PG only, JSON archived)", "active_gate": "gate_pg_production_cutover"},
+      {"phase": 5, "description": "JSON deprecated (read-only legacy)", "active_gate": "TBD"}
+    ],
+
+    "per_file_migration_status": [
+      {"file": "data/users.json", "current_phase": 0, "target_phase": 4, "priority": "HIGH", "rationale": "High read volume; auth-critical"},
+      {"file": "data/audit_log.json", "current_phase": 0, "target_phase": 4, "priority": "HIGH", "rationale": "Event sourcing target; append-heavy"},
+      {"file": "data/audit_trail.jsonl", "current_phase": 0, "target_phase": 4, "priority": "HIGH", "rationale": "Same as audit_log"},
+      {"file": "data/bsc_data.json", "current_phase": 0, "target_phase": 4, "priority": "HIGH", "rationale": "Large per-period datasets"},
+      {"file": "data/bsc_actuals_*.json", "current_phase": 0, "target_phase": 4, "priority": "HIGH", "rationale": "Same as bsc_data; 8 periods"},
+      {"file": "data/bsc_scores.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Derived; can lag bsc_data"},
+      {"file": "data/target_cascade.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Moderate complexity"},
+      {"file": "data/cascade_scores_*.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Derived; 4 periods"},
+      {"file": "data/pipeline.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Pipeline operations"},
+      {"file": "data/credit_*.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Credit operations"},
+      {"file": "data/treasury_*.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Treasury operations; 7 files"},
+      {"file": "data/compliance_cases.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Compliance operations"},
+      {"file": "data/cbs_baseline_*.json", "current_phase": 0, "target_phase": 4, "priority": "MEDIUM", "rationale": "Period snapshots"},
+      {"file": "data/org_hierarchy_config.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Config-like; low write volume — STAY JSON"},
+      {"file": "data/kpi_library.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Config-like; harmonization-stamped — STAY JSON"},
+      {"file": "data/org_config.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Tenant config — STAY JSON"},
+      {"file": "data/role_default_targets.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Config-like — STAY JSON"},
+      {"file": "data/role_skill_matrix.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Config-like — STAY JSON"},
+      {"file": "data/bank_targets.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Annual setup — STAY JSON"},
+      {"file": "data/locked_targets.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Lock state — STAY JSON"},
+      {"file": "data/fixed_kpis.json", "current_phase": 0, "target_phase": 0, "priority": "LOW", "rationale": "Top-of-precedence overrides — STAY JSON"}
+    ],
+
+    "migration_ordering": [
+      "users.json first — foundational",
+      "audit_log + audit_trail — must not lose events",
+      "bsc_data + bsc_actuals — large; benefits from query optimization",
+      "target_cascade + cascade_scores — depends on users.json being in PG",
+      "pipeline, credit_*, treasury_*, compliance_cases — domain data",
+      "cbs_baseline_* — large; bulk loads"
+    ],
+
+    "schema_versioning_rule": "Every file gets JSON Schema in data/_schemas/ BEFORE PG migration. Schema becomes PG table DDL source. Schema drift between JSON shape and PG table shape is CRITICAL violation."
+  },
+
+  "twin_to_production_cutover_playbook": {
+    "pre_cutover_requirements": [
+      "Olympic certification G373 passing on twin data",
+      "Championship readiness G374 passing on twin data",
+      "Uncertainty exposure G375-G380 maintained on twin data",
+      "Flexcube integration gates pass (gate_flexcube_* family, 7 gates)",
+      "DR drill executed in last 90 days with passing recovery",
+      "Stage C enforcement gates wired",
+      "PG migration at least Phase 2 (composer fanout) for high-priority files",
+      "Per-organ RTO/RPO declarations complete (OI-54)"
+    ],
+
+    "cutover_sequence": [
+      {
+        "step": 1,
+        "name": "Shadow run",
+        "twin_state": "full traffic",
+        "production_state": "parallel read-only from Flexcube",
+        "duration_days_min": 14,
+        "verification": "data_isolation_guard confirms no cross-pollination",
+        "exit_criteria": "Flexcube reads produce expected shapes"
+      },
+      {
+        "step": 2,
+        "name": "Dual-write",
+        "twin_state": "full traffic, canonical writes",
+        "production_state": "writes shadowed to PG + Flexcube readback",
+        "duration_days_min": 14,
+        "verification": "writes match across both sinks",
+        "exit_criteria": "write parity > 99.99%"
+      },
+      {
+        "step": 3,
+        "name": "Reverse-canonical",
+        "twin_state": "shadow-mode",
+        "production_state": "canonical writes; twin reads as fallback",
+        "duration_days_min": 30,
+        "verification": "production audit log complete; no fallback observed",
+        "exit_criteria": "no twin reads triggered for 7 consecutive days"
+      },
+      {
+        "step": 4,
+        "name": "Twin deprecation",
+        "twin_state": "archived (immutable historical reference)",
+        "production_state": "sole source",
+        "generator_scripts": "marked as replay-only",
+        "dr_matrix_updated": "twin no longer a recovery option"
+      },
+      {
+        "step": 5,
+        "name": "Post-cutover audit",
+        "actions": [
+          "Full gate suite re-run against production",
+          "Olympic G373 verified on production",
+          "Regulator notification per local CBK requirement",
+          "REVIVAL_LEDGER entry created"
+        ]
+      }
+    ],
+
+    "rollback_procedure": [
+      "Step 4 → Step 3: restore generator scripts to live mode",
+      "Step 3 → Step 2: restore canonical writes to twin",
+      "Step 2 → Step 1: cease dual-write; twin remains canonical",
+      "Step 1 → pre-cutover: detach Flexcube; twin sole source",
+      "Rollback events are full ledger entries with rationale"
+    ],
+
+    "audit_checkpoint_sentinels": [
+      {"sentinel": "Audit gate pass count", "check": "Same after cutover as before"},
+      {"sentinel": "Integration test count", "check": "Same after cutover as before"},
+      {"sentinel": "Role classification coverage", "check": "100% maintained"},
+      {"sentinel": "API endpoints with auth Depends", "check": "100% maintained"},
+      {"sentinel": "Olympic certification (G373)", "check": "Re-verified on production data"}
+    ]
+  },
+
+  "vulnerability_remediation_history": [
+    {"vuln": "V-001", "title": "Cleartext password storage", "resolved_in": "Pre-v10.400 (historical)", "verification_gate": "gate_password_safety (scripts/audit.py:741)"},
+    {"vuln": "V-002", "title": "TBD — title not in session memory", "resolved_in": "Historical"},
+    {"vuln": "V-003", "title": "SHA-256 password migration to bcrypt on successful login", "resolved_in": "Historical (continues passive migration)", "verification_gate": "gate_password_safety"},
+    {"vuln": "V-009", "title": "CORS origins hardcoded → env-driven with safe defaults", "resolved_in": "v10.497", "evidence": "utils/api.py:72-99", "verification_gate": "gate_cors_safety (line TBD)"}
+  ],
+
+  "stage_c_enforcement_rollout_plan": {
+    "phases": [
+      {
+        "phase": "1 Visibility",
+        "duration_per_gate": "1 batch",
+        "severity": "LOW",
+        "behavior": "Failures logged but do not block; batch CHANGELOGs include findings"
+      },
+      {
+        "phase": "2 Grace",
+        "duration_per_gate": "2-3 batches (severity-tiered)",
+        "severity_escalation": {
+          "MEDIUM": "1 batch grace",
+          "HIGH": "2-3 batches grace",
+          "CRITICAL": "immediate fail-fast (no grace)"
+        },
+        "behavior": "Failures produce warnings with remediation tracked"
+      },
+      {
+        "phase": "3 Full",
+        "severity": "Declared canonical severity",
+        "behavior": "Failures block at declared severity"
+      }
+    ],
+
+    "wave_by_wave_schedule": [
+      {"wave": "W1 Foundation", "gates": 3, "rollout_start": "next batch", "full_enforcement_eta": "+2 batches"},
+      {"wave": "W2 Role/Auth/API", "gates": 5, "rollout_start": "next batch", "full_enforcement_eta": "+3 batches"},
+      {"wave": "W3 Organs/Dependencies", "gates": 3, "rollout_start": "next batch", "full_enforcement_eta": "+2 batches"},
+      {"wave": "W4 Data/Telemetry/Frontend", "gates": 7, "rollout_start": "next batch", "full_enforcement_eta": "+3 batches"},
+      {"wave": "W5 Digital Twin/AI/Resilience", "gates": 15, "rollout_start": "staged over 3 batches", "full_enforcement_eta": "+5 batches"},
+      {"wave": "W6 (this wave)", "gates": 2, "rollout_start": "next batch", "full_enforcement_eta": "+1 batch"}
+    ],
+
+    "total_stage_c_gates_planned": 35,
+    "stage_c_completion_estimate": "6 batches with disciplined progression"
+  },
+
+  "open_items": [
+    {"id": "OI-28", "title": "PostgreSQL migration roadmap per file", "resolution": "Resolved in this artifact"},
+    {"id": "OI-43", "title": "Twin → production cutover playbook", "resolution": "Resolved in this artifact"},
+    {"id": "OI-57", "title": "Document V-002, V-004 through V-008 details", "wave": "Stage C amendment from CHANGELOG forensics"},
+    {"id": "OI-58", "title": "Per-gate Stage C rollout calendar with dates", "wave": "Stage C kickoff batch"}
+  ]
+}
