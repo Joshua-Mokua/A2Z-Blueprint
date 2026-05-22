@@ -1,0 +1,504 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact",
+    "authority_level": "Constitution (this artifact defines authority itself)",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 1",
+    "last_updated": "2026-05-22",
+    "owner": "A2Z constitution maintainers",
+    "human_readable_equivalent": "CANONICAL_TRUTH_REGISTRY.md",
+    "doctrine": [
+      "D1 — One source of truth per domain",
+      "D2 — Drift is detected by gates, not by audit prose",
+      "D3 — Authority can change; lineage must not be lost",
+      "D4 — Sources point to data; pointers don't drift silently",
+      "D5 — Conflicts have an explicit winner"
+    ]
+  },
+
+  "domains": {
+    "tenant_identity_and_branding": {
+      "authoritative_source": "data/org_config.json",
+      "canonical_interface": ["utils/config.py", "utils/api_branding.py"],
+      "consumers": [
+        "frontend/web/src/providers/BrandingProvider.tsx",
+        "all Streamlit pages via utils/config"
+      ],
+      "conflict_rule": "data/org_config.json always wins; hardcoded brand strings are violations",
+      "enforcement_gates": [
+        "gate_tenant_identity_hardcoding (line 20576)",
+        "G381 App.tsx contract",
+        "G382 no hardcoded hex in components"
+      ],
+      "owner": "Admin / Tenant Onboarding",
+      "classification": "canonical"
+    },
+
+    "role_taxonomy_and_rbac": {
+      "authoritative_source": "data/org_hierarchy_config.json",
+      "canonical_interface": "utils/role_taxonomy.py",
+      "canonical_exports": [
+        "classify_role", "get_profitability_tier", "get_branch_scope", "get_sbu",
+        "can_be_tagged", "list_all_classified_roles", "list_roles_by_tier",
+        "list_roles_by_sbu", "validate_role_coverage", "RoleClassification",
+        "ALL_TIERS", "ALL_SBUS", "ALL_SCOPES",
+        "TIER_PORTFOLIO_OWNER", "TIER_PROPOSITION_OWNER", "TIER_STRUCTURAL_OWNER",
+        "TIER_SERVICE", "TIER_SUPPORT"
+      ],
+      "consumers": [
+        "utils/auth_jwt.py (require_role — transitional, takes raw role strings)",
+        "utils/hierarchy_synth.py",
+        "utils/profitability_hierarchy.py",
+        "utils/cascade_hierarchy.py",
+        "utils/staff_role_resolver.py",
+        "data/users.json (role field)",
+        "data/hr.json (role field)"
+      ],
+      "conflict_rule": "profitability_axis.role_classification is exhaustive; missing roles use tier_keyword_fallback; final fallback is 'support'",
+      "enforcement_gates": ["G260 gate_role_taxonomy_alignment (line 36381)"],
+      "owner": "Admin / HR Operations",
+      "classification": "canonical",
+      "load_bearing_data_batches": [
+        "_v10330_canonical_retail_chain",
+        "_v10396_joshua_clarification",
+        "_v10398_joshua_hq_canonical",
+        "_v10399_joshua_corrections",
+        "_v10469_role_kpis_resolution"
+      ]
+    },
+
+    "authentication_and_session_tokens": {
+      "authoritative_source": "utils/auth_jwt.py",
+      "version": "post v10.497 P1.3",
+      "canonical_exports": [
+        "get_current_user", "create_access_token", "decode_token", "revoke_token",
+        "_is_revoked", "require_admin", "require_role", "warn_if_default_secret"
+      ],
+      "consumers": [
+        "utils/api.py (all endpoints except /api/health)",
+        "frontend/web/src/providers/AuthProvider.tsx (future, via cookie)"
+      ],
+      "conflict_rule": "Cookie source wins over Bearer header when both present; blocklist check after sig/expiry",
+      "enforcement_gates": ["G12 gate_api_auth_safety (line 811)"],
+      "owner": "Security / Platform",
+      "classification": "canonical",
+      "critical_drift_to_flag": "utils/auth.py exports a function also named require_role(module, user) with different signature — name collision must be resolved in Wave 2"
+    },
+
+    "streamlit_page_access_rbac": {
+      "authoritative_source": "utils/auth.py",
+      "canonical_exports": [
+        "require_access", "has_access", "is_admin", "get_current_user", "check_access"
+      ],
+      "alias_collision_warning": {
+        "exported_name": "require_role",
+        "actual_function": "require_access",
+        "collides_with": "utils/auth_jwt.py::require_role",
+        "resolution_path": "rename to require_module_access in Wave 2",
+        "consumers_affected": "all Streamlit pages/*.py importing require_role from utils.auth"
+      },
+      "consumers": ["pages/*.py (158 Streamlit pages per Master Prompt v5.40)"],
+      "conflict_rule": "Checks user.accessible_modules, user.hidden_modules, user.is_admin, user.is_ict_admin, user.can_view_all from data/users.json",
+      "enforcement_gates": [],
+      "owner": "Admin / Platform",
+      "classification": "transitional",
+      "transition_target": "deprecated post Streamlit → React migration (post v10.500)",
+      "migration_required": true
+    },
+
+    "user_identity_and_seed_data": {
+      "authoritative_source": "data/users.json",
+      "record_count_observed": 1439,
+      "canonical_interface": "utils/core.py::UserManager",
+      "canonical_methods": ["authenticate", "lookup", "role/department/staff_code resolution"],
+      "consumers": [
+        "utils/auth.py::has_access",
+        "utils/auth_jwt.py::create_access_token",
+        "every page/route that resolves a user"
+      ],
+      "conflict_rule": "users.json wins; SHA-256 today with bcrypt migration on successful login per V-003",
+      "enforcement_gates": ["gate_password_safety (line 741)"],
+      "owner": "HR Operations / Admin",
+      "classification": "canonical_with_transitional_subareas",
+      "transitional_subareas": ["password hash migration (SHA-256 → bcrypt)"]
+    },
+
+    "kpi_library_and_role_kpi_mapping": {
+      "authoritative_source": "data/kpi_library.json",
+      "canonical_interface": [
+        "utils/kpi_alias_resolver.py",
+        "utils/kpi_aggregation_rules.py",
+        "utils/kpi_dedup_engine.py",
+        "utils/kpi_ownership.py"
+      ],
+      "consumers": [
+        "utils/bsc_engine.py family (11 BSC modules)",
+        "utils/cascade_* (8 cascade modules)",
+        "every actuals engine (14 modules)"
+      ],
+      "conflict_rule": "Canonical KPI IDs in kpi_library.json::kpis win; aliases resolve via kpi_alias_resolver",
+      "resolution_status": {
+        "_v10469_role_kpis_resolution": {
+          "resolved": 1469,
+          "unresolved": 0
+        }
+      },
+      "enforcement_gates": [
+        "gate_kpi_alias_resolver (line 37361)",
+        "gate_kpi_alias_and_users_cleanup (line 30755)",
+        "gate_canonical_pillar_weights (line 37965)",
+        "gate_universal_bsc_contract (line 36805)",
+        "gate_kpi_source_has_aggregator (line 18333)"
+      ],
+      "owner": "Performance / BSC governance",
+      "classification": "canonical"
+    },
+
+    "org_hierarchy_synthesis": {
+      "authoritative_source": "data/org_hierarchy_config.json",
+      "canonical_interface": [
+        "utils/hierarchy_synth.py",
+        "utils/org_hierarchy_config.py",
+        "utils/cascade_hierarchy.py",
+        "utils/profitability_hierarchy.py"
+      ],
+      "consumers": [
+        "data/users.json (manager assignments derived)",
+        "utils/core.py::ReportingLineManager",
+        "utils/cascade_bsc_*"
+      ],
+      "conflict_rule": "hr.json source-data linkages violating role_manager_whitelist are flagged and replaced with synthesis-derived linkages",
+      "enforcement_gates": [
+        "gate_hierarchy_classification_correct (line 3034)",
+        "gate_hierarchy_synth (line 28575)",
+        "gate_hierarchy_synth_config (line 28752)",
+        "gate_canonical_retail_chain (line 31416)",
+        "gate_cascade_hierarchy_alignment (line 29144)",
+        "gate_target_hierarchy (line 36243)"
+      ],
+      "owner": "Admin / HR Operations",
+      "classification": "canonical"
+    },
+
+    "bsc_scoring_and_cascade": {
+      "authoritative_sources": [
+        "data/bsc_data.json",
+        "data/bsc_scores.json",
+        "data/bsc_actuals_*.json (8 periods)",
+        "data/cascade_scores_*.json (4 periods)",
+        "data/bank_targets.json",
+        "data/target_cascade.json",
+        "data/locked_targets.json",
+        "data/pillar_weights_history.json",
+        "data/fixed_kpis.json"
+      ],
+      "canonical_interface": [
+        "utils/bsc_engine.py",
+        "utils/bsc_score_computation.py",
+        "utils/bsc_universal_contract.py",
+        "utils/canonical_bsc_writer.py",
+        "utils/canonical_pbt_bsc_view.py",
+        "utils/core.py::CascadeManager"
+      ],
+      "consumers": [
+        "All BSC dashboards (Streamlit + React future)",
+        "MD cockpit",
+        "Cascade UI",
+        "PM framework"
+      ],
+      "conflict_rule": "Target precedence: fixed → cascaded → role default → missing. kpi_library canonical for definitions; bsc_data canonical for assignments; bank_targets canonical for top targets; target_cascade canonical for per-staff distribution.",
+      "enforcement_gates": [
+        "gate_bsc_contract (line 441)",
+        "gate_bsc_score_computation (line 29445)",
+        "gate_canonical_write_bridge (line 37182)",
+        "gate_universal_bsc_contract (line 36805)"
+      ],
+      "v1_audit_endpoints": [
+        "/api/v1/bsc-audit/full", "/staff-coverage", "/kpi-completeness",
+        "/pillar-canonical", "/weight-normalization", "/library-alignment",
+        "/cascade-linkage"
+      ],
+      "owner": "Performance / BSC governance",
+      "classification": "canonical"
+    },
+
+    "api_surface": {
+      "authoritative_source": "utils/api.py",
+      "mounted_routers": [
+        "utils/api_branding.py", "utils/api_cascade.py", "utils/api_capacity_feedback.py",
+        "utils/api_compliance.py", "utils/api_legal.py", "utils/api_telemetry.py",
+        "utils/api_treasury.py", "utils/api_strategy.py", "utils/api_product.py",
+        "utils/api_resource_optimization.py", "utils/api_cockpit.py",
+        "utils/api_crud.py", "utils/api_gateway_developer_portal.py"
+      ],
+      "canonical_interface": "FastAPI route declarations with Depends(get_current_user|require_admin|require_role)",
+      "endpoint_count_observed_in_api_py": 80,
+      "v1_endpoints_observed": 53,
+      "consumers": [
+        "scripts/run_load_tests.py",
+        "tests/load/lib/auth.js",
+        "frontend/web/src/lib/api.ts (future)",
+        "Streamlit pages calling utils/api_client.py"
+      ],
+      "conflict_rule": "Every endpoint except /api/health must declare auth Depends; state-changing endpoints must emit _audit()",
+      "enforcement_gates": [
+        "G12 gate_api_auth_safety (line 811)",
+        "gate_api_v1_coverage (line 1249)",
+        "gate_audit_coverage (line 251)",
+        "gate_cors_and_deploy_config (line 26146)",
+        "gate_cockpit_api_exposed (line 25835)"
+      ],
+      "owner": "Platform",
+      "classification": "canonical_with_transitional_subareas",
+      "transitional_subareas": [
+        "Destructive admin endpoints today gated by confirm: bool = False query param, not RBAC. Wave 2 RBAC_MATRIX classifies these."
+      ]
+    },
+
+    "telemetry_and_audit": {
+      "authoritative_source": "utils/api.py::_audit (single emitter at line 170)",
+      "broader_observability_modules": [
+        "utils/observability_monitoring.py",
+        "utils/api_telemetry.py",
+        "utils/anomaly_observer.py",
+        "utils/event_bus.py",
+        "utils/cross_organ_event_bus.py"
+      ],
+      "sinks": [
+        "data/audit_log.json",
+        "data/audit_trail.jsonl",
+        "data/audit_baselines.json",
+        "data/audit_reviews.json",
+        "data/observability_metrics.json"
+      ],
+      "consumers": [
+        "Audit dashboards",
+        "Compliance reports",
+        "G260+ verifier",
+        "/api/v1/vitals/*"
+      ],
+      "conflict_rule": "_audit() is the only legitimate emitter for API audit events; engines emit via their own audit log convention but should converge",
+      "enforcement_gates": ["gate_audit_coverage (line 251)"],
+      "owner": "Compliance / Audit",
+      "classification": "canonical_with_transitional_subareas"
+    },
+
+    "frontend_governance": {
+      "authoritative_source": [
+        "frontend/web/src/lib/tokens.ts",
+        "data/org_config.json (brand colors)",
+        "frontend/web/components.json (shadcn config)",
+        "frontend/web/tailwind.config.js",
+        "frontend/web/src/index.css"
+      ],
+      "canonical_interface": [
+        "shadcn/ui primitives under frontend/web/src/components/ui/*",
+        "A2Z extensions (Button.loading, Badge.tone, StatCard)",
+        "lib/cn utility"
+      ],
+      "consumers": [
+        "frontend/web/src/pages/*",
+        "frontend/web/src/components/*"
+      ],
+      "conflict_rule": "tokens.ts single source for semantic hex; brand vars (--brand-*) HEX tenant-injected; shadcn vars (--primary etc.) HSL components",
+      "enforcement_gates": [
+        "G381 App.tsx contract literals",
+        "G382 all primitives exist + no hardcoded hex",
+        "gate_frontend_scaffolding_present (line 4111)",
+        "gate_v10495_react_foundations (line 58961)",
+        "gate_v10496_design_system (line 59116)"
+      ],
+      "owner": "Frontend / Design system",
+      "classification": "canonical",
+      "post_state": "v10.497 P0 shadcn pivot complete"
+    },
+
+    "digital_twin_simulation": {
+      "authoritative_source": [
+        "generate_cbs.py (project root)",
+        "generate_staff.py (project root)",
+        "compute_actuals.py (project root)",
+        "utils/virtual_bank_*.py family (8 modules)",
+        "data/cbs_baseline_*.json"
+      ],
+      "canonical_interface": [
+        "utils/virtual_bank_core.py",
+        "utils/virtual_bank_simulator.py",
+        "utils/vb_actuals_bridge.py",
+        "utils/virtual_bank_kpi_unifier.py"
+      ],
+      "consumers": [
+        "CBS explorer page (Streamlit pages/15_cbs.py)",
+        "Future React CBS view",
+        "Actuals engines (14)"
+      ],
+      "conflict_rule": "Generated baseline persists in cbs_baseline_*.json + branch_actuals.json; live actuals overlay via utils/live_actuals.py; manual override via BSC Excel upload",
+      "enforcement_gates": [
+        "gate_cbs_baseline (line 34026)",
+        "gate_cbs_writer_integrity (line 34539)",
+        "gate_virtual_bank_readiness (line 34337)",
+        "gate_virtual_bank_foundation (line 28413)",
+        "gate_virtual_bank_simulation_implemented (line 15188)",
+        "gate_seed_determinism (line 34424)"
+      ],
+      "owner": "Simulation / Training",
+      "classification": "canonical",
+      "simulation_parameters": {
+        "customers": 700000,
+        "accounts": 1197425,
+        "branches": 35,
+        "rms": 232
+      }
+    },
+
+    "ai_ml_governance": {
+      "authoritative_source": [
+        "utils/model_governance.py",
+        "utils/model_governance_runtime.py",
+        "utils/mlops_model_registry.py",
+        "utils/mlops_model_card_composer.py",
+        "utils/mlops_adjudication_log.py",
+        "utils/mlops_ab_harness.py",
+        "utils/mlops_retraining_scheduler.py",
+        "utils/mlops_persistence.py",
+        "utils/ai_explainability.py",
+        "utils/ai_underwriting.py",
+        "utils/fairness_testing.py"
+      ],
+      "consumers": [
+        "utils/credit_alt_scoring.py",
+        "utils/decline_prediction.py",
+        "utils/churn_prediction.py",
+        "utils/customer_predictive_*",
+        "utils/predictive_*",
+        "utils/cross_sell_bandit.py"
+      ],
+      "conflict_rule": "Models must be registered before deployment; predictions emit adjudication log entries; AB harness controls rollouts; retraining scheduler is only canonical retraining trigger",
+      "enforcement_gates": [
+        "gate_model_governance_engines_implemented (line 14969)",
+        "gate_ml_governance_arc_closed (line 17765)",
+        "gate_ml_governance_arc_ui_integrated (line 17977)",
+        "gate_ml_governance_cross_platform_wiring (line 18100)",
+        "gate_anti_drift_completion_floor (line 18223)",
+        "gate_cross_sell_bandit_pilot_implemented (line 15376)"
+      ],
+      "owner": "ML governance / Model risk",
+      "classification": "canonical",
+      "wave_5_artifact": "AI_GOVERNANCE.md"
+    },
+
+    "resilience_and_certification": {
+      "authoritative_source": [
+        "utils/enterprise_discharge_audit.py",
+        "utils/audit_trail_certification.py",
+        "utils/audit_trail_cert.py",
+        "utils/disaster_recovery.py",
+        "utils/it_disaster_recovery.py",
+        "utils/it_cicd.py",
+        "utils/scalability_validator.py",
+        "utils/stress_test_harness.py",
+        "utils/stress_testing.py",
+        "utils/chaos/ (subdirectory)"
+      ],
+      "consumers": [
+        "Audit dashboards",
+        "Regulatory submissions",
+        "Board reports"
+      ],
+      "conflict_rule": "Certification states are append-only; stress tests with passing thresholds required for certification; DR drills produce audit trail entries",
+      "enforcement_gates": [
+        "gate_v10471_enterprise_discharge_ready (line 53895)",
+        "gate_v10472_enterprise_360_compliance (line 54016)",
+        "gate_v10473_o1_stabilization_complete (line 54119)",
+        "gate_v10487_olympic_certification (line 57583)",
+        "gate_v10488_championship_readiness (line 57807)",
+        "gate_v10482_o5_chaos_engineering (line 56093)",
+        "gate_v10489_uncertainty_exposure_phase1",
+        "gate_v10490_uncertainty_exposure_phase2",
+        "gate_v10491_uncertainty_exposure_phase3",
+        "gate_v10492_uncertainty_exposure_phase4",
+        "gate_v10493_uncertainty_exposure_phase5",
+        "gate_v10494_uncertainty_exposure_phase6_FINAL"
+      ],
+      "owner": "Operations / Risk / Audit",
+      "classification": "canonical",
+      "wave_5_artifact": "RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md"
+    },
+
+    "audit_gates_the_enforcer": {
+      "authoritative_source": "scripts/audit.py",
+      "canonical_interface": ["run_all(only_gate)", "render_human(report)", "main()"],
+      "consumers": [
+        "CI/CD pipeline",
+        "Pre-commit checks (TBD)",
+        "Manual `python -m scripts.audit` runs"
+      ],
+      "conflict_rule": "Gate is canonical if name matches gate_<topic>_<verb> or gate_v10XXX_<topic> AND returns {id, name, passed, violations, summary} dict; versioned batch gates persist as load-bearing",
+      "enforcement_gates": ["gate_audit_coverage (line 251) — self-verification"],
+      "owner": "Doctrine / Architecture",
+      "classification": "canonical",
+      "current_state": {
+        "total_distinct_gates": 412,
+        "canonical_named": 271,
+        "versioned_batch_gates": 147,
+        "verifier_status": "1153/1153 (per Master Prompt v5.40)"
+      },
+      "new_gate_added_by_governance_batch": "gate_canonical_truth_registry_sync (Stage C, placeholder)"
+    },
+
+    "constitution_itself": {
+      "authoritative_source": [
+        "docs/architecture/CANONICAL_TRUTH_REGISTRY.md",
+        "docs/architecture/CANONICAL_TRUTH_REGISTRY.json"
+      ],
+      "canonical_interface": "this document",
+      "consumers": [
+        "Future AI sessions (read this first)",
+        "gate_canonical_truth_registry_sync (Stage C)",
+        "Human collaborators making architectural decisions"
+      ],
+      "conflict_rule": "If a domain claims authority elsewhere without being listed here, this registry must be updated first; PRs that add a new authoritative source without updating this registry fail audit",
+      "enforcement_gates": ["gate_canonical_truth_registry_sync (Stage C, TBD)"],
+      "owner": "A2Z constitution maintainers",
+      "classification": "canonical",
+      "versioning_scheme": "semver — major on breaking authority changes, minor on new domain entries, patch on clarifications"
+    }
+  },
+
+  "open_items_for_subsequent_waves": [
+    {
+      "id": "OI-1",
+      "title": "require_role name collision",
+      "location": "utils/auth.py + utils/auth_jwt.py",
+      "resolution_wave": "Wave 2 — RBAC_MATRIX",
+      "proposed_resolution": "rename utils/auth.py::require_role to require_module_access"
+    },
+    {
+      "id": "OI-2",
+      "title": "v1 admin endpoint RBAC classification",
+      "location": "utils/api.py (53 v1 endpoints)",
+      "resolution_wave": "Wave 2 — API_CONTRACTS",
+      "proposed_resolution": "classify each as (a) authenticated-user OK, (b) needs require_admin, (c) needs specific require_role"
+    },
+    {
+      "id": "OI-3",
+      "title": "Streamlit → React migration contract",
+      "location": "pages/*.py (158 pages) + frontend/web/src/",
+      "resolution_wave": "Wave 2",
+      "notes": "Master Prompt v5.40 declares post v10.500 migration"
+    },
+    {
+      "id": "OI-4",
+      "title": "AI/ML governance & resilience domain detail",
+      "resolution_wave": "Wave 5 — AI_GOVERNANCE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE"
+    },
+    {
+      "id": "OI-5",
+      "title": "CHANGELOG governance seed",
+      "location": "docs/CHANGELOG_*.md (empty) + docs/releases/*.md (empty)",
+      "resolution_wave": "Wave 6 — CHANGELOG_MASTER",
+      "notes": "Seed from scripts/audit.py versioned batch gates (147 known)"
+    }
+  ]
+}
