@@ -1,22 +1,90 @@
-/* v10.495 — A2Z Blueprint base styles.
-   Brand color CSS variables are injected at runtime by
-   BrandingProvider once GET /api/branding resolves. The :root
-   block below provides Ecobank corporate fallbacks for the
-   pre-API and offline cases. */
+/* v10.497 Phase 0 — A2Z Blueprint base styles + shadcn theme variables.
+   ────────────────────────────────────────────────────────────────────
+   Two layers of CSS variables coexist in :root:
+
+   1. --brand-* (cyan / navy / yellow):
+      Tenant-specific brand colors. Injected at runtime by
+      BrandingProvider via GET /api/branding. Fallbacks below
+      cover the pre-API and offline cases (Ecobank corporate).
+      Tailwind config exposes these as `brand-primary`, etc.
+
+   2. --shadcn-* tokens (background, foreground, primary, …):
+      shadcn/ui's component theming system. We DO NOT use shadcn's
+      default HSL palette; instead, every shadcn token is mapped
+      to a value from src/lib/tokens.ts (the G382-enforced single
+      source of non-brand hex). This means:
+        - shadcn components honor your design system, not a parallel one
+        - G382 audit can later verify these CSS values match tokens.ts
+        - One color system, not two — doctrine: no architectural entropy
+
+   The hex values below mirror tokens.ts exactly. Keep them in sync
+   when tokens.ts changes (audit gate will enforce this once written).
+*/
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Fallback brand colors used before /api/branding resolves.
-     BrandingProvider overwrites these on mount via inline style
-     on document.documentElement. */
+  /* ── Tenant brand (overwritten at runtime by BrandingProvider) ── */
   --brand-primary: #1797ce;
   --brand-secondary: #0e2440;
   --brand-accent: #ffd200;
+
+  /* ── shadcn theme tokens — sourced from src/lib/tokens.ts ──
+     Values are hex (not HSL) because tokens.ts is hex.
+     Tailwind picks these up via tailwind.config.js theme.extend.colors.
+  */
+
+  /* Surfaces */
+  --background: #f9fafb;        /* tokens.semantic.gray.50 */
+  --foreground: #111827;        /* tokens.semantic.gray.900 */
+  --card: #ffffff;              /* pure white card surface */
+  --card-foreground: #111827;   /* tokens.semantic.gray.900 */
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  /* Brand-aware primary (cyan) — shadcn primary === brand primary */
+  --primary: #1797ce;           /* === --brand-primary */
+  --primary-foreground: #ffffff;
+
+  /* Secondary surface (subtle backgrounds, hover states) */
+  --secondary: #f3f4f6;         /* tokens.semantic.gray.100 */
+  --secondary-foreground: #1f2937; /* tokens.semantic.gray.800 */
+
+  /* Muted (disabled text, captions, tertiary info) */
+  --muted: #f3f4f6;             /* tokens.semantic.gray.100 */
+  --muted-foreground: #6b7280;  /* tokens.semantic.gray.500 */
+
+  /* Accent (hover/focus highlights on neutral surfaces) */
+  --accent: #f3f4f6;            /* tokens.semantic.gray.100 */
+  --accent-foreground: #1f2937; /* tokens.semantic.gray.800 */
+
+  /* Destructive (delete confirmations, errors) */
+  --destructive: #dc2626;       /* tokens.semantic.danger.600 */
+  --destructive-foreground: #ffffff;
+
+  /* Borders, inputs, focus rings */
+  --border: #e5e7eb;            /* tokens.semantic.gray.200 */
+  --input: #e5e7eb;             /* tokens.semantic.gray.200 */
+  --ring: #1797ce;              /* === --brand-primary (focus = brand) */
+
+  /* Chart palette (used by shadcn chart components later) —
+     starts with brand cyan, then semantic tones */
+  --chart-1: #1797ce;           /* brand-primary */
+  --chart-2: #10b981;           /* success.500 */
+  --chart-3: #f59e0b;           /* warning.500 */
+  --chart-4: #ef4444;           /* danger.500 */
+  --chart-5: #3b82f6;           /* info.500 */
+
+  /* Border radius — sourced from tokens.radius.md */
+  --radius: 6px;
 }
 
+/* ── Body resets ──
+   Background and foreground now flow from CSS variables, not
+   inline hex (closing the pre-v10.497 G382 gap on this file).
+*/
 html, body {
   margin: 0;
   padding: 0;
@@ -27,8 +95,8 @@ body {
                sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f7fa;
-  color: #0f2d5c;
+  background: var(--background);
+  color: var(--brand-secondary);
 }
 
 * {
