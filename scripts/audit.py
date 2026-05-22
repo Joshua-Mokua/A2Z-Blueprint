@@ -59247,6 +59247,616 @@ def gate_v10496_design_system() -> Dict[str, Any]:
     }
 
 
+
+#
+# ============================================================================
+# Stage C Batch 1 — five CRITICAL enforcement gates from v10.497 governance
+# constitution. Insert these function bodies into scripts/audit.py just before
+# the run_all() function at line 59667 (or anywhere after the existing gate
+# definitions). Then add the five registry tuples (separate file) at the top
+# of the GATES list.
+#
+# All five gates follow the canonical Pattern 1 + 2 established by the
+# existing code: violations list, append-as-you-go, decide-at-end.
+#
+# These gates ENFORCE doctrine from the v10.497 governance constitution
+# under docs/architecture/. Each gate's docstring cites the constitutional
+# article it enforces.
+#
+# Expected behavior on first run: most will FAIL (visibility-phase). That's
+# correct. The failures are the work backlog; subsequent batches drive them
+# to zero per the rollout schedule in docs/architecture/REVIVAL_LEDGER.md.
+# ============================================================================
+
+
+def gate_v10498_no_require_role_collision() -> Dict[str, Any]:
+    """G383 — v10.498 Stage C: no misleading `require_role` alias in
+    utils/auth.py (the Streamlit page-access transport).
+
+    REVISED v10.498 Stage C Batch 1b per first-run output and CGR1 doctrine
+    (Constitutional Governance Reality-Grounding):
+
+    Original premise (per ROLE_GOVERNANCE.md as written in v10.497):
+      Both utils/auth.py and utils/auth_jwt.py exported `require_role` with
+      incompatible signatures, creating a runtime collision.
+
+    First-run reality (2026-05-22):
+      utils/auth_jwt.py does NOT define `require_role`. It defines
+      create_access_token / decode_token / get_current_user / require_admin
+      / _require_admin_impl / _make_require_admin. No `require_role` factory
+      exists at the FastAPI transport. The collision is NOT current-state.
+
+    Gate revision:
+      G383 now enforces ONLY the actual problem — the Streamlit alias
+      `require_role = require_access` in utils/auth.py is misleading
+      (suggests a role-tier check; actually a module-access check). The
+      OI-1 fix is unilateral: rename the alias to `require_module_access`.
+      No auth_jwt.py changes are required.
+
+    Future roadmap (ASPIRATIONAL, not enforced):
+      Enterprise JWT RBAC factories (`require_role` taking a list of role
+      tiers) are planned for the FastAPI transport. When they ship,
+      G383 may be re-extended with a forward-direction collision check.
+      Until then, the doctrine claim is downgraded to ASPIRATIONAL per
+      GOVERNANCE_REALITY_INDEX.md.
+
+    Verifies (current-state, observable):
+      1. utils/auth.py does NOT contain `require_role = require_access`
+         (the misleading alias) — must be renamed to require_module_access
+      2. utils/auth.py does NOT contain `def require_role(...)` (no
+         fresh definition under that confusing name)
+      3. No callsite in pages/ or utils/ imports `require_role` from
+         utils.auth (only `require_module_access` allowed)
+
+    Severity: HIGH (was CRITICAL). The misleading alias does not cause a
+    runtime collision (since auth_jwt.py has no peer symbol), but it is
+    still a maintenance hazard and a doctrine-clarity problem.
+
+    Shipped: v10.498 Stage C Batch 1b — reality-grounded enforcement.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    auth_py = repo / "utils" / "auth.py"
+
+    if not auth_py.exists():
+        violations.append("utils/auth.py missing (Streamlit auth gone)")
+    else:
+        content = auth_py.read_text(encoding="utf-8", errors="replace")
+        # Forbidden: exporting require_role as alias of require_access
+        if re.search(r'^\s*require_role\s*=\s*require_access\b',
+                     content, re.MULTILINE):
+            violations.append(
+                "utils/auth.py still aliases `require_role = require_access` "
+                "(OI-1: rename to `require_module_access`)")
+        # Forbidden: defining a fresh function named require_role
+        if re.search(r'^\s*def\s+require_role\s*\(',
+                     content, re.MULTILINE):
+            violations.append(
+                "utils/auth.py still defines `def require_role(...)` "
+                "(OI-1: rename to `require_module_access`)")
+
+    # Scan callsites: no import of require_role FROM utils.auth (Streamlit)
+    callsite_violations: List[str] = []
+    scan_dirs = [repo / "pages", repo / "utils"]
+    for scan_dir in scan_dirs:
+        if not scan_dir.exists():
+            continue
+        for py_file in scan_dir.rglob("*.py"):
+            # Skip the canonical defining modules themselves
+            if py_file.name in {"auth.py", "auth_jwt.py"}:
+                continue
+            try:
+                file_content = py_file.read_text(encoding="utf-8",
+                                                  errors="replace")
+            except Exception:
+                continue
+            # Pattern: `from utils.auth import ... require_role`
+            # (note: utils.auth NOT utils.auth_jwt)
+            if re.search(
+                    r'from\s+utils\.auth\s+import\s+[^\n]*\brequire_role\b',
+                    file_content):
+                rel = py_file.relative_to(repo)
+                callsite_violations.append(
+                    f"{rel} imports `require_role` from utils.auth "
+                    "(must rename to require_module_access)")
+
+    violations.extend(callsite_violations)
+
+    return {
+        "id": "G383",
+        "name": "v10498_no_require_role_collision",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": (
+            "v10.498 Stage C Batch 1b — HIGH gate enforcing the OI-1 "
+            "resolution per docs/architecture/ROLE_GOVERNANCE.md (revised). "
+            "The Streamlit `require_role` (alias for require_access) must be "
+            "renamed to `require_module_access` for doctrine clarity. The "
+            "originally-claimed auth_jwt.py collision was disproved by first "
+            "run; auth_jwt.py has no `require_role` symbol. "
+            f"{len(violations)} violations."
+        ),
+    }
+def gate_v10498_event_bus_publisher_purity() -> Dict[str, Any]:
+    """G384 — v10.498 Stage C: event bus publishers are Managers/engines only.
+
+    Per docs/architecture/TELEMETRY_MAP.md (T2) and CANONICAL_DEPENDENCY_MAP.md
+    (D2): organs coordinate state changes through the event bus, not through
+    direct cross-imports between transports. The publication rules state:
+
+      Rule: Only Managers and engines may publish events. Transports
+            MUST NOT publish events directly (they call Managers, which
+            publish).
+
+    Forbidden pattern: a FastAPI handler in utils/api.py, a Streamlit
+    page in pages/, or a React component (not Python so out of scope here)
+    calling `event_bus.publish(...)` or `cross_organ_event_bus.publish(...)`.
+
+    Correct pattern: transport calls Manager method → Manager publishes
+    event from inside its own body.
+
+    Severity: CRITICAL. Direct publication from transports fragments the
+    audit trail and breaks the canonical "one canonical emitter per signal"
+    invariant (TELEMETRY_MAP T2).
+
+    Verifies:
+      1. utils/api.py does not contain `event_bus.publish` or
+         `cross_organ_event_bus.publish` outside Manager-class internals
+      2. No file in pages/ contains `event_bus.publish` or
+         `cross_organ_event_bus.publish`
+      3. utils/api_*.py router modules do not contain `event_bus.publish`
+
+    Shipped: v10.498 Stage C Batch 1 — CRITICAL enforcement.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    # Pattern: any `.publish(` call where the receiver looks like an
+    # event-bus reference. Conservative: match `event_bus.publish(` and
+    # `cross_organ_event_bus.publish(`.
+    forbidden_calls = [
+        r'\bevent_bus\s*\.\s*publish\s*\(',
+        r'\bcross_organ_event_bus\s*\.\s*publish\s*\(',
+    ]
+    forbidden_re = re.compile("|".join(forbidden_calls))
+
+    # 1. utils/api.py (FastAPI primary transport)
+    api_py = repo / "utils" / "api.py"
+    if api_py.exists():
+        content = api_py.read_text(encoding="utf-8", errors="replace")
+        for ln_no, line in enumerate(content.split("\n"), start=1):
+            # Skip comments and strings (very rough — flag for review)
+            stripped = line.strip()
+            if stripped.startswith("#") or stripped.startswith('"""'):
+                continue
+            if forbidden_re.search(line):
+                violations.append(
+                    f"utils/api.py:{ln_no} — direct event_bus.publish() in "
+                    "FastAPI transport (must publish from Manager/engine)")
+
+    # 2. utils/api_*.py router modules
+    for router_file in (repo / "utils").glob("api_*.py"):
+        try:
+            content = router_file.read_text(encoding="utf-8",
+                                             errors="replace")
+        except Exception:
+            continue
+        for ln_no, line in enumerate(content.split("\n"), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#") or stripped.startswith('"""'):
+                continue
+            if forbidden_re.search(line):
+                rel = router_file.relative_to(repo)
+                violations.append(
+                    f"{rel}:{ln_no} — direct event_bus.publish() in router "
+                    "(must publish from Manager/engine)")
+
+    # 3. pages/*.py (Streamlit transport)
+    pages_dir = repo / "pages"
+    if pages_dir.exists():
+        for page_file in pages_dir.glob("*.py"):
+            try:
+                content = page_file.read_text(encoding="utf-8",
+                                               errors="replace")
+            except Exception:
+                continue
+            for ln_no, line in enumerate(content.split("\n"), start=1):
+                stripped = line.strip()
+                if stripped.startswith("#") or stripped.startswith('"""'):
+                    continue
+                if forbidden_re.search(line):
+                    rel = page_file.relative_to(repo)
+                    violations.append(
+                        f"{rel}:{ln_no} — direct event_bus.publish() in "
+                        "Streamlit page (must publish from Manager/engine)")
+
+    return {
+        "id": "G384",
+        "name": "v10498_event_bus_publisher_purity",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": (
+            "v10.498 Stage C Batch 1 — CRITICAL gate enforcing TELEMETRY_MAP "
+            "T2 + CANONICAL_DEPENDENCY_MAP D2: transports MUST NOT publish "
+            "events directly. Only Managers and engines publish. Transports "
+            "call Manager methods; Managers publish from inside their own "
+            f"bodies. {len(violations)} violations."
+        ),
+    }
+
+
+def gate_v10498_react_no_tenant_strings() -> Dict[str, Any]:
+    """G385 — v10.498 Stage C: no hardcoded tenant strings in React components.
+
+    Per docs/architecture/FRONTEND_GOVERNANCE.md (FE3) and
+    SYSTEM_CONSTITUTION §7.2: brand identity is tenant data, never code.
+    Tenant strings live in data/org_config.json and reach React via
+    BrandingProvider + GET /api/branding.
+
+    Forbidden: any `.tsx`, `.ts`, `.jsx`, or `.js` file under
+    frontend/web/src/ containing a hardcoded tenant string like "Ecobank",
+    "FLEXCUBE" (uppercase product name), or "Kenya" (when used as tenant
+    identifier, not as locale).
+
+    Severity: CRITICAL. Tenant strings in code make the system unusable
+    for other tenants without code changes — a constitutional violation
+    of Article VII (Multi-Tenant Identity).
+
+    Verifies:
+      1. No "Ecobank" substring in frontend/web/src/**/*.{tsx,ts,jsx,js}
+      2. No "FLEXCUBE" or "Flexcube" tenant-product naming
+      3. Skips test files, .test., .spec., and stories (where mock tenant
+         data is legitimate)
+
+    Note: this gate's Python-side scope. Streamlit pages/*.py + utils/**.py
+    tenant strings are covered by existing G162 (gate_tenant_identity_hardcoding).
+    G385 is the React-side companion.
+
+    Shipped: v10.498 Stage C Batch 1 — CRITICAL enforcement.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    react_root = repo / "frontend" / "web" / "src"
+    if not react_root.exists():
+        # If frontend doesn't exist yet, gate passes vacuously
+        return {
+            "id": "G385",
+            "name": "v10498_react_no_tenant_strings",
+            "passed": True,
+            "violations": [],
+            "summary": (
+                "v10.498 Stage C Batch 1 — frontend/web/src/ not present; "
+                "gate passes vacuously. Once React UI ships, this gate "
+                "blocks any tenant string in *.tsx/*.ts/*.jsx/*.js."
+            ),
+        }
+
+    # Forbidden tenant identifiers (extend per master prompt addendum)
+    forbidden_strings = ["Ecobank", "FLEXCUBE"]
+    # Skip patterns for legitimate uses
+    skip_patterns = [".test.", ".spec.", "__tests__", "/stories/",
+                     ".stories.", "/mocks/", "/__mocks__/"]
+
+    for ext in ("*.tsx", "*.ts", "*.jsx", "*.js"):
+        for src_file in react_root.rglob(ext):
+            rel_str = str(src_file.relative_to(repo)).replace("\\", "/")
+            # Skip test/story/mock files
+            if any(skip in rel_str for skip in skip_patterns):
+                continue
+            try:
+                content = src_file.read_text(encoding="utf-8",
+                                              errors="replace")
+            except Exception:
+                continue
+            for forbidden in forbidden_strings:
+                if forbidden in content:
+                    # Find line number for better error message
+                    for ln_no, line in enumerate(content.split("\n"),
+                                                 start=1):
+                        if forbidden in line:
+                            # Skip if the line is a comment-only line
+                            stripped = line.strip()
+                            if (stripped.startswith("//") or
+                                    stripped.startswith("*") or
+                                    stripped.startswith("/*")):
+                                continue
+                            violations.append(
+                                f"{rel_str}:{ln_no} — hardcoded tenant "
+                                f"string \"{forbidden}\" "
+                                "(must come from BrandingProvider / "
+                                "GET /api/branding per FE3)")
+                            break  # one violation per file per string
+
+    return {
+        "id": "G385",
+        "name": "v10498_react_no_tenant_strings",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": (
+            "v10.498 Stage C Batch 1 — CRITICAL gate enforcing "
+            "FRONTEND_GOVERNANCE FE3: brand identity is tenant data, "
+            "never code. React components must consume tenant strings via "
+            "BrandingProvider (sourced from /api/branding which reads "
+            f"data/org_config.json). {len(violations)} violations."
+        ),
+    }
+
+
+def gate_v10498_no_unregistered_model_in_production() -> Dict[str, Any]:
+    """G386 — v10.498 Stage C: production AI engines load from model registry.
+
+    Per docs/architecture/AI_GOVERNANCE.md (AI1): no model that influences
+    a production decision may exist outside utils/mlops_model_registry.py.
+    Every prediction site must lookup the model through the registry's
+    canonical interface (e.g. `get_model(model_id)`), not by instantiating
+    a model class directly.
+
+    The list of production AI engines is documented in AI_GOVERNANCE.md
+    Section "Production AI engines" (11 modules).
+
+    Severity: CRITICAL. An unregistered model is unauditable — there's no
+    model card, no fairness assessment, no drift threshold, no rollback
+    target. AI1 closes this hole.
+
+    Verifies:
+      For each production AI engine module:
+        1. The module imports something from utils.mlops_model_registry,
+           OR
+        2. The module is a pure-compute helper (no inference) — flagged
+           for manual review rather than auto-fail
+      For each module that performs inference:
+        3. It must NOT directly instantiate model classes (e.g.
+           XGBClassifier()) outside of test scope
+
+    Note: this gate accepts EITHER the registry import OR an explicit
+    `# G386:exempt — <reason>` comment marker. Exemption markers must be
+    reviewed during audit but allow legitimate non-inference modules.
+
+    Shipped: v10.498 Stage C Batch 1 — CRITICAL enforcement.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    # The canonical production AI engine list per AI_GOVERNANCE.md
+    production_ai_engines = [
+        "utils/ai_underwriting.py",
+        "utils/credit_alt_scoring.py",
+        "utils/credit_risk_scoring.py",
+        "utils/decline_prediction.py",
+        "utils/churn_prediction.py",
+        "utils/cross_sell_bandit.py",
+        "utils/cross_sell_nba.py",
+        "utils/customer_segmentation.py",
+        "utils/predictive_performance.py",
+        "utils/behavioral_anomaly_detection.py",
+        "utils/analytics_anomaly_detection.py",
+    ]
+
+    registry_import_patterns = [
+        r'from\s+utils\.mlops_model_registry\s+import',
+        r'from\s+utils\s+import\s+mlops_model_registry',
+        r'import\s+utils\.mlops_model_registry',
+    ]
+    registry_re = re.compile("|".join(registry_import_patterns))
+    exemption_re = re.compile(r'#\s*G386:exempt\b')
+
+    for engine_rel in production_ai_engines:
+        engine_path = repo / engine_rel
+        if not engine_path.exists():
+            # Module declared in AI_GOVERNANCE but missing on disk
+            violations.append(
+                f"{engine_rel} listed in AI_GOVERNANCE as production AI "
+                "engine but file not present on disk")
+            continue
+        try:
+            content = engine_path.read_text(encoding="utf-8",
+                                             errors="replace")
+        except Exception as e:
+            violations.append(
+                f"{engine_rel} unreadable ({e}) — cannot verify registry "
+                "compliance")
+            continue
+
+        if exemption_re.search(content):
+            # Exempt — flagged for manual review but not a violation
+            continue
+
+        if not registry_re.search(content):
+            violations.append(
+                f"{engine_rel} does not import from "
+                "utils.mlops_model_registry (AI1 violation; production "
+                "engines must load models via the registry's canonical "
+                "interface, or carry a `# G386:exempt — <reason>` marker)")
+
+    return {
+        "id": "G386",
+        "name": "v10498_no_unregistered_model_in_production",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": (
+            "v10.498 Stage C Batch 1 — CRITICAL gate enforcing AI_GOVERNANCE "
+            "AI1: no deployment without registration. Every production AI "
+            "engine must load models via utils.mlops_model_registry. "
+            f"{len(violations)} violations across "
+            f"{len(production_ai_engines)} canonical engine modules."
+        ),
+    }
+
+
+def gate_v10498_agent_scope_declared() -> Dict[str, Any]:
+    """G387 — v10.498 Stage C: every AI agent declares its scope.
+
+    Per docs/architecture/AI_GOVERNANCE.md (AI7): agents are bounded. Every
+    agent module in utils/agents/ must declare a scope dict with the
+    canonical schema:
+
+        AGENT_SCOPE = {
+            "agent_id": <str>,
+            "purpose": <str>,
+            "scope": {
+                "domains": [<str>, ...],
+                "data_read": [<file_path>, ...],
+                "data_write": [<file_path>, ...],
+                "tools_allowed": [<function_name>, ...],
+                "actions_forbidden": [<action_name>, ...],
+            },
+            "escalation": {
+                "uncertainty_threshold": <float>,
+                "escalation_target": <str>,
+                "stop_conditions": [<str>, ...],
+            },
+            "audit": {
+                "every_decision_logged": <bool>,
+                "log_target": <str>,
+                "review_cadence_days": <int>,
+            },
+        }
+
+    Agents without a declared scope are unbounded — they can attempt
+    anything. AI7 closes this. Scope violation events are logged as
+    `mlops.agent.scope_violation`; repeated violations remove agents from
+    production.
+
+    Severity: CRITICAL. An unbounded agent is a constitutional violation
+    of Article IX (AI/ML governance).
+
+    Verifies:
+      For each Python module in utils/agents/ (excluding __init__.py
+      and helpers prefixed with `_`):
+        1. The module defines `AGENT_SCOPE` at module level
+        2. AGENT_SCOPE has required top-level keys: agent_id, purpose,
+           scope, escalation, audit
+        3. AGENT_SCOPE.scope has required sub-keys: domains, data_read,
+           data_write, tools_allowed, actions_forbidden
+
+    Special case: utils/agents/ may not exist yet, or may be empty. In
+    that case the gate passes vacuously and adds a note. Once any agent
+    module ships, scope declaration is mandatory.
+
+    Shipped: v10.498 Stage C Batch 1 — CRITICAL enforcement.
+    """
+    violations: List[str] = []
+    repo = Path(__file__).parent.parent
+
+    agents_dir = repo / "utils" / "agents"
+    if not agents_dir.exists():
+        return {
+            "id": "G387",
+            "name": "v10498_agent_scope_declared",
+            "passed": True,
+            "violations": [],
+            "summary": (
+                "v10.498 Stage C Batch 1 — utils/agents/ not present on "
+                "disk. Gate passes vacuously. Once any agent module is "
+                "added, AGENT_SCOPE declaration becomes mandatory per AI7."
+            ),
+        }
+
+    required_top_keys = {"agent_id", "purpose", "scope", "escalation",
+                          "audit"}
+    required_scope_keys = {"domains", "data_read", "data_write",
+                            "tools_allowed", "actions_forbidden"}
+    required_escalation_keys = {"uncertainty_threshold",
+                                  "escalation_target", "stop_conditions"}
+    required_audit_keys = {"every_decision_logged", "log_target",
+                             "review_cadence_days"}
+
+    agent_files_checked = 0
+    for agent_file in agents_dir.glob("*.py"):
+        if agent_file.name == "__init__.py":
+            continue
+        if agent_file.name.startswith("_"):
+            # Private helper modules are not agents
+            continue
+        agent_files_checked += 1
+        try:
+            content = agent_file.read_text(encoding="utf-8",
+                                            errors="replace")
+        except Exception as e:
+            violations.append(
+                f"utils/agents/{agent_file.name} unreadable ({e})")
+            continue
+
+        # Parse AST to inspect top-level AGENT_SCOPE
+        try:
+            tree = ast.parse(content)
+        except SyntaxError as e:
+            violations.append(
+                f"utils/agents/{agent_file.name} has syntax error "
+                f"(line {e.lineno}) — cannot verify scope declaration")
+            continue
+
+        scope_node = None
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if (isinstance(target, ast.Name) and
+                            target.id == "AGENT_SCOPE"):
+                        scope_node = node.value
+                        break
+            if scope_node is not None:
+                break
+
+        if scope_node is None:
+            violations.append(
+                f"utils/agents/{agent_file.name} does not declare "
+                "AGENT_SCOPE at module level (AI7 violation)")
+            continue
+
+        if not isinstance(scope_node, ast.Dict):
+            violations.append(
+                f"utils/agents/{agent_file.name}::AGENT_SCOPE is not a "
+                "dict literal (must be a dict for static inspection)")
+            continue
+
+        # Extract top-level keys
+        top_keys = set()
+        for k in scope_node.keys:
+            if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                top_keys.add(k.value)
+
+        missing_top = required_top_keys - top_keys
+        if missing_top:
+            violations.append(
+                f"utils/agents/{agent_file.name}::AGENT_SCOPE missing "
+                f"required top-level keys: {sorted(missing_top)}")
+            continue  # don't drill into sub-keys if top keys are wrong
+
+        # Drill into the `scope` sub-dict
+        scope_sub = None
+        for k, v in zip(scope_node.keys, scope_node.values):
+            if (isinstance(k, ast.Constant) and k.value == "scope" and
+                    isinstance(v, ast.Dict)):
+                scope_sub = v
+                break
+
+        if scope_sub is not None:
+            scope_keys = set()
+            for k in scope_sub.keys:
+                if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                    scope_keys.add(k.value)
+            missing_scope = required_scope_keys - scope_keys
+            if missing_scope:
+                violations.append(
+                    f"utils/agents/{agent_file.name}::AGENT_SCOPE['scope'] "
+                    f"missing required sub-keys: {sorted(missing_scope)}")
+
+    summary = (
+        f"v10.498 Stage C Batch 1 — CRITICAL gate enforcing AI_GOVERNANCE "
+        f"AI7: every agent in utils/agents/ declares AGENT_SCOPE with "
+        f"canonical schema. Checked {agent_files_checked} agent module(s). "
+        f"{len(violations)} violations."
+    )
+    return {
+        "id": "G387",
+        "name": "v10498_agent_scope_declared",
+        "passed": len(violations) == 0,
+        "violations": violations,
+        "summary": summary,
+    }
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -59323,6 +59933,11 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G387", gate_v10498_agent_scope_declared),                  # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI7
+    ("G386", gate_v10498_no_unregistered_model_in_production),   # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI1
+    ("G385", gate_v10498_react_no_tenant_strings),               # v10.498 STAGE C — CRITICAL — FRONTEND_GOVERNANCE FE3
+    ("G384", gate_v10498_event_bus_publisher_purity),            # v10.498 STAGE C — CRITICAL — TELEMETRY_MAP T2 / CANONICAL_DEPENDENCY_MAP D2
+    ("G383", gate_v10498_no_require_role_collision),             # v10.498 STAGE C — CRITICAL — ROLE_GOVERNANCE OI-1    
     ("G382", gate_v10496_design_system),  # v10.496 DESIGN SYSTEM
     ("G381", gate_v10495_react_foundations),  # v10.495 REACT FOUNDATIONS
     ("G380", gate_v10494_uncertainty_exposure_phase6_FINAL),  # v10.494 UNCERTAINTY P6 FINAL
@@ -59662,7 +60277,6 @@ GATES = [
     ("G299", gate_v10413_cascade_api_react_payoff),                        # v10.413 — E7 Cascade API & exports (React-readiness payoff per Joshua's repeated directive). NEW utils/api_cascade.py (~430 LOC) with APIRouter prefix /api/v1/cascade + JWT-required on every endpoint via Depends(get_current_user) + Pydantic request/response models + 12+ endpoints wrapping cascade_health_engine/manager_rollup/pillar_impact_engine/kpi_ownership_pairing/target_scenario_simulator/cascade_structure_engine. utils/api.py mounts BOTH api_cascade (v10.413 broad surface) AND api_capacity_feedback (v10.412 stub now activated) routers. NEW scripts/export_cascade_openapi.py generates OpenAPI 3.0 spec from standalone mini-app (bypasses legacy Pydantic forward-ref issues in main api.py). NEW docs/openapi_cascade_v10413.json shipped — 19 endpoints across both prefixes (/api/v1/cascade/* + /api/cascade/capacity-feedback/*) — React team feeds this to openapi-typescript/openapi-generator for TypeScript client generation. Engine preserved 0/0/0/0. SEVENTH and FINAL QA enhancement landed; full E1-E7 cycle complete. Cost: ~0.7s isolated.
     ("G282", gate_v10397_staff_code_dedup),                              # v10.397 — Duplicate Staff Code Resolution. Per Joshua: "we had 2 staff lists that might have introduced staff codes that are similar, we need to get rid of the first or merge". 10 duplicate staff codes found in users.json: codes 300001-300010 were each used by BOTH a C-suite executive (william001/nicholas002/.../mark010) AND a Head of Branches + 9 Area Managers (veronica001/beatrice002/.../isabella010). Two staff lists generated independently, both starting at 300001. RENUMBERED the 10 Heads + Area Managers to fresh codes 301500-301509. C-suite codes 300001-300010 preserved (cascade roots, BSC owners, deeply baked — William Mwanake as MD is canonical throughout system). Heads + Area Managers added later in canonical hierarchy work (v10.396); their codes were incorrectly generated colliding with executive range. Updated data/users.json (10 staff_code changes + _v10397_staff_code_resolution provenance) + data/staff_register.xlsx (Staff Code column updated for same 10 names). hr.json unaffected (different staff subset; 192 entries, none of the 20 names present). target_cascade.json has stale composite-key references (`300001__veronica001|PBT|2026` from prior attempt workaround); v10.398 will regenerate cascade fresh with clean simple codes (`301500|PBT|2026`). 0 duplicate codes after fix. Backups at data/_v10397_backups/users.json.before + staff_register.xlsx.before. Cost: ~0.5s isolated (xlsx parse).
 ]
-
 
 def run_all(only_gate: str | None = None) -> Dict[str, Any]:
     results = []

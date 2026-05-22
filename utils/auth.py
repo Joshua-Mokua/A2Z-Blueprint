@@ -73,6 +73,20 @@ def require_access(module: str, user: Optional[Dict[str, Any]] = None) -> bool:
 
 # Convenience aliases for legacy code
 check_access = has_access
-require_role = require_access
+
+# v10.498 Stage C Batch 1b — OI-1 resolved per ROLE_GOVERNANCE.md (CGR1).
+# The previous alias `require_role = require_access` was misleading
+# (the name suggested role-tier RBAC; the implementation was module-access).
+# Renamed to `require_module_access`. No callsites used the old name
+# (verified by findstr on 2026-05-22, zero matches in pages/ or utils/),
+# so the deprecation alias was unnecessary. Removed cleanly.
+#
+# Future enterprise JWT RBAC factory (`require_role` taking a list of
+# role tiers) is ASPIRATIONAL per GOVERNANCE_REALITY_INDEX.md; when it
+# ships in utils/auth_jwt.py, this module won't collide because the
+# Streamlit symbol no longer uses that name.
+require_module_access = require_access
+
 __all__ = ["get_current_user", "is_admin", "has_access",
-           "require_access", "check_access", "require_role"]
+           "require_access", "check_access",
+           "require_module_access"]

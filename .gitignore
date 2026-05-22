@@ -56,3 +56,9 @@ data/_v*_backups/
 data/_v*_backups/
 # Stale nested project copy (pre-v10.22, removed in cleanup before v10.497)
 a2z/
+
+# Auth-testing artifacts (cookie jars from curl/browser auth tests)
+cookies.txt
+
+# JWT revocation runtime state (per-session blocklist, not source)
+data/jwt_blocklist.json

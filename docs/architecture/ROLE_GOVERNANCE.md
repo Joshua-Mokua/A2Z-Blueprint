@@ -4,12 +4,134 @@
 **Authority level:** Domain (consumes from `CANONICAL_TRUTH_REGISTRY.md`)
 **Status:** `canonical`
 **Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 2)
-**Last updated:** 2026-05-22
+**Last updated:** 2026-05-22 (revised v10.498 Stage C Batch 1b — CGR1 reality-grounding)
 **Owner:** Admin / HR Operations
 **Authoritative source:** `data/org_hierarchy_config.json`
 **Canonical interface:** `utils/role_taxonomy.py`
 **Machine-readable equivalent:** `ROLE_GOVERNANCE.json`
 **Enforcement gate:** `G260 gate_role_taxonomy_alignment` (scripts/audit.py:36381)
+
+---
+
+## CGR1 Reality-Check Correction (v10.498 Stage C Batch 1b)
+
+**Classification:** ACTIVE (with revisions per first-run reality check)
+**Classification authority:** `GOVERNANCE_REALITY_INDEX.md`
+**Last validated:** 2026-05-22
+**Validation source:** Gate G383 first run + findstr inspection of
+`utils/auth.py` and `utils/auth_jwt.py`
+
+### What this artifact said in v10.497
+
+OI-1 (Open Item 1) claimed:
+
+> Both `utils/auth.py` (Streamlit transport) and `utils/auth_jwt.py`
+> (FastAPI transport) export a symbol named `require_role` with
+> incompatible signatures, creating a runtime collision. The fix is
+> to rename the Streamlit symbol to `require_module_access`.
+
+### What first-run inspection revealed
+
+`utils/auth_jwt.py` contains the following exports:
+
+- `create_access_token(user: dict) → str`
+- `decode_token(token: str) → dict`
+- `get_current_user(authorization: Optional[str]) → dict`
+- `require_admin(user: dict = None) → dict`
+- `_require_admin_impl(user: dict) → dict` (private)
+- `_make_require_admin()` (factory for require_admin dependency)
+
+There is **no `require_role` symbol** in `utils/auth_jwt.py`. There never
+was one in this branch. The "collision" was a hypothetical scenario based
+on incorrect inspection during v10.497 authoring.
+
+### Revised doctrine (current ACTIVE)
+
+The OI-1 concern is narrower than originally stated:
+
+**The Streamlit alias `require_role = require_access` in `utils/auth.py`
+was misleading.** It suggested role-tier RBAC (à la
+`require_role(['admin', 'manager'])`) but actually wrapped
+`require_access(module_name)` — a module-access check.
+
+**Resolution (completed v10.498 Stage C Batch 1b):**
+
+- Renamed `require_role` to `require_module_access` in `utils/auth.py`
+- No callsites needed updating (findstr verified 0 matches in pages/ or utils/)
+- Removed the old alias cleanly (no deprecation shim needed)
+- No changes to `utils/auth_jwt.py` (the symbol never existed there)
+
+### Severity downgrade
+
+**OI-1 severity reclassified: CRITICAL → HIGH → RESOLVED.**
+
+The originally-claimed runtime collision (CRITICAL) did not exist. The
+actual concern — a misleading symbol name — was a maintenance hazard
+but not a correctness bug. As of v10.498 Stage C Batch 1b, OI-1 is
+RESOLVED (G383 passes 0 violations).
+
+---
+
+## Future Roadmap (ASPIRATIONAL, NOT enforced)
+
+The following are planned future enhancements to FastAPI authorization,
+documented here as ASPIRATIONAL per CGR1. They are NOT current behavior
+and MUST NOT be assumed by gates or callers:
+
+### A1 (ASPIRATIONAL) — JWT RBAC role-tier factories
+
+Once the role-tier model is formalized (RBAC_MATRIX provides the
+capability table), `utils/auth_jwt.py` will export a `require_role`
+factory accepting a list of role tiers:
+
+```python
+require_role = make_role_check_factory()
+
+@app.get("/api/admin/...")
+def admin_endpoint(user = Depends(require_role(['admin', 'md']))):
+    ...
+```
+
+When this ships, G383 will be re-extended with a forward-direction
+collision check to ensure the FastAPI factory and the Streamlit
+`require_module_access` don't drift back toward name overlap.
+
+**Target version:** v10.501-v10.510 (RBAC-factory arc, Stage C
+sub-program). Not committed to a specific batch.
+
+### A2 (ASPIRATIONAL) — Capability-based authorization
+
+Beyond role tiers, the longer-term plan is capability-based:
+`require_capability('approve_credit_above_5M')` rather than
+`require_role(['credit_manager'])`. Aligns with RBAC_MATRIX which
+already specifies capabilities, not roles.
+
+**Target version:** v11.x (post-Stage C). Not scheduled.
+
+### A3 (ASPIRATIONAL) — useRole() React hook canonical adoption
+
+The `useRole()` hook is implemented in v10.495 frontend foundations,
+but full React component adoption is TRANSITIONAL. Once all components
+consume `useRole()` (verified by a future G388-class gate), the doctrine
+moves from TRANSITIONAL to ACTIVE.
+
+**Target version:** v10.499-v10.501.
+
+---
+
+## Standing reality-check procedure (per CGR1)
+
+Any future doctrine update to this artifact must be preceded by:
+
+1. Inspection of the actual code (`findstr` or AST scan of
+   `utils/auth.py` and `utils/auth_jwt.py`)
+2. Comparison of inspection output against the claim being added
+3. Classification of the claim (ACTIVE / TRANSITIONAL / ASPIRATIONAL)
+4. Update to `GOVERNANCE_REALITY_INDEX.md` with date and source of
+   reality check
+
+The G383 incident in v10.498 Stage C Batch 1b is the canonical example
+of this procedure executed retroactively.
 
 ---
 
@@ -41,39 +163,39 @@ The authority for role data is `data/org_hierarchy_config.json`. The authority f
 
 7 tiers from MD root down to entry-level frontline. Defined in `org_hierarchy_config.json::role_tiers` with 143 explicit role-to-tier mappings + 8 keyword-fallback groups.
 
-| Tier | Meaning | Example roles |
-|---|---|---|
-| 0 | MD root (only one allowed) | Chief Executive & Managing Director, Managing Director |
-| 1 | C-suite + Directors | Chief Retail Banking Officer, Chief Risk Officer, Director Retail Banking, Director Commercial Banking, General Manager - Bancassurance |
-| 2 | Head Of / Regional Head | Head of Branches, Head of Treasury, Head Of Corporates & Trade Finance, Regional Head |
-| 3 | Senior Manager / Area Manager | Area Manager, Senior Manager Direct Sales Force, Senior Manager Treasury |
-| 4 | Manager / Branch Manager | Branch Manager, Senior Branch Manager, Branch Operations Manager, Credit Manager |
-| 5 | Officer / Specialist / RM | Relationship Manager - SME, Credit Analyst, Treasury Dealer, Senior Relationship Manager - Corporate Banking |
-| 6 | Teller / CSO / DSR / Trainee | Teller, Customer Service Officer, Direct Sales Representative |
+| Tier | Meaning                       | Example roles                                                                                                                           |
+| ---- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | MD root (only one allowed)    | Chief Executive & Managing Director, Managing Director                                                                                  |
+| 1    | C-suite + Directors           | Chief Retail Banking Officer, Chief Risk Officer, Director Retail Banking, Director Commercial Banking, General Manager - Bancassurance |
+| 2    | Head Of / Regional Head       | Head of Branches, Head of Treasury, Head Of Corporates & Trade Finance, Regional Head                                                   |
+| 3    | Senior Manager / Area Manager | Area Manager, Senior Manager Direct Sales Force, Senior Manager Treasury                                                                |
+| 4    | Manager / Branch Manager      | Branch Manager, Senior Branch Manager, Branch Operations Manager, Credit Manager                                                        |
+| 5    | Officer / Specialist / RM     | Relationship Manager - SME, Credit Analyst, Treasury Dealer, Senior Relationship Manager - Corporate Banking                            |
+| 6    | Teller / CSO / DSR / Trainee  | Teller, Customer Service Officer, Direct Sales Representative                                                                           |
 
 **Keyword fallback** (when a role doesn't match an explicit mapping):
 
-| Tier | Keywords (first match wins, lower tier first) |
-|---|---|
-| 0 | "managing director", "chief executive" |
-| 1 | "chief ", "general manager", "director " |
-| 2 | "head of", "head ", "regional head" |
-| 3 | "senior manager", "area manager", "senior branch", "senior relationship manager" |
-| 4 | "manager" |
-| 5 | "officer", "specialist", "analyst", "supervisor", "engineer", "administrator", "dealer", "developer", "representative" |
-| 6 | "teller", "junior ", "trainee", "assistant", "clerk" |
+| Tier | Keywords (first match wins, lower tier first)                                                                          |
+| ---- | ---------------------------------------------------------------------------------------------------------------------- |
+| 0    | "managing director", "chief executive"                                                                                 |
+| 1    | "chief ", "general manager", "director "                                                                               |
+| 2    | "head of", "head ", "regional head"                                                                                    |
+| 3    | "senior manager", "area manager", "senior branch", "senior relationship manager"                                       |
+| 4    | "manager"                                                                                                              |
+| 5    | "officer", "specialist", "analyst", "supervisor", "engineer", "administrator", "dealer", "developer", "representative" |
+| 6    | "teller", "junior ", "trainee", "assistant", "clerk"                                                                   |
 
 ### Profitability axis (`profitability_axis.tiers`)
 
 5 categories representing the directness of bank impact. Defined in `org_hierarchy_config.json::profitability_axis` (shipped v10.374, enforced by G260).
 
-| Tier | Meaning | Tagging permitted? |
-|---|---|---|
-| `portfolio_owner` | Tagged to customers; drives sales; Σ(customer PBT) attributed to them | **Yes** — appears in `accounts.csv::relationship_manager_code` |
+| Tier                | Meaning                                                                | Tagging permitted?                                                   |
+| ------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `portfolio_owner`   | Tagged to customers; drives sales; Σ(customer PBT) attributed to them  | **Yes** — appears in `accounts.csv::relationship_manager_code`       |
 | `proposition_owner` | Drives overlapping proposition (Women Banking, Diaspora, Agribusiness) | **No** — overlaps customer portfolios; attribution via overlap views |
-| `structural_owner` | Owns PBT at structural level (branch, region, SBU, bank) via rollup | **No** — owns aggregated PBT, not direct customer relationships |
-| `service` | Branch operational role; occasionally tagged when introducing accounts | **Yes** — secondary tagging only |
-| `support` | Head office function (Risk, Compliance, IT, HR, Finance, Audit, Legal) | **No** — owns cost center / function, not direct PBT |
+| `structural_owner`  | Owns PBT at structural level (branch, region, SBU, bank) via rollup    | **No** — owns aggregated PBT, not direct customer relationships      |
+| `service`           | Branch operational role; occasionally tagged when introducing accounts | **Yes** — secondary tagging only                                     |
+| `support`           | Head office function (Risk, Compliance, IT, HR, Finance, Audit, Legal) | **No** — owns cost center / function, not direct PBT                 |
 
 **Taggability invariant** (R6, enforced by G260 check 6):
 
@@ -83,11 +205,11 @@ The authority for role data is `data/org_hierarchy_config.json`. The authority f
 
 3 values declaring where a role physically/organizationally sits:
 
-| Scope | Meaning |
-|---|---|
-| `branch_bound` | Works at one specific branch |
-| `head_office` | Works at HO; portfolio may span multiple branches |
-| `national` | Bank-wide responsibility |
+| Scope          | Meaning                                           |
+| -------------- | ------------------------------------------------- |
+| `branch_bound` | Works at one specific branch                      |
+| `head_office`  | Works at HO; portfolio may span multiple branches |
+| `national`     | Bank-wide responsibility                          |
 
 ### Strategic Business Unit (SBU)
 
@@ -160,18 +282,18 @@ class RoleClassification:
 
 ### Exported functions
 
-| Function | Returns | Use case |
-|---|---|---|
-| `classify_role(role)` | `RoleClassification` | Full classification when you need all attributes |
-| `get_profitability_tier(role)` | `str` | Just the profitability tier |
-| `get_branch_scope(role)` | `str` | Just the branch scope |
-| `get_sbu(role)` | `str` | Just the SBU |
-| `can_be_tagged(role)` | `bool` | **The single authority on tagging** |
-| `list_all_classified_roles()` | `list[str]` | All roles with explicit classification |
-| `list_roles_by_tier(tier)` | `list[str]` | All explicit roles in a tier |
-| `list_roles_by_sbu(sbu)` | `list[str]` | All explicit roles in an SBU |
-| `validate_role_coverage()` | `dict` | Audit: every role in users.json + hr.json classifies |
-| `self_test()` | `None` (asserts) | Module self-verification (12 tests) |
+| Function                       | Returns              | Use case                                             |
+| ------------------------------ | -------------------- | ---------------------------------------------------- |
+| `classify_role(role)`          | `RoleClassification` | Full classification when you need all attributes     |
+| `get_profitability_tier(role)` | `str`                | Just the profitability tier                          |
+| `get_branch_scope(role)`       | `str`                | Just the branch scope                                |
+| `get_sbu(role)`                | `str`                | Just the SBU                                         |
+| `can_be_tagged(role)`          | `bool`               | **The single authority on tagging**                  |
+| `list_all_classified_roles()`  | `list[str]`          | All roles with explicit classification               |
+| `list_roles_by_tier(tier)`     | `list[str]`          | All explicit roles in a tier                         |
+| `list_roles_by_sbu(sbu)`       | `list[str]`          | All explicit roles in an SBU                         |
+| `validate_role_coverage()`     | `dict`               | Audit: every role in users.json + hr.json classifies |
+| `self_test()`                  | `None` (asserts)     | Module self-verification (12 tests)                  |
 
 ### Coverage validation output shape
 
@@ -194,14 +316,14 @@ class RoleClassification:
 
 Declared in `org_hierarchy_config.json::_validation_rules`:
 
-| Invariant | Meaning | Enforced by |
-|---|---|---|
-| `exactly_one_root_required` | One and only one MD | `gate_hierarchy_synth` |
-| `no_cycles_allowed` | Reporting graph is a tree | `gate_hierarchy_classification_correct` |
-| `only_chiefs_report_to_md` | Depth-1 from root is C-suite only | `gate_canonical_retail_chain`, `_v10399_joshua_corrections` |
-| `every_staff_has_a_chain_to_root` | No orphans | `gate_hierarchy_synth` |
-| `default_max_span_of_control: 15` | Soft span limit | warnings only |
-| `default_max_chain_depth: 12` | Maximum nesting depth | warnings only |
+| Invariant                         | Meaning                           | Enforced by                                                 |
+| --------------------------------- | --------------------------------- | ----------------------------------------------------------- |
+| `exactly_one_root_required`       | One and only one MD               | `gate_hierarchy_synth`                                      |
+| `no_cycles_allowed`               | Reporting graph is a tree         | `gate_hierarchy_classification_correct`                     |
+| `only_chiefs_report_to_md`        | Depth-1 from root is C-suite only | `gate_canonical_retail_chain`, `_v10399_joshua_corrections` |
+| `every_staff_has_a_chain_to_root` | No orphans                        | `gate_hierarchy_synth`                                      |
+| `default_max_span_of_control: 15` | Soft span limit                   | warnings only                                               |
+| `default_max_chain_depth: 12`     | Maximum nesting depth             | warnings only                                               |
 
 The synthesizer (`utils/hierarchy_synth.py`) consumes `org_hierarchy_config.json::role_manager_whitelist` (131 entries) to validate that each subordinate role's parent comes from the allowed-manager set. Violations from `hr.json` source data are flagged and replaced with synthesis-derived linkages.
 
@@ -211,20 +333,20 @@ The synthesizer (`utils/hierarchy_synth.py`) consumes `org_hierarchy_config.json
 
 10 Chief roles + 1 MD = 11 top-level positions. Each Chief has a synthetic staff code for hierarchy synthesis when no real staff occupies the role.
 
-| Role | Synthetic staff code | Primary department |
-|---|---|---|
-| Chief Executive & Managing Director | (real: `william001` / 300001) | Executive |
-| Chief Retail Banking Officer | `EXEC-CRO-001` | Retail Banking |
-| Chief Credit Officer | `EXEC-CCO-001` | Credit |
-| Chief Operating Officer | `EXEC-COO-001` | Operations |
-| Chief Financial Officer | `EXEC-CFO-001` | Finance |
-| Chief Information Officer | `EXEC-CIO-001` | IT & Digital |
-| Chief Risk Officer | `EXEC-CRSO-001` | Risk & Compliance |
-| Chief Compliance Officer | `EXEC-CCMP-001` | Legal |
-| Chief Internal Auditor | `EXEC-CIA-001` | Internal Audit |
-| Chief Human Resource Officer | `EXEC-CHRO-001` | People & HR |
-| Chief Commercial Officer | `EXEC-CCMO-001` | Commercial & Corporate |
-| General Manager - Bancassurance | (real or synthetic; tier 1) | Bancassurance |
+| Role                                | Synthetic staff code          | Primary department     |
+| ----------------------------------- | ----------------------------- | ---------------------- |
+| Chief Executive & Managing Director | (real: `william001` / 300001) | Executive              |
+| Chief Retail Banking Officer        | `EXEC-CRO-001`                | Retail Banking         |
+| Chief Credit Officer                | `EXEC-CCO-001`                | Credit                 |
+| Chief Operating Officer             | `EXEC-COO-001`                | Operations             |
+| Chief Financial Officer             | `EXEC-CFO-001`                | Finance                |
+| Chief Information Officer           | `EXEC-CIO-001`                | IT & Digital           |
+| Chief Risk Officer                  | `EXEC-CRSO-001`               | Risk & Compliance      |
+| Chief Compliance Officer            | `EXEC-CCMP-001`               | Legal                  |
+| Chief Internal Auditor              | `EXEC-CIA-001`                | Internal Audit         |
+| Chief Human Resource Officer        | `EXEC-CHRO-001`               | People & HR            |
+| Chief Commercial Officer            | `EXEC-CCMO-001`               | Commercial & Corporate |
+| General Manager - Bancassurance     | (real or synthetic; tier 1)   | Bancassurance          |
 
 Synthetic MD (`EXEC-MD-001`) was **deleted in `_v10399_joshua_corrections`**. The real MD `william001` (William Mwanake) is the sole tier-0 occupant.
 
@@ -245,6 +367,7 @@ Branch Manager → Area Manager → Head of Branches → Chief Retail Banking Of
 ```
 
 **Specific changes:**
+
 - TIGHTENED `role_manager_whitelist`: `Branch Manager` parents reduced from `[Area Manager, Senior Branch Manager, Head of Branches]` to `[Area Manager]` only
 - TIGHTENED `role_manager_whitelist`: `Senior Branch Manager` parents reduced from `[Area Manager, Head of Branches]` to `[Area Manager]` only
 - ALIGNED `utils/hierarchy_synth.py`: SBMs treated as PEERS of standard BMs (both report to Area Manager), not as a supervisory tier
@@ -267,23 +390,24 @@ Branch Manager → Area Manager → Head of Branches → Chief Retail Banking Of
 
 **Chief-to-domain mapping:**
 
-| Chief | Domains |
-|---|---|
-| CFO | Finance + Business Analytics + Treasury |
-| CRO (Risk) | Risk + Compliance + Chief Compliance Officer |
-| CIO | IT + DFS (later updated by `_v10399`) |
-| COO | Operations + Marketing + Procurement + CX + Trade Operations |
-| CHRO | HR |
-| CRBO | Branches + Women Banking + Diaspora + RM Diaspora + Business Development (DSR) |
-| CCO (Commercial) | Corporates + SME + GIB + RMs |
-| Chief Credit Officer | Credit Analysis + Admin + Monitoring + Collections |
-| Chief Internal Auditor | Audit roles |
-| Chief Legal (= Chief Compliance Officer in updated taxonomy) | Legal roles |
-| GM Bancassurance | Manager Underwriting + HQ Bancassurance |
+| Chief                                                        | Domains                                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| CFO                                                          | Finance + Business Analytics + Treasury                                        |
+| CRO (Risk)                                                   | Risk + Compliance + Chief Compliance Officer                                   |
+| CIO                                                          | IT + DFS (later updated by `_v10399`)                                          |
+| COO                                                          | Operations + Marketing + Procurement + CX + Trade Operations                   |
+| CHRO                                                         | HR                                                                             |
+| CRBO                                                         | Branches + Women Banking + Diaspora + RM Diaspora + Business Development (DSR) |
+| CCO (Commercial)                                             | Corporates + SME + GIB + RMs                                                   |
+| Chief Credit Officer                                         | Credit Analysis + Admin + Monitoring + Collections                             |
+| Chief Internal Auditor                                       | Audit roles                                                                    |
+| Chief Legal (= Chief Compliance Officer in updated taxonomy) | Legal roles                                                                    |
+| GM Bancassurance                                             | Manager Underwriting + HQ Bancassurance                                        |
 
 **Bancassurance dotted-line rule:** Bancassurance Officers at branches report to Branch Manager primary with dotted line to GM Bancassurance.
 
 **Specific ordering fixes:**
+
 - SDCO branches → BM/SBM primary (94 branch SDCOs found)
 - RM Corporate Banking → SRM Corporate primary
 - RM Agribusiness → SRM SME primary
@@ -323,6 +447,7 @@ This locks the link between role taxonomy (this document) and KPI library. Every
 Two functions named `require_role` exist in the system today with incompatible signatures:
 
 **`utils/auth.py::require_role`** (Streamlit-era):
+
 ```python
 require_role = require_access  # module-level alias
 
@@ -331,6 +456,7 @@ def require_access(module: str, user: Optional[Dict[str, Any]] = None) -> bool:
 ```
 
 **`utils/auth_jwt.py::require_role`** (v10.497 P1.1):
+
 ```python
 def require_role(roles: list[str]) -> Callable:
     """FastAPI Depends factory."""
@@ -410,6 +536,7 @@ From `validate_role_coverage()` running against the current `users.json` + `hr.j
 **Note: these counts are derived from the survey context (1,439 users, 124 distinct roles). The actual `validate_role_coverage()` result must be re-run to populate this section authoritatively. In the next batch, Stage C gate output should be captured here.**
 
 Expected shape:
+
 - `total_used`: ~124 distinct roles
 - `explicit`: ≥30 (G260 minimum threshold)
 - `keyword`: remainder
@@ -465,11 +592,11 @@ def attribute_pbt_to_rm(account):
 
 ```typescript
 // FUTURE — to be specified in FRONTEND_GOVERNANCE.md (Wave 4)
-import { useRole } from '@/lib/role';
+import { useRole } from "@/lib/role";
 
 function AdminPanel() {
   const role = useRole();
-  if (role.tier !== 'structural_owner') return null;
+  if (role.tier !== "structural_owner") return null;
   // ...
 }
 ```
@@ -495,12 +622,12 @@ Anywhere else — route handlers, page logic, business engines, React effects, c
 
 ## Open items carried to subsequent waves
 
-| ID | Title | Resolution wave |
-|---|---|---|
-| OI-1 (this artifact) | `require_role` name collision — resolution path declared; execution next batch | Next governance batch after Wave 6 |
-| OI-8 | Capture live `validate_role_coverage()` output in this document | Next Wave 2 amendment |
-| OI-9 | Define `/api/roles/me` endpoint contract for React useRole() hook | Wave 4 FRONTEND_GOVERNANCE |
-| OI-10 | Extend `require_role` factory to accept `tier=`, `sbu=`, `seniority_max=` filters | Stage C |
+| ID                   | Title                                                                             | Resolution wave                    |
+| -------------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| OI-1 (this artifact) | `require_role` name collision — resolution path declared; execution next batch    | Next governance batch after Wave 6 |
+| OI-8                 | Capture live `validate_role_coverage()` output in this document                   | Next Wave 2 amendment              |
+| OI-9                 | Define `/api/roles/me` endpoint contract for React useRole() hook                 | Wave 4 FRONTEND_GOVERNANCE         |
+| OI-10                | Extend `require_role` factory to accept `tier=`, `sbu=`, `seniority_max=` filters | Stage C                            |
 
 ---
 

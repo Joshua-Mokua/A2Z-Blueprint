@@ -61,13 +61,13 @@ Every authoritative source has a **canonical interface** — a Python module, a 
 
 Examples currently enforced:
 
-| Authority | Canonical interface | Violation pattern (forbidden) |
-|---|---|---|
-| `data/org_hierarchy_config.json` | `utils/role_taxonomy.py` | Parsing role strings directly in arbitrary modules |
-| `data/users.json` | `utils/core.py::UserManager` | Reading `users.json` directly outside UserManager |
-| `data/kpi_library.json` | `utils/kpi_alias_resolver.py` + family | Hardcoded KPI ID lists in route bodies |
-| JWT tokens | `utils/auth_jwt.py` | Decoding tokens with custom code |
-| Tenant identity | `utils/config.py` + `/api/branding` | Hardcoded "Ecobank" in any code |
+| Authority                        | Canonical interface                    | Violation pattern (forbidden)                      |
+| -------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| `data/org_hierarchy_config.json` | `utils/role_taxonomy.py`               | Parsing role strings directly in arbitrary modules |
+| `data/users.json`                | `utils/core.py::UserManager`           | Reading `users.json` directly outside UserManager  |
+| `data/kpi_library.json`          | `utils/kpi_alias_resolver.py` + family | Hardcoded KPI ID lists in route bodies             |
+| JWT tokens                       | `utils/auth_jwt.py`                    | Decoding tokens with custom code                   |
+| Tenant identity                  | `utils/config.py` + `/api/branding`    | Hardcoded "Ecobank" in any code                    |
 
 ### §2.3 Multi-tenancy from day one
 
@@ -82,6 +82,7 @@ Tenant identity (bank name, regulator, brand colors, IP notice) lives entirely i
 Every role in the system is classified on two **orthogonal** axes:
 
 **Seniority axis** (`role_tiers`, 0-6):
+
 - 0 = MD root
 - 1 = C-suite + Directors
 - 2 = Head Of / Regional Head
@@ -91,6 +92,7 @@ Every role in the system is classified on two **orthogonal** axes:
 - 6 = Teller / CSO / DSR / Trainee
 
 **Profitability axis** (`profitability_axis.tiers`, 5 categories):
+
 - `portfolio_owner` — tagged to customers, drives sales
 - `proposition_owner` — drives overlap proposition, NOT tagged
 - `structural_owner` — owns PBT at structural level
@@ -122,6 +124,7 @@ The org hierarchy obeys these invariants (declared in `org_hierarchy_config.json
 - **`every_staff_has_a_chain_to_root`** — no orphans
 
 Plus:
+
 - `default_max_span_of_control: 15`
 - `default_max_chain_depth: 12`
 
@@ -153,6 +156,7 @@ The system has two **transport layers** (Streamlit pages, FastAPI routes) and on
 This means **the same engine is callable from Streamlit and FastAPI**, producing identical results. A test that exercises an engine doesn't need to spin up either transport.
 
 Violations:
+
 - Business rules embedded in route handlers (e.g. `if user.role == "MD": ...` instead of calling into `role_taxonomy`)
 - Engines importing Streamlit or FastAPI
 - Engines using `st.session_state` or `Request` objects
@@ -162,6 +166,7 @@ Violations:
 Every engine must have at least one audit gate verifying its declared contract. Gates live in `scripts/audit.py` and follow the naming convention `gate_<domain>_<verb>` or `gate_v10XXX_<topic>` for versioned batch gates.
 
 A gate returns:
+
 ```python
 {
     "id": "GXXX",
@@ -181,6 +186,7 @@ A gate returns:
 ### §5.1 Every endpoint declares its auth posture
 
 Every FastAPI endpoint except `/api/health` MUST declare one of:
+
 - `Depends(get_current_user)` — any authenticated user
 - `Depends(require_admin)` — admin role required
 - `Depends(require_role([...]))` — specific role list required (v10.497 addition)
@@ -192,6 +198,7 @@ Enforced by **G12** (`gate_api_auth_safety`).
 ### §5.2 JWT tokens are the canonical session
 
 JWT (HS256, 30-minute lifetime) is the canonical session token. Claims:
+
 - `sub` (username)
 - `role` (role string — transitional; canonical contract is to resolve via `role_taxonomy` at the consumer)
 - `iat`, `exp`
@@ -202,6 +209,7 @@ Tokens are sourced from either an `access_token` httpOnly cookie OR an `Authoriz
 ### §5.3 Logout is regulator-grade
 
 Logout MUST do both:
+
 1. Clear the auth cookie client-side (`response.delete_cookie`)
 2. Add the token's `jti` to the blocklist with TTL = remaining lifetime
 
@@ -242,6 +250,7 @@ Backup directories use the pattern `data/_v10XXX_backups/`. Retention policy is 
 The frontend uses **shadcn/ui** as its single governed component system (effective v10.497 Phase 0). No parallel component architectures. No bespoke primitives competing with shadcn-installed equivalents.
 
 A2Z banking-grade extensions exist:
+
 - `Button.loading` prop (universal form-submit affordance)
 - `Badge.tone` variants (semantic operational signaling)
 - `StatCard` composition over shadcn `Card` (KPI tile pattern)
@@ -269,6 +278,7 @@ This contract will be declared in `FRONTEND_GOVERNANCE.md` (Wave 4) and enforced
 Every state-changing operation in the API MUST emit an `_audit()` event (the single canonical emitter in `utils/api.py` line 170). Event types follow the convention `API_<DOMAIN>_<ACTION>` (e.g. `API_LOGIN_SUCCESS`, `API_CACHE_CLEAR`).
 
 Audit log sinks:
+
 - `data/audit_log.json` — append-only structured events
 - `data/audit_trail.jsonl` — line-delimited equivalent
 
@@ -402,5 +412,64 @@ This constitution exists so that the next session, the next collaborator, the ne
 The work continues.
 
 ---
+
+---
+
+## Article CGR1 — Constitutional Governance Reality-Grounding
+
+**Status:** ACTIVE
+**Introduced:** v10.498 Stage C Batch 1b
+**Source incident:** G383's first-run output disproved a doctrine claim
+**Enforcement:** GOVERNANCE_REALITY_INDEX.md (classification index)
+
+### The principle
+
+> **Constitutional governance must track runtime reality, not aspiration.**
+> Every claim in `docs/architecture/` is classified ACTIVE, TRANSITIONAL,
+> ASPIRATIONAL, or DEPRECATED. Audit gates enforce ACTIVE doctrine only.
+> Aspirational claims are explicitly labeled, never enforced, and never
+> conflated with current-state assertions.
+
+### The four classifications
+
+- **ACTIVE** — accurately describes deployed runtime; enforceable
+- **TRANSITIONAL** — work-in-progress; partly true today; tracked path to ACTIVE
+- **ASPIRATIONAL** — future-state; not enforceable; signpost for future batches
+- **DEPRECATED** — was true, no longer; retained for history; scheduled removal
+
+### Mechanics
+
+Every artifact in `docs/architecture/` carries a classification banner at
+the top. A new artifact, `GOVERNANCE_REALITY_INDEX.md`, catalogs every
+artifact's overall classification and lists inline exceptions.
+
+An audit gate MAY enforce a claim if and only if the claim's classification
+is ACTIVE. Gates that test ASPIRATIONAL claims are constitutional theater
+and MUST be either downgraded to TRANSITIONAL (visibility phase only) or
+deferred until the implementation lands and the claim becomes ACTIVE.
+
+### Discovery procedure
+
+When a gate's first run reveals doctrine is wrong:
+
+1. Don't blame the gate — the gate tested reality and reality won
+2. Diagnose the doctrine (accidentally aspirational, was-true-now-false, or simply wrong)
+3. Update classification (move the claim to ASPIRATIONAL, DEPRECATED, or delete)
+4. Update the gate (tighten or retire)
+5. Document the change in GOVERNANCE_REALITY_INDEX.md
+
+The G383 incident in v10.498 Stage C Batch 1b is the canonical example
+of this procedure.
+
+### Standing principle
+
+Henceforth, every constitutional artifact, every audit gate, every ledger
+entry must answer: _Is this ACTIVE, or is this aspirational?_
+
+A doctrine that cannot answer this question is incomplete. A gate that
+enforces a non-ACTIVE claim is theater. An incident that reveals
+reality-vs-doctrine drift is a feature of the system, not a failure.
+
+**This is what makes governance trustworthy instead of ceremonial.**
 
 **End of SYSTEM_CONSTITUTION.md**
