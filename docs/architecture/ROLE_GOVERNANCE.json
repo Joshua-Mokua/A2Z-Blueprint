@@ -1,0 +1,320 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain (consumes from CANONICAL_TRUTH_REGISTRY)",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 2",
+    "last_updated": "2026-05-22",
+    "owner": "Admin / HR Operations",
+    "authoritative_source": "data/org_hierarchy_config.json",
+    "canonical_interface": "utils/role_taxonomy.py",
+    "human_readable_equivalent": "ROLE_GOVERNANCE.md",
+    "enforcement_gate": "G260 gate_role_taxonomy_alignment (scripts/audit.py:36381)",
+    "doctrine": [
+      "R1 — Two orthogonal axes",
+      "R2 — Canonical resolution only",
+      "R3 — Display vs logic separation",
+      "R4 — Joshua-authored batches are constitutional",
+      "R5 — users.json and hr.json are data; org_hierarchy_config.json is schema",
+      "R6 — Taggability invariant: only portfolio_owner + service can be in accounts.csv::relationship_manager_code"
+    ]
+  },
+
+  "two_axes": {
+    "seniority": {
+      "source": "data/org_hierarchy_config.json::role_tiers",
+      "explicit_mappings_count": 143,
+      "keyword_fallback_groups": 8,
+      "tiers": {
+        "0": {"meaning": "MD root", "max_count": 1, "examples": ["Chief Executive & Managing Director", "Managing Director"]},
+        "1": {"meaning": "C-suite + Directors", "examples": ["Chief Retail Banking Officer", "Director Retail Banking", "Director Commercial Banking", "General Manager - Bancassurance"]},
+        "2": {"meaning": "Head Of / Regional Head", "examples": ["Head of Branches", "Head of Treasury", "Regional Head"]},
+        "3": {"meaning": "Senior Manager / Area Manager", "examples": ["Area Manager", "Senior Manager Direct Sales Force"]},
+        "4": {"meaning": "Manager / Branch Manager", "examples": ["Branch Manager", "Senior Branch Manager", "Branch Operations Manager", "Credit Manager"]},
+        "5": {"meaning": "Officer / Specialist / RM", "examples": ["Relationship Manager - SME", "Credit Analyst", "Treasury Dealer"]},
+        "6": {"meaning": "Teller / CSO / DSR / Trainee", "examples": ["Teller", "Customer Service Officer", "Direct Sales Representative"]}
+      },
+      "keyword_fallback": {
+        "0": ["managing director", "chief executive"],
+        "1": ["chief ", "general manager", "director "],
+        "2": ["head of", "head ", "regional head"],
+        "3": ["senior manager", "area manager", "senior branch", "senior relationship manager"],
+        "4": ["manager"],
+        "5": ["officer", "specialist", "analyst", "supervisor", "engineer", "administrator", "dealer", "developer", "representative"],
+        "6": ["teller", "junior ", "trainee", "assistant", "clerk"]
+      }
+    },
+
+    "profitability": {
+      "source": "data/org_hierarchy_config.json::profitability_axis",
+      "shipped_in": "v10.374",
+      "enforcement_gate": "G260",
+      "tiers": {
+        "portfolio_owner": {
+          "meaning": "Tagged to customers; drives sales; Σ(customer PBT) attributed to them",
+          "tagging_permitted": true,
+          "appears_in": "accounts.csv::relationship_manager_code"
+        },
+        "proposition_owner": {
+          "meaning": "Drives overlapping proposition (Women Banking, Diaspora, Agribusiness)",
+          "tagging_permitted": false,
+          "attribution_via": "overlap views"
+        },
+        "structural_owner": {
+          "meaning": "Owns PBT at structural level (branch, region, SBU, bank) via rollup",
+          "tagging_permitted": false
+        },
+        "service": {
+          "meaning": "Branch operational role; occasionally tagged when introducing accounts",
+          "tagging_permitted": true,
+          "tagging_secondary_only": true
+        },
+        "support": {
+          "meaning": "Head office function (Risk, Compliance, IT, HR, Finance, Audit, Legal)",
+          "tagging_permitted": false
+        }
+      },
+      "taggability_invariant": "Only portfolio_owner and service roles may appear in accounts.csv::relationship_manager_code or customers.csv::rm_code"
+    },
+
+    "branch_scopes": {
+      "branch_bound": "Works at one specific branch",
+      "head_office": "Works at HO; portfolio may span multiple branches",
+      "national": "Bank-wide responsibility"
+    },
+
+    "sbus": {
+      "values": ["Retail Banking", "Commercial Banking", "Corporate Banking", "Treasury", "Digital_Agency", "Support", "Executive"],
+      "alignment": "Must be subset of data/segment_sbu_mapping.json plus axis-level operational SBUs (Support, Executive, Treasury, Digital_Agency)"
+    }
+  },
+
+  "canonical_interface_contract": {
+    "module": "utils/role_taxonomy.py",
+    "purity": [
+      "Zero upward imports",
+      "Reads only org_hierarchy_config.json (schema) + users.json/hr.json (coverage audit)",
+      "Safe from any layer (engines, transports, gates)",
+      "No Streamlit / FastAPI / transport-specific dependencies"
+    ],
+    "exported_constants": {
+      "tier_constants": ["TIER_PORTFOLIO_OWNER", "TIER_PROPOSITION_OWNER", "TIER_STRUCTURAL_OWNER", "TIER_SERVICE", "TIER_SUPPORT"],
+      "tier_tuple": "ALL_TIERS",
+      "scope_constants": ["SCOPE_BRANCH_BOUND", "SCOPE_HEAD_OFFICE", "SCOPE_NATIONAL"],
+      "scope_tuple": "ALL_SCOPES",
+      "sbu_constants": ["SBU_RETAIL", "SBU_COMMERCIAL", "SBU_CORPORATE", "SBU_TREASURY", "SBU_DIGITAL", "SBU_SUPPORT", "SBU_EXECUTIVE"],
+      "sbu_tuple": "ALL_SBUS"
+    },
+    "exported_dataclass": {
+      "name": "RoleClassification",
+      "frozen": true,
+      "fields": [
+        {"name": "role", "type": "str", "meaning": "original role string"},
+        {"name": "tier", "type": "str", "constraint": "one of ALL_TIERS"},
+        {"name": "branch_scope", "type": "str", "constraint": "one of ALL_SCOPES"},
+        {"name": "sbu", "type": "str", "constraint": "one of ALL_SBUS"},
+        {"name": "matched_via", "type": "str", "values": ["explicit", "keyword_fallback:<keyword>", "no_match_default", "empty_role_fallback"]}
+      ]
+    },
+    "exported_functions": [
+      {"name": "classify_role(role)", "returns": "RoleClassification", "use_case": "Full classification"},
+      {"name": "get_profitability_tier(role)", "returns": "str", "use_case": "Just the tier"},
+      {"name": "get_branch_scope(role)", "returns": "str", "use_case": "Just the scope"},
+      {"name": "get_sbu(role)", "returns": "str", "use_case": "Just the SBU"},
+      {"name": "can_be_tagged(role)", "returns": "bool", "use_case": "Single authority on tagging"},
+      {"name": "list_all_classified_roles()", "returns": "list[str]"},
+      {"name": "list_roles_by_tier(tier)", "returns": "list[str]"},
+      {"name": "list_roles_by_sbu(sbu)", "returns": "list[str]"},
+      {"name": "validate_role_coverage()", "returns": "dict", "use_case": "Audit; required for G260"},
+      {"name": "self_test()", "returns": "None", "test_count": 12}
+    ],
+    "coverage_validation_shape": {
+      "total_used": "int — distinct roles in users + hr",
+      "explicit": "int — in role_classification",
+      "keyword": "int — matched via fallback",
+      "default": "int — fell to no_match_default (G260 requires 0)",
+      "unclassified": "list[str] — sorted default cases",
+      "by_tier": "dict tier -> count"
+    }
+  },
+
+  "hierarchy_invariants": {
+    "exactly_one_root_required": {"meaning": "One and only one MD", "enforced_by": "gate_hierarchy_synth"},
+    "no_cycles_allowed": {"meaning": "Reporting graph is a tree", "enforced_by": "gate_hierarchy_classification_correct"},
+    "only_chiefs_report_to_md": {"meaning": "Depth-1 from root is C-suite only", "enforced_by": ["gate_canonical_retail_chain", "_v10399_joshua_corrections"]},
+    "every_staff_has_a_chain_to_root": {"meaning": "No orphans", "enforced_by": "gate_hierarchy_synth"},
+    "default_max_span_of_control": {"value": 15, "behavior": "warnings only"},
+    "default_max_chain_depth": {"value": 12, "behavior": "warnings only"}
+  },
+
+  "chief_roster": {
+    "total_positions": 11,
+    "real_md": {"username": "william001", "staff_code": "300001", "role": "Chief Executive & Managing Director", "name": "William Mwanake"},
+    "chiefs": [
+      {"role": "Chief Retail Banking Officer", "synthetic_staff_code": "EXEC-CRO-001", "primary_department": "Retail Banking"},
+      {"role": "Chief Credit Officer", "synthetic_staff_code": "EXEC-CCO-001", "primary_department": "Credit"},
+      {"role": "Chief Operating Officer", "synthetic_staff_code": "EXEC-COO-001", "primary_department": "Operations"},
+      {"role": "Chief Financial Officer", "synthetic_staff_code": "EXEC-CFO-001", "primary_department": "Finance"},
+      {"role": "Chief Information Officer", "synthetic_staff_code": "EXEC-CIO-001", "primary_department": "IT & Digital"},
+      {"role": "Chief Risk Officer", "synthetic_staff_code": "EXEC-CRSO-001", "primary_department": "Risk & Compliance"},
+      {"role": "Chief Compliance Officer", "synthetic_staff_code": "EXEC-CCMP-001", "primary_department": "Legal"},
+      {"role": "Chief Internal Auditor", "synthetic_staff_code": "EXEC-CIA-001", "primary_department": "Internal Audit"},
+      {"role": "Chief Human Resource Officer", "synthetic_staff_code": "EXEC-CHRO-001", "primary_department": "People & HR"},
+      {"role": "Chief Commercial Officer", "synthetic_staff_code": "EXEC-CCMO-001", "primary_department": "Commercial & Corporate"},
+      {"role": "General Manager - Bancassurance", "primary_department": "Bancassurance", "tier": 1}
+    ],
+    "synthetic_md_deleted_in": "_v10399_joshua_corrections",
+    "departments_count": 23,
+    "department_chief_mapping_source": "data/org_hierarchy_config.json::department_chief_mapping"
+  },
+
+  "joshua_authored_canonical_batches": {
+    "_v10330_canonical_retail_chain": {
+      "version": "v10.330",
+      "decision": "Retail chain locked: Branch Manager → Area Manager → Head of Branches → CRBO",
+      "constraints_tightened": [
+        "Branch Manager parents: [Area Manager, Senior Branch Manager, Head of Branches] → [Area Manager]",
+        "Senior Branch Manager parents: [Area Manager, Head of Branches] → [Area Manager]"
+      ],
+      "synth_alignment": "SBMs treated as PEERS of standard BMs (both report to Area Manager), not as supervisory tier",
+      "rationale": "Branch performance = BM's performance; Area Manager BSC = aggregate of branches; etc. SBMs run flagship branches but don't supervise other BMs"
+    },
+    "_v10396_joshua_clarification": {
+      "date": "2026-05-13",
+      "decisions": [
+        "Branch tops are BM (regular) or SBM (big branches)",
+        "BOM, BRM, BSRO, RO PB, RO BB, DSR report to BM/SBM",
+        "BOS, Teller, CSO report to BOM",
+        "Senior Branch Manager tier corrected 3 → 4",
+        "DSR reporting line moved from BOS/BOM to BM/SBM"
+      ]
+    },
+    "_v10398_joshua_hq_canonical": {
+      "date": "2026-05-13",
+      "roles_added": 103,
+      "roles_updated": 9,
+      "tier_updates": 127,
+      "chief_domain_mapping": {
+        "CFO": ["Finance", "Business Analytics", "Treasury"],
+        "CRO_Risk": ["Risk", "Compliance", "Chief Compliance Officer"],
+        "CIO": ["IT", "DFS (later updated by _v10399)"],
+        "COO": ["Operations", "Marketing", "Procurement", "CX", "Trade Operations"],
+        "CHRO": ["HR"],
+        "CRBO": ["Branches", "Women Banking", "Diaspora", "RM Diaspora", "Business Development (DSR)"],
+        "CCO_Commercial": ["Corporates", "SME", "GIB", "RMs"],
+        "Chief_Credit_Officer": ["Credit Analysis", "Admin", "Monitoring", "Collections"],
+        "Chief_Internal_Auditor": ["Audit roles"],
+        "Chief_Legal": ["Legal roles"],
+        "GM_Bancassurance": ["Manager Underwriting", "HQ Bancassurance"]
+      },
+      "bancassurance_dotted_line": "Bancassurance Officers at branches report to BM primary with dotted line to GM Bancassurance",
+      "ordering_fixes": [
+        "SDCO branches → BM/SBM primary (94 found)",
+        "RM Corporate Banking → SRM Corporate primary",
+        "RM Agribusiness → SRM SME primary",
+        "Credit Analyst → distributed under analysis managers"
+      ]
+    },
+    "_v10399_joshua_corrections": {
+      "date": "2026-05-13",
+      "corrections": [
+        "Synthetic MD deleted from users.json (only William Mwanake CE&MD remains)",
+        "Head of DFS moved CIO → CCO (DFS is commercially-led)",
+        "Manager Card Operations remains under DFS (now via CCO)",
+        "Corporate Sales Dealer confirmed under Treasury (CFO)",
+        "Trade Finance Back Office Manager confirmed under Head of Operations → COO",
+        "Trade Finance split confirmed: relationships → CCO, operations → COO",
+        "Admin role moved CHRO → MD (developer/MD-login admin account)"
+      ]
+    },
+    "_v10469_role_kpis_resolution": {
+      "version": "v10.469",
+      "location": "data/kpi_library.json",
+      "resolved": 1469,
+      "unresolved": 0,
+      "decision": "All role-KPI short-code references resolved to canonical library KPI IDs"
+    }
+  },
+
+  "oi_1_require_role_name_collision_resolution": {
+    "problem": "Two functions named require_role with incompatible signatures",
+    "location_a": {
+      "module": "utils/auth.py",
+      "alias_target": "require_access",
+      "signature": "require_role(module: str, user: Optional[Dict]) -> bool",
+      "semantics": "Streamlit page gate"
+    },
+    "location_b": {
+      "module": "utils/auth_jwt.py",
+      "signature": "require_role(roles: list[str]) -> Callable",
+      "semantics": "FastAPI Depends factory",
+      "returns": "Inner _checker that validates JWT role claim"
+    },
+    "resolution": "Rename utils/auth.py::require_role → require_module_access",
+    "rationale": [
+      "Streamlit function semantics ('require access to module') captured by require_module_access",
+      "Name require_role accurately describes the FastAPI factory",
+      "Streamlit version is transitional; FastAPI version is canonical going forward"
+    ],
+    "migration_steps": [
+      "Rename internal alias in utils/auth.py: require_role = require_access → require_module_access = require_access",
+      "Update __all__: remove require_role, add require_module_access",
+      "Add DeprecationWarning shim for one batch grace period",
+      "Update every pages/*.py import: from utils.auth import require_role → require_module_access",
+      "Update call sites: require_role(\"name\") → require_module_access(\"name\")",
+      "Add gate_no_require_role_collision in Stage C",
+      "Remove deprecation shim one batch later"
+    ],
+    "severity_classification": {
+      "before_rename": "HIGH (transitional collision; flagged at warning during grace)",
+      "after_rename_if_reintroduced": "CRITICAL (constitutional rot)"
+    },
+    "timeline": {
+      "wave_2_this_batch": "Declared resolution path; gate placeholder in Stage C",
+      "next_governance_batch": "Execute rename + import updates + gate activation",
+      "one_batch_after": "Remove deprecation shim"
+    }
+  },
+
+  "permitted_raw_role_string_exceptions": [
+    "Inside utils/role_taxonomy.py itself (canonical implementation)",
+    "Inside data/org_hierarchy_config.json (canonical data)",
+    "Inside data/users.json and data/hr.json (user records)",
+    "Inside scripts/audit.py (gate implementations testing the taxonomy)",
+    "In UI display layers after classification (e.g. {user.role} in JSX greeting)",
+    "In role-keyed dictionaries: data/kpi_library.json::role_kpis, data/role_default_targets.json, data/role_skill_matrix.json"
+  ],
+
+  "consumer_patterns": {
+    "fastapi_authorization": {
+      "pattern_a_string_list_current_v10497_p1_1": {
+        "code": "Depends(require_role([\"Chief Executive & Managing Director\", \"Chief Retail Banking Officer\"]))",
+        "status": "currently supported"
+      },
+      "pattern_b_canonical_tier_stage_c_target": {
+        "code": "Depends(require_role(tier=TIER_STRUCTURAL_OWNER))",
+        "status": "to be implemented in Stage C"
+      },
+      "pattern_c_manual_classification": {
+        "code": "classification = classify_role(user.get(\"role\", \"\")); if classification.sbu != \"Retail Banking\": raise HTTPException(403)",
+        "status": "permitted; explicit and canonical"
+      }
+    },
+    "engine_business_logic": {
+      "must_use": ["classify_role()", "can_be_tagged()", "get_profitability_tier()", "get_branch_scope()", "get_sbu()"]
+    },
+    "react_phase_2_future": {
+      "hook": "useRole()",
+      "data_source": "/api/roles/me endpoint (Wave 4 to specify)",
+      "rule": "React layer never sees raw role strings for logic decisions"
+    }
+  },
+
+  "open_items": [
+    {"id": "OI-1", "title": "require_role name collision execution", "wave": "Next governance batch"},
+    {"id": "OI-8", "title": "Capture live validate_role_coverage() output", "wave": "Next Wave 2 amendment"},
+    {"id": "OI-9", "title": "Define /api/roles/me endpoint contract", "wave": "Wave 4 FRONTEND_GOVERNANCE"},
+    {"id": "OI-10", "title": "Extend require_role factory to accept tier=, sbu=, seniority_max= filters", "wave": "Stage C"}
+  ]
+}

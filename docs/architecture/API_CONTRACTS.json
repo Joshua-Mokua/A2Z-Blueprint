@@ -1,0 +1,185 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_transitional_subareas",
+    "version": "1.0.0",
+    "contract_version": "v10.497-API-1",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 2",
+    "last_updated": "2026-05-22",
+    "owner": "Platform / Security",
+    "authoritative_source": "utils/api.py + mounted routers",
+    "human_readable_equivalent": "API_CONTRACTS.md",
+    "consumed_by": [
+      "Test suites (load tests, contract tests)",
+      "frontend/web/src/lib/api.ts",
+      "Streamlit pages via utils/api_client.py",
+      "Audit gates (gate_api_v1_coverage, G12, gate_audit_coverage)"
+    ],
+    "doctrine": [
+      "API1 — Every endpoint declares auth",
+      "API2 — State changes emit audit events",
+      "API3 — Destructive operations need RBAC, not just confirm=true",
+      "API4 — Idempotency where possible",
+      "API5 — Path versioning is permanent"
+    ]
+  },
+
+  "endpoints": {
+    "auth": [
+      {"method": "POST", "path": "/api/auth/login", "cap": "auth:login", "auth": "PUBLIC", "audit_events": ["API_LOGIN_SUCCESS", "API_LOGIN_FAILED"], "side_effects": ["sets cookie", "mints JWT"], "status": "canonical"},
+      {"method": "GET", "path": "/api/auth/me", "cap": "auth:me", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "POST", "path": "/api/auth/logout", "cap": "auth:logout", "auth": "Depends(get_current_user)", "audit_events": ["API_LOGOUT_SUCCESS"], "side_effects": ["clears cookie", "adds jti to blocklist"], "status": "canonical", "shipped_in": "v10.497 P1.3"},
+      {"method": "GET", "path": "/api/health", "cap": null, "auth": "PUBLIC", "audit_events": [], "side_effects": [], "status": "canonical", "only_unauth_route": true},
+      {"method": "GET", "path": "/api/branding", "cap": null, "auth": "PUBLIC", "audit_events": [], "side_effects": [], "status": "canonical", "shipped_in": "v10.495"}
+    ],
+
+    "core_resource_summaries": [
+      {"method": "GET", "path": "/api/bsc/summary", "cap": "bsc:read_summary", "auth": "Depends(get_current_user)", "audit_events": ["API_BSC_SUMMARY"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/bsc/staff/{username}", "cap_set": ["bsc:read_own", "bsc:read_subordinates", "bsc:read_all_staff"], "auth": "Depends(get_current_user) + handler-level scope check", "audit_events": ["API_BSC_STAFF", "API_BSC_STAFF_DENIED"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/pipeline/summary", "cap": "pipeline:read_summary", "auth": "Depends(get_current_user)", "audit_events": ["API_PIPELINE_SUMMARY"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/pipeline/deals", "cap_set": ["pipeline:read_own_deals", "pipeline:read_all_deals"], "auth": "Depends(get_current_user) + handler-level filter", "audit_events": ["API_PIPELINE_DEALS"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/credit/summary", "cap": "credit:read_summary", "auth": "Depends(get_current_user)", "audit_events": ["API_CREDIT_SUMMARY"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/credit/watchlist", "cap": "credit:read_watchlist", "auth": "Depends(get_current_user) + scope check", "audit_events": ["API_CREDIT_WATCHLIST"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/aml/summary", "cap": "aml:read_summary", "auth": "Depends(get_current_user) + handler-level filter", "audit_events": ["API_AML_SUMMARY"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/users/summary", "cap": "users:read_summary", "auth": "Depends(get_current_user)", "audit_events": ["API_USERS_SUMMARY"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/dashboard/md", "cap": "dashboard:md", "auth": "Depends(get_current_user) + MD check", "audit_events": ["API_DASHBOARD_MD"], "side_effects": [], "status": "canonical"}
+    ],
+
+    "cache_and_vitals": [
+      {"method": "POST", "path": "/api/cache/clear", "cap": "cache:clear", "auth": "Depends(require_admin)", "audit_events": ["API_CACHE_CLEAR"], "side_effects": ["invalidates in-memory cache"], "status": "canonical"},
+      {"method": "GET", "path": "/api/cache/stats", "cap": "cache:read_stats", "auth": "Depends(get_current_user)", "audit_events": ["API_CACHE_STATS"], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/vitals/full", "cap": "vitals:read", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "long_running": "30-60s", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/vitals/organs", "cap": "vitals:read", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/vitals/regression", "cap": "vitals:read", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"}
+    ],
+
+    "performance_v2": [
+      {"method": "GET", "path": "/api/v2/performance/insights/{staff_code}", "cap": "performance:insights", "auth": "Depends(get_current_user) + scope check", "audit_events": [], "side_effects": [], "status": "canonical"}
+    ],
+
+    "integration": [
+      {"method": "GET", "path": "/api/integration/rules", "cap": "integration:read_rules", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/integration/actuals/{period}", "cap": "integration:read_actuals", "auth": "Depends(get_current_user) + scope filter", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/integration/resolution-metrics", "cap": "integration:read_metrics", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "POST", "path": "/api/integration/run-period", "cap": "integration:run_period", "auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_events": ["API_INTEGRATION_RUN_PERIOD"], "side_effects": ["writes period actuals"], "status": "transitional"},
+      {"method": "GET", "path": "/api/integration/coverage", "cap": "integration:read_coverage", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"},
+      {"method": "GET", "path": "/api/integration/rule-explain/{kpi_id}", "cap": "integration:read_rule_explain", "auth": "Depends(get_current_user)", "audit_events": [], "side_effects": [], "status": "canonical"}
+    ],
+
+    "v1_admin_governance_read": [
+      {"method": "GET", "path": "/api/v1/role-weights/audit", "cap": "role-weights:audit", "auth": "Depends(get_current_user)", "current_grant": "[ALL_AUTHENTICATED]", "target_grant": "[ALL_AUTHENTICATED]", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/role-weights/{role}/audit", "cap": "role-weights:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/role-weights/{role}/normalized", "cap": "role-weights:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/kpi-dedup/audit", "cap": "kpi-dedup:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/backup-retention/audit", "cap": "backup-retention:audit", "auth": "Depends(get_current_user)", "current_grant": "[ALL_AUTHENTICATED]", "target_grant": "[ADMIN]", "status": "transitional", "rationale": "exposes operationally sensitive metadata"},
+      {"method": "GET", "path": "/api/v1/test-cleanup/audit", "cap": "test-cleanup:audit", "auth": "Depends(get_current_user)", "current_grant": "[ALL_AUTHENTICATED]", "target_grant": "[ADMIN]", "status": "transitional"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/full", "cap": "bsc-audit:full", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/staff-coverage", "cap": "bsc-audit:staff-coverage", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/kpi-completeness", "cap": "bsc-audit:kpi-completeness", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/pillar-canonical", "cap": "bsc-audit:pillar-canonical", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/weight-normalization", "cap": "bsc-audit:weight-normalization", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/library-alignment", "cap": "bsc-audit:library-alignment", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-audit/cascade-linkage", "cap": "bsc-audit:cascade-linkage", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-pillar/audit", "cap": "bsc-pillar:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-library/audit", "cap": "bsc-library:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-completeness/audit", "cap": "bsc-completeness:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-weights/audit", "cap": "bsc-weights:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/bsc-codes/audit", "cap": "bsc-codes:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/admin-validation/library", "cap": "admin-validation:library", "auth": "Depends(get_current_user)", "current_grant": "[ALL_AUTHENTICATED]", "target_grant": "[ADMIN]", "status": "transitional"},
+      {"method": "GET", "path": "/api/v1/cascade-360/audit", "cap": "cascade-360:audit", "auth": "Depends(get_current_user)", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/cascade-360/stage/{stage}", "cap": "cascade-360:stage", "auth": "Depends(get_current_user)", "status": "canonical"}
+    ],
+
+    "v1_admin_governance_write_TRANSITIONAL": [
+      {"method": "POST", "path": "/api/v1/role-weights/migrate", "cap": "role-weights:migrate", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_ROLE_WEIGHTS_MIGRATE", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/kpi-dedup/migrate", "cap": "kpi-dedup:migrate", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_KPI_DEDUP_MIGRATE", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/backup-retention/apply", "cap": "backup-retention:apply", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BACKUP_RETENTION_APPLY", "destructive": true, "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/test-cleanup/archive", "cap": "test-cleanup:archive", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_TEST_CLEANUP_ARCHIVE", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/bsc-pillar/migrate", "cap": "bsc-pillar:migrate", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BSC_PILLAR_MIGRATE", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/bsc-library/register", "cap": "bsc-library:register", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BSC_LIBRARY_REGISTER", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/bsc-completeness/repair", "cap": "bsc-completeness:repair", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BSC_COMPLETENESS_REPAIR", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/bsc-weights/renormalize", "cap": "bsc-weights:renormalize", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BSC_WEIGHTS_RENORMALIZE", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/bsc-codes/fix", "cap": "bsc-codes:fix", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_BSC_CODES_FIX", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/admin-validation/legacy-aliases", "cap": "admin-validation:legacy-aliases", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_ADMIN_VALIDATION_LEGACY_ALIASES", "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/harmonize/all", "cap": "harmonize:all", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_HARMONIZE_ALL", "destructive": true, "status": "transitional"},
+      {"method": "POST", "path": "/api/v1/harmonize/stage/{stage}", "cap": "harmonize:stage", "current_auth": "Depends(get_current_user) + confirm: bool", "target_auth": "Depends(require_admin)", "audit_event": "API_HARMONIZE_STAGE", "destructive": true, "status": "transitional"}
+    ],
+
+    "v1_hr_read": [
+      {"method": "GET", "path": "/api/v1/onboarding/audit", "cap": "onboarding:audit", "auth": "Depends(get_current_user)", "scope": "Head+ in HR SBU OR ADMIN", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/onboarding/audit/{staff_code}", "cap": "onboarding:audit_staff", "auth": "Depends(get_current_user)", "scope": "Manager of subordinate OR Head+", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/exit-risk/audit", "cap": "exit-risk:audit", "auth": "Depends(get_current_user)", "scope": "Head+ in HR SBU OR ADMIN", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/exit-risk/audit/{staff_code}", "cap": "exit-risk:audit_staff", "auth": "Depends(get_current_user)", "scope": "Manager OR Head+", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/exit-risk/simulate/{staff_code}", "cap": "exit-risk:simulate_staff", "auth": "Depends(get_current_user)", "scope": "Manager OR Head+ in HR SBU", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/hr-audit/full", "cap": "hr-audit:full", "auth": "Depends(get_current_user)", "scope": "Head+ in HR SBU OR ADMIN", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/hr-audit/dimension/{dimension}", "cap": "hr-audit:dimension", "auth": "Depends(get_current_user)", "scope": "Head+ in HR SBU", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/peer-learning/cards/{staff_code}", "cap": "peer-learning:cards", "auth": "Depends(get_current_user)", "scope": "Own or subordinates", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/peer-learning/match-skill", "cap": "peer-learning:match_skill", "auth": "Depends(get_current_user)", "scope": "[ALL_AUTHENTICATED]", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/coaching/script", "cap": "coaching:script", "auth": "Depends(get_current_user)", "scope": "Manager of staff_code", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/predict/{staff_code}", "cap": "predict:achievement", "auth": "Depends(get_current_user)", "scope": "Own or subordinates", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/gamification/badges/{staff_code}", "cap": "gamification:badges", "auth": "Depends(get_current_user)", "scope": "Own or subordinates", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/gamification/leaderboard", "cap": "gamification:leaderboard", "auth": "Depends(get_current_user)", "scope": "Relevant scope", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/efficiency/{staff_code}", "cap": "efficiency:read", "auth": "Depends(get_current_user)", "scope": "Own or subordinates", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/wellness/{staff_code}", "cap": "wellness:read", "auth": "Depends(get_current_user)", "scope": "Manager OR ADMIN OR subject self", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/wellness/alerts/{manager_code}", "cap": "wellness:alerts", "auth": "Depends(get_current_user)", "scope": "manager_code must equal caller's staff_code", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/hr-actuals/staff/{staff_code}", "cap": "hr-actuals:staff", "auth": "Depends(get_current_user)", "scope": "Own or subordinates", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/hr-actuals/bank-wide/{kpi_id_or_name}", "cap": "hr-actuals:bank_wide", "auth": "Depends(get_current_user)", "scope": "Head+ in HR SBU OR ADMIN", "status": "canonical"},
+      {"method": "GET", "path": "/api/v1/hr-actuals/coverage", "cap": "hr-actuals:coverage", "auth": "Depends(get_current_user)", "scope": "[ALL_AUTHENTICATED]", "status": "canonical"}
+    ],
+
+    "v1_hr_write": [
+      {"method": "POST", "path": "/api/v1/onboarding/simulate", "cap": "onboarding:simulate", "auth": "OI-7: UNCLEAR — extracted signature lacks Depends(get_current_user); likely extraction artifact, requires Joshua to verify in utils/api.py", "audit_event_expected": "API_ONBOARDING_SIMULATE", "status": "VERIFY (likely canonical)"},
+      {"method": "POST", "path": "/api/v1/peer-learning/generate-cards", "cap": "peer-learning:generate_cards", "auth": "OI-7: UNCLEAR — same as above", "audit_event_expected": "API_PEER_LEARNING_GENERATE", "status": "VERIFY (likely canonical)"},
+      {"method": "POST", "path": "/api/v1/gamification/evaluate/{staff_code}", "cap": "gamification:evaluate", "auth": "Depends(get_current_user)", "audit_event": "API_GAMIFICATION_EVALUATE", "status": "canonical"}
+    ]
+  },
+
+  "mounted_routers": {
+    "confirmed_mounted_in_startup": [
+      {"name": "cascade_router", "source": "utils/api_cascade.py", "mount_point": "/api/v1/cascade/*", "shipped_in": "v10.413", "status": "canonical"},
+      {"name": "capacity_router", "source": "utils/api_capacity_feedback.py", "mount_point": "/api/cascade/capacity-feedback", "shipped_in": "v10.413", "status": "canonical"},
+      {"name": "branding_router", "source": "utils/api_branding.py", "mount_point": "/api/branding", "shipped_in": "v10.495", "status": "canonical"}
+    ],
+    "exist_in_utils_inventory_mount_status_unknown": [
+      "utils/api_cockpit.py",
+      "utils/api_compliance.py",
+      "utils/api_legal.py",
+      "utils/api_telemetry.py",
+      "utils/api_treasury.py",
+      "utils/api_strategy.py",
+      "utils/api_product.py",
+      "utils/api_resource_optimization.py",
+      "utils/api_crud.py",
+      "utils/api_gateway_developer_portal.py"
+    ],
+    "resolution_wave": "Wave 3 ORGANS_REGISTRY"
+  },
+
+  "transitional_summary": {
+    "endpoints_classified_transitional": 14,
+    "categories": [
+      "12 v1 admin write endpoints needing require_admin",
+      "2 read endpoints (backup-retention/audit, test-cleanup/audit, admin-validation/library) needing tightening to ADMIN"
+    ],
+    "verification_required": 2,
+    "verification_routes": [
+      "POST /api/v1/onboarding/simulate",
+      "POST /api/v1/peer-learning/generate-cards"
+    ]
+  },
+
+  "api_versioning_policy": {
+    "v1_endpoint_count_observed": 53,
+    "v2_endpoint_count_observed": 1,
+    "breaking_change_policy": "Breaking change to existing v1 endpoint is constitutional violation; new endpoint must live at /api/v2/...",
+    "deprecation_grace_batches": 3
+  },
+
+  "open_items": [
+    {"id": "OI-2", "title": "53 v1 admin endpoint migration to Depends(require_admin)", "wave": "next governance batch"},
+    {"id": "OI-7", "title": "Verify /onboarding/simulate + /peer-learning/generate-cards auth state", "wave": "Immediate (Joshua grep)"},
+    {"id": "OI-14", "title": "Mount status of 10 router modules", "wave": "Wave 3 ORGANS_REGISTRY"},
+    {"id": "OI-15", "title": "Full audit event vocabulary documentation", "wave": "Wave 4 TELEMETRY_MAP"}
+  ]
+}
