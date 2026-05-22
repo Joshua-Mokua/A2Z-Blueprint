@@ -1,0 +1,239 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 5",
+    "last_updated": "2026-05-22",
+    "owner": "Operations / Risk / Audit",
+    "human_readable_equivalent": "RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md",
+    "authoritative_sources": [
+      "utils/enterprise_discharge_audit.py",
+      "utils/audit_trail_certification.py",
+      "utils/disaster_recovery.py",
+      "utils/it_disaster_recovery.py",
+      "utils/scalability_validator.py",
+      "utils/stress_test_harness.py",
+      "utils/stress_testing.py",
+      "v10.471-v10.494 audit gates G357-G380"
+    ],
+    "doctrine": [
+      "R1 — Certification is earned, not declared",
+      "R2 — Failure is the test, not the exception",
+      "R3 — Resilience is layered",
+      "R4 — Certification is forward-only",
+      "R5 — Uncertainty exposure is the highest discipline"
+    ]
+  },
+
+  "certification_ladder": {
+    "total_rungs": 24,
+    "cumulative_property": "G380 implies G379 implies ... G357; drop at any rung invalidates everything above",
+    "rungs": [
+      {"rung": 1, "gate_id": "G357", "gate_name": "gate_v10471_enterprise_discharge_ready", "batch": "v10.471", "line": 53895, "certifies": "System ready for discharge — operational handover from build to operations"},
+      {"rung": 2, "gate_id": "G358", "gate_name": "gate_v10472_enterprise_360_compliance", "batch": "v10.472", "line": 54016, "certifies": "360 compliance across all major regulatory frameworks"},
+      {"rung": 3, "gate_id": "G359", "gate_name": "gate_v10473_o1_stabilization_complete", "batch": "v10.473", "line": 54119, "certifies": "O1 stabilization — base operational stability"},
+      {"rung": 4, "gate_id": "G360", "gate_name": "gate_v10474_o8_environment_isolation", "batch": "v10.474", "line": 54331, "certifies": "O8 isolation — environments properly isolated"},
+      {"rung": 5, "gate_id": "G361", "gate_name": "gate_v10475_o2a_telemetry_lineage_replay", "batch": "v10.475", "line": 54496, "certifies": "O2-A — telemetry lineage and replay infrastructure"},
+      {"rung": 6, "gate_id": "G362", "gate_name": "gate_v10476_o2b_ai_heatmap_anomaly_telemetry", "batch": "v10.476", "line": 54658, "certifies": "O2-B — AI heatmap + anomaly telemetry"},
+      {"rung": 7, "gate_id": "G363", "gate_name": "gate_v10477_o3a_channel_simulators", "batch": "v10.477", "line": 54814, "certifies": "O3-A — channel simulators operational"},
+      {"rung": 8, "gate_id": "G364", "gate_name": "gate_v10478_o3b_kic_cards_complete_7_channels", "batch": "v10.478", "line": 55041, "certifies": "O3-B — KIC cards across 7 channels"},
+      {"rung": 9, "gate_id": "G365", "gate_name": "gate_v10479_o3c_scenario_library", "batch": "v10.479", "line": 55344, "certifies": "O3-C — scenario library populated", "cross_ref": "DIGITAL_TWIN_ARCHITECTURE"},
+      {"rung": 10, "gate_id": "G366", "gate_name": "gate_v10480_o4a_simulation_clock_tick_scheduler", "batch": "v10.480", "line": 55557, "certifies": "O4-A — simulation clock + tick scheduler"},
+      {"rung": 11, "gate_id": "G367", "gate_name": "gate_v10481_o4b_macro_economic_state", "batch": "v10.481", "line": 55814, "certifies": "O4-B — macro economic state engine"},
+      {"rung": 12, "gate_id": "G368", "gate_name": "gate_v10482_o5_chaos_engineering", "batch": "v10.482", "line": 56093, "certifies": "O5 — chaos engineering active", "resolves_subdir": "utils/chaos/"},
+      {"rung": 13, "gate_id": "G369", "gate_name": "gate_v10483_o6a_ml_evolution_lab", "batch": "v10.483", "line": 56601, "certifies": "O6-A — ML evolution lab", "cross_ref": "AI_GOVERNANCE", "resolves_subdir": "utils/ml/"},
+      {"rung": 14, "gate_id": "G370", "gate_name": "gate_v10484_o6b_agent_infrastructure", "batch": "v10.484", "line": 56886, "certifies": "O6-B — agent infrastructure", "cross_ref": "AI_GOVERNANCE", "resolves_subdir": "utils/agents/"},
+      {"rung": 15, "gate_id": "G371", "gate_name": "gate_v10485_o7a_training_arena", "batch": "v10.485", "line": 57139, "certifies": "O7-A — training arena", "cross_ref": "DIGITAL_TWIN_ARCHITECTURE", "resolves_subdir": "utils/arena/"},
+      {"rung": 16, "gate_id": "G372", "gate_name": "gate_v10486_o7b_drill_scoring_replay", "batch": "v10.486", "line": 57348, "certifies": "O7-B — drill ledger with scoring + replay"},
+      {"rung": 17, "gate_id": "G373", "gate_name": "gate_v10487_olympic_certification", "batch": "v10.487", "line": 57583, "certifies": "OLYMPIC — all 16 prior rungs pass simultaneously", "milestone": "production-ready"},
+      {"rung": 18, "gate_id": "G374", "gate_name": "gate_v10488_championship_readiness", "batch": "v10.488", "line": 57807, "certifies": "CHAMPIONSHIP — peak operational condition", "milestone": "regulator-supervised live banking"},
+      {"rung": 19, "gate_id": "G375", "gate_name": "gate_v10489_uncertainty_exposure_phase1", "batch": "v10.489", "line": 57974, "certifies": "Uncertainty exposure phase 1 — basic exposure", "resolves_subdir": "utils/uncertainty/"},
+      {"rung": 20, "gate_id": "G376", "gate_name": "gate_v10490_uncertainty_exposure_phase2", "batch": "v10.490", "line": 58154, "certifies": "Phase 2 — adversarial scenarios"},
+      {"rung": 21, "gate_id": "G377", "gate_name": "gate_v10491_uncertainty_exposure_phase3", "batch": "v10.491", "line": 58308, "certifies": "Phase 3 — multi-system perturbation"},
+      {"rung": 22, "gate_id": "G378", "gate_name": "gate_v10492_uncertainty_exposure_phase4", "batch": "v10.492", "line": 58476, "certifies": "Phase 4 — sustained stress"},
+      {"rung": 23, "gate_id": "G379", "gate_name": "gate_v10493_uncertainty_exposure_phase5", "batch": "v10.493", "line": 58619, "certifies": "Phase 5 — recovery verification"},
+      {"rung": 24, "gate_id": "G380", "gate_name": "gate_v10494_uncertainty_exposure_phase6_FINAL", "batch": "v10.494", "line": 58783, "certifies": "PHASE 6 FINAL — full uncertainty exposure complete", "milestone": "maximum audit confidence"}
+    ]
+  },
+
+  "olympic_certification_g373": {
+    "gate": "gate_v10487_olympic_certification",
+    "line": 57583,
+    "criteria": [
+      "All prior gates G357-G372 pass",
+      "End-to-end integration tests pass (897+ per session memory)",
+      "Audit gate suite reports 1153/1153 verifier checks",
+      "Performance latency thresholds met",
+      "No CRITICAL or HIGH severity findings outstanding"
+    ],
+    "significance": "Canonical production-ready state; demos, pilot rollouts, tenant onboarding can proceed"
+  },
+
+  "championship_readiness_g374": {
+    "gate": "gate_v10488_championship_readiness",
+    "line": 57807,
+    "criteria": [
+      "Olympic certification G373 currently passing",
+      "Stress tests at championship-level thresholds (deeper than Olympic)",
+      "DR drills executed within last 90 days with passing recovery time",
+      "Chaos experiments executed within last 30 days with no unrecovered failures",
+      "Live tenant data validated (or synthetic-but-production-realistic validated)"
+    ],
+    "significance": "Betting-the-bank-on-this milestone; appropriate for live regulatory submission and real customer service"
+  },
+
+  "uncertainty_exposure_phases": {
+    "phase_1_basic_exposure": {"gate": "G375", "description": "System encounters scenarios outside training distribution. Graceful degradation. Knows when it doesn't know."},
+    "phase_2_adversarial": {"gate": "G376", "description": "Crafted inputs to fool system. Adversarial ML attacks, edge cases at decision boundaries, prompt injection attempts."},
+    "phase_3_multi_system_perturbation": {"gate": "G377", "description": "Multiple subsystems perturbed simultaneously. Cascading failure analysis. Independent recovery paths."},
+    "phase_4_sustained_stress": {"gate": "G378", "description": "Stress that doesn't relent. Long-running load, memory pressure, slow consumers. SLA maintenance."},
+    "phase_5_recovery_verification": {"gate": "G379", "description": "After deliberate failure, full recovery: all canonical contracts honored, all data consistent, all audit trails intact."},
+    "phase_6_final": {"gate": "G380", "description": "Continuous uncertainty exposure in production-equivalent environments. Maximum audit confidence."}
+  },
+
+  "chaos_engineering": {
+    "canonical_subdirectory": "utils/chaos/",
+    "enforcement_gate": "gate_v10482_o5_chaos_engineering (G368, line 56093)",
+    "expected_contents": [
+      "Chaos experiment definitions",
+      "Experiment runner",
+      "Hypothesis verification",
+      "Recovery measurement"
+    ],
+    "experiment_types": [
+      {"type": "Resource pressure", "examples": ["CPU exhaustion", "Memory exhaustion", "Disk full", "FD exhaustion"]},
+      {"type": "Network", "examples": ["Latency injection", "Packet loss", "Partition"]},
+      {"type": "Application", "examples": ["Random process kill", "Slow consumer", "Bad-data injection"]},
+      {"type": "Data", "examples": ["Stale data", "Partial reads", "Write conflicts"]},
+      {"type": "Dependency", "examples": ["Third-party API timeouts", "CBS unavailable", "Auth service degraded"]}
+    ],
+    "contract": [
+      "Every experiment has declared hypothesis",
+      "Experiments are time-bounded (max blast radius)",
+      "Results logged to drill ledger per G372",
+      "Recovery verified mechanically, not by human observation",
+      "Failed experiments are constitutional events"
+    ],
+    "contents_oi": "OI-51"
+  },
+
+  "uncertainty_subdirectory": {
+    "path": "utils/uncertainty/",
+    "purpose": "Infrastructure for 6-phase uncertainty exposure regime",
+    "enforcement_gates": ["G375", "G376", "G377", "G378", "G379", "G380"],
+    "expected_contents": [
+      "Phase-specific runners",
+      "Distribution shift detection",
+      "Adversarial input generation",
+      "Multi-system perturbation orchestrator",
+      "Sustained stress harness",
+      "Recovery verification"
+    ],
+    "contents_oi": "OI-52"
+  },
+
+  "certification_artifacts_subdirectory": {
+    "path": "utils/cert/",
+    "purpose": "Immutable record of certification milestones (e.g. as-of-date system passed G373)",
+    "expected_contents": [
+      "Per-rung certification ledger files",
+      "Audit run snapshots at certification time",
+      "Sign-off records",
+      "Regulatory submission artifacts"
+    ],
+    "contents_oi": "OI-53",
+    "duplicate_disambiguation_oi": "OI-18 — audit_trail_cert.py vs audit_trail_certification.py"
+  },
+
+  "disaster_recovery": {
+    "canonical_modules": [
+      {"module": "utils/disaster_recovery.py", "responsibility": "DR policy + orchestration"},
+      {"module": "utils/it_disaster_recovery.py", "responsibility": "IT/infrastructure DR specifics"},
+      {"module": "utils/it_cicd.py", "responsibility": "CI/CD as part of recovery (rebuild from source)"}
+    ],
+    "contract": [
+      "Recovery Time Objective (RTO) declared per organ (OI-54)",
+      "Recovery Point Objective (RPO) declared per data domain",
+      "DR drills run every 90 days; results logged to drill ledger",
+      "Tested recovery paths via chaos experiments",
+      "Documented runbooks in docs/runbooks/"
+    ],
+    "scenarios": [
+      {"scenario": "FastAPI process crash", "rto": "<30s (auto-restart)", "rpo": "0 (stateless)"},
+      {"scenario": "Streamlit process crash", "rto": "<30s (auto-restart)", "rpo": "0 (stateless)"},
+      {"scenario": "Single JSON data file corruption", "rto": "<5 min (restore from backup)", "rpo": "per backup retention"},
+      {"scenario": "Disk loss", "rto": "<30 min (restore from off-disk backup)", "rpo": "per RPO policy"},
+      {"scenario": "Total environment loss", "rto": "<4 hours (rebuild from source + restore data)", "rpo": "per RPO policy"},
+      {"scenario": "CBS connectivity loss", "rto": "<1 hour (failover to last baseline)", "rpo": "last successful baseline"},
+      {"scenario": "Flexcube outage", "rto": "<2 hours (failover to standby)", "rpo": "per Flexcube RPO"}
+    ],
+    "per_organ_rto_rpo_oi": "OI-54"
+  },
+
+  "stress_testing": {
+    "canonical_modules": [
+      {"module": "utils/stress_testing.py", "responsibility": "Stress test umbrella"},
+      {"module": "utils/stress_test_harness.py", "responsibility": "Test execution harness"},
+      {"module": "utils/scalability_validator.py", "responsibility": "Scalability assertions"}
+    ],
+    "categories": [
+      {"category": "Load", "tests": ["Concurrent users", "Transaction throughput", "Query rate"]},
+      {"category": "Capacity", "tests": ["Database size", "File count", "JSON size limits"]},
+      {"category": "Endurance", "tests": ["Multi-hour load", "Memory leak detection"]},
+      {"category": "Spike", "tests": ["Sudden traffic increase", "Scale-out time"]},
+      {"category": "Resource", "tests": ["CPU saturation", "Memory pressure", "Disk I/O"]}
+    ],
+    "performance_gates": [
+      {"gate": "gate_performance_api_latency", "line": 2897},
+      {"gate": "gate_coverage_thresholds", "line": 1519},
+      {"gate": "gate_load_test_thresholds", "line": 1812}
+    ]
+  },
+
+  "body_health_engine": {
+    "canonical_module": "utils/body_health_engine.py",
+    "powers_endpoints": ["GET /api/v1/vitals/full", "GET /api/v1/vitals/organs", "GET /api/v1/vitals/regression"],
+    "vital_signs": [
+      {"vital": "Organ status", "source": "per-organ self-test", "healthy_range": "All operational"},
+      {"vital": "Audit pass rate", "source": "gate suite", "healthy_range": "100% (1153/1153)"},
+      {"vital": "API latency p95", "source": "telemetry", "healthy_range": "< threshold per endpoint"},
+      {"vital": "Audit log append rate", "source": "_audit emit rate", "healthy_range": "matching activity"},
+      {"vital": "Cascade integrity", "source": "cascade_health_engine", "healthy_range": "No orphans, no cycles"},
+      {"vital": "BSC completeness", "source": "bsc_completeness_engine", "healthy_range": "100% staff with assignments"},
+      {"vital": "Role coverage", "source": "role_taxonomy.validate_role_coverage", "healthy_range": "default: 0"},
+      {"vital": "Drift sentinels", "source": "per-model drift detectors", "healthy_range": "Below alarm thresholds"}
+    ]
+  },
+
+  "regression_sentinels": [
+    {"sentinel": "Audit gate pass count", "target": "≥ 1153/1153", "watches": "Doctrine enforcement"},
+    {"sentinel": "Integration test count", "target": "≥ 897", "watches": "Test surface"},
+    {"sentinel": "Role classification coverage", "target": "100%", "watches": "Role taxonomy completeness"},
+    {"sentinel": "API endpoints with auth Depends", "target": "100% except /api/health", "watches": "G12"},
+    {"sentinel": "Modules with audit gate", "target": "All canonical organs", "watches": "Doctrine coverage"},
+    {"sentinel": "Bcrypt password coverage", "target": "100% (post V-003)", "watches": "Password safety"}
+  ],
+
+  "stage_c_gates_planned": [
+    {"gate": "gate_dr_drill_recent", "purpose": "DR drill executed in last 90 days", "severity": "HIGH"},
+    {"gate": "gate_chaos_experiments_active", "purpose": "Chaos experiments active in last 30 days", "severity": "MEDIUM"},
+    {"gate": "gate_olympic_certification_maintained", "purpose": "G373 still passes (no regression)", "severity": "CRITICAL"},
+    {"gate": "gate_championship_readiness_maintained", "purpose": "G374 still passes", "severity": "CRITICAL"},
+    {"gate": "gate_uncertainty_exposure_p6_maintained", "purpose": "G380 still passes if previously achieved", "severity": "CRITICAL"},
+    {"gate": "gate_dr_runbook_per_scenario", "purpose": "Every DR scenario has runbook", "severity": "MEDIUM"},
+    {"gate": "gate_rto_rpo_declared_per_organ", "purpose": "Per-organ RTO/RPO documented", "severity": "HIGH"},
+    {"gate": "gate_regression_sentinels_held", "purpose": "All sentinels at or above floor", "severity": "CRITICAL"}
+  ],
+
+  "open_items": [
+    {"id": "OI-18", "title": "Disambiguate audit_trail_cert.py vs audit_trail_certification.py", "wave": "Stage C"},
+    {"id": "OI-51", "title": "Enumerate utils/chaos/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-52", "title": "Enumerate utils/uncertainty/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-53", "title": "Enumerate utils/cert/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-54", "title": "Per-organ RTO/RPO declarations", "wave": "Stage C"},
+    {"id": "OI-55", "title": "DR runbooks under docs/runbooks/", "wave": "Stage C"},
+    {"id": "OI-56", "title": "Current actual certification rung", "wave": "Stage C amendment"}
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 5",
+    "last_updated": "2026-05-22",
+    "owner": "ML Governance / Model Risk",
+    "human_readable_equivalent": "AI_GOVERNANCE.md",
+    "doctrine": [
+      "AI1 — No deployment without registration",
+      "AI2 — Every prediction is adjudicated",
+      "AI3 — Rollouts are AB-controlled",
+      "AI4 — Human-impact decisions require explainability + fairness",
+      "AI5 — Drift is detected, not suspected",
+      "AI6 — Retraining is scheduled, not ad-hoc",
+      "AI7 — Agents are bounded"
+    ]
+  },
+
+  "model_lifecycle_infrastructure": [
+    {"module": "utils/model_governance.py", "responsibility": "Top-level governance contracts"},
+    {"module": "utils/model_governance_runtime.py", "responsibility": "Runtime governance enforcement"},
+    {"module": "utils/mlops_model_registry.py", "responsibility": "Model registry (versioned)", "interface": ["register_model", "get_model", "list_models", "retire_model"]},
+    {"module": "utils/mlops_model_card_composer.py", "responsibility": "Model card generation", "interface": ["compose_card(model_id)"]},
+    {"module": "utils/mlops_persistence.py", "responsibility": "Model artifact persistence"},
+    {"module": "utils/mlops_ab_harness.py", "responsibility": "A/B testing", "interface": ["start_experiment", "record_outcome", "assess_winner"]},
+    {"module": "utils/mlops_adjudication_log.py", "responsibility": "Prediction adjudication log", "interface": ["log_prediction", "log_decision"], "append_only": true},
+    {"module": "utils/mlops_retraining_scheduler.py", "responsibility": "Retraining trigger", "interface": ["schedule_retrain", "execute_retrain"]}
+  ],
+
+  "explainability_fairness": [
+    {"module": "utils/ai_explainability.py", "responsibility": "Per-prediction explanations"},
+    {"module": "utils/fairness_testing.py", "responsibility": "Bias detection, fairness metrics"}
+  ],
+
+  "production_ai_engines": [
+    {"module": "utils/ai_underwriting.py", "domain": "credit", "decision": "Approve / decline / refer"},
+    {"module": "utils/credit_alt_scoring.py", "domain": "credit", "decision": "Score (0-100)"},
+    {"module": "utils/credit_risk_scoring.py", "domain": "credit", "decision": "Risk grade"},
+    {"module": "utils/decline_prediction.py", "domain": "credit", "decision": "Likely-to-decline flag"},
+    {"module": "utils/churn_prediction.py", "domain": "customer", "decision": "Churn probability"},
+    {"module": "utils/cross_sell_bandit.py", "domain": "customer", "decision": "Product recommendation (RL bandit)"},
+    {"module": "utils/cross_sell_nba.py", "domain": "customer", "decision": "Next best action"},
+    {"module": "utils/customer_segmentation.py", "domain": "customer", "decision": "Segment label"},
+    {"module": "utils/predictive_performance.py", "domain": "hr", "decision": "EOM achievement probability"},
+    {"module": "utils/behavioral_anomaly_detection.py", "domain": "anomaly", "decision": "Anomaly score + flag"},
+    {"module": "utils/analytics_anomaly_detection.py", "domain": "anomaly", "decision": "Anomaly score"}
+  ],
+
+  "utils_ml_subdirectory": {
+    "path": "utils/ml/",
+    "purpose": "ML evolution lab",
+    "enforcement_gate": "gate_v10483_o6a_ml_evolution_lab (G369, scripts/audit.py:56601)",
+    "expected_contents": ["Model class definitions", "Feature engineering pipelines", "Training scripts", "Notebook-replay scripts", "Hyperparameter search"],
+    "contents_oi": "OI-45"
+  },
+
+  "utils_agents_subdirectory": {
+    "path": "utils/agents/",
+    "purpose": "AI agent infrastructure",
+    "enforcement_gate": "gate_v10484_o6b_agent_infrastructure (G370, scripts/audit.py:56886)",
+    "known_agent_module": "utils/treasury_agents.py",
+    "expected_contents": ["Agent definitions", "Tool registry", "Scope definitions", "Escalation paths", "Decision audit trail"],
+    "contents_oi": "OI-46"
+  },
+
+  "model_lifecycle_states": {
+    "proposed": "Model defined, not yet trained",
+    "training": "Training in progress",
+    "evaluation": "Trained, undergoing evaluation",
+    "ab_candidate": "Approved for A/B harness",
+    "production_primary": "Serving primary traffic",
+    "production_shadow": "Serving in parallel; predictions logged but not used",
+    "drifted": "Below gate_anti_drift_completion_floor threshold",
+    "retired": "Removed from production",
+    "canonical_path": "proposed → training → evaluation → ab_candidate → production_primary",
+    "transitions_append_only": true
+  },
+
+  "model_card_schema": {
+    "fields": [
+      "model_id (string)",
+      "version (string semver)",
+      "domain (string)",
+      "purpose (string)",
+      "owner (team/module)",
+      "trained_on (dataset, rows, features, training_start, training_end)",
+      "algorithm (string)",
+      "hyperparameters (object)",
+      "performance (auc_roc, precision_at_recall_*, calibration_score)",
+      "fairness_assessment (tested_on, max_disparity, passed)",
+      "explainability (method, top_features)",
+      "deployment (state, deployed_at, deployed_by, ab_cohort)",
+      "drift_thresholds (auc_floor, precision_floor, monitoring_window_days)",
+      "retired (datetime or null)"
+    ],
+    "enforcement_gate": "gate_model_governance_engines_implemented (scripts/audit.py:14969)"
+  },
+
+  "ab_harness_lifecycle": [
+    "new model v4 → register as proposed",
+    "train, evaluate, fairness-test → eligible",
+    "ab_harness.start_experiment(primary=v3, candidate=v4, traffic_split=10, duration_days=14, success_criteria)",
+    "both predict; outcomes captured",
+    "ab_harness.assess_winner()",
+    "if winner=v4: promote v4 to production_primary, retire v3",
+    "if winner=v3: retire v4",
+    "if inconclusive: extend or terminate",
+    "promotion logged as event mlops.model.deployed; entry in REVIVAL_LEDGER"
+  ],
+
+  "adjudication_log_schema": {
+    "fields": {
+      "timestamp": "ISO 8601",
+      "model_id": "string",
+      "model_version": "string",
+      "input_record_id": "string",
+      "prediction": "object (score, decision, confidence)",
+      "explanation": "object (method, top_contributors)",
+      "human_review": "object or null (populated when reviewed)",
+      "outcome_recorded": "object or null (populated when ground truth observed)"
+    },
+    "retention": "indefinite per regulatory requirement",
+    "persistence_module": "utils/mlops_persistence.py"
+  },
+
+  "explainability_requirements": {
+    "rule": "Human-impact models MUST support per-prediction explanations",
+    "required_for_domains": [
+      {"domain": "Credit approval/decline", "why": "Regulatory (adverse action notices); customer right to know"},
+      {"domain": "Pricing", "why": "Customer trust, regulatory"},
+      {"domain": "Churn prediction (triggers outreach)", "why": "RM understanding why customer flagged"},
+      {"domain": "Customer segmentation", "why": "Treatment fairness"},
+      {"domain": "Wellness assessment", "why": "Subject's right to understand"}
+    ],
+    "permitted_methods": ["SHAP (primary canonical)", "LIME", "Counterfactuals", "Feature importance (global)"],
+    "forbidden_patterns": [
+      "Black-box production models for human-impact decisions",
+      "Post-hoc rationalization",
+      "Single-feature explanations when multi-feature interaction dominates"
+    ]
+  },
+
+  "fairness_testing": {
+    "canonical_module": "utils/fairness_testing.py",
+    "required_dimensions": [
+      {"dimension": "Gender", "why": "Regulatory + ethical"},
+      {"dimension": "Age band", "why": "Age discrimination protection"},
+      {"dimension": "Region / branch", "why": "Geographic equity"},
+      {"dimension": "Segment", "why": "Cross-segment fairness"}
+    ],
+    "metrics": [
+      "Demographic parity — equal positive rate across groups",
+      "Equal opportunity — equal true positive rate across groups",
+      "Calibration — predicted probability matches actual rate across groups",
+      "Disparity ratio — max(group_metric) / min(group_metric); target ≤ 1.2"
+    ],
+    "blocking_threshold": "Models exceeding disparity thresholds blocked from promotion to production_primary"
+  },
+
+  "drift_detection": {
+    "enforcement_gate": "gate_anti_drift_completion_floor (scripts/audit.py:18223)",
+    "triggers": [
+      "AUC dropping below auc_floor",
+      "Precision dropping below precision_floor",
+      "Feature distribution shift > threshold",
+      "Outcome distribution shift > threshold"
+    ],
+    "response_chain": [
+      "Model state changes to drifted",
+      "Event published: mlops.drift.detected",
+      "Retraining scheduled via mlops_retraining_scheduler",
+      "If retraining doesn't recover within X days, model retired",
+      "Fallback model takes over"
+    ]
+  },
+
+  "retraining_policy": {
+    "canonical_module": "utils/mlops_retraining_scheduler.py",
+    "rule": "Only the scheduler may trigger retraining",
+    "triggers": [
+      {"trigger": "Scheduled cadence", "action": "Routine retrain"},
+      {"trigger": "Drift detection", "action": "Emergency retrain"},
+      {"trigger": "New data threshold", "action": "Opportunistic retrain"},
+      {"trigger": "Manual request via admin (logged)", "action": "Ad-hoc retrain", "requires": "explicit admin authorization + audit event API_MLOPS_RETRAIN_TRIGGERED"}
+    ]
+  },
+
+  "agent_governance_contract": {
+    "schema": {
+      "agent_id": "string",
+      "purpose": "string",
+      "scope": {
+        "domains": "array of strings",
+        "data_read": "array of file paths",
+        "data_write": "array of file paths",
+        "tools_allowed": "array of function names",
+        "actions_forbidden": "array of action names"
+      },
+      "escalation": {
+        "uncertainty_threshold": "number",
+        "escalation_target": "string (role or named individual)",
+        "stop_conditions": "array of conditions"
+      },
+      "audit": {
+        "every_decision_logged": "boolean",
+        "log_target": "mlops_adjudication_log",
+        "review_cadence_days": "integer"
+      }
+    },
+    "scope_violation_response": "Attempt stopped; logged as mlops.agent.scope_violation; repeated violations remove agent from production"
+  },
+
+  "audit_gate_ladder": [
+    {"gate": "gate_model_governance_engines_implemented", "line": 14969},
+    {"gate": "gate_ml_governance_arc_closed", "line": 17765},
+    {"gate": "gate_ml_governance_arc_ui_integrated", "line": 17977},
+    {"gate": "gate_ml_governance_cross_platform_wiring", "line": 18100},
+    {"gate": "gate_anti_drift_completion_floor", "line": 18223},
+    {"gate": "gate_cross_sell_bandit_pilot_implemented", "line": 15376},
+    {"gate": "gate_v10483_o6a_ml_evolution_lab", "id": "G369", "line": 56601},
+    {"gate": "gate_v10484_o6b_agent_infrastructure", "id": "G370", "line": 56886},
+    {"gate": "gate_v10476_o2b_ai_heatmap_anomaly_telemetry", "id": "G362", "line": 54658}
+  ],
+
+  "stage_c_gates_planned": [
+    {"gate": "gate_no_unregistered_model_in_production", "purpose": "Verify every prediction site loads from mlops_model_registry", "severity": "CRITICAL"},
+    {"gate": "gate_human_impact_model_has_explainability", "purpose": "Every credit/churn/wellness model has explanation method", "severity": "HIGH"},
+    {"gate": "gate_human_impact_model_passes_fairness", "purpose": "Disparity ratio ≤ 1.2 for required dimensions", "severity": "HIGH"},
+    {"gate": "gate_adjudication_log_complete", "purpose": "Every prediction has adjudication log entry", "severity": "HIGH"},
+    {"gate": "gate_agent_scope_declared", "purpose": "Every agent in utils/agents/ has declared scope file", "severity": "CRITICAL"},
+    {"gate": "gate_ab_harness_used_for_promotion", "purpose": "No model goes to production without ab_harness validation", "severity": "HIGH"},
+    {"gate": "gate_retraining_only_via_scheduler", "purpose": "No retraining calls outside mlops_retraining_scheduler", "severity": "HIGH"}
+  ],
+
+  "open_items": [
+    {"id": "OI-45", "title": "Enumerate utils/ml/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-46", "title": "Enumerate utils/agents/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-47", "title": "Model card schema canonical declaration", "wave": "Stage C"},
+    {"id": "OI-48", "title": "Agent scope declaration schema", "wave": "Stage C"},
+    {"id": "OI-49", "title": "Adjudication log retention specifics", "wave": "Stage C"},
+    {"id": "OI-50", "title": "Per-model fairness dimensions", "wave": "Per-model registration"}
+  ]
+}

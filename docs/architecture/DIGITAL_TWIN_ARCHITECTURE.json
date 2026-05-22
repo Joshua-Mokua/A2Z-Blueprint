@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 5",
+    "last_updated": "2026-05-22",
+    "owner": "Simulation / Training",
+    "human_readable_equivalent": "DIGITAL_TWIN_ARCHITECTURE.md",
+    "authoritative_sources": [
+      "generate_cbs.py (project root)",
+      "generate_staff.py (project root)",
+      "compute_actuals.py (project root)",
+      "utils/virtual_bank_*.py (8 modules)",
+      "data/cbs_baseline_*.json"
+    ],
+    "doctrine": [
+      "DT1 — The twin is deterministic",
+      "DT2 — Generated data is canonical for its scope",
+      "DT3 — Twin and production share canonical interfaces",
+      "DT4 — Scenario libraries are append-only",
+      "DT5 — The training arena is the twin's gymnasium"
+    ]
+  },
+
+  "simulation_parameters": {
+    "customers": 700000,
+    "customer_cif_range": "100000001-100700000",
+    "accounts": 1197425,
+    "account_format": "ECO + 10 digits",
+    "transactions_sample": 50000,
+    "branches": 35,
+    "rms": 232,
+    "staff_total": 487,
+    "users_json_full_register": 1439,
+    "deposits_kes": 11500000000000,
+    "loans_kes": 2600000000000,
+    "npl_ratio_pct": 11.1,
+    "currency": "KES",
+    "note": "Configurable via generator scripts; production replaces with live CBS ingestion"
+  },
+
+  "virtual_bank_engine_family": [
+    {"module": "utils/virtual_bank.py", "responsibility": "Umbrella module", "authority": "canonical"},
+    {"module": "utils/virtual_bank_core.py", "responsibility": "Core simulation state", "authority": "canonical"},
+    {"module": "utils/virtual_bank_simulator.py", "responsibility": "Time-stepped simulator", "authority": "canonical"},
+    {"module": "utils/virtual_bank_cbs_writer.py", "responsibility": "Writes CBS-shaped data to cbs_data/ and data/cbs_baseline_*.json", "authority": "canonical"},
+    {"module": "utils/virtual_bank_kpi_unifier.py", "responsibility": "Maps simulator outputs to canonical KPI IDs", "authority": "canonical"},
+    {"module": "utils/virtual_bank_readiness.py", "responsibility": "Readiness checks", "authority": "canonical"},
+    {"module": "utils/virtual_bank_seed.py", "responsibility": "Deterministic random seed management", "authority": "canonical"},
+    {"module": "utils/vb_actuals_bridge.py", "responsibility": "Bridges simulator outputs to actuals engines", "authority": "canonical"}
+  ],
+
+  "supporting_simulation_modules": [
+    "utils/cbs_baseline.py",
+    "utils/simulation_clock.py",
+    "utils/tick_scheduler.py",
+    "utils/scenario_simulator.py",
+    "utils/target_scenario_simulator.py",
+    "utils/hybrid_scheduling_simulator.py",
+    "utils/strategy_simulator.py",
+    "utils/macro_state.py",
+    "utils/macro_calendar.py",
+    "utils/macro_bridge.py",
+    "utils/macro_evolution.py"
+  ],
+
+  "scenarios_subdirectory": {
+    "path": "utils/scenarios/",
+    "classification": "canonical",
+    "enforcement_gate": "gate_v10479_o3c_scenario_library (G365, scripts/audit.py:55344)",
+    "contents_oi": "OI-39 — Joshua to provide dir output",
+    "expected_contents": [
+      "Per-domain scenario definitions (risk, compliance, treasury, credit, market, customer behavior)",
+      "Scenario parameters (severity, duration, affected segments)",
+      "Expected outcomes for replay verification"
+    ]
+  },
+
+  "generator_scripts": [
+    {"script": "generate_cbs.py", "output": ["cbs_data/* (large)", "data/cbs_baseline_*.json"], "responsibility": "Generate accounts, customers, transactions"},
+    {"script": "generate_staff.py", "output": ["data/staff_register.xlsx", "data/users.json (sync)"], "responsibility": "Generate staff with roles aligned to taxonomy"},
+    {"script": "compute_actuals.py", "output": ["data/actuals_*.xlsx", "BSC actuals JSON files"], "responsibility": "Compute KPI actuals from generated CBS data"}
+  ],
+
+  "generator_contract": [
+    "Deterministic — accept seed parameter; identical seed produces identical output",
+    "Validated — output passes gate_role_taxonomy_alignment, gate_canonical_retail_chain, gate_cbs_writer_integrity",
+    "Idempotent on re-run — same seed and params produce same data",
+    "Versioned — changes tracked in CHANGELOG_MASTER"
+  ],
+
+  "role_distribution_rule": {
+    "source": "_v10398_joshua_hq_canonical",
+    "rules": [
+      "Exactly 1 staff at tier 0 (MD)",
+      "C-suite (tier 1) maps 1-to-1 with declared Chief roster",
+      "Heads/Sr Mgrs/Mgrs distributed per role_manager_whitelist constraints",
+      "Branch staff distributed across 35 branches",
+      "Every role classifies via role_taxonomy.classify_role()",
+      "validate_role_coverage() returns default: 0"
+    ]
+  },
+
+  "cbs_baseline_lifecycle": {
+    "snapshot_generation_chain": [
+      "generate_cbs.py (seed S, params P)",
+      "cbs_data/* (raw simulated data)",
+      "utils/virtual_bank_cbs_writer.py",
+      "data/cbs_baseline_YYYY_Mon.json (point-in-time snapshot)",
+      "data/branch_actuals.json (aggregated)"
+    ],
+    "live_overlay_chain": [
+      "data/cbs_baseline_YYYY_Mon.json",
+      "utils/live_actuals.py (real-time refresh)",
+      "+ manual BSC Excel override (if provided)",
+      "Current period actuals",
+      "data/bsc_actuals_YYYY_Mon.json"
+    ],
+    "period_rotation": [
+      "compute_actuals.py snapshots current period as cbs_baseline_YYYY_Mon.json",
+      "Previous period's snapshot becomes immutable historical",
+      "New period inherits closing balances as opening balances",
+      "YoY comparisons read from snapshot files"
+    ],
+    "enforcement_gate": "gate_cbs_baseline (scripts/audit.py:34026)"
+  },
+
+  "audit_gates_certification_ladder": [
+    {"gate": "gate_virtual_bank_foundation", "line": 28413},
+    {"gate": "gate_virtual_bank_simulation_implemented", "line": 15188},
+    {"gate": "gate_virtual_bank_readiness", "line": 34337},
+    {"gate": "gate_seed_determinism", "line": 34424},
+    {"gate": "gate_cbs_writer_integrity", "line": 34539},
+    {"gate": "gate_cbs_baseline", "line": 34026},
+    {"gate": "gate_branch_single_source", "line": 34638},
+    {"gate": "gate_accruals_synthesizer", "line": 35463},
+    {"gate": "gate_v10479_o3c_scenario_library", "id": "G365", "line": 55344},
+    {"gate": "gate_v10480_o4a_simulation_clock_tick_scheduler", "id": "G366", "line": 55557},
+    {"gate": "gate_v10481_o4b_macro_economic_state", "id": "G367", "line": 55814}
+  ],
+
+  "scenario_canonical_shape_target": {
+    "fields": {
+      "scenario_id": "string (unique identifier)",
+      "version": "integer (append-only versioning)",
+      "domain": "macro | operational | credit | compliance | cyber | customer_behavior",
+      "severity": "low | medium | high | critical",
+      "duration_periods": "integer",
+      "parameters": "object (scenario-specific)",
+      "affected_segments": "array of strings",
+      "expected_outcomes": "object (range-bounded predictions)",
+      "owner": "string (team / module)",
+      "shipped_in_batch": "string (e.g. v10.479)",
+      "replay_count": "integer",
+      "last_replayed": "ISO 8601 datetime or null"
+    }
+  },
+
+  "scenario_categories": [
+    {"category": "Macro", "examples": ["Recession", "FX shock", "Rate shock", "Sovereign downgrade"]},
+    {"category": "Operational", "examples": ["Branch outage", "Channel failure", "CBS downtime"]},
+    {"category": "Credit", "examples": ["Sector crisis", "Large default", "NPL spike"]},
+    {"category": "Compliance", "examples": ["Sanctions hit", "AML alert wave", "Regulator action"]},
+    {"category": "Cyber", "examples": ["Phishing wave", "Ransomware", "Account takeover"]},
+    {"category": "Customer behavior", "examples": ["Mass dormancy", "Run on deposits", "Mass onboarding"]}
+  ],
+
+  "training_arena": {
+    "path": "utils/arena/",
+    "enforcement_gate": "gate_v10485_o7a_training_arena (G371, scripts/audit.py:57139)",
+    "drill_scoring_gate": "gate_v10486_o7b_drill_scoring_replay (G372, scripts/audit.py:57348)",
+    "arena_contract_components": [
+      "Scenario injection — load scenario from library; instantiate state",
+      "Decision capture — record actor decisions (human or agent) at each step",
+      "Outcome scoring — compare actor decisions to expected/optimal outcomes",
+      "Replay — save session for later analysis",
+      "Drill ledger — append-only record"
+    ],
+    "contents_oi": "OI-40"
+  },
+
+  "macro_state_engine": {
+    "modules": [
+      {"module": "utils/macro_state.py", "responsibility": "Current macro state"},
+      {"module": "utils/macro_calendar.py", "responsibility": "Scheduled macro events"},
+      {"module": "utils/macro_bridge.py", "responsibility": "Bridge macro state to simulation inputs"},
+      {"module": "utils/macro_evolution.py", "responsibility": "Time-step evolution rules"}
+    ],
+    "macro_state_shape_example": {
+      "period": "2026-Q2",
+      "gdp_growth_pct": 4.8,
+      "inflation_pct": 6.2,
+      "central_bank_rate_pct": 13.0,
+      "fx_kes_per_usd": 158.5,
+      "kes_yields": {"91_day": 14.2, "182_day": 15.1, "364_day": 15.8, "10_year": 16.4},
+      "sector_outlook": {"agriculture": "stable", "manufacturing": "weak", "services": "stable", "real_estate": "weak"}
+    },
+    "enforcement_gate": "gate_v10481_o4b_macro_economic_state (G367)",
+    "consumers": ["stress tests", "scenario runs", "forward-looking provisions"]
+  },
+
+  "cbs_data_lineage_regulator_grade": [
+    "generate_cbs.py (seed S, params P)",
+    "produces deterministically",
+    "cbs_data/accounts.csv (CIF, account, balance, RM code, ...)",
+    "filtered/joined by utils/virtual_bank_kpi_unifier.py (maps CBS columns to canonical KPI IDs)",
+    "aggregated by utils/<domain>_actuals_engine.py",
+    "written via data/bsc_actuals_YYYY_Mon.json (canonical period actuals)",
+    "consumed by BSC dashboards, reports, regulatory submissions"
+  ],
+
+  "production_vs_twin": [
+    {"aspect": "Data source", "twin": "generate_cbs.py", "production": "Live CBS via Flexcube"},
+    {"aspect": "Refresh", "twin": "Manual / scheduled", "production": "Real-time streaming"},
+    {"aspect": "Determinism", "twin": "Yes (seed-based)", "production": "No (real events)"},
+    {"aspect": "Modifiable", "twin": "Yes (regenerate)", "production": "No (audit immutability)"},
+    {"aspect": "Used for", "twin": "Development, scenarios, training", "production": "Live operations"},
+    {"aspect": "Same engines?", "twin": "Yes", "production": "Yes"},
+    {"aspect": "Same audit gates?", "twin": "Yes", "production": "Yes"}
+  ],
+
+  "flexcube_production_data_ingress": {
+    "canonical_modules": ["utils/flexcube_adapter.py", "utils/flexcube_aggregator.py", "utils/flexcube_connection.py", "utils/flexcube_etl_dag.py", "utils/flexcube_integration_readiness.py", "utils/flexcube_mappings.py", "utils/flexcube_staging.py"],
+    "audit_gates": ["gate_flexcube_pipeline_validation", "gate_flexcube_staging_schema_valid", "gate_flexcube_connection_retry_correct", "gate_flexcube_etl_dag_structure_correct", "gate_flexcube_retry_circuit_breaker_contract", "gate_flexcube_resilience_v2_contract", "gate_flexcube_live_wireup"]
+  },
+
+  "scenarios_as_living_artifacts": {
+    "creation_flow": [
+      "JSON definition added to utils/scenarios/",
+      "Entry created in REVIVAL_LEDGER.md with date, rationale, owner",
+      "gate_v10479_o3c_scenario_library validates addition",
+      "Scenario available for scenario_simulator.run(scenario_id)"
+    ],
+    "replay_flow": [
+      "replay_count incremented",
+      "last_replayed updated",
+      "Drill ledger entry per gate_v10486_o7b_drill_scoring_replay"
+    ]
+  },
+
+  "open_items": [
+    {"id": "OI-39", "title": "Enumerate utils/scenarios/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-40", "title": "Enumerate utils/arena/ contents", "wave": "Follow-up batch"},
+    {"id": "OI-41", "title": "Document scenario JSON schema (canonical)", "wave": "Stage C"},
+    {"id": "OI-42", "title": "Macro state schema validation", "wave": "Stage C"},
+    {"id": "OI-43", "title": "Twin → production cutover playbook", "wave": "Wave 6 REVIVAL_LEDGER"},
+    {"id": "OI-44", "title": "CBS data lineage gate body verification", "wave": "Stage C"}
+  ]
+}
