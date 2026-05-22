@@ -350,6 +350,58 @@ def me(user: dict = Depends(get_current_user)):
     }
 
 
+@app.post("/api/auth/logout", status_code=204)
+def logout(response: Response, user: dict = Depends(get_current_user)):
+    """v10.497 Phase 1 Step 1.3 — log the current user out.
+
+    Two layers of revocation, both required for regulator-grade logout:
+
+    1. Cookie clear (response.delete_cookie). Handles the legitimate
+       case: browser drops the cookie on success, subsequent requests
+       carry no token. The user is locked out client-side.
+
+    2. Token blocklist (auth_jwt.revoke_token). Handles the adversarial
+       case: if the token was exfiltrated before logout (XSS, network
+       sniff, log leakage), without a blocklist it remains usable until
+       natural 30-min expiry. With it, the token is rejected by
+       decode_token on every subsequent request until the entry
+       auto-prunes at original-expiry. Blocklist entry size: ~80 bytes.
+       Worst-case file growth: ~80 bytes * (logouts in last 30 min).
+
+    Returns 204 No Content per HTTP convention for successful state-
+    changing requests that have nothing meaningful to return. The
+    Set-Cookie header for the deletion is included in the 204 response.
+
+    Idempotency: re-calling logout after the cookie is cleared returns
+    401 (no token present). This is correct — once logged out, the
+    endpoint is no longer reachable until the user logs back in.
+    """
+    from utils.auth_jwt import revoke_token
+    jti = user.get("jti")
+    exp = user.get("exp")
+    if jti and exp:
+        revoke_token(jti, exp)
+
+    # Clear cookie client-side. delete_cookie sends Set-Cookie with
+    # an expired Max-Age so the browser discards it immediately.
+    # Path must match the original set_cookie call or browsers may
+    # leave a stale cookie behind.
+    response.delete_cookie(
+        key=_AUTH_COOKIE_NAME,
+        path=_AUTH_COOKIE_KWARGS["path"],
+        samesite=_AUTH_COOKIE_KWARGS["samesite"],
+        secure=_AUTH_COOKIE_KWARGS["secure"],
+        httponly=_AUTH_COOKIE_KWARGS["httponly"],
+    )
+
+    _audit("API_LOGOUT_SUCCESS", user,
+           f"User logged out, jti added to blocklist")
+    # Return nothing — 204 No Content. FastAPI handles this when the
+    # function returns None and status_code=204 is set on the decorator.
+    return None
+
+
+
 # ── Health check (NO AUTH — by design) ────────────────────────────
 @app.get("/api/health")
 def health():
