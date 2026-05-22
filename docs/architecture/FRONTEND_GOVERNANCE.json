@@ -1,0 +1,234 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 4",
+    "last_updated": "2026-05-22",
+    "owner": "Frontend / Design System",
+    "human_readable_equivalent": "FRONTEND_GOVERNANCE.md",
+    "authoritative_sources": [
+      "frontend/web/src/lib/tokens.ts (semantic hex)",
+      "data/org_config.json (brand colors)",
+      "frontend/web/components.json (shadcn config)",
+      "frontend/web/tailwind.config.js",
+      "frontend/web/src/index.css"
+    ],
+    "doctrine": [
+      "FE1 — Single component system (shadcn/ui)",
+      "FE2 — Tokens flow downward",
+      "FE3 — Brand identity is tenant data, never code",
+      "FE4 — Role-driven rendering goes through useRole()",
+      "FE5 — Cross-page imports are forbidden",
+      "FE6 — A2Z extensions preserve shadcn defaults"
+    ]
+  },
+
+  "react_frontend": {
+    "stack": {
+      "framework": "React 18+",
+      "build_tool": "Vite",
+      "language": "TypeScript",
+      "component_primitives": "shadcn/ui (new-york style, neutral baseColor)",
+      "styling": "Tailwind CSS + CSS variables",
+      "class_composition": "clsx + tailwind-merge via @/lib/cn",
+      "icons": "lucide-react 0.383+",
+      "toasts": "sonner"
+    },
+
+    "file_structure": {
+      "lib": ["tokens.ts (HEX SOURCE)", "cn.ts (clsx + tailwind-merge)", "api.ts (API client)"],
+      "components_ui": ["button.tsx", "badge.tsx", "card.tsx", "input.tsx", "label.tsx", "alert.tsx", "skeleton.tsx", "table.tsx", "dialog.tsx", "form.tsx", "sonner.tsx"],
+      "components": ["StatCard.tsx (A2Z composition)"],
+      "providers": ["BrandingProvider.tsx (canonical)", "AuthProvider.tsx (transitional Phase 2)"],
+      "pages": ["Dashboard.tsx", "Showcase.tsx (full enumeration OI-35)"],
+      "app_shell": "App.tsx",
+      "css_vars": "index.css (derived from tokens.ts)",
+      "entry": "main.tsx"
+    },
+
+    "token_discipline_chain": [
+      "1. tokens.ts (HEX, semantic) — SOURCE",
+      "2. index.css (HSL components in CSS vars) — DERIVED",
+      "3. tailwind.config.js (hsl(var(--token) / <alpha-value>)) — WRAPPED",
+      "4. components use Tailwind classes — CONSUMED"
+    ],
+    "critical_lesson_v10497_p0": "shadcn opacity modifiers (bg-primary/90) require HSL components in CSS vars, not hex. tokens.ts stays hex (source), index.css is derived HSL components. Manually synced when tokens.ts changes.",
+
+    "brand_vs_theme_variables": {
+      "brand_variables": {
+        "format": "HEX",
+        "scope": "tenant identity",
+        "injected_by": "BrandingProvider at runtime",
+        "examples": ["--brand-primary", "--brand-secondary", "--brand-accent"],
+        "tailwind_access": "text-brand-primary, bg-brand-accent (no opacity modifiers — hex doesn't support /)"
+      },
+      "theme_variables": {
+        "format": "HSL components (e.g. '197 80% 45%')",
+        "scope": "shadcn semantic",
+        "sourced_from": "tokens.ts (derived)",
+        "examples": ["--primary", "--primary-foreground", "--background", "--foreground", "--muted", "--muted-foreground"],
+        "tailwind_access": "bg-primary/90, text-muted-foreground/50 (opacity modifiers work because HSL components)"
+      }
+    },
+
+    "shadcn_primitives_installed": [
+      {"name": "Button", "a2z_extension": "loading prop (inline spinner + aria-busy + implicit disable)"},
+      {"name": "Badge", "a2z_extension": "tone variants (success / warning / danger / info / brand / neutral)"},
+      {"name": "Card", "a2z_extension": null},
+      {"name": "Input", "a2z_extension": null},
+      {"name": "Label", "a2z_extension": null},
+      {"name": "Alert", "a2z_extension": null},
+      {"name": "Skeleton", "a2z_extension": null},
+      {"name": "Table", "a2z_extension": null},
+      {"name": "Dialog", "a2z_extension": null},
+      {"name": "Form", "a2z_extension": null},
+      {"name": "Sonner", "a2z_extension": "richColors + closeButton + position='top-right' via <Toaster> in App.tsx"}
+    ],
+
+    "a2z_compositions": [
+      {"name": "StatCard", "purpose": "KPI tile (label, value, delta, accent stripe)", "composed_from": "shadcn Card + custom layout"}
+    ],
+
+    "a2z_extension_contract": {
+      "rules": [
+        "Preserve original shadcn API (variant=, size=, className= etc. must work)",
+        "Add as new props (additive: tone=, loading=)",
+        "Document in FRONTEND_GOVERNANCE article",
+        "Self-test in Showcase.tsx"
+      ]
+    },
+
+    "provider_chain": {
+      "order": ["QueryClientProvider", "BrandingProvider", "Toaster", "AuthProvider", "WebSocketProvider", "Router"],
+      "constraints": [
+        "Order preserved byte-for-byte",
+        "No tenant string literal in App.tsx",
+        "BrandingProvider wraps everything (brand colors are CSS vars used by all descendants)",
+        "Toaster inside BrandingProvider so toasts can use brand colors"
+      ],
+      "enforcement_gates": ["gate_app_tsx_contract (G381)"]
+    }
+  },
+
+  "useRole_hook_contract": {
+    "purpose": "Canonical React contract for consuming role data from backend (resolves OI-9)",
+    "hook_path": "@/lib/role",
+    "fields": {
+      "tier": "portfolio_owner | proposition_owner | structural_owner | service | support",
+      "seniorityTier": "0 | 1 | 2 | 3 | 4 | 5 | 6",
+      "sbu": "Retail Banking | Commercial Banking | Corporate Banking | Treasury | Digital_Agency | Support | Executive",
+      "branchScope": "branch_bound | head_office | national",
+      "capabilities": "string[] — resolved capability names per RBAC_MATRIX",
+      "isAdmin": "boolean",
+      "username": "string",
+      "displayName": "string"
+    },
+    "methods": {
+      "hasCapability(cap: string)": "boolean",
+      "isMD()": "boolean — convenience for seniorityTier === 0",
+      "isChief()": "boolean — convenience for seniorityTier === 1",
+      "canTag()": "boolean — mirrors role_taxonomy.can_be_tagged"
+    },
+    "data_source_endpoint": "GET /api/roles/me",
+    "endpoint_implementation_pattern": "calls role_taxonomy.classify_role + resolve_capabilities + _resolve_seniority_tier",
+    "caching": {
+      "stale_time_ms": 300000,
+      "refetch_on_window_focus": true,
+      "invalidated_on_logout": true,
+      "invalidated_on_token_refresh": true
+    },
+    "forbidden_patterns_with_severity_HIGH": [
+      "user.role === \"Chief Executive & Managing Director\"",
+      "user.role === \"MD\"",
+      "if (role.tier === 'MD')  // (no such tier on profitability axis — use isMD())",
+      "any direct role-string comparison"
+    ],
+    "enforcement_gate": "gate_react_no_role_string_comparison (HIGH severity, Stage C)"
+  },
+
+  "api_client_conventions": {
+    "module": "frontend/web/src/lib/api.ts",
+    "authentication_after_v10_497_p1_3": "httpOnly cookie via fetch credentials: 'include'",
+    "error_type": "ApiError (canonical exception)",
+    "401_handling": "Triggers logout via AuthProvider",
+    "403_handling": "Surfaced via sonner toast",
+    "vite_dev_proxy_target": "http://localhost:8502",
+    "production_config": "build-time env vars"
+  },
+
+  "streamlit_frontend": {
+    "status": "transitional",
+    "transition_target": "deprecated (post v10.500)",
+    "pages_count_per_master_prompt_v5_40": 158,
+    "rbac_via": "utils/auth.py::require_access (and require_role alias — OI-1)",
+    "known_canonical_pages": [
+      {"path": "pages/1_perform.py", "purpose": "BSC scorecard", "module_name": "bsc"},
+      {"path": "pages/3_pipeline.py", "purpose": "CRM pipeline", "module_name": "pipeline"},
+      {"path": "pages/7_admin.py", "purpose": "Admin + KPI Library", "module_name": "admin"},
+      {"path": "pages/12_cascade.py", "purpose": "Target cascade", "module_name": "cascade"},
+      {"path": "pages/15_cbs.py", "purpose": "CBS explorer", "module_name": "cbs"}
+    ],
+    "full_inventory_oi": "OI-13",
+    "migration_policy": [
+      "New React page authored under frontend/web/src/pages/",
+      "Uses shadcn primitives + A2Z extensions + useRole()",
+      "Streamlit page marked deprecated with superseded_by pointer",
+      "After 1 batch with both UIs operational, Streamlit page removed",
+      "users.json::accessible_modules stays for remaining Streamlit pages"
+    ],
+    "streamlit_specific_helpers": ["utils/page_shared.py", "utils/page_smoke.py", "utils/page_manifest_loader.py", "utils/page_cockpit_render.py"],
+    "smoke_test_gate": "gate_page_smoke_test (scripts/audit.py:33164)"
+  },
+
+  "multi_tenant_identity_rules": {
+    "brand_color_flow_chain": [
+      "data/org_config.json",
+      "GET /api/branding (utils/api_branding.py, public endpoint)",
+      "BrandingProvider (React) sets CSS vars on :root",
+      "--brand-primary, --brand-secondary, --brand-accent",
+      "shadcn primitives + Tailwind classes + StatCard accent stripes"
+    ],
+    "tenant_string_rules_zero_tolerance": {
+      "frontend/web/src/**.tsx": "zero tenant strings; use useBranding() hook",
+      "pages/*.py": "zero tenant strings; use utils/config.get_tenant_name()",
+      "utils/**.py": "zero tenant strings; tenant context flows through config",
+      "data/org_config.json": "tenant strings live here"
+    },
+    "enforcement_gates_critical": [
+      "gate_tenant_identity_hardcoding (scripts/audit.py:20576)",
+      "G381 App.tsx contract preserved byte-for-byte",
+      "G382 no hardcoded hex in components except var(--brand-*)"
+    ]
+  },
+
+  "streamlit_react_parity_rules_during_transition": [
+    "Both must show identical canonical data (read from same engines)",
+    "Both must enforce same RBAC (same capabilities, same scope checks)",
+    "Differences are UX-only",
+    "No Streamlit-only features (if canonical, must be present in both or planned for migration)",
+    "No React-only canonical data until migration complete",
+    "Constraint dissolves post v10.500 full migration"
+  ],
+
+  "stage_c_frontend_gates_planned": [
+    {"gate": "gate_app_tsx_contract", "purpose": "App.tsx provider order + tenant strings", "severity": "CRITICAL", "existing_as": "G381"},
+    {"gate": "gate_no_hardcoded_hex_in_components", "purpose": "No hex in components except var(--brand-*)", "severity": "HIGH", "existing_as": "G382"},
+    {"gate": "gate_token_index_css_sync", "purpose": "tokens.ts and index.css HSL components match", "severity": "HIGH"},
+    {"gate": "gate_react_no_role_string_comparison", "purpose": "No direct role-string === patterns", "severity": "HIGH"},
+    {"gate": "gate_react_no_tenant_strings", "purpose": "No Ecobank or any tenant name", "severity": "CRITICAL"},
+    {"gate": "gate_useRole_hook_used", "purpose": "Components using role data go through useRole", "severity": "MEDIUM"},
+    {"gate": "gate_shadcn_primitive_purity", "purpose": "shadcn primitives not modified outside extensions", "severity": "HIGH"},
+    {"gate": "gate_streamlit_page_smoke", "purpose": "Every Streamlit page passes smoke", "severity": "HIGH", "existing": true}
+  ],
+
+  "open_items": [
+    {"id": "OI-9", "title": "/api/roles/me endpoint contract", "resolution": "Resolved in this artifact; implementation in next governance batch"},
+    {"id": "OI-13", "title": "Full Streamlit page inventory + RBAC", "wave": "follow-up batch"},
+    {"id": "OI-35", "title": "Full enumeration of React frontend/web/src/ tree", "wave": "Wave 4 amendment (dir /s /b)"},
+    {"id": "OI-36", "title": "Router specification (React Router)", "wave": "Wave 4 amendment"},
+    {"id": "OI-37", "title": "Documented A2Z extensions beyond Button.loading + Badge.tone", "wave": "Stage C amendment as added"},
+    {"id": "OI-38", "title": "useBranding() hook contract for tenant name display", "wave": "Wave 4 amendment"}
+  ]
+}
