@@ -45,7 +45,7 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException, Query, Depends, Body
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -252,8 +252,6 @@ def _serialize(obj):
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -261,14 +259,46 @@ class TokenResponse(BaseModel):
     username: str
     role: str
 
+# v10.497 Phase 1 — cookie config. Centralized here so /api/auth/login
+# and /api/auth/logout (Step 1.3) reference the same settings. Doctrine:
+# single source of truth.
+#
+# httponly=True  → JS in the browser cannot read this cookie. Protects
+#                  the JWT from exfiltration via XSS. This is the whole
+#                  point of cookie-based auth vs localStorage.
+# secure=False   → in dev (HTTP localhost) cookies need to fly without
+#                  TLS. Production deployments MUST flip this to True
+#                  via env var; cookies over plain HTTP are interceptable.
+# samesite="lax" → cookie included on top-level navigation (clicks,
+#                  refreshes) but NOT on cross-site POST/fetch. Blocks
+#                  most CSRF vectors at the browser layer. The CSRF
+#                  token (Step 1.5) adds defense-in-depth for the
+#                  state-changing requests Lax does still allow.
+# max_age        → 1800s = 30min, matches JWT TOKEN_LIFETIME so the
+#                  cookie and JWT expire together. No "valid JWT in
+#                  expired cookie" or vice versa.
+_AUTH_COOKIE_NAME = "access_token"
+_AUTH_COOKIE_KWARGS = {
+    "httponly": True,
+    "secure":   os.getenv("A2Z_COOKIE_SECURE", "false").lower() == "true",
+    "samesite": "lax",
+    "max_age":  1800,
+    "path":     "/",
+}
 
 @app.post("/api/auth/login", response_model=TokenResponse)
-def login(req: LoginRequest):
+def login(req: LoginRequest, response: Response):
     """Exchange username + password for a 30-minute bearer JWT.
-
     Verifies via UserManager.authenticate (which uses bcrypt per V-003 fix
     and rehashes legacy SHA-256 on success). Audit log fires on both
     success and failure so brute-force attempts are visible.
+
+    v10.497 Phase 1: also sets `access_token` as an httpOnly cookie.
+    React clients use the cookie (set + sent by the browser, hidden
+    from JS). API consumers (load tests, scripts) ignore the cookie
+    and continue to use the `access_token` in the response body as
+    a Bearer header. Both paths remain authoritative — see
+    utils/auth_jwt.get_current_user which dual-sources from either.
     """
     try:
         from utils.core import UserManager
@@ -277,7 +307,6 @@ def login(req: LoginRequest):
     except Exception as e:
         logger.error(f"Login system error: {e}")
         raise HTTPException(status_code=500, detail="Authentication system unavailable")
-
     if not ok or not user_data:
         # Audit failed login attempts (V-007 brute-force visibility)
         _audit("API_LOGIN_FAILED", {"username": req.username},
@@ -287,13 +316,22 @@ def login(req: LoginRequest):
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     user = {
         "username": req.username,
         "role":     user_data.get("role", "Staff"),
     }
     token = create_access_token(user)
-    _audit("API_LOGIN_SUCCESS", user, "Issued bearer token via /api/auth/login")
+
+    # v10.497: set the httpOnly cookie. Same token value as the body —
+    # the body return is preserved for backward compatibility with
+    # existing API consumers (Bearer header path).
+    response.set_cookie(
+        key=_AUTH_COOKIE_NAME,
+        value=token,
+        **_AUTH_COOKIE_KWARGS,
+    )
+
+    _audit("API_LOGIN_SUCCESS", user, "Issued bearer token + cookie via /api/auth/login")
     return TokenResponse(
         access_token=token,
         username=req.username,
@@ -322,7 +360,7 @@ def health():
         "db":        "postgresql" if db_ok else "json_fallback",
         "timestamp": datetime.now().isoformat(),
         "cache_keys": len(_cache),
-        "auth":      "jwt-bearer",
+        "auth":      "jwt-bearer+cookie",
     }
 
 # ── BSC Endpoints ─────────────────────────────────────────────────
