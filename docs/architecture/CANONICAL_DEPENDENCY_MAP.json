@@ -1,0 +1,247 @@
+{
+  "_meta": {
+    "type": "Constitutional artifact, domain-specific governance",
+    "authority_level": "Domain",
+    "status": "canonical_with_unknown_subareas",
+    "version": "1.0.0",
+    "introduced_in": "v10.497 governance batch, Stage B Wave 3",
+    "last_updated": "2026-05-22",
+    "owner": "Architecture / Doctrine",
+    "human_readable_equivalent": "CANONICAL_DEPENDENCY_MAP.md",
+    "companion_artifacts": ["ORGANS_REGISTRY.md", "CANONICAL_TRUTH_REGISTRY.md"],
+    "doctrine": [
+      "D1 — Imports are stratified",
+      "D2 — Organs coordinate through the event bus, not direct imports",
+      "D3 — Canonical foundations are universally importable",
+      "D4 — Shadow dependencies are CRITICAL violations",
+      "D5 — Circular dependencies are forbidden"
+    ]
+  },
+
+  "stratification": {
+    "stratum_1_transports": {
+      "may_import_from": ["stratum_2", "stratum_3", "stratum_4", "stratum_5"],
+      "must_not_import_from": ["other transports"],
+      "members": [
+        {"surface": "FastAPI", "entry": "utils/api.py"},
+        {"surface": "FastAPI routers", "entries": ["utils/api_cascade.py", "utils/api_capacity_feedback.py", "utils/api_branding.py", "...10 more pending verification"]},
+        {"surface": "Streamlit", "entry": "pages/*.py"},
+        {"surface": "React", "entry": "frontend/web/src/**"}
+      ]
+    },
+    "stratum_2_managers": {
+      "may_import_from": ["stratum_3", "stratum_4", "stratum_5"],
+      "must_not_import_from": ["stratum_1"],
+      "members": ["utils/core.py (15 Manager classes)"]
+    },
+    "stratum_3_engines": {
+      "may_import_from": ["stratum_4", "stratum_5"],
+      "must_not_import_from": ["stratum_1", "stratum_2"],
+      "members_examples": [
+        "BSC engines (bsc_engine, bsc_score_computation, canonical_bsc_writer)",
+        "Cascade engines (cascade_*)",
+        "Actuals engines (14 *_actuals_engine.py)",
+        "Domain logic (risk, credit, treasury, compliance, customer, segment, proposition, etc.)"
+      ]
+    },
+    "stratum_4_foundations": {
+      "may_import_from": ["stratum_5"],
+      "must_not_import_from": ["stratum_1", "stratum_2", "stratum_3"],
+      "universally_importable": true,
+      "members": [
+        {"module": "utils/role_taxonomy.py", "role": "Role taxonomy & RBAC"},
+        {"module": "utils/auth_jwt.py", "role": "Authentication (FastAPI)"},
+        {"module": "utils/auth.py", "role": "Authentication (Streamlit) — transitional"},
+        {"module": "utils/org_hierarchy_config.py", "role": "Org hierarchy schema"},
+        {"module": "utils/hierarchy_synth.py", "role": "Hierarchy synthesizer"},
+        {"module": "utils/config.py", "role": "Tenant config"},
+        {"module": "utils/db.py", "role": "Database — transitional pending JSON → PG"},
+        {"module": "utils/kpi_alias_resolver.py", "role": "KPI canonical"},
+        {"module": "utils/kpi_aggregation_rules.py", "role": "KPI canonical"},
+        {"module": "utils/staff_role_resolver.py", "role": "Staff resolution"},
+        {"module": "utils/staff_field_resolver.py", "role": "Staff resolution"},
+        {"module": "utils/staff_name_resolver.py", "role": "Staff resolution"},
+        {"module": "utils/event_bus.py", "role": "Event bus"},
+        {"module": "utils/cross_organ_event_bus.py", "role": "Cross-organ event bus"}
+      ]
+    },
+    "stratum_5_data": {
+      "members": ["data/*.json", "data/*.xlsx", "data/_schemas/*.json", "cbs_data/*"],
+      "no_imports": true
+    }
+  },
+
+  "canonical_dependency_edges": [
+    {"from": "all transports", "to": "utils/auth_jwt.py", "reason": "Authentication"},
+    {"from": "Streamlit transports", "to": "utils/auth.py", "reason": "Streamlit page auth"},
+    {"from": "all transports", "to": "utils/core.py", "reason": "Multi-record operations via Managers"},
+    {"from": "all transports", "to": "utils/config.py", "reason": "Tenant configuration"},
+    {"from": "FastAPI handlers", "to": "utils/role_taxonomy.py", "reason": "RBAC tier checks"},
+    {"from": "FastAPI handlers", "to": "domain engines", "reason": "Domain computation"},
+    {"from": "Streamlit pages", "to": "utils/page_shared.py", "reason": "Shared page utilities"},
+    {"from": "Streamlit pages", "to": "utils/page_smoke.py", "reason": "Page smoke tests"},
+    {"from": "Manager classes", "to": "domain engines", "reason": "Engine orchestration"},
+    {"from": "Manager classes", "to": "utils/role_taxonomy.py", "reason": "Role-based filtering"},
+    {"from": "Manager classes", "to": "utils/event_bus.py", "reason": "Publish state-change events"},
+    {"from": "domain engines", "to": "utils/role_taxonomy.py", "reason": "Role classification"},
+    {"from": "domain engines", "to": "utils/kpi_alias_resolver.py", "reason": "KPI ID resolution"},
+    {"from": "domain engines", "to": "utils/staff_*_resolver.py", "reason": "Staff field resolution"},
+    {"from": "domain engines", "to": "utils/db.py", "reason": "Data access"},
+    {"from": "domain engines", "to": "utils/event_bus.py", "reason": "Event publish/subscribe"},
+    {"from": "BSC engines", "to": "utils/cascade_*", "reason": "Cascade integration"},
+    {"from": "BSC engines", "to": "utils/kpi_* modules", "reason": "KPI computation"},
+    {"from": "BSC engines", "to": "utils/pillar_* modules", "reason": "Pillar computation"},
+    {"from": "Cascade engines", "to": "utils/hierarchy_synth.py", "reason": "Hierarchy walks"},
+    {"from": "Cascade engines", "to": "utils/role_taxonomy.py", "reason": "Role-based cascade"},
+    {"from": "Actuals engines", "to": "utils/canonical_bsc_writer.py", "reason": "Write BSC actuals"},
+    {"from": "Actuals engines", "to": "utils/db.py", "reason": "Data access"},
+    {"from": "Live actuals", "to": "All *_actuals_engine.py", "reason": "Overlay refresh"},
+    {"from": "VB actuals bridge", "to": "utils/cbs_baseline.py", "reason": "Baseline computation"},
+    {"from": "VB actuals bridge", "to": "utils/virtual_bank_*", "reason": "Virtual bank state"},
+    {"from": "ML engines", "to": "utils/mlops_model_registry.py", "reason": "Model lookup"},
+    {"from": "ML engines", "to": "utils/mlops_adjudication_log.py", "reason": "Adjudication emit"},
+    {"from": "Audit engines", "to": "All read targets", "reason": "Read-only verification"},
+    {"from": "Treasury engines", "to": "utils/treasury_alm.py", "reason": "ALM helpers"},
+    {"from": "Treasury engines", "to": "utils/fx_position.py", "reason": "FX state"},
+    {"from": "Compliance engines", "to": "utils/sanctions_screening.py", "reason": "Sanctions checks"},
+    {"from": "Compliance engines", "to": "utils/transaction_monitoring.py", "reason": "TM rules"}
+  ],
+
+  "event_bus_contract": {
+    "canonical_interfaces": ["utils/event_bus.py", "utils/cross_organ_event_bus.py"],
+    "api_surface_oi": "OI-19 — bodies not yet surveyed",
+    "publication_rules": [
+      "Only Managers and engines may publish events",
+      "Transports MUST NOT publish events directly (they call Managers, which publish)",
+      "Events MUST include event_type, timestamp, actor (if known), payload, source_module",
+      "Subscribers MUST be idempotent (events may be replayed)"
+    ],
+    "event_categories_observed": [
+      {"category": "BSC updates", "examples": ["bsc.score.computed", "bsc.target.cascaded", "bsc.actual.updated"]},
+      {"category": "Pipeline events", "examples": ["pipeline.deal.created", "pipeline.deal.moved", "pipeline.deal.won/lost"]},
+      {"category": "HR lifecycle", "examples": ["hr.staff.registered", "hr.staff.transferred", "hr.staff.terminated"]},
+      {"category": "Risk alerts", "examples": ["risk.threshold.breached", "risk.limit.warning"]},
+      {"category": "Compliance", "examples": ["compliance.case.escalated", "compliance.aml.flagged"]},
+      {"category": "CBS sync", "examples": ["cbs.baseline.refreshed", "cbs.transaction.streamed"]},
+      {"category": "API audit", "examples": ["api.endpoint.called", "api.audit.emitted"]},
+      {"category": "System health", "examples": ["vitals.organ.degraded", "vitals.regression.detected"]}
+    ]
+  },
+
+  "shadow_dependency_detection_rules": [
+    {
+      "rule": "Transport-to-transport imports forbidden",
+      "example_violation": "from utils.api import pipeline_deals (in pages/3_pipeline.py)",
+      "example_ok": "from utils.api_client import call_api"
+    },
+    {
+      "rule": "Engine importing from transport forbidden",
+      "example_violation": "from utils.api import _audit (in utils/bsc_engine.py)",
+      "fix": "Emit event via event_bus; transport's audit emit happens at route level"
+    },
+    {
+      "rule": "Cross-organ direct import without declared edge = shadow dependency",
+      "permitted_exceptions": [
+        "Stratum 4 canonical foundations universally importable",
+        "Stratum 3 modules within same organ family may cross-import"
+      ]
+    },
+    {
+      "rule": "Circular imports CRITICAL",
+      "tolerance": "none — even Python's lazy import doesn't excuse",
+      "severity": "CRITICAL"
+    }
+  ],
+
+  "foundation_contracts": {
+    "role_taxonomy": {
+      "stability": "API-compatible additions allowed; removals forbidden",
+      "see": "ROLE_GOVERNANCE.md"
+    },
+    "auth_jwt": {
+      "stability": "API-compatible additions allowed",
+      "evolution_path": "require_role gains tier=, sbu=, seniority_max= kwargs while remaining backward-compatible with list[str] (OI-10)"
+    },
+    "config": {
+      "stability": "Canonical config schema; new fields require CANONICAL_TRUTH_REGISTRY update"
+    },
+    "db": {
+      "stability": "Read API stable; write API may evolve with migration",
+      "transitional_note": "JSON files → PostgreSQL migration in progress (gate_pg_migration_progress, gate_pg_migration_baseline, gate_pg_production_cutover)"
+    },
+    "event_bus": {
+      "api_surface_oi": "OI-19",
+      "resolution_wave": "Wave 4 TELEMETRY_MAP"
+    }
+  },
+
+  "known_dependency_hotspots": {
+    "bsc_cascade": {
+      "description": "BSC engines and cascade engines are tightly coupled by domain",
+      "permitted": true,
+      "rationale": "Same organ family (target → cascade → score → actuals → audit)"
+    },
+    "actuals_to_live_actuals": {
+      "description": "All 14 actuals engines feed into live_actuals.py",
+      "direction": "engines → live_actuals (live_actuals subscribes)"
+    },
+    "hierarchy_role_taxonomy": {
+      "description": "hierarchy_synth consumes role_taxonomy; role_taxonomy reads org_hierarchy_config.json (same data file)",
+      "no_module_imports_each_other": true,
+      "coordination_via": "data file (org_hierarchy_config.json)"
+    },
+    "auth_users": {
+      "description": "auth_jwt and auth both read data/users.json; UserManager is canonical interface",
+      "oi_20": "Verify whether auth modules use UserManager or direct file reads",
+      "if_direct_reads": "Violation of D4 with transitional grace period"
+    }
+  },
+
+  "frontend_dependency_rules": {
+    "react_import_discipline": {
+      "pages/*": ["components", "lib", "providers"],
+      "components/*": ["other components", "lib", "ui primitives"],
+      "components/ui/*": ["lib", "NO other components (primitives have no dependencies)"],
+      "lib/*": ["other lib modules only"],
+      "providers/*": ["lib", "NO components"]
+    },
+    "forbidden_patterns": [
+      "Cross-page imports",
+      "Components importing pages",
+      "lib importing components or providers"
+    ],
+    "brand_color_flow": [
+      "data/org_config.json",
+      "GET /api/branding (HTTP)",
+      "BrandingProvider",
+      "--brand-primary, --brand-secondary, --brand-accent (CSS vars)",
+      "shadcn primitives + Tailwind classes"
+    ],
+    "token_flow": [
+      "frontend/web/src/lib/tokens.ts (semantic hex source)",
+      "frontend/web/src/index.css (HSL components — derived)",
+      "tailwind.config.js (hsl(var(--token) / <alpha-value>) wrappers)",
+      "Components use Tailwind classes (never read hex directly)"
+    ]
+  },
+
+  "unknown_subdirectories_hypothesized_imports": {
+    "utils/agents/": ["utils/treasury_agents.py", "utils/mlops_*", "utils/event_bus"],
+    "utils/arena/": ["utils/virtual_bank_*", "utils/scenario_simulator", "utils/event_bus"],
+    "utils/cert/": ["utils/audit_trail_certification", "utils/enterprise_discharge_audit"],
+    "utils/channels/": ["utils/channel_* top-level modules"],
+    "utils/chaos/": ["utils/stress_test_harness", "utils/disaster_recovery", "utils/system_invariants"],
+    "utils/ml/": ["utils/mlops_*", "utils/model_governance", "utils/fairness_testing"],
+    "utils/scenarios/": ["utils/scenario_simulator", "utils/target_scenario_simulator", "utils/macro_*"],
+    "utils/uncertainty/": ["utils/stress_*", "utils/risk_*", "utils/chaos/", "utils/cert/"]
+  },
+
+  "open_items": [
+    {"id": "OI-19", "title": "event_bus + cross_organ_event_bus API surface", "wave": "Wave 4 TELEMETRY_MAP"},
+    {"id": "OI-20", "title": "Verify auth_jwt and auth go through UserManager or direct reads", "wave": "Stage C"},
+    {"id": "OI-21", "title": "Add Stage C gate_canonical_dependency_map_sync", "wave": "Stage C"},
+    {"id": "OI-22", "title": "Generate full import graph from utils/*.py by AST parsing", "wave": "Optional follow-up"},
+    {"id": "OI-23", "title": "Resolve 8 utils subdirectories' actual import edges", "wave": "Wave 5"},
+    {"id": "OI-24", "title": "utils/db.py migration state impact on stratum 4 stability", "wave": "Stage C"}
+  ]
+}
