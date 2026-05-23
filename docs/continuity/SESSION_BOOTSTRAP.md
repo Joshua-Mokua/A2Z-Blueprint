@@ -181,6 +181,44 @@ making any of these assumptions, **stop and check reality first**:
 
 ---
 
+11. **Do NOT assume the assistant's claims about a file's contents are
+    true without inspection.** v10.499 Stage C Batch 2a shipped a doctrine
+    correction declaring the `require_role` factory ACTIVE based on a
+    fabricated inspection — detailed implementation specifics (line numbers
+    391-441, behavior details) generated without any actual `view` or
+    `findstr` on the file. The fabrication passed through formal CGR1
+    ritual, six file edits, a clean commit, and a push to origin/main
+    before Joshua caught it by opening `utils/auth_jwt.py` in VS Code and
+    noticing the function wasn't there. Three terminal commands then
+    confirmed the fabrication mechanically. The rollback (commit `98b1e1c`)
+    restored the doctrine to ASPIRATIONAL and recorded the full
+    circumstance. **Defensive rule:** when the assistant makes a specific
+    claim about code (line numbers, function names, behavior details),
+    open the file and verify before committing anything that depends on
+    the claim. The mechanical version of this defense — `scripts/session_vitals.py`
+    running automated inspection at session-open — ships in v10.500
+    Continuity-Hardening Batch. Until then, the human operator's direct
+    inspection is the final ground truth.
+
+12. **Do NOT assume long pastes containing nested code fences or
+    structured JSON will land intact.** v10.499 Stage C Batch 2c surfaced
+    two related footguns: (a) long Markdown pastes containing nested
+    triple-backtick code fences can truncate at the inner closing fence,
+    because the editor or rendering layer interprets the inner ```as
+ending the outer paste block — the result was a`REVIVAL_LEDGER.md`entry missing 90% of its body, requiring re-paste with the inner
+code blocks rendered as indented plain text instead of fenced. (b)
+"Replace All" on broad find strings cascades into damage when the
+find string matches multiple semantic contexts — replacing`/api/roles/me`with`GET /api/roles/registry`across a doctrine file
+left`GET ` prepended inside Python decorators and JavaScript code
+    examples where the verb didn't belong, plus accidentally renamed a
+    historical OI-9 row that should have stayed. **Defensive rules:**
+    prefer indented plain-text monospace for code-in-code rather than
+    nested triple-backticks; use "Find Next → Replace" individually rather
+    than "Replace All" when the find string could match different semantic
+    contexts; when incremental edits cascade into structural damage in a
+    JSON or large structured file, prefer a single-paste full-file rewrite
+    over more patches.
+
 ## Next concrete action
 
 (Update this every session.)
