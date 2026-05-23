@@ -128,14 +128,19 @@ Do NOT try to read everything upfront. Read what the current task needs.
 These are things sessions repeatedly get wrong. If you find yourself
 making any of these assumptions, **stop and check reality first**:
 
-1. **`require_role` factory in `utils/auth_jwt.py` is ACTIVE** (corrected
-   v10.499 Stage C Batch 2a — see GOVERNANCE_REALITY_INDEX). Implemented
-   at lines 391–441, returns a FastAPI Depends-compatible callable,
-   case-insensitive role matching, raises 403 on insufficient role. Use
-   it directly: `Depends(require_role(["MD", "Director Retail Banking"]))`.
-   The Streamlit-side `require_role` alias in `utils/auth.py` was renamed
-   to `require_module_access` in v10.498 Stage C Batch 1b (G383 enforces
-   the no-collision invariant).
+1. **Do NOT assume `require_role` exists in `utils/auth.py` OR `utils/auth_jwt.py`.**
+   `utils/auth.py` (Streamlit) used to have a `require_role = require_access` alias —
+   renamed to `require_module_access` in v10.498 Stage C Batch 1b (G383 enforces the
+   no-collision invariant). `utils/auth_jwt.py` (FastAPI) has `require_admin` but
+   NOT `require_role`. The `require_role(roles: list[str])` factory is ASPIRATIONAL
+   per CGR1 — verified absent by `findstr /n "require_role" utils\auth_jwt.py` returning
+   zero matches at commit `dd381dc` (last touched the file). Pre-Batch-2b this factory
+   has not been built; Batch 2b will build it from scratch following the `require_admin`
+   chained-Depends pattern. **History note:** v10.499 Stage C Batch 2a incorrectly
+   reclassified this factory ACTIVE based on a fabricated inspection by the assistant;
+   the error was caught and rolled back in v10.499 Stage C Batch 2a-rollback after
+   Joshua's manual verification. See GOVERNANCE_REALITY_INDEX.md and REVIVAL_LEDGER for
+   the full record.
 
 2. **Do NOT assume the Streamlit alias `require_role` still exists in
    `utils/auth.py`.** It was renamed to `require_module_access` in

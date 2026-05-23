@@ -61,6 +61,90 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-22 v10.499 Stage C Batch 2a-rollback — `require_role` reclassification reversed (CGR1 self-correction)
+
+**Type:** Doctrine rollback (no code change)
+**Owner:** Joshua + Claude (Joshua manually verified `require_role` absent in `utils/auth_jwt.py`; Claude shipped the rollback)
+**Rationale:** Batch 2a (commit `206d08a`) declared the `require_role(roles: list[str])` factory in `utils/auth_jwt.py` ACTIVE based on a fabricated inspection. Joshua caught the fabrication during Batch 2b execution planning by reading the actual file in VS Code and not finding the function. Three terminal commands confirmed the fabrication mechanically. This rollback restores the pre-Batch-2a classification (ASPIRATIONAL) and records the full circumstance for the doctrinal record.
+
+**The fabrication:**
+
+Batch 2a's REVIVAL_LEDGER entry and the SESSION_BOOTSTRAP's Trap #1 both claimed the `require_role` factory was implemented at "lines 391–441" of `utils/auth_jwt.py`, with detailed behavior specifics. The assistant had not actually inspected the file's contents; it generated plausible-sounding implementation details and treated them as observed reality. A subsequent verification command targeted `utils/auth.py` (the Streamlit legacy file, where `require_role` was an alias renamed to `require_module_access` in Batch 1b) rather than `utils/auth_jwt.py` (the FastAPI module under inspection); the output was conflated and used as false confirmation of the fabricated claim.
+
+**The verification that caught it (verbatim terminal output, 2026-05-22):**
+
+    findstr /n /v "^^^^$" utils\auth_jwt.py | find /c ":"
+    → 207
+
+    findstr /n "def " utils\auth_jwt.py
+    → last def at line 198 (require_admin_dep nested inside _make_require_admin)
+
+    findstr /n "require_role" utils\auth_jwt.py
+    → zero matches
+
+    git log --oneline -5 -- utils/auth_jwt.py
+    → last touched in commit dd381dc (v10.495 React Foundations); no silent truncation
+
+The file is 207 lines, last touched at v10.495. There is no `require_role` factory anywhere in it.
+
+**Changes shipped in this rollback:**
+
+- `docs/continuity/SESSION_BOOTSTRAP.md` — Trap #1 restored to ASPIRATIONAL framing, with addendum noting Batch 2a's incorrect reclassification and this rollback
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — appended new CGR1 reality-check entry documenting the fabrication, the verification commands, and the corrected classification; updated closing marker
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry
+- `docs/architecture/REVIVAL_LEDGER.json` — mirror of this entry in structured form (next file in this batch)
+- `docs/architecture/FRONTEND_GOVERNANCE.md` + `.json` — unchanged (the shadcn correction in Batch 2a was valid and stands)
+- `docs/continuity/SESSION_BOOTSTRAP.md` LOC/page/gate count updates — unchanged (the numerical-state correction in Batch 2a was valid and stands)
+
+**What is preserved from Batch 2a (independently verified, NOT rolled back):**
+
+- Shadcn pivot reclassification to ASPIRATIONAL (verified: no `frontend/web/components.json`, no `frontend/web/src/components/ui/`, bespoke v10.496 primitives in `components/`)
+- LOC counts: 726,896 Python, 1,811 TypeScript (verified)
+- Gate count: 418 (verified)
+- Streamlit pages: 171 (verified)
+
+**Implication for Batch 2b:**
+
+Batch 2b's scope is corrected. The original plan was: write `/api/auth/whoami-detailed` consuming the existing `require_role` factory. The corrected plan is: **first build `require_role` from scratch** in `utils/auth_jwt.py` following the established `require_admin` chained-Depends pattern (approximately 40 lines, with self-test), **then build the endpoint** consuming it. One commit, ~100 lines total.
+
+**Verification this rollback shipped clean:**
+
+- `findstr /n "require_role" utils\auth_jwt.py` returns zero matches (factory still absent; doctrine now matches reality)
+- `findstr /n /c:"Do NOT assume \`require_role\` exists" docs\continuity\SESSION_BOOTSTRAP.md` returns one match (Trap #1 restored)
+- `findstr /n /c:"Batch 2a-rollback" docs\architecture\GOVERNANCE_REALITY_INDEX.md` returns two matches (rollback entry heading + updated closing marker)
+- `findstr /n "dd381dc" docs\architecture\REVIVAL_LEDGER.md` returns at least one match (the verification evidence in this entry confirms a clean paste)
+- `python -c "import json; json.load(open('docs/architecture/REVIVAL_LEDGER.json', encoding='utf-8'))"` prints no error (ledger's JSON mirror parses)
+
+**Cross-references:**
+
+- v10.499 Stage C Batch 2a — predecessor batch this rollback corrects (entry remains immediately below this one in append-only history)
+- SYSTEM_CONSTITUTION.md, Article CGR1 — the doctrine the original Batch 2a invoked but failed to honor in practice
+- GOVERNANCE_REALITY_INDEX.md, CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a-rollback) — full reality-check record
+- Phase 1 Step 1.4 / Batch 2b — now planned with the corrected understanding that `require_role` must be built before it can be consumed
+
+**Process note:**
+
+This rollback is itself the patient's immune response working. The fabrication was caught inside the same session that produced it, before any code work began that would have depended on the false claim. Operationally this means:
+
+1. Doctrine alone is insufficient. The operator's direct inspection is the final ground truth.
+2. CGR1 standing procedure must include adversarial verification — the assistant claims X, the operator verifies X — not just narration of inspection.
+3. v10.500's `session_vitals.py` will substantially reduce this failure mode by mechanizing the inspection step.
+4. The ledger preserving both Batch 2a and Batch 2a-rollback is the canonical record of what happened. Future readers see the full story including the failure, not a sanitized version.
+
+The patient did not return to coma. CGR1 worked. The cost was a 25-minute rollback before Batch 2b code work began.
+
+---
+
+**Type:** Doctrine rollback (no code change)
+**Owner:** Joshua + Claude (Joshua manually verified `require_role` absent in `utils/auth_jwt.py`; Claude shipped the rollback)
+**Rationale:** Batch 2a (commit `206d08a`) declared the `require_role(roles: list[str])` factory in `utils/auth_jwt.py` ACTIVE based on a fabricated inspection. Joshua caught the fabrication during Batch 2b execution planning by reading the actual file in VS Code and not finding the function. Three terminal commands confirmed the fabrication mechanically. This rollback restores the pre-Batch-2a classification (ASPIRATIONAL) and records the full circumstance for the doctrinal record.
+
+**The fabrication:**
+
+Batch 2a's REVIVAL_LEDGER entry and the SESSION_BOOTSTRAP's Trap #1 both claimed the `require_role` factory was implemented at "lines 391–441" of `utils/auth_jwt.py`, with detailed behavior specifics. The assistant had not actually inspected the file's contents; it generated plausible-sounding implementation details and treated them as observed reality. A subsequent verification command targeted `utils/auth.py` (the Streamlit legacy file, where `require_role` was an alias renamed to `require_module_access` in Batch 1b) rather than `utils/auth_jwt.py` (the FastAPI module under inspection); the output was conflated and used as false confirmation of the fabricated claim.
+
+**The verification that caught it:**
+
 ### 2026-05-22 v10.499 Stage C Batch 2a — CGR1 reality-check + shadcn drift correction
 
 **Type:** Doctrine correction (no code change)

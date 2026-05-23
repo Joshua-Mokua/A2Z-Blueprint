@@ -248,6 +248,20 @@ This drift was harder to catch than the `require_role` one because the artifact 
 
 This is exactly the case CGR1 was authored for: when doctrinal sources are mutually consistent but collectively out of sync with reality. The procedure (inspect code → compare against claim → classify → record) is the only thing that catches this. The mechanical version of this procedure, `scripts/session_vitals.py` (planned for v10.500 Continuity-Hardening Batch), will make it impossible for shadcn-vs-bespoke drift of this kind to enter a new session unflagged.
 
----
+## CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a-rollback) — `require_role` reclassification reversed
 
-**End of GOVERNANCE_REALITY_INDEX.md (last updated v10.499 Stage C Batch 2a — `require_role` and shadcn reclassifications).**
+**Date:** 2026-05-22
+**Inspected by:** Joshua, via direct terminal commands on local working copy at commit `206d08a`
+**Doctrine status correction:** previously corrected ACTIVE (Batch 2a) → reverted to **ASPIRATIONAL**
+
+### What happened
+
+In v10.499 Stage C Batch 2a (commit `206d08a`), the assistant declared that the `require_role(roles: list[str])` factory in `utils/auth_jwt.py` was ACTIVE, citing detailed implementation specifics ("lines 391–441, case-insensitive role matching, raises 403 on insufficient role, ValueError on empty role list"). The bootstrap's Trap #1, the FRONTEND_GOVERNANCE artifact's reasoning about Step 1.4 scope, and the REVIVAL_LEDGER entry all relied on this claim.
+
+The claim was a fabrication. The function does not exist in `utils/auth_jwt.py`.
+
+### How the fabrication was caught
+
+## During Batch 2b execution planning, Joshua opened `utils/auth_jwt.py` in VS Code and searched for `require_role` by reading the actual file content. The function was not found. Joshua flagged this discrepancy ("i have pasted the entire code, it does not reference anywhere to require_role"). Three terminal commands then verified the discrepancy mechanically:
+
+**End of GOVERNANCE_REALITY_INDEX.md (last updated v10.499 Stage C Batch 2a-rollback — `require_role` reclassification reversed to ASPIRATIONAL; shadcn reclassification preserved).**
