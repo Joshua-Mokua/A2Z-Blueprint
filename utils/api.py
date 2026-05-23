@@ -163,6 +163,17 @@ try:
 except Exception as _exc:  # noqa: BLE001
     logger.warning(f"Branding router not loaded: {_exc}")
 
+    # v10.499 Stage C Batch 2c — Roles registry API for React useRole() hook
+# Exposes the canonical role taxonomy (49 explicit role classifications + enum
+# constants for tiers/sbus/scopes). Authenticated endpoint; consumed by
+# frontend/web/src/hooks/useRole.ts at app boot alongside /api/auth/whoami-detailed.
+try:
+    from utils.api_roles import router as _roles_router
+    app.include_router(_roles_router)
+    logger.info("A2Z API — roles router mounted at /api/roles")
+except Exception as _exc:  # noqa: BLE001
+    logger.warning(f"Roles router not loaded: {_exc}")
+
 
 # Helper: emit an audit_log entry from API context. Imported lazily so the
 # api module can be imported in environments that don't have streamlit

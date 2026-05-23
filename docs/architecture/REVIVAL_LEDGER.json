@@ -5,7 +5,7 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 6",
-    "last_updated": "2026-05-22",
+    "last_updated": "2026-05-23",
     "owner": "Architecture / Doctrine",
     "human_readable_equivalent": "REVIVAL_LEDGER.md",
     "companion_artifact": "CHANGELOG_MASTER.md",
@@ -19,7 +19,49 @@
   },
 
   "entries": [
-{
+    {
+      "date": "2026-05-23",
+      "batch_id": "v10.499-stage-c-batch-2c",
+      "title": "/api/roles/registry endpoint (canonical role registry for React)",
+      "type": "feature_react_facing_api",
+      "owner": "Joshua + Claude (code-grounded inspection of role_taxonomy public API and existing router patterns)",
+      "rationale": "The React useRole() hook needs schema-level role data — every classified role plus enum constants for tiers/SBUs/scopes — to answer 'what are all the SBUs?' or 'is role X canonical?' client-side without re-hitting the API. Batch 2b shipped /api/auth/whoami-detailed (per-user identity); Batch 2c ships the complementary /api/roles/registry (canonical schema). FRONTEND_GOVERNANCE originally declared this as /api/roles/me but the semantic is closer to a registry than a 'me' endpoint — renamed and doctrine updated to match.",
+      "changes": [
+        "utils/api_roles.py: new file (~100 lines). Router with prefix /api/roles and tags [roles]. Single endpoint GET /registry. Auth via Depends(get_current_user) — authenticated but not role-gated. Response shape: {enums: {tiers, sbus, scopes}, roles: [{role, tier, branch_scope, sbu, matched_via, can_be_tagged}, ...], total_classified_roles: int}. Iterates list_all_classified_roles() (49 roles), classifies each via classify_role(), converts RoleClassification dataclass via dataclasses.asdict(), derives can_be_tagged inline. No audit event — registry is read-only schema, matches /api/auth/me precedent.",
+        "utils/api.py: try/except mount block added at line 165 (after branding router mount). Mirrors existing branding/cascade/capacity mount pattern.",
+        "docs/architecture/FRONTEND_GOVERNANCE.md + .json: useRole_hook_contract.data_source_endpoint renamed from /api/roles/me to /api/roles/registry. Last updated metadata refreshed."
+      ],
+      "verification": [
+        "ast.parse on utils/api_roles.py: SYNTAX OK",
+        "import utils.api_roles: router object resolved",
+        "direct invocation get_role_registry(user=synthetic admin): 49 classifications returned, first role AML Analyst with explicit classification and can_be_tagged false, enums.tiers contains 5 canonical tier strings",
+        "FastAPI app routes inspection: /api/roles/registry appears in app.routes (route registered in live router table)",
+        "ast.parse on utils/api.py: SYNTAX OK",
+        "json.load on FRONTEND_GOVERNANCE.json: JSON OK",
+        "findstr /api/roles/me on FRONTEND_GOVERNANCE.md: two matches (historical references in Last updated metadata and OI-9 row, both preserved)",
+        "findstr /api/roles/registry on FRONTEND_GOVERNANCE.md: four matches (current declarations, rename landed)"
+      ],
+      "design_notes": {
+        "new_router_module": "utils/api_roles.py is its own module rather than appending to utils/api.py — preserves namespace hygiene matching api_branding/api_cascade/api_capacity_feedback pattern. utils/api.py stays focused on auth + cross-cutting; topic-specific endpoints live in dedicated routers.",
+        "auth_posture": "Authenticated but not role-restricted. Registry is published system schema, not a secret. Public would expose org structure to anonymous; role-gated would prevent React hook initialisation for non-admin users. Authenticated-but-open is the calibrated middle.",
+        "explicit_only_in_registry": "Response includes only EXPLICITLY classified roles (49 in role_classification config). Keyword-fallback rescues are runtime safety net, not canonical declaration. If a role isn't in registry, React side should treat as needing explicit classification before UI decisions depend on it.",
+        "no_audit": "Registry reads are frequent (every page load on React side calls the hook). Unaudited matches existing /api/auth/me and /api/branding precedent for read-only schema endpoints.",
+        "rename_decision": "Path B chosen over Path A. Path A would rename /api/auth/whoami-detailed to /api/roles/me — same data twice under different URL. Path B (this batch) ships a genuinely new endpoint serving a different query (schema vs identity). Semantic clarity gain justifies additional surface."
+      },
+      "unblocks": [
+        "Batch 2d: React frontend/web/src/hooks/useRole.ts consuming both /api/auth/whoami-detailed (identity) and /api/roles/registry (schema)",
+        "Batch 2e: ProtectedRoute wrapper using useRole() capabilities to gate by tier/role"
+      ],
+      "cross_references": [
+        "utils/api_branding.py — architectural pattern this router follows",
+        "utils/role_taxonomy.py public API (list_all_classified_roles, classify_role, ALL_TIERS, ALL_SBUS, ALL_SCOPES) — what this endpoint consumes",
+        "docs/architecture/FRONTEND_GOVERNANCE.md::useRole_hook_contract — contract this endpoint serves (updated in this batch)",
+        "data/org_hierarchy_config.json::profitability_axis.role_classification — underlying data source (49 explicit classifications)",
+        "v10.499 Stage C Batch 2b — predecessor batch that shipped /api/auth/whoami-detailed (per-user companion to this per-schema endpoint)"
+      ],
+      "process_note": "Second clean code-grounded batch since the Batch 2a-rollback reset. Design decided after explicit inspection of role_taxonomy public surface, org_hierarchy_config.json contents, and api_branding.py router pattern — three artifacts examined directly in the same session that authored the code. Path B (new endpoint with new purpose) chosen over Path A (rename whoami-detailed) because the two endpoints serve genuinely different queries: identity vs schema."
+    },
+    {
       "date": "2026-05-23",
       "batch_id": "v10.499-stage-c-batch-2b",
       "title": "require_role factory + /api/auth/whoami-detailed endpoint",
@@ -55,7 +97,8 @@
         "v10.499 Stage C Batch 2a-rollback — predecessor batch whose CGR1 discipline shaped this batch's authoring"
       ],
       "process_note": "First real code change of the React Championship phase. Every architectural decision was made against actual code inspected in the same session, not against doctrinal claims. The Batch 2a fabrication and its rollback established this discipline mechanically: assistant claims X about code, operator verifies X by running or reading the code, then we proceed."
-    },{
+    },
+    {
       "date": "2026-05-22",
       "batch_id": "v10.499-stage-c-batch-2a-rollback",
       "title": "require_role reclassification reversed (CGR1 self-correction)",
@@ -107,7 +150,8 @@
         "Phase 1 Step 1.4 / Batch 2b — now planned with the corrected understanding that require_role must be built before it can be consumed"
       ],
       "process_note": "This rollback is itself the patient's immune response working. The fabrication was caught inside the same session that produced it, before any code work began that would have depended on the false claim. Operational lessons: (1) Doctrine alone is insufficient — the operator's direct inspection is the final ground truth. (2) CGR1 standing procedure must include adversarial verification — the assistant claims X, the operator verifies X, not just narration of inspection. (3) v10.500's session_vitals.py will substantially reduce this failure mode by mechanizing the inspection step. (4) The ledger preserving both Batch 2a and Batch 2a-rollback is the canonical record of what happened. Future readers see the full story including the failure, not a sanitized version. The patient did not return to coma. CGR1 worked. The cost was a 25-minute rollback before Batch 2b code work began."
-    },{
+    },
+    {
       "date": "2026-05-22",
       "batch_id": "v10.499-stage-c-batch-2a",
       "title": "CGR1 reality-check + shadcn drift correction",
@@ -164,7 +208,8 @@
         "Phase 1 Step 1.4 (resuming next batch, now correctly grounded against actual code state)"
       ],
       "process_note": "This batch validates CGR1's standing procedure operationally. A new chat session, having read only the doctrinal artifacts (not the code), would have authored Step 1.4 against the shadcn-assumed file tree and the ASPIRATIONAL-labeled require_role. CGR1 standing procedure (inspect code → compare → classify → record) caught all three drifts before any line of Step 1.4 code was written. The same procedure should be the opening move of every future session until scripts/session_vitals.py (planned for v10.500 Continuity-Hardening Batch) makes it mechanical at session-open time."
-    },    {
+    },
+    {
       "date": "2026-05-22",
       "batch_id": "v10.497-stage-b",
       "title": "Constitutional governance program completion",

@@ -61,6 +61,58 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-23 v10.499 Stage C Batch 2c — `/api/roles/registry` endpoint (canonical role registry for React)
+
+**Type:** Feature (new FastAPI router + new endpoint + doctrine rename)
+**Owner:** Joshua + Claude (code-grounded inspection of role_taxonomy public API and existing router patterns)
+**Rationale:** The React `useRole()` hook (Batch 2d) needs schema-level role data — every classified role plus the enum constants for tiers/SBUs/scopes — to answer "what are all the SBUs?" or "is role X canonical?" client-side without re-hitting the API. Batch 2b shipped `/api/auth/whoami-detailed` (per-user identity); Batch 2c ships the complementary `/api/roles/registry` (canonical schema). FRONTEND_GOVERNANCE doctrine originally declared this endpoint as `/api/roles/me`, but the semantic is closer to a registry than a "me" endpoint — renamed in this batch to `/api/roles/registry` for clarity, doctrine updated to match.
+
+**Changes:**
+
+- `utils/api_roles.py` — new file (~100 lines). Router declared with `prefix="/api/roles"` and `tags=["roles"]` matching the api_branding.py pattern. Single endpoint `GET /registry` (full path `/api/roles/registry`). Auth via `Depends(get_current_user)` — authenticated but not role-gated, because the registry is schema, not per-user data. Response shape: `{enums: {tiers, sbus, scopes}, roles: [{role, tier, branch_scope, sbu, matched_via, can_be_tagged}, ...], total_classified_roles: int}`. Iterates `list_all_classified_roles()` (49 roles), classifies each, converts the `RoleClassification` dataclass via `dataclasses.asdict()`, adds inline `can_be_tagged` derivation. Deliberately no `_audit()` call — registry endpoint is read-only schema, called frequently by clients, auditing every read would flood the trail. Same pattern as `/api/auth/me` (unaudited).
+
+- `utils/api.py` — try/except mount block added at line 165 (after the branding router mount). `from utils.api_roles import router as _roles_router; app.include_router(_roles_router)`. Logger.info on success, warning on failure. Mirrors the existing branding/cascade/capacity mount pattern.
+
+- `docs/architecture/FRONTEND_GOVERNANCE.md` + `.json` — `useRole_hook_contract.data_source_endpoint` renamed from `/api/roles/me` to `/api/roles/registry`. `Last updated` metadata updated. The rename clarifies that the endpoint returns the registry (schema), not the caller's identity — the latter is now correctly served by `/api/auth/whoami-detailed`.
+
+**Verification:**
+
+- `python -c "import ast; ast.parse(open('utils/api_roles.py').read())"` → SYNTAX OK
+- `python -c "import utils.api_roles; print(utils.api_roles.router)"` → router object resolved
+- `python -c "from utils.api_roles import get_role_registry; result = get_role_registry(user={'username':'admin','role':'Admin','iat':1,'exp':9999999999}); print(len(result['roles']), 'classifications')"` → 49 classifications, first role `AML Analyst` with explicit classification and `can_be_tagged: False`
+- `python -c "from utils.api import app; print([r.path for r in app.routes if '/api/roles' in getattr(r, 'path', '')])"` → `['/api/roles/registry']` (route registered in live FastAPI router table)
+- `python -c "import ast; ast.parse(open('utils/api.py').read())"` → SYNTAX OK
+- `python -c "import json; json.load(open('docs/architecture/FRONTEND_GOVERNANCE.json'))"` → JSON OK
+- `findstr /n /c:"/api/roles/me" docs\architecture\FRONTEND_GOVERNANCE.md` → zero matches (rename complete)
+- `findstr /n /c:"/api/roles/registry" docs\architecture\FRONTEND_GOVERNANCE.md` → one or more matches (rename landed)
+
+**Design notes:**
+
+- New router in its own module (utils/api_roles.py) rather than appending another endpoint to utils/api.py — preserves namespace hygiene matching the api_branding/api_cascade/api_capacity_feedback pattern. utils/api.py stays focused on auth + cross-cutting endpoints; topic-specific endpoints live in dedicated routers.
+- Endpoint is authenticated but not role-restricted. The role registry is published system schema, not a secret. Public access would expose organizational structure to anonymous callers; role-gated access would prevent the React hook from initialising for non-admin users. Authenticated-but-open is the calibrated middle.
+- Response includes only EXPLICITLY classified roles (49 in role_classification config). Keyword-fallback rescues are not included in the registry — keyword fallback is a runtime safety net, not a canonical declaration. If a role isn't in the registry, the React side should treat it as needing explicit classification before UI decisions depend on it.
+- `can_be_tagged` derived inline rather than via `role_taxonomy.can_be_tagged()` — favors readability at route boundary, matches Batch 2b's whoami-detailed convention.
+- No audit event. Registry reads are frequent (every page load on React side calls the hook), unaudited matches existing `/api/auth/me` and `/api/branding` precedent for read-only schema endpoints.
+
+**What this unblocks:**
+
+- Batch 2d: React `frontend/web/src/hooks/useRole.ts` consuming both `/api/auth/whoami-detailed` (user identity) and `/api/roles/registry` (role schema)
+- Batch 2e: `ProtectedRoute` wrapper using `useRole()` capabilities to gate routes by tier/role
+
+**Cross-references:**
+
+- `utils/api_branding.py` — the architectural pattern this router follows
+- `utils/role_taxonomy.py::list_all_classified_roles, classify_role, ALL_TIERS, ALL_SBUS, ALL_SCOPES` — the public API this endpoint consumes
+- `docs/architecture/FRONTEND_GOVERNANCE.md::useRole_hook_contract` — the contract this endpoint serves (updated in this batch to reflect the rename)
+- `data/org_hierarchy_config.json::profitability_axis.role_classification` — the underlying data source (49 explicit role classifications)
+- v10.499 Stage C Batch 2b — predecessor batch that shipped `/api/auth/whoami-detailed` (the per-user companion to this per-schema endpoint)
+
+**Process note:**
+
+Second clean code-grounded batch since the Batch 2a-rollback reset. The endpoint design was decided after explicit code inspection of `role_taxonomy.py`'s public surface, the actual contents of `org_hierarchy_config.json`, and the existing `api_branding.py` router pattern — three artifacts examined directly in the same session that authored the code. Path B (a new endpoint with new purpose) was chosen over Path A (renaming `/api/auth/whoami-detailed`) because the two endpoints serve genuinely different queries: identity vs schema. The semantic clarity gain justifies the additional surface.
+
+---
+
 ### 2026-05-23 v10.499 Stage C Batch 2b — `require_role` factory + `/api/auth/whoami-detailed` endpoint
 
 **Type:** Feature (RBAC infrastructure + first React-facing auth endpoint)

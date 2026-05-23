@@ -5,7 +5,7 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 4",
-    "last_updated": "2026-05-22 (revised v10.499 Stage C Batch 2a — shadcn pivot reclassified ASPIRATIONAL per CGR1)",
+    "last_updated": "2026-05-23 (revised v10.499 Stage C Batch 2c — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)",
     "owner": "Frontend / Design System",
     "human_readable_equivalent": "FRONTEND_GOVERNANCE.md",
     "authoritative_sources": [
@@ -148,7 +148,7 @@
       "isChief()": "boolean — convenience for seniorityTier === 1",
       "canTag()": "boolean — mirrors role_taxonomy.can_be_tagged"
     },
-    "data_source_endpoint": "GET /api/roles/me",
+    "data_source_endpoint": "GET /api/roles/registry",
     "endpoint_implementation_pattern": "calls role_taxonomy.classify_role + resolve_capabilities + _resolve_seniority_tier",
     "caching": {
       "stale_time_ms": 300000,
@@ -241,7 +241,7 @@
   ],
 
   "open_items": [
-    {"id": "OI-9", "title": "/api/roles/me endpoint contract", "resolution": "Resolved in this artifact; implementation in next governance batch"},
+    {"id": "OI-9", "title": "/api/roles/registry endpoint contract", "resolution": "Resolved in this artifact; implementation in next governance batch"},
     {"id": "OI-13", "title": "Full Streamlit page inventory + RBAC", "wave": "follow-up batch"},
     {"id": "OI-35", "title": "Full enumeration of React frontend/web/src/ tree", "wave": "Wave 4 amendment (dir /s /b)"},
     {"id": "OI-36", "title": "Router specification (React Router)", "wave": "Wave 4 amendment"},

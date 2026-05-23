@@ -4,7 +4,7 @@
 **Authority level:** Domain (consumes from `CANONICAL_TRUTH_REGISTRY.md` + `ROLE_GOVERNANCE.md` + `RBAC_MATRIX.md`)
 **Status:** `canonical` (post v10.497 P0 shadcn pivot)
 **Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 4)
-**Last updated:** 2026-05-22 (revised v10.499 Stage C Batch 2a — shadcn pivot reclassified ASPIRATIONAL per CGR1)
+**Last updated:** 2026-05-23 (revised v10.499 Stage C Batch 2c — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)
 **Owner:** Frontend / Design System
 **Authoritative sources:**
 
@@ -351,13 +351,13 @@ const role = useRole();
 ### Data source (new endpoint to be added)
 
 ```
-GET /api/roles/me
+GET /api/roles/registry
 ```
 
 Server-side implementation:
 
 ```python
-@app.get("/api/roles/me")
+@app.get("/api/roles/registry")
 def get_role_me(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
     """Return canonical role classification + capabilities for the current user."""
     from utils.role_taxonomy import classify_role
@@ -403,7 +403,7 @@ export interface UserRole {
 export function useRole(): UserRole | null {
   const { data } = useQuery({
     queryKey: ["role", "me"],
-    queryFn: () => api.get("/api/roles/me"),
+    queryFn: () => api.get("/api/roles/registry"),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
