@@ -61,6 +61,55 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-23 v10.499 Stage C Batch 2b — `require_role` factory + `/api/auth/whoami-detailed` endpoint
+
+**Type:** Feature (RBAC infrastructure + first React-facing auth endpoint)
+**Owner:** Joshua + Claude (code-grounded inspection at every step per post-Batch-2a discipline)
+**Rationale:** Phase 1 Step 1.4 needs RBAC infrastructure beyond the existing admin/non-admin binary, plus a richer identity endpoint for the React `useRole()` hook to consume. Batch 2b ships both: a `require_role(accepted_roles)` factory in `utils/auth_jwt.py` and a `/api/auth/whoami-detailed` route in `utils/api.py`. Following the discipline established by the Batch 2a-rollback CGR1 self-correction, every file was inspected directly before any code was authored against it.
+
+**Changes:**
+
+- `utils/auth_jwt.py` — appended `require_role(accepted_roles: list[str])` factory function (~80 lines). Closure-based parameterized FastAPI dependency. Empty-list guard raises `ValueError` at factory call time (fail-fast). Pre-normalises accepted roles once (lowercased, stripped, set-deduplicated). Inner closure returns dependency function with chained `Depends(get_current_user)` so auth runs first. Raises 403 (not 401) on insufficient role with explicit "this endpoint requires one of: [...]; your role: X" detail. Closure `__name__` rebound to `require_role[role1,role2,...]` so FastAPI OpenAPI docs and tracebacks show meaningful identity. Follows the established `require_admin` chained-Depends pattern.
+
+- `utils/api.py` — appended `/api/auth/whoami-detailed` endpoint immediately after `/api/auth/me`. Authentication via `Depends(get_current_user)`; no role restriction (returns caller's own identity only). Enriches the JWT-derived user dict with: (a) canonical identity from `UserManager.users[username]` — staff_code, full_name, department, email, active; (b) role classification via `role_taxonomy.classify_role()` — tier, sbu, branch_scope, matched_via, can_be_tagged derived from tier; (c) capability flags — is_admin (derived from either is_admin field or role==admin), can_view_all; (d) Streamlit RBAC migration-compat fields — accessible_modules, hidden_modules; (e) token timing — expires_at matching `/api/auth/me` convention. Audit event `API_AUTH_WHOAMI_DETAILED` fires before return per T1 telemetry doctrine.
+
+**Verification:**
+
+- `python -c "import ast; ast.parse(open('utils/auth_jwt.py').read())"` → SYNTAX OK
+- `python -c "from utils.auth_jwt import require_role; print(require_role)"` → function object resolved
+- `python -c "from utils.auth_jwt import require_role; dep = require_role(['MD','Director Retail Banking']); print(dep.__name__)"` → `require_role[director retail banking,md]` (factory closure works, name rebinding works)
+- `python -c "from utils.auth_jwt import require_role; require_role([])"` → ValueError raised with documented detail (fail-fast guard works)
+- `python -c "import ast; ast.parse(open('utils/api.py').read())"` → SYNTAX OK
+- `python -c "import utils.api"` → MODULE IMPORT OK
+- `python -c "from utils.api import whoami_detailed; result = whoami_detailed(user={'username':'admin','role':'Admin','iat':1700000000,'exp':9999999999}); print(result['tier'])"` → `support` (full end-to-end execution, identity resolution + classification + response assembly all work)
+
+**Design notes:**
+
+- Lazy imports in both new code blocks (`from fastapi import Depends` inside factory body; `from utils.core import UserManager` and `from utils.role_taxonomy import classify_role` inside endpoint body) match the existing codebase convention established by login route and `_make_require_admin`. Rationale: keeps auth and api modules usable in non-FastAPI contexts (tests, scripts).
+- `can_be_tagged` derived inline at the endpoint boundary rather than calling `role_taxonomy.can_be_tagged()` — favors readability at the route level (the rule "portfolio_owner + service tiers can be tagged" is explicit in the response code).
+- Endpoint surface deliberately omits `password`/hash, `_protected` flag, `managed_staff_codes` (hierarchy concern), and any cross-user data.
+- Response shape designed for direct React consumption — no transformation layer needed in the `useRole()` hook (Batch 2d).
+
+**What this unblocks:**
+
+- Batch 2c: `/api/roles/me` endpoint via new `utils/api_roles.py` router (canonical role registry exposure)
+- Batch 2d: React `frontend/web/src/hooks/useRole.ts` consuming both `/api/auth/whoami-detailed` (this batch) and `/api/roles/me` (Batch 2c)
+- Batch 2e: `ProtectedRoute` wrapper + App.tsx route table updated to gate by role via `useRole()`
+
+**Cross-references:**
+
+- `RBAC_MATRIX.md::react_phase_2_useRole_hook_contract` — the canonical contract this endpoint serves
+- `FRONTEND_GOVERNANCE.md::useRole_hook_contract` — same, in the frontend governance artifact
+- `utils/auth_jwt.py::_make_require_admin` — the architectural pattern `require_role` follows
+- `utils/role_taxonomy.py::classify_role` — the role-axis classification this endpoint consumes
+- v10.499 Stage C Batch 2a-rollback — the predecessor batch whose CGR1 discipline shaped how Batch 2b was authored (verify against actual code before any claim or commit)
+
+**Process note:**
+
+This batch is the first real code change of the React Championship phase. Every architectural decision — lazy imports, inline `can_be_tagged` derivation, the response shape, the field omissions, the audit event naming — was made against actual code inspected in the same session, not against doctrinal claims. The Batch 2a fabrication and its rollback established this discipline mechanically: assistant claims X about code, operator verifies X by running the code or reading it directly, then we proceed. This batch closes Phase 1 Step 1.4 first sub-step (`whoami-detailed` endpoint) cleanly, with the `require_role` factory built first because the original Batch 2a plan's assumption that the factory existed was the precise drift that the rollback corrected.
+
+---
+
 ### 2026-05-22 v10.499 Stage C Batch 2a-rollback — `require_role` reclassification reversed (CGR1 self-correction)
 
 **Type:** Doctrine rollback (no code change)

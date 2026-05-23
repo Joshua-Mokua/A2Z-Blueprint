@@ -312,6 +312,71 @@ def me(user: dict = Depends(get_current_user)):
     }
 
 
+
+@app.get("/api/auth/whoami-detailed")
+def whoami_detailed(user: dict = Depends(get_current_user)):
+    """Return the caller's full operational identity for React useRole().
+
+    Extends /api/auth/me with:
+      - Full user profile (staff_code, full_name, department, email)
+      - Role classification from role_taxonomy (tier, sbu, branch_scope)
+      - Capability flags (is_admin, can_be_tagged, can_view_all)
+      - Streamlit RBAC fields (accessible_modules) for migration compat
+
+    Auth: any authenticated user (Depends(get_current_user)). Caller
+    receives their own identity only — no cross-user data exposure.
+
+    Used by: frontend/web/src/hooks/useRole.ts (Batch 2d).
+    """
+    # Lazy import to keep auth_jwt usable in non-FastAPI contexts (matches
+    # the codebase pattern used by login + the _make_require_admin factory).
+    from utils.core import UserManager
+    from utils.role_taxonomy import classify_role
+
+    username = user["username"]
+    um = UserManager()
+    full_user = um.users.get(username) or {}
+
+    role_raw = full_user.get("role") or user.get("role") or "Staff"
+    classification = classify_role(role_raw)
+
+    response = {
+        # Identity (from users.json — never trust JWT for these)
+        "username":     username,
+        "staff_code":   full_user.get("staff_code"),
+        "full_name":    full_user.get("full_name"),
+        "department":   full_user.get("department"),
+        "email":        full_user.get("email"),
+        "active":       full_user.get("active", True),
+
+        # Role (raw + classified)
+        "role":           role_raw,
+        "tier":           classification.tier,
+        "sbu":            classification.sbu,
+        "branch_scope":   classification.branch_scope,
+        "matched_via":    classification.matched_via,
+        "can_be_tagged":  classification.tier in {"portfolio_owner", "service"},
+
+        # Capability flags
+        "is_admin":         bool(full_user.get("is_admin") or full_user.get("role", "").lower() == "admin"),
+        "can_view_all":     bool(full_user.get("can_view_all")),
+
+        # Streamlit RBAC (migration compat — React will phase these out)
+        "accessible_modules":  full_user.get("accessible_modules", []),
+        "hidden_modules":      full_user.get("hidden_modules", []),
+
+        # Token timing (matches /api/auth/me convention)
+        "expires_at": (
+            datetime.fromtimestamp(user["exp"]).isoformat()
+            if user.get("exp") else None
+        ),
+    }
+
+    _audit("API_AUTH_WHOAMI_DETAILED", user,
+           f"Detailed identity returned for {username} "
+           f"(role={role_raw}, tier={classification.tier})")
+
+    return response
 # ── Health check (NO AUTH — by design) ────────────────────────────
 @app.get("/api/health")
 def health():

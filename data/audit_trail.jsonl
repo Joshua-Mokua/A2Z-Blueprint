@@ -487,3 +487,4 @@
 {"ts": "2026-05-21T14:46:21.309683", "user": "william001", "action": "LOGIN", "detail": "Success", "module": "", "before": "", "after": ""}
 {"ts": "2026-05-21T14:46:32.685581", "user": "william001", "action": "md_cockpit.view", "detail": "role=chief executive & managing director is_admin=True is_md=True", "module": "md_cockpit", "before": "", "after": ""}
 {"ts": "2026-05-21T14:47:40.191183", "user": "william001", "action": "md_cockpit.view", "detail": "role=chief executive & managing director is_admin=True is_md=True", "module": "md_cockpit", "before": "", "after": ""}
+{"ts": "2026-05-23T13:58:41.972336", "user": "admin", "action": "API_AUTH_WHOAMI_DETAILED", "detail": "Detailed identity returned for admin (role=Admin, tier=support)", "module": "api", "before": "", "after": ""}

@@ -20,6 +20,42 @@
 
   "entries": [
 {
+      "date": "2026-05-23",
+      "batch_id": "v10.499-stage-c-batch-2b",
+      "title": "require_role factory + /api/auth/whoami-detailed endpoint",
+      "type": "feature_rbac_infrastructure",
+      "owner": "Joshua + Claude (code-grounded inspection at every step per post-Batch-2a discipline)",
+      "rationale": "Phase 1 Step 1.4 needs RBAC infrastructure beyond the admin/non-admin binary, plus a richer identity endpoint for the React useRole() hook to consume. Batch 2b ships both. Following the discipline established by the Batch 2a-rollback CGR1 self-correction, every file was inspected directly before code was authored against it.",
+      "changes": [
+        "utils/auth_jwt.py: appended require_role(accepted_roles: list[str]) factory (~80 lines). Closure-based parameterized FastAPI dependency. Empty-list guard at factory time. Case-insensitive role matching via pre-normalised set. Inner closure chains Depends(get_current_user) so auth runs first. Raises 403 on insufficient role with explicit allow-list in detail. Closure __name__ rebound for OpenAPI docs visibility. Follows require_admin chained-Depends architectural pattern.",
+        "utils/api.py: appended /api/auth/whoami-detailed endpoint after /api/auth/me. Auth via Depends(get_current_user); no role restriction. Enriches JWT user dict with UserManager identity (staff_code, full_name, department, email, active), role_taxonomy classification (tier, sbu, branch_scope, matched_via, can_be_tagged), capability flags (is_admin, can_view_all), Streamlit migration-compat fields (accessible_modules, hidden_modules), and token timing (expires_at). Emits API_AUTH_WHOAMI_DETAILED audit event before return."
+      ],
+      "verification": [
+        "python ast.parse on both modified files: SYNTAX OK",
+        "python import of utils.api: MODULE IMPORT OK (six Streamlit cache warnings expected and harmless)",
+        "require_role factory tests: factory returns function, closure __name__ correctly reflects normalised roles, empty-list raises ValueError with documented detail",
+        "whoami_detailed direct invocation with synthetic admin user: returns structured JSON with all 17 documented fields populated correctly, role classification matched_via keyword_fallback:admin to support tier, can_be_tagged correctly false for support tier, is_admin true via role==admin path"
+      ],
+      "design_notes": {
+        "lazy_imports": "Both new code blocks use lazy imports inside function bodies (matches existing codebase pattern from login route and _make_require_admin factory). Keeps modules usable in non-FastAPI contexts.",
+        "can_be_tagged_derived_inline": "Endpoint derives can_be_tagged from classification.tier directly rather than calling role_taxonomy.can_be_tagged(). Favors readability at route boundary; the rule 'portfolio_owner + service tiers can be tagged' is explicit in route code.",
+        "deliberate_omissions": "Endpoint never returns password/hash, _protected flag, managed_staff_codes, or any cross-user data.",
+        "response_shape": "Designed for direct React consumption — no transformation layer needed in useRole() hook (Batch 2d)."
+      },
+      "unblocks": [
+        "Batch 2c: /api/roles/me endpoint via new utils/api_roles.py router",
+        "Batch 2d: React frontend/web/src/hooks/useRole.ts",
+        "Batch 2e: ProtectedRoute wrapper + App.tsx route table role-gated"
+      ],
+      "cross_references": [
+        "RBAC_MATRIX.md::react_phase_2_useRole_hook_contract — canonical contract this endpoint serves",
+        "FRONTEND_GOVERNANCE.md::useRole_hook_contract — same in frontend artifact",
+        "utils/auth_jwt.py::_make_require_admin — architectural pattern require_role follows",
+        "utils/role_taxonomy.py::classify_role — role classification this endpoint consumes",
+        "v10.499 Stage C Batch 2a-rollback — predecessor batch whose CGR1 discipline shaped this batch's authoring"
+      ],
+      "process_note": "First real code change of the React Championship phase. Every architectural decision was made against actual code inspected in the same session, not against doctrinal claims. The Batch 2a fabrication and its rollback established this discipline mechanically: assistant claims X about code, operator verifies X by running or reading the code, then we proceed."
+    },{
       "date": "2026-05-22",
       "batch_id": "v10.499-stage-c-batch-2a-rollback",
       "title": "require_role reclassification reversed (CGR1 self-correction)",

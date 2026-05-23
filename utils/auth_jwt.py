@@ -205,3 +205,86 @@ def _make_require_admin():
 
 
 require_admin = _make_require_admin()
+
+# ── require_role factory (v10.499 Stage C Batch 2b) ───────────────────────
+# Generalises require_admin to arbitrary role lists. Used by routes that
+# need RBAC beyond the admin/non-admin binary, e.g. /api/dashboard/md
+# (MD only), /api/credit/watchlist (Credit roles + executives).
+#
+# Pattern matches require_admin: a factory builds the chained Depends form
+# so routes write `Depends(require_role(["MD"]))` cleanly without importing
+# the chain machinery at every callsite.
+#
+# Role matching is case-insensitive (so callers don't have to remember
+# whether users.json stores "Managing Director" or "managing director").
+# Whitespace is normalised on both sides. The accepted-roles list must
+# be non-empty; passing [] raises ValueError immediately at factory call
+# time, not at request time — fail-fast per A2Z doctrine.
+def require_role(accepted_roles: list[str]):
+    """FastAPI Depends factory — require user's role to be in accepted_roles.
+
+    Returns a FastAPI dependency callable. Raises 403 (not 401) on
+    insufficient role so the caller knows the token was valid but the
+    user isn't authorised for this specific endpoint.
+
+    Usage:
+        from fastapi import Depends
+        from utils.auth_jwt import require_role
+
+        @app.get("/api/dashboard/md")
+        def md_dashboard(user: dict = Depends(require_role(["Managing Director"]))):
+            ...
+
+        @app.get("/api/credit/decisions")
+        def credit(user: dict = Depends(require_role(
+            ["Branch Credit Manager", "Director Retail Banking", "Managing Director"]
+        ))):
+            ...
+
+    Args:
+        accepted_roles: list of role strings the user's role must match
+                        (case-insensitive). Must be non-empty.
+
+    Raises:
+        ValueError: if accepted_roles is empty (factory call time).
+        HTTPException 403: if authenticated user's role not in list
+                           (request time).
+    """
+    if not accepted_roles:
+        raise ValueError(
+            "require_role: accepted_roles must be a non-empty list. "
+            "If you mean 'any authenticated user', use Depends(get_current_user) "
+            "directly. If you mean 'admin only', use Depends(require_admin)."
+        )
+
+    # Pre-normalise the accepted list once at factory time, not at every
+    # request. Saves a few microseconds per call and makes intent explicit.
+    normalised_accepted = {r.strip().lower() for r in accepted_roles if r and r.strip()}
+    if not normalised_accepted:
+        raise ValueError(
+            "require_role: accepted_roles contained only blank strings."
+        )
+
+    from fastapi import Depends
+
+    def require_role_dep(user: dict = Depends(get_current_user)) -> dict:
+        """Inner dependency — verifies authenticated user's role is accepted."""
+        user_role = (user.get("role") or "").strip().lower()
+        if user_role not in normalised_accepted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"This endpoint requires one of: "
+                    f"{sorted(accepted_roles)}. Your role: "
+                    f"{user.get('role', '(none)')}."
+                ),
+            )
+        return user
+
+    # Give the closure a readable __name__ so FastAPI's OpenAPI docs and
+    # error messages show something meaningful instead of 'require_role_dep'.
+    require_role_dep.__name__ = (
+        f"require_role[{','.join(sorted(normalised_accepted))}]"
+    )
+
+    return require_role_dep

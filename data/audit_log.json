@@ -4399,5 +4399,14 @@
     "module": "md_cockpit",
     "before": "",
     "after": ""
+  },
+  {
+    "ts": "2026-05-23T13:58:41.972336",
+    "user": "admin",
+    "action": "API_AUTH_WHOAMI_DETAILED",
+    "detail": "Detailed identity returned for admin (role=Admin, tier=support)",
+    "module": "api",
+    "before": "",
+    "after": ""
   }
 ]
