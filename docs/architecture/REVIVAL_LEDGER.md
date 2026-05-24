@@ -61,6 +61,73 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-24 v10.499 Stage C Batch 2d — React `useRole()` hook + RoleProvider (first useful React hook of the championship phase)
+
+**Type:** Feature (first React-side code consumer of the role infrastructure shipped in Batches 2b + 2c)
+**Owner:** Joshua + Claude (code-grounded inspection of every file before any claim; matches post-rollback discipline)
+**Rationale:** Batches 2b and 2c shipped the backend role infrastructure (`/api/auth/whoami-detailed`, `/api/roles/registry`) but the React side had no consumer. Batch 2d builds the React `useRole()` hook + `RoleProvider`, making the role data live in the React tree. Components that need to make role-aware UI decisions can now call `useRole()` and get back the caller's full identity, the canonical role registry, and a set of derived capability flags and helper predicates — all from one hook, fetched once at app boot.
+
+**Path A architecture chosen over Path B:** the existing `useBranding` / `BrandingProvider` pattern uses native React context with `useState` + `useEffect` for data fetching, not TanStack Query's `useQuery`. Batch 2d preserves this consistency — RoleProvider mirrors BrandingProvider exactly. TanStack Query is installed at App level (QueryClientProvider) but unused for data fetching; full adoption is a stack-wide decision deferred to OI-63.
+
+**Files shipped:**
+
+- `frontend/web/src/types/role.ts` — TypeScript contracts for both endpoints. Three string-union types (`Tier`, `BranchScope`, `Sbu`), three interfaces (`UserIdentity`, `RoleClassification`, `RoleRegistry`). 3,391 bytes. Every field validated against actual backend runtime output captured 2026-05-24 (17 fields in whoami-detailed, 3-section response shape for registry).
+
+- `frontend/web/src/lib/api.ts` — extended with `fetchWhoamiDetailed()` and `fetchRoleRegistry()` functions following the existing `fetchBranding()` pattern. Grew from 1,003 to 2,352 bytes. Uses the same generic `getJson<T>(path)` helper; no new dependencies introduced.
+
+- `frontend/web/src/providers/RoleProvider.tsx` — new (~150 LOC). Single `useEffect` running `Promise.all([fetchWhoamiDetailed(), fetchRoleRegistry()])` once on mount. Four pieces of `useState`: `user`, `registry`, `loading`, `error`. Derived flags computed in the context value object (not stored as separate state): `isAdmin`, `canViewAll`, `canBeTagged`, `isAuthenticated`. Two helper predicates as closures over `user`: `userHasTier(tier)`, `userHasAnyRole(roles)`. Default context value is "loading, not authenticated, all flags false, helpers return false" so consumers outside the Provider's tree fail safe rather than crash.
+
+- `frontend/web/src/hooks/useRole.ts` — new (6 LOC). Pure context consumer mirroring useBranding's pattern. The hook is tiny by design — provider does the work, hook is the consumption interface.
+
+- `frontend/web/src/App.tsx` — added RoleProvider import and inserted it in the provider chain between AuthProvider and WebSocketProvider. Final chain: `QueryClient → Branding → Toast → Auth → Role → WebSocket → Router`. Tag balance preserved (last-opened-first-closed).
+
+**Verification (every step gated):**
+
+- `dir` + `findstr` on each of the 5 files confirmed creation and content
+- `npm run dev` (Vite) compiled the entire React project cleanly: `VITE v5.4.21 ready in 2824 ms` with zero errors. Every import path resolved, every TypeScript type aligned across files, every JSX block parsed. The provider chain modification in App.tsx accepted without complaint.
+- Backend smoke tests rerun fresh on 2026-05-24 confirmed the response shapes both endpoints actually return: 17 fields in whoami-detailed with email nullable + accessible_modules/hidden_modules as string arrays + expires_at as ISO 8601; registry has enums (3 arrays) + roles (49 explicit classifications) + total_classified_roles count.
+
+**Honest delta — what shipped vs what Stage B doctrine declared:**
+
+The original Stage B `useRole_hook_contract` in `FRONTEND_GOVERNANCE` declared an aspirational signature including `seniorityTier: 0..6`, `capabilities: string[]`, `hasCapability(cap)`, `isMD()`, `isChief()`, and a `displayName` field. The backend example code referenced an unimplemented `utils/rbac_matrix.py` module with a `resolve_capabilities` function and a `_resolve_seniority_tier` helper that doesn't exist.
+
+Batch 2d shipped a smaller hook that consumes what `role_taxonomy.classify_role()` actually returns today (`tier`, `branch_scope`, `sbu`, `can_be_tagged`) plus what the backend endpoints actually return (`is_admin`, `can_view_all`, `accessible_modules`). The deferred features are real and useful but each is a separate architectural decision deserving its own batch. Per CGR1 — doctrine bends to reality, not reality to doctrine.
+
+Five new open items track the deferred features:
+
+- OI-59: `seniorityTier: 0..6` (requires `_resolve_seniority_tier` in role_taxonomy)
+- OI-60: `capabilities: string[]` + `hasCapability(cap)` (requires `utils/rbac_matrix.py` module, depends on Stage C OI-11)
+- OI-61: `isMD()` + `isChief()` convenience methods (depends on OI-59)
+- OI-62: `displayName` field (coordinated backend + React contract change)
+- OI-63: TanStack Query adoption stack-wide (useBranding would migrate too)
+
+**Doctrine updates in this batch:**
+
+- `docs/architecture/FRONTEND_GOVERNANCE.md` — four surgical edits: Last updated metadata refreshed; entire `## React Phase 2 contract` section restructured into Implementation v1 + Future extensions + Forbidden patterns + Stage C enforcement; Provider chain JSX block updated to reflect actual on-disk chain (including the bespoke `ToastProvider` correction from Batch 2a that was missed in this specific JSX example, plus the new `RoleProvider`); Open items table extended with OI-59 through OI-63. Mid-flight repair of accidentally-deleted `## API client conventions` heading caught by structural verification and restored.
+
+- `docs/architecture/FRONTEND_GOVERNANCE.json` — three surgical edits mirroring the .md: last_updated metadata, full restructure of `useRole_hook_contract` block into `status` + `implementation_v1_shipped` + `future_extensions_aspirational` + `previous_doctrine_versions`, open_items array extended.
+
+**Process notes:**
+
+This batch was authored under the post-Batch-2a discipline: every claim about a file's contents was verified by direct inspection in the same turn the claim was made. The discipline caught a paste-and-Replace-All cascade (Trap #12) early — when 4 instances of `/api/roles/me` were rename-replaced in FRONTEND_GOVERNANCE.md and "Replace All" with an overly-permissive find string produced `GET GET` damage on three lines plus an incorrectly-renamed historical OI-9 row, the operator caught it via verification and we repaired each broken line surgically before saving the corrupted state.
+
+Mid-flight the `## API client conventions` heading was accidentally deleted during a shift-click selection boundary for the React Phase 2 contract section replacement. Structural verification (`findstr "^## "`) showed three orphaned `###` subsections without their parent `##`. One-line insertion restored the heading. Net cost: about 5 minutes of recovery. The lesson: shift-click selection boundaries in large structured files are inherently boundary-sensitive; structural verification after every deletion is non-negotiable.
+
+The full-file-rewrite approach (Trap #12's preferred path for cascading damage in structured files) was considered for FRONTEND_GOVERNANCE.md but rejected for a 25KB Markdown file because the chat-client paste fragmentation risk exceeded the surgical-edits risk. The decision to use minimal-diff surgical edits ("Option C") was honest about the residual inconsistencies it would leave (the file's FE1 doctrine wording is mildly stale, the Stack table still mentions shadcn in the abstract — both overridden by the CGR1 Reality-Check at the top of the file). A future doctrine-hygiene cleanup batch will resolve these residuals; tracked as OI-64 implicit (not formally filed because non-urgent).
+
+The first useful React hook of the championship phase is now alive in the codebase. When the real `AuthProvider` lands (v10.497 milestone for real JWT auth integration), the chain becomes live and any component can ask `useRole()` who the user is and what they can do.
+
+**Cross-references:**
+
+- `FRONTEND_GOVERNANCE.md::React Phase 2 contract — useRole() hook` (updated this batch)
+- `FRONTEND_GOVERNANCE.json::useRole_hook_contract` (restructured this batch)
+- `frontend/web/src/providers/BrandingProvider.tsx` (the architectural pattern this batch follows)
+- `utils/api.py::whoami_detailed` and `utils/api_roles.py::get_role_registry` (the endpoints this hook consumes — shipped Batches 2b and 2c respectively)
+- v10.499 Stage C Batch 2c (predecessor batch that shipped /api/roles/registry)
+- Phase 1 Step 1.4 / Batch 2e (next batch — ProtectedRoute wrapper consuming this hook to gate routes by role)
+
+---
+
 ### 2026-05-23 v10.499 Stage C Batch 2c — `/api/roles/registry` endpoint (canonical role registry for React)
 
 **Type:** Feature (new FastAPI router + new endpoint + doctrine rename)

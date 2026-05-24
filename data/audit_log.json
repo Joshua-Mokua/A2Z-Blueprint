@@ -4408,5 +4408,32 @@
     "module": "api",
     "before": "",
     "after": ""
+  },
+  {
+    "ts": "2026-05-24T07:47:17.507259",
+    "user": "admin",
+    "action": "API_AUTH_WHOAMI_DETAILED",
+    "detail": "Detailed identity returned for admin (role=Admin, tier=support)",
+    "module": "api",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-05-24T07:48:04.400610",
+    "user": "admin",
+    "action": "API_AUTH_WHOAMI_DETAILED",
+    "detail": "Detailed identity returned for admin (role=Admin, tier=support)",
+    "module": "api",
+    "before": "",
+    "after": ""
+  },
+  {
+    "ts": "2026-05-24T07:49:24.751492",
+    "user": "admin",
+    "action": "API_AUTH_WHOAMI_DETAILED",
+    "detail": "Detailed identity returned for admin (role=Admin, tier=support)",
+    "module": "api",
+    "before": "",
+    "after": ""
   }
 ]

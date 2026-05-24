@@ -5,7 +5,7 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 4",
-    "last_updated": "2026-05-23 (revised v10.499 Stage C Batch 2c — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)",
+    "last_updated": "2026-05-24 (revised v10.499 Stage C Batch 2d — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)",
     "owner": "Frontend / Design System",
     "human_readable_equivalent": "FRONTEND_GOVERNANCE.md",
     "authoritative_sources": [
@@ -130,38 +130,132 @@
   },
 
   "useRole_hook_contract": {
-    "purpose": "Canonical React contract for consuming role data from backend (resolves OI-9)",
-    "hook_path": "@/lib/role",
-    "fields": {
-      "tier": "portfolio_owner | proposition_owner | structural_owner | service | support",
-      "seniorityTier": "0 | 1 | 2 | 3 | 4 | 5 | 6",
-      "sbu": "Retail Banking | Commercial Banking | Corporate Banking | Treasury | Digital_Agency | Support | Executive",
-      "branchScope": "branch_bound | head_office | national",
-      "capabilities": "string[] — resolved capability names per RBAC_MATRIX",
-      "isAdmin": "boolean",
-      "username": "string",
-      "displayName": "string"
+    "purpose": "Canonical React contract for consuming role data from backend (resolves OI-9 v1)",
+    "status": "ACTIVE — Implementation v1 shipped v10.499 Stage C Batch 2d",
+
+    "implementation_v1_shipped": {
+      "hook_path": "@/hooks/useRole",
+      "provider_path": "@/providers/RoleProvider",
+      "types_path": "@/types/role",
+      "implementation_files": [
+        "frontend/web/src/hooks/useRole.ts (6 LOC — pure context consumer)",
+        "frontend/web/src/providers/RoleProvider.tsx (~150 LOC — Promise.all parallel fetch)",
+        "frontend/web/src/types/role.ts (TypeScript contracts validated against backend runtime output)",
+        "frontend/web/src/lib/api.ts (fetchWhoamiDetailed + fetchRoleRegistry client functions)",
+        "frontend/web/src/App.tsx (provider mounted between AuthProvider and WebSocketProvider)"
+      ],
+      "architecture_choice": "Path A — context-Provider pattern mirroring useBranding/BrandingProvider; rejected Path B (useQuery via TanStack Query) for v1 to preserve stack consistency. TanStack Query is installed at App level but unused for data fetching.",
+      "data_sources": [
+        "GET /api/auth/whoami-detailed — caller's identity (shipped Batch 2b)",
+        "GET /api/roles/registry — canonical role registry (shipped Batch 2c)"
+      ],
+      "auth_required": "Depends(get_current_user) on both endpoints; httpOnly cookie carries JWT after v10.497 P1.3",
+      "fetch_pattern": "Promise.all([fetchWhoamiDetailed(), fetchRoleRegistry()]) in single useEffect with empty deps; runs once on mount",
+      "context_value_fields": {
+        "user": "UserIdentity | null — from whoami-detailed",
+        "registry": "RoleRegistry | null — from /api/roles/registry",
+        "loading": "boolean — true until both fetches resolve",
+        "error": "string | null — surfaces fetch failure (e.g. 401 before login)",
+        "isAdmin": "boolean (derived: user?.is_admin ?? false)",
+        "canViewAll": "boolean (derived: user?.can_view_all ?? false)",
+        "canBeTagged": "boolean (derived: user?.can_be_tagged ?? false)",
+        "isAuthenticated": "boolean (derived: user !== null && error === null)",
+        "userHasTier": "(tier: Tier) => boolean",
+        "userHasAnyRole": "(roles: string[]) => boolean"
+      },
+      "user_shape_fields": {
+        "username": "string",
+        "staff_code": "string",
+        "full_name": "string",
+        "department": "string",
+        "email": "string | null (nullable; some users have no email recorded)",
+        "active": "boolean",
+        "role": "string (canonical role name)",
+        "tier": "Tier (5-tier enum: portfolio_owner | proposition_owner | structural_owner | service | support)",
+        "sbu": "Sbu (7-SBU enum)",
+        "branch_scope": "BranchScope (branch_bound | head_office | national)",
+        "matched_via": "string (explicit or keyword_fallback:<keyword>)",
+        "can_be_tagged": "boolean",
+        "is_admin": "boolean",
+        "can_view_all": "boolean",
+        "accessible_modules": "string[] (Streamlit RBAC migration-compat)",
+        "hidden_modules": "string[]",
+        "expires_at": "string | null (ISO 8601 datetime from JWT exp)"
+      },
+      "caching_semantics": {
+        "approach": "Provider runs both fetches once on mount; no automatic refetch, no stale-while-revalidate, no focus-refresh",
+        "rationale": "matches v10.495 useBranding pattern intentionally; TanStack Query adoption is OI-63",
+        "invalidation_hooks": {
+          "on_logout": "unmount/remount provider tree (clears all state)",
+          "on_token_refresh": "provider re-mount or explicit refetch (TBD when auth lands)"
+        }
+      },
+      "stage_c_enforcement_planned": [
+        "gate_useRole_hook_used (MEDIUM): components using role data go through useRole(), not raw fetches",
+        "gate_no_role_string_comparison (HIGH): no `user.role === \"MD\"` or direct role-string compares",
+        "gate_role_endpoint_contract_match (HIGH): UserIdentity/RoleRegistry types in types/role.ts match backend response shapes"
+      ],
+      "forbidden_patterns_with_severity_HIGH": [
+        "user.role === \"Chief Executive & Managing Director\"",
+        "user.role === \"MD\"",
+        "if (role.tier === 'MD')  // (no such tier on profitability axis)",
+        "if (role.tier === 'executive')  // ('executive' is an SBU, not a tier)",
+        "any direct role-string comparison"
+      ],
+      "correct_patterns": [
+        "if (userHasTier(\"structural_owner\")) { ... }",
+        "if (isAdmin) { ... }",
+        "if (userHasAnyRole([\"Managing Director\", \"Director Retail Banking\"])) { ... }"
+      ]
     },
-    "methods": {
-      "hasCapability(cap: string)": "boolean",
-      "isMD()": "boolean — convenience for seniorityTier === 0",
-      "isChief()": "boolean — convenience for seniorityTier === 1",
-      "canTag()": "boolean — mirrors role_taxonomy.can_be_tagged"
+
+    "future_extensions_aspirational": {
+      "rationale": "The original Stage B aspirational signature declared additional features that did NOT ship in v1. Each is deferred to a future batch with its own architectural sub-decisions. Per CGR1 doctrine — doctrine bends to reality, not reality to doctrine. The v1 implementation reflects what role_taxonomy.py and the backend endpoints actually expose today.",
+      "deferred_features": {
+        "seniorityTier_0_to_6": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-59",
+          "rationale": "Requires _resolve_seniority_tier mapping in role_taxonomy.py; depends on canonical 0-6 mapping decision"
+        },
+        "capabilities_string_array": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-60",
+          "rationale": "Requires utils/rbac_matrix.py module with resolve_capabilities (planned per Stage C OI-11); module does not yet exist"
+        },
+        "hasCapability_method": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-60",
+          "rationale": "Depends on capabilities array shipping first"
+        },
+        "isMD_convenience": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-61",
+          "rationale": "Trivial wrapper over userHasAnyRole([\"Managing Director\"]) once role canonicalisation settled; not yet needed by any consumer"
+        },
+        "isChief_convenience": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-61",
+          "rationale": "Depends on seniorityTier shipping; depends on chief-role definition"
+        },
+        "displayName_field": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-62",
+          "rationale": "Endpoint currently returns full_name; future renaming/aliasing is a contract-change requiring coordinated React + backend update"
+        },
+        "tanstack_query_adoption": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-63",
+          "rationale": "Stack-wide migration decision; useBranding would need migration too to maintain consistency"
+        }
+      }
     },
-    "data_source_endpoint": "GET /api/roles/registry",
-    "endpoint_implementation_pattern": "calls role_taxonomy.classify_role + resolve_capabilities + _resolve_seniority_tier",
-    "caching": {
-      "stale_time_ms": 300000,
-      "refetch_on_window_focus": true,
-      "invalidated_on_logout": true,
-      "invalidated_on_token_refresh": true
+
+    "previous_doctrine_versions": {
+      "stage_b_v10497_original": "declared aspirational signature with seniorityTier, capabilities, hasCapability, isMD, isChief, displayName fields; endpoint at /api/roles/me; useQuery-based caching with 5min staleTime; lib path @/lib/role",
+      "batch_2c_rename": "endpoint renamed /api/roles/me → /api/roles/registry to clarify semantic (returns registry/schema, not per-user identity)",
+      "batch_2d_restructure": "split into implementation_v1_shipped (the actual ship) and future_extensions_aspirational (the deferred features); hook moved to @/hooks/useRole; Path A context-Provider chosen over Path B useQuery"
     },
-    "forbidden_patterns_with_severity_HIGH": [
-      "user.role === \"Chief Executive & Managing Director\"",
-      "user.role === \"MD\"",
-      "if (role.tier === 'MD')  // (no such tier on profitability axis — use isMD())",
-      "any direct role-string comparison"
-    ],
+
     "enforcement_gate": "gate_react_no_role_string_comparison (HIGH severity, Stage C)"
   },
 
@@ -246,6 +340,11 @@
     {"id": "OI-35", "title": "Full enumeration of React frontend/web/src/ tree", "wave": "Wave 4 amendment (dir /s /b)"},
     {"id": "OI-36", "title": "Router specification (React Router)", "wave": "Wave 4 amendment"},
     {"id": "OI-37", "title": "Documented A2Z extensions beyond Button.loading + Badge.tone", "wave": "Stage C amendment as added"},
-    {"id": "OI-38", "title": "useBranding() hook contract for tenant name display", "wave": "Wave 4 amendment"}
+    {"id": "OI-38", "title": "useBranding() hook contract for tenant name display", "wave": "Wave 4 amendment"},
+    {"id": "OI-59", "title": "seniorityTier: 0..6 field in useRole", "wave": "Future batch — requires _resolve_seniority_tier in role_taxonomy"},
+    {"id": "OI-60", "title": "capabilities: string[] + hasCapability(cap) in useRole", "wave": "Future batch — requires utils/rbac_matrix.py (depends on OI-11)"},
+    {"id": "OI-61", "title": "isMD() + isChief() convenience methods in useRole", "wave": "Future batch — depends on seniorityTier (OI-59) shipping first"},
+    {"id": "OI-62", "title": "displayName field in whoami-detailed endpoint", "wave": "Future batch — coordinated backend + React contract change"},
+    {"id": "OI-63", "title": "TanStack Query adoption for data-fetching hooks", "wave": "Future stack-wide migration arc"}
   ]
 }

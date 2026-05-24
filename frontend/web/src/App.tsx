@@ -26,6 +26,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { BrandingProvider } from './providers/BrandingProvider';
 import { AuthProvider } from './providers/AuthProvider';
+import { RoleProvider } from './providers/RoleProvider';
 import { WebSocketProvider } from './providers/WebSocketProvider';
 import { ToastProvider } from './components/Toast';
 import { Dashboard } from './pages/Dashboard';
@@ -39,14 +40,14 @@ function App() {
     return <QueryClientProvider client={queryClient}>
         <BrandingProvider>
         <ToastProvider>
-        <AuthProvider><WebSocketProvider><BrowserRouter>
+        <AuthProvider><RoleProvider><WebSocketProvider><BrowserRouter>
             <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/perform" element={<Perform />} />
                 <Route path="/profitability" element={<Profitability />} />
                 <Route path="/components" element={<Showcase />} />
             </Routes>
-        </BrowserRouter></WebSocketProvider></AuthProvider>
+        </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>
         </ToastProvider>
         </BrandingProvider>
     </QueryClientProvider>;

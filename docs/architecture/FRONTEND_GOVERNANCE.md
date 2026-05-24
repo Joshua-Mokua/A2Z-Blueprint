@@ -4,7 +4,7 @@
 **Authority level:** Domain (consumes from `CANONICAL_TRUTH_REGISTRY.md` + `ROLE_GOVERNANCE.md` + `RBAC_MATRIX.md`)
 **Status:** `canonical` (post v10.497 P0 shadcn pivot)
 **Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 4)
-**Last updated:** 2026-05-23 (revised v10.499 Stage C Batch 2c — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)
+**Last updated:** 2026-05-24 (revised v10.499 Stage C Batch 2d — `useRole_hook_contract` restructured to Implementation v1 + Future extensions per CGR1; previous revisions: Batch 2c renamed /api/roles/me → /api/roles/registry, Batch 2a reclassified shadcn pivot ASPIRATIONAL)
 **Owner:** Frontend / Design System
 **Authoritative sources:**
 
@@ -301,12 +301,15 @@ Example pattern (Button):
 ```tsx
 <QueryClientProvider client={queryClient}>
   <BrandingProvider>
-    <Toaster richColors closeButton position="top-right" />
-    <AuthProvider>
-      <WebSocketProvider>
-        <Router>{/* pages */}</Router>
-      </WebSocketProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <RoleProvider>
+          <WebSocketProvider>
+            <BrowserRouter>{/* pages */}</BrowserRouter>
+          </WebSocketProvider>
+        </RoleProvider>
+      </AuthProvider>
+    </ToastProvider>
   </BrandingProvider>
 </QueryClientProvider>
 ```
@@ -315,8 +318,9 @@ Constraints (per Stage C `gate_app_tsx_contract` / G381):
 
 - Order of providers preserved byte-for-byte
 - No tenant string literal anywhere in App.tsx
-- BrandingProvider must wrap everything (because brand colors are CSS vars used by all descendants)
-- Toaster lives inside BrandingProvider so toasts can use brand colors
+- `BrandingProvider` wraps everything below `QueryClientProvider` (brand colors are CSS vars used by all descendants)
+- `ToastProvider` (bespoke v10.496, not shadcn `Toaster`) sits inside `BrandingProvider` so toasts can use brand colors
+- `RoleProvider` (Batch 2d) sits inside `AuthProvider` (depends on JWT cookie set by auth flow) and outside `WebSocketProvider` (so WebSocket subscriptions can read role data for channel scoping)
 
 ### Routing
 
@@ -326,127 +330,164 @@ Constraints (per Stage C `gate_app_tsx_contract` / G381):
 
 ## React Phase 2 contract — `useRole()` hook (resolves OI-9)
 
-This is the canonical React contract for consuming role data from the backend.
+**Status:** ACTIVE (Implementation v1 shipped v10.499 Stage C Batch 2d)
 
-### Hook signature
+**Implementation files:**
 
-```typescript
-import { useRole } from "@/lib/role";
+- `frontend/web/src/hooks/useRole.ts` — consumer hook (6 LOC)
+- `frontend/web/src/providers/RoleProvider.tsx` — provider with parallel fetch (~150 LOC)
+- `frontend/web/src/types/role.ts` — TypeScript contracts (validated against backend runtime output)
+- `frontend/web/src/lib/api.ts` — `fetchWhoamiDetailed` + `fetchRoleRegistry` client functions
+- `frontend/web/src/App.tsx` — provider mounted between AuthProvider and WebSocketProvider
 
-const role = useRole();
+This is the canonical React contract for consuming role data from the backend. Path A architecture chosen over Path B: matches the existing `useBranding`/`BrandingProvider` context-Provider pattern rather than introducing `useQuery` (TanStack Query is installed at App level but not yet adopted for data fetching).
 
-// role has:
-//   tier: 'portfolio_owner' | 'proposition_owner' | 'structural_owner' | 'service' | 'support'
-//   seniorityTier: 0 | 1 | 2 | 3 | 4 | 5 | 6
-//   sbu: 'Retail Banking' | 'Commercial Banking' | 'Corporate Banking' | 'Treasury' | 'Digital_Agency' | 'Support' | 'Executive'
-//   branchScope: 'branch_bound' | 'head_office' | 'national'
-//   capabilities: string[]   // resolved capability names per RBAC_MATRIX
-//   isAdmin: boolean
-//   hasCapability(cap: string): boolean
-//   isMD(): boolean          // convenience for tier 0
-//   isChief(): boolean       // convenience for tier 1
-//   canTag(): boolean        // mirrors role_taxonomy.can_be_tagged
-```
+### Implementation v1 — what shipped in Batch 2d
 
-### Data source (new endpoint to be added)
+Hook surface (from `useRole.ts` consuming `RoleProvider`):
 
-```
-GET /api/roles/registry
-```
+    import { useRole } from "@/hooks/useRole";
 
-Server-side implementation:
+    const {
+      user,            // UserIdentity | null  — from /api/auth/whoami-detailed
+      registry,        // RoleRegistry | null  — from /api/roles/registry
+      loading,         // boolean              — true until both fetches resolve
+      error,           // string | null        — surfaces fetch failure (e.g. 401)
 
-```python
-@app.get("/api/roles/registry")
-def get_role_me(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
-    """Return canonical role classification + capabilities for the current user."""
-    from utils.role_taxonomy import classify_role
-    from utils.rbac_matrix import resolve_capabilities  # new module per Stage C OI-11
+      isAdmin,         // boolean — derived: user?.is_admin ?? false
+      canViewAll,      // boolean — derived: user?.can_view_all ?? false
+      canBeTagged,     // boolean — derived: user?.can_be_tagged ?? false
+      isAuthenticated, // boolean — derived: user !== null && error === null
 
-    classification = classify_role(user.get("role", ""))
-    capabilities = resolve_capabilities(classification, is_admin=user.get("is_admin", False))
+      userHasTier,     // (tier: Tier) => boolean
+      userHasAnyRole,  // (roles: string[]) => boolean
+    } = useRole();
 
-    return {
-        "username": user["username"],
-        "displayName": user.get("full_name", user["username"]),
-        "tier": classification.tier,
-        "seniorityTier": _resolve_seniority_tier(user.get("role", "")),  # from role_tiers
-        "sbu": classification.sbu,
-        "branchScope": classification.branch_scope,
-        "capabilities": capabilities,
-        "isAdmin": user.get("is_admin", False),
+User shape (subset of `UserIdentity`):
+
+    {
+      username:           string;
+      staff_code:         string;
+      full_name:          string;
+      department:         string;
+      email:              string | null;
+      active:             boolean;
+      role:               string;
+      tier:               Tier;          // 5-tier enum
+      sbu:                Sbu;           // 7-SBU enum
+      branch_scope:       BranchScope;   // branch_bound | head_office | national
+      matched_via:        string;        // 'explicit' or 'keyword_fallback:<keyword>'
+      can_be_tagged:      boolean;
+      is_admin:           boolean;
+      can_view_all:       boolean;
+      accessible_modules: string[];      // Streamlit RBAC migration-compat
+      hidden_modules:     string[];
+      expires_at:         string | null; // ISO 8601 datetime
     }
-```
 
-### Hook implementation (canonical pattern)
+### Data sources (live as of Batch 2d)
 
-```typescript
-// frontend/web/src/lib/role.ts
-import { useQuery } from "@tanstack/react-query";
-import { api } from "./api";
+    GET /api/auth/whoami-detailed   — caller's identity (shipped Batch 2b)
+    GET /api/roles/registry         — canonical role registry (shipped Batch 2c)
 
-export interface UserRole {
-  username: string;
-  displayName: string;
-  tier: ProfitabilityTier;
-  seniorityTier: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  sbu: SBU;
-  branchScope: BranchScope;
-  capabilities: string[];
-  isAdmin: boolean;
-  hasCapability: (cap: string) => boolean;
-  isMD: () => boolean;
-  isChief: () => boolean;
-  canTag: () => boolean;
-}
-
-export function useRole(): UserRole | null {
-  const { data } = useQuery({
-    queryKey: ["role", "me"],
-    queryFn: () => api.get("/api/roles/registry"),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  if (!data) return null;
-
-  return {
-    ...data,
-    hasCapability: (cap: string) => data.capabilities.includes(cap),
-    isMD: () => data.seniorityTier === 0,
-    isChief: () => data.seniorityTier === 1,
-    canTag: () => data.tier === "portfolio_owner" || data.tier === "service",
-  };
-}
-```
-
-### Usage in components
-
-```tsx
-// CORRECT
-function AdminButton() {
-  const role = useRole();
-  if (!role?.hasCapability("cache:clear")) return null;
-  return <Button onClick={clearCache}>Clear cache</Button>;
-}
-
-// FORBIDDEN — direct role-string comparison
-function AdminButton() {
-  const { user } = useAuth();
-  if (user?.role !== "Chief Executive & Managing Director") return null; // ✗ violation
-  return <Button>...</Button>;
-}
-```
+Both endpoints sit behind `Depends(get_current_user)`. The provider's `Promise.all` fetches them in parallel on mount.
 
 ### Caching semantics
 
-- Hook data cached 5 minutes (`staleTime`)
-- Refetches on window focus, logout, or explicit invalidation
-- On logout, the cache is cleared in `AuthProvider`
-- During token refresh, the cache is invalidated
+The Provider runs both fetches once on mount (`useEffect` with empty dependency array). No automatic refetch, no stale-while-revalidate, no focus-refresh — this is the v10.495 `useBranding` pattern intentionally. If TanStack Query adoption becomes a stack-wide decision (separate batch), the Provider can be migrated to `useQuery` with `staleTime: 5min` then.
 
-### Stage C enforcement
+Invalidation hooks for future:
 
-`gate_react_no_role_string_comparison` (HIGH severity): scan `frontend/web/src/**.tsx` for patterns like `=== "Chief Executive`, `=== "MD"`, etc. Any match is a violation.
+- On logout → unmount/remount the provider tree (clears all state)
+- On token refresh → provider re-mount or explicit refetch (TBD when auth lands)
+
+### Stage C enforcement (planned)
+
+| Gate                                | Verifies                                                                             | Severity |
+| ----------------------------------- | ------------------------------------------------------------------------------------ | -------- |
+| `gate_useRole_hook_used`            | Components using role data go through `useRole()`, not raw fetches                   | MEDIUM   |
+| `gate_no_role_string_comparison`    | No `user.role === "MD"` or other direct role-string compares                         | HIGH     |
+| `gate_role_endpoint_contract_match` | `UserIdentity`/`RoleRegistry` types in `types/role.ts` match backend response shapes | HIGH     |
+
+### Forbidden patterns (HIGH severity)
+
+Direct role-string comparison (forbidden):
+
+    if (user.role === "Chief Executive & Managing Director") { ... }
+
+Hardcoded role aliases (forbidden):
+
+    if (user.role === "MD") { ... }
+
+Inventing tier values not on the profitability axis (forbidden):
+
+    if (role.tier === "executive") { ... }   // 'executive' is an SBU, not a tier
+
+Canonical enum comparison (correct):
+
+    if (userHasTier("structural_owner")) { ... }
+
+Derived flags (correct):
+
+    if (isAdmin) { ... }
+
+Any-of role matching (correct):
+
+    if (userHasAnyRole(["Managing Director", "Director Retail Banking"])) { ... }
+
+### Future extensions (ASPIRATIONAL)
+
+The original Stage B aspirational signature declared additional features that did NOT ship in v1. Each is deferred to a future batch with its own architectural sub-decisions to make. Tracked as open items:
+
+| Field/method             | Status       | Open item | Rationale for deferral                                                                                                             |
+| ------------------------ | ------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `seniorityTier: 0..6`    | ASPIRATIONAL | OI-59     | Requires `_resolve_seniority_tier` mapping in `role_taxonomy.py`; depends on canonical 0-6 mapping decision                        |
+| `capabilities: string[]` | ASPIRATIONAL | OI-60     | Requires `utils/rbac_matrix.py` module with `resolve_capabilities` (planned per Stage C OI-11); module does not yet exist          |
+| `hasCapability(cap)`     | ASPIRATIONAL | OI-60     | Depends on `capabilities` array shipping first                                                                                     |
+| `isMD()` convenience     | ASPIRATIONAL | OI-61     | Trivial wrapper over `userHasAnyRole(["Managing Director"])` once role canonicalisation is settled; not yet needed by any consumer |
+| `isChief()` convenience  | ASPIRATIONAL | OI-61     | Depends on seniorityTier shipping; depends on chief-role definition                                                                |
+| `displayName` field      | ASPIRATIONAL | OI-62     | Endpoint currently returns `full_name`; future renaming/aliasing is a contract-change requiring coordinated React + backend update |
+| TanStack Query adoption  | ASPIRATIONAL | OI-63     | Stack-wide migration decision; useBranding would need migration too to maintain consistency                                        |
+
+Per CGR1 doctrine, **doctrine bends to reality, not reality to doctrine**. The v1 implementation reflects what `role_taxonomy.py` actually exposes today (`tier`, `branch_scope`, `sbu`, `can_be_tagged`) and what the backend endpoints actually return (`is_admin`, `can_view_all`, `accessible_modules`). The aspirational features remain valuable but each is a deliberate future batch, not a Batch 2d gap to fill in retroactively.
+
+### Implementation reference: Provider sketch
+
+The actual `RoleProvider.tsx` is the canonical reference. Documentation sketch:
+
+    // frontend/web/src/providers/RoleProvider.tsx
+    import { createContext, useEffect, useState } from 'react';
+    import { fetchWhoamiDetailed, fetchRoleRegistry } from '@/lib/api';
+
+    export function RoleProvider({ children }) {
+      const [user, setUser]         = useState(null);
+      const [registry, setRegistry] = useState(null);
+      const [loading, setLoading]   = useState(true);
+      const [error, setError]       = useState(null);
+
+      useEffect(() => {
+        Promise.all([fetchWhoamiDetailed(), fetchRoleRegistry()])
+          .then(([u, r]) => { setUser(u); setRegistry(r); })
+          .catch((e) => setError(String(e)))
+          .finally(() => setLoading(false));
+      }, []);
+
+      const value = {
+        user, registry, loading, error,
+        isAdmin:         user?.is_admin ?? false,
+        canViewAll:      user?.can_view_all ?? false,
+        canBeTagged:     user?.can_be_tagged ?? false,
+        isAuthenticated: user !== null && error === null,
+        userHasTier:    (tier)  => user?.tier === tier,
+        userHasAnyRole: (roles) => {
+          if (!user) return false;
+          const ur = user.role.toLowerCase();
+          return roles.some(r => r.toLowerCase() === ur);
+        },
+      };
+
+      return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
+    }
 
 ---
 
@@ -615,6 +656,11 @@ This is a _temporary_ constraint during transition. Once Streamlit is fully migr
 | OI-36 | Router specification (React Router)                          | Wave 4 amendment                                                   |
 | OI-37 | Documented A2Z extensions beyond Button.loading + Badge.tone | Stage C amendment as added                                         |
 | OI-38 | useBranding() hook contract for tenant name display          | Wave 4 amendment                                                   |
+| OI-59 | `seniorityTier: 0..6` field in useRole                       | Future batch — requires `_resolve_seniority_tier` in role_taxonomy |
+| OI-60 | `capabilities: string[]` + `hasCapability(cap)` in useRole   | Future batch — requires `utils/rbac_matrix.py` (depends on OI-11)  |
+| OI-61 | `isMD()` + `isChief()` convenience methods in useRole        | Future batch — depends on seniorityTier (OI-59) shipping first     |
+| OI-62 | `displayName` field in whoami-detailed endpoint              | Future batch — coordinated backend + React contract change         |
+| OI-63 | TanStack Query adoption for data-fetching hooks              | Future stack-wide migration arc                                    |
 
 ---
 
