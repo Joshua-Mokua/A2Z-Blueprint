@@ -4,7 +4,7 @@
 **Authority level:** Domain (consumes from `CANONICAL_TRUTH_REGISTRY.md` + `ROLE_GOVERNANCE.md` + `RBAC_MATRIX.md`)
 **Status:** `canonical` (post v10.497 P0 shadcn pivot)
 **Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 4)
-**Last updated:** 2026-05-24 (revised v10.499 Stage C Batch 2d — `useRole_hook_contract` restructured to Implementation v1 + Future extensions per CGR1; previous revisions: Batch 2c renamed /api/roles/me → /api/roles/registry, Batch 2a reclassified shadcn pivot ASPIRATIONAL)
+**Last updated:** 2026-05-24 (revised v10.499 Stage C Batch 2e — ProtectedRoute wrapper consuming useRole() added; OI-36 routing documentation resolved; previous Batch 2d — `useRole_hook_contract` restructured to Implementation v1 + Future extensions per CGR1; previous revisions: Batch 2c renamed /api/roles/me → /api/roles/registry, Batch 2a reclassified shadcn pivot ASPIRATIONAL)
 **Owner:** Frontend / Design System
 **Authoritative sources:**
 
@@ -324,7 +324,84 @@ Constraints (per Stage C `gate_app_tsx_contract` / G381):
 
 ### Routing
 
-(**OI-36** — Router specification (likely React Router) to be documented in Wave 4 amendment after full App.tsx tree is surveyed.)
+React Router 6.26.0 (`react-router-dom` package). `BrowserRouter` sits at the innermost layer of the provider chain, just inside `WebSocketProvider` and wrapping the `<Routes>` declaration block in `App.tsx`.
+
+Current route table (commit `9895676` + Batch 2e):
+
+| Path             | Element                                                      | Protection                             |
+| ---------------- | ------------------------------------------------------------ | -------------------------------------- |
+| `/`              | `<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>` | requires authenticated user (Batch 2e) |
+| `/perform`       | `<Perform />`                                                | unprotected (prototype, future batch)  |
+| `/profitability` | `<Profitability />`                                          | unprotected (prototype, future batch)  |
+| `/components`    | `<Showcase />`                                               | unprotected (design-system gallery)    |
+
+#### ProtectedRoute contract (resolves OI-36 routing documentation)
+
+**Status:** ACTIVE (shipped v10.499 Stage C Batch 2e)
+**Implementation file:** `frontend/web/src/components/ProtectedRoute.tsx`
+
+ProtectedRoute is the canonical mechanism for gating a route's content based on the caller's role and capabilities. It consumes `useRole()` to make the access decision and renders one of four states depending on the result.
+
+##### Props
+
+| Prop             | Type      | Semantics                                                             |
+| ---------------- | --------- | --------------------------------------------------------------------- |
+| `children`       | ReactNode | The protected content rendered when authorization succeeds            |
+| `requireAuth`    | boolean   | Any authenticated user (lowest gate)                                  |
+| `requireAdmin`   | boolean   | `user.is_admin === true`                                              |
+| `requireTier`    | Tier      | `user.tier === <tier>` (5-tier profitability axis)                    |
+| `requireAnyRole` | string[]  | `user.role` matches one of the provided role names (case-insensitive) |
+
+All requirement props are optional. When multiple are provided, they combine with **AND semantics** — the user must satisfy every stated requirement. `requireAuth` is implicit when any other requirement is set (an unauthenticated user cannot be admin).
+
+##### State rendering
+
+| useRole state                                               | Rendered output                                                                        |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `loading === true`                                          | `null` (blank during sub-second fetch — avoids flashing unauth message)                |
+| `loading === false && !isAuthenticated`                     | "Please log in" message (v1 placeholder; real redirect when AuthProvider becomes real) |
+| `loading === false && isAuthenticated && !requirements_met` | "Access denied" message with specific failed-requirement reason                        |
+| `loading === false && isAuthenticated && requirements_met`  | `children` rendered                                                                    |
+
+##### Usage examples
+
+    // Lowest gate — any authenticated user
+    <Route path="/dashboard"
+           element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />
+
+    // Admin only
+    <Route path="/admin"
+           element={<ProtectedRoute requireAdmin><AdminPanel /></ProtectedRoute>} />
+
+    // Specific tier (e.g. leadership-tier views)
+    <Route path="/leadership"
+           element={<ProtectedRoute requireTier="structural_owner"><LeadershipView /></ProtectedRoute>} />
+
+    // Specific named roles (any of)
+    <Route path="/exec"
+           element={<ProtectedRoute requireAnyRole={["Managing Director", "Director Retail Banking"]}><ExecView /></ProtectedRoute>} />
+
+    // Compound (admin AND in a specific SBU — would require user.sbu predicate, not yet shipped)
+    // Future: <ProtectedRoute requireAdmin requireSbu="Treasury">...</ProtectedRoute>
+
+##### V1 limitations (intentional)
+
+- **Unauthenticated state shows a message, not a redirect.** Real redirect to `/login` lands when AuthProvider becomes real (depends on v10.497 milestone). For Batch 2e, the message is honest about current state — there's no login page to redirect to yet.
+- **Inline error-state styling.** ProtectedRoute uses inline `style={{ padding: '2rem', textAlign: 'center' }}` for the "Please log in" and "Access denied" pages. Production polish would use the bespoke v10.496 `<Card>` primitive with proper design tokens. Replacement deferred to a future polish batch.
+- **No `requireSbu` or `requireBranchScope` props yet.** Only tier and role-name predicates ship in v1. Adding SBU and branch_scope predicates is a 5-line additive change when first consumer demands them.
+
+##### Smoke-test integration (Batch 2e)
+
+The `/` route is wrapped with `<ProtectedRoute requireAuth>` as end-to-end proof. Visiting `/` today produces the "Please log in" message (because AuthProvider is still a stub and no JWT cookie is set). When real auth lands, the same wrap produces the actual Dashboard render automatically — no further code changes to ProtectedRoute needed.
+
+The other three current routes (`/perform`, `/profitability`, `/components`) remain unprotected. They will be wrapped individually when each page reaches production-readiness and its access requirements are decided.
+
+##### Stage C enforcement (planned)
+
+| Gate                               | Verifies                                                                     | Severity |
+| ---------------------------------- | ---------------------------------------------------------------------------- | -------- |
+| `gate_protected_route_wraps_pages` | Every production-marked page is wrapped in a `<ProtectedRoute>`              | HIGH     |
+| `gate_no_raw_role_gates_in_routes` | Routes use `<ProtectedRoute>` with prop-based gates, not inline conditionals | HIGH     |
 
 ---
 
@@ -648,19 +725,20 @@ This is a _temporary_ constraint during transition. Once Streamlit is fully migr
 
 ## Open items
 
-| ID    | Title                                                        | Resolution wave                                                    |
-| ----- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
-| OI-9  | `/api/roles/me` endpoint contract                            | Resolved in this artifact; implementation in next governance batch |
-| OI-13 | Full Streamlit page inventory + RBAC                         | Follow-up batch                                                    |
-| OI-35 | Full enumeration of React `frontend/web/src/` tree           | Wave 4 amendment (Joshua to provide `dir /s /b`)                   |
-| OI-36 | Router specification (React Router)                          | Wave 4 amendment                                                   |
-| OI-37 | Documented A2Z extensions beyond Button.loading + Badge.tone | Stage C amendment as added                                         |
-| OI-38 | useBranding() hook contract for tenant name display          | Wave 4 amendment                                                   |
-| OI-59 | `seniorityTier: 0..6` field in useRole                       | Future batch — requires `_resolve_seniority_tier` in role_taxonomy |
-| OI-60 | `capabilities: string[]` + `hasCapability(cap)` in useRole   | Future batch — requires `utils/rbac_matrix.py` (depends on OI-11)  |
-| OI-61 | `isMD()` + `isChief()` convenience methods in useRole        | Future batch — depends on seniorityTier (OI-59) shipping first     |
-| OI-62 | `displayName` field in whoami-detailed endpoint              | Future batch — coordinated backend + React contract change         |
-| OI-63 | TanStack Query adoption for data-fetching hooks              | Future stack-wide migration arc                                    |
+| ID    | Title                                                                                                                                                            | Resolution wave                                                                                                |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| OI-9  | `/api/roles/me` endpoint contract                                                                                                                                | Resolved in this artifact; implementation in next governance batch                                             |
+| OI-13 | Full Streamlit page inventory + RBAC                                                                                                                             | Follow-up batch                                                                                                |
+| OI-35 | Full enumeration of React `frontend/web/src/` tree                                                                                                               | Wave 4 amendment (Joshua to provide `dir /s /b`)                                                               |
+| OI-36 | Router specification (React Router)                                                                                                                              | Resolved in v10.499 Batch 2e — react-router-dom 6.26.0 documented in Routing section + ProtectedRoute contract |
+| OI-37 | Documented A2Z extensions beyond Button.loading + Badge.tone                                                                                                     | Stage C amendment as added                                                                                     |
+| OI-38 | useBranding() hook contract for tenant name display                                                                                                              | Wave 4 amendment                                                                                               |
+| OI-59 | `seniorityTier: 0..6` field in useRole                                                                                                                           | Future batch — requires `_resolve_seniority_tier` in role_taxonomy                                             |
+| OI-60 | `capabilities: string[]` + `hasCapability(cap)` in useRole                                                                                                       | Future batch — requires `utils/rbac_matrix.py` (depends on OI-11)                                              |
+| OI-61 | `isMD()` + `isChief()` convenience methods in useRole                                                                                                            | Future batch — depends on seniorityTier (OI-59) shipping first                                                 |
+| OI-62 | `displayName` field in whoami-detailed endpoint                                                                                                                  | Future batch — coordinated backend + React contract change                                                     |
+| OI-63 | TanStack Query adoption for data-fetching hooks                                                                                                                  | Future stack-wide migration arc                                                                                |
+| OI-65 | ProtectedRoute polish — replace inline-style error pages with bespoke `<Card>` primitive; add `requireSbu` + `requireBranchScope` predicates as consumers demand | Future polish batch                                                                                            |
 
 ---
 

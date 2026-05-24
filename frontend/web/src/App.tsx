@@ -29,6 +29,7 @@ import { AuthProvider } from './providers/AuthProvider';
 import { RoleProvider } from './providers/RoleProvider';
 import { WebSocketProvider } from './providers/WebSocketProvider';
 import { ToastProvider } from './components/Toast';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
@@ -42,7 +43,7 @@ function App() {
         <ToastProvider>
         <AuthProvider><RoleProvider><WebSocketProvider><BrowserRouter>
             <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />
                 <Route path="/perform" element={<Perform />} />
                 <Route path="/profitability" element={<Profitability />} />
                 <Route path="/components" element={<Showcase />} />

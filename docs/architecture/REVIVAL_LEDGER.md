@@ -61,6 +61,53 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-24 v10.499 Stage C Batch 2e — ProtectedRoute wrapper (consuming useRole, smoke-tested on `/`, OI-36 routing documentation resolved)
+
+**Type:** Feature (first concrete consumer of the useRole hook shipped in Batch 2d)
+**Owner:** Joshua + Claude (post-Batch-2a discipline maintained throughout — every claim about file contents inspected before commit)
+**Rationale:** Batch 2d shipped the useRole hook but no consumer existed in the codebase. Batch 2e builds ProtectedRoute — the canonical mechanism for gating routes by role/capability — as the hook's first concrete consumer. The smoke-test wrap on `/` proves the integration end-to-end: when a user navigates to the protected route, RoleProvider's Promise.all fires, ProtectedRoute reads the resulting context, and renders one of four states (loading / unauthenticated / unauthorized / authorized) based on the resolution.
+
+**Files shipped:**
+
+- `frontend/web/src/components/ProtectedRoute.tsx` — new (4,904 bytes, ~110 LOC). Single React component. Props: `children` plus four optional access-requirement props (`requireAuth`, `requireAdmin`, `requireTier`, `requireAnyRole`). AND semantics across multiple requirements. Four-state rendering (loading → null, unauthenticated → 'Please log in' message, unauthorized → 'Access denied' message with specific reason, authorized → children). Internal `<Unauthorized reason="...">` helper component for the three authorization-failure branches. Inline-style error pages marked as v1 with bespoke-component polish tracked as OI-65.
+
+- `frontend/web/src/App.tsx` — added `import { ProtectedRoute } from './components/ProtectedRoute'` at line 32. Wrapped the `/` route from `<Route path="/" element={<Dashboard />} />` to `<Route path="/" element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />` at line 46. Other three routes (`/perform`, `/profitability`, `/components`) deliberately left unwrapped — they're prototypes whose production access requirements haven't been decided yet.
+
+**Verification:**
+
+- Vite v5.4.21 dev server compile clean (`ready in 387 ms`) — the entire React project type-checks and parses end-to-end with the new component integrated. Cache-warm boot was 7x faster than yesterday's first-time compile (387ms vs 2,824ms), confirming Vite's dependency optimization survived overnight.
+- `findstr` structural verification of ProtectedRoute.tsx file confirmed: 1 main export, useRole imported and called, four requireXxx props in the interface + destructure + needsAuth calculation, internal Unauthorized helper declared and used 3x for the three authorization-failure branches.
+- App.tsx verification confirmed: provider chain unchanged (QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter still intact), four route declarations still present, only the `/` route wrapped.
+- python `json.load()` parse-clean on both updated JSON doctrine files after every JSON edit.
+
+**Doctrine updates:**
+
+- `docs/architecture/FRONTEND_GOVERNANCE.md` — three surgical edits plus two cleanup repairs. Last_updated metadata refreshed to Batch 2e. The previously-stub `### Routing` section expanded into a substantive section that documents react-router-dom 6.26.0, the current route table with protection status per route, and the full ProtectedRoute contract (props table, state-rendering table, usage examples, V1 limitations, Stage C enforcement gates planned). This resolves OI-36 (router specification) directly. Open items table updated: OI-36 marked resolved, OI-65 appended for deferred ProtectedRoute polish (bespoke error pages, requireSbu/requireBranchScope predicates).
+- `docs/architecture/FRONTEND_GOVERNANCE.json` — three surgical edits mirroring the .md. Last_updated metadata. New `protected_route_contract` top-level key inserted between `useRole_hook_contract` and `api_client_conventions`, documenting purpose, status, implementation file, depends_on, consumed_by, props, semantics, state_rendering, smoke_test_integration_batch_2e, v1_limitations_intentional, stage_c_enforcement_planned, and future_extensions_aspirational. open_items array: OI-36 marked resolved, OI-65 appended.
+
+**Discipline notes:**
+
+Two issues caught mid-session, both via verify-after-every-edit:
+
+(a) **Stray pipe character in JSON last_updated** — after the first find-replace on FRONTEND_GOVERNANCE.json's metadata line, the `python json.load` verification immediately surfaced `JSONDecodeError: Expecting property name enclosed in double quotes: line 8 column 5`. Inspection of the line revealed an extra `|` character before the `"last_updated"` key. Manually deleted via cursor positioning at line 8 column 5. Three-character fix. Trap #11 discipline (verify-before-claim) caught it before any further edits would have built on the broken JSON.
+
+(b) **Markdown table column-count drift in FRONTEND_GOVERNANCE.md Open items** — after the OI-36 row update (resolution text grew much longer than the previous "Wave 4 amendment" placeholder), VS Code's Markdown autoformatter shifted the table separator and the OI-65 row to a 3-column shape (extra trailing `| --- |` and `|     |` respectively) while OI-9 through OI-63 stayed 2-column. Caught by `findstr " | --- |"` and a `Get-Content -Tail` inspection. Repaired with two cursor-positioned manual deletes. The other ten rows on disk were correct; only the two lines we directly modified had the autoformatter shift them. Trap #12 lesson: verify table structure after edits to wide cells.
+
+**Cross-references:**
+
+- `FRONTEND_GOVERNANCE.md::Routing — ProtectedRoute contract` (new this batch, resolves OI-36)
+- `FRONTEND_GOVERNANCE.json::protected_route_contract` (new this batch)
+- `frontend/web/src/hooks/useRole.ts` (the hook this batch's component consumes; shipped Batch 2d)
+- `frontend/web/src/providers/RoleProvider.tsx` (the provider that feeds useRole; shipped Batch 2d)
+- v10.499 Stage C Batch 2d (predecessor batch — shipped the hook this consumes)
+- Phase 1 Step 1.4 / Batch 3 (next batch — CSRF double-submit + verify_bcrypt.py, closes Phase 1 security hardening)
+
+**Phase 1 status after this batch:**
+
+Phase 1 progress: 4 of 5 batches shipped (2a + 2a-rollback, 2b, 2c + 2c-meta, 2d, 2e). One remaining: Batch 3 (CSRF + verify_bcrypt). The React role-awareness machinery is now complete and end-to-end-proven via the `/` route smoke test. When real AuthProvider lands (post-v10.497-milestone), every protected route renders its real content automatically with zero further code changes to ProtectedRoute.
+
+---
+
 ### 2026-05-24 v10.499 Stage C Batch 2d — React `useRole()` hook + RoleProvider (first useful React hook of the championship phase)
 
 **Type:** Feature (first React-side code consumer of the role infrastructure shipped in Batches 2b + 2c)

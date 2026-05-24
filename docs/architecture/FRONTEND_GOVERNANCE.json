@@ -5,7 +5,7 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 4",
-    "last_updated": "2026-05-24 (revised v10.499 Stage C Batch 2d — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)",
+    "last_updated": "2026-05-24 (revised v10.499 Stage C Batch 2e — ProtectedRoute contract added, OI-36 routing documentation resolved; previous Batch 2d — /api/roles/me renamed to /api/roles/registry to clarify semantic; shadcn reclassification preserved from Batch 2a)",
     "owner": "Frontend / Design System",
     "human_readable_equivalent": "FRONTEND_GOVERNANCE.md",
     "authoritative_sources": [
@@ -259,6 +259,69 @@
     "enforcement_gate": "gate_react_no_role_string_comparison (HIGH severity, Stage C)"
   },
 
+  "protected_route_contract": {
+    "purpose": "Canonical React mechanism for gating routes by role/capability (resolves OI-36 routing documentation; depends on useRole)",
+    "status": "ACTIVE — shipped v10.499 Stage C Batch 2e",
+    "implementation_file": "frontend/web/src/components/ProtectedRoute.tsx",
+    "depends_on": "@/hooks/useRole (RoleContext consumer)",
+    "consumed_by": "App.tsx route table — wraps the `element` prop of React Router `<Route>` declarations",
+    "props": {
+      "children": "ReactNode — the protected content rendered when authorization succeeds",
+      "requireAuth": "boolean (optional) — any authenticated user (lowest gate)",
+      "requireAdmin": "boolean (optional) — user.is_admin === true",
+      "requireTier": "Tier (optional) — user.tier === <tier> (5-tier profitability axis)",
+      "requireAnyRole": "string[] (optional) — user.role matches one of the provided role names, case-insensitive"
+    },
+    "semantics": "All requirement props are optional. When multiple are provided, they combine with AND semantics — the user must satisfy every stated requirement. requireAuth is implicit when any other requirement is set (an unauthenticated user cannot be admin).",
+    "state_rendering": {
+      "loading": "null (blank during sub-second fetch — avoids flashing unauth message)",
+      "unauthenticated": "'Please log in' message (v1 placeholder; real redirect when AuthProvider becomes real)",
+      "unauthorized": "'Access denied' message with specific failed-requirement reason",
+      "authorized": "children rendered"
+    },
+    "smoke_test_integration_batch_2e": {
+      "route": "/",
+      "wrap": "<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>",
+      "current_behavior": "Renders 'Please log in' because AuthProvider is still a stub and no JWT cookie is set; when real auth lands, same wrap produces real Dashboard render automatically with no further code changes",
+      "other_routes_unwrapped": ["/perform", "/profitability", "/components"],
+      "rationale_for_partial_wrap": "Only / is wrapped for end-to-end proof. Other routes will be wrapped individually when each page reaches production-readiness and its access requirements are decided."
+    },
+    "v1_limitations_intentional": [
+      "Unauthenticated state shows a message, not a redirect — real redirect to /login lands when AuthProvider becomes real (depends on v10.497 milestone)",
+      "Inline error-state styling (`style={{ padding: '2rem', textAlign: 'center' }}`) — production polish would use bespoke v10.496 Card primitive (tracked as OI-65)",
+      "No requireSbu or requireBranchScope props yet — only tier and role-name predicates ship in v1; SBU/scope predicates are a 5-line additive change when first consumer demands them"
+    ],
+    "stage_c_enforcement_planned": [
+      "gate_protected_route_wraps_pages (HIGH): every production-marked page is wrapped in a <ProtectedRoute>",
+      "gate_no_raw_role_gates_in_routes (HIGH): routes use <ProtectedRoute> with prop-based gates, not inline conditionals or direct role-string comparisons"
+    ],
+    "future_extensions_aspirational": {
+      "rationale": "Per CGR1 doctrine — doctrine bends to reality. ProtectedRoute v1 ships what role infrastructure actually provides today. Additional predicates ship when first consumer demands them.",
+      "deferred_features": {
+        "requireSbu_predicate": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-65 (covers ProtectedRoute polish broadly)",
+          "rationale": "Additive prop matching against user.sbu — 5-line change when first consumer demands"
+        },
+        "requireBranchScope_predicate": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-65",
+          "rationale": "Additive prop matching against user.branch_scope — 5-line change when first consumer demands"
+        },
+        "bespoke_error_pages": {
+          "status": "ASPIRATIONAL",
+          "open_item": "OI-65",
+          "rationale": "Replace inline-style error pages with bespoke v10.496 Card primitive for design consistency"
+        },
+        "login_redirect": {
+          "status": "ASPIRATIONAL",
+          "open_item": "Depends on AuthProvider becoming real (v10.497 milestone)",
+          "rationale": "Unauthenticated state will redirect to /login (using react-router Navigate) once a login page exists"
+        }
+      }
+    }
+  },
+
   "api_client_conventions": {
     "module": "frontend/web/src/lib/api.ts",
     "authentication_after_v10_497_p1_3": "httpOnly cookie via fetch credentials: 'include'",
@@ -338,13 +401,14 @@
     {"id": "OI-9", "title": "/api/roles/registry endpoint contract", "resolution": "Resolved in this artifact; implementation in next governance batch"},
     {"id": "OI-13", "title": "Full Streamlit page inventory + RBAC", "wave": "follow-up batch"},
     {"id": "OI-35", "title": "Full enumeration of React frontend/web/src/ tree", "wave": "Wave 4 amendment (dir /s /b)"},
-    {"id": "OI-36", "title": "Router specification (React Router)", "wave": "Wave 4 amendment"},
+    {"id": "OI-36", "title": "Router specification (React Router)", "wave": "Resolved in v10.499 Batch 2e — react-router-dom 6.26.0 documented in Routing section + ProtectedRoute contract"},
     {"id": "OI-37", "title": "Documented A2Z extensions beyond Button.loading + Badge.tone", "wave": "Stage C amendment as added"},
     {"id": "OI-38", "title": "useBranding() hook contract for tenant name display", "wave": "Wave 4 amendment"},
     {"id": "OI-59", "title": "seniorityTier: 0..6 field in useRole", "wave": "Future batch — requires _resolve_seniority_tier in role_taxonomy"},
     {"id": "OI-60", "title": "capabilities: string[] + hasCapability(cap) in useRole", "wave": "Future batch — requires utils/rbac_matrix.py (depends on OI-11)"},
     {"id": "OI-61", "title": "isMD() + isChief() convenience methods in useRole", "wave": "Future batch — depends on seniorityTier (OI-59) shipping first"},
     {"id": "OI-62", "title": "displayName field in whoami-detailed endpoint", "wave": "Future batch — coordinated backend + React contract change"},
-    {"id": "OI-63", "title": "TanStack Query adoption for data-fetching hooks", "wave": "Future stack-wide migration arc"}
+    {"id": "OI-63", "title": "TanStack Query adoption for data-fetching hooks", "wave": "Future stack-wide migration arc"},
+    {"id": "OI-65", "title": "ProtectedRoute polish — replace inline-style error pages with bespoke Card primitive; add requireSbu + requireBranchScope predicates as consumers demand", "wave": "Future polish batch"}
   ]
 }

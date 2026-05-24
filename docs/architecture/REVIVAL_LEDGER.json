@@ -21,6 +21,51 @@
   "entries": [
     {
       "date": "2026-05-24",
+      "batch_id": "v10.499-stage-c-batch-2e",
+      "title": "ProtectedRoute wrapper (consuming useRole, smoke-tested on /, OI-36 routing documentation resolved)",
+      "type": "feature_react_consumer_component",
+      "owner": "Joshua + Claude (post-Batch-2a discipline maintained throughout — every claim about file contents inspected before commit)",
+      "rationale": "Batch 2d shipped the useRole hook but no consumer existed in the codebase. Batch 2e builds ProtectedRoute as the hook's first concrete consumer — the canonical mechanism for gating routes by role/capability. The smoke-test wrap on `/` proves the integration end-to-end: when a user navigates to the protected route, RoleProvider's Promise.all fires, ProtectedRoute reads the resulting context, and renders one of four states based on the resolution.",
+      "changes": [
+        "frontend/web/src/components/ProtectedRoute.tsx: new file (4904 bytes, ~110 LOC). Single React component. Props: children plus four optional access-requirement props (requireAuth, requireAdmin, requireTier, requireAnyRole). AND semantics across multiple requirements. Four-state rendering: loading → null (blank during sub-second fetch to avoid flashing unauth message); unauthenticated → 'Please log in' message (v1 placeholder; real redirect when AuthProvider becomes real); unauthorized → 'Access denied' with specific failed-requirement reason; authorized → children rendered. Internal Unauthorized helper component for the three authorization-failure branches. Inline-style error pages marked as v1 with bespoke-component polish tracked as OI-65.",
+        "frontend/web/src/App.tsx: added `import { ProtectedRoute } from './components/ProtectedRoute'` at line 32. Wrapped the `/` route from `<Route path=\"/\" element={<Dashboard />} />` to `<Route path=\"/\" element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />` at line 46. Other three routes (`/perform`, `/profitability`, `/components`) deliberately left unwrapped — they're prototypes whose production access requirements haven't been decided yet.",
+        "docs/architecture/FRONTEND_GOVERNANCE.md: three surgical edits plus two cleanup repairs. Last_updated metadata refreshed to Batch 2e. The previously-stub `### Routing` section expanded into substantive documentation: react-router-dom 6.26.0, current route table with protection status per route, full ProtectedRoute contract (props table, state-rendering table, usage examples, V1 limitations, Stage C enforcement gates planned). This resolves OI-36 directly. Open items table updated: OI-36 marked resolved, OI-65 appended.",
+        "docs/architecture/FRONTEND_GOVERNANCE.json: three surgical edits mirroring the .md. Last_updated metadata. New `protected_route_contract` top-level key inserted between useRole_hook_contract and api_client_conventions, parallel to useRole's structured contract. Open_items array: OI-36 marked resolved, OI-65 appended."
+      ],
+      "verification": [
+        "Vite v5.4.21 dev server compile clean: `ready in 387 ms` — the entire React project type-checks and parses end-to-end with the new component integrated. Cache-warm boot 7x faster than Batch 2d's first-time compile (387ms vs 2824ms), confirming Vite's dependency optimization survived overnight.",
+        "findstr structural verification of ProtectedRoute.tsx: 1 main export, useRole imported and called, four requireXxx props in interface + destructure + needsAuth calculation, internal Unauthorized helper declared and used 3x for the three authorization-failure branches.",
+        "App.tsx verification: provider chain unchanged (QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter intact), four route declarations still present, only `/` route wrapped.",
+        "python json.load() parse-clean on both updated JSON doctrine files after every JSON edit.",
+        "Cleanup verifications after autoformatter-induced table column drift in FRONTEND_GOVERNANCE.md: findstr ` | --- |` returned 0 matches after repair (separator clean); PowerShell tail confirmed all 12 rows of Open items table render as 2-column."
+      ],
+      "design_notes": {
+        "smoke_test_choice_dashboard_only": "Only the / route (Dashboard) wrapped with requireAuth for end-to-end proof. /perform /profitability /components left unwrapped as prototypes — their access requirements decided when each reaches production-readiness. This is intentional partial coverage, not oversight.",
+        "graceful_failure_behavior": "Visiting / today produces the 'Please log in' message because AuthProvider is still a stub and no JWT cookie is set. RoleProvider's Promise.all catches the 401, sets error state, isAuthenticated returns false. When real auth lands (v10.497 milestone for AuthProvider), the same component will render real Dashboard automatically with zero further code changes to ProtectedRoute. The wrap is forward-compatible by design.",
+        "and_semantics_for_multiple_requirements": "When multiple requirement props are provided (e.g. requireAdmin and requireTier), they combine with AND semantics — user must satisfy every stated requirement. requireAuth is implicit when any other requirement is set. This matches RBAC intuition: 'admin tier-X user' is stricter than 'admin OR tier-X user'.",
+        "deferred_features_filed_under_oi65": "Three deferred polish features tracked under single OI-65: (a) requireSbu predicate, (b) requireBranchScope predicate, (c) bespoke Card primitive for error pages replacing inline styles. Filed as one open item rather than three because they're a single polish batch's worth of work and decided together when first consumer demands."
+      },
+      "unblocks": [
+        "Future React pages can be production-protected with `<ProtectedRoute requireXxx>` wraps as they're designed; the gating infrastructure is now canonical",
+        "Batch 3 (CSRF double-submit + verify_bcrypt.py) — final Phase 1 batch, security hardening"
+      ],
+      "cross_references": [
+        "FRONTEND_GOVERNANCE.md::Routing — ProtectedRoute contract (new this batch, resolves OI-36)",
+        "FRONTEND_GOVERNANCE.json::protected_route_contract (new this batch)",
+        "frontend/web/src/hooks/useRole.ts (the hook consumed; shipped Batch 2d)",
+        "frontend/web/src/providers/RoleProvider.tsx (feeds useRole; shipped Batch 2d)",
+        "v10.499-stage-c-batch-2d (predecessor batch in this arc)",
+        "Phase 1 Step 1.4 / Batch 3 (next batch — CSRF + verify_bcrypt, closes Phase 1)"
+      ],
+      "process_notes": [
+        "Stray pipe character in JSON last_updated caught immediately by python json.load() verification — JSONDecodeError pointed to exact line and column. Three-character cursor-positioned fix. Trap #11 discipline (verify-before-claim) prevented cascading damage.",
+        "Markdown table column-count drift in FRONTEND_GOVERNANCE.md Open items section — VS Code Markdown autoformatter shifted the separator and OI-65 row to 3-column shape when OI-36 row's resolution text grew. Caught by findstr structural verification + PowerShell tail inspection. Repaired with two cursor-positioned manual deletes. Trap #12 lesson: verify table structure after edits to wide cells in formatted Markdown.",
+        "These two repairs together cost about 8 minutes mid-session. Total Batch 2e session time about 1 hour 45 minutes from open-of-work to commit, well within the 'still very sharp' window agreed at the pacing checkpoint after the React code shipped."
+      ],
+      "phase_1_status_after_this_batch": "4 of 5 Phase 1 batches shipped (2a + 2a-rollback, 2b, 2c + 2c-meta, 2d, 2e). One remaining: Batch 3 (CSRF double-submit + verify_bcrypt.py) closes Phase 1 security hardening. React role-awareness machinery complete and end-to-end-proven via the / route smoke test."
+    },
+    {
+      "date": "2026-05-24",
       "batch_id": "v10.499-stage-c-batch-2d",
       "title": "React useRole() hook + RoleProvider (first useful React hook of championship phase)",
       "type": "feature_react_consumer",
