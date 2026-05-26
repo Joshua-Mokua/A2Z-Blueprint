@@ -3,7 +3,7 @@ import streamlit as st
 from pathlib import Path
 
 # ── Version stamp — wipes only manager objects when code is updated ──
-_APP_VERSION = "1.0.0-2026.04.13"
+_APP_VERSION = "v10.500-phase1-closed-2026.05.26"
 if st.session_state.get("_app_version") != _APP_VERSION:
     # Only remove manager objects — keep auth, data, and UI state
     _mgr_keys = [k for k in list(st.session_state.keys())

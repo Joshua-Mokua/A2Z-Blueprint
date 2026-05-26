@@ -229,9 +229,50 @@ def upgrade(users: dict, dry_run: bool) -> Tuple[dict, int]:
     return upgraded, count
 
 
+def write_backup(path: Path) -> Path:
+    """Create a timestamped backup of users.json before mutation.
+
+    Returns the backup file path. Per OPERATIONAL_PROTOCOL.md backup-
+    before-mutation discipline (codified in Batch 3d after Batch 3c's
+    initial migration shipped without a backup mechanism, requiring the
+    operator to make a manual copy after the fact).
+
+    Backup naming: data/users.json.pre_envelope_YYYYMMDD_HHMMSS
+
+    The backup pattern is gitignored (data/users.json.pre_*) so it never
+    reaches origin. Backups remain on the local filesystem indefinitely
+    for forensic / rollback purposes; the operator decides when (or if)
+    to remove them.
+    """
+    import datetime as _dt
+    stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = path.with_suffix(path.suffix + f".pre_envelope_{stamp}")
+    try:
+        backup_path.write_text(path.read_text(encoding="utf-8"),
+                               encoding="utf-8")
+    except Exception as e:
+        print(f"ERROR: could not write backup {backup_path}: "
+              f"{type(e).__name__}: {e}")
+        print("Aborting before mutation — operator must investigate "
+              "disk/permission issues before retrying.")
+        sys.exit(6)
+    return backup_path
+
+
 def write_users(path: Path, users: dict) -> None:
     """Persist updated users.json. Writes via temp file + atomic
-    rename for safety on Windows + Unix."""
+    rename for safety on Windows + Unix.
+
+    Batch 3d: creates a timestamped backup of the current users.json
+    BEFORE the atomic rename, so the operator has an automatic rollback
+    point. The backup pattern is gitignored.
+    """
+    # Backup-before-mutation (Batch 3d discipline).
+    backup_path = write_backup(path)
+    print(f"\nBackup created: {backup_path}")
+    print("  (Use this file to restore the pre-migration state if needed.")
+    print("   This file is gitignored and will NOT reach origin.)")
+
     tmp = path.with_suffix(path.suffix + ".batch3c_tmp")
     try:
         tmp.write_text(json.dumps(users, indent=2), encoding="utf-8")
@@ -239,7 +280,9 @@ def write_users(path: Path, users: dict) -> None:
         tmp.replace(path)
     except Exception as e:
         print(f"ERROR: could not write {path}: {type(e).__name__}: {e}")
-        # Best-effort cleanup
+        print(f"  Backup file remains at: {backup_path}")
+        print(f"  To restore manually:  copy /Y {backup_path} {path}")
+        # Best-effort cleanup of the temp file
         if tmp.exists():
             try: tmp.unlink()
             except Exception: pass

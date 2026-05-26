@@ -1,74 +1,90 @@
 # SESSION_BOOTSTRAP.md
 
 **Purpose:** orient a fresh Claude (or human collaborator) on A2Z Blueprint
-in under 5 minutes. This file is the entry point â€” it does NOT duplicate
+in under 5 minutes. This file is the entry point — it does NOT duplicate
 canonical artifacts; it points to them.
 
 **Maintenance rule:** update this file at the end of each batch, alongside
 the per-batch CHANGELOG. If you ship code without updating this file, the
-next session will eat rediscovery tax.
+next session will eat rediscovery tax. This is now mechanically enforced
+by audit gate G388 (planned for Phase 2 Stage C resumption).
 
 ---
 
 ## A2Z in 3 lines
 
-A2Z Blueprint is an enterprise banking MIS configurable to any bank (Ecobank Kenya
-is the prospect tenant): 700K simulated customers, 35 branches, 487 staff,
-KES 11.5T simulated deposits. ~726,896 Python LOC (Streamlit + FastAPI) +
-~1,811 TypeScript LOC (React frontend with 8 bespoke v10.496 primitives in
-`frontend/web/src/components/`). 171 Streamlit pages. Constitutional governance
-layer with 32 artifacts (16 .md + 16 .json pairs) in `docs/architecture/`,
-mechanical audit suite with 418 gates in `scripts/audit.py`. The system is in
-active development across multiple concurrent arcs (Stage C governance,
-Phase 1 auth at Step 1.4, React migration, virtual bank simulation, Olympic
-certification ladder).
+A2Z Blueprint is an enterprise banking MIS configurable to any bank (Ecobank
+Kenya is the prospect tenant): 700K simulated customers, 35 branches, 487
+staff, KES 11.5T simulated deposits. ~726,896 Python LOC (Streamlit + FastAPI)
++ ~2,500 TypeScript LOC (React frontend with 8 bespoke v10.496 primitives,
+Phase 1 auth substrate post-v10.500). 171 Streamlit pages. Constitutional
+governance layer with 32 artifacts (16 .md + 16 .json pairs) in
+`docs/architecture/` plus operational protocol added in Batch 3d. Mechanical
+audit suite at 418 gates in `scripts/audit.py`. The system is in active
+development across multiple concurrent arcs.
 
 ---
 
 ## Current certified state
 
-**Last commit on main:** `49e804f` (continuity layer; predecessor v10.498 Stage C Batch 1+1b at `5bbc669`)
-**Last shipped batch:** v10.498 Stage C Batch 1+1b â€” 2026-05-22
-**Governance doctrine in force:** CGR1 (reality-grounding) â€” active
-**Gate count:** 418 total (verified via `grep -c '^[[:space:]]*("G' scripts/audit.py` at commit `49e804f`); G383â€“G387 ship from this batch
-**G383 status:** passes (0 violations)
-**G384 status:** passes (0 violations) â€” pre-existing discipline validated
-**G385, G386, G387 status:** intentional FAIL (visibility-phase work backlog)
+**Last commit on main:** `216171d` (v10.500 Phase 1 Batch 3d — doctrine refresh)
+**Last shipped batch:** v10.500 Phase 1 Batch 3d — 2026-05-26
+**Phase 1 status:** **CLOSED** — 10/10 gates green
+**Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) — all active
+**Gate count:** 418 total (verified at commit `49e804f`)
+**Phase 1 commits (newest first):**
+- `216171d` v10.500 Phase 1 Batch 3d — doctrine refresh, observability regression test, OPERATIONAL_PROTOCOL.md, POLICY_GAPS.md
+- `[commit]`  v10.500 Phase 1 Batch 3c — bcrypt envelope migration + verify_pw multi-path + auto-upgrade instrumentation (1437 SHA-256 → envelope-wrapped)
+- `2aab56b` v10.500 Phase 1 Batch 3b — FastAPI must_change_password enforcement via must_rotate JWT scope + core.py hash_pw hotfix
+- `13d5258` v10.500 Phase 1 Batch 3a — Real AuthProvider + login lifecycle (replaces v10.495 stub)
 
 For full ledger: `docs/architecture/REVIVAL_LEDGER.md` (newest entry on top)
-For current batch detail: `docs/CHANGELOG_v10498.md`
+For Phase 1 closure record: `docs/CHANGELOG_v10500_batch3d.md`
+For operational discipline: `docs/architecture/OPERATIONAL_PROTOCOL.md` (introduced Batch 3d)
 
 ---
 
 ## Current architectural reality (CGR1-grounded)
 
-These statements describe runtime as of commit `5bbc669`:
+These statements describe runtime as of commit `216171d`:
 
-- **Governance Stage C is active.** Stage B (32 constitutional artifacts)
-  shipped; Stage C is wiring those artifacts into enforcement gates.
-  ~5/35 planned gates wired so far.
+- **Governance Stage C is paused at the start of Phase 2.** Stage B
+  (32 constitutional artifacts) shipped. Stage C wired ~5/35 gates
+  through Batch 2e (commit `f3187dc`) before Phase 1 React substrate
+  work began. Stage C resumes after Phase 2 planning lands.
+- **React substrate Phase 1 is complete.** Auth lifecycle fully wired
+  end-to-end: real AuthProvider (Batch 3a), must_change_password
+  rotation gate with `must_rotate` JWT scope (Batch 3b), envelope-based
+  bcrypt migration for 1437 dormant SHA-256 records (Batch 3c), and
+  doctrine refresh + observability regression test (Batch 3d).
+- **JWT bearer auth ACTIVE (not cookies).** `utils/auth_jwt.py` has
+  `create_access_token`, `decode_token`, `get_current_user`,
+  `require_admin`, `require_role(roles)` factory (Stage C Batch 2b),
+  `get_current_user_allow_rotation` (Batch 3b). Token scopes "full"
+  (default, omitted from payload for backward-compat) vs "must_rotate"
+  (only `/api/auth/change-password` accepts). CSRF is N/A (Bearer header,
+  not cookies). Refresh tokens NOT supported by design (re-login on
+  expiry, 30-min lifetime).
 - **React migration in progress, Streamlit operational.** Both transports
-  coexist. Frontend at `frontend/web/src/` (Vite + React + TS + Tailwind,
-  24 TS/TSX files: 8 bespoke v10.496 primitives in `components/`, 4 pages,
-  3 providers, 1 hook, lib + types). 171 Streamlit pages in `pages/*.py`.
-  Migration is TRANSITIONAL, not ACTIVE. shadcn/ui pivot is ASPIRATIONAL
-  per CGR1 Batch 2a — bespoke v10.496 primitives are canonical until a
-  dedicated shadcn migration arc ships.
-- **JWT cookie auth ACTIVE; transport-layer RBAC partial.** `utils/auth_jwt.py`
-  has `create_access_token`, `get_current_user`, `require_admin`. There
-  is NO `require_role` factory in `auth_jwt.py` â€” that's ASPIRATIONAL
-  per CGR1. Streamlit alias `require_role` was renamed to
-  `require_module_access` in v10.498 Stage C Batch 1b.
-- **Virtual bank certified for Olympic simulation drills (G373).** Used
-  for reproducibility checks; not production-load yet.
+  coexist. Frontend at `frontend/web/src/` (Vite + React + TS + Tailwind):
+  8 bespoke primitives in `components/`, 5 pages including Login and
+  ChangePassword (Batch 3a/3b), 3 providers (Auth, Role, Branding),
+  hooks for useAuth + useRole + useBranding, lib + types. 171 Streamlit
+  pages in `pages/*.py`. Migration is TRANSITIONAL.
+- **bcrypt envelope verify path ACTIVE.** `UserManager.verify_pw` (post-
+  Batch-3c) tries direct-bcrypt, envelope-bcrypt, then legacy SHA-256
+  in order. Envelope is a TRANSITIONAL stabilization layer per CGR1 —
+  not canonical end-state. Phase 2 may add forced normalization,
+  Argon2 migration, etc. Observability: INFO log "Envelope-backed
+  credential authenticated" fires on envelope success (Phase 2 will
+  use this signal to plan envelope retirement). Regression test:
+  `tests/test_verify_pw_observability.py` (5 tests, all passing).
+- **Virtual bank certified for Olympic simulation drills (G373).**
 - **PostgreSQL migration TRANSITIONAL.** 27/52 tables migrated per G163
   baseline ratchet; remaining 25 tables still JSON-backed.
 - **mlops_model_registry exists but 11 production AI engines do NOT yet
-  load through it.** AI_GOVERNANCE AI1 doctrine is ACTIVE; implementation
-  is TRANSITIONAL (Stage C Batch 2-3 work).
-- **utils/agents/ has 4 modules (base, policies, runner, tools).** None
-  declare `AGENT_SCOPE`. AI7 doctrine is ACTIVE; implementation is
-  TRANSITIONAL.
+  load through it.** AI_GOVERNANCE AI1 doctrine ACTIVE; implementation
+  TRANSITIONAL (Stage C Batch 2-3 work, paused).
 
 When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
@@ -77,205 +93,130 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 
 ## Active workstreams
 
-1. **Stage C governance enforcement (current focus).**
-   - Batch 1+1b shipped. Batches 2â€“7 pending.
-   - Batch 2 candidates: G385 remediation (BrandingProvider), G386/G387
-     remediation arcs, classification of remaining 28 governance
-     artifacts (OI-66).
+1. **Phase 2 planning (next focus).**
+   Now that Phase 1 React auth substrate is closed, Phase 2 scope to be
+   determined. Candidate themes: forced normalization to direct bcrypt
+   (replacing envelope), audit-log file gitignore migration with
+   `git rm --cached`, password policy strengthening (close the
+   stated-vs-enforced gap from `POLICY_GAPS.md`), `_APP_VERSION`
+   stamp policy formalization, additional React substrate features
+   (settings, voluntary password change, password reset).
 
-2. **Phase 1 Step 1.4+ â€” auth deepening.**
-   - whoami-detailed endpoint
-   - useRole() React hook canonical wiring
-   - CSRF (Step 1.5)
-   - verify_bcrypt.py script (Step 1.6)
-   - Was originally paused to do Stage C; resume after Batch 2.
+2. **Stage C governance enforcement (paused).**
+   ~5/35 gates wired through Batch 2e. Remaining gates G388-G417
+   tracked in `OI-66`. Will resume after Phase 2 planning.
 
-3. **React migration (TRANSITIONAL).**
-   - 11 shadcn-style primitives shipped in v10.496 (Button, Card, etc.)
-   - Showcase page mounted at `/components`
-   - Dashboard refactored to compose primitives
-   - Many pages still Streamlit-only â€” staged migration over future
-     batches.
+3. **PostgreSQL migration (incremental).**
+   27/52 tables migrated. G163 ratchet enforces no regression.
 
-4. **Virtual bank realism (Olympic certification).**
-   - G373 Olympic certification battery live
-   - Used in reproducibility checks
-   - Production-load scaling NOT scoped yet.
+4. **mlops_model_registry adoption (incremental).**
+   11 engines pending registration per G386.
 
 ---
 
-## Canonical artifact reading order
+## Key file paths
 
-Read in this order to build context fast:
+**Repo root:** `C:\Users\Joshua\Desktop\A2Z Blue Print\a2z\` (operator) /
+`/home/claude/a2z/` (Claude sandbox clone).
 
-1. **This file** (`docs/continuity/SESSION_BOOTSTRAP.md`) â€” you're here
-2. **`docs/CHANGELOG_v10498.md`** â€” what shipped most recently
-3. **`docs/architecture/REVIVAL_LEDGER.md`** (top entry only) â€” current
-   operational state
-4. **`docs/architecture/GOVERNANCE_REALITY_INDEX.md`** â€” classification
-   of every governance artifact
-5. **`docs/architecture/SYSTEM_CONSTITUTION.md`** â€” doctrine; CGR1 is
-   the latest article
-6. **`scripts/audit.py`** â€” only when authoring or modifying gates
-7. **Other `docs/architecture/*.md`** â€” on-demand by topic
+**Frontend auth substrate:** `frontend/web/src/`
+- `providers/AuthProvider.tsx` — JWT lifecycle, login/logout/changePassword,
+  must_rotate handling, 3 storage keys: `a2z_token`,
+  `a2z_token_expires_at`, `a2z_must_rotate`
+- `providers/RoleProvider.tsx` — identity/role hydration via
+  `/api/auth/whoami-detailed` (fires only on `status === 'authenticated'`)
+- `components/ProtectedRoute.tsx` — path-aware must_rotate gate
+- `pages/Login.tsx`, `pages/ChangePassword.tsx`, `pages/Dashboard.tsx`,
+  `pages/Perform.tsx`, `pages/Profitability.tsx`, `pages/Showcase.tsx`
+- `hooks/useAuth.ts`, `hooks/useRole.ts`, `hooks/useBranding.ts`
+- `lib/api.ts` — centralized Authorization-header injection,
+  `setCurrentToken`, `setOn401Callback`
+- `types/auth.ts`, `types/role.ts`
 
-Do NOT try to read everything upfront. Read what the current task needs.
+**Backend auth:** `utils/auth_jwt.py`, `utils/api.py:276-468` (auth routes),
+`utils/core.py:5743-5852` (UserManager auth helpers).
 
----
+**Migration tooling:** `scripts/verify_bcrypt.py` (audit + envelope upgrade
+with timestamped backup per OPERATIONAL_PROTOCOL.md backup-before-mutation
+discipline).
 
-## Top rediscovery traps
+**Tests:** `tests/test_verify_pw_observability.py` (envelope INFO log
+regression; 5 tests).
 
-These are things sessions repeatedly get wrong. If you find yourself
-making any of these assumptions, **stop and check reality first**:
-
-1. **Do NOT assume `require_role` exists in `utils/auth.py` OR `utils/auth_jwt.py`.**
-   `utils/auth.py` (Streamlit) used to have a `require_role = require_access` alias —
-   renamed to `require_module_access` in v10.498 Stage C Batch 1b (G383 enforces the
-   no-collision invariant). `utils/auth_jwt.py` (FastAPI) has `require_admin` but
-   NOT `require_role`. The `require_role(roles: list[str])` factory is ASPIRATIONAL
-   per CGR1 — verified absent by `findstr /n "require_role" utils\auth_jwt.py` returning
-   zero matches at commit `dd381dc` (last touched the file). Pre-Batch-2b this factory
-   has not been built; Batch 2b will build it from scratch following the `require_admin`
-   chained-Depends pattern. **History note:** v10.499 Stage C Batch 2a incorrectly
-   reclassified this factory ACTIVE based on a fabricated inspection by the assistant;
-   the error was caught and rolled back in v10.499 Stage C Batch 2a-rollback after
-   Joshua's manual verification. See GOVERNANCE_REALITY_INDEX.md and REVIVAL_LEDGER for
-   the full record.
-
-2. **Do NOT assume the Streamlit alias `require_role` still exists in
-   `utils/auth.py`.** It was renamed to `require_module_access` in
-   v10.498 Stage C Batch 1b.
-
-3. **Do NOT assume the 11 production AI engines load through
-   `mlops_model_registry`.** They do not. AI1 doctrine says they should;
-   implementation is TRANSITIONAL.
-
-4. **Do NOT assume `utils/agents/` modules have `AGENT_SCOPE`.** They do
-   not. AI7 doctrine says they should; implementation is TRANSITIONAL.
-
-5. **Do NOT assume the GATES list in `scripts/audit.py` is sorted purely
-   chronologically.** It's mostly descending by G-number with some
-   exceptions (G10463\_\* prefix block, suffixed variants like G356aâ€“G356i).
-   The list opens at line ~59249 and closes at line ~59668.
-
-6. **Do NOT add new gate function definitions AFTER the GATES list in
-   `scripts/audit.py`.** Python evaluates the list at parse time; functions
-   referenced in tuples must be defined BEFORE the list opens.
-
-7. **Do NOT assume PostgreSQL is the canonical persistence backend.** Only
-   27/52 tables are migrated. JSON files in `data/` are still authoritative
-   for the rest.
-
-8. **Do NOT recreate role governance registries.** Canonical is
-   `data/org_hierarchy_config.json` (data) + `utils/role_taxonomy.py`
-   (logic). `docs/architecture/ROLE_GOVERNANCE.md` documents what those
-   say.
-
-9. **Do NOT assume the React frontend covers all pages.** It covers a
-   small showcase + Dashboard + auth screens. Most pages are still
-   Streamlit (`pages/*.py`).
-
-10. **Do NOT assume new doctrine claims are automatically ACTIVE.** Per
-    CGR1: classify the claim before relying on it. Run gates to validate
-    reality.
+**Doctrine:** `docs/architecture/` (32 constitutional artifacts + 2 added
+in Batch 3d), `docs/continuity/SESSION_BOOTSTRAP.md` (this file),
+`docs/CHANGELOG_v*` (per-batch records).
 
 ---
 
-11. **Do NOT assume the assistant's claims about a file's contents are
-    true without inspection.** v10.499 Stage C Batch 2a shipped a doctrine
-    correction declaring the `require_role` factory ACTIVE based on a
-    fabricated inspection — detailed implementation specifics (line numbers
-    391-441, behavior details) generated without any actual `view` or
-    `findstr` on the file. The fabrication passed through formal CGR1
-    ritual, six file edits, a clean commit, and a push to origin/main
-    before Joshua caught it by opening `utils/auth_jwt.py` in VS Code and
-    noticing the function wasn't there. Three terminal commands then
-    confirmed the fabrication mechanically. The rollback (commit `98b1e1c`)
-    restored the doctrine to ASPIRATIONAL and recorded the full
-    circumstance. **Defensive rule:** when the assistant makes a specific
-    claim about code (line numbers, function names, behavior details),
-    open the file and verify before committing anything that depends on
-    the claim. The mechanical version of this defense — `scripts/session_vitals.py`
-    running automated inspection at session-open — ships in v10.500
-    Continuity-Hardening Batch. Until then, the human operator's direct
-    inspection is the final ground truth.
+## Phase 1 closure gates (10/10 green)
 
-12. **Do NOT assume long pastes containing nested code fences or
-    structured JSON will land intact.** v10.499 Stage C Batch 2c surfaced
-    two related footguns: (a) long Markdown pastes containing nested
-    triple-backtick code fences can truncate at the inner closing fence,
-    because the editor or rendering layer interprets the inner ```as
-ending the outer paste block — the result was a`REVIVAL_LEDGER.md`entry missing 90% of its body, requiring re-paste with the inner
-code blocks rendered as indented plain text instead of fenced. (b)
-"Replace All" on broad find strings cascades into damage when the
-find string matches multiple semantic contexts — replacing`/api/roles/me`with`GET /api/roles/registry`across a doctrine file
-left`GET ` prepended inside Python decorators and JavaScript code
-    examples where the verb didn't belong, plus accidentally renamed a
-    historical OI-9 row that should have stayed. **Defensive rules:**
-    prefer indented plain-text monospace for code-in-code rather than
-    nested triple-backticks; use "Find Next → Replace" individually rather
-    than "Replace All" when the find string could match different semantic
-    contexts; when incremental edits cascade into structural damage in a
-    JSON or large structured file, prefer a single-paste full-file rewrite
-    over more patches.
-
-## Next concrete action
-
-(Update this every session.)
-
-**As of commit `5bbc669` (2026-05-22):**
-
-Stage C Batch 1+1b shipped clean. Three candidate next actions:
-
-- **A** â€” Stage C Batch 2: choose next 5 gates from planned ~30
-  remaining gates. Likely focus: G385 BrandingProvider fix + G386 engine
-  registration batch + 3 more gates from the artifact priorities.
-- **B** â€” Phase 1 Step 1.4: resume whoami-detailed + useRole hook
-  wiring + CSRF.
-- **C** â€” OI-66: classify remaining 28 governance artifacts under CGR1.
-
-Recommend reading the latest CHANGELOG entry and choosing A or B based
-on what you'd find most useful next.
+| Gate | Status | Closed by |
+|---|---|---|
+| 1. Real user opens app | ✅ | Batch 3a (`13d5258`) |
+| 2. Redirect to /login | ✅ | Batch 3a |
+| 3. Authenticate | ✅ | Batch 3a |
+| 4. Receive token | ✅ | Batch 3a |
+| 5. Refresh page, stay authenticated | ✅ | Batch 3a |
+| 6. Access protected routes | ✅ | Batch 3a |
+| 7. Logout cleanly | ✅ | Batch 3a |
+| 8. Dormant SHA-256 migration path | ✅ | Batch 3c |
+| 9. `must_change_password` consistent Streamlit + FastAPI | ✅ | Batch 3b (`2aab56b`) |
+| 10. Doctrine artifacts refreshed | ✅ | Batch 3d (`216171d`) |
 
 ---
 
-## How this file evolves
+## Operational protocol (codified Batch 3d)
 
-- **Every batch ship** â†’ update the "Current certified state" section
-  with new commit SHA, batch number, gate count.
-- **Every doctrine correction** â†’ update "Current architectural reality"
-  AND add new entry to "Top rediscovery traps" if relevant.
-- **Every workstream shift** â†’ update "Active workstreams" and "Next
-  concrete action."
+See `docs/architecture/OPERATIONAL_PROTOCOL.md` for full doctrine. Key rules:
 
-This file is supposed to be short. If it grows past ~300 lines, that's
-a signal it's drifting from "orientation" into "duplicate canonical
-artifact" territory â€” prune ruthlessly.
-
----
-
-## Session-opening template
-
-When starting a new chat, paste this opener:
-
-```
-I'm working on A2Z Blueprint (Ecobank Kenya banking MIS). Before we begin:
-
-1. Read docs/continuity/SESSION_BOOTSTRAP.md from my repo at
-   github.com/Joshua-Mokua/A2Z-Blueprint. That orients you to current
-   state, active workstreams, and known rediscovery traps.
-
-2. Last shipped commit: 5bbc669 (v10.498 Stage C Batch 1+1b).
-
-3. Today I want to work on: <one-sentence description of intent>
-
-Acknowledge that you've read the bootstrap, summarize back in 2-3
-sentences what you understand about current state, then we'll begin.
-```
-
-That opener is the discipline that makes this file useful. See
-`SESSION_DISCIPLINE.md` for the full session-management playbook.
+- **Trap #11 — No fabrication.** Every claim about file contents grounded
+  in same-turn code inspection.
+- **Trap #12 — No paste cascade.** Multi-file deliveries use ZIP, not
+  inline prose dumps.
+- **Trap #14 — No path-colliding extractions.** ZIP payloads use
+  namespaced staging folders (e.g. `_batch3c_payload/`) that cannot
+  share directory names with the destination tree. Codified after the
+  Batch 3b `utils/` directory deletion false-alarm.
+- **CGR1 — Reality grounds doctrine.** Documents describe runtime, not
+  aspiration. Drift between doctrine and runtime is recorded in
+  `GOVERNANCE_REALITY_INDEX.md`.
+- **Backup-before-mutation.** Any script that writes to credential data
+  (e.g. `data/users.json`) MUST create a timestamped backup first.
+  Pattern: `<file>.pre_<operation>_YYYYMMDD_HHMMSS`. Backups are gitignored.
 
 ---
 
-**End of SESSION_BOOTSTRAP.md** â€” last updated: 2026-05-22, commit `5bbc669`.
+## Known doctrine gaps (Phase 2 candidates)
+
+Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
+
+1. **Stated-vs-enforced password policy.** `utils/core.py:313` email
+   template advertises "uppercase, lowercase, number, special character"
+   but `pages/_login.py:286-291` and Batch 3b's
+   `/api/auth/change-password` enforce length-only. Cross-platform
+   consistent; just weaker than advertised.
+2. **Envelope retirement.** Phase 2 should plan when to drop the
+   transitional envelope verify path. Trigger: when the
+   "Envelope-backed credential authenticated" INFO log stops appearing
+   in production logs for ≥30 days.
+3. **`data/users.json` tracking inconsistency.** The file is listed in
+   `.gitignore` but is tracked. `git rm --cached` would un-track but
+   requires a bootstrap-from-generator workflow that hasn't been
+   designed.
+4. **Auto-upgrade re-hash on envelope success.** Currently deferred —
+   envelope hashes stay envelope-wrapped indefinitely. Phase 2 hardening
+   could add observable staged normalization.
+
+---
+
+## How to resume in a fresh session
+
+Paste this into a new Claude chat:
+
+> Continuing A2Z v10.500. Last commit: `216171d` (Phase 1 Batch 3d closed).
+> Phase 1 complete: 10/10 gates green, React auth substrate fully wired.
+> Ready for Phase 2 scoping. Read `docs/continuity/SESSION_BOOTSTRAP.md`
+> for current state.
+
+That plus `userMemories` gives Claude full Phase 1 context immediately.

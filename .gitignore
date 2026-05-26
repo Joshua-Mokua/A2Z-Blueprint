@@ -52,8 +52,6 @@ coverage/
 data/users.json
 # Versioned in-repo backup snapshots (use git history instead)
 data/_v*_backups/
-# Versioned in-repo backup snapshots (use git history instead)
-data/_v*_backups/
 # Stale nested project copy (pre-v10.22, removed in cleanup before v10.497)
 a2z/
 
@@ -62,3 +60,29 @@ cookies.txt
 
 # JWT revocation runtime state (per-session blocklist, not source)
 data/jwt_blocklist.json
+
+# ── Runtime mutation files (Batch 3d) ───────────────────────────────────
+# These get rewritten on every request — they shouldn't have been tracked
+# in the first place. New clones will not have them; the running app
+# creates them on first audit-emitting action. To stop tracking the
+# already-tracked copies, run:
+#
+#     git rm --cached data/audit_log.json
+#     git rm --cached data/audit_trail.jsonl
+#     git commit -m "Untrack runtime audit files (Batch 3d cleanup)"
+#
+# This is mentioned in docs/CHANGELOG_v10500_batch3d.md as a follow-up
+# step the operator can run on their own schedule.
+data/audit_log.json
+data/audit_trail.jsonl
+
+# ── Hotfix and migration backups (Batch 3d) ─────────────────────────────
+# Per OPERATIONAL_PROTOCOL.md backup-before-mutation discipline. These
+# files contain sensitive credential material (hashes, sometimes plain
+# text during diagnostic sessions) and must never reach git or origin.
+data/users.json.pre_*
+data/users.json.post_*_migration
+data/users.json.batch3c_tmp
+*.pre_batch*_hotfix
+utils/*.pre_*
+utils/*.preBatch*

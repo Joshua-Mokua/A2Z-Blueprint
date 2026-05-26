@@ -61,6 +61,105 @@ Each entry follows this shape:
 
 ---
 
+### 2026-05-26 v10.500 Phase 1 Batch 3d — Doctrine refresh + Phase 1 closure
+
+**Type:** Doctrine harmonization + observability gap closure
+**Owner:** Joshua + Claude
+**Rationale:** Phase 1 React auth substrate shipped across batches 3a/3b/3c with ~8 batches of accumulated doctrine drift. SESSION_BOOTSTRAP still referenced commit `49e804f` and claimed `require_role` was ASPIRATIONAL when it had been ACTIVE since Stage C Batch 2b (`d740b98`). GOVERNANCE_REALITY_INDEX classifications were stale. The envelope INFO log shipped in Batch 3c had not been verification-proven to fire. Three lessons emerged during the Phase 1 arc that needed codification as protocol: Trap #14 (no path-colliding ZIP extractions, after the `utils/` directory false-alarm), backup-before-mutation discipline (after `verify_bcrypt.py` shipped without an automatic backup mechanism), and the stated-vs-enforced password policy gap.
+
+**Files shipped:**
+- `.gitignore` — added `data/audit_log.json`, `data/audit_trail.jsonl`, backup patterns
+- `scripts/verify_bcrypt.py` — added timestamped backup before mutation
+- `tests/test_verify_pw_observability.py` NEW — 5 regression tests confirming the envelope INFO log fires correctly; closes the verification gap from Batch 3c
+- `docs/continuity/SESSION_BOOTSTRAP.md` — refreshed from `49e804f` → `216171d` state, reflects Phase 1 closure
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry + entries for 3a, 3b, 3c
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — reclassified `require_role` ACTIVE, added Phase 1 React substrate row
+- `docs/architecture/OPERATIONAL_PROTOCOL.md` NEW — codifies Traps #11, #12, #14 + backup-before-mutation
+- `docs/architecture/POLICY_GAPS.md` NEW — stated-vs-enforced password policy gap + envelope retirement criteria + tracked-but-gitignored `users.json` inconsistency
+- `docs/CHANGELOG_v10500_batch3d.md` NEW
+- `app.py` — `_APP_VERSION` bumped to v10.500-phase1-closed-2026.05.26
+
+**Verification:** all 5 envelope observability tests pass. SESSION_BOOTSTRAP references current commit. REVIVAL_LEDGER has chronological entries for all 4 Phase 1 batches. `git status` clean post-commit.
+
+**Cross-references:** Phase 1 closure record in `docs/CHANGELOG_v10500_batch3d.md`. Traps codified in `OPERATIONAL_PROTOCOL.md`. Policy gaps tracked in `POLICY_GAPS.md`. Phase 2 candidates listed in SESSION_BOOTSTRAP's "Known doctrine gaps" section.
+
+---
+
+### 2026-05-26 v10.500 Phase 1 Batch 3c — bcrypt envelope migration
+
+**Type:** Migration (closes Phase 1 closure gate #8)
+**Owner:** Joshua + Claude
+**Rationale:** 1437 dormant user records were stored as raw SHA-256 hashes (pre-bcrypt convention from `generate_staff_v2.py`). The pre-Batch-3b auto-upgrade in `UserManager.authenticate()` was supposed to re-hash these to bcrypt on first successful login, but had silently failed for ~2 years due to a missing `_hash_password` import (fixed in Batch 3b). Direct bulk migration via plaintext recovery wasn't possible — plaintexts weren't stored. Solution: envelope wrapping. `bcrypt(sha256(password_hex))` produces a bcrypt-shaped hash from the existing SHA-256 hash, indistinguishable at-rest from a direct bcrypt hash. `verify_pw` learns a 3-path verification: direct bcrypt, envelope (rewrap on the fly), legacy SHA-256 fallback.
+
+**Files shipped:**
+- `utils/core.py` — `verify_pw` gains `$2y$` prefix support + envelope path + INFO log on envelope-success + `username` kwarg for log identification; `authenticate` auto-upgrade swallow now logs full traceback (per Banking observability posture)
+- `scripts/verify_bcrypt.py` NEW — audit + `--upgrade` (dry-run + confirmation prompt + write) tooling, security-conscious (never prints hashes, derivations, tokens, sample usernames only)
+- `docs/CHANGELOG_v10500_batch3c.md` NEW
+
+**Verification:** Migration executed successfully — 1437 SHA-256 records → bcrypt envelope; distribution after: 1438 direct/envelope, 0 legacy SHA-256, 1 empty (intentional placeholder), 0 malformed. Real auth confirmed working via `verify_pw(EcoStaff0001, envelope_hash) == True`. Live `/api/auth/login` returned valid token post-migration. Envelope INFO log fires when expected (proven by regression test added in Batch 3d).
+
+**Known limitations (intentional, per CGR1):**
+- Envelope is TRANSITIONAL stabilization layer, NOT canonical end-state. Phase 2 may add forced normalization.
+- Envelope-success does NOT trigger opportunistic re-hash to direct bcrypt (deferred to Phase 2 hardening to avoid hidden mutation paths).
+- Script lacked automatic backup of users.json — operator created manual backup after migration. Batch 3d closed this gap by adding timestamped backup to `write_users()`.
+
+**Cross-references:** Phase 1 closure gate #8 (SESSION_BOOTSTRAP). Observability regression test in `tests/test_verify_pw_observability.py` (added Batch 3d). Envelope retirement criteria in `POLICY_GAPS.md`.
+
+---
+
+### 2026-05-26 v10.500 Phase 1 Batch 3b — must_change_password enforcement via must_rotate JWT scope + core.py hash_pw hotfix
+
+**Type:** Feature + bug fix (closes Phase 1 closure gate #9, surfaces 2-year-old latent bug)
+**Owner:** Joshua + Claude
+**Rationale:** Pre-Batch-3b, `must_change_password=true` was honored ONLY in Streamlit (`pages/_login.py:182,264`). FastAPI's `/api/auth/login` issued normal tokens regardless. The React frontend had no rotation UX at all. Cross-transport inconsistency. Solution: introduce a `scope` claim on JWTs — "full" (default, omitted from payload for backward compat) vs "must_rotate" (only `/api/auth/change-password` accepts). `get_current_user` rejects must_rotate with 403; every other endpoint inherits the rotation gate for free via existing `Depends(get_current_user)`. Mechanical enforcement, not advisory.
+
+**The hash_pw hotfix discovered mid-batch:** verification of the change-password flow hit a 500 error. Audit log showed `Persistence error: NameError`. Investigation revealed `utils/core.py` called `_hash_password()` at 6 sites but never imported it — the function had been extracted to `utils/core_audit.py` years earlier. `authenticate()`'s auto-upgrade swallowed this NameError on every successful login since the extraction (the `except Exception: pass` was hiding the bug; auto-upgrade has been silently broken for ~2 years). `change_password()`, called by the new endpoint, did NOT swallow exceptions → the bug surfaced as a 500. Fix: deferred import inside `hash_pw` (avoids circular dependency since `core_audit` imports `core` at top), plus rewriting 4 bootstrap call sites to use `self.hash_pw` which routes through the deferred import.
+
+**This is the most important teaching artifact of Phase 1.** A silent except masked a 2-year-old NameError. The bug's primary symptom — "auto-upgrade never actually runs" — was operationally invisible because nobody monitored SHA-256-to-bcrypt migration rates. Only when an unrelated batch (3b) exercised the un-swallowed code path did the bug surface. Implication for governance: every `except Exception: pass` is a defect waiting to be discovered. Batch 3c replaced this specific swallow with full-traceback logging.
+
+**Files shipped:**
+- `utils/auth_jwt.py` — `TOKEN_SCOPE_FULL`/`TOKEN_SCOPE_MUST_ROTATE` constants, `scope` param on `create_access_token`, `_extract_token_payload` helper, `get_current_user_allow_rotation` dep, `get_current_user` rejects must_rotate
+- `utils/api.py` — `TokenResponse.must_change_password`, `ChangePasswordRequest`, login route teaches scope contract, new `POST /api/auth/change-password` endpoint (defensive divergence: requires `current_password` verification even on forced rotation, stricter than Streamlit)
+- `utils/core.py` — hash_pw hotfix (deferred import; 4 bootstrap call sites use self.hash_pw)
+- `frontend/web/src/types/auth.ts` — `TokenResponse.must_change_password`, `AuthStatus.must_rotate`, `AuthContextValue.changePassword`, `ChangePasswordRequest`
+- `frontend/web/src/providers/AuthProvider.tsx` — must_rotate status handling, changePassword action, 3rd localStorage key
+- `frontend/web/src/components/ProtectedRoute.tsx` — path-aware must_rotate gate
+- `frontend/web/src/pages/Login.tsx` — redirect must_rotate users to /change-password
+- `frontend/web/src/pages/ChangePassword.tsx` NEW — rotation form
+- `frontend/web/src/App.tsx` — /change-password route
+- `docs/CHANGELOG_v10500_batch3b.md` NEW
+
+**Verification:** Forced rotation flow exercised end-to-end. william001 flagged with `must_change_password=true`, login issued must_rotate-scope token, frontend confined to /change-password, backend 403'd whoami-detailed for must_rotate token, change-password submission succeeded with valid current_password, fresh full-scope token issued, Dashboard loaded.
+
+**Cross-references:** Hash_pw bug is the canonical example for the "silent except is a latent bug" rule in `OPERATIONAL_PROTOCOL.md`. Defensive-divergence rationale (API stricter than Streamlit) in `docs/CHANGELOG_v10500_batch3b.md`. Phase 1 closure gate #9 (SESSION_BOOTSTRAP).
+
+---
+
+### 2026-05-26 v10.500 Phase 1 Batch 3a — Real AuthProvider + login lifecycle (replaces v10.495 stub)
+
+**Type:** Feature (closes Phase 1 closure gates #1-7)
+**Owner:** Joshua + Claude
+**Rationale:** `frontend/web/src/providers/AuthProvider.tsx` was a 16-line no-op stub. Header confessed "real JWT auth lands in v10.497." `useRole` (Batch 2d) and `ProtectedRoute` (Batch 2e) were structurally correct but operationally disconnected — they imported `useAuth` from a stub that always returned `status: 'unauthenticated'`. CGR1: 2d/2e remained VALID shipments (operational disconnection ≠ failure); 3a is their completion. Token strategy: Bearer header + centralized injection via `setCurrentToken` + in-memory primary + localStorage fallback for refresh persistence. Per the original architectural assessment, CSRF defense is N/A for Bearer auth (XSS is the relevant threat model; deferred to Phase 2 hardening if/when cookie-based JWT is reconsidered).
+
+**Files shipped:**
+- `frontend/web/src/types/auth.ts` NEW — `LoginRequest`, `TokenResponse`, `AuthStatus`, `AuthContextValue`
+- `frontend/web/src/providers/AuthProvider.tsx` REWRITE — real provider, login/logout, 401 handling
+- `frontend/web/src/hooks/useAuth.ts` NEW — context consumer
+- `frontend/web/src/pages/Login.tsx` NEW — composes Input/Button/useBranding
+- `frontend/web/src/lib/api.ts` MODIFY — `setCurrentToken`, `setOn401Callback`, `AuthExpiredError`, Bearer injection in `getJson`
+- `frontend/web/src/providers/RoleProvider.tsx` MODIFY — gates fetch on `auth.status === 'authenticated'`, uses cancellation token
+- `frontend/web/src/components/ProtectedRoute.tsx` MODIFY — `<Navigate to="/login" state={{from: location}} replace />` with redirect preservation
+- `frontend/web/src/App.tsx` MODIFY — `/login` route, ProtectedRoute wrapping
+- `docs/CHANGELOG_v10500_batch3a.md` NEW
+
+**Race-condition hotfix discovered during operator verification:** React effects fire bottom-up (child before parent). RoleProvider's `[auth.status]` effect fired `fetchWhoamiDetailed` BEFORE AuthProvider's `[state.token]` effect could push token to api.ts. First whoami went without Authorization header → 401 → on401 callback → status flipped to 'expired' → "Your session expired" banner shown immediately after successful login. Fix: call `setCurrentToken` SYNCHRONOUSLY before `setState` in all 4 token-state-changing paths (mount rehydration, login success, logout, on401 callback). Defense-in-depth `useEffect([state.token])` retained.
+
+**Verification:** TS clean (3 pre-existing Card.tsx + Input.tsx baseline errors only — pre-date this batch). Login as `william001 / EcoStaff0001` → Dashboard renders → F5 persists.
+
+**Cross-references:** Phase 1 closure gates #1-7 (SESSION_BOOTSTRAP). Race-fix discipline documented in `frontend/web/src/providers/AuthProvider.tsx` header comment. Stub was at commit `f3187dc`; real provider lands at `13d5258`.
+
+---
+
 ### 2026-05-24 v10.499 Stage C Batch 2e — ProtectedRoute wrapper (consuming useRole, smoke-tested on `/`, OI-36 routing documentation resolved)
 
 **Type:** Feature (first concrete consumer of the useRole hook shipped in Batch 2d)

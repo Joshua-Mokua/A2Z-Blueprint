@@ -201,6 +201,51 @@ A new chat session that read only doctrinal artifacts (not the code) would have 
 
 ---
 
+## CGR1 Reality-Check Correction (v10.500 Phase 1 Batch 3d) — React auth substrate now operationally complete
+
+**Date:** 2026-05-26
+**Inspected by:** Claude session, ground-checked against repo clone (commit 216171d)
+**Doctrine status correction:** AuthProvider STUB (was) → AuthProvider ACTIVE (now); JWT cookie auth described (was, never actually true) → JWT Bearer auth ACTIVE (correct description)
+
+### Original claim (since v10.495)
+
+`SESSION_BOOTSTRAP.md` and earlier doctrine described:
+
+> "JWT cookie auth ACTIVE; transport-layer RBAC partial. `utils/auth_jwt.py` has `create_access_token`, `get_current_user`, `require_admin`."
+
+The "JWT cookie" framing was incorrect from the start — `auth_jwt.py:129-158` has always used `Authorization: Bearer` header extraction, never cookies. CSRF defense was framed as needed when in fact Bearer auth makes XSS the relevant threat model. The original Phase 1 Step 1.4 prose-batch carried this confusion forward; the architectural re-evaluation at the start of Batch 3a caught and corrected it.
+
+Additionally, `frontend/web/src/providers/AuthProvider.tsx` was a 16-line no-op stub until Batch 3a (commit `13d5258`) replaced it. Doctrine listed the file as part of the auth substrate without flagging its stub status.
+
+### Reality (post-Phase-1 closure at commit 216171d)
+
+Phase 1 React auth substrate is fully operational:
+
+- `AuthProvider.tsx` — real JWT lifecycle, 3 actions (login, logout, changePassword), 3 storage keys, 5 states (initializing/unauthenticated/authenticated/must_rotate/expired), race-condition-correct token sync discipline
+- `lib/api.ts` — centralized Authorization-header Bearer injection via `setCurrentToken`, `setOn401Callback`
+- `pages/Login.tsx`, `pages/ChangePassword.tsx` — composing existing design-system primitives
+- `components/ProtectedRoute.tsx` — path-aware must_rotate gate
+- Backend: `utils/auth_jwt.py` has full scope plumbing (`TOKEN_SCOPE_FULL`/`TOKEN_SCOPE_MUST_ROTATE`, `get_current_user_allow_rotation`); `utils/api.py` has `/api/auth/change-password` endpoint
+- Migration: `utils/core.py::verify_pw` has 3-path verification (direct bcrypt, envelope bcrypt, legacy SHA-256); 1437 dormant accounts migrated to envelope (Batch 3c)
+- Observability: `tests/test_verify_pw_observability.py` regression tests confirm INFO log fires correctly on envelope success
+
+### Classification updates
+
+- **AuthProvider operational state** — STUB → ACTIVE (since Batch 3a, `13d5258`)
+- **JWT auth transport** — wording corrected from "cookie" to "Bearer header"
+- **CSRF** — N/A for Bearer auth; deferred indefinitely (only relevant if cookie-based JWT is reconsidered in Phase 2+)
+- **must_change_password enforcement** — STREAMLIT-ONLY → CONSISTENT ACROSS STREAMLIT + FASTAPI (since Batch 3b, `2aab56b`)
+- **Auto-upgrade SHA-256 → bcrypt on login** — SILENTLY BROKEN (since extraction of `_hash_password` to `core_audit.py`, ~2 years) → ACTIVE WITH FULL-TRACEBACK INSTRUMENTATION (since Batch 3b hotfix + Batch 3c instrumentation)
+- **Envelope verify path** — N/A → ACTIVE (TRANSITIONAL per CGR1; envelope retirement criteria recorded in `POLICY_GAPS.md`)
+
+### Procedural lesson
+
+The pre-Batch-3a architectural re-evaluation identified 8 findings the original prose Phase 1 spec had wrong (CSRF being the most consequential). Inspecting the code BEFORE committing to a batch's scope caught the drift. CGR1 standing procedure works; it's been applied successfully across all 4 Phase 1 batches.
+
+A second procedural lesson surfaced in Batch 3b: the silent `except Exception: pass` in `authenticate()`'s auto-upgrade hid a `NameError` for ~2 years. The bug's primary symptom — "auto-upgrade never actually runs" — was operationally invisible. Discovery happened only because Batch 3b's change-password endpoint exercised the un-swallowed code path. Doctrine implication codified in `OPERATIONAL_PROTOCOL.md` (Batch 3d): **every `except Exception: pass` is a latent bug waiting to surface; bare swallows must be replaced with logged exception handling that preserves availability but makes the failure observable.**
+
+---
+
 ## CGR1 Reality-Check Correction (v10.499 Stage C Batch 2a) — shadcn/ui pivot in `frontend/web/src/`
 
 **Date:** 2026-05-22
