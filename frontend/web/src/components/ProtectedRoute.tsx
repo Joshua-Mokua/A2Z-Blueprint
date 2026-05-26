@@ -1,44 +1,48 @@
-// v10.499 Stage C Batch 2e — ProtectedRoute wrapper.
+// v10.500 Phase 1 Batch 3a — ProtectedRoute with real redirect.
 //
-// Gates a route's content based on the caller's role and capabilities.
-// Consumes useRole() for the access decision; renders different states
-// depending on whether the user is loading, unauthenticated, unauthorized,
-// or authorized.
+// Originally shipped at v10.499 Stage C Batch 2e as a wrapper that
+// rendered a "Please log in" message under unauthenticated conditions —
+// a dead-end with no path forward because /login did not exist yet.
+// Batch 3a closes the loop: now redirects to /login via <Navigate />,
+// preserving the originally requested location so post-login can
+// return the user to where they were going.
 //
-// Usage:
+// CGR1 note: Batch 2e's ProtectedRoute was structurally correct — the
+// role/admin/tier authorization branches below are unchanged. Only the
+// unauthenticated branch swapped from a div to a Navigate. Batch 2e
+// remains a VALID shipment, not a rollback.
+//
+// Gating logic now considers both:
+//   - auth.status from AuthProvider (token-level state)
+//   - isAuthenticated from RoleProvider (hydration-level state)
+//
+// During the authenticated-but-still-hydrating window, we render null
+// (avoid flashing "Please log in" while whoami is in flight). Once
+// hydration completes the user sees protected content; if the token is
+// rejected during hydration, AuthProvider flips to 'expired' via the
+// api.ts 401 callback, and the next render sees auth.status !==
+// 'authenticated' and Navigates to /login.
+//
+// Usage (unchanged from Batch 2e):
 //   <Route path="/admin"
 //          element={<ProtectedRoute requireAdmin><AdminPanel /></ProtectedRoute>} />
 //   <Route path="/dashboard"
 //          element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />
 //   <Route path="/leadership"
 //          element={<ProtectedRoute requireTier="structural_owner"><LeadershipView /></ProtectedRoute>} />
-//   <Route path="/exec"
-//          element={<ProtectedRoute requireAnyRole={["Managing Director", "Director Retail Banking"]}><ExecView /></ProtectedRoute>} />
-//
-// Each access-requirement prop is optional. When multiple are provided,
-// they are combined with AND semantics — the user must satisfy all
-// stated requirements. requireAuth is implicit when any other requirement
-// is set (you can't be admin if you're not authenticated).
-//
-// State rendering:
-//   loading        → null (don't flash content during the typically
-//                    sub-second initial fetch)
-//   unauthenticated → "Please log in" message (v1; real redirect to
-//                    /login lands when AuthProvider becomes real)
-//   unauthorized   → "You don't have permission" message (logged in
-//                    but doesn't satisfy role requirements)
-//   authorized     → renders children
 
 import type { ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
+import { useAuth } from '../hooks/useAuth';
 import type { Tier } from '../types/role';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requireAuth?:     boolean;          // any authenticated user
-  requireAdmin?:    boolean;          // user.is_admin === true
-  requireTier?:     Tier;             // user.tier === <tier>
-  requireAnyRole?:  string[];         // user.role matches one of these (case-insensitive)
+  requireAuth?:     boolean;
+  requireAdmin?:    boolean;
+  requireTier?:     Tier;
+  requireAnyRole?:  string[];
 }
 
 export function ProtectedRoute({
@@ -48,61 +52,56 @@ export function ProtectedRoute({
   requireTier,
   requireAnyRole,
 }: ProtectedRouteProps) {
-  const {
-    loading,
-    isAuthenticated,
-    isAdmin,
-    userHasTier,
-    userHasAnyRole,
-  } = useRole();
+  const auth = useAuth();
+  const role = useRole();
+  const location = useLocation();
 
-  // ── Loading ───────────────────────────────────────────────────────────
-  // While useRole() is still fetching, render nothing. Avoid flashing
-  // "Please log in" briefly during the initial sub-second fetch.
+  const needsAuth =
+    requireAuth || requireAdmin || requireTier
+    || (requireAnyRole && requireAnyRole.length > 0);
 
-  if (loading) {
+  // ── Auth still initializing (reading localStorage) ────────────────────
+  // Or hydration still in flight after we know we're authenticated.
+  // Render null to avoid flashing intermediate states.
+  if (auth.status === 'initializing' || (needsAuth && role.loading)) {
     return null;
   }
 
-  // ── Unauthenticated ───────────────────────────────────────────────────
-  // No user loaded (either fetch failed with 401 or no JWT cookie yet).
-  // Any of the requirement props implies requireAuth, so we check this
-  // gate first regardless of which specific requirement was passed.
+  // ── Unauthenticated → redirect to /login ──────────────────────────────
+  // Preserve the originally requested location so Login can navigate
+  // the user back after a successful auth.
+  if (needsAuth && auth.status !== 'authenticated') {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-  const needsAuth =
-    requireAuth || requireAdmin || requireTier || (requireAnyRole && requireAnyRole.length > 0);
-
-  if (needsAuth && !isAuthenticated) {
+  // ── Edge case: authenticated but hydration produced no user ───────────
+  // RoleProvider failed to fetch whoami (e.g. transient backend error
+  // that wasn't a 401). Surface this as an unauthorized state rather
+  // than render protected content with null user — fail safe.
+  if (needsAuth && !role.isAuthenticated) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Please log in</h2>
-        <p>You must be signed in to view this page.</p>
-      </div>
+      <Unauthorized reason="Unable to load your identity. Please try refreshing or signing in again." />
     );
   }
 
   // ── Authorization checks (AND semantics) ──────────────────────────────
-  // User is authenticated; verify each stated requirement.
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && !role.isAdmin) {
     return <Unauthorized reason="This page requires administrator access." />;
   }
 
-  if (requireTier && !userHasTier(requireTier)) {
+  if (requireTier && !role.userHasTier(requireTier)) {
     return <Unauthorized reason={`This page requires tier: ${requireTier}.`} />;
   }
 
-  if (requireAnyRole && requireAnyRole.length > 0 && !userHasAnyRole(requireAnyRole)) {
+  if (requireAnyRole && requireAnyRole.length > 0
+      && !role.userHasAnyRole(requireAnyRole)) {
     return <Unauthorized reason="Your role doesn't have access to this page." />;
   }
-
-  // ── Authorized ────────────────────────────────────────────────────────
-  // All requirements satisfied (or none were specified). Render children.
 
   return <>{children}</>;
 }
 
-// ── Internal helper ─────────────────────────────────────────────────────
 
 function Unauthorized({ reason }: { reason: string }) {
   return (

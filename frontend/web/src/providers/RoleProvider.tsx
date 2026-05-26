@@ -1,62 +1,56 @@
-// v10.499 Stage C Batch 2d — RoleProvider for the React SPA.
+// v10.500 Phase 1 Batch 3a — RoleProvider with auth-state gating.
 //
-// Fetches the caller's identity from /api/auth/whoami-detailed and the
-// canonical role registry from /api/roles/registry in parallel, exposes
-// both via RoleContext so any descendant component can read them via
-// the useRole() hook.
+// Originally shipped at v10.499 Stage C Batch 2d as a fetcher that fired
+// /api/auth/whoami-detailed + /api/roles/registry on mount, on the
+// assumption that an auth substrate would attach credentials by then.
+// Batch 3a closes that loop: this provider now waits for
+// auth.status === 'authenticated' before firing either fetch, and
+// resets state when auth transitions away from 'authenticated'.
 //
-// Pattern: mirrors BrandingProvider exactly. Single useEffect fires
-// once on mount, Promise.all runs both fetches in parallel, .finally
-// flips loading false regardless of success/failure.
+// CGR1 note: Batch 2d's RoleProvider was structurally correct — its
+// shape, error handling, and derived-value pattern are unchanged here.
+// The only meaningful difference is the useEffect gating + dependency.
+// Batch 2d remains a VALID shipment, not a rollback.
+//
+// Separation of concerns (per Batch 3a doctrine):
+//   - AuthProvider owns: token, expiry, login/logout, auth status
+//   - RoleProvider owns: user identity, role classification, RBAC helpers
+//   - The two providers do NOT share state; they communicate only via
+//     auth.status, with RoleProvider reading and reacting.
 //
 // Provider chain placement (App.tsx):
-//   QueryClient → Branding → Auth → Role → WebSocket → Router
-// Role sits AFTER Auth because the endpoints it fetches require an
-// authenticated JWT cookie. Until real auth lands (v10.497 milestone
-// for AuthProvider), unauthenticated boots will see the endpoints
-// return 401 — the .catch handler surfaces this as a non-fatal error
-// state, keeping the UI alive.
-//
-// Derived values (isAdmin, helper predicates) are computed in the
-// context value object rather than stored as separate state. Single
-// source of truth: the `user` state holds the canonical data, derived
-// fields are calculated on each render. This avoids the synchronisation
-// bug class where stored derivations drift out of sync with their
-// source.
+//   QueryClient → Branding → Toast → Auth → Role → WebSocket → Router
 
 import {
   createContext, useEffect, useState, type ReactNode,
 } from 'react';
 import { fetchWhoamiDetailed, fetchRoleRegistry } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 import type { UserIdentity, RoleRegistry, Tier } from '@/types/role';
 
 
 // ── Context value shape ─────────────────────────────────────────────────
-// What useRole() returns. Includes raw state plus derived helpers.
 
 interface RoleContextValue {
-  // Raw data (from React state)
+  // Raw data
   user:      UserIdentity | null;
   registry:  RoleRegistry | null;
   loading:   boolean;
   error:     string | null;
 
-  // Derived flags (computed from user, not stored)
+  // Derived flags
   isAdmin:        boolean;
   canViewAll:     boolean;
   canBeTagged:    boolean;
-  isAuthenticated: boolean;   // true iff user is loaded (no 401 / no error)
+  isAuthenticated: boolean;
 
-  // Derived helpers (functions that close over user)
+  // Derived helpers
   userHasTier:    (tier: Tier) => boolean;
   userHasAnyRole: (roles: string[]) => boolean;
 }
 
 
-// ── Context with a sensible default ─────────────────────────────────────
-// The default value is what useContext returns when there's no Provider
-// above the consumer in the tree. We use a "not loaded, not authenticated"
-// shape so consumers fail safe rather than crash.
+// ── Context with a safe default ─────────────────────────────────────────
 
 export const RoleContext = createContext<RoleContextValue>({
   user:     null,
@@ -77,36 +71,59 @@ export const RoleContext = createContext<RoleContextValue>({
 // ── Provider component ──────────────────────────────────────────────────
 
 export function RoleProvider({ children }: { children: ReactNode }) {
+  const auth = useAuth();
+
   const [user, setUser]         = useState<UserIdentity | null>(null);
   const [registry, setRegistry] = useState<RoleRegistry | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
+  // ── Auth-gated fetch ──────────────────────────────────────────────────
+  // Fires whoami + registry only when authenticated. Resets state when
+  // auth transitions to any non-authenticated status (logout, expiry).
+  //
+  // Why dep is auth.status only (not auth.token): the role hydration
+  // doesn't depend on the token value, only on whether we are
+  // authenticated. A token refresh (if ever added in Phase 2) shouldn't
+  // re-trigger a whoami round trip.
   useEffect(() => {
-    // Parallel fetch — both endpoints are independent, so Promise.all
-    // kicks them off simultaneously and resolves when both arrive.
-    // Total wait time = max(latency_whoami, latency_registry), not sum.
+    if (auth.status !== 'authenticated') {
+      // Reset on transition out of authenticated state
+      setUser(null);
+      setRegistry(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    // Parallel fetch — endpoints are independent. Total wait time =
+    // max(latency_whoami, latency_registry), not sum.
     Promise.all([fetchWhoamiDetailed(), fetchRoleRegistry()])
       .then(([userData, registryData]) => {
+        if (cancelled) return;
         setUser(userData);
         setRegistry(registryData);
       })
       .catch((e) => {
-        // 401 (no JWT cookie) is expected before login. Network errors
-        // are also captured here. Either way, we surface the error to
-        // consumers so they can render an unauthenticated state, but
-        // we don't crash the app — the BrandingProvider continues to
-        // work, branded login pages can render.
+        if (cancelled) return;
+        // A 401 here is handled by api.ts (it fires the AuthProvider's
+        // on401 callback before throwing AuthExpiredError). Re-render
+        // will see auth.status !== 'authenticated' and the reset branch
+        // will fire. Other errors (5xx, network) we surface as `error`.
         setError(String(e));
       })
       .finally(() => {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
-  }, []);  // Empty deps — fetch once on mount, never again.
+
+    return () => { cancelled = true; };
+  }, [auth.status]);
 
   // ── Derived values (computed each render from `user`) ─────────────────
-  // Cheap to compute, always in sync with `user`. Storing these as
-  // separate state would create a synchronisation problem.
 
   const isAdmin         = user?.is_admin     ?? false;
   const canViewAll      = user?.can_view_all ?? false;
@@ -122,8 +139,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const userRole = user.role.toLowerCase();
     return roles.some((r) => r.toLowerCase() === userRole);
   };
-
-  // ── Assemble context value and provide it to children ─────────────────
 
   const value: RoleContextValue = {
     user,
