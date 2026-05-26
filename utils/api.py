@@ -53,8 +53,11 @@ from pydantic import BaseModel
 from utils.auth_jwt import (
     create_access_token,
     get_current_user,
+    get_current_user_allow_rotation,
     require_admin,
     warn_if_default_secret,
+    TOKEN_SCOPE_FULL,
+    TOKEN_SCOPE_MUST_ROTATE,
 )
 
 logger = logging.getLogger("a2z.api")
@@ -271,6 +274,24 @@ class TokenResponse(BaseModel):
     expires_in_seconds: int = 1800
     username: str
     role: str
+    # ── must_change_password (Batch 3b) ──────────────────────────────────
+    # True when the authenticating user has must_change_password=true in
+    # users.json. In that case, access_token is issued with
+    # scope="must_rotate" — it is only valid against
+    # /api/auth/change-password and is rejected by every other Depends(
+    # get_current_user) endpoint with 403. The frontend reads this flag
+    # to route the user to the rotation form.
+    #
+    # Default False preserves backward compat — pre-3b callsites that
+    # don't set it still get a valid response that React reads as full
+    # access.
+    must_change_password: bool = False
+
+
+# ── /api/auth/change-password request shape (Batch 3b) ───────────────
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 @app.post("/api/auth/login", response_model=TokenResponse)
@@ -303,12 +324,30 @@ def login(req: LoginRequest):
         "username": req.username,
         "role":     user_data.get("role", "Staff"),
     }
-    token = create_access_token(user)
-    _audit("API_LOGIN_SUCCESS", user, "Issued bearer token via /api/auth/login")
+
+    # Batch 3b: read must_change_password from the stored user record.
+    # If true, issue a scope='must_rotate' token (rejected by every
+    # endpoint except /api/auth/change-password — mechanical enforcement
+    # via auth_jwt.get_current_user).
+    must_rotate = bool(user_data.get("must_change_password"))
+    scope = TOKEN_SCOPE_MUST_ROTATE if must_rotate else TOKEN_SCOPE_FULL
+
+    token = create_access_token(user, scope=scope)
+    if must_rotate:
+        _audit(
+            "API_LOGIN_FORCE_PW", user,
+            "Issued must_rotate-scope token — user must change password",
+        )
+    else:
+        _audit(
+            "API_LOGIN_SUCCESS", user,
+            "Issued full-scope bearer token via /api/auth/login",
+        )
     return TokenResponse(
         access_token=token,
         username=req.username,
         role=user["role"],
+        must_change_password=must_rotate,
     )
 
 
@@ -388,6 +427,119 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
            f"(role={role_raw}, tier={classification.tier})")
 
     return response
+
+
+# ── /api/auth/change-password (Batch 3b) ──────────────────────────────
+# Rotates the authenticated user's password. Accepts BOTH full-scope and
+# must_rotate-scope tokens via get_current_user_allow_rotation — the
+# only endpoint in the system that permits must_rotate scope.
+#
+# On success, issues a fresh full-scope token in the response so the
+# caller is normally authenticated post-rotation without needing to
+# re-enter credentials. The frontend swaps the stored token and
+# transitions auth.status from 'must_rotate' to 'authenticated'.
+#
+# Password policy matches the Streamlit force_change_pw flow at
+# pages/_login.py:286-291 (length >= 8, new != current). The new-account
+# email template at utils/core.py:313 advertises a stronger policy
+# (complexity rules) but no code currently enforces it; that stated-vs-
+# enforced gap is recorded for Phase 2 hardening — Batch 3b matches
+# actual code behavior to keep Streamlit and FastAPI mechanically
+# consistent.
+#
+# Defensive divergence from Streamlit: this endpoint REQUIRES
+# current_password verification. Streamlit's flow does not (it trusts
+# the must_rotate state machine). The API gate is stricter because a
+# stolen must_rotate-scope token would otherwise let an attacker set
+# an arbitrary password. Documented in CHANGELOG_v10500_batch3b.md.
+@app.post("/api/auth/change-password", response_model=TokenResponse)
+def change_password(
+    req: ChangePasswordRequest,
+    user: dict = Depends(get_current_user_allow_rotation),
+):
+    """Rotate the authenticated user's password.
+
+    Accepts both full-scope and must_rotate-scope tokens. On success,
+    persists the new bcrypt hash, clears must_change_password, audits,
+    and returns a fresh full-scope TokenResponse.
+    """
+    username = user["username"]
+    forced   = (user.get("scope") == TOKEN_SCOPE_MUST_ROTATE)
+
+    try:
+        from utils.core import UserManager
+        um = UserManager()
+    except Exception as e:
+        logger.error(f"UserManager init failed during password change: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Authentication system unavailable",
+        )
+
+    full_user = um.users.get(username)
+    if not full_user:
+        _audit("API_PASSWORD_CHANGE_FAILED", user,
+               f"User '{username}' not in store (token outlived account?)")
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # Verify current password — defensive even for forced rotations.
+    if not um.verify_pw(req.current_password, full_user.get("password", "")):
+        _audit("API_PASSWORD_CHANGE_FAILED", user,
+               f"current_password mismatch (forced={forced})")
+        raise HTTPException(
+            status_code=401,
+            detail="Current password is incorrect",
+        )
+
+    # ── Validate new password ────────────────────────────────────────
+    # Length-only policy mirrors Streamlit's actual enforcement at
+    # pages/_login.py:286. Stricter complexity rules are documented as
+    # aspirational in core.py:313 but not currently enforced anywhere —
+    # Batch 3b matches reality, not doctrine, per CGR1.
+    if len(req.new_password) < 8:
+        _audit("API_PASSWORD_CHANGE_FAILED", user,
+               "new_password too short (<8 chars)")
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be at least 8 characters",
+        )
+    if req.new_password == req.current_password:
+        _audit("API_PASSWORD_CHANGE_FAILED", user,
+               "new_password equals current_password")
+        raise HTTPException(
+            status_code=400,
+            detail="New password must differ from current password",
+        )
+
+    # Apply change. UserManager.change_password (utils/core.py:5759)
+    # bcrypt-hashes the new password and clears must_change_password.
+    try:
+        um.change_password(username, req.new_password)
+    except Exception as e:
+        logger.error(f"Password change persistence failed for {username}: {e}")
+        _audit("API_PASSWORD_CHANGE_FAILED", user,
+               f"Persistence error: {type(e).__name__}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save new password — please retry",
+        )
+
+    # Issue a fresh FULL-scope token so the caller is normally
+    # authenticated post-rotation. No re-login required.
+    fresh_user = {"username": username, "role": full_user.get("role", "Staff")}
+    new_token = create_access_token(fresh_user, scope=TOKEN_SCOPE_FULL)
+    _audit(
+        "API_PASSWORD_CHANGE_SUCCESS", user,
+        f"Password rotated (forced={forced}); fresh full-scope token issued",
+    )
+    return TokenResponse(
+        access_token=new_token,
+        username=username,
+        role=full_user.get("role", "Staff"),
+        must_change_password=False,
+    )
+
+
 # ── Health check (NO AUTH — by design) ────────────────────────────
 @app.get("/api/health")
 def health():

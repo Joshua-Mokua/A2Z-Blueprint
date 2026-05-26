@@ -1,35 +1,32 @@
 // v10.500 Phase 1 Batch 3a — ProtectedRoute with real redirect.
+// v10.500 Phase 1 Batch 3b — extended with path-aware must_rotate gate.
 //
-// Originally shipped at v10.499 Stage C Batch 2e as a wrapper that
-// rendered a "Please log in" message under unauthenticated conditions —
-// a dead-end with no path forward because /login did not exist yet.
-// Batch 3a closes the loop: now redirects to /login via <Navigate />,
-// preserving the originally requested location so post-login can
-// return the user to where they were going.
+// Gates a route's content based on auth status and role classification.
+// Renders one of: loading, redirect-to-login, redirect-to-rotation,
+// unauthorized, or children.
 //
-// CGR1 note: Batch 2e's ProtectedRoute was structurally correct — the
-// role/admin/tier authorization branches below are unchanged. Only the
-// unauthenticated branch swapped from a div to a Navigate. Batch 2e
-// remains a VALID shipment, not a rollback.
+// CGR1 note: Batch 2e's ProtectedRoute was structurally correct; the
+// auth-status redirect (Batch 3a) and the must_rotate path gate (Batch
+// 3b) are completions, not corrections. The role/admin/tier
+// authorization branches are unchanged.
 //
-// Gating logic now considers both:
-//   - auth.status from AuthProvider (token-level state)
-//   - isAuthenticated from RoleProvider (hydration-level state)
+// Batch 3b must_rotate semantics:
+//   When auth.status === 'must_rotate', the user has a scope-limited
+//   token that only the change-password endpoint accepts. ProtectedRoute
+//   keeps them on /change-password and bounces every other route there.
+//   This pairs with the backend: utils/auth_jwt.get_current_user rejects
+//   must_rotate tokens with 403, so even if a user bypasses this
+//   frontend gate (devtools, direct URL), every API call other than
+//   change-password will fail server-side. Frontend gate is UX; backend
+//   gate is mechanism.
 //
-// During the authenticated-but-still-hydrating window, we render null
-// (avoid flashing "Please log in" while whoami is in flight). Once
-// hydration completes the user sees protected content; if the token is
-// rejected during hydration, AuthProvider flips to 'expired' via the
-// api.ts 401 callback, and the next render sees auth.status !==
-// 'authenticated' and Navigates to /login.
-//
-// Usage (unchanged from Batch 2e):
+// Usage (unchanged from Batch 3a):
 //   <Route path="/admin"
 //          element={<ProtectedRoute requireAdmin><AdminPanel /></ProtectedRoute>} />
 //   <Route path="/dashboard"
 //          element={<ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>} />
-//   <Route path="/leadership"
-//          element={<ProtectedRoute requireTier="structural_owner"><LeadershipView /></ProtectedRoute>} />
+//   <Route path="/change-password"
+//          element={<ProtectedRoute requireAuth><ChangePassword /></ProtectedRoute>} />
 
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
@@ -44,6 +41,8 @@ interface ProtectedRouteProps {
   requireTier?:     Tier;
   requireAnyRole?:  string[];
 }
+
+const CHANGE_PASSWORD_PATH = '/change-password';
 
 export function ProtectedRoute({
   children,
@@ -61,23 +60,40 @@ export function ProtectedRoute({
     || (requireAnyRole && requireAnyRole.length > 0);
 
   // ── Auth still initializing (reading localStorage) ────────────────────
-  // Or hydration still in flight after we know we're authenticated.
-  // Render null to avoid flashing intermediate states.
-  if (auth.status === 'initializing' || (needsAuth && role.loading)) {
+  if (auth.status === 'initializing') {
+    return null;
+  }
+
+  // ── must_rotate (Batch 3b) — confine user to /change-password ─────────
+  // If the user has a must_rotate-scope token, they may ONLY render
+  // /change-password. Every other protected (or unprotected) route
+  // bounces them there. Hard navigation guard.
+  //
+  // /change-password is the only legitimate destination — when the user
+  // is on it, render the children even though role.isAuthenticated is
+  // false (RoleProvider deliberately does not hydrate identity until
+  // status === 'authenticated', because the must_rotate token is 403'd
+  // by whoami-detailed).
+  if (auth.status === 'must_rotate') {
+    if (location.pathname !== CHANGE_PASSWORD_PATH) {
+      return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // ── Loading state for authenticated users (role hydration) ────────────
+  if (needsAuth && role.loading) {
     return null;
   }
 
   // ── Unauthenticated → redirect to /login ──────────────────────────────
-  // Preserve the originally requested location so Login can navigate
-  // the user back after a successful auth.
+  // Preserves original location so Login.tsx can navigate back after
+  // successful auth. Covers both 'unauthenticated' and 'expired'.
   if (needsAuth && auth.status !== 'authenticated') {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // ── Edge case: authenticated but hydration produced no user ───────────
-  // RoleProvider failed to fetch whoami (e.g. transient backend error
-  // that wasn't a 401). Surface this as an unauthorized state rather
-  // than render protected content with null user — fail safe.
   if (needsAuth && !role.isAuthenticated) {
     return (
       <Unauthorized reason="Unable to load your identity. Please try refreshing or signing in again." />

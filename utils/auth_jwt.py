@@ -6,10 +6,15 @@ A2Z_JWT_SECRET (env var, generated default for dev with a startup warning).
 
 Token payload:
     {
-        "sub":  "<username>",        # subject = username
-        "role": "<role>",
-        "iat":  <issued-at>,
-        "exp":  <expires>,
+        "sub":   "<username>",        # subject = username
+        "role":  "<role>",
+        "iat":   <issued-at>,
+        "exp":   <expires>,
+        "scope": "must_rotate",       # OPTIONAL — present only on rotation-only
+                                      # tokens (Batch 3b). Absent claim means
+                                      # full-scope token (backward compatible
+                                      # with pre-3b issued tokens still in
+                                      # circulation in localStorage).
     }
 
 Lifetime: 30 minutes (matches the audit's session-timeout expectation).
@@ -17,9 +22,22 @@ Refresh tokens are intentionally NOT supported in this iteration — log in
 again on expiry. The audit didn't require refresh and the React migration
 that would benefit from it isn't here yet.
 
+Scope (Batch 3b — must_change_password enforcement):
+    The default scope is "full" — the token grants access to every
+    authenticated endpoint. When UserManager.authenticate returns a user
+    whose `must_change_password` flag is true, /api/auth/login issues a
+    token with scope="must_rotate" instead. That token is REJECTED by
+    get_current_user (403) and only accepted by
+    get_current_user_allow_rotation, which is used exclusively by
+    /api/auth/change-password. Mechanical enforcement: every existing
+    endpoint that already declared Depends(get_current_user) inherits
+    the rotation gate for free.
+
 Usage in routes:
     from fastapi import Depends
-    from utils.auth_jwt import get_current_user, require_admin
+    from utils.auth_jwt import (
+        get_current_user, require_admin, get_current_user_allow_rotation,
+    )
 
     @app.get("/api/bsc/summary")
     def bsc_summary(user: dict = Depends(get_current_user)):
@@ -27,6 +45,11 @@ Usage in routes:
 
     @app.post("/api/cache/clear")
     def clear_cache(user: dict = Depends(require_admin)):
+        ...
+
+    # ONLY /api/auth/change-password uses the rotation-tolerant dep:
+    @app.post("/api/auth/change-password")
+    def change_password(user: dict = Depends(get_current_user_allow_rotation)):
         ...
 
 audit gate G12 (api_auth_safety) verifies every @app.get/post route except
@@ -51,6 +74,17 @@ logger = logging.getLogger("a2z.auth")
 ALGORITHM       = "HS256"
 TOKEN_LIFETIME  = timedelta(minutes=30)
 _DEFAULT_SECRET_USED = False
+
+# ── Token scope constants (Batch 3b) ──────────────────────────────────────
+# Full-scope tokens grant access to every authenticated endpoint.
+# Must-rotate-scope tokens are issued by /api/auth/login when the
+# authenticating user has must_change_password=True; they ONLY pass the
+# get_current_user_allow_rotation dep, used exclusively by
+# /api/auth/change-password. Every other Depends(get_current_user) call
+# rejects them with 403.
+TOKEN_SCOPE_FULL          = "full"
+TOKEN_SCOPE_MUST_ROTATE   = "must_rotate"
+_VALID_SCOPES             = (TOKEN_SCOPE_FULL, TOKEN_SCOPE_MUST_ROTATE)
 
 
 def _resolve_secret() -> str:
@@ -82,17 +116,33 @@ def warn_if_default_secret() -> None:
 
 
 # ── Token issue / decode ──────────────────────────────────────────────────
-def create_access_token(user: dict) -> str:
+def create_access_token(user: dict, scope: str = TOKEN_SCOPE_FULL) -> str:
     """Issue a bearer JWT for a freshly authenticated user.
 
     `user` is the dict UserManager.authenticate returns. Only `username`
     and `role` go into the token — never the password hash, never PII.
+
+    Args:
+        user:  dict with at minimum a "username" key (or "sub").
+        scope: "full" (default — full access) or "must_rotate" (only
+               valid against /api/auth/change-password).
+
+    Backward compatibility (Batch 3b):
+        Full-scope tokens are encoded WITHOUT a `scope` claim. Tokens
+        issued by pre-3b builds (still circulating in client localStorage)
+        have no `scope` claim either, and must be interpreted as full
+        scope on decode — encoding-side symmetry preserves that.
     """
     import jwt as _jwt
 
     username = user.get("username") or user.get("sub")
     if not username:
         raise ValueError("create_access_token: user dict missing 'username'")
+    if scope not in _VALID_SCOPES:
+        raise ValueError(
+            f"create_access_token: invalid scope {scope!r}; "
+            f"must be one of {_VALID_SCOPES}"
+        )
 
     now = datetime.now(timezone.utc)
     payload = {
@@ -101,6 +151,11 @@ def create_access_token(user: dict) -> str:
         "iat":  int(now.timestamp()),
         "exp":  int((now + TOKEN_LIFETIME).timestamp()),
     }
+    # Omit `scope` for full tokens — keeps the on-the-wire payload
+    # identical to pre-3b tokens, so any cached/in-flight tokens stay
+    # valid through the deploy.
+    if scope != TOKEN_SCOPE_FULL:
+        payload["scope"] = scope
     return _jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -126,11 +181,18 @@ def decode_token(token: str) -> dict:
 
 
 # ── FastAPI dependencies ──────────────────────────────────────────────────
-def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
-    """FastAPI Depends — extract + validate bearer token, return user dict.
+def _extract_token_payload(authorization: Optional[str]) -> dict:
+    """Internal — extract + validate bearer token, return user dict WITH
+    scope. Used by both get_current_user (which enforces full scope) and
+    get_current_user_allow_rotation (which permits must_rotate).
 
-    The dict has shape {"username", "role", "iat", "exp"}. Pages that need
-    fuller user data should call UserManager.users[username] themselves.
+    The returned dict has shape:
+        {"username", "role", "scope", "iat", "exp"}
+
+    `scope` defaults to TOKEN_SCOPE_FULL for tokens that don't include
+    the claim (pre-Batch-3b tokens, or any externally-issued token that
+    chose to omit the claim — interpreted as full access for backward
+    compatibility with existing live tokens).
     """
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
@@ -153,9 +215,53 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     return {
         "username": payload.get("sub"),
         "role":     payload.get("role", "Staff"),
+        "scope":    payload.get("scope", TOKEN_SCOPE_FULL),
         "iat":      payload.get("iat"),
         "exp":      payload.get("exp"),
     }
+
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """FastAPI Depends — extract + validate bearer token, return user dict.
+
+    Requires FULL-scope tokens. Tokens with scope="must_rotate" are
+    rejected with 403 — they are only valid against the change-password
+    endpoint, which uses get_current_user_allow_rotation.
+
+    Mechanical enforcement (Batch 3b): every existing endpoint that
+    already declared `Depends(get_current_user)` now inherits the
+    rotation gate for free. No endpoint changes are needed elsewhere.
+
+    The returned dict has shape {"username", "role", "scope", "iat", "exp"}.
+    Pages that need fuller user data should call UserManager.users[username]
+    themselves.
+    """
+    user = _extract_token_payload(authorization)
+    if user.get("scope") == TOKEN_SCOPE_MUST_ROTATE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Password rotation required. Call POST /api/auth/change-password "
+                "to set a new password before accessing any other endpoint."
+            ),
+        )
+    return user
+
+
+def get_current_user_allow_rotation(
+    authorization: Optional[str] = Header(None),
+) -> dict:
+    """FastAPI Depends — like get_current_user but accepts must_rotate scope.
+
+    USE THIS DEP ONLY ON /api/auth/change-password. Every other
+    authenticated endpoint must use get_current_user, which rejects
+    must_rotate scope and forces users through the rotation flow.
+
+    Returns the same dict shape as get_current_user, with `scope`
+    indicating which token type was presented so the route can audit
+    the rotation-from-forced vs voluntary-change distinction.
+    """
+    return _extract_token_payload(authorization)
 
 
 def require_admin(user: dict = None) -> dict:
@@ -173,6 +279,10 @@ def require_admin(user: dict = None) -> dict:
 
     This dep itself depends on get_current_user via FastAPI's sub-dep
     injection — it gets the user dict, then enforces the role check.
+    Because get_current_user enforces full scope (Batch 3b), require_admin
+    inherits the rotation gate transparently — admins with
+    must_change_password=true cannot reach admin endpoints until they
+    rotate.
     """
     from fastapi import Depends as _Depends
     # When invoked through FastAPI DI, user is None at decoration time;
@@ -220,6 +330,10 @@ require_admin = _make_require_admin()
 # Whitespace is normalised on both sides. The accepted-roles list must
 # be non-empty; passing [] raises ValueError immediately at factory call
 # time, not at request time — fail-fast per A2Z doctrine.
+#
+# Batch 3b: this factory chains through get_current_user, which now
+# enforces full scope — must_rotate-token users hit 403 from
+# get_current_user before this factory's body ever runs.
 def require_role(accepted_roles: list[str]):
     """FastAPI Depends factory — require user's role to be in accepted_roles.
 

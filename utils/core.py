@@ -5636,7 +5636,7 @@ class UserManager:
             # Always ensure admin account exists and cannot be permanently removed
             if 'admin' not in users:
                 users['admin'] = {
-                    "password":   _hash_password("admin123"),
+                    "password":   self.hash_pw("admin123"),
                     "full_name":  "System Admin",
                     "role":       "Admin",
                     "department": "All",
@@ -5663,21 +5663,21 @@ class UserManager:
     def _defaults(self):
         u = {
             "admin": {
-                "password": _hash_password("admin123"),
+                "password": self.hash_pw("admin123"),
                 "full_name": "System Admin", "role": "Admin", "department": "All",
                 "can_view_all": True, "managed_roles": [], "managed_units": [],
                 "managed_staff_codes": [], "staff_code": "ADMIN001",
                 "email": "admin@bank.com", "active": True,
             },
             "manager1": {
-                "password": _hash_password("manager123"),
+                "password": self.hash_pw("manager123"),
                 "full_name": "John Manager", "role": "Manager", "department": "Retail Banking",
                 "can_view_all": False, "managed_roles": [], "managed_units": ["Retail Banking"],
                 "managed_staff_codes": [], "staff_code": "MGR001",
                 "email": "manager@bank.com", "active": True,
             },
             "staff1": {
-                "password": _hash_password("staff123"),
+                "password": self.hash_pw("staff123"),
                 "full_name": "Jane Staff", "role": "Staff", "department": "Retail Banking",
                 "can_view_all": False, "managed_roles": [], "managed_units": [],
                 "managed_staff_codes": [], "staff_code": "STF001",
@@ -5725,7 +5725,13 @@ class UserManager:
 
         Delegates to module-level _hash_password() so bootstrap and runtime
         share a single implementation.
+
+        Batch 3b: _hash_password lives in utils.core_audit (extracted there
+        when this method was the last user). Deferred import here avoids the
+        circular dependency that would result from a top-of-file import
+        (core_audit imports back from core).
         """
+        from utils.core_audit import _hash_password
         return _hash_password(pw)
 
     def verify_pw(self, pw: str, stored: str) -> bool:

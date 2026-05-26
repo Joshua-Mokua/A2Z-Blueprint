@@ -7,10 +7,15 @@
 // v10.500 Phase 1 Batch 3a:
 //   - /login route added (public, no ProtectedRoute wrapper).
 //   - /perform and /profitability now wrapped in ProtectedRoute.
-//   - /components remains public per Batch 3a doctrine (#4) — it is the
-//     design-system showcase and must be reachable for frontend
-//     governance inspection without authentication.
+//   - /components remains public per Batch 3a doctrine — design-system
+//     showcase, must be reachable for frontend governance inspection.
 //   - AuthProvider is now the real provider (no longer a stub).
+// v10.500 Phase 1 Batch 3b:
+//   - /change-password route added, wrapped in ProtectedRoute. The
+//     route is reachable for both 'must_rotate' (forced rotation) and
+//     'authenticated' (future voluntary rotation) auth states.
+//     ProtectedRoute's path-aware must_rotate gate confines users with
+//     must_rotate tokens to this route specifically.
 //
 // CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
 //
@@ -19,15 +24,11 @@
 //   - `const queryClient = new QueryClient()`
 //   - `<QueryClientProvider client={queryClient}>`
 //   - `<AuthProvider><WebSocketProvider><BrowserRouter>` — chain order
-//   - Existing route paths `/`, `/perform`, `/profitability`, `/components`
+//   - Existing route paths `/`, `/perform`, `/profitability`, `/components`,
+//     `/login`
 //
-// AMENDED CHAIN (v10.496, unchanged in Batch 3a):
+// AMENDED CHAIN (v10.496, unchanged in Batch 3a/3b):
 //   QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter
-//
-// Toast is placed BELOW Branding so toasts can read brand colors,
-// but ABOVE Auth so unauthenticated pages (login) can fire toasts too.
-// RoleProvider sits BELOW Auth — it reads auth.status to gate its
-// fetches per Batch 3a wiring.
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -43,6 +44,7 @@ import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
 import { Showcase } from './pages/Showcase';
 import { Login } from './pages/Login';
+import { ChangePassword } from './pages/ChangePassword';
 
 const queryClient = new QueryClient();
 
@@ -55,7 +57,7 @@ function App() {
                 {/* Public — login surface */}
                 <Route path="/login" element={<Login />} />
 
-                {/* Public — design-system showcase (Batch 3a #4) */}
+                {/* Public — design-system showcase (Batch 3a) */}
                 <Route path="/components" element={<Showcase />} />
 
                 {/* Protected — operational surfaces */}
@@ -67,6 +69,12 @@ function App() {
                 } />
                 <Route path="/profitability" element={
                     <ProtectedRoute requireAuth><Profitability /></ProtectedRoute>
+                } />
+
+                {/* Protected — password rotation (Batch 3b) */}
+                {/* Reachable for both must_rotate and authenticated states. */}
+                <Route path="/change-password" element={
+                    <ProtectedRoute requireAuth><ChangePassword /></ProtectedRoute>
                 } />
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>

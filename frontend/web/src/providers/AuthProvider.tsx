@@ -1,4 +1,5 @@
 // v10.500 Phase 1 Batch 3a — Real AuthProvider.
+// v10.500 Phase 1 Batch 3b — extended with must_rotate state + changePassword action.
 //
 // Replaces the v10.495 no-op stub. Owns the JWT token lifecycle for the
 // React SPA. Scope is strictly token-level per separation-of-concerns:
@@ -6,12 +7,16 @@
 // which hydrates from /api/auth/whoami-detailed only once
 // auth.status === 'authenticated'.
 //
-// Doctrine context (CGR1-grounded, see REVIVAL_LEDGER batch 3a):
+// Doctrine context (CGR1-grounded, see REVIVAL_LEDGER batch 3a/3b):
 //   - useRole (Batch 2d) and ProtectedRoute (Batch 2e) were structurally
-//     correct shipments; they were operationally disconnected because
-//     the auth substrate they assumed (this file) was a stub. Batch 3a
-//     completes the circulation layer they depend on. 2d/2e remain
-//     VALID under CGR1, not rollbacks.
+//     correct shipments operationally completed by Batch 3a. They remain
+//     VALID under CGR1.
+//   - Batch 3b adds the rotation contract: when /api/auth/login returns
+//     must_change_password=true, the access_token has scope='must_rotate'
+//     and AuthProvider transitions to status='must_rotate'. The user is
+//     confined to /change-password until they successfully rotate.
+//     ProtectedRoute is path-aware: it permits /change-password under
+//     must_rotate and redirects every other route there.
 //
 // Architecture:
 //   - Bearer-header JWT (no cookies — CSRF deferred to Phase 2)
@@ -19,40 +24,39 @@
 //   - localStorage persistence fallback for page-refresh continuity
 //   - No refresh tokens (backend forbids; utils/auth_jwt.py:17-18)
 //   - Central Authorization-header injection happens in lib/api.ts
-//     via the token-accessor pattern wired below (setCurrentToken,
-//     setOn401Callback). AuthProvider does not touch fetch directly
-//     except for the login POST itself.
+//     via the token-accessor pattern (setCurrentToken, setOn401Callback)
 //
-// CRITICAL — effect ordering discipline (hotfix from initial operator
-// verification):
+// CRITICAL — effect ordering discipline (from Batch 3a hotfix):
 //   React effects fire bottom-up (child before parent). RoleProvider
 //   is a CHILD of AuthProvider; its auth-status effect therefore fires
 //   BEFORE AuthProvider's [state.token] effect can push the new token
 //   into api.ts. To prevent the resulting "first whoami fires with no
 //   Authorization header → 401 → spurious 'expired' transition" race,
 //   every state path that updates the token MUST call setCurrentToken
-//   synchronously BEFORE setState. The four affected paths are:
+//   synchronously BEFORE setState. The five affected paths are:
 //     1. mount-time rehydration when localStorage has a valid token
 //     2. login() success
-//     3. logout()
-//     4. the on401 callback (clears the dead token immediately)
+//     3. changePassword() success  (Batch 3b)
+//     4. logout()
+//     5. the on401 callback (clears the dead token immediately)
 //   The [state.token] useEffect remains as defense-in-depth, but the
-//   sync calls are load-bearing. Any future code path that touches
-//   token state MUST follow the same discipline.
+//   sync calls are load-bearing.
 //
 // State machine:
-//   'initializing'    → 'authenticated' | 'unauthenticated'  (on mount)
+//   'initializing'    → 'authenticated' | 'unauthenticated' | 'must_rotate' (on mount)
+//   'unauthenticated' → 'authenticated' (login) | 'must_rotate' (login + flag)
+//   'must_rotate'     → 'authenticated' (changePassword success)
+//                     → 'unauthenticated' (logout) | 'expired' (401)
 //   'authenticated'   → 'unauthenticated' (logout) | 'expired' (401)
-//   'expired'         → 'authenticated' (next login)
-//   'unauthenticated' → 'authenticated' (login)
+//   'expired'         → any login attempt path
 //
 // Storage keys (single source of truth, do not duplicate elsewhere):
 //   localStorage['a2z_token']             — JWT string
 //   localStorage['a2z_token_expires_at']  — ms-since-epoch as string
+//   localStorage['a2z_must_rotate']       — 'true' when token is must_rotate-scope
+//                                           (Batch 3b; absent or 'false' = full)
 //
-// Expiry safety margin: 30 seconds. A token expiring within 30s of
-// now is treated as already expired, to avoid issuing a request the
-// backend will reject mid-flight.
+// Expiry safety margin: 30 seconds.
 
 import {
   createContext, useCallback, useEffect, useState, type ReactNode,
@@ -65,16 +69,15 @@ import { setCurrentToken, setOn401Callback } from '@/lib/api';
 
 // ── Storage keys + tunables (single source of truth) ────────────────────
 
-const STORAGE_KEY_TOKEN       = 'a2z_token';
-const STORAGE_KEY_EXPIRES     = 'a2z_token_expires_at';
-const EXPIRY_SAFETY_MARGIN_MS = 30_000;
-const LOGIN_ENDPOINT          = '/api/auth/login';
+const STORAGE_KEY_TOKEN         = 'a2z_token';
+const STORAGE_KEY_EXPIRES       = 'a2z_token_expires_at';
+const STORAGE_KEY_MUST_ROTATE   = 'a2z_must_rotate';
+const EXPIRY_SAFETY_MARGIN_MS   = 30_000;
+const LOGIN_ENDPOINT            = '/api/auth/login';
+const CHANGE_PASSWORD_ENDPOINT  = '/api/auth/change-password';
 
 
 // ── Safe storage helpers ────────────────────────────────────────────────
-// localStorage can throw in private mode, when quota is exceeded, or
-// when disabled by policy. Silent degradation to in-memory-only is the
-// correct fallback — the user simply loses F5 session continuity.
 
 function safeStorageGet(key: string): string | null {
   try { return window.localStorage.getItem(key); }
@@ -89,21 +92,23 @@ function safeStorageRemove(key: string): void {
   catch { /* silent */ }
 }
 
+function clearAllAuthStorage(): void {
+  safeStorageRemove(STORAGE_KEY_TOKEN);
+  safeStorageRemove(STORAGE_KEY_EXPIRES);
+  safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
+}
+
 
 // ── Context with a safe default ─────────────────────────────────────────
-// Default 'initializing' status keeps RoleProvider's auth-gated fetch
-// disarmed until the real provider mounts and resolves localStorage.
-// If consumers ever appear above the provider in the tree (they
-// shouldn't), the defaults fail safe: never authenticated, login/logout
-// are no-ops.
 
 export const AuthContext = createContext<AuthContextValue>({
   status:    'initializing',
   token:     null,
   expiresAt: null,
   error:     null,
-  login:  async () => { /* no-op default */ },
-  logout: () => { /* no-op default */ },
+  login:           async () => { /* no-op default */ },
+  changePassword:  async () => { /* no-op default */ },
+  logout:          () => { /* no-op default */ },
 });
 
 
@@ -130,12 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(INITIAL_STATE);
 
   // ── Mount: rehydrate from localStorage ────────────────────────────────
-  // Runs exactly once. Reads stored token + expiry, validates the expiry
-  // is still in the future (with safety margin), and transitions to
-  // 'authenticated' or 'unauthenticated' accordingly.
   useEffect(() => {
-    const storedToken   = safeStorageGet(STORAGE_KEY_TOKEN);
-    const storedExpires = safeStorageGet(STORAGE_KEY_EXPIRES);
+    const storedToken     = safeStorageGet(STORAGE_KEY_TOKEN);
+    const storedExpires   = safeStorageGet(STORAGE_KEY_EXPIRES);
+    const storedMustRotate = safeStorageGet(STORAGE_KEY_MUST_ROTATE) === 'true';
 
     if (!storedToken || !storedExpires) {
       setState({ ...INITIAL_STATE, status: 'unauthenticated' });
@@ -144,20 +147,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const expiresAt = Number(storedExpires);
     if (!Number.isFinite(expiresAt)
         || expiresAt <= Date.now() + EXPIRY_SAFETY_MARGIN_MS) {
-      // Stale or unparseable — clean up and start fresh.
-      safeStorageRemove(STORAGE_KEY_TOKEN);
-      safeStorageRemove(STORAGE_KEY_EXPIRES);
+      clearAllAuthStorage();
       setState({ ...INITIAL_STATE, status: 'unauthenticated' });
       return;
     }
-    // CRITICAL: register the token with api.ts BEFORE setState. React
-    // effects fire bottom-up (child before parent) — without this sync
-    // call, RoleProvider's auth-status effect fires before the
-    // [state.token] safety-net effect below, sending its whoami fetch
-    // with no Authorization header → 401 → spurious 'expired' transition.
+    // CRITICAL: sync setCurrentToken BEFORE setState (effect ordering).
     setCurrentToken(storedToken);
     setState({
-      status:    'authenticated',
+      status:    storedMustRotate ? 'must_rotate' : 'authenticated',
       token:     storedToken,
       expiresAt,
       error:     null,
@@ -165,32 +162,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Defense-in-depth: token sync on every state change ────────────────
-  // The login/logout/rehydration paths above call setCurrentToken
-  // synchronously before setState — this is the load-bearing sync. This
-  // effect catches any future code path that updates state.token without
-  // remembering to sync. Idempotent: re-pushing the same value is free.
   useEffect(() => {
     setCurrentToken(state.token);
   }, [state.token]);
 
   // ── Register 401 callback once on mount ───────────────────────────────
-  // When any authenticated fetch in api.ts receives a 401, it invokes
-  // this callback to flip state to 'expired'. Re-render propagates to
-  // ProtectedRoute which Navigates to /login.
-  //
-  // Functional setState ensures the only meaningful transition fired is
-  // authenticated → expired. Other states already represent "no valid
-  // token" so a 401 there is a no-op.
   useEffect(() => {
     setOn401Callback(() => {
-      safeStorageRemove(STORAGE_KEY_TOKEN);
-      safeStorageRemove(STORAGE_KEY_EXPIRES);
-      // Clear api.ts token holder synchronously — any fetch firing
-      // before the [state.token] effect runs would otherwise still
-      // carry the dead token and produce a second redundant 401.
+      clearAllAuthStorage();
       setCurrentToken(null);
       setState((s) => (
-        s.status === 'authenticated'
+        (s.status === 'authenticated' || s.status === 'must_rotate')
           ? { status: 'expired', token: null, expiresAt: null, error: null }
           : s
       ));
@@ -199,14 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── login action ──────────────────────────────────────────────────────
-  // POST /api/auth/login → store token + expiry → transition to
-  // 'authenticated'. Throws on failure so the Login form can render
-  // the message inline; also stores the message in state so other
-  // consumers (e.g. a logout-toast pattern) can render it too.
-  //
-  // Deliberately uses raw fetch here, NOT lib/api.ts's wrapper —
-  // login is the bootstrap moment, it cannot depend on token
-  // accessor state that doesn't exist yet.
+  // POST /api/auth/login. On success, transitions to 'authenticated' OR
+  // 'must_rotate' based on the must_change_password flag in the response
+  // (Batch 3b). Token is stored either way; only the status differs.
   const login = useCallback(async (username: string, password: string) => {
     setState((s) => ({ ...s, error: null }));
 
@@ -257,32 +234,136 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const expiresAt = Date.now() + body.expires_in_seconds * 1000;
+    const mustRotate = body.must_change_password === true;
+
     safeStorageSet(STORAGE_KEY_TOKEN,   body.access_token);
     safeStorageSet(STORAGE_KEY_EXPIRES, String(expiresAt));
-    // CRITICAL: register the token with api.ts BEFORE setState. React
-    // effects fire bottom-up (child before parent), so RoleProvider's
-    // auth-status effect would otherwise fire fetchWhoamiDetailed
-    // before the [state.token] safety-net effect runs — the request
-    // would go out with no Authorization header, return 401, and
-    // trigger a spurious 'expired' transition. This sync call closes
-    // the race.
+    if (mustRotate) {
+      safeStorageSet(STORAGE_KEY_MUST_ROTATE, 'true');
+    } else {
+      safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
+    }
+    // CRITICAL: sync token BEFORE setState (race fix).
     setCurrentToken(body.access_token);
     setState({
-      status:    'authenticated',
+      status:    mustRotate ? 'must_rotate' : 'authenticated',
       token:     body.access_token,
       expiresAt,
       error:     null,
     });
   }, []);
 
+  // ── changePassword action (Batch 3b) ──────────────────────────────────
+  // POST /api/auth/change-password. Accepts BOTH must_rotate-scope (the
+  // forced-rotation path) and full-scope (future voluntary path) tokens.
+  // On success the backend returns a fresh full-scope token; we swap it
+  // in and transition to 'authenticated'.
+  //
+  // The fetch uses raw fetch + manual Authorization header rather than
+  // going through lib/api.ts's getJson, because (a) getJson is GET-only
+  // and (b) we want explicit control over the request shape for this
+  // bootstrap-adjacent flow. The token from state is attached directly.
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      setState((s) => ({ ...s, error: null }));
+
+      const currentToken = state.token;
+      if (!currentToken) {
+        const msg = 'You must be signed in to change your password.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(CHANGE_PASSWORD_ENDPOINT, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password:     newPassword,
+          }),
+        });
+      } catch {
+        const msg = 'Cannot reach authentication server. Please try again.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      if (res.status === 401) {
+        // Backend says current_password is wrong OR token is invalid.
+        // We can't easily distinguish — surface the most likely cause.
+        const msg = 'Current password is incorrect.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+      if (res.status === 400) {
+        // Validation failure — read the detail string from the response.
+        let detail = 'Password does not meet requirements.';
+        try {
+          const body = await res.json();
+          if (body && typeof body.detail === 'string') detail = body.detail;
+        } catch { /* keep default */ }
+        setState((s) => ({ ...s, error: detail }));
+        throw new Error(detail);
+      }
+      if (res.status >= 500) {
+        const msg = 'Authentication system unavailable. Please try again later.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+      if (!res.ok) {
+        const msg = `Password change failed (HTTP ${res.status}).`;
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      let body: TokenResponse;
+      try {
+        body = await res.json() as TokenResponse;
+      } catch {
+        const msg = 'Authentication server returned an invalid response.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      if (!body.access_token
+          || typeof body.expires_in_seconds !== 'number'
+          || body.expires_in_seconds <= 0) {
+        const msg = 'Authentication server returned an incomplete response.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      // Success — swap in the fresh full-scope token. Clear the
+      // must_rotate flag in storage so a subsequent F5 lands in
+      // 'authenticated', not 'must_rotate'.
+      const expiresAt = Date.now() + body.expires_in_seconds * 1000;
+      safeStorageSet(STORAGE_KEY_TOKEN,   body.access_token);
+      safeStorageSet(STORAGE_KEY_EXPIRES, String(expiresAt));
+      safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
+      // CRITICAL: sync token BEFORE setState (race fix — same discipline
+      // as login). On the must_rotate → authenticated transition,
+      // RoleProvider's auth-status effect fires whoami immediately;
+      // without this sync, that whoami sees the stale must_rotate token
+      // and gets 403'd.
+      setCurrentToken(body.access_token);
+      setState({
+        status:    'authenticated',
+        token:     body.access_token,
+        expiresAt,
+        error:     null,
+      });
+    },
+    [state.token],
+  );
+
   // ── logout action ─────────────────────────────────────────────────────
-  // Client-side only. JWT is stateless; there is no server-side session
-  // to invalidate (matches utils/auth_jwt.py contract). Clears storage,
-  // clears state. ProtectedRoute will re-render and Navigate to /login.
   const logout = useCallback(() => {
-    safeStorageRemove(STORAGE_KEY_TOKEN);
-    safeStorageRemove(STORAGE_KEY_EXPIRES);
-    // Sync-clear api.ts token holder; symmetric with the login sync.
+    clearAllAuthStorage();
     setCurrentToken(null);
     setState({
       status:    'unauthenticated',
@@ -300,6 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     expiresAt: state.expiresAt,
     error:     state.error,
     login,
+    changePassword,
     logout,
   };
 
