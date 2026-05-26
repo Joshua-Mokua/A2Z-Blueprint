@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, date
 import datetime as _dt
 import hashlib
 import json
+import logging
 import re
 import io
 import smtplib
@@ -28,6 +29,12 @@ from email.mime.multipart import MIMEMultipart
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+
+# Batch 3c — module logger for auth-path observability (envelope-verify
+# success log, auto-upgrade failure instrumentation). Uses the standard
+# a2z.<module> namespace; no handler attached here (FastAPI/Streamlit
+# entry points configure handlers globally).
+logger = logging.getLogger("a2z.core")
 for f in ["users.json", "validations.json", "audit_log.json", "calendar_events.json",
           "staff_history.json", "email_config.json", "pending_tokens.json"]:
     p = DATA_DIR / f
@@ -5734,32 +5741,108 @@ class UserManager:
         from utils.core_audit import _hash_password
         return _hash_password(pw)
 
-    def verify_pw(self, pw: str, stored: str) -> bool:
-        """Verify password — handles bcrypt and legacy SHA-256 hashes."""
+    def verify_pw(self, pw: str, stored: str, username: str = "") -> bool:
+        """Verify password — handles bcrypt, envelope-bcrypt, and legacy SHA-256.
+
+        Three verification paths tried in order:
+
+          1. Direct bcrypt: stored = bcrypt(password)
+             — produced by hash_pw / change_password / add_user, or by
+               a successful auto-upgrade in authenticate().
+          2. Envelope bcrypt: stored = bcrypt(sha256(password).hex)
+             — produced by the Batch 3c migration script (scripts/verify_bcrypt.py
+               --upgrade) when wrapping legacy SHA-256 hashes without
+               requiring plaintext password recovery.
+          3. Legacy SHA-256 direct: stored = sha256(password).hex
+             — pre-bcrypt tablestakes; still present for dormant accounts
+               not yet logged-in or migrated.
+
+        Returns True on first match. Each bcrypt check costs ~25ms; worst
+        case (envelope-stored, wrong password) is ~50ms. Operationally
+        irrelevant at this scale.
+
+        Batch 3c additions:
+          - $2y$ prefix support (some bcrypt libraries emit this; Python's
+            bcrypt emits $2b$, but external systems may produce $2y$).
+          - Envelope verification path.
+          - INFO-level log on envelope-success (observability for ratchet
+            planning — measures how many users still authenticate via the
+            transitional envelope path so Phase 2 can plan deprecation).
+
+        The optional `username` kwarg enables the envelope-success log to
+        identify the user. Callers WITHOUT username available may omit it;
+        existing call sites that don't pass it remain backward compatible.
+
+        SECURITY: this method never logs plaintext password, hash, sha256
+        derivation, or bcrypt string. Username + log message only.
+
+        CGR1 doctrine (Batch 3c): envelope is a TRANSITIONAL stabilization
+        layer, NOT canonical end-state. Phase 2 hardening may add forced
+        normalization, Argon2 migration, etc.
+        """
         if not pw or not stored:
             return False
         try:
             import bcrypt as _bc
-            if stored.startswith('$2b$') or stored.startswith('$2a$'):
-                return _bc.checkpw(pw.encode('utf-8'), stored.encode('utf-8'))
+            if stored.startswith('$2b$') or stored.startswith('$2a$') \
+                    or stored.startswith('$2y$'):
+                # Path 1: direct bcrypt
+                if _bc.checkpw(pw.encode('utf-8'), stored.encode('utf-8')):
+                    return True
+                # Path 2: envelope — bcrypt of sha256(password) hex string
+                sha_hex = hashlib.sha256(pw.encode('utf-8')).hexdigest()
+                if _bc.checkpw(sha_hex.encode('utf-8'), stored.encode('utf-8')):
+                    if username:
+                        logger.info(
+                            "Envelope-backed credential authenticated for "
+                            "user '%s'", username
+                        )
+                    else:
+                        logger.info("Envelope-backed credential authenticated")
+                    return True
+                return False
         except ImportError:
+            # bcrypt missing — fall through to legacy SHA-256 path.
             pass
+        # Path 3: legacy SHA-256 direct comparison
         return hashlib.sha256(pw.encode()).hexdigest() == stored
 
     def authenticate(self, username, password):
         u = self.users.get(username)
         if not u or not u.get('active'):
             return False, None
-        if not self.verify_pw(password, u.get('password', '')):
+        if not self.verify_pw(password, u.get('password', ''), username=username):
             return False, None
-        # Auto-upgrade legacy SHA-256 to bcrypt on successful login
+        # Batch 3c: Auto-upgrade legacy SHA-256 (raw) to direct bcrypt on
+        # successful login. Envelope-bcrypted hashes are already bcrypt
+        # and skip this path.
+        #
+        # Pre-Batch-3b this swallow silently hid a NameError that masked
+        # the absence of any auto-upgrade for ~2 years. Batch 3b's hotfix
+        # (commit 2aab56b) made hash_pw actually work. This Batch 3c
+        # change instruments the swallow so any future hygiene failure
+        # surfaces in logs — auth availability remains primary (do NOT
+        # re-raise), but migration failure becomes observable.
+        #
+        # SECURITY: log message contains username + exception class +
+        # traceback ONLY. NEVER plaintext password, sha256 hex, bcrypt
+        # string, or token material.
         stored = u.get('password', '')
-        if stored and not (stored.startswith('$2b$') or stored.startswith('$2a$')):
+        needs_upgrade = bool(stored) and not (
+            stored.startswith('$2b$') or stored.startswith('$2a$')
+            or stored.startswith('$2y$')
+        )
+        if needs_upgrade:
             try:
                 u['password'] = self.hash_pw(password)
                 self.save_users()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(
+                    "Auto-upgrade SHA-256 -> bcrypt FAILED for user '%s': "
+                    "%s: %s — auth allowed, migration deferred",
+                    username, type(e).__name__, e,
+                    exc_info=True,
+                )
         return True, u
 
     def change_password(self, username, new_password):
