@@ -61113,6 +61113,222 @@ def gate_pipeline_api_enforces_cascade_scope() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_api_crud_present() -> Dict[str, Any]:
+    """G396 — v10.505 Phase 3 Arc α Batch α3 — Pipeline CRUD + Advance
+    endpoints present and LMS-stage allowlist enforced.
+
+    Verifies the three Batch α3 mutation endpoints exist in
+    `utils/api.py`:
+      - `pipeline_deal_create` (POST /api/pipeline/deals)
+      - `pipeline_deal_update` (PUT /api/pipeline/deals/{id})
+      - `pipeline_deal_advance` (POST /api/pipeline/deals/{id}/advance)
+
+    Plus the supporting helper module `utils/api_pipeline_mutations.py`
+    with its load-bearing constants:
+      - `ALLOWED_ADVANCE_STAGES` (Option C allowlist)
+      - `LMS_DEFERRED_STAGES` (the rejection target, deferred to α4)
+      - `validate_advance_target` (the function that enforces the
+        allowlist — its presence is required; G396 does NOT validate
+        the contents of the set, only that the enforcement mechanism
+        exists)
+
+    Doctrine context
+    ----------------
+    Per audit Section 15.7 (LMS handoff anatomy) + Section 16.3 (Arc
+    α scope), α3 deliberately defers LMS handoff to α4. Option C
+    chosen at α3 scoping time: the advance endpoint maintains an
+    explicit allowlist and rejects LMS stages with HTTP 400 +
+    pointer to α4. G396 ensures this allowlist enforcement is wired
+    in — if a future batch silently widens the allowlist to include
+    LMS stages (e.g., by removing the validate_advance_target call),
+    G396 fails.
+
+    Behaviour
+    ---------
+    1. AST-parse `utils/api.py`. Verify each of the three endpoint
+       functions exists.
+    2. AST-parse `utils/api_pipeline_mutations.py`. Verify the
+       two stage sets and the validator function exist.
+    3. For `pipeline_deal_advance`: walk body for a call to
+       `validate_advance_target`. **Fail if absent** — without it,
+       the endpoint would accept LMS stages.
+    4. For `pipeline_deal_create`: walk body for a call to
+       `validate_create_payload`. **Fail if absent** — same reason
+       at the create surface.
+    5. INFO line on success listing the allowlist size + the
+       deferred set size.
+
+    Cost: ~0.05s isolated.
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    mutations_path = repo / "utils" / "api_pipeline_mutations.py"
+    models_path = repo / "utils" / "api_pipeline_models.py"
+
+    if not api_path.exists():
+        return {
+            "id": "G396",
+            "name": "pipeline_api_crud_present",
+            "passed": False,
+            "violations": [f"utils/api.py not found at {api_path}"],
+            "summary": "api.py missing",
+        }
+    if not mutations_path.exists():
+        violations.append(
+            "utils/api_pipeline_mutations.py missing — the mutation "
+            "helpers module that defines the LMS allowlist and the "
+            "validator functions must exist for Batch α3"
+        )
+    if not models_path.exists():
+        violations.append(
+            "utils/api_pipeline_models.py missing — the mutation "
+            "request/response models must exist"
+        )
+
+    # Parse api.py and locate the three new endpoint functions
+    try:
+        api_tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G396",
+            "name": "pipeline_api_crud_present",
+            "passed": False,
+            "violations": [f"utils/api.py has syntax error: {e}"],
+            "summary": "api.py unparseable",
+        }
+
+    target_endpoints = {
+        "pipeline_deal_create",
+        "pipeline_deal_update",
+        "pipeline_deal_advance",
+    }
+    endpoints_found: Dict[str, _ast.FunctionDef] = {}
+    for node in _ast.walk(api_tree):
+        if isinstance(node, _ast.FunctionDef) and node.name in target_endpoints:
+            endpoints_found[node.name] = node
+
+    for ep in target_endpoints:
+        if ep not in endpoints_found:
+            violations.append(
+                f"endpoint function `{ep}` missing from utils/api.py — "
+                "Batch α3 mutation surface is incomplete"
+            )
+
+    # Verify pipeline_deal_create calls validate_create_payload
+    if "pipeline_deal_create" in endpoints_found:
+        calls_validator = False
+        for sub in _ast.walk(endpoints_found["pipeline_deal_create"]):
+            if isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name):
+                if sub.func.id == "validate_create_payload":
+                    calls_validator = True
+                    break
+        if not calls_validator:
+            violations.append(
+                "`pipeline_deal_create` does not call "
+                "`validate_create_payload` — required-field validation "
+                "bypassed; deals could be created without core fields "
+                "or directly at LMS stages"
+            )
+
+    # Verify pipeline_deal_advance calls validate_advance_target
+    # (this is the load-bearing check — without it, LMS stages would
+    # silently succeed and α4's scope would be pre-broken)
+    if "pipeline_deal_advance" in endpoints_found:
+        calls_validator = False
+        for sub in _ast.walk(endpoints_found["pipeline_deal_advance"]):
+            if isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name):
+                if sub.func.id == "validate_advance_target":
+                    calls_validator = True
+                    break
+        if not calls_validator:
+            violations.append(
+                "`pipeline_deal_advance` does not call "
+                "`validate_advance_target` — the LMS-stage allowlist "
+                "is not enforced; advance to Credit Review/Approval/"
+                "Vetting/etc. would succeed without creating the "
+                "required LoanApplication (α4's scope)"
+            )
+
+    # Verify mutations module has the load-bearing constants + functions
+    if mutations_path.exists():
+        try:
+            mut_tree = _ast.parse(mutations_path.read_text(encoding="utf-8"))
+            assigned_names: set = set()
+            defined_fns: set = set()
+            for node in _ast.walk(mut_tree):
+                if isinstance(node, _ast.Assign):
+                    for tgt in node.targets:
+                        if isinstance(tgt, _ast.Name):
+                            assigned_names.add(tgt.id)
+                if isinstance(node, _ast.FunctionDef):
+                    defined_fns.add(node.name)
+                # Annotated assignments (with type hints)
+                if isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
+                    assigned_names.add(node.target.id)
+
+            for name in ("ALLOWED_ADVANCE_STAGES", "LMS_DEFERRED_STAGES"):
+                if name not in assigned_names:
+                    violations.append(
+                        f"utils/api_pipeline_mutations.py does not define "
+                        f"`{name}` — required for allowlist enforcement"
+                    )
+            for fn_name in ("validate_create_payload",
+                            "validate_advance_target",
+                            "emit_bsc_trigger",
+                            "invalidate_pipeline_caches"):
+                if fn_name not in defined_fns:
+                    violations.append(
+                        f"utils/api_pipeline_mutations.py does not define "
+                        f"function `{fn_name}` — required by α3 endpoints"
+                    )
+        except SyntaxError as e:
+            violations.append(
+                f"utils/api_pipeline_mutations.py has syntax error: {e}"
+            )
+
+    if not violations:
+        # Compute the sizes for the INFO line — runtime import (only
+        # on success path so we don't double-import on failure cases)
+        try:
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location(
+                "_mut_for_g396", mutations_path
+            )
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            n_allow = len(mod.ALLOWED_ADVANCE_STAGES)
+            n_defer = len(mod.LMS_DEFERRED_STAGES)
+            info.append(
+                f"INFO: pipeline CRUD + advance endpoints present; "
+                f"LMS allowlist enforced (allowed={n_allow}, "
+                f"deferred={n_defer}); validate_create_payload and "
+                f"validate_advance_target both wired in"
+            )
+        except Exception:
+            info.append(
+                "INFO: pipeline CRUD + advance endpoints present; "
+                "LMS allowlist enforcement verified by AST walk"
+            )
+
+    summary = (
+        "pipeline CRUD + advance present; LMS allowlist intact"
+        if not violations
+        else f"{len(violations)} violations — α3 surface incomplete"
+    )
+
+    return {
+        "id": "G396",
+        "name": "pipeline_api_crud_present",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -61189,6 +61405,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G396", gate_pipeline_api_crud_present),                   # v10.505 PHASE 3 ARC α BATCH α3 — CRITICAL — pipeline CRUD + advance endpoints present, LMS allowlist enforced (Option C)
     ("G395", gate_pipeline_api_enforces_cascade_scope),         # v10.504 PHASE 3 ARC α BATCH α2 — CRITICAL — pipeline API enforces server-side cascade scope (closes GAP-001)
     ("G394", gate_pipeline_api_uses_canonical_manager),         # v10.503 PHASE 3 ARC α BATCH α1 — CRITICAL — pipeline API uses PipelineManager (no pipeline.json bypass)
     ("G393", gate_organs_registry_coverage),                    # v10.502 STAGE C ARC D2 — TRANSITIONAL — ORGANS_REGISTRY O5 coverage surveillance

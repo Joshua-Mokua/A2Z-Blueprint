@@ -61,6 +61,59 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.505 Phase 3 Arc α Batch α3 — Pipeline CRUD + advance + BSC trigger; G396 authored; Option C LMS allowlist enforced; closes GAP-002/013/014 partial
+
+**Type:** First mutation-capable batch in Arc α. One new CRITICAL enforcement gate. One new mutation-helpers module. Pydantic model extensions. Three new endpoints.
+**Owner:** Joshua + Claude
+**Rationale:** Per audit Section 16.3 Arc α plan, α3 introduces the first batch that lets the FastAPI surface mutate pipeline state. Before α3, the API was read-only (α1 and α2 routed reads through the canonical manager and applied cascade scope). α3 brings the API up to parity with Streamlit's create / update / stage-change flows from `pages/3_pipeline.py:940-988` (add deal), `1310-1340` (update + advance), without yet replicating the LMS handoff at `1239-1281` (which auto-creates a LoanApplication when advancing to Credit Review or beyond). Per the design decision at α3 scoping time (Option C from the three options surfaced), the advance endpoint maintains an **explicit allowlist of safe stages** and rejects LMS-handoff stages with HTTP 400 + an explanatory message pointing the caller at Streamlit until α4 implements the LoanApplication auto-creation.
+
+**Files shipped (4 modified, 2 new):**
+
+- `utils/api_pipeline_mutations.py` — NEW (~210 LOC). Defines `ALLOWED_ADVANCE_STAGES` (15 stages from PIPELINE_STAGES_LOAN/ACCOUNT/DEPOSIT/GENERIC that don't require LMS handoff), `LMS_DEFERRED_STAGES` (the 7 LMS stages from audit Section 15.7), `REQUIRED_CREATE_FIELDS` (6 minimum fields for new deals), `validate_create_payload`, `validate_advance_target`, `emit_bsc_trigger` (server-side equivalent of Streamlit's `_bsc_trigger(uname, "K041")`), `invalidate_pipeline_caches` (pops `pipeline_summary` from the in-memory cache so GET reflects mutations).
+
+- `utils/api_pipeline_models.py` — appended ~100 LOC. New models: `PipelineDealCreate` (6 required fields, ~12 optional), `PipelineDealUpdate` (all optional — partial update semantics), `PipelineDealAdvance` (new_stage + optional note), `PipelineDealMutationResponse` (returns updated deal + status + bsc_triggered flag). Existing `PipelineDeal` and read-side response models are untouched.
+
+- `utils/api.py` — three new endpoints inserted between the existing pipeline GET endpoints and the Credit Monitoring section (~190 LOC):
+  - `POST /api/pipeline/deals` (status 201) — calls `validate_create_payload` → `PipelineManager.add_deal()` → emit `DEAL_ADDED` audit (matching Streamlit emission line 965) → `emit_bsc_trigger` → `invalidate_pipeline_caches` → returns the created deal with its `D####` id.
+  - `PUT /api/pipeline/deals/{deal_id}` — cascade scope check via α2's `get_visible_staff_codes` (403 if out of scope) → `PipelineManager.update_deal()` (partial update, only `exclude_unset=True` fields) → emit `DEAL_UPDATED` → BSC + cache invalidation.
+  - `POST /api/pipeline/deals/{deal_id}/advance` — `validate_advance_target` (Option C LMS rejection) → cascade scope check → `PipelineManager.update_stage()` (logs activity in PM's stream) → emit `API_PIPELINE_ADVANCED` → BSC + cache invalidation.
+
+- `scripts/audit.py` — NEW `gate_pipeline_api_crud_present` (~190 LOC, G396). AST-walks `utils/api.py` for the three endpoint definitions; AST-walks `utils/api_pipeline_mutations.py` for the two stage sets + four functions; walks `pipeline_deal_create` body for `validate_create_payload` call; walks `pipeline_deal_advance` body for `validate_advance_target` call (the load-bearing Option C guarantee). Registered above G395 in GATES dispatch.
+
+- `tests/test_pipeline_crud_advance.py` — NEW (~290 LOC, 19 tests). Coverage: G396 registration + behavior + well-formed result (4), endpoint surface (2), validation logic including LMS rejection at both create and advance surfaces (5), stage set invariants (disjoint sets + LMS_DEFERRED_STAGES matches audit Section 15.7 exactly) (2), Pydantic mutation models (3), side-effect helpers (BSC + cache invalidation) (2).
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — CGR1 correction appended; gate count 395 → 396.
+
+**Verification:**
+
+- All three files parse with `ast.parse(open('FILE', encoding='utf-8').read())`.
+- G394 (α1) still PASSES.
+- G395 (α2) still PASSES.
+- G396 PASSES with INFO: "pipeline CRUD + advance endpoints present; LMS allowlist enforced (allowed=15, deferred=7); validate_create_payload and validate_advance_target both wired in".
+- G396 counter-test: removing the `validate_advance_target` call from `pipeline_deal_advance` makes G396 FAIL with precise violation: "the LMS-stage allowlist is not enforced; advance to Credit Review/Approval/Vetting/etc. would succeed without creating the required LoanApplication (α4's scope)". After restore, G396 PASSES again.
+- Live validation tests against the helper functions: good payload validates; missing field rejected with field name; LMS stage on create rejected with α4 pointer; advance to 'Contacted' allowed; advance to 'Credit Review' rejected with full Option C message; Pydantic models parse correctly; ALLOWED and LMS_DEFERRED sets are disjoint.
+- 51 cumulative tests pass: 19 α3 + 13 α2 + 10 α1 + 9 Arc D2 G393. Full prior surface intact.
+
+**Explicitly NOT done in this batch:**
+
+- Did NOT implement LMS handoff (the auto-create LoanApplication logic at `pages/3_pipeline.py:1239-1281`). That's α4's scope.
+- Did NOT touch `PipelineManager` (the canonical engine). All mutation logic uses existing methods (`add_deal`, `update_deal`, `update_stage`).
+- Did NOT add DELETE endpoint. Deletion in this domain is via `request_cancel` → `approve_cancel`, deferred to α5 (conflict resolution + cancel queue).
+- Did NOT add draft state endpoints (`DRAFT_COMPLETED` / `DRAFT_DISCARDED` from audit Section 15.5). The `draft: bool` field passes through `update_deal` if a caller supplies it, but no dedicated draft transition endpoint.
+- Did NOT touch the PostgreSQL primary path. Same reason as α1/α2 — separate concern.
+- Did NOT write any React frontend code.
+- Did NOT promote Pydantic validation to strict. Mutation models accept `extra="allow"`; future-arc concern.
+
+**One CGR1 finding recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch α3 correction):**
+
+The audit's Section 15.12 (and Section 16.3's refined sequence) originally described α3 as "Pipeline CRUD endpoints — POST/PUT/advance with BSC trigger calls and draft state. Closes GAP-002, GAP-013, GAP-014." Same-turn inspection at α3 scoping time revealed this was actually three or more distinct concerns. The chosen scope (Option C from the three options surfaced) was: CRUD + advance + BSC trigger; **LMS handoff explicitly deferred to α4; draft state explicitly deferred to a later polish batch**. GAP-002 is therefore partially closed by α3 (POST + PUT + advance); fully closed by α4 (handoff) + the eventual draft batch. GAP-013 (LMS handoff) remains OPEN. GAP-014 (BSC trigger) is closed by α3.
+
+**Cross-references:** Phase 3 Arc α2 (commit `9778b2a`) is the immediate predecessor. Arc α4 (LMS handoff — auto-create LoanApplication on advance to LMS_DEFERRED_STAGES) is the natural next batch. Full Batch α3 CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
+
+---
+
 ### 2026-06-10 v10.504 Phase 3 Arc α Batch α2 — Pipeline cascade scope enforcement on server-side; G395 authored; GAP-001 closed
 
 **Type:** Architectural drift correction (presentation-canonical alignment, RBAC scope hole closed). One new CRITICAL enforcement gate. One new server-side helper module. Two endpoint surgical edits.

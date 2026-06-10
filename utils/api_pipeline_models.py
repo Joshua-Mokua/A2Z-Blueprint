@@ -252,3 +252,129 @@ class PipelineDealsResponse(BaseModel):
     deals: List[PipelineDeal]
     count: int
     source: str
+
+
+# ────────────────────────────────────────────────────────────────────
+# Mutation request / response models (v10.505 Phase 3 Arc α Batch α3)
+# ────────────────────────────────────────────────────────────────────
+#
+# POST/PUT/advance endpoints. Strictness profile:
+# - PipelineDealCreate — required fields enforced by validator
+# - PipelineDealUpdate — all optional (partial update semantics)
+# - PipelineDealAdvance — new_stage required; note optional
+#
+# All accept extra=allow so callers can include the richer field set
+# Streamlit collects (id_type, id_number, sector, etc.) without
+# forcing the API to mirror every UI affordance.
+
+
+class PipelineDealCreate(BaseModel):
+    """Request body for POST /api/pipeline/deals.
+
+    Required fields match REQUIRED_CREATE_FIELDS in
+    utils/api_pipeline_mutations.py — kept in sync deliberately so
+    the validation gate and the schema gate report the same surface.
+    """
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    # Required (validated at endpoint via validate_create_payload)
+    client_name: str = Field(description="Customer display name")
+    staff_code: str = Field(description="Owning RM staff code")
+    staff_name: str = Field(description="Owning RM display name")
+    deal_value: float = Field(
+        description="Deal amount in canonical currency (typically KES). "
+                    "Must be non-negative."
+    )
+    product_type: str = Field(
+        description="e.g. 'Business Loan', 'Personal Loan', 'CASA'"
+    )
+    stage: str = Field(
+        description="Initial stage. Must be in ALLOWED_ADVANCE_STAGES "
+                    "(LMS-handoff stages rejected in α3 — see α4)."
+    )
+
+    # Optional but commonly supplied
+    client_type: Optional[str] = Field(
+        default=None, description="'Individual' or 'Business'"
+    )
+    is_ntb: Optional[bool] = Field(
+        default=None, description="True if New To Bank"
+    )
+    pipeline_category: Optional[str] = Field(default=None)
+    probability: Optional[float] = Field(default=None)
+    next_action: Optional[str] = Field(default=None)
+    next_action_date: Optional[str] = Field(default=None)
+    expected_close: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    source: Optional[str] = Field(default=None)
+    unit: Optional[str] = Field(default=None)
+
+    # Portfolio conflict resolution (audit Section 15.4 — partial
+    # coverage here; full conflict-resolution flow is α5 scope)
+    portfolio_owner_code: Optional[str] = Field(default=None)
+    portfolio_owner_name: Optional[str] = Field(default=None)
+    bsc_credit_to: Optional[str] = Field(default=None)
+
+
+class PipelineDealUpdate(BaseModel):
+    """Request body for PUT /api/pipeline/deals/{deal_id}.
+
+    All fields optional — partial update. The endpoint applies only
+    the keys present in the request; absent keys are not touched.
+    `stage` updates via PUT are intentionally allowed for fields
+    PipelineManager.update_deal handles (e.g. correcting an
+    accidentally-wrong stage during creation). Stage TRANSITIONS
+    (with activity log entry, audit trail, BSC trigger) should use
+    the dedicated advance endpoint.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    client_name: Optional[str] = Field(default=None)
+    deal_value: Optional[float] = Field(default=None)
+    product_type: Optional[str] = Field(default=None)
+    stage: Optional[str] = Field(default=None)
+    probability: Optional[float] = Field(default=None)
+    next_action: Optional[str] = Field(default=None)
+    next_action_date: Optional[str] = Field(default=None)
+    expected_close: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    source: Optional[str] = Field(default=None)
+    competitors: Optional[Any] = Field(default=None)
+    loss_reason: Optional[str] = Field(default=None)
+    portfolio_owner_code: Optional[str] = Field(default=None)
+    portfolio_owner_name: Optional[str] = Field(default=None)
+    bsc_credit_to: Optional[str] = Field(default=None)
+
+
+class PipelineDealAdvance(BaseModel):
+    """Request body for POST /api/pipeline/deals/{deal_id}/advance."""
+    model_config = ConfigDict(extra="allow")
+
+    new_stage: str = Field(
+        description="Target stage. Must be in ALLOWED_ADVANCE_STAGES "
+                    "from utils/api_pipeline_mutations.py. LMS-handoff "
+                    "stages are rejected in α3 — use Streamlit until α4."
+    )
+    note: Optional[str] = Field(
+        default="",
+        description="Free-text note about the transition. Recorded in "
+                    "activity log."
+    )
+
+
+class PipelineDealMutationResponse(BaseModel):
+    """Response shape for POST/PUT/advance success.
+
+    Returns the full updated deal record + a status field for the
+    caller's UX. The `bsc_triggered` flag indicates whether the
+    side-effect BSC recompute succeeded (failure is non-fatal per
+    Section 15.6 — the K041 breadcrumb is best-effort).
+    """
+    model_config = ConfigDict(extra="allow")
+
+    deal: PipelineDeal
+    status: str = Field(description="'created' | 'updated' | 'advanced'")
+    bsc_triggered: bool = Field(
+        description="True if BSC recompute was invoked successfully"
+    )
+

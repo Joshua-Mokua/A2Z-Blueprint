@@ -1016,3 +1016,112 @@ Before this batch: 394 (post-α1).
 After this batch: **395** (G395 added).
 
 ---
+
+## CGR1 Reality-Check Correction (v10.505 Phase 3 Arc α Batch α3) — Pipeline CRUD + advance + LMS allowlist
+
+**Type:** First mutation-capable batch in Arc α. Architectural drift correction (presentation-canonical asymmetry — Streamlit could mutate pipeline state, API could not). One new CRITICAL enforcement gate. One new server-side helpers module. Pydantic model extensions for mutations.
+
+**Scope:** `utils/api.py` (three new endpoints) + new `utils/api_pipeline_mutations.py` (helpers + load-bearing constants) + extended `utils/api_pipeline_models.py` + new `scripts/audit.py::gate_pipeline_api_crud_present` (G396) + `tests/test_pipeline_crud_advance.py` (19 tests).
+
+### Drift identified
+
+Before α3, the FastAPI pipeline surface was read-only — α1 (canonical-manager routing) and α2 (cascade scope enforcement) made reads correct, but no API endpoint could create, update, or transition a deal. Streamlit page `pages/3_pipeline.py` had all three flows (add at 940-988, update at 1310-1314, stage change at 1310-1340) plus the consequential LMS handoff at 1239-1281 (auto-create LoanApplication on advance to LMS stages). Per the established "Streamlit stays, React additive, FastAPI canonical" doctrine, the API surface must reach Streamlit parity for the React frontend to be production-viable.
+
+The audit's Section 15.12 + Section 16.3 framed this as "α3 — Pipeline CRUD endpoints — POST/PUT/advance with BSC trigger calls and draft state." Same-turn inspection at α3 scoping time revealed this was three or four distinct concerns that wouldn't fit in one disciplined batch.
+
+### Resolution (Option C from three options surfaced)
+
+The user was offered three explicit options:
+- **A.** Reject LMS-stage advances with 400.
+- **B.** Allow LMS-stage advances, document the gap (creates inconsistent state).
+- **C.** Allow advances only up to a documented stage ceiling, with the allowlist explicit in code and audit gate.
+
+The user picked C. Implementation:
+
+`utils/api_pipeline_mutations.py` (NEW) declares two stage sets that must be disjoint:
+
+```python
+ALLOWED_ADVANCE_STAGES = {  # 15 stages from canonical vocabularies
+    "Lead", "Contacted", "Qualified", "Proposal", "Negotiation",
+    "Compliance", "Closed Won", "Closed Lost",
+    "Information Gathered", "Documentation Complete", "Account Opened",
+    "Pitched", "Negotiating", "Funded", "Open",
+}
+
+LMS_DEFERRED_STAGES = {  # 7 stages — must match audit Section 15.7
+    "Credit Review", "Approval", "Bank Approval", "Credit Committee",
+    "Documentation", "Vetting", "Disbursed",
+}
+```
+
+`validate_advance_target(new_stage)` returns `(False, reason)` for any stage in `LMS_DEFERRED_STAGES` with the message `"Stage 'X' requires LMS handoff (planned for Arc α4). Use the Streamlit pipeline page for this transition until α4 lands."` The advance endpoint calls this first; if rejected, returns HTTP 400 + emits `API_PIPELINE_ADVANCE_REJECTED` audit event. Similarly `validate_create_payload` rejects creation directly at LMS stages.
+
+### Three endpoints added
+
+`POST /api/pipeline/deals` (status 201) — validates payload via `validate_create_payload` → calls `PipelineManager.add_deal(deal_dict)` (the canonical engine, per α1's G394) → emits `DEAL_ADDED` audit (matching Streamlit's emission convention at page line 965) → calls `emit_bsc_trigger(username)` (server-side equivalent of Streamlit's `_bsc_trigger(uname, "K041")` pattern) → calls `invalidate_pipeline_caches` so the next GET reflects the new deal → returns the created deal with its PipelineManager-assigned id.
+
+`PUT /api/pipeline/deals/{deal_id}` — verifies deal exists (404 if not) → applies cascade scope check via α2's `get_visible_staff_codes` (403 if out of scope) → calls `PipelineManager.update_deal(deal_id, updates, user)` with `exclude_unset=True` so absent keys are not touched → emits `DEAL_UPDATED` → BSC + cache invalidation.
+
+`POST /api/pipeline/deals/{deal_id}/advance` — `validate_advance_target` (rejects LMS stages) → 404 check → cascade scope check → `PipelineManager.update_stage` (PM logs the stage change as an activity in its own stream) → emits `API_PIPELINE_ADVANCED` with old→new transition → BSC + cache invalidation.
+
+### Gate authored
+
+`G396 gate_pipeline_api_crud_present` (`scripts/audit.py`, ~190 LOC). AST walks check:
+- All three endpoint functions exist in `utils/api.py`
+- `utils/api_pipeline_mutations.py` exists with the two stage sets and four required helper functions
+- `pipeline_deal_create` calls `validate_create_payload` (required-field enforcement at create surface)
+- `pipeline_deal_advance` calls `validate_advance_target` (the **load-bearing Option C guarantee** at advance surface)
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification)
+
+Same-turn counter-test executed: the `validate_advance_target` call was removed programmatically from `pipeline_deal_advance`, G396 was re-run, and the gate FAILED with the precise violation: `\`pipeline_deal_advance\` does not call \`validate_advance_target\` — the LMS-stage allowlist is not enforced; advance to Credit Review/Approval/Vetting/etc. would succeed without creating the required LoanApplication (α4's scope)`. After restore, G396 PASSED again. The gate mechanically catches Option C drift.
+
+### Tests
+
+`tests/test_pipeline_crud_advance.py` (NEW, ~290 LOC) — 19 regression tests, all green:
+
+| # | Tests | Confirms |
+|---|---|---|
+| 1-4 | G396 registration / callable / well-formed / passes | Gate plumbing |
+| 5-6 | Three endpoints exist + have route decorators | Endpoint surface |
+| 7 | Good payload validates | Create happy path |
+| 8 | Missing required field rejected with name | Required-field enforcement |
+| 9 | Negative deal_value rejected | Numeric sanity |
+| 10 | LMS stage on create rejected with α4 pointer | Option C at create surface |
+| 11 | All 7 LMS stages rejected on advance with α4 pointer | Option C at advance surface (load-bearing) |
+| 12 | Standard stages accepted on advance | Allowed-set correctness |
+| 13 | ALLOWED and LMS_DEFERRED sets disjoint | Invariant: no contradictions |
+| 14 | LMS_DEFERRED_STAGES matches audit Section 15.7 exactly | Code-audit alignment |
+| 15-17 | Pydantic mutation models parse / enforce required fields | Schema correctness |
+| 18 | emit_bsc_trigger returns False for empty username | Defensive behavior |
+| 19 | invalidate_pipeline_caches doesn't raise | Idempotent + safe |
+
+51 cumulative tests (19 α3 + 13 α2 + 10 α1 + 9 Arc D2) pass. Full prior surface intact.
+
+### What this batch DID
+
+- Created `utils/api_pipeline_mutations.py` with the load-bearing stage sets + helpers.
+- Extended `utils/api_pipeline_models.py` with four new mutation models.
+- Added three new endpoints to `utils/api.py` (POST/PUT/advance).
+- Authored `gate_pipeline_api_crud_present` (G396) with structural + behavioral checks.
+- Authored 19-test regression suite.
+- Appended Batch α3 entry to REVIVAL_LEDGER.
+- Appended this CGR1 correction.
+
+### What this batch DID NOT do
+
+- Did NOT implement LMS handoff. α3 explicitly defers to α4.
+- Did NOT add DELETE endpoint. Cancellation flow is α5 scope.
+- Did NOT add draft state endpoints (`DRAFT_COMPLETED` / `DRAFT_DISCARDED`).
+- Did NOT modify `PipelineManager` or the canonical cascade-walk function.
+- Did NOT touch the PostgreSQL primary path.
+- Did NOT write React frontend code.
+
+### Gate count delta
+
+Before this batch: 395 (post-α2).
+After this batch: **396** (G396 added).
+
+---

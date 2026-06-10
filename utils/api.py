@@ -973,6 +973,232 @@ def pipeline_deals(
         "source": "pipeline_manager",
     }
 
+
+# ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──
+#
+# POST/PUT/advance for pipeline deals. Adds API-side equivalents of
+# the Streamlit page's create/update/stage-change flows from
+# pages/3_pipeline.py:940-988 (add) + 1330-1340 (advance) + 1310-1314
+# (update). Routes through PipelineManager — same canonical engine
+# Streamlit consumes (G394 alignment) — applies cascade scope
+# (α2 / G395 alignment) — and rejects LMS-handoff stages until α4
+# implements the LoanApplication auto-creation (G396 alignment).
+#
+# Side effects on success: BSC recompute via update_bsc_from_modules
+# (matches Streamlit's `_bsc_trigger(uname, "K041")` pattern, 16
+# occurrences in the page); pipeline_summary cache invalidation so
+# the next GET reflects the mutation.
+
+
+@app.post("/api/pipeline/deals", status_code=201)
+def pipeline_deal_create(
+    payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy
+    user: dict = Depends(get_current_user),
+):
+    """Create a new pipeline deal.
+
+    Required fields: client_name, staff_code, staff_name, deal_value,
+    product_type, stage. Returns the created deal with its
+    PipelineManager-assigned id.
+
+    Authorization: any authenticated user may create. The staff_code
+    on the payload identifies who owns the deal — typically the
+    caller's own code, but managers/admins may create on behalf of
+    subordinates. (Server-side enforcement of "create on behalf"
+    rules is α5 / GAP-005 scope — conflict resolution.)
+    """
+    _audit("API_PIPELINE_CREATE_ATTEMPT", user,
+           f"client={payload.client_name} value={payload.deal_value}")
+
+    # Lazy imports to avoid circular dependencies at module load
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        validate_create_payload,
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+
+    # Validate required fields + numeric sanity + stage allowlist
+    deal_dict = payload.model_dump(exclude_unset=False)
+    ok, reason = validate_create_payload(deal_dict)
+    if not ok:
+        _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
+        raise HTTPException(status_code=400, detail=reason)
+
+    # Route through canonical manager (G394 alignment)
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    new_id = pm.add_deal(deal_dict)
+
+    # Mirror Streamlit's emission convention (DEAL_ADDED, line 965)
+    _audit("DEAL_ADDED", user,
+           f"{new_id}|{payload.client_name}|{payload.deal_value}")
+
+    # BSC trigger (matches Streamlit's _bsc_trigger pattern)
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+
+    # Bust the summary cache so GET reflects the new deal
+    invalidate_pipeline_caches()
+
+    # Fetch the created record (PipelineManager.add_deal returns the
+    # id; we re-fetch to return the full record including
+    # auto-populated fields like created_at)
+    created = pm.get_deal(new_id) or deal_dict
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(created),
+        status="created",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
+@app.put("/api/pipeline/deals/{deal_id}")
+def pipeline_deal_update(
+    deal_id: str,
+    payload: "PipelineDealUpdate",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Update fields on an existing pipeline deal.
+
+    Partial update — only keys present in the request body are
+    applied. Stage TRANSITIONS should use the dedicated /advance
+    endpoint (which logs the change to the activity stream); PUT
+    accepts a stage field but does NOT log a stage-change activity.
+
+    Authorization: caller must have the deal in their cascade scope
+    (α2 / G395 alignment). 403 if not.
+    """
+    _audit("API_PIPELINE_UPDATE_ATTEMPT", user, f"deal_id={deal_id}")
+
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Cascade scope check
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if sc not in visible_codes and (not po or po not in visible_codes):
+        _audit("API_PIPELINE_UPDATE_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(
+            status_code=400,
+            detail="No fields supplied for update",
+        )
+
+    pm.update_deal(deal_id, updates, user.get("username", ""))
+    _audit("DEAL_UPDATED", user,
+           f"{deal_id}|fields={sorted(updates.keys())}")
+
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    updated = pm.get_deal(deal_id) or deal
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(updated),
+        status="updated",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
+@app.post("/api/pipeline/deals/{deal_id}/advance")
+def pipeline_deal_advance(
+    deal_id: str,
+    payload: "PipelineDealAdvance",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Advance a pipeline deal to a new stage.
+
+    Stage allowlist (Option C from Arc α3 scoping): only stages in
+    `utils.api_pipeline_mutations.ALLOWED_ADVANCE_STAGES` are
+    accepted. Requests to advance to any LMS_DEFERRED_STAGES
+    (Credit Review, Approval, Bank Approval, Credit Committee,
+    Documentation, Vetting, Disbursed) are rejected with HTTP 400
+    + a message pointing the caller at Streamlit until Arc α4
+    implements the LoanApplication auto-creation handoff.
+
+    Authorization: caller must have the deal in their cascade scope.
+    """
+    _audit("API_PIPELINE_ADVANCE_ATTEMPT", user,
+           f"deal_id={deal_id} new_stage={payload.new_stage}")
+
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        validate_advance_target,
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+
+    # Stage allowlist check (Option C — LMS handoff deferred to α4)
+    ok, reason = validate_advance_target(payload.new_stage)
+    if not ok:
+        _audit("API_PIPELINE_ADVANCE_REJECTED", user, reason)
+        raise HTTPException(status_code=400, detail=reason)
+
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Cascade scope check
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if sc not in visible_codes and (not po or po not in visible_codes):
+        _audit("API_PIPELINE_ADVANCE_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    old_stage = deal.get("stage", "?")
+    pm.update_stage(
+        deal_id,
+        payload.new_stage,
+        payload.note or "",
+        user.get("username", ""),
+    )
+    _audit("API_PIPELINE_ADVANCED", user,
+           f"{deal_id}|{old_stage}->{payload.new_stage}")
+
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    advanced = pm.get_deal(deal_id) or deal
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(advanced),
+        status="advanced",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
 # ── Credit Monitoring Endpoints ───────────────────────────────────
 @app.get("/api/credit/summary")
 def credit_summary(user: dict = Depends(get_current_user)):
