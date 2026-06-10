@@ -61,6 +61,59 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.503 Phase 3 Arc α Batch α1 — Pipeline API consolidation; FastAPI endpoints routed through PipelineManager; G394 authored; PIPELINE_DOMAIN_AUDIT amended with Section 16
+
+**Type:** Architectural drift correction (presentation-canonical alignment). One new CRITICAL enforcement gate. One new Pydantic models module. One audit doc amendment.
+**Owner:** Joshua + Claude
+**Rationale:** Per the established **"Streamlit stays, React additive, FastAPI canonical"** doctrine (documented in `docs/REACT_READINESS_AUDIT.md` line 35; established across changelogs v10.21, v10.400, v10.417, v10.426+ via the "zero-streamlit engine" pattern), business logic is centralized in FastAPI and both presentation layers consume the same backend services. The pre-α1 state violated this: `pages/3_pipeline.py` read 8 records via `PipelineManager.get_deals()` (`data/pipeline_deals.json`) while `/api/pipeline/summary` and `/api/pipeline/deals` read 302 records via `_load_json("pipeline.json")`. Two surfaces, two different datasets. This was documented as Finding D3 in PIPELINE_DOMAIN_AUDIT Section 15.1. Batch α1 routes the API through the canonical manager — both surfaces now see the same 8 records, doctrine alignment restored.
+
+**Phase 3 Arc α — first batch.** This opens the React frontend production-readiness arc for the pipeline domain. Arc α scope (per PIPELINE_DOMAIN_AUDIT Section 15.12) is backend foundation work: data consolidation (α1), cascade scope enforcement (α2), pipeline CRUD (α3), stage advance + handoff (α4), conflict resolution (α5), manager queues (α6), per-deal permissions (α7), loan application endpoints (α8), credit admin endpoints (α9), documentation pass (α10). React UI work begins after Arc α closes.
+
+**Files shipped (4 modified, 2 new):**
+
+- `utils/api.py` — surgical edits to `pipeline_summary` (lines 800-859 pre-edit, around 800-870 post-edit) and `pipeline_deals` (lines 861-892 pre-edit, around 880-940 post-edit). The JSON-fallback branch (the `# JSON fallback` block) is replaced with `PipelineManager().get_deals()`. The PostgreSQL primary path is untouched. Source label in response changes from `"json"` to `"pipeline_manager"`. Aggregation logic updated to prefer canonical `deal_value` over legacy `amount` field; the previously-hardcoded `lost_count: 0` in summary is now properly computed (= 2 on current data — was an unflagged bug).
+
+- `utils/api_pipeline_models.py` — NEW (~210 LOC). Pydantic models `PipelineDeal`, `PipelineByStage`, `PipelineTotals`, `PipelineSummaryResponse`, `PipelineDealsResponse`. Non-strict (extra="allow", optional fields) for this batch; describes the contract without rejecting transitional records. Strict validation deferred to a future arc.
+
+- `scripts/audit.py` — NEW `gate_pipeline_api_uses_canonical_manager` (~120 LOC) at line ~60768. AST-walks `utils/api.py`, locates the two endpoint functions, walks each body for `_load_json("pipeline.json")` calls (FAIL if found) and `PipelineManager()` instantiation (FAIL if absent). Verifies `utils/api_pipeline_models.py` exports the three required model classes. Counter-test verified: gate PASSES against current code, FAILS with precise violation messages when drift is reintroduced. Registered in GATES dispatch table above G393.
+
+- `tests/test_pipeline_api_consolidation.py` — NEW (~280 LOC). 10 regression tests covering: G394 registration (3), G394 behavior including a structural counter-test that verifies the AST walker would catch a regression (2), Pydantic models structure (3), and end-to-end contract behavior (2). All 10 pass against current state.
+
+- `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` — Section 16 amendment appended (append-only discipline; Sections 1-15 untouched). Explicitly references the "Streamlit stays, React additive, FastAPI canonical" doctrine with citations to REACT_READINESS_AUDIT.md and the relevant changelogs. Corrects the Section 15.12 framing of "α1 = file consolidation" to "α1 = route API through canonical manager."
+
+- `docs/architecture/OPERATIONAL_PROTOCOL.md` — G394 invocation rule appended to gate registry.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — G394 row added to classification table; new "## CGR1 Reality-Check Correction (v10.503 Phase 3 Arc α Batch α1)" section appended at end documenting the resolved Finding D3.
+
+**Verification:**
+
+- `python3 -c "import ast; ast.parse(open('utils/api.py').read())"` — passes.
+- `python3 -c "import ast; ast.parse(open('scripts/audit.py').read())"` — passes.
+- Live PipelineManager sandbox query — returns 8 deals with canonical Generation B shape; `deal_value` populated, `amount=None`; stages match doctrine constants (Lead/Contacted/Closed Lost).
+- Pydantic models parse all 8 deals without error (0 validation failures).
+- End-to-end aggregation replication confirms: total_deals=8, pipeline_value=KES 1,160,000,000, lost_count=2 (was hardcoded to 0 in legacy path).
+- G394 invocation: PASSES against current code, summary "pipeline API canonical-manager routing intact".
+- G394 counter-test: when `_load_json("pipeline.json")` is reinjected into `pipeline_deals`, gate FAILS with 2 precise violations identifying the offending function. After restore, PASSES again.
+- All 10 regression tests pass via `pytest`.
+
+**Explicitly NOT done in this batch (deliberately scoped out):**
+
+- Did NOT delete `data/pipeline.json`. The file becomes unreferenced by the API path; archival vs deletion is a future-batch decision. Streamlit-side dependencies on it (none found) would surface separately.
+- Did NOT modify `PipelineManager` itself. Its file (`data/pipeline_deals.json`) remains the canonical store.
+- Did NOT touch the PostgreSQL primary path in either endpoint. The PG schema migration is a separate concern (data store, not API contract).
+- Did NOT add any new endpoints. CRUD remains α3's scope.
+- Did NOT add server-side cascade scope enforcement. That's α2.
+- Did NOT write any React code.
+- Did NOT promote Pydantic validation from non-strict to strict — that's a later arc.
+
+**One CGR1 finding recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch α1 correction):**
+
+The audit document's Section 15.12 originally framed α1 as "pipeline data consolidation" (suggesting file deletion / data migration). Under the "Streamlit stays, React additive" doctrine, the right framing is "route API through canonical business layer." Same end state (one canonical data source), different mechanism (refactor, not delete). Section 16 amends the framing explicitly; Section 15.12 itself is untouched per append-only discipline but readers are pointed to Section 16 for the corrected interpretation.
+
+**Cross-references:** Stage C Arc D2 Batch 5e (commit `b2cf3a4`) is the immediate predecessor. Arc α2 (cascade scope enforcement on the now-canonical endpoints) is the natural next batch. Full Batch α1 CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
+
+---
+
 ### 2026-06-10 v10.502 Stage C Arc D2 Batch 5e — ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE reality-checked; G393 authored; **Arc D2 mechanically complete**
 
 **Closing hotfix appended 2026-06-10:** during operator regression run, G392 (`gate_telemetry_event_naming`, Batch 5d) flagged `API_RATE_LIMITED` as undeclared. The event is emitted by the slowapi 429 handler added in Phase 2 Arc B — my Batch 5d sandbox clone (pre-Phase-2) didn't contain that emitter, so it was missed during the 5d Auth-events addition. Fixed in 5e closing by adding the event under a new "Rate limiting (1 event)" sub-section of TELEMETRY_MAP + extending the DOMAIN list with `RATE`. **G392 caught real drift my inspection missed — exactly the system functioning as designed.** Full detail in GOVERNANCE_REALITY_INDEX Batch 5e Finding 5.

@@ -60765,6 +60765,192 @@ def gate_organs_registry_coverage() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_api_uses_canonical_manager() -> Dict[str, Any]:
+    """G394 — v10.503 Phase 3 Arc α Batch α1 — Pipeline API
+    Consolidation. Verifies the FastAPI pipeline endpoints route
+    through PipelineManager (the canonical business-logic layer
+    Streamlit consumes) rather than reading `data/pipeline.json`
+    directly via `_load_json(...)`.
+
+    Doctrine context
+    ----------------
+    Per the established "Streamlit stays, React additive, FastAPI
+    canonical" architecture documented in:
+
+      - `docs/REACT_READINESS_AUDIT.md` line 35:
+        "Streamlit pages remain the internal admin/staging tool.
+         React SPA is the production employee-facing UI."
+
+      - `CHANGELOG_v10.426.md`:
+        "20 React-ready engines now. All zero-streamlit, all
+         dataclass-returning."
+
+      - `CHANGELOG_v10.417.md` + `v10.400.md` + multiple cockpit
+        batches v10.434-v10.439 documenting the "engine API + zero
+        streamlit" pattern.
+
+    Business logic is centralized in FastAPI services. Both Streamlit
+    and the new React frontend consume the same canonical layer. No
+    duplicate logic across presentation surfaces.
+
+    Drift this gate prevents
+    ------------------------
+    Until Batch α1, `/api/pipeline/summary` and `/api/pipeline/deals`
+    read `data/pipeline.json` directly (via `_load_json("pipeline.json")`)
+    while `PipelineManager.get_deals()` (Streamlit consumer) read the
+    different file `data/pipeline_deals.json`. The two surfaces saw
+    different datasets: API returned 302 legacy records, Streamlit
+    showed 8 canonical records. This was documented in
+    `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 15.1 as
+    Finding D3.
+
+    G394 fails if any future change reintroduces a direct read of
+    `pipeline.json` inside either endpoint.
+
+    Behaviour
+    ---------
+    1. AST-parse `utils/api.py`.
+    2. Locate `pipeline_summary` and `pipeline_deals` function
+       definitions (the two GET endpoints).
+    3. For each function:
+       a. Walk the body for `Call` nodes whose function is `_load_json`
+          with a first arg of `"pipeline.json"`. **Fail if found.**
+       b. Walk the body for `Call` nodes whose function is
+          `PipelineManager` (instantiation). **Fail if NOT found.**
+    4. Verify `utils/api_pipeline_models.py` exists and exports
+       `PipelineDeal`, `PipelineSummaryResponse`, `PipelineDealsResponse`.
+
+    Cost: ~0.05s isolated (single AST parse).
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    models_path = repo / "utils" / "api_pipeline_models.py"
+
+    if not api_path.exists():
+        return {
+            "id": "G394",
+            "name": "pipeline_api_uses_canonical_manager",
+            "passed": False,
+            "violations": [f"utils/api.py not found at {api_path}"],
+            "summary": "api.py missing",
+        }
+    if not models_path.exists():
+        violations.append(
+            "utils/api_pipeline_models.py is missing — Pydantic contract "
+            "for the canonical pipeline shape must exist alongside the "
+            "endpoint refactor"
+        )
+
+    try:
+        tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G394",
+            "name": "pipeline_api_uses_canonical_manager",
+            "passed": False,
+            "violations": [f"utils/api.py has syntax error: {e}"],
+            "summary": "api.py unparseable",
+        }
+
+    # Find the two endpoint functions
+    target_fns = {"pipeline_summary", "pipeline_deals"}
+    fns_found: Dict[str, _ast.FunctionDef] = {}
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.FunctionDef) and node.name in target_fns:
+            fns_found[node.name] = node
+
+    for fn_name in target_fns:
+        if fn_name not in fns_found:
+            violations.append(
+                f"function `{fn_name}` not found in utils/api.py — "
+                "endpoint was removed or renamed; G394 cannot verify "
+                "canonical-manager routing"
+            )
+            continue
+
+        fn = fns_found[fn_name]
+        # Walk the body for the two patterns we care about
+        bypasses_manager = False
+        uses_manager = False
+
+        for sub in _ast.walk(fn):
+            if isinstance(sub, _ast.Call):
+                # Pattern 1: _load_json("pipeline.json")
+                if isinstance(sub.func, _ast.Name) and sub.func.id == "_load_json":
+                    if sub.args and isinstance(sub.args[0], _ast.Constant):
+                        if sub.args[0].value == "pipeline.json":
+                            bypasses_manager = True
+
+                # Pattern 2: PipelineManager() instantiation OR
+                # alias _PM_for_api() (the import-aliased name used in α1)
+                if isinstance(sub.func, _ast.Name):
+                    if sub.func.id in ("PipelineManager", "_PM_for_api"):
+                        uses_manager = True
+
+        if bypasses_manager:
+            violations.append(
+                f"`{fn_name}` still calls `_load_json(\"pipeline.json\")` — "
+                "this bypasses PipelineManager (the canonical business-logic "
+                "layer) and reads stale legacy data. Refactor to use "
+                "PipelineManager().get_deals() per Batch α1."
+            )
+        if not uses_manager:
+            violations.append(
+                f"`{fn_name}` does not instantiate PipelineManager — "
+                "the canonical manager must be used as the data source "
+                "for the JSON / non-PostgreSQL path."
+            )
+
+    # Verify Pydantic models export the expected names
+    if models_path.exists():
+        try:
+            mtree = _ast.parse(models_path.read_text(encoding="utf-8"))
+            expected_models = {
+                "PipelineDeal",
+                "PipelineSummaryResponse",
+                "PipelineDealsResponse",
+            }
+            found_models = set()
+            for node in _ast.walk(mtree):
+                if isinstance(node, _ast.ClassDef) and node.name in expected_models:
+                    found_models.add(node.name)
+            missing = expected_models - found_models
+            if missing:
+                violations.append(
+                    f"utils/api_pipeline_models.py is missing models: "
+                    f"{sorted(missing)}"
+                )
+        except SyntaxError as e:
+            violations.append(
+                f"utils/api_pipeline_models.py has syntax error: {e}"
+            )
+
+    if not violations:
+        info.append(
+            "INFO: pipeline endpoints route through PipelineManager; "
+            "Pydantic models present; legacy pipeline.json bypass "
+            "eliminated (Batch α1)"
+        )
+
+    summary = (
+        "pipeline API canonical-manager routing intact"
+        if not violations
+        else f"{len(violations)} violations — pipeline API drift detected"
+    )
+
+    return {
+        "id": "G394",
+        "name": "pipeline_api_uses_canonical_manager",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -60841,6 +61027,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G394", gate_pipeline_api_uses_canonical_manager),         # v10.503 PHASE 3 ARC α BATCH α1 — CRITICAL — pipeline API uses PipelineManager (no pipeline.json bypass)
     ("G393", gate_organs_registry_coverage),                    # v10.502 STAGE C ARC D2 — TRANSITIONAL — ORGANS_REGISTRY O5 coverage surveillance
     ("G392", gate_telemetry_event_naming),                       # v10.502 STAGE C ARC D2 — HIGH — TELEMETRY_MAP T1+T2 event-naming discipline
     ("G391", gate_canonical_dependency_map_sync),                # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_DEPENDENCY_MAP D5 cycle enforcement

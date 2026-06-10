@@ -804,3 +804,105 @@ Before this batch: 389 (post-5b).
 After this batch: **391** (G389 + G390 added).
 
 ---
+
+## CGR1 Reality-Check Correction (v10.503 Phase 3 Arc α Batch α1) — Pipeline API consolidation
+
+**Type:** Architectural drift correction (presentation-canonical alignment).
+**Scope:** `utils/api.py` pipeline endpoints + new `utils/api_pipeline_models.py` + new `scripts/audit.py::gate_pipeline_api_uses_canonical_manager` (G394) + `tests/test_pipeline_api_consolidation.py` + `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 16 amendment.
+
+### Drift identified
+
+The `/api/pipeline/summary` and `/api/pipeline/deals` endpoints in `utils/api.py` were reading `data/pipeline.json` directly via `_load_json("pipeline.json")` while `PipelineManager.get_deals()` (the canonical business-logic layer Streamlit consumes via `pages/3_pipeline.py:67`) was reading the DIFFERENT file `data/pipeline_deals.json`. Two presentation surfaces — same domain — different datasets.
+
+Same-turn verification at commit `b2cf3a4`:
+- `PipelineManager().get_deals()` returned **8 records** with canonical Generation B shape (`deal_value`, `product_type`, `staff_name`).
+- `/api/pipeline/deals` (JSON path) returned **302 records** with legacy Generation A shape (`amount`, `product`, `staff_name`).
+- Stage vocabularies also differed: PipelineManager records use doctrine-aligned stages (Lead, Contacted, Closed Lost); the 302 legacy records use stages not in any `PIPELINE_STAGES_*` constant (Prospecting, Needs Analysis, Credit Review, etc.).
+
+This was documented as Finding D3 in `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 15.1 (authored 2026-06-10 ahead of this batch). It is a direct violation of the established doctrine, "Streamlit stays, React additive, FastAPI canonical — business logic centralized, no duplicate logic across presentation surfaces" (per `docs/REACT_READINESS_AUDIT.md` line 35 + the "zero-streamlit engine" pattern documented across `CHANGELOG_v10.21.md`, `v10.400.md`, `v10.417.md`, `v10.426.md`, `v10.434.md`–`v10.439.md`).
+
+### Resolution
+
+The JSON-fallback branch in each pipeline endpoint was refactored to call `PipelineManager().get_deals()` instead of `_load_json("pipeline.json")`. The PostgreSQL primary path was untouched (the PG schema migration is a separate data-store concern). The response source label was changed from `"json"` to `"pipeline_manager"` to make the new path observable.
+
+Both endpoints now serve 8 records (the canonical PipelineManager dataset). The aggregation logic was updated to prefer `deal_value` over the legacy `amount` field (with fallback), and a previously-hardcoded `lost_count: 0` in the summary endpoint was replaced with a proper Closed Lost count (= 2 on current data; the hardcoded zero was an unflagged bug).
+
+### Gate authored
+
+`G394 gate_pipeline_api_uses_canonical_manager` (`scripts/audit.py`, ~120 LOC). AST-walks `utils/api.py`, locates `pipeline_summary` and `pipeline_deals` function definitions, walks each body for:
+
+- **`_load_json("pipeline.json")` calls** — FAIL if found (the drift pattern).
+- **`PipelineManager` or `_PM_for_api` instantiation** — FAIL if absent (the required canonical-manager invocation).
+
+Additionally verifies that `utils/api_pipeline_models.py` exists and exports the three Pydantic models (`PipelineDeal`, `PipelineSummaryResponse`, `PipelineDealsResponse`).
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification — gates that always pass are aspirational)
+
+Same-turn counter-test executed: the `_load_json("pipeline.json")` pattern was reinjected into `pipeline_deals` programmatically, G394 was re-run, and the gate FAILED with two precise violation messages identifying the offending function and the expected fix. The file was then restored, G394 re-run, PASSED. The gate mechanically detects drift in both directions.
+
+### Pydantic schema
+
+`utils/api_pipeline_models.py` (NEW, ~210 LOC) declares the canonical pipeline contract:
+
+- `PipelineDeal` — 29-field model matching `PipelineManager.get_deals()[0]` output exactly. Generation B field names are canonical: `deal_value` (not `amount`), `product_type` (not `product`), `staff_name` (not `rm_name`). Generation A field names are NOT canonical here.
+- `PipelineSummaryResponse` — wraps `by_stage` + `totals`.
+- `PipelineDealsResponse` — wraps `deals` + `count` + `source`.
+
+All fields except `id`, `client_name`, `stage` are optional. Models accept `extra="allow"` and do NOT raise on validation failure during this batch (non-strict). Strict validation is deferred to a future arc once all transitional records are verified parseable. Same-turn verification: all 8 PipelineManager records parse cleanly through `PipelineDeal.model_validate()` with zero errors.
+
+### Tests
+
+`tests/test_pipeline_api_consolidation.py` (NEW, ~280 LOC) — 10 regression tests, all green:
+
+| # | Test | Confirms |
+|---|---|---|
+| 1 | `test_g394_is_registered_in_gates_table` | G394 in GATES dispatch |
+| 2 | `test_g394_function_exists_and_is_callable` | Function exported |
+| 3 | `test_g394_returns_well_formed_result` | Return-shape contract |
+| 4 | `test_g394_passes_against_current_code` | Post-α1 state is clean |
+| 5 | `test_g394_detects_regression_when_load_json_reintroduced` | Structural counter-test for the AST walker |
+| 6 | `test_pydantic_models_module_exists` | File present |
+| 7 | `test_pydantic_models_export_expected_classes` | All three classes declared |
+| 8 | `test_pydantic_pipeline_deal_parses_real_pipeline_manager_records` | Live data parses cleanly |
+| 9 | `test_api_endpoint_response_source_is_pipeline_manager` | Source label updated |
+| 10 | `test_pipeline_summary_and_deals_use_consistent_data_source` | End-to-end aggregation arithmetic |
+
+### Audit Section 16 amendment
+
+The PIPELINE_DOMAIN_AUDIT document was extended with Section 16 (append-only; Sections 1-15 untouched). Section 16 explicitly references the established "Streamlit stays, React additive, FastAPI canonical" doctrine with citations to REACT_READINESS_AUDIT.md and 5 specific changelogs. It corrects the framing of Section 15.12 (which proposed "α1 = data consolidation") to the architecturally precise "α1 = route API through canonical manager." Section 16.3 also refines the Arc α sequence from 7 to 10 numbered batches based on the deep anatomy findings.
+
+### Classification updates
+
+- **PIPELINE_DOMAIN_AUDIT.md** — added as a new ACTIVE artifact in `docs/architecture/`. Audit document established 2026-06-10; Section 16 amendment same-day per append-only discipline.
+
+(The classification table at the top of this index does not yet contain a PIPELINE_DOMAIN_AUDIT row; this is a candidate addition for the next governance batch.)
+
+### What this batch DID
+
+- Refactored `pipeline_summary` and `pipeline_deals` in `utils/api.py` to route through `PipelineManager` instead of `_load_json("pipeline.json")`.
+- Created `utils/api_pipeline_models.py` with Pydantic models for the canonical pipeline shape.
+- Authored `gate_pipeline_api_uses_canonical_manager` (G394) in `scripts/audit.py`. Registered above G393 in GATES dispatch.
+- Authored `tests/test_pipeline_api_consolidation.py` (10 tests, all green).
+- Appended Section 16 to `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` documenting the doctrine reference and corrected Arc α framing.
+- Appended this CGR1 correction.
+- Appended Batch α1 entry to REVIVAL_LEDGER.md at the top of the entries section (reverse-chronological convention).
+
+### What this batch DID NOT do
+
+- Did NOT delete `data/pipeline.json`. The file is now unreferenced by the API path; archival decision deferred.
+- Did NOT modify `PipelineManager` itself. Its file (`data/pipeline_deals.json`) remains the canonical store.
+- Did NOT touch the PostgreSQL primary path in either endpoint. PG schema migration is a separate concern.
+- Did NOT add any new endpoints. CRUD remains α3's scope.
+- Did NOT add server-side cascade scope enforcement (GAP-001). That's α2.
+- Did NOT write any React frontend code. React UI work begins after Arc α closes.
+- Did NOT promote Pydantic validation from non-strict to strict. Future-arc concern.
+- Did NOT modify SYSTEM_CONSTITUTION, CANONICAL_TRUTH_REGISTRY, or any other doctrine artifact beyond REVIVAL_LEDGER, this index, and PIPELINE_DOMAIN_AUDIT.
+
+### Gate count delta
+
+Before this batch: 393 (post-Arc-D2).
+After this batch: **394** (G394 added).
+
+---

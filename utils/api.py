@@ -833,27 +833,59 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
         except Exception as e:
             logger.error(f"Pipeline DB error: {e}")
 
-    # JSON fallback
-    raw = _load_json("pipeline.json")
-    deals = raw if isinstance(raw, list) else raw.get("deals", [])
-    by_stage = {}
-    total_val = 0
-    won_val   = 0
+    # Canonical-manager path (v10.503 Phase 3 Arc α Batch α1).
+    #
+    # Previously this branch read `data/pipeline.json` directly via
+    # `_load_json(...)`. That bypassed `PipelineManager` — the canonical
+    # business-logic layer that Streamlit consumes — and exposed the
+    # legacy 302-deal seed dataset to the API instead of the
+    # PipelineManager-managed records. The drift was documented in
+    # `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 15.1 and
+    # surfaced as data inconsistency between the Streamlit UI (8 deals)
+    # and the API response (302 deals).
+    #
+    # Per the established doctrine ("Streamlit stays, React additive,
+    # FastAPI canonical" — see REACT_READINESS_AUDIT.md and changelogs
+    # v10.21/v10.400/v10.417/v10.426+), business logic is centralized.
+    # The API now reads through the same manager class Streamlit uses;
+    # both presentation layers receive identical data.
+    #
+    # G394 (gate_pipeline_api_uses_canonical_manager) enforces that
+    # this branch references PipelineManager and NOT _load_json(
+    # "pipeline.json").
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deals = pm.get_deals()
+
+    by_stage: dict = {}
+    total_val = 0.0
+    won_val   = 0.0
     for d in deals:
-        st  = d.get("stage","Unknown")
-        amt = _safe_float(d.get("amount",0))
+        st  = d.get("stage", "Unknown")
+        # Canonical amount field is `deal_value` (Generation B).
+        # Fall back to `amount` for any transitional record.
+        amt = _safe_float(d.get("deal_value") or d.get("amount", 0))
         total_val += amt
-        if st == "Closed Won": won_val += amt
+        if st == "Closed Won":
+            won_val += amt
         if st not in by_stage:
-            by_stage[st] = {"stage":st,"deal_count":0,"total_value":0.0}
+            by_stage[st] = {"stage": st, "deal_count": 0, "total_value": 0.0}
         by_stage[st]["deal_count"]  += 1
         by_stage[st]["total_value"] += amt
 
+    # Count Closed Lost explicitly (was always 0 in the previous path
+    # — that was an unflagged bug; fixed in α1).
+    lost_count = sum(1 for d in deals if d.get("stage") == "Closed Lost")
+
     result = {
-        "by_stage":     list(by_stage.values()),
-        "totals":       {"total_deals":len(deals),"pipeline_value":total_val,
-                         "won_value":won_val,"lost_count":0},
-        "source":       "json",
+        "by_stage": list(by_stage.values()),
+        "totals": {
+            "total_deals":    len(deals),
+            "pipeline_value": total_val,
+            "won_value":      won_val,
+            "lost_count":     lost_count,
+        },
+        "source": "pipeline_manager",
     }
     _set_cache("pipeline_summary", result)
     return result
@@ -884,12 +916,29 @@ def pipeline_deals(
         except Exception as e:
             logger.error(f"Pipeline deals DB error: {e}")
 
-    raw   = _load_json("pipeline.json")
-    deals = raw if isinstance(raw, list) else raw.get("deals", [])
-    if stage:    deals = [d for d in deals if d.get("stage")==stage]
-    if category: deals = [d for d in deals if d.get("deal_category")==category]
-    if unit:     deals = [d for d in deals if d.get("unit")==unit]
-    return {"deals": deals[offset:offset+limit], "count": len(deals), "source": "json"}
+    # Canonical-manager path (v10.503 Phase 3 Arc α Batch α1).
+    # See pipeline_summary above for the doctrine and migration note.
+    # G394 enforces no `_load_json("pipeline.json")` in this branch.
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deals = pm.get_deals()
+
+    if stage:
+        deals = [d for d in deals if d.get("stage") == stage]
+    if category:
+        # PipelineManager records use `pipeline_category` (Gen B);
+        # legacy `deal_category` accepted for transitional compatibility.
+        deals = [d for d in deals
+                 if d.get("pipeline_category") == category
+                 or d.get("deal_category") == category]
+    if unit:
+        deals = [d for d in deals if d.get("unit") == unit]
+
+    return {
+        "deals":  deals[offset:offset + limit],
+        "count":  len(deals),
+        "source": "pipeline_manager",
+    }
 
 # ── Credit Monitoring Endpoints ───────────────────────────────────
 @app.get("/api/credit/summary")
