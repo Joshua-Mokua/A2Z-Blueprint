@@ -252,6 +252,65 @@ statement is in `REVIVAL_LEDGER.md::Doctrine::RL1`.
 
 ---
 
+## Intentionally-tracked credential data
+
+**Rule:** `data/users.json` is listed in `.gitignore` AND is tracked
+in git. This apparent inconsistency is intentional. Do NOT run
+`git rm --cached data/users.json` to "fix" it.
+
+**Trigger:** Any code review, automated lint, or fresh-eyes session
+that notices the entry in `.gitignore` and proposes to either
+remove the entry OR un-track the file.
+
+**Why the inconsistency exists:**
+
+The file is currently tracked because the bootstrap-from-generator
+workflow (Path A in `POLICY_GAPS.md` GAP-002) hasn't been designed.
+A fresh clone needs `data/users.json` present for `UserManager` to
+initialise; un-tracking would force every fresh clone to either
+run `generate_staff_v2.py` first OR restore the file from a secure
+source. Both are legitimate workflows; neither has been built.
+
+The `.gitignore` entry exists because if the file is ever removed
+from the working tree (during a deliberate switch to Path A, or
+during ad-hoc operator workflow), it prevents `git add .` from
+silently re-adding it before the operator decides whether the
+absence was intentional.
+
+**The contents are bcrypt-wrapped, not plaintext.** Post-v10.497
+the file stores bcrypt hashes via `UserManager.hash_pw`. Post-v10.500
+Batch 3c, 1437 previously-SHA-256 hashes are wrapped in bcrypt
+envelopes via `scripts/verify_bcrypt.py`. The pre-v10.497 "plaintext
+credentials" wording in the original `.gitignore` comment was
+misleading; corrected in Batch 4c.
+
+**Codified during:** v10.501 Phase 2 Arc C Batch 4c (closure of
+GAP-002 via Path B accept-and-document).
+
+**Future migration path (Path A — bootstrap-from-generator):**
+When repo privacy posture changes (e.g. open-sourcing parts of the
+codebase, or shared development across organisations), Path A
+becomes necessary. The arc:
+
+1. Design first-run README with explicit `python generate_staff_v2.py`
+   step and operator-data sync mechanism.
+2. Run `git rm --cached data/users.json` and commit.
+3. Update this section to remove the "tracked" status and add the
+   first-run prerequisite to the operational checklist.
+4. Verify on a fresh clone that the new bootstrap workflow produces
+   a usable system without manual intervention.
+
+Until that arc lands, Path B is the active doctrine.
+
+**Sibling rule — backup files MUST stay gitignored.** The patterns
+`data/users.json.pre_*`, `data/users.json.post_*_migration`, and
+`data/users.json.batch3c_tmp` are correctly gitignored and must
+remain so. Those files contain credential material from
+backup-before-mutation operations (Batch 3c/3d discipline) and have
+no legitimate path into git history.
+
+---
+
 ## Single-worker FastAPI operational constraint
 
 **Rule:** The FastAPI API tier (`utils/api.py`) MUST be deployed as a

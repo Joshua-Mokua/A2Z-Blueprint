@@ -31,11 +31,12 @@ development across multiple concurrent arcs.
 **Phase 1 closure commit:** `f268330` (v10.500 Phase 1 Batch 3d — doctrine refresh)
 **Last shipped batch:** v10.501 Phase 2 Arc A Batch 4a — 2026-06-10 (password policy hardening)
 **Phase 1 status:** **CLOSED** — 10/10 gates green
-**Phase 2 status:** Arc A CLOSED (GAP-001 + GAP-005 closed). Arc B CLOSED (GAP-006 closed via slowapi). Arc C (`users.json` tracking, GAP-002) next.
-**Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) — all active
+**Phase 2 status:** **CLOSED.** All three arcs complete. Arc A (GAP-001 + GAP-005), Arc B (GAP-006), Arc C (GAP-002). Push to origin scheduled at phase boundary (this batch).
+**Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) + intentionally-tracked credential data discipline (Batch 4c) — all active
 **Gate count:** 418 total (verified at commit `49e804f`)
 **Phase 2 commits (newest first):**
-- `[pending]` v10.501 Phase 2 Arc B Batch 4b — slowapi rate limiting on login + change-password (closes GAP-006); single-worker FastAPI operational constraint codified
+- `[pending]` v10.501 Phase 2 Arc C Batch 4c — `.gitignore` doctrine fix + OPERATIONAL_PROTOCOL section + httpx dev-dep bundle (closes GAP-002; PHASE 2 CLOSED)
+- `97fb635` v10.501 Phase 2 Arc B Batch 4b — slowapi rate limiting on login + change-password (closes GAP-006); single-worker FastAPI operational constraint codified
 - `e542acd` v10.501 Phase 2 Arc A Batch 4a — password policy helper + Streamlit `current_password` parity (closes GAP-001 + GAP-005)
 
 **Phase 1 commits (newest first):**
@@ -101,20 +102,30 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 
 ## Active workstreams
 
-1. **Phase 2 Arc C — `users.json` tracking (next focus).**
-   GAP-002 closure via Path (B) — accept-and-document. One
-   `.gitignore` comment update, no behavioural change. Single-batch
-   arc.
+1. **Stage C governance enforcement (resumes — natural next focus).**
+   Paused at start of Phase 1 React substrate work. ~5/35 gates wired
+   through Batch 2e. Remaining gates G388-G417 tracked in `OI-66`.
+   Doctrine surface is healthy; OPERATIONAL_PROTOCOL grew two new
+   sections during Phase 2 (single-worker FastAPI constraint,
+   intentionally-tracked credential data). Picking up Stage C means
+   resuming the gate-authoring discipline.
 
-2. **Stage C governance enforcement (paused).**
-   ~5/35 gates wired through Batch 2e. Remaining gates G388-G417
-   tracked in `OI-66`. Will resume after Phase 2 closure.
-
-3. **PostgreSQL migration (incremental).**
+2. **PostgreSQL migration (incremental).**
    27/52 tables migrated. G163 ratchet enforces no regression.
 
-4. **mlops_model_registry adoption (incremental).**
+3. **mlops_model_registry adoption (incremental).**
    11 engines pending registration per G386.
+
+4. **Post-Phase-2 hygiene candidates (optional, non-gating).**
+   - `@app.on_event("startup")` → lifespan handler migration
+     (`utils/api.py:258`). FastAPI is emitting deprecation warnings.
+     Not breaking; pre-dates Phase 2; small hygiene arc.
+   - GAP-007 `_APP_VERSION` stamp policy formalisation. De facto
+     applied (bumped per batch in 4a/4b/4c); decide whether to make
+     it audit-gate-enforced doctrine or formally informational.
+   - Two `docs/` untracked items (`KPA Pin.pdf`,
+     `architecture/survey_inputs/`) — decide what they are and either
+     gitignore, commit, or delete.
 
 ---
 
@@ -193,26 +204,31 @@ See `docs/architecture/OPERATIONAL_PROTOCOL.md` for full doctrine. Key rules:
 
 ## Known doctrine gaps (Phase 2 candidates)
 
-Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
+Recorded in `docs/architecture/POLICY_GAPS.md`. Phase 2 closure
+status:
 
 1. ~~**Stated-vs-enforced password policy.**~~ **CLOSED** in v10.501
    Batch 4a. `validate_password_policy(pw)` in `utils/core.py` is the
-   single source of truth, called from Streamlit `change_pw` +
-   `force_change_pw` forms and FastAPI `/api/auth/change-password`.
+   single source of truth.
 2. ~~**No rate limiting on auth endpoints.**~~ **CLOSED** in v10.501
-   Batch 4b. slowapi mounted on FastAPI: per-IP 10/min on
-   `/api/auth/login`, per-token 5/min on `/api/auth/change-password`,
-   whoami-detailed unlimited. Custom 429 handler writes audit row.
-   Single-worker FastAPI declared as operational constraint.
-3. **Envelope retirement.** Phase 2 should plan when to drop the
-   transitional envelope verify path. Trigger: when the
-   "Envelope-backed credential authenticated" INFO log stops appearing
-   in production logs for ≥30 days. Status: DEFERRED.
-4. **`data/users.json` tracking inconsistency.** The file is listed in
-   `.gitignore` but is tracked. Phase 2 Arc C planned — Path (B) accept-and-document.
-5. **Auto-upgrade re-hash on envelope success.** Currently deferred —
-   envelope hashes stay envelope-wrapped indefinitely. Phase 2 hardening
-   could add observable staged normalization. Status: DEFERRED.
+   Batch 4b. slowapi mounted on FastAPI: per-IP 10/min on login,
+   per-token 5/min on change-password, whoami-detailed unlimited.
+3. ~~**Streamlit force_change_pw lacks current_password verify.**~~
+   **CLOSED** in v10.501 Batch 4a alongside GAP-001.
+4. ~~**`data/users.json` tracked-but-gitignored inconsistency.**~~
+   **CLOSED** in v10.501 Batch 4c via Path (B) accept-and-document.
+   `.gitignore` comment rewritten; OPERATIONAL_PROTOCOL section added.
+5. **Envelope retirement.** DEFERRED. Trigger: when the
+   "Envelope-backed credential authenticated" INFO log stops
+   appearing in production logs for ≥30 days. Phase 2 did not move
+   the needle here.
+6. **Auto-upgrade re-hash on envelope success.** DEFERRED. Envelope
+   hashes remain envelope-wrapped indefinitely. A future hardening
+   arc could add observable staged normalization.
+7. **`_APP_VERSION` stamp policy.** OPEN. De facto applied in
+   Phase 2 (bumped per batch in 4a/4b/4c). Formalisation as either
+   audit-gate-enforced doctrine or formal-informational is a small
+   hygiene candidate; not gating any other work.
 
 ---
 
@@ -220,11 +236,11 @@ Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
 
 Paste this into a new Claude chat:
 
-> Continuing A2Z v10.501. Last commit: `e542acd` (Phase 2 Arc A Batch 4a)
-> + Batch 4b working tree (Phase 2 Arc B closure pending commit).
-> Phase 1 complete: 10/10 gates green. Phase 2 Arcs A + B complete:
-> GAP-001, GAP-005, GAP-006 closed. Arc C (`users.json` tracking,
-> GAP-002) is the next focus. Read `docs/continuity/SESSION_BOOTSTRAP.md`
-> for current state.
+> Continuing A2Z v10.501. Last commit: `[pending Arc C push]`.
+> Phase 1 complete: 10/10 gates green. Phase 2 complete: 4 gaps
+> closed across 3 arcs (GAP-001, GAP-005, GAP-006, GAP-002).
+> 30/30 regression suite green. Next focus is Stage C governance
+> enforcement resumption (~30 gates remaining, OI-66). Read
+> `docs/continuity/SESSION_BOOTSTRAP.md` for current state.
 
 That plus `userMemories` gives Claude full context immediately.

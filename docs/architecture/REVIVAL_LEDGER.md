@@ -61,6 +61,51 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.501 Phase 2 Arc C Batch 4c — `users.json` tracking via Path B (closes GAP-002) + dev-dep fix + PHASE 2 CLOSED
+
+**Type:** Doctrine harmonization + hygiene
+**Owner:** Joshua + Claude
+**Rationale:** Phase 1 inspection (Batch 3d) flagged that `data/users.json` was listed in `.gitignore` (line 51) but tracked in git history — a textual inconsistency that confused fresh-eyes sessions and would have been "fixed" by any well-meaning code reviewer running `git rm --cached`. The original comment on the entry called the contents "plaintext credentials — replaced by hashed users in v10.497"; both halves of that wording were misleading by Phase 2 (the file contains bcrypt hashes post-v10.497 and bcrypt-envelope-wrapped SHA-256 hashes post-v10.500 Batch 3c, AND the file remained tracked despite the entry). POLICY_GAPS GAP-002 named two resolution paths: (A) bootstrap-from-generator workflow, requiring a designed first-run prerequisite + secure-source sync mechanism for operator records, or (B) accept-and-document. Per operator pre-decision (D1 in Phase 2 orientation), Path B was selected — the bootstrap-from-generator arc requires repo privacy posture changes (e.g. open-sourcing, multi-org development) that aren't yet on the horizon.
+
+**Files shipped:**
+- `.gitignore` — single-line replacement of the misleading comment on the `data/users.json` entry. New comment block (28 lines including blank lines) explains: (a) the file is intentionally tracked, (b) the contents are bcrypt-wrapped not plaintext, (c) why the entry exists at all (prevent silent re-add via `git add .` if the file is ever removed), (d) why it's still tracked (bootstrap-from-generator not yet designed), (e) the operational discipline (do NOT run `git rm --cached`), and (f) a pointer to OPERATIONAL_PROTOCOL.md for the codified rule. The entry itself (`data/users.json`) is unchanged.
+- `docs/architecture/OPERATIONAL_PROTOCOL.md` — new section "Intentionally-tracked credential data" inserted before the "Single-worker FastAPI operational constraint" section (Batch 4b). Codifies the rule (do NOT un-track), the trigger (fresh-eyes session proposing to fix), the rationale (Path A not designed), the contents (bcrypt-wrapped post-v10.497, envelope-wrapped post-Batch-3c), the future migration path to Path A (4 steps), and a sibling rule that backup-file patterns (`data/users.json.pre_*`, `.post_*_migration`, `.batch3c_tmp`) MUST stay gitignored.
+- `requirements-dev.txt` — bundled fix: `httpx>=0.27.0` added to the Testing block. Discovered missing during the Batch 4b verification run on a fresh venv (operator hit `RuntimeError: The starlette.testclient module requires the httpx package to be installed` on first pytest run). `fastapi.TestClient` imports `starlette.testclient`, which now defers the `httpx` import and raises at use-site rather than at install time. Documented in the Batch 4c CHANGELOG and inline-commented in `requirements-dev.txt`.
+- `docs/architecture/POLICY_GAPS.md` — GAP-002 flipped to CLOSED with closure summary; historical OPEN record preserved below per RL1. Phase summary substantially rewritten — Phase 2 is now CLOSED with 4 gaps closed across 3 arcs (GAP-001, GAP-005, GAP-006, GAP-002). Net status: 1 OPEN (GAP-007 `_APP_VERSION` stamp policy), 2 DEFERRED (GAP-003, GAP-004). Push-to-`origin/main` at the phase boundary noted explicitly.
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+- `docs/continuity/SESSION_BOOTSTRAP.md` — Phase 2 CLOSED in commit list, Arc B/C status updated, active workstreams renumbered (no more Phase 2 work, Stage C governance enforcement resumes as the natural next focus).
+- `docs/CHANGELOG_v10501_batch4c.md` NEW — per-batch closure record.
+- `app.py` — `_APP_VERSION` bumped to `v10.501-batch4c-2026.06.10`.
+
+**Verification:**
+- `.gitignore` comment block parses cleanly (manual inspection — no shell verification possible, the file IS the manifest).
+- POLICY_GAPS, REVIVAL_LEDGER, SESSION_BOOTSTRAP, OPERATIONAL_PROTOCOL — all 4 doctrine documents updated in lockstep so internal cross-references stay consistent.
+- Batch 4a + 4b regression suite (`tests/test_validate_password_policy.py` + `tests/test_rate_limit_auth.py`) untouched — Path B makes zero behavioural code changes, so no regression test ships in this batch. Adding a test that asserts "data/users.json is still tracked" or "POLICY_GAPS says GAP-002 is CLOSED" would be testing the test artifact itself, not behavior.
+- After extraction the operator should run `pip install -r requirements-dev.txt` to pick up `httpx` (already installed manually during Batch 4b verification, but the dev-deps file is now the canonical source).
+
+**Operational notes:**
+- **The `.gitignore` "fix" trap is now codified.** Any future Claude session, code reviewer, or operator who sees `data/users.json` in `.gitignore` and proposes `git rm --cached data/users.json` will be redirected by the new OPERATIONAL_PROTOCOL section. The full rationale is one click away.
+- **No `data/users.json` mutation in this batch.** Backup-before-mutation discipline is N/A. The file's tracked content is unchanged.
+- **`httpx>=0.27.0` is now the single source of truth for the dev-dep.** Anyone setting up a fresh venv with `pip install -r requirements.txt -r requirements-dev.txt` gets it automatically. The manual `pip install httpx` Joshua ran during Batch 4b verification was the right band-aid; this batch closes the underlying gap.
+
+**Phase 2 closure:**
+- 4 gaps closed across 3 arcs (GAP-001, GAP-005, GAP-006, GAP-002).
+- 1 OPEN gap (GAP-007), 2 DEFERRED (GAP-003 envelope retirement, GAP-004 must_rotate lifetime).
+- 30/30 regression suite green (22 in Batch 4a + 8 in Batch 4b).
+- 3 doctrine additions to OPERATIONAL_PROTOCOL.md (single-worker FastAPI from Batch 4b; intentionally-tracked credential data from Batch 4c).
+- 4 commits to push at the phase boundary: `e542acd` (Batch 4a), `97fb635` (Batch 4b), `[pending]` (Batch 4c), and any subsequent doctrine harmonisation. Push happens AFTER this batch lands and verification is green.
+
+**Trap discipline applied:**
+- **Trap #11** — every claim in this entry is grounded in same-turn inspection of the affected files. The `.gitignore` line numbers, the existing "Auth seeds" comment wording, the `requirements-dev.txt` block structure were each verified before being described.
+- **Trap #12** — ZIP delivery, full replacement files for each modified path, namespaced `_batch4c_payload/` staging.
+- **Trap #14** — staging folder cannot collide with `.gitignore`, `app.py`, `requirements*.txt`, or `docs/` at destination.
+- **Backup-before-mutation** — N/A. Zero credential or audit data writes.
+- **Silent-except** — no new exception handlers introduced; doctrine and `.gitignore` only.
+
+**Cross-references:** GAP-002 closure record in `docs/architecture/POLICY_GAPS.md`. Intentionally-tracked-credential-data section in `docs/architecture/OPERATIONAL_PROTOCOL.md`. Phase 2 Arc B predecessor entry below. Phase 2 closure summary in CHANGELOG_v10501_batch4c.md. **Post-Phase-2 next focus per SESSION_BOOTSTRAP: Stage C governance enforcement resumes (OI-66, ~30 gates remaining).**
+
+---
+
 ### 2026-06-10 v10.501 Phase 2 Arc B Batch 4b — API rate limiting (closes GAP-006)
 
 **Type:** Security hardening + operational doctrine codification

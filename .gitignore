@@ -48,7 +48,40 @@ coverage/
 .npm/
 .pnpm-store/
 
-# Auth seeds (plaintext credentials — replaced by hashed users in v10.497)
+# data/users.json — INTENTIONALLY TRACKED despite being listed here.
+# (v10.501 Phase 2 Arc C Batch 4c — closes GAP-002 via Path B
+# accept-and-document.)
+#
+# The file is currently tracked in git history. It contains bcrypt
+# password hashes (post-v10.497) and envelope-wrapped hashes
+# (post-v10.500 Batch 3c), NOT plaintext. The previous comment here
+# called the contents "plaintext credentials — replaced by hashed
+# users in v10.497"; that wording was misleading on two counts
+# (the file is now bcrypt-backed, AND it remained tracked despite
+# the apparent gitignore entry).
+#
+# Why this entry exists at all:
+#   - If the file is ever removed from the working tree (e.g. on a
+#     fresh clone where the operator bootstraps from scratch), this
+#     entry prevents it from being silently re-added by `git add .`
+#     before the operator decides whether to bootstrap from a
+#     generator or restore from a secure source.
+#
+# Why it's still tracked:
+#   - Bootstrap-from-generator workflow (Path A) requires a
+#     `generate_staff_v2.py` first-run prerequisite documented in
+#     README + a separate sync mechanism for the operator's existing
+#     user records. That work hasn't been designed.
+#   - Path B (this batch) accepts current behaviour, documents the
+#     inconsistency, and defers Path A to a future arc gated on
+#     repo privacy posture changes.
+#
+# Operational discipline (codified in OPERATIONAL_PROTOCOL.md
+# "Intentionally-tracked credential data"): do NOT run
+# `git rm --cached data/users.json` to "fix" the apparent
+# inconsistency. The tracking is intentional. If you genuinely want
+# to switch to Path A, that becomes its own arc with a designed
+# bootstrap-from-generator workflow.
 data/users.json
 # Versioned in-repo backup snapshots (use git history instead)
 data/_v*_backups/

@@ -111,7 +111,48 @@ Suggested implementation: introduce `validate_password_policy(pw: str)
 
 ## GAP-002 — `data/users.json` is gitignored but tracked
 
-**Status:** OPEN
+**Status:** CLOSED (v10.501 Phase 2 Arc C Batch 4c)
+**Surfaced during:** Phase 1 Batch 3d (gitignore review)
+**Closed during:** Phase 2 Arc C Batch 4c via Path (B) accept-and-document
+
+**Resolution:** Path (B) selected. The `.gitignore` entry for
+`data/users.json` is preserved (so removal-then-`git add .` cannot
+silently re-add it), but the comment block above the entry is
+rewritten from the misleading "plaintext credentials — replaced by
+hashed users in v10.497" to an honest explanation of why the
+inconsistency is intentional and what discipline preserves it.
+
+A new section "Intentionally-tracked credential data" is added to
+`OPERATIONAL_PROTOCOL.md` codifying the rule (do NOT run `git rm
+--cached data/users.json`), the trigger (any fresh-eyes session
+proposing to fix the apparent inconsistency), the rationale (bootstrap
+workflow not designed), and the future migration path to Path A
+(when repo privacy posture changes).
+
+**Operational risk profile unchanged:** the file's contents are
+bcrypt-wrapped hashes (post-v10.497) and bcrypt-envelope-wrapped
+SHA-256 hashes (post-v10.500 Batch 3c). The aggregate is still
+sensitive but contains no plaintext credentials. Privacy is gated
+on repo access scope, which is currently private.
+
+**No regression test ships in this batch** because Path (B) makes
+zero behavioural code changes — only doctrine and a `.gitignore`
+comment edit. Adding a test that asserts "data/users.json is still
+tracked in git" or "POLICY_GAPS.md says GAP-002 is CLOSED" would be
+testing the test artifact itself, not behavior. The Batch 4a + 4b
+regression suite (30/30) continues to protect the auth path.
+
+**Bundled dev-dep fix:** `httpx>=0.27.0` added to
+`requirements-dev.txt` after Batch 4b's regression test surfaced
+the missing dependency on a fresh venv. Discovered too late to
+include in Batch 4b; cleanly bundled here as a single-line dev-deps
+edit that needs no separate batch.
+
+---
+
+## GAP-002 — (historical record preserved below)
+
+**Status (historical, pre-closure):** OPEN
 **Surfaced during:** Phase 1 Batch 3d (gitignore review)
 
 **Gap:** `.gitignore` lists `data/users.json` as ignored, but the file
@@ -358,21 +399,37 @@ recorded. 0 closed at Phase 1 boundary. 5 OPEN, 2 DEFERRED.
 
 **Phase 2 Arc A (CLOSED, v10.501 Batch 4a, commit `e542acd`):**
 GAP-001 and GAP-005 closed via shared `validate_password_policy`
-helper + Streamlit `current_password` parity. Net status: 3 OPEN,
-2 DEFERRED.
+helper + Streamlit `current_password` parity.
 
-**Phase 2 Arc B (CLOSED, v10.501 Batch 4b):** GAP-006 closed via
-slowapi mount with per-IP login limit and per-token change-password
-limit. Custom 429 handler writes audit row; single-worker FastAPI
-declared as operational constraint in `OPERATIONAL_PROTOCOL.md`.
-Net status: 2 OPEN (GAP-002, GAP-007), 2 DEFERRED (GAP-003, GAP-004).
+**Phase 2 Arc B (CLOSED, v10.501 Batch 4b, commit `97fb635`):**
+GAP-006 closed via slowapi mount with per-IP login limit and
+per-token change-password limit. Custom 429 handler writes audit
+row; single-worker FastAPI declared as operational constraint in
+`OPERATIONAL_PROTOCOL.md`.
 
-**Phase 2 Arc C (next):** GAP-002 (`users.json` tracking) —
-direction (B) accept-and-document selected. Single-batch arc.
+**Phase 2 Arc C (CLOSED, v10.501 Batch 4c):** GAP-002 closed via
+Path (B) accept-and-document. `.gitignore` comment rewritten;
+new section "Intentionally-tracked credential data" added to
+`OPERATIONAL_PROTOCOL.md`. Bundled dev-dep fix: `httpx>=0.27.0`
+added to `requirements-dev.txt`.
 
-**GAP-003 / GAP-004 / GAP-007 remain DEFERRED** per original
-recommendations — their triggers (observability data, established
-Phase 2 token discipline, OPERATIONAL_PROTOCOL section) have not
-materialised yet. (GAP-007 will likely become a candidate when
-Arc C lands and `_APP_VERSION` stamping discipline becomes more
-visible.)
+**Phase 2 status: CLOSED.** 4 gaps closed across 3 arcs.
+Net status of POLICY_GAPS at Phase 2 boundary: 1 OPEN (GAP-007 —
+`_APP_VERSION` stamp policy), 2 DEFERRED (GAP-003 envelope
+retirement, GAP-004 must_rotate token lifetime).
+
+**Push to `origin/main` happens at this phase boundary** per
+the established workflow (commit per batch, push at phase
+boundaries).
+
+**GAP-003 / GAP-004 remain DEFERRED** per original recommendations —
+their triggers (observability data for GAP-003, established Phase 2
+token discipline for GAP-004) have not materialised yet.
+
+**GAP-007** is the only remaining OPEN item. The `_APP_VERSION`
+stamping discipline was applied de facto across all three Phase 2
+batches (bump per batch). A future hygiene arc could either codify
+this as binding doctrine in `OPERATIONAL_PROTOCOL.md` (with an
+audit gate enforcing the bump per batch) or formally deprecate
+the stamp as informational. Either decision is small; not gating
+any other work.

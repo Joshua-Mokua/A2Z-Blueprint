@@ -9,6 +9,15 @@
 # Testing
 pytest>=7.4.0
 pytest-cov>=4.1.0   # coverage measurement (Standard #4, v5.33)
+# v10.501 Phase 2 Arc C Batch 4c — required by fastapi.TestClient,
+# which tests/test_rate_limit_auth.py (Batch 4b) uses. Discovered
+# missing during the Batch 4b verification run on a fresh venv:
+# the integration tests pass everywhere fastapi.TestClient can
+# import, but starlette.testclient now defers its httpx import and
+# raises RuntimeError if httpx isn't installed. Adding it here so
+# any future dev environment picks it up via
+# `pip install -r requirements-dev.txt`.
+httpx>=0.27.0
 
 # Dependency security scanners (Standard #9, v5.37)
 # These are in DEV deps because pip-audit and safety scan the
