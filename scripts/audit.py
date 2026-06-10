@@ -59857,6 +59857,173 @@ def gate_v10498_agent_scope_declared() -> Dict[str, Any]:
         "summary": summary,
     }
 
+def gate_canonical_truth_registry_sync() -> Dict[str, Any]:
+    """G388 — v10.502 Stage C Arc D2 Batch 5b — CANONICAL_TRUTH_REGISTRY
+    pointer integrity (closes the stated-vs-enforced gap on D4).
+
+    Per `docs/architecture/CANONICAL_TRUTH_REGISTRY.md` D4 doctrine:
+
+        "Sources point to data; pointers don't drift silently. Every
+         pointer in this registry is a file path. Changes to those
+         pointers (renames, moves) must update this registry in the
+         same commit. Audit gate `gate_canonical_truth_registry_sync`
+         enforces this."
+
+    Prior to v10.502 Batch 5b this gate was named in doctrine but did
+    not exist in `scripts/audit.py` — a textbook CGR1 (stated-vs-
+    enforced) gap. Same-turn inspection during Batch 5b orientation
+    confirmed: `grep -n "gate_canonical_truth_registry_sync"
+    scripts/audit.py` returned zero hits while the registry's D4
+    doctrine line cited the gate by name. Batch 5b closes this gap.
+
+    What this gate enforces
+    -----------------------
+    Parses `Authoritative source` and `Canonical interface` rows from
+    each domain section of CANONICAL_TRUTH_REGISTRY.md. Extracts every
+    backticked path-shaped value (any backtick-quoted string containing
+    a `/`). For each such value:
+
+    - Glob patterns (contain `*` or `?`): expand and verify at least
+      one match exists on disk.
+    - Bare module/import names (no `/`): skipped — not file paths.
+    - Anything else: verified to exist via `Path(p).exists()`, EXCEPT
+      paths the registry intentionally references as locally-generated
+      runtime data which are gitignored at the repo level. The
+      RUNTIME_GITIGNORED allowlist captures these; the gate skips them
+      with an INFO-level note in the summary so a future Claude
+      session knows they were intentionally excluded.
+
+    What this gate does NOT enforce
+    -------------------------------
+    - Content of the pointed-to files. The registry does not declare
+      schema; other gates do (e.g. G269 for users.json schema).
+    - That the audit gates the registry cites in the `Enforcement`
+      column exist. That's a Wave 2+ concern; this gate only checks
+      Authoritative source + Canonical interface pointers.
+    - The classification field. CGR1 reality-checks classify; this
+      gate just verifies the pointers resolve.
+
+    Exit shape
+    ----------
+    `passed: True` iff every parsed pointer either resolves on disk or
+    is on the RUNTIME_GITIGNORED allowlist. Violations are individually
+    listed with the row they came from for fast investigation.
+
+    Cost: ~0.05s isolated (single file parse, ~75 path checks).
+    """
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    registry_path = repo / "docs" / "architecture" / "CANONICAL_TRUTH_REGISTRY.md"
+
+    if not registry_path.exists():
+        return {
+            "id": "G388",
+            "name": "canonical_truth_registry_sync",
+            "passed": False,
+            "violations": [f"CANONICAL_TRUTH_REGISTRY.md not found at {registry_path}"],
+            "summary": "registry artifact missing — cannot verify pointers",
+        }
+
+    content = registry_path.read_text(encoding="utf-8")
+
+    # Paths the registry references as authoritative but which are
+    # intentionally gitignored at the repo level (locally-generated
+    # runtime data per `.gitignore`). Verified via same-turn
+    # `git check-ignore -v <path>` during Batch 5b authoring.
+    RUNTIME_GITIGNORED = {
+        "data/users.json",  # auth seed; .gitignore:52; populated by bootstrap
+    }
+
+    # Paths the registry references that point to ASPIRATIONAL artifacts
+    # (post-rollback per GOVERNANCE_REALITY_INDEX Batch 2a-shadcn
+    # correction). These resolve only when the shadcn pivot is re-
+    # attempted; treated as INFO not violation.
+    SHADCN_ASPIRATIONAL = {
+        "frontend/web/components.json",
+        "frontend/web/src/components/ui/*",
+        "lib/cn",  # shadcn utility import shorthand; would resolve at lib/cn.ts only post-pivot
+    }
+
+    # Row patterns
+    row_re = re.compile(
+        r'^\|\s*(Authoritative source|Canonical interface)\s*\|\s*(.+?)\s*\|',
+        re.MULTILINE,
+    )
+    path_re = re.compile(r'`([^`]+)`')
+
+    total_checked = 0
+    total_resolved = 0
+    total_skipped_nonpath = 0
+    total_skipped_allowlist = 0
+    total_skipped_aspirational = 0
+
+    for match in row_re.finditer(content):
+        field = match.group(1)
+        row = match.group(2)
+        for raw_path in path_re.findall(row):
+            p = raw_path.strip().split("::")[0]
+            # Skip bare module names (no path separator)
+            if "/" not in p:
+                total_skipped_nonpath += 1
+                continue
+            total_checked += 1
+            # Runtime gitignored allowlist
+            if p in RUNTIME_GITIGNORED:
+                total_skipped_allowlist += 1
+                info.append(
+                    f"INFO ({field}): {p!r} is gitignored runtime data — "
+                    "skipped per RUNTIME_GITIGNORED allowlist"
+                )
+                continue
+            # Shadcn aspirational allowlist
+            if p in SHADCN_ASPIRATIONAL:
+                total_skipped_aspirational += 1
+                info.append(
+                    f"INFO ({field}): {p!r} is ASPIRATIONAL per "
+                    "GOVERNANCE_REALITY_INDEX Batch 2a-shadcn correction — "
+                    "shadcn pivot not yet implemented"
+                )
+                continue
+            # Glob expansion
+            if "*" in p or "?" in p:
+                # Resolve glob relative to repo root
+                matches = list(repo.glob(p))
+                if matches:
+                    total_resolved += 1
+                else:
+                    violations.append(
+                        f"{field}: glob pattern {p!r} has zero matches "
+                        f"(row: {row[:120]!r})"
+                    )
+                continue
+            # Plain file existence
+            if (repo / p).exists():
+                total_resolved += 1
+            else:
+                violations.append(
+                    f"{field}: pointer {p!r} does not resolve to a file "
+                    f"or directory under repo root (row: {row[:120]!r})"
+                )
+
+    summary = (
+        f"checked={total_checked} resolved={total_resolved} "
+        f"violations={len(violations)} "
+        f"(skipped: nonpath={total_skipped_nonpath}, "
+        f"runtime_gitignored={total_skipped_allowlist}, "
+        f"shadcn_aspirational={total_skipped_aspirational})"
+    )
+
+    # info notes appended after violations for visibility
+    return {
+        "id": "G388",
+        "name": "canonical_truth_registry_sync",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -59933,6 +60100,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G388", gate_canonical_truth_registry_sync),               # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_TRUTH_REGISTRY D4 pointer integrity
     ("G387", gate_v10498_agent_scope_declared),                  # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI7
     ("G386", gate_v10498_no_unregistered_model_in_production),   # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI1
     ("G385", gate_v10498_react_no_tenant_strings),               # v10.498 STAGE C — CRITICAL — FRONTEND_GOVERNANCE FE3

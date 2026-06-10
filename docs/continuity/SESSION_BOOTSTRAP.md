@@ -34,9 +34,10 @@ development across multiple concurrent arcs.
 **Phase 2 status:** **CLOSED** (pushed to origin/main at `535b477`). All three arcs complete.
 **Stage C status:** Arc D RESUMED. Arc D1 doctrine baseline alignment (Batch 5a) is the current focus. See Active Workstreams below.
 **Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) + intentionally-tracked credential data discipline (Batch 4c) — all active
-**Gate count:** 388 total (verified same-turn at HEAD `535b477` via `grep -c '^\s*("G[0-9]+",' scripts/audit.py`). The v10.498-era "418 verified at commit `49e804f`" attribution was stale — corrected v10.502 Stage C Arc D1 Batch 5a per CGR1.
+**Gate count:** 389 total (verified same-turn at HEAD `[pending Batch 5b commit]`). G388 `gate_canonical_truth_registry_sync` authored in Stage C Arc D2 Batch 5b to close the D4 stated-vs-enforced gap. The v10.498-era "418 verified at commit `49e804f`" attribution had been stale by ~50 v10.4xx batches — corrected to 388 in v10.502 Stage C Arc D1 Batch 5a per CGR1, then to 389 with the G388 addition in 5b.
 **Stage C commits (newest first):**
-- `[pending]` v10.502 Stage C Arc D1 Batch 5a — doctrine baseline alignment (GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded)
+- `[pending]` v10.502 Stage C Arc D2 Batch 5b — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked; G388 `gate_canonical_truth_registry_sync` authored (closes D4 stated-vs-enforced gap); 4 stale entries in CANONICAL_TRUTH_REGISTRY corrected; 11/11 new gate tests green
+- `72b1f1f` v10.502 Stage C Arc D1 Batch 5a — doctrine baseline alignment (GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded)
 
 **Phase 2 commits (newest first):**
 - `535b477` v10.501 Phase 2 Arc C Batch 4c — `.gitignore` doctrine fix + OPERATIONAL_PROTOCOL section + httpx dev-dep bundle (closes GAP-002; PHASE 2 CLOSED)
@@ -107,10 +108,14 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 ## Active workstreams
 
 1. **Stage C Arc D — Doctrine baseline + reality-classification (active focus).**
-   Resumed v10.502 after Phase 2 closure. Sub-arc structure that emerged from same-turn inspection (Batch 5a orientation findings):
-   - **Arc D1 — Doctrine baseline alignment.** Single batch (5a, this batch). GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded (gate count drift; G10463 cluster pathology; ledger drift; Stage C scope overcount).
-   - **Arc D2 — Reality-check the 8 provisional artifacts.** 4 batches paired by artifact shape. Each batch ships 1-2 new audit gates in the G388+ range + index updates + CGR1 correction if drift found. Pairings: (5b) CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY; (5c) API_CONTRACTS + DATA_DICTIONARY; (5d) CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP; (5e) ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE.
-   - **Arc D3 — Ledger backfill (optional).** ~75 v10.380-v10.413 + v10.463 gates exist with no ledger entries. Either backfill retroactive entries or formally accept the gap. 1 batch (5f).
+   Resumed v10.502 after Phase 2 closure. Sub-arc structure:
+   - **Arc D1 — Doctrine baseline alignment.** CLOSED (Batch 5a, commit `72b1f1f`). GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded (gate count drift; G10463 cluster pathology; ledger drift; Stage C scope overcount).
+   - **Arc D2 — Reality-check the 8 provisional artifacts.** In progress.
+     - 5b CLOSED `[pending commit]` — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked, G388 authored, 4 stale entries corrected.
+     - 5c pending — API_CONTRACTS + DATA_DICTIONARY.
+     - 5d pending — CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP.
+     - 5e pending — ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE.
+   - **Arc D3 — Ledger backfill (optional).** ~75 v10.380-v10.413 + v10.463 gates exist with no ledger entries. 1 batch (5f). Decide at end of D2 whether to backfill or accept gap.
 
 2. **PostgreSQL migration (incremental).** 27/52 tables migrated. G163 ratchet enforces no regression.
 

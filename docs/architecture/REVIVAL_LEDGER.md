@@ -61,6 +61,72 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.502 Stage C Arc D2 Batch 5b — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked; G388 authored
+
+**Type:** First gate-authoring batch of Stage C Arc D2 + 4 CGR1 surgical corrections inside CANONICAL_TRUTH_REGISTRY
+**Owner:** Joshua + Claude
+**Rationale:** Per Arc D2 pairing plan from Batch 5a closure (registry-shaped artifacts paired first), reality-check the two registries that govern the doctrine system itself. Same-turn inspection surfaced 5 findings (1 missing-gate fabrication-by-omission, 1 narrative misreading from Phase 2, 3 stale entries inside CANONICAL_TRUTH_REGISTRY, 0 drift inside GOVERNANCE_CLASSIFICATION_REGISTRY). G388 closes the largest of these — the D4 doctrine stated a gate-by-name that didn't exist. Both registries promoted from ACTIVE (provisional) to ACTIVE post-corrections.
+
+**Files shipped (6 modified, 2 new):**
+
+- `scripts/audit.py` — NEW `gate_canonical_truth_registry_sync` function (~120 LOC including docstring) authored just before `GATES = [`. Function parses `Authoritative source` and `Canonical interface` rows from CANONICAL_TRUTH_REGISTRY.md, extracts backticked path-shaped values, expands glob patterns, checks `Path(p).exists()` for each remaining path, with two allowlists (RUNTIME_GITIGNORED for `data/users.json`; SHADCN_ASPIRATIONAL for `components.json`, `src/components/ui/*`, `lib/cn`). Also registered `("G388", gate_canonical_truth_registry_sync)` in GATES dispatch table adjacent to G383-G387.
+
+- `docs/architecture/CANONICAL_TRUTH_REGISTRY.md` — 4 surgical edits: (1) Auth domain Conflict rule rewritten from "Cookie source wins over Bearer header" to "Bearer Authorization header only" reflecting v10.500 Phase 1 Batch 3a (commit `13d5258`); (2) Auth domain Critical-drift entry rewritten from "name collision must be resolved in Wave 2" to "RESOLVED in v10.498 Stage C Batch 1b (commit `2bcd76f`), enforced by G383"; (3) User identity domain Conflict/Enforcement/Classification updated to reflect completed bcrypt migration (v10.500 Phase 1 Batch 3c, commit `216171d`) + Phase 2 closures (validate_password_policy, rate limiting); (4) Frontend governance domain split into ACTIVE (bespoke React primitives + tokens.ts + tailwind.config.js + index.css) and ASPIRATIONAL (shadcn paths, pending future re-attempt).
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — both registries promoted from `ACTIVE (provisional)` to `ACTIVE` in the classification table; new Batch 5b CGR1 correction appended at end of file documenting all 5 findings; chronological reading order note updated to include Batch 5b.
+
+- `docs/architecture/POLICY_GAPS.md` — Stage C Arc D status updated to reflect Arc D1 closed and Arc D2 5b complete.
+
+- `docs/continuity/SESSION_BOOTSTRAP.md` — gate count 388 → 389; Stage C commits row extended; active workstreams updated to show 5b complete and 5c-5e pending.
+
+- `docs/CHANGELOG_v10502_batch5b.md` NEW — per-batch closure record.
+
+- `tests/test_gate_canonical_truth_registry_sync.py` NEW — 11 regression tests covering: gate registered, function exists, passes against current registry, summary shape correct, catches synthetic missing pointer, handles glob with matches, catches glob with zero matches, skips RUNTIME_GITIGNORED, skips SHADCN_ASPIRATIONAL, handles missing-registry-file gracefully, skips bare identifiers without `/`.
+
+- `app.py` — `_APP_VERSION` bumped to `v10.502-batch5b-2026.06.10`.
+
+**Five CGR1 findings recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch 5b correction):**
+
+1. **`gate_canonical_truth_registry_sync` was named in doctrine but never existed.** D4 of CANONICAL_TRUTH_REGISTRY.md cited the gate by name; same-turn grep confirmed zero hits in scripts/audit.py. Classic stated-vs-enforced fabrication-by-omission. **Closed** — gate authored, registered, tested.
+
+2. **`data/users.json` is gitignored runtime data, not "intentionally tracked".** Pre-compaction summary carried a misreading from Phase 2 Arc C closure narrative. Same-turn `.gitignore:52`, `git check-ignore`, `git ls-files`, `git log` all confirmed: file is gitignored and not in git history. The Batch 4c outcome (updated .gitignore comment to be honest) stands; only the narrative around it needed grounding. **Closed** — Batch 5b CGR1 correction documents.
+
+3. **Three stale entries inside CANONICAL_TRUTH_REGISTRY were silently outdated.** Auth Conflict rule (Cookie vs Bearer); Auth Critical drift (name collision unresolved → already RESOLVED); User identity (SHA-256 with on-login migration → bcrypt complete). **Closed** — three surgical edits.
+
+4. **Frontend domain conflated ACTIVE bespoke and ASPIRATIONAL shadcn parts.** Classification claimed `canonical (post v10.497 P0 shadcn pivot)` but the shadcn pivot was rolled back in v10.499 Stage C Batch 2a. **Closed** — domain split into explicit ACTIVE + ASPIRATIONAL.
+
+5. **GOVERNANCE_CLASSIFICATION_REGISTRY held up.** No drift inside the artifact. References to `gate_canonical_truth_registry_sync` cross-pointed to Finding 1; other gate references verified to exist. Open registry items section is forward-looking, not drift. **Promoted to ACTIVE** without edits.
+
+**Verification:**
+
+- Same-turn `grep -n "gate_canonical_truth_registry_sync" scripts/audit.py` confirmed zero hits before authoring.
+- Pre-authoring dry run of the gate logic against the unfixed registry returned 1 violation (`lib/cn` not resolvable) — driving the SHADCN_ASPIRATIONAL allowlist addition.
+- Post-correction gate run: 82 checked, 78 resolved, 0 violations, PASS.
+- Pre-existing Stage C G383 still passes (sanity check that audit.py edit didn't break neighbours).
+- All 11 new tests green when run against the sandbox clone with both corrected files in place.
+- Phase 2 regression suite (30 tests) unaffected because no Phase 2 code touched.
+
+**Trap discipline applied:**
+
+- **Trap #11** — every finding cited the same-turn inspection command that grounded it (`grep`, `git check-ignore`, `git ls-files`, `git log`, AST checks on the gate function via the tests).
+- **Trap #12** — ZIP delivery, full-file replacement for scripts/audit.py (2.7 MB) and CANONICAL_TRUTH_REGISTRY.md, namespaced `_batch5b_payload/` staging.
+- **Trap #14** — staging folder cannot collide with any destination path.
+- **Backup-before-mutation** — N/A. No credential data writes.
+- **Silent-except** — gate uses no broad except handlers; missing-registry-file case returns explicit failure result, not silent pass.
+- **RL1 (append-only)** — entry appended at top; no historical entries deleted or rewritten.
+
+**What this batch DID NOT do:**
+
+- Did not author gates for missing `Enforcement` references the registry cites for OTHER domains (e.g. `gate_bsc_completeness`). Those are other artifacts' problems; surfaced not closed.
+- Did not modify GOVERNANCE_CLASSIFICATION_REGISTRY — it held up under reality-check.
+- Did not change SYSTEM_CONSTITUTION or any other previously-classified artifact.
+- Did not address the G10463 duplication finding from Batch 5a — that remediation is a separate arc.
+- Did not backfill v10.380-v10.413 / v10.463 ledger entries — Arc D3 placeholder.
+
+**Cross-references:** Batch 5a (commit `72b1f1f`) is the immediate predecessor. Arc D2 Batch 5c (API_CONTRACTS + DATA_DICTIONARY reality-check) is the natural next batch. Full Batch 5b CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
+
+---
+
 ### 2026-06-10 v10.502 Stage C Arc D1 Batch 5a — Doctrine baseline alignment
 
 **Type:** Doctrine harmonization + CGR1 reality-check (4 distinct findings recorded)

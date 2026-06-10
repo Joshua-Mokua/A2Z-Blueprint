@@ -93,11 +93,11 @@ When a consumer wants to make a logic decision, it must call into the authoritat
 | Authoritative source | `utils/auth_jwt.py` (post v10.497 P1.3) |
 | Canonical interface | Exports `get_current_user`, `create_access_token`, `decode_token`, `revoke_token`, `_is_revoked`, `require_admin`, `require_role` |
 | Consumers | `utils/api.py` (all endpoints except `/api/health`); future `frontend/web/src/providers/AuthProvider.tsx` (via cookie) |
-| Conflict rule | Cookie source wins over Bearer header when both present. Blocklist check fires after signature/expiry validation. No alternate JWT issuance paths permitted. |
+| Conflict rule | **Bearer Authorization header only.** Cookie-based auth was never implemented in production (the v10.497 P1.3 cookie proposal was rolled into the React substrate work but the AuthProvider lifecycle adopted Bearer-header-only per v10.500 Phase 1 Batch 3a, commit `13d5258`). CSRF is N/A for the Bearer model. Blocklist check fires after signature/expiry validation. No alternate JWT issuance paths permitted. *(Corrected v10.502 Stage C Arc D2 Batch 5b — cross-ref GOVERNANCE_REALITY_INDEX Batch 3d React substrate correction.)* |
 | Enforcement | **G12** (`gate_api_auth_safety`, line 811) — every endpoint except `/api/health` declares an auth Depends. |
 | Owner | Security / Platform |
 | Classification | `canonical` (post v10.497 P1.3) |
-| Critical drift to flag | `utils/auth.py` (Streamlit-era) exports a function also named `require_role(module, user)` taking a module-string. This name collision must be resolved in Wave 2 (`API_CONTRACTS` + `RBAC_MATRIX`). Marked `transitional` pending resolution. |
+| Critical drift to flag | **RESOLVED.** `utils/auth.py` (Streamlit-era) previously exported a function also named `require_role(module, user)` taking a module-string — colliding with the `auth_jwt.py::require_role(roles: list[str])` factory. In v10.498 Stage C Batch 1b the Streamlit alias was renamed to `require_module_access` (commit `2bcd76f`, enforced by G383 `gate_v10498_no_require_role_collision`). The name space is now clean. *(Corrected v10.502 Stage C Arc D2 Batch 5b.)* |
 
 ---
 
@@ -123,10 +123,10 @@ When a consumer wants to make a logic decision, it must call into the authoritat
 | Authoritative source | `data/users.json` (1,439 records as of 2026-05-22) |
 | Canonical interface | `utils/core.py::UserManager` (`authenticate`, lookup, role/department/staff_code resolution) |
 | Consumers | `utils/auth.py::has_access`; `utils/auth_jwt.py::create_access_token`; every page/route that resolves a user |
-| Conflict rule | `users.json` wins. Password is SHA-256 today with bcrypt migration on successful login (V-003 fix). |
-| Enforcement | `gate_password_safety` (line 741); audit gates over users.json schema (TBD — see Wave 2 RBAC_MATRIX). |
+| Conflict rule | `users.json` wins. **Passwords are bcrypt envelope `bcrypt(sha256_hex)` for all 1,437 records** (migration completed v10.500 Phase 1 Batch 3c at commit `216171d`; `scripts/verify_bcrypt.py` enforces the envelope shape). *(Corrected v10.502 Stage C Arc D2 Batch 5b — was previously "SHA-256 today with bcrypt migration on successful login" reflecting pre-3c state.)* |
+| Enforcement | `gate_password_safety` (line 741); `gate_validate_password_policy` (closes GAP-001 + GAP-005 via tests/test_validate_password_policy.py, v10.501 Phase 2 Arc A); `gate_rate_limit_auth` (closes GAP-006 via tests/test_rate_limit_auth.py, v10.501 Phase 2 Arc B). Schema-level gate over users.json shape remains TBD — Wave 2 RBAC_MATRIX scope. |
 | Owner | HR Operations / Admin |
-| Classification | `canonical` (data) + `transitional` (password hash migration in flight) |
+| Classification | `canonical` (bcrypt migration complete; password policy enforced; rate limiting active) |
 
 ---
 
@@ -204,13 +204,13 @@ When a consumer wants to make a logic decision, it must call into the authoritat
 
 | Field | Value |
 |---|---|
-| Authoritative source | `frontend/web/src/lib/tokens.ts` (semantic hex tokens); `data/org_config.json` (brand colors via API); `frontend/web/components.json` (shadcn config); `frontend/web/tailwind.config.js` (Tailwind extends); `frontend/web/src/index.css` (CSS variable bindings) |
-| Canonical interface | shadcn/ui primitives under `frontend/web/src/components/ui/*`; A2Z extensions (`Button.loading`, `Badge.tone`, `StatCard`); `lib/cn` utility for class composition |
+| Authoritative source | **ACTIVE:** `frontend/web/src/lib/tokens.ts` (semantic hex tokens); `data/org_config.json` (brand colors via API); `frontend/web/tailwind.config.js` (Tailwind extends); `frontend/web/src/index.css` (CSS variable bindings). **ASPIRATIONAL** (pending shadcn pivot completion): `frontend/web/components.json`. *(Split corrected v10.502 Stage C Arc D2 Batch 5b — cross-ref GOVERNANCE_REALITY_INDEX Batch 2a-shadcn correction.)* |
+| Canonical interface | **ACTIVE:** A2Z bespoke React primitives under `frontend/web/src/components/` (BrandingProvider, AuthProvider, ProtectedRoute, useRole, App.tsx contract). **ASPIRATIONAL** (pending shadcn pivot completion): shadcn/ui primitives under `frontend/web/src/components/ui/*`; `lib/cn` utility for class composition. The shadcn pivot was attempted in v10.497 P0, rolled back by v10.499 Stage C Batch 2a; bespoke implementation is the current ACTIVE form. |
 | Consumers | Every React page and component under `frontend/web/src/pages/*` and `frontend/web/src/components/*` |
-| Conflict rule | `tokens.ts` is single source for semantic hex. Brand color variables (`--brand-*`) are HEX, tenant-injected via BrandingProvider. shadcn theme variables (`--primary`, etc.) are HSL components, derived from `tokens.ts`. No hardcoded hex elsewhere. |
+| Conflict rule | `tokens.ts` is single source for semantic hex. Brand color variables (`--brand-*`) are HEX, tenant-injected via BrandingProvider. shadcn theme variables (HSL components derived from `tokens.ts`) become ACTIVE only when the shadcn pivot is re-attempted. No hardcoded hex elsewhere. |
 | Enforcement | **G381** (App.tsx contract literals preserved); **G382** (all primitives exist, Dashboard uses them, no hardcoded hex in `src/components/**.tsx`); `gate_frontend_scaffolding_present` (line 4111); `gate_v10495_react_foundations` (line 58961); `gate_v10496_design_system` (line 59116) |
 | Owner | Frontend / Design system |
-| Classification | `canonical` (post v10.497 P0 shadcn pivot) |
+| Classification | `canonical` (bespoke React primitives layer; shadcn pivot remains ASPIRATIONAL post-rollback) |
 
 ---
 

@@ -39,15 +39,15 @@ pending Batch 2-7 reality checks (tracked as OI-66).
 
 | Artifact                                   | Provisional                | Notes                                                              |
 | ------------------------------------------ | -------------------------- | ------------------------------------------------------------------ |
-| CANONICAL_TRUTH_REGISTRY.md                | ACTIVE (provisional)       | Reality check scheduled Batch 2                                    |
-| GOVERNANCE_CLASSIFICATION_REGISTRY.md      | ACTIVE (provisional)       | Self-referential; supplemented by this index                       |
+| CANONICAL_TRUTH_REGISTRY.md                | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5b. G388 (`gate_canonical_truth_registry_sync`) authored to mechanically enforce D4 pointer integrity. 3 stale entries corrected (Auth cookie/Bearer; auth.py name collision RESOLVED; bcrypt migration COMPLETE). Frontend domain split into ACTIVE bespoke + ASPIRATIONAL shadcn parts. |
+| GOVERNANCE_CLASSIFICATION_REGISTRY.md      | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5b. G1-G5 doctrine holds; the classification mechanism is in active use across this index. Open registry items are forward-looking work, not drift. |
 | SYSTEM_CONSTITUTION.md                     | ACTIVE                     | Received CGR1 article in this batch                                |
-| API_CONTRACTS.md                           | ACTIVE (provisional)       | Reality check scheduled Batch 2                                    |
-| ORGANS_REGISTRY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 3                                    |
-| CANONICAL_DEPENDENCY_MAP.md                | ACTIVE (provisional)       | D2 enforced by G384, passed; broader coverage scheduled Batch 2    |
-| DATA_DICTIONARY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 2                                    |
-| TELEMETRY_MAP.md                           | ACTIVE (provisional)       | T2 enforced by G384, passed; broader coverage scheduled Batch 2    |
-| DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL (provisional) | Twin exists; full parity ASPIRATIONAL; reality check Batch 4       |
+| API_CONTRACTS.md                           | ACTIVE (provisional)       | Reality check scheduled Batch 5c                                    |
+| ORGANS_REGISTRY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5e                                    |
+| CANONICAL_DEPENDENCY_MAP.md                | ACTIVE (provisional)       | D2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
+| DATA_DICTIONARY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5c                                    |
+| TELEMETRY_MAP.md                           | ACTIVE (provisional)       | T2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
+| DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL (provisional) | Twin exists; full parity ASPIRATIONAL; reality check Batch 5e      |
 | RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL (provisional) | G373-G380 ladder ACTIVE; full Olympic certification TRANSITIONAL   |
 | REVIVAL_LEDGER.md                          | ACTIVE                     | This is the operational log; always reflects reality by definition |
 | CHANGELOG_MASTER.md                        | ACTIVE                     | CM1 doctrine ACTIVE since v10.498                                  |
@@ -411,4 +411,100 @@ Surgical doctrine edits only — zero behavioural code changes.
 
 ---
 
-For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+## CGR1 Reality-Check Correction (v10.502 Stage C Arc D2 Batch 5b) — CANONICAL_TRUTH_REGISTRY and GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked
+
+**Date:** 2026-06-10
+**Inspected by:** Claude, same-turn inspection of `docs/architecture/CANONICAL_TRUTH_REGISTRY.md`, `docs/architecture/GOVERNANCE_CLASSIFICATION_REGISTRY.md`, `scripts/audit.py`, `.gitignore`
+**Doctrine status corrections:** both artifacts promoted from `ACTIVE (provisional)` to **ACTIVE**; 4 stale entries inside CANONICAL_TRUTH_REGISTRY corrected; new audit gate G388 authored to close the D4 stated-vs-enforced gap.
+
+### Finding 1 — `gate_canonical_truth_registry_sync` was named in doctrine but never existed
+
+CANONICAL_TRUTH_REGISTRY.md D4 doctrine line stated:
+
+> Sources point to data; pointers don't drift silently. Every pointer in this registry is a file path. Changes to those pointers (renames, moves) must update this registry in the same commit. Audit gate `gate_canonical_truth_registry_sync` enforces this.
+
+Same-turn `grep -n "gate_canonical_truth_registry_sync" scripts/audit.py` returned zero hits. The gate was a fabrication-by-omission — the doctrine declared mechanical enforcement that didn't exist.
+
+**Closed in this batch.** G388 (`gate_canonical_truth_registry_sync`) authored, registered in GATES dispatch table, and verified to PASS against the post-correction registry (82 paths checked, 78 resolved, 0 violations). 11 regression tests in `tests/test_gate_canonical_truth_registry_sync.py` lock the behaviour:
+
+- Gate registered in GATES
+- Function exists with expected signature
+- Passes against current registry
+- Returns expected summary shape (checked/resolved/violations counts)
+- Catches synthetic missing pointer
+- Handles glob with matches
+- Catches glob with zero matches
+- Skips RUNTIME_GITIGNORED paths (e.g. `data/users.json`)
+- Skips SHADCN_ASPIRATIONAL paths (post-rollback)
+- Handles missing registry file (clean failure, not crash)
+- Skips bare identifiers without `/`
+
+### Finding 2 — `data/users.json` is gitignored runtime data, not "intentionally tracked"
+
+Pre-compaction summary carried a misreading from Phase 2 Arc C: "Per Phase 2 Arc C closure (Batch 4c), file is INTENTIONALLY TRACKED." Same-turn inspection contradicts:
+
+```
+$ grep -n "users.json" .gitignore
+52:data/users.json
+$ git check-ignore -v data/users.json
+.gitignore:52:data/users.json   data/users.json
+$ git ls-files data/users.json
+(empty)
+$ git log --all --oneline -- data/users.json
+(empty)
+```
+
+The file is **gitignored AND not in git history**. The actual Phase 2 Arc C / Batch 4c work was: updating the `.gitignore` COMMENT block to explain *why* the file is intentionally gitignored (locally-generated bcrypt password store; must never be committed). The file's gitignored status was never in dispute; only the *explanation* was previously misleading. GAP-002 closure correctly documented gitignore — but the per-batch narrative confused "documented intentional gitignore" with "intentional tracking." Today's Batch 5b inspection resolves the confusion. The Batch 4c outcome stands; the narrative around it is now grounded.
+
+G388's RUNTIME_GITIGNORED allowlist explicitly handles this case so the registry can continue to cite `data/users.json` as the authoritative source for user identity without the gate false-positiving on a clean checkout.
+
+### Finding 3 — Three stale entries inside CANONICAL_TRUTH_REGISTRY were silently outdated
+
+The registry's last `Last updated` field was 2026-05-22 (v10.498). Three substantive entries fell out of sync since:
+
+1. **Authentication domain — "Cookie source wins over Bearer header when both present"**. WRONG since v10.500 Phase 1 Batch 3a (commit `13d5258`). The AuthProvider lifecycle adopted Bearer-header-only. CSRF is N/A for the Bearer model. **Corrected.**
+
+2. **Authentication domain — "name collision must be resolved in Wave 2"**. Already RESOLVED in v10.498 Stage C Batch 1b (commit `2bcd76f`): the Streamlit `require_role` alias was renamed to `require_module_access`, enforced by G383 `gate_v10498_no_require_role_collision`. **Corrected to reflect resolved status.**
+
+3. **User identity domain — "Password is SHA-256 today with bcrypt migration on successful login (V-003 fix)"**. Stale. v10.500 Phase 1 Batch 3c migrated all 1,437 credentials to bcrypt envelope format `bcrypt(sha256_hex)` (commit `216171d`). Migration is complete; the on-login lazy-migration path no longer applies. **Corrected to "passwords are bcrypt envelope for all 1,437 records; migration completed v10.500 Phase 1 Batch 3c."** The Enforcement column also extended with the Phase 2 closures (`validate_password_policy`, rate limiting). Classification line correspondingly de-transitionalized.
+
+### Finding 4 — Frontend domain conflated ACTIVE bespoke primitives with ASPIRATIONAL shadcn primitives
+
+The Frontend governance domain claimed Authoritative source = shadcn-pivot files (`components.json`, `src/components/ui/*`, `lib/cn`) and Classification = `canonical (post v10.497 P0 shadcn pivot)`. Per GOVERNANCE_REALITY_INDEX Batch 2a-shadcn correction, the shadcn pivot was rolled back; bespoke React primitives are the ACTIVE form. The Frontend domain has now been split explicitly into ACTIVE (tokens.ts + tailwind.config.js + index.css + bespoke primitives) and ASPIRATIONAL (shadcn paths, pending future re-attempt). **Corrected.**
+
+G388's SHADCN_ASPIRATIONAL allowlist contains the three pivot-paths so the gate doesn't false-positive while the post-rollback state holds.
+
+### Finding 5 — GOVERNANCE_CLASSIFICATION_REGISTRY references two real and one apparent-placeholder gate
+
+References inspected:
+
+- `gate_canonical_truth_registry_sync` — MISSING (cross-pointer to Finding 1 above; not the artifact's own claim)
+- `gate_coverage_thresholds` — **EXISTS** (verified)
+- `gate_performance_api_latency` — **EXISTS** (verified)
+- `gate_name` — apparent placeholder/example, not a real gate name (used illustratively in the "Enforcement tier taxonomy" section)
+
+The artifact's own G1-G5 doctrine holds. The classification mechanism IS in active use (GOVERNANCE_REALITY_INDEX consumes it). The Open registry items section lists forward-looking Wave 2-6 work; some has progressed (Wave 2 RBAC_MATRIX is ACTIVE per Batch 1b), some is pending (Wave 3 ORGANS_REGISTRY scheduled for Arc D2 Batch 5e). No drift inside the artifact warrants a CGR1 correction; the forward-looking nature of the Open items section is normal doctrine work, not stated-vs-enforced gap. **Classification promoted to ACTIVE.**
+
+### What this batch DID
+
+- Authored `gate_canonical_truth_registry_sync` (G388) in `scripts/audit.py` with full docstring, glob handling, RUNTIME_GITIGNORED allowlist, SHADCN_ASPIRATIONAL allowlist, and missing-registry guard.
+- Registered G388 in GATES dispatch table adjacent to G383-G387 (Stage C cluster).
+- Made 4 surgical edits to `CANONICAL_TRUTH_REGISTRY.md`: Auth Conflict rule + Auth Critical drift + User identity Conflict/Enforcement/Classification + Frontend governance domain split.
+- Promoted both artifacts to ACTIVE in the classification table at the top of this index.
+- Authored `tests/test_gate_canonical_truth_registry_sync.py` (11 tests, all green).
+
+### What this batch DID NOT do
+
+- Did not change `GOVERNANCE_CLASSIFICATION_REGISTRY.md`. Its content held up under reality-check; no edits needed.
+- Did not author gates for any other domain's `Enforcement` references that turned out to be missing (e.g. `gate_bsc_completeness`). Those are other artifacts' problems, not CANONICAL_TRUTH_REGISTRY's. Surfaced; not closed.
+- Did not modify any other doctrine artifact's classification.
+- Did not change SYSTEM_CONSTITUTION or any of the previously-classified-ACTIVE artifacts.
+
+### Gate count delta
+
+Before this batch: 388 total gates in `scripts/audit.py`.
+After this batch: **389 total gates** (G388 authored and registered).
+
+---
+
+For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.

@@ -417,7 +417,7 @@ added to `requirements-dev.txt`.
 4 gaps closed across 3 arcs. Net status at Phase 2 boundary:
 1 OPEN (GAP-007 — `_APP_VERSION` stamp policy), 2 DEFERRED (GAP-003 envelope retirement, GAP-004 must_rotate token lifetime).
 
-**Stage C Arc D status:** Arc D1 (doctrine baseline alignment) in progress as v10.502 Batch 5a — surfaced 4 CGR1 corrections (gate count drift; G10463 cluster pathology; ledger drift for v10.380-v10.413 and v10.463; Stage C scope overcount). Arc D2 (reality-check 8 provisional artifacts) and Arc D3 (optional ledger backfill) follow.
+**Stage C Arc D status:** Arc D1 CLOSED (Batch 5a, commit `72b1f1f` — doctrine baseline alignment + 4 CGR1 corrections). Arc D2 in progress: Batch 5b CLOSED `[pending commit]` (CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked; G388 `gate_canonical_truth_registry_sync` authored; 11/11 new tests green); 5c-5e pending. Arc D3 (optional ledger backfill) deferred to end of D2.
 
 **GAP-003 / GAP-004 remain DEFERRED** per original recommendations — their triggers (observability data for GAP-003, established Phase 2 token discipline for GAP-004) have not materialised yet.
 
