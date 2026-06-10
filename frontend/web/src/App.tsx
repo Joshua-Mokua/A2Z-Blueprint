@@ -32,6 +32,17 @@
 //     after each successful mutation. The list page's provider will
 //     re-fetch on its next mount when user navigates back.
 //   - G381 chain still byte-for-byte unchanged.
+// v10.512 Phase 4 Batch β3:
+//   - /pipeline/new route added (protected, requireAuth).
+//   - Route declaration ORDER is load-bearing: /pipeline/new MUST come
+//     before /pipeline/:dealId. React Router 6 matches in declaration
+//     order; without this the literal "new" would be captured as a
+//     :dealId param and the detail page would try to fetch a deal
+//     with ID "new" (and 404).
+//   - Create page is page-local — no PipelineProvider wrap. After
+//     successful create or refer, navigates to /pipeline/{newId} (the
+//     detail page), which fetches the new deal fresh.
+//   - G381 chain still byte-for-byte unchanged.
 //
 // CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
 //
@@ -64,6 +75,7 @@ import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { Pipeline } from './pages/Pipeline';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
+import { PipelineCreate } from './pages/PipelineCreate';
 
 const queryClient = new QueryClient();
 
@@ -107,6 +119,17 @@ function App() {
                     Mutations refetch the same page-local state. The
                     list view will re-fetch on its next mount when
                     user navigates back to /pipeline. */}
+
+                {/* CRITICAL: /pipeline/new MUST be declared BEFORE
+                    /pipeline/:dealId. React Router 6 matches in order,
+                    and without this the literal "new" would be captured
+                    as a :dealId param and the detail page would try to
+                    fetch a deal with ID "new". */}
+                <Route path="/pipeline/new" element={
+                    <ProtectedRoute requireAuth>
+                        <PipelineCreate />
+                    </ProtectedRoute>
+                } />
                 <Route path="/pipeline/:dealId" element={
                     <ProtectedRoute requireAuth>
                         <PipelineDealDetail />

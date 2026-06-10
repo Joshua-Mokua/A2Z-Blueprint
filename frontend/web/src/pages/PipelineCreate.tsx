@@ -1,0 +1,757 @@
+// v10.512 Phase 4 Batch β3 — PipelineCreate page.
+//
+// Form at /pipeline/new for creating a new pipeline deal. Covers the
+// happy path AND the α5 portfolio-conflict resolution (Refer / Seek
+// permission / Override-with-note).
+//
+// Architecture note — Streamlit/backend semantic inversion:
+//   Streamlit's `_bsc_credit` calculation in pages/3_pipeline.py inverts
+//   the bsc_credit_to value relative to what the backend rules in
+//   utils/api_pipeline_mutations.py::is_override_semantics expect:
+//
+//   Streamlit "Seek permission"  → bsc_credit_to = creator      (me)
+//   Streamlit "Pursue (override)" → bsc_credit_to = portfolio_owner
+//
+//   Backend rules:
+//   bsc_credit_to == portfolio_owner_name → seek-permission (no note)
+//   bsc_credit_to == anything else          → override (note required)
+//
+//   So Streamlit's "Seek permission" payload triggers the backend's
+//   OVERRIDE rule and fails validation (no note collected). This is
+//   the α5 doctrine note's "latent UX bug surfaced in α5 inspection."
+//
+//   This page implements the BACKEND's semantics — internally
+//   consistent, server-validated. A future batch should fix Streamlit
+//   to match (not β3 scope). Documenting the divergence in REVIVAL_LEDGER
+//   is part of β3's deliverable.
+//
+// Deliberately NOT in β3 (deferred to later batches):
+//   - CBS auto-lookup (needs new GET /api/cbs/customer/{cif} endpoint)
+//   - Product dropdown driven by GET /api/pipeline/products
+//   - Duplicate detection across deals (client-side scan or server endpoint)
+//   - Backup staff selector
+//   - Save-as-draft path
+//   - Sector / decision-level / ID type / phone fields
+//   - Competitors multiselect
+//   - Linked deals for accounts pipeline
+//   - Manager "assign to" override
+
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useBranding } from '@/hooks/useBranding';
+import { useRole } from '@/hooks/useRole';
+import { useToast } from '@/components/Toast';
+import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
+import { Card } from '@/components/Card';
+import { Badge } from '@/components/Badge';
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import {
+  PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
+  COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
+  MIN_OVERRIDE_NOTE_LEN,
+  type PipelineCategory, type CreateDealRequest, type ReferDealRequest,
+} from '@/types/pipeline';
+
+
+// ── Conflict resolution path discriminator ──────────────────────────────
+
+type ConflictPath = 'refer' | 'seek_permission' | 'override';
+
+
+// ── Page component ──────────────────────────────────────────────────────
+
+export function PipelineCreate() {
+  const navigate = useNavigate();
+  const { branding } = useBranding();
+  const { user } = useRole();
+  const { toast } = useToast();
+  const mutations = usePipelineDealMutations();
+
+  // ── Core form state ──────────────────────────────────────────────────
+
+  const [clientName,  setClientName]  = useState('');
+  const [clientType,  setClientType]  = useState<'Individual' | 'Business'>('Individual');
+  const [isNtb,       setIsNtb]       = useState(false);
+  const [accountNumber, setAccountNumber] = useState('');
+
+  const [category,    setCategory]    = useState<PipelineCategory>('Loan');
+  const [productType, setProductType] = useState('');
+  const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
+  const [stage,       setStage]       = useState<string>('Lead');
+  const [probability, setProbability] = useState<number>(10);     // percent 0..100
+
+  const [nextAction,     setNextAction]     = useState('');
+  const [nextActionDate, setNextActionDate] = useState('');
+  const [expectedClose,  setExpectedClose]  = useState('');
+  const [source,         setSource]         = useState<string>('Existing relationship');
+  const [notes,          setNotes]          = useState('');
+
+  // ── Conflict resolution state ────────────────────────────────────────
+
+  const [hasConflict, setHasConflict] = useState(false);
+  const [portfolioOwnerCode, setPortfolioOwnerCode] = useState('');
+  const [portfolioOwnerName, setPortfolioOwnerName] = useState('');
+  const [conflictPath,       setConflictPath]       = useState<ConflictPath>('seek_permission');
+  const [referredTo,         setReferredTo]         = useState('');     // refer path only
+  const [referralNote,       setReferralNote]       = useState('');     // refer path only
+  const [overrideNote,       setOverrideNote]       = useState('');     // override path only
+
+  // ── Submit state ─────────────────────────────────────────────────────
+
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // ── Derived values ───────────────────────────────────────────────────
+
+  const stageOptions       = useMemo(() => INITIAL_STAGES_BY_CATEGORY[category], [category]);
+  const productSuggestions = useMemo(() => COMMON_PRODUCTS_BY_CATEGORY[category], [category]);
+  const dealValueNum       = useMemo(() => {
+    const n = Number(String(dealValue).replace(/[,\s]/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+  }, [dealValue]);
+
+  // Override note is required when conflictPath === 'override' AND user has conflict
+  const overrideNoteTooShort = hasConflict && conflictPath === 'override'
+    && overrideNote.trim().length < MIN_OVERRIDE_NOTE_LEN;
+
+  // When category changes, ensure stage is valid for the new category
+  // (don't auto-mutate stage here — let the user see the change explicitly)
+  const stageIsValidForCategory = stageOptions.includes(stage);
+
+  // ── Validation ───────────────────────────────────────────────────────
+
+  const isReferPath = hasConflict && conflictPath === 'refer';
+
+  const validate = (): string | null => {
+    if (!clientName.trim()) return 'Client name is required.';
+
+    if (isReferPath) {
+      // Refer path has different required fields
+      if (!portfolioOwnerCode.trim()) return 'Portfolio owner staff code is required for referral.';
+      if (!portfolioOwnerName.trim()) return 'Portfolio owner name is required for referral.';
+      if (!referredTo.trim())          return 'Referred-to name is required.';
+      if (user?.staff_code && portfolioOwnerCode.trim() === user.staff_code) {
+        return "You can't refer a deal to yourself.";
+      }
+      return null;
+    }
+
+    // Standard create path
+    if (!productType.trim())        return 'Product type is required.';
+    if (!stage.trim())              return 'Stage is required.';
+    if (!stageIsValidForCategory)   return `Stage "${stage}" is not valid for ${category} pipeline.`;
+    if (!Number.isFinite(dealValueNum) || dealValueNum < 0) {
+      return 'Deal value must be a non-negative number.';
+    }
+
+    if (hasConflict) {
+      if (!portfolioOwnerCode.trim()) return 'Portfolio owner staff code is required.';
+      if (!portfolioOwnerName.trim()) return 'Portfolio owner name is required.';
+      if (user?.staff_code && portfolioOwnerCode.trim() === user.staff_code) {
+        return 'Portfolio owner cannot be yourself — uncheck conflict if you own this portfolio.';
+      }
+      if (conflictPath === 'override' && overrideNote.trim().length < MIN_OVERRIDE_NOTE_LEN) {
+        return `Manager override note must be at least ${MIN_OVERRIDE_NOTE_LEN} characters.`;
+      }
+    }
+    return null;
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────
+
+  const onSubmit = async () => {
+    setSubmitError(null);
+    const v = validate();
+    if (v) {
+      setSubmitError(v);
+      return;
+    }
+
+    // Guard against missing user identity (shouldn't happen given the
+    // route is ProtectedRoute requireAuth, but type system needs it)
+    if (!user?.staff_code || !user?.full_name) {
+      setSubmitError('Your user identity is not loaded. Try refreshing the page.');
+      return;
+    }
+
+    // ── Refer path: separate endpoint ──────────────────────────────────
+    if (isReferPath) {
+      const body: ReferDealRequest = {
+        client_name:           clientName.trim(),
+        staff_code:            user.staff_code,
+        staff_name:            user.full_name,
+        portfolio_owner_code:  portfolioOwnerCode.trim(),
+        portfolio_owner_name:  portfolioOwnerName.trim(),
+        referred_to:           referredTo.trim(),
+        referral_note:         referralNote.trim() || undefined,
+        account_number:        accountNumber.trim() || undefined,
+        // Note: unit not sent from client — UserIdentity surfaces
+        // department, not unit. Server can resolve unit from staff_code
+        // if needed (the create endpoint already does this for other
+        // ownership fields).
+      };
+      const result = await mutations.refer(body);
+      if (result.ok) {
+        toast({
+          tone: 'success',
+          message: `Deal referred to ${referredTo.trim()}. Owner will see it in their pipeline.`,
+        });
+        navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
+      } else {
+        setSubmitError(result.error);
+      }
+      return;
+    }
+
+    // ── Standard create path (with optional conflict fields) ───────────
+    const body: CreateDealRequest = {
+      client_name:  clientName.trim(),
+      staff_code:   user.staff_code,
+      staff_name:   user.full_name,
+      deal_value:   dealValueNum,
+      product_type: productType.trim(),
+      stage:        stage,
+
+      // Optional
+      client_type:        clientType,
+      is_ntb:             isNtb,
+      pipeline_category:  category,
+      probability:        probability / 100,
+      next_action:        nextAction.trim() || undefined,
+      next_action_date:   nextActionDate || undefined,
+      expected_close:     expectedClose  || undefined,
+      notes:              notes.trim() || undefined,
+      source:             source,
+      // Note: unit not sent — UserIdentity has department but not unit.
+      // Server resolves unit from staff_code if needed.
+      account_number:     !isNtb && accountNumber.trim() ? accountNumber.trim() : undefined,
+    };
+
+    // ── Apply conflict resolution to body ─────────────────────────────
+    if (hasConflict) {
+      body.portfolio_owner_code = portfolioOwnerCode.trim();
+      body.portfolio_owner_name = portfolioOwnerName.trim();
+
+      if (conflictPath === 'seek_permission') {
+        // BSC credit goes to portfolio owner. Backend sees this as
+        // seek-permission semantics — NO override note required.
+        body.bsc_credit_to = portfolioOwnerName.trim();
+      } else if (conflictPath === 'override') {
+        // BSC credit goes to caller. Backend detects override semantics
+        // and REQUIRES manager_override_note (≥10 chars).
+        body.bsc_credit_to          = user.full_name;
+        body.manager_override_note  = overrideNote.trim();
+      }
+    }
+
+    const result = await mutations.create(body);
+    if (result.ok) {
+      toast({ tone: 'success', message: 'Deal created.' });
+      navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
+    } else {
+      setSubmitError(result.error);
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header
+        className="px-6 py-5 text-white shadow-sm"
+        style={{ background: 'var(--brand-secondary)' }}
+      >
+        <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
+              {branding?.bank_name ?? 'A2Z MIS 360'}
+            </div>
+            <h1 className="text-xl font-bold mt-1">
+              {branding?.app_name ?? 'A2Z'} MIS 360 — New Pipeline Deal
+            </h1>
+          </div>
+          <div className="text-right text-xs opacity-70 leading-relaxed">
+            {user?.full_name && (
+              <div className="font-medium opacity-90">{user.full_name}</div>
+            )}
+            {user?.role && <div>{user.role}</div>}
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Top action bar */}
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
+            ← Back to pipeline
+          </Button>
+          <Badge tone="brand" size="sm">β3</Badge>
+        </div>
+
+        {/* ─────────── Customer section ─────────── */}
+        <Card stripe="primary">
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Customer</h2>
+            <span className="text-xs text-gray-400">Who is this deal for?</span>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Client name *"
+                placeholder="e.g. John Otieno Kamau"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Customer type
+                </label>
+                <div className="flex gap-2 mt-1">
+                  <SegBtn
+                    active={clientType === 'Individual'}
+                    onClick={() => setClientType('Individual')}
+                    disabled={mutations.loading}
+                  >Individual</SegBtn>
+                  <SegBtn
+                    active={clientType === 'Business'}
+                    onClick={() => setClientType('Business')}
+                    disabled={mutations.loading}
+                  >Business</SegBtn>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Relationship status
+                </label>
+                <div className="flex gap-2 mt-1">
+                  <SegBtn
+                    active={!isNtb}
+                    onClick={() => setIsNtb(false)}
+                    disabled={mutations.loading}
+                  >Existing</SegBtn>
+                  <SegBtn
+                    active={isNtb}
+                    onClick={() => setIsNtb(true)}
+                    disabled={mutations.loading}
+                  >New to Bank (NTB)</SegBtn>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Existing = has CBS relationship · NTB = first-time customer
+                </p>
+              </div>
+              {!isNtb && (
+                <Input
+                  label="Account number / CIF (optional)"
+                  placeholder="e.g. ECO0123456789 or 100456789"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  disabled={mutations.loading}
+                  helper="Helps tie the deal to the CBS record. Auto-lookup deferred to a future batch."
+                />
+              )}
+            </div>
+          </Card.Body>
+        </Card>
+
+        {/* ─────────── Deal classification + value ─────────── */}
+        <Card className="mt-6" stripe="primary">
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Deal details</h2>
+            <span className="text-xs text-gray-400">Classification + value</span>
+          </Card.Header>
+          <Card.Body>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Pipeline category *</label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {PIPELINE_CATEGORIES.map((c) => (
+                  <SegBtn
+                    key={c}
+                    active={category === c}
+                    onClick={() => {
+                      setCategory(c);
+                      // Auto-reset stage to a valid one for this category
+                      if (!INITIAL_STAGES_BY_CATEGORY[c].includes(stage)) {
+                        setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
+                      }
+                      // Clear product (suggestions changed)
+                      setProductType('');
+                    }}
+                    disabled={mutations.loading}
+                  >{c}</SegBtn>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {category === 'Loan'    && 'Loans, overdrafts, trade finance, mortgages'}
+                {category === 'Deposit' && 'CASA, fixed deposit, call deposit, notice'}
+                {category === 'Account' && 'Account opening — counts as new accounts'}
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <Input
+                label="Product type *"
+                placeholder="e.g. Business Loan"
+                value={productType}
+                onChange={(e) => setProductType(e.target.value)}
+                disabled={mutations.loading}
+                helper="Quick pick from common products below, or type your own."
+              />
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {productSuggestions.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setProductType(p)}
+                    disabled={mutations.loading}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                      productType === p
+                        ? 'bg-brand-primary text-white border-brand-primary'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <Input
+                label={category === 'Account' ? 'Number of accounts *' : 'Deal value (KES) *'}
+                placeholder={category === 'Account' ? 'e.g. 1' : 'e.g. 5000000'}
+                type="number"
+                value={dealValue}
+                onChange={(e) => setDealValue(e.target.value)}
+                disabled={mutations.loading}
+                helper={Number.isFinite(dealValueNum) && dealValueNum > 0
+                  ? `${branding?.currency_symbol ?? 'KES'} ${dealValueNum.toLocaleString()}`
+                  : undefined}
+              />
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Initial stage *
+                </label>
+                <select
+                  value={stage}
+                  onChange={(e) => setStage(e.target.value)}
+                  disabled={mutations.loading}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                >
+                  {stageOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Most deals start at Lead.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Probability ({probability}%)
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={probability}
+                  onChange={(e) => setProbability(Number(e.target.value))}
+                  disabled={mutations.loading}
+                  className="mt-3 w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  How likely is this deal to close?
+                </p>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+
+        {/* ─────────── Workflow ─────────── */}
+        <Card className="mt-6">
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Workflow</h2>
+            <span className="text-xs text-gray-400">Next steps + source</span>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Next action"
+                placeholder="e.g. Send KYC checklist"
+                value={nextAction}
+                onChange={(e) => setNextAction(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <Input
+                label="Next action date"
+                type="date"
+                value={nextActionDate}
+                onChange={(e) => setNextActionDate(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <Input
+                label="Expected close date"
+                type="date"
+                value={expectedClose}
+                onChange={(e) => setExpectedClose(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Lead source</label>
+                <select
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  disabled={mutations.loading}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                >
+                  {SOURCE_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700">
+                Notes
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={mutations.loading}
+                placeholder="Relationship history, key triggers, urgency..."
+                rows={3}
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+              />
+            </div>
+          </Card.Body>
+        </Card>
+
+        {/* ─────────── Portfolio conflict resolution ─────────── */}
+        <Card className="mt-6" stripe={hasConflict ? 'accent' : undefined}>
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">
+              Portfolio assignment
+            </h2>
+            <span className="text-xs text-gray-400">
+              {hasConflict ? 'α5 conflict resolution' : 'Is this customer already in another RM\u2019s portfolio?'}
+            </span>
+          </Card.Header>
+          <Card.Body>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasConflict}
+                onChange={(e) => setHasConflict(e.target.checked)}
+                disabled={mutations.loading}
+                className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+              />
+              <span className="text-sm text-gray-800">
+                This customer is in another RM&rsquo;s portfolio
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-2">
+              Check this if CBS already assigns the customer to a different RM.
+              Auto-detection via CBS lookup is deferred to a future batch — for
+              β3, mark manually.
+            </p>
+
+            {hasConflict && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Portfolio owner staff code *"
+                  placeholder="e.g. 0123"
+                  value={portfolioOwnerCode}
+                  onChange={(e) => setPortfolioOwnerCode(e.target.value)}
+                  disabled={mutations.loading}
+                />
+                <Input
+                  label="Portfolio owner name *"
+                  placeholder="e.g. Jane Mwangi"
+                  value={portfolioOwnerName}
+                  onChange={(e) => setPortfolioOwnerName(e.target.value)}
+                  disabled={mutations.loading}
+                />
+              </div>
+            )}
+
+            {hasConflict && (
+              <div className="mt-6">
+                <label className="text-sm font-medium text-gray-700">
+                  How do you want to proceed?
+                </label>
+                <div className="mt-2 space-y-2">
+                  <PathRadio
+                    active={conflictPath === 'refer'}
+                    onClick={() => setConflictPath('refer')}
+                    disabled={mutations.loading}
+                    label="Refer to portfolio owner"
+                    sub={`Sends the lead to ${portfolioOwnerName || 'the owner'}. They take it from here.`}
+                  />
+                  <PathRadio
+                    active={conflictPath === 'seek_permission'}
+                    onClick={() => setConflictPath('seek_permission')}
+                    disabled={mutations.loading}
+                    label="Seek permission, defer BSC credit"
+                    sub={`You'll work the deal; BSC credit on close goes to ${portfolioOwnerName || 'the owner'}. No manager approval required server-side.`}
+                  />
+                  <PathRadio
+                    active={conflictPath === 'override'}
+                    onClick={() => setConflictPath('override')}
+                    disabled={mutations.loading}
+                    label="Override portfolio assignment, take BSC credit"
+                    sub={`BSC credit goes to ${user?.full_name ?? 'you'}. Requires manager override note (\u2265 ${MIN_OVERRIDE_NOTE_LEN} chars).`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {hasConflict && conflictPath === 'refer' && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Referred to (named recipient) *"
+                  placeholder="Usually the portfolio owner"
+                  value={referredTo}
+                  onChange={(e) => setReferredTo(e.target.value)}
+                  disabled={mutations.loading}
+                />
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Referral note (optional)
+                  </label>
+                  <textarea
+                    value={referralNote}
+                    onChange={(e) => setReferralNote(e.target.value)}
+                    disabled={mutations.loading}
+                    placeholder="Context for the recipient — what does this customer need?"
+                    rows={2}
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+                  />
+                </div>
+              </div>
+            )}
+
+            {hasConflict && conflictPath === 'override' && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-gray-700">
+                  Manager override note * (min {MIN_OVERRIDE_NOTE_LEN} chars)
+                </label>
+                <textarea
+                  value={overrideNote}
+                  onChange={(e) => setOverrideNote(e.target.value)}
+                  disabled={mutations.loading}
+                  placeholder="Why is the override appropriate? This is reviewed by management."
+                  rows={3}
+                  className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+                />
+                {overrideNote.length > 0 && overrideNoteTooShort && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {overrideNote.trim().length} / {MIN_OVERRIDE_NOTE_LEN} characters.
+                  </p>
+                )}
+              </div>
+            )}
+          </Card.Body>
+        </Card>
+
+        {/* ─────────── Submit ─────────── */}
+        {submitError && (
+          <Card className="mt-6">
+            <Card.Body>
+              <div className="px-3 py-2 rounded-md bg-red-50 border border-red-200 text-sm text-red-800">
+                {submitError}
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => navigate('/pipeline')}
+            disabled={mutations.loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => void onSubmit()}
+            loading={mutations.loading}
+          >
+            {isReferPath ? 'Send referral' : 'Create deal'}
+          </Button>
+        </div>
+
+        {/* Footer */}
+        <footer className="mt-12 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
+          {branding?.ip_notice}
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+
+// ── Helper components ───────────────────────────────────────────────────
+
+interface SegBtnProps {
+  active:   boolean;
+  onClick:  () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}
+
+function SegBtn({ active, onClick, disabled, children }: SegBtnProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-4 h-10 rounded-md text-sm font-medium border transition-colors ${
+        active
+          ? 'bg-brand-primary text-white border-brand-primary'
+          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface PathRadioProps {
+  active:    boolean;
+  onClick:   () => void;
+  disabled?: boolean;
+  label:     string;
+  sub:       React.ReactNode;
+}
+
+function PathRadio({ active, onClick, disabled, label, sub }: PathRadioProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full text-left px-4 py-3 rounded-md border transition-colors ${
+        active
+          ? 'bg-blue-50 border-brand-primary'
+          : 'bg-white border-gray-200 hover:border-gray-400'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+          active ? 'border-brand-primary bg-brand-primary' : 'border-gray-400'
+        }`}>
+          {active && <div className="h-1.5 w-1.5 rounded-full bg-white m-auto mt-[3px]" />}
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-gray-900">{label}</div>
+          <div className="text-xs text-gray-600 mt-0.5">{sub}</div>
+        </div>
+      </div>
+    </button>
+  );
+}

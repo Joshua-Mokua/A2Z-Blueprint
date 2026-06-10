@@ -1,8 +1,11 @@
 // v10.511 Phase 4 Batch β2 — usePipelineDealMutations hook.
+// v10.512 Phase 4 Batch β3 — extended with create + refer methods.
 //
-// Encapsulates the mutation lifecycle for the two owner-side actions
-// shipped in β2: advance stage + request cancellation. Each mutation
-// returns a discriminated result the page can switch on:
+// Encapsulates the mutation lifecycle for owner-side actions:
+//   β2: advance stage + request cancellation
+//   β3: create deal + refer to portfolio owner
+//
+// Each mutation returns a discriminated result the page can switch on:
 //   { ok: true,  data: <response> }
 //   { ok: false, error: string, status?: number }
 //
@@ -23,21 +26,24 @@
 // Refetch semantics:
 //   The hook does NOT call PipelineProvider.refetch automatically — it
 //   has no way to (PipelineProvider lives above /pipeline only, not
-//   above the detail route). The detail page is expected to refetch
-//   its OWN deal data on success (via the usePipelineDealDetail hook
-//   it'll own). The list will naturally refresh when the user navigates
-//   back to /pipeline (PipelineProvider remounts).
+//   above the detail or create routes). Pages that need a re-render
+//   after success handle it themselves (detail page reloads its own
+//   deal; create page navigates to detail of the new deal).
 
 import { useState, useCallback } from 'react';
 import {
   advancePipelineDeal,
   requestPipelineDealCancel,
+  createPipelineDeal,
+  referPipelineDeal,
   ApiValidationError,
   AuthExpiredError,
 } from '@/lib/api';
 import type {
   AdvanceDealRequest, AdvanceDealResponse,
   RequestCancelRequest, RequestCancelResponse,
+  CreateDealRequest, CreateDealResponse,
+  ReferDealRequest, ReferDealResponse,
 } from '@/types/pipeline';
 
 
@@ -55,6 +61,10 @@ export interface PipelineDealMutationsHookValue {
   advance:        (dealId: string, body: AdvanceDealRequest) => Promise<MutationResult<AdvanceDealResponse>>;
   /** Submit a cancellation request. Same result shape. */
   requestCancel:  (dealId: string, body: RequestCancelRequest) => Promise<MutationResult<RequestCancelResponse>>;
+  /** Create a new deal (β3). Same result shape. */
+  create:         (body: CreateDealRequest)  => Promise<MutationResult<CreateDealResponse>>;
+  /** Refer a deal to its portfolio owner (β3). Same result shape. */
+  refer:          (body: ReferDealRequest)   => Promise<MutationResult<ReferDealResponse>>;
   /** True while ANY mutation from this hook instance is in flight. */
   loading:        boolean;
 }
@@ -98,6 +108,30 @@ export function usePipelineDealMutations(): PipelineDealMutationsHookValue {
     }
   }, []);
 
+  // Body-only mutation runner — for endpoints that don't take a path
+  // param (create, refer). Mirrors runMutation but without dealId.
+  const runBodyMutation = useCallback(async <TBody, TResponse>(
+    fn: (body: TBody) => Promise<TResponse>,
+    body: TBody,
+  ): Promise<MutationResult<TResponse>> => {
+    setLoading(true);
+    try {
+      const data = await fn(body);
+      return { ok: true, data };
+    } catch (e) {
+      if (e instanceof ApiValidationError) {
+        return { ok: false, error: e.detail, status: e.status };
+      }
+      if (e instanceof AuthExpiredError) {
+        return { ok: false, error: 'Your session expired. Please sign in again.' };
+      }
+      const msg = e instanceof Error ? e.message : 'Mutation failed';
+      return { ok: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const advance = useCallback(
     (dealId: string, body: AdvanceDealRequest) =>
       runMutation(advancePipelineDeal, dealId, body),
@@ -110,5 +144,17 @@ export function usePipelineDealMutations(): PipelineDealMutationsHookValue {
     [runMutation],
   );
 
-  return { advance, requestCancel, loading };
+  const create = useCallback(
+    (body: CreateDealRequest) =>
+      runBodyMutation(createPipelineDeal, body),
+    [runBodyMutation],
+  );
+
+  const refer = useCallback(
+    (body: ReferDealRequest) =>
+      runBodyMutation(referPipelineDeal, body),
+    [runBodyMutation],
+  );
+
+  return { advance, requestCancel, create, refer, loading };
 }

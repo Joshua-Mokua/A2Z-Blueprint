@@ -223,14 +223,23 @@ export function Pipeline() {
               </h2>
               <Badge tone="brand" size="sm">v10.510 β1</Badge>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void refetch()}
-              loading={loading}
-            >
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void refetch()}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate('/pipeline/new')}
+              >
+                + New Deal
+              </Button>
+            </div>
           </Card.Header>
           <Card.Body className="p-0">
             <Table<PipelineDeal>

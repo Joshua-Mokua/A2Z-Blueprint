@@ -230,3 +230,143 @@ export const ADVANCE_TARGET_STAGES: readonly string[] = [
   'Closed Won',
   'Closed Lost',
 ] as const;
+
+
+// ── Pipeline category + stage scaffolding (v10.512 Phase 4 Batch β3) ────
+//
+// Mirrors the backend's ALLOWED_ADVANCE_STAGES set from
+// utils/api_pipeline_mutations.py. Grouping by pipeline category so
+// the create form can offer a sensible default stage dropdown.
+//
+// Drift warning: these constants are duplicated from the backend.
+// A future batch SHOULD replace this with a GET /api/pipeline/stages
+// endpoint that returns the canonical stage list. For β3 the duplication
+// is accepted — the backend rejects invalid stages anyway, so drift
+// would surface as a 400 error rather than a silent bug.
+
+export const PIPELINE_CATEGORIES = ['Loan', 'Deposit', 'Account'] as const;
+export type PipelineCategory = typeof PIPELINE_CATEGORIES[number];
+
+/** Initial stages a deal can be created at, grouped by category.
+ *  Subset of ALLOWED_ADVANCE_STAGES that excludes terminal stages
+ *  (Closed Won / Closed Lost). */
+export const INITIAL_STAGES_BY_CATEGORY: Record<PipelineCategory, readonly string[]> = {
+  Loan:    ['Lead', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Compliance'],
+  Deposit: ['Lead', 'Pitched', 'Negotiating', 'Funded'],
+  Account: ['Lead', 'Information Gathered', 'Documentation Complete', 'Account Opened'],
+} as const;
+
+/** Common products as quick-pick suggestions for the create form.
+ *  NOT exhaustive — the create form accepts arbitrary product_type
+ *  strings and the server doesn't currently validate against a
+ *  canonical list. β4 candidate: add GET /api/pipeline/products. */
+export const COMMON_PRODUCTS_BY_CATEGORY: Record<PipelineCategory, readonly string[]> = {
+  Loan: [
+    'Business Loan',
+    'Personal Loan',
+    'Mortgage / Home Loan',
+    'Overdraft',
+    'Trade Finance',
+    'Asset Finance',
+    'LPO Finance',
+    'Bancassurance',
+  ],
+  Deposit: [
+    'Current Account (CASA)',
+    'Savings Account (CASA)',
+    'Fixed Deposit',
+    'Call Deposit',
+    'Business Current Account',
+    'Business Savings',
+  ],
+  Account: [
+    'Account Opening',
+  ],
+} as const;
+
+/** Lead source options — mirrors Streamlit's source dropdown. */
+export const SOURCE_OPTIONS: readonly string[] = [
+  'Referral',
+  'Existing relationship',
+  'Walk-in',
+  'Cold call',
+  'Branch campaign',
+  'Digital / online',
+  'Partner / broker',
+  'Other',
+] as const;
+
+/** Minimum length of manager override note when override semantics
+ *  detected. Matches MIN_OVERRIDE_NOTE_LEN in
+ *  utils/api_pipeline_mutations.py — kept in sync so client-side
+ *  validation provides the same hint the server enforces. */
+export const MIN_OVERRIDE_NOTE_LEN = 10;
+
+
+// ── Create mutation request/response (β3) ───────────────────────────────
+// Matches PipelineDealCreate from utils/api_pipeline_models.py.
+
+export interface CreateDealRequest {
+  // Required
+  client_name:           string;
+  staff_code:            string;
+  staff_name:            string;
+  deal_value:            number;
+  product_type:          string;
+  stage:                 string;
+
+  // Optional but commonly supplied
+  client_type?:          string;     // 'Individual' or 'Business'
+  is_ntb?:               boolean;
+  pipeline_category?:    PipelineCategory;
+  probability?:          number;     // 0..1 (NOT 0..100)
+  next_action?:          string;
+  next_action_date?:     string;     // YYYY-MM-DD
+  expected_close?:       string;     // YYYY-MM-DD
+  notes?:                string;
+  source?:               string;
+  unit?:                 string;
+  account_number?:       string;
+
+  // Conflict resolution fields (β3)
+  portfolio_owner_code?:    string;
+  portfolio_owner_name?:    string;
+  bsc_credit_to?:           string;
+  manager_override_note?:   string;
+}
+
+export interface CreateDealResponse {
+  deal:           PipelineDeal;
+  status:         string;  // 'created'
+  bsc_triggered:  boolean;
+  // LMS fields are not populated for create (only advance), but
+  // the server's response schema may include them as null.
+  lms_triggered?:        boolean | null;
+  lms_application_id?:   string | null;
+  lms_error?:            string | null;
+}
+
+
+// ── Refer endpoint request/response (β3) ────────────────────────────────
+// Matches PipelineDealRefer from utils/api_pipeline_models.py.
+
+export interface ReferDealRequest {
+  // Required
+  client_name:            string;
+  staff_code:             string;  // the referring RM
+  staff_name:             string;
+  portfolio_owner_code:   string;  // who's being referred TO
+  portfolio_owner_name:   string;
+  referred_to:            string;  // named recipient (often == portfolio_owner_name)
+
+  // Optional
+  referral_note?:         string;
+  account_number?:        string;
+  unit?:                  string;
+}
+
+export interface ReferDealResponse {
+  deal:           PipelineDeal;
+  status:         string;  // 'referred'
+  bsc_triggered:  boolean;
+}

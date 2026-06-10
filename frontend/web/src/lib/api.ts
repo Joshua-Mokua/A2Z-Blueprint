@@ -1,6 +1,7 @@
 // v10.500 Phase 1 Batch 3a — Typed API client.
 // v10.510 Phase 4 Batch β1 — extended with pipeline fetchers.
 // v10.511 Phase 4 Batch β2 — extended with postJson + pipeline mutations.
+// v10.512 Phase 4 Batch β3 — extended with create + refer mutations.
 //
 // Single source for talking to the FastAPI backend. The Vite dev proxy
 // (vite.config.ts) transparently forwards /api/* to localhost:8502 in
@@ -28,6 +29,8 @@ import type {
   PipelineDealsQuery,
   AdvanceDealRequest, AdvanceDealResponse,
   RequestCancelRequest, RequestCancelResponse,
+  CreateDealRequest, CreateDealResponse,
+  ReferDealRequest, ReferDealResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -342,6 +345,66 @@ export async function requestPipelineDealCancel(
 ): Promise<RequestCancelResponse> {
   return postJson<RequestCancelResponse, RequestCancelRequest>(
     `/pipeline/deals/${encodeURIComponent(dealId)}/cancel/request`,
+    body,
+  );
+}
+
+
+// ── Pipeline create + refer fetchers (v10.512 Phase 4 Batch β3) ─────────
+//
+// The two creation paths. Server enforces the load-bearing rules:
+//   - REQUIRED_CREATE_FIELDS presence + non-empty
+//   - deal_value non-negative number
+//   - stage in ALLOWED_ADVANCE_STAGES (LMS stages rejected)
+//   - is_override_semantics → manager_override_note required (>=10 chars)
+//   - REQUIRED_REFER_FIELDS presence + non-empty
+//   - refer: staff_code != portfolio_owner_code (no self-referral)
+
+
+/**
+ * Create a new pipeline deal via POST /api/pipeline/deals.
+ *
+ * Auth: REQUIRED. Server validates payload via validate_create_payload
+ * in utils/api_pipeline_mutations.py.
+ *
+ * Conflict resolution (α5):
+ *   - "Seek permission" path:    bsc_credit_to = portfolio_owner_name (or unset)
+ *                                NO manager_override_note required
+ *   - "Override" path:           bsc_credit_to = caller's own name
+ *                                manager_override_note REQUIRED, ≥10 chars
+ *
+ * Throws ApiValidationError on:
+ *   - Missing required fields
+ *   - deal_value negative or not numeric
+ *   - Stage not in allowlist
+ *   - Override semantics detected without sufficient note
+ */
+export async function createPipelineDeal(
+  body: CreateDealRequest,
+): Promise<CreateDealResponse> {
+  return postJson<CreateDealResponse, CreateDealRequest>(
+    '/pipeline/deals',
+    body,
+  );
+}
+
+
+/**
+ * Refer a deal to its portfolio owner via POST /api/pipeline/deals/refer.
+ *
+ * Auth: REQUIRED. Server validates via validate_refer_payload.
+ * Server auto-sets: is_referral=true, product_type="Referral",
+ * stage="Lead", deal_value=0, probability=0.05.
+ *
+ * Throws ApiValidationError on:
+ *   - Missing required fields (REQUIRED_REFER_FIELDS)
+ *   - staff_code === portfolio_owner_code (cannot refer to self)
+ */
+export async function referPipelineDeal(
+  body: ReferDealRequest,
+): Promise<ReferDealResponse> {
+  return postJson<ReferDealResponse, ReferDealRequest>(
+    '/pipeline/deals/refer',
     body,
   );
 }
