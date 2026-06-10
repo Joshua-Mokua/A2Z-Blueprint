@@ -61,6 +61,83 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.502 Stage C Arc D2 Batch 5e — ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE reality-checked; G393 authored; **Arc D2 mechanically complete**
+
+**Closing hotfix appended 2026-06-10:** during operator regression run, G392 (`gate_telemetry_event_naming`, Batch 5d) flagged `API_RATE_LIMITED` as undeclared. The event is emitted by the slowapi 429 handler added in Phase 2 Arc B — my Batch 5d sandbox clone (pre-Phase-2) didn't contain that emitter, so it was missed during the 5d Auth-events addition. Fixed in 5e closing by adding the event under a new "Rate limiting (1 event)" sub-section of TELEMETRY_MAP + extending the DOMAIN list with `RATE`. **G392 caught real drift my inspection missed — exactly the system functioning as designed.** Full detail in GOVERNANCE_REALITY_INDEX Batch 5e Finding 5.
+
+**Type:** Final Arc D2 triple — biggest pairing (3 artifacts). One new TRANSITIONAL surveillance gate; two artifacts re-classified without surgical edits (their doctrine maps cleanly to existing implementation).
+**Owner:** Joshua + Claude
+**Rationale:** Per Arc D2 pairing plan, the final triple tackles the largest artifacts in the queue. Same-turn inspection found three distinct shapes of drift:
+- **ORGANS_REGISTRY** — O5 doctrine declares strict ownership; reality has 30% unclassified modules. The artifact's own inventory summary numbers were themselves stale.
+- **DIGITAL_TWIN_ARCHITECTURE** — every gate cited in doctrine actually exists; no fabrication-by-omission; aspirational scenario/arena work is honestly named as such.
+- **RESILIENCE_AND_CERTIFICATION_GOVERNANCE** — 7 Stage-C-planned gates remain unauthored, but the artifact honestly names them as planned (not stated-as-enforced); G373-G380 ladder substrate IS implemented.
+
+The right scope for Batch 5e was ONE new gate (G393 for ORGANS_REGISTRY O5 coverage surveillance) plus classification updates for all three. DIGITAL_TWIN and RESILIENCE require no surgical edits — they were already honestly classified TRANSITIONAL; the `(provisional)` qualifier simply meant "not yet reality-checked." Now reality-checked, they settle TRANSITIONAL.
+
+**Files shipped (5 modified, 2 new):**
+
+- `scripts/audit.py` — NEW `gate_organs_registry_coverage` (~100 LOC). AST-walks `utils/*.py` to enumerate actual modules; regex-parses ORGANS_REGISTRY for `` `utils/<name>.py` `` references; computes coverage; fails if unclaimed > `_UNCLAIMED_CEILING = 175` OR any stale references (modules cited in registry but missing from disk). Registered in GATES dispatch above G392.
+
+- `docs/architecture/ORGANS_REGISTRY.md` — 1 surgical edit to the Inventory summary table. Numbers corrected from "~290 claimed, ~237 unclaimed" to **369 claimed, 158 unclaimed, 70.0% coverage**. Added explicit TRANSITIONAL classification note citing G393.
+
+- `docs/architecture/DIGITAL_TWIN_ARCHITECTURE.md` — UNCHANGED. All cited gates verified to exist; doctrine maps cleanly; no drift to fix.
+
+- `docs/architecture/RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md` — UNCHANGED. The "Stage C gates planned" section already accurately distinguishes planned-vs-built. G373-G380 ladder IS active.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — classification table updated for all 3 artifacts: ORGANS_REGISTRY `ACTIVE (provisional)` → `TRANSITIONAL`; DIGITAL_TWIN_ARCHITECTURE `TRANSITIONAL (provisional)` → `TRANSITIONAL`; RESILIENCE_AND_CERTIFICATION_GOVERNANCE `TRANSITIONAL (provisional)` → `TRANSITIONAL`. New Batch 5e CGR1 correction appended with 4 findings. Chronological reading order extended. **Arc D2 grand total declared.**
+
+- `docs/architecture/POLICY_GAPS.md` — Stage C Arc D status row updated; Arc D2 marked **MECHANICALLY COMPLETE**.
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry at top (RL1 append-only).
+
+- `docs/continuity/SESSION_BOOTSTRAP.md` — gate count 393 → 394; Stage C commits row + active workstreams updated; Arc D2 marked complete with Arc D3 placeholder.
+
+- `docs/CHANGELOG_v10502_batch5e.md` NEW — per-batch closure record.
+
+- `tests/test_gate_organs_registry_coverage.py` NEW — 9 regression tests covering registration, function existence, current-state pass, summary shape, stale-reference catching (with synthetic registry citing missing module), unclaimed-ceiling violation (synthetic 200-module repo with empty registry), allowlist semantics (synthetic mini repo with full coverage passes), missing-utils-dir handling, missing-registry-file handling.
+
+- `app.py` — `_APP_VERSION` bumped to `v10.502-batch5e-2026.06.10`.
+
+**Four CGR1 findings recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch 5e correction):**
+
+1. **ORGANS_REGISTRY O5 drift; artifact's inventory itself stale.** Same-turn count: 527 actual modules, 369 claimed (registry's claim of ~290 was conservative), 158 unclaimed (registry's claim of ~237 was inflated). Coverage actually 70%. **Closed mechanically** via G393 TRANSITIONAL surveillance + surgical inventory-summary refresh.
+
+2. **DIGITAL_TWIN_ARCHITECTURE all cited gates exist.** No fabrication-by-omission. DT1-DT5 doctrine maps cleanly. Classification settles TRANSITIONAL because aspirational arena/scenarios remain.
+
+3. **RESILIENCE 7 planned gates remain unauthored; G373-G380 substrate IS active.** Artifact honestly names them as planned, not stated-as-enforced. Different from Batch 5b G388 pattern. Classification settles TRANSITIONAL.
+
+4. **Arc D2 mechanically complete.** All 8 provisional artifacts reality-checked across 5b-5e. 6 new gates (G388-G393), 53 new regression tests, 4 promoted to ACTIVE, 4 settled TRANSITIONAL. Zero "(provisional)" qualifiers remain in the classification table.
+
+**Verification:**
+
+- Same-turn regex count of `` `utils/<name>.py` `` references in ORGANS_REGISTRY: 369 unique paths, 0 stale (every cited module exists on disk).
+- Same-turn directory walk: 527 actual utils modules.
+- Post-correction G393 run: `actual=527 claimed=369 unclaimed=158 (TRANSITIONAL ceiling 175) coverage=70.0% PASS`.
+- Same-turn verification of every gate cited in DIGITAL_TWIN_ARCHITECTURE: all EXIST.
+- Same-turn verification of gates cited in RESILIENCE: G373-G380 ladder EXISTS; 7 planned gates MISSING (artifact honest about this).
+- 9/9 new gate tests green in sandbox.
+
+**Trap discipline applied:**
+
+- **Trap #11** — every drift finding cited the same-turn command (regex, AST walk, grep verification).
+- **Trap #12** — ZIP delivery with namespaced `_batch5e_payload/`.
+- **Trap #14** — staging cannot collide with destination.
+- **Backup-before-mutation** — N/A.
+- **Silent-except** — gate uses targeted `try/except FileNotFoundError`-equivalent; no bare excepts.
+- **RL1 append-only** — entry at top.
+
+**What this batch DID NOT do:**
+
+- Did NOT close the ORGANS_REGISTRY 158-module coverage gap. Multi-batch work; deferred.
+- Did NOT author any of the 7 RESILIENCE planned gates. Multi-batch work; deferred.
+- Did NOT modify any utils/*.py file.
+- Did NOT do an Arc D3 ledger backfill (optional; deferred to operator decision).
+- Did NOT push to origin/main — Arc D phase boundary push happens after operator decides on Arc D3.
+
+**Cross-references:** Batch 5d is the immediate predecessor. With Batch 5e, Arc D2 is mechanically complete. Optional Arc D3 (ledger backfill v10.380-v10.413 + v10.463) is the only remaining placeholder before the Arc D phase boundary push. Full Batch 5e CGR1 correction in GOVERNANCE_REALITY_INDEX.md.
+
+---
+
 ### 2026-06-10 v10.502 Stage C Arc D2 Batch 5d — CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP reality-checked; G391 + G392 authored
 
 **Type:** Third Arc D2 pairing — relation-shaped artifacts. Two new strict-mode gates closing two stated-vs-enforced gaps explicitly named in the artifacts' doctrine.

@@ -60629,6 +60629,142 @@ def gate_telemetry_event_naming() -> Dict[str, Any]:
     }
 
 
+def gate_organs_registry_coverage() -> Dict[str, Any]:
+    """G393 — v10.502 Stage C Arc D2 Batch 5e — ORGANS_REGISTRY O5
+    coverage enforcement (TRANSITIONAL surveillance).
+
+    Per `docs/architecture/ORGANS_REGISTRY.md` O5 doctrine:
+
+        "No anonymous modules. Every `.py` file in `utils/` MUST be
+         claimable by exactly one organ in this registry. Unknown
+         modules are constitutional violations until classified."
+
+    Same-turn inventory at Batch 5e showed:
+    - 527 actual modules in `utils/*.py`
+    - 369 claimed (referenced via backticked `utils/<name>.py` in
+      organ section tables)
+    - **158 unclaimed** (~30% uncovered)
+    - 0 stale references (every claimed module exists on disk)
+
+    The artifact's own inventory summary ("~290 claimed, ~237
+    unclaimed") was itself stale relative to reality — corrected in
+    this batch.
+
+    Full O5 coverage is multi-batch work (would require classifying
+    158 modules into the correct organ sections). Until then, the
+    gate runs in TRANSITIONAL mode: PASSES while unclaimed count is
+    within the snapshot ceiling; FAILS if the gap grows.
+
+    Behaviour
+    ---------
+    1. AST-walk `utils/*.py` to enumerate actual modules.
+    2. Regex-parse ORGANS_REGISTRY.md for backtick-quoted
+       `utils/<name>.py` references in any organ section.
+    3. Compute:
+       - `unclaimed = actual - claimed`
+       - `stale = claimed - actual` (referenced but file doesn't exist)
+    4. TRANSITIONAL guard: if `unclaimed > _UNCLAIMED_CEILING`, gate
+       FAILS. Stale references always FAIL (mechanical issue,
+       different from coverage gap).
+    5. Reports current coverage percentage + sample unclaimed modules
+       as INFO.
+
+    Cost: ~0.3s isolated.
+    """
+    import re as _re
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    utils_dir = repo / "utils"
+    registry_path = repo / "docs" / "architecture" / "ORGANS_REGISTRY.md"
+
+    if not utils_dir.exists():
+        return {
+            "id": "G393",
+            "name": "organs_registry_coverage",
+            "passed": False,
+            "violations": [f"utils/ directory not found at {utils_dir}"],
+            "summary": "utils tree missing",
+        }
+    if not registry_path.exists():
+        return {
+            "id": "G393",
+            "name": "organs_registry_coverage",
+            "passed": False,
+            "violations": [f"ORGANS_REGISTRY.md not found at {registry_path}"],
+            "summary": "registry artifact missing",
+        }
+
+    # TRANSITIONAL ceiling — Batch 5e snapshot is 158 unclaimed.
+    # Ceiling set 17 above to allow small additions; future arcs should
+    # tighten this as modules are classified into organ sections.
+    _UNCLAIMED_CEILING = 175
+
+    actual = set()
+    for f in utils_dir.glob("*.py"):
+        if f.name == "__init__.py":
+            continue
+        actual.add(f.stem)
+
+    content = registry_path.read_text(encoding="utf-8")
+    claimed_re = _re.compile(r"`utils/([a-z_][a-z0-9_]*)\.py`")
+    claimed = set(claimed_re.findall(content))
+
+    unclaimed = sorted(actual - claimed)
+    stale = sorted(claimed - actual)
+    coverage_pct = (
+        100 * len(claimed & actual) / len(actual) if actual else 0
+    )
+
+    # Stale references always fail — they're not a coverage gap, they're
+    # a doctrine error (file was renamed or removed but the registry
+    # wasn't updated).
+    if stale:
+        for s in stale[:10]:
+            violations.append(
+                f"stale reference: registry cites `utils/{s}.py` but file "
+                "does not exist on disk"
+            )
+        if len(stale) > 10:
+            violations.append(
+                f"... and {len(stale) - 10} more stale references"
+            )
+
+    # TRANSITIONAL guard on unclaimed count
+    if len(unclaimed) > _UNCLAIMED_CEILING:
+        violations.append(
+            f"unclaimed module count {len(unclaimed)} exceeds TRANSITIONAL "
+            f"ceiling {_UNCLAIMED_CEILING} — O5 doctrine drift has worsened "
+            "beyond Batch 5e snapshot"
+        )
+
+    info.append(
+        f"INFO: actual={len(actual)} claimed={len(claimed & actual)} "
+        f"unclaimed={len(unclaimed)} stale={len(stale)} "
+        f"coverage={coverage_pct:.1f}%"
+    )
+    if unclaimed:
+        info.append(
+            f"INFO: first 5 unclaimed modules: "
+            + ", ".join(f"utils/{m}.py" for m in unclaimed[:5])
+        )
+
+    summary = (
+        f"actual={len(actual)} claimed={len(claimed & actual)} "
+        f"unclaimed={len(unclaimed)} (TRANSITIONAL ceiling {_UNCLAIMED_CEILING}) "
+        f"coverage={coverage_pct:.1f}%"
+    )
+
+    return {
+        "id": "G393",
+        "name": "organs_registry_coverage",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -60705,6 +60841,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G393", gate_organs_registry_coverage),                    # v10.502 STAGE C ARC D2 — TRANSITIONAL — ORGANS_REGISTRY O5 coverage surveillance
     ("G392", gate_telemetry_event_naming),                       # v10.502 STAGE C ARC D2 — HIGH — TELEMETRY_MAP T1+T2 event-naming discipline
     ("G391", gate_canonical_dependency_map_sync),                # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_DEPENDENCY_MAP D5 cycle enforcement
     ("G390", gate_data_dictionary_tracking_claims),             # v10.502 STAGE C ARC D2 — CRITICAL — DATA_DICTIONARY tracking-claim integrity

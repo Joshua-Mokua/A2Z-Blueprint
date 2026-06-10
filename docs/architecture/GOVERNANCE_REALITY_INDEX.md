@@ -43,12 +43,12 @@ pending Batch 2-7 reality checks (tracked as OI-66).
 | GOVERNANCE_CLASSIFICATION_REGISTRY.md      | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5b. G1-G5 doctrine holds; the classification mechanism is in active use across this index. Open registry items are forward-looking work, not drift. |
 | SYSTEM_CONSTITUTION.md                     | ACTIVE                     | Received CGR1 article in this batch                                |
 | API_CONTRACTS.md                           | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5c. **81 endpoints documented, 276 actual** across 16 router files. G389 (`gate_api_contract_inventory`) enforces transitional ceiling of 300 and surfaces drift as INFO. 5 surgical Auth-domain corrections applied. Substantive rewrite to document the 195 undocumented endpoints deferred to future arc. |
-| ORGANS_REGISTRY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5e                                    |
+| ORGANS_REGISTRY.md                         | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5e. **70.0% coverage** (369 claimed, 158 unclaimed, 527 total). 0 stale references. Artifact's own inventory summary was itself stale (~290 / ~237); corrected. G393 (`gate_organs_registry_coverage`) enforces TRANSITIONAL ceiling 175 — fails if O5 drift worsens. Full coverage (158 modules → 0) deferred to future arcs. |
 | CANONICAL_DEPENDENCY_MAP.md                | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5d. G391 (`gate_canonical_dependency_map_sync`) enforces D5 (no cycles) via Tarjan's SCC algorithm; KNOWN_CYCLES allowlist holds 2 existing multi-module SCCs to be drained by future arcs. 32 self-loops surfaced as INFO with doctrine-exemption note (Python's import system handles re-imports as no-ops). D2 already enforced by G384. |
 | DATA_DICTIONARY.md                         | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5c. 4 surgical fixes applied (users.json+jwt_blocklist.json gitignored; super_user_registry.json ORPHANED; observability_metrics.json git-tracked). DD5 PII claim corrected. G390 (`gate_data_dictionary_tracking_claims`) enforces git-tracked/gitignored claims mechanically. |
 | TELEMETRY_MAP.md                           | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5d. G392 (`gate_telemetry_event_naming`) enforces T1+T2 — every `_audit()` literal event in `utils/api*.py` must appear in the documented vocabulary. 4 undeclared events (API_LOGIN_FORCE_PW, API_AUTH_WHOAMI_DETAILED, API_PASSWORD_CHANGE_SUCCESS, API_PASSWORD_CHANGE_FAILED) added to Auth section. T2 + Stage-C-planned `gate_event_bus_publisher_purity` already enforced by G384. |
-| DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL (provisional) | Twin exists; full parity ASPIRATIONAL; reality check Batch 5e      |
-| RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL (provisional) | G373-G380 ladder ACTIVE; full Olympic certification TRANSITIONAL   |
+| DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5e — `(provisional)` qualifier dropped. All gates referenced in doctrine EXIST (gate_seed_determinism, gate_cbs_baseline, gate_virtual_bank_foundation, gate_virtual_bank_readiness, gate_canonical_retail_chain, gate_accruals_synthesizer). DT1-DT5 doctrine maps cleanly to existing implementation. Classification remains TRANSITIONAL because aspirational scenario library + training arena + twin-parity work remains unbuilt; existing gates cover what's been built. |
+| RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5e — `(provisional)` qualifier dropped. The 14-rung certification ladder (G373-G380 + related) is the ACTIVE substrate. 7 Stage-C-planned gates (gate_dr_drill_recent, gate_chaos_experiments_active, gate_olympic_certification_maintained, gate_championship_readiness_maintained, gate_uncertainty_exposure_p6_maintained, gate_dr_runbook_per_scenario, gate_rto_rpo_declared_per_organ, gate_regression_sentinels_held) and 7 OIs (OI-18, OI-51 through OI-56) remain. Classification stays TRANSITIONAL until the planned-gate ladder is built out. |
 | REVIVAL_LEDGER.md                          | ACTIVE                     | This is the operational log; always reflects reality by definition |
 | CHANGELOG_MASTER.md                        | ACTIVE                     | CM1 doctrine ACTIVE since v10.498                                  |
 | OPERATIONAL_PROTOCOL.md                    | ACTIVE                     | Introduced v10.500 Phase 1 Batch 3d. Codifies Traps #11/#12/#14 + backup-before-mutation + silent-except + intentionally-tracked credential data (v10.501 Batch 4c) + single-worker FastAPI constraint (v10.501 Batch 4b) |
@@ -507,7 +507,141 @@ After this batch: **389 total gates** (G388 authored and registered).
 
 ---
 
-For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b → Batch 5c → Batch 5d. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b → Batch 5c → Batch 5d → Batch 5e. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+
+---
+
+## CGR1 Reality-Check Correction (v10.502 Stage C Arc D2 Batch 5e) — ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE reality-checked
+
+**Date:** 2026-06-10
+**Inspected by:** Claude, same-turn AST walk of `utils/*.py` (527 modules) + regex scan of ORGANS_REGISTRY for `` `utils/<name>.py` `` references + verification of every named gate cited across the three artifacts.
+**Doctrine status corrections:** ORGANS_REGISTRY `ACTIVE (provisional)` → **TRANSITIONAL** (70% coverage; 158 unclaimed modules). DIGITAL_TWIN_ARCHITECTURE `TRANSITIONAL (provisional)` → **TRANSITIONAL** (drops "(provisional)" qualifier; all cited gates exist; aspirational arena/scenarios remain). RESILIENCE_AND_CERTIFICATION_GOVERNANCE `TRANSITIONAL (provisional)` → **TRANSITIONAL** (drops "(provisional)" qualifier; G373-G380 ladder is ACTIVE substrate; 7 planned gates remain unauthored).
+
+### Finding 1 — ORGANS_REGISTRY O5 doctrine drift; artifact's own inventory was stale
+
+O5 doctrine: "Every `.py` file in `utils/` MUST be claimable by exactly one organ in this registry. Unknown modules are constitutional violations until classified."
+
+Same-turn count of `utils/<name>.py` references in the registry vs disk inventory:
+
+```
+Actual utils modules:   527
+Claimed in registry:    369
+Stale references:         0
+Unclaimed:              158
+Coverage:              70.0%
+```
+
+The artifact's own inventory summary text claimed "~290 claimed, ~237 unclaimed" — **itself stale**. Reality is better than the artifact admitted. 0 stale references is a strong signal: every module the artifact names actually exists on disk; the only drift is the unclaimed long tail.
+
+**Closed mechanically.** G393 (`gate_organs_registry_coverage`) authored in TRANSITIONAL mode with `_UNCLAIMED_CEILING = 175` (current 158 + breathing room of 17). Gate PASSES at current state, FAILS if drift worsens. Stale references always fail (different concern from coverage).
+
+**Surgical fix.** ORGANS_REGISTRY's inventory summary table refreshed: 290→369 claimed, 237→158 unclaimed, with explicit 70.0% coverage row and TRANSITIONAL classification note citing G393.
+
+**Deferred.** Substantive coverage closure (158 modules → 0) is multi-batch work. Each unclaimed module needs a target organ section.
+
+### Finding 2 — DIGITAL_TWIN_ARCHITECTURE all cited gates exist; doctrine maps cleanly
+
+Same-turn verification of every named gate in the artifact:
+
+| Gate | Status |
+|---|---|
+| `gate_seed_determinism` | EXISTS |
+| `gate_cbs_baseline` | EXISTS |
+| `gate_virtual_bank_foundation` | EXISTS |
+| `gate_virtual_bank_readiness` | EXISTS |
+| `gate_canonical_retail_chain` | EXISTS |
+| `gate_accruals_synthesizer` | EXISTS |
+| `gate_virtual_bank_simulation_implemented` | EXISTS |
+
+DT1-DT5 doctrine maps cleanly to existing implementation. No fabrication-by-omission, no stated-vs-enforced gap.
+
+**Closed without surgical edits.** Classification dropped "(provisional)" qualifier — settles TRANSITIONAL. The artifact stays TRANSITIONAL because aspirational scenario library, training arena, and full twin-parity work remains unbuilt; existing gates accurately cover what's been built so far.
+
+### Finding 3 — RESILIENCE_AND_CERTIFICATION_GOVERNANCE has 7 unauthored planned gates; ladder substrate is ACTIVE
+
+Same-turn verification:
+
+| Gate | Status |
+|---|---|
+| `gate_dr_drill_recent` | **MISSING** |
+| `gate_chaos_experiments_active` | **MISSING** |
+| `gate_olympic_certification_maintained` | **MISSING** |
+| `gate_championship_readiness_maintained` | **MISSING** |
+| `gate_uncertainty_exposure_p6_maintained` | **MISSING** |
+| `gate_dr_runbook_per_scenario` | **MISSING** |
+| `gate_rto_rpo_declared_per_organ` | **MISSING** |
+| `gate_regression_sentinels_held` | **MISSING** |
+| G373-G380 (Olympic + Championship + Uncertainty rungs) | EXISTS |
+
+The Stage C "gates planned" section is honestly named — these are PLANNED, not stated-as-enforced. So this is NOT the same pattern as Batch 5b's G388 fabrication-by-omission. The artifact is honest about its aspirational scope. The 14-rung ladder substrate (G373-G380) IS implemented and active.
+
+**Closed without surgical edits.** Classification dropped "(provisional)" qualifier — settles TRANSITIONAL. Authoring the 7 planned gates is multi-batch work deferred to future arcs (each gate would need a runbook, RTO/RPO declarations, etc. as supporting infrastructure).
+
+### Finding 5 — Batch 5d TELEMETRY_MAP addition missed `API_RATE_LIMITED`; G392 caught the drift on operator verification
+
+**Honest CGR1 outcome.** During Batch 5d closing, my sandbox clone at commit `92c2e0a` (pre-Phase-2) did not contain the Phase 2 Arc B rate-limit 429 handler. AST walk of `utils/api*.py` produced 24 actual events; I documented 4 missing ones (the Phase 2 Arc A change-password pair + the Phase 1 Batch 3b `API_LOGIN_FORCE_PW` + the Stage C Batch 2b `API_AUTH_WHOAMI_DETAILED`). I declared `documented=40 actual=24 violations=0 PASS` against my sandbox state and shipped.
+
+On operator verification (Joshua's machine, which has the full Phase 2 Arc A+B+C tree applied), G392 ran against the actual current code surface and found:
+
+```
+event 'API_RATE_LIMITED' emitted via _audit() but not documented in TELEMETRY_MAP.md
+```
+
+`API_RATE_LIMITED` is the slowapi 429 handler emission — emitted since Phase 2 Arc B per the rate-limit-audit-trail tests (`test_429_audit_row_is_written`, `test_429_handler_does_not_leak_token_in_audit`). The emitter exists in Josh's `utils/api.py`; my sandbox never saw it because Phase 2 commits aren't in my clone baseline.
+
+**This is exactly what G392 is for.** The gate caught real drift that escaped my inspection. The CGR1 principle held: doctrine bends to runtime reality, and the gate enforces the bend. Without G392 in the regression suite, the drift would have remained invisible.
+
+**Closed in Batch 5e closing-hotfix.** TELEMETRY_MAP extended with `API_RATE_LIMITED` row under a new "Rate limiting (1 event)" sub-section; DOMAIN list extended with `RATE`. No code change. G392 re-run on operator machine post-fix passes.
+
+**Methodology lesson for future arcs.** When a batch's gate logic depends on present-day code surface (G389, G392, G393 all do), running the gate against the sandbox clone is necessary but not sufficient — the operator's working tree is the source of truth. Future arcs should request a one-line `grep` from operator machine to confirm the gate's actual-side count matches expectation BEFORE declaring closure. For G392 specifically: `grep -hoE "_audit\([\"']API_[A-Z_]+[\"']" utils/api*.py | sort -u | wc -l` is a 1-second check that would have surfaced the gap pre-shipment.
+
+### Finding 4 — Batch 5e is final Arc D2 batch; full D2 closure declared
+
+Arc D2 began at Batch 5b. Five batches in total:
+
+| Batch | Pairing | Status | Gates added |
+|---|---|---|---|
+| 5b | CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY | CLOSED | G388 |
+| 5c | API_CONTRACTS + DATA_DICTIONARY | CLOSED `6085eda` | G389 + G390 |
+| 5d | CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP | CLOSED `[pending]` | G391 + G392 |
+| 5e (this) | ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE | **CLOSED `[pending]`** | **G393** |
+| 5f (optional) | Ledger backfill | not committed | — |
+
+**With Batch 5e, the 8 provisional artifacts are all reality-checked.** Arc D2 is mechanically complete. The post-D2 classification table contains zero "(provisional)" qualifiers.
+
+### What this batch DID
+
+- Authored `gate_organs_registry_coverage` (G393, ~100 LOC) in TRANSITIONAL mode — counts actual vs claimed modules, fails if unclaimed > ceiling 175 OR if any stale references exist.
+- Registered G393 in the GATES dispatch table.
+- Made 1 surgical edit to `ORGANS_REGISTRY.md` — inventory summary numbers refreshed (290→369, 237→158, added 70% coverage row, added TRANSITIONAL classification note).
+- Updated classification table for all 3 artifacts.
+- Authored 9 regression tests for G393 in `tests/test_gate_organs_registry_coverage.py`.
+
+### What this batch DID NOT do
+
+- Did NOT close the ORGANS_REGISTRY coverage gap (158 modules unclassified). Multi-batch work; deferred.
+- Did NOT author any of the 7 RESILIENCE planned gates. Multi-batch work; deferred.
+- Did NOT modify DIGITAL_TWIN_ARCHITECTURE.md content (artifact was clean post-inspection).
+- Did NOT modify RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md content (the "Stage C gates planned" section already accurately describes what's planned vs what's built).
+- Did NOT touch any utils/*.py source files.
+- Did NOT change SYSTEM_CONSTITUTION or any other artifact.
+
+### Gate count delta
+
+Before this batch: 393 (post-5d).
+After this batch: **394** (G393 added).
+
+### Arc D2 grand total
+
+- 6 new gates: G388, G389, G390, G391, G392, G393
+- 5 batches (5b, 5c, 5d, 5e + optional 5f)
+- 53 new regression tests (11 + 16 + 17 + 9)
+- 8 of 8 provisional artifacts reality-checked
+- 4 promoted to ACTIVE: CANONICAL_TRUTH_REGISTRY, GOVERNANCE_CLASSIFICATION_REGISTRY, DATA_DICTIONARY, CANONICAL_DEPENDENCY_MAP, TELEMETRY_MAP (5 artifacts but DATA_DICTIONARY was already promoted in 5c)
+- 4 settled TRANSITIONAL: API_CONTRACTS (195-endpoint rewrite deferred), ORGANS_REGISTRY (158 modules unclassified), DIGITAL_TWIN_ARCHITECTURE (arena/scenarios aspirational), RESILIENCE_AND_CERTIFICATION_GOVERNANCE (7 planned gates deferred)
+- Zero "(provisional)" qualifiers remain in the classification table — every artifact has been reality-checked at least once.
+
+---
 
 ---
 

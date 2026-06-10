@@ -48,10 +48,13 @@ This registry is the single source of truth for:
 | `utils/core.py` Manager classes (canonical multi-record interfaces) | 15 |
 | `utils/*.py` modules total | 527 |
 | `utils/*/` subdirectories | 8 (currently `unknown`, see Section 10) |
-| Files in `utils/` claimed by an organ in this registry | ~290 |
-| Files awaiting explicit organ assignment in Wave 4-6 batches | ~237 |
+| Files in `utils/` claimed by an organ in this registry | **369** |
+| Files awaiting explicit organ assignment | **158** |
+| **Coverage** | **70.0%** |
 
-The unclaimed count is high because (a) many modules are individually small but functionally peripheral (e.g. CIMS sub-modules, channels, propositions), and (b) Wave 3 prioritizes the load-bearing organs over the long tail. Subsequent waves will assign the remainder.
+*(Numbers refreshed v10.502 Stage C Arc D2 Batch 5e — previously claimed "~290 claimed, ~237 unclaimed" but same-turn regex count of backticked `utils/<name>.py` references against actual disk inventory produced 369/158. Real coverage is better than the artifact's stale text suggested. Enforcement: G393 `gate_organs_registry_coverage` runs in TRANSITIONAL mode with unclaimed-ceiling 175; full O5 coverage deferred to a future arc.)*
+
+The unclaimed count is high because (a) many modules are individually small but functionally peripheral (e.g. CIMS sub-modules, channels, propositions), and (b) Wave 3 prioritized the load-bearing organs over the long tail. Subsequent waves will assign the remainder. **Classification:** TRANSITIONAL per v10.502 Stage C Arc D2 Batch 5e — the artifact's claims about claimed modules are accurate; the gap is documentation debt on the unclaimed 30%.
 
 ---
 

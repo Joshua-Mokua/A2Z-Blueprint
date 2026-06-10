@@ -78,7 +78,7 @@ Both sinks are **gitignored** per `DATA_DICTIONARY.md`.
 `API_<DOMAIN>_<ACTION>[_<MODIFIER>]`
 
 Where:
-- `<DOMAIN>` ∈ {LOGIN, LOGOUT, AUTH, BSC, PIPELINE, CREDIT, AML, USERS, DASHBOARD, CACHE, INTEGRATION, ROLE_WEIGHTS, KPI_DEDUP, BACKUP_RETENTION, TEST_CLEANUP, BSC_PILLAR, BSC_LIBRARY, BSC_COMPLETENESS, BSC_WEIGHTS, BSC_CODES, ADMIN_VALIDATION, CASCADE_360, HARMONIZE, ONBOARDING, EXIT_RISK, HR_AUDIT, PEER_LEARNING, COACHING, PREDICT, GAMIFICATION, EFFICIENCY, WELLNESS, HR_ACTUALS, VITALS, PASSWORD_CHANGE} *(extended v10.502 Batch 5d — AUTH and PASSWORD_CHANGE domains were undocumented despite active emitters)*
+- `<DOMAIN>` ∈ {LOGIN, LOGOUT, AUTH, BSC, PIPELINE, CREDIT, AML, USERS, DASHBOARD, CACHE, INTEGRATION, ROLE_WEIGHTS, KPI_DEDUP, BACKUP_RETENTION, TEST_CLEANUP, BSC_PILLAR, BSC_LIBRARY, BSC_COMPLETENESS, BSC_WEIGHTS, BSC_CODES, ADMIN_VALIDATION, CASCADE_360, HARMONIZE, ONBOARDING, EXIT_RISK, HR_AUDIT, PEER_LEARNING, COACHING, PREDICT, GAMIFICATION, EFFICIENCY, WELLNESS, HR_ACTUALS, VITALS, PASSWORD_CHANGE, RATE} *(extended v10.502 Batch 5d — AUTH and PASSWORD_CHANGE; extended v10.502 Batch 5e closing-hotfix — RATE)*
 - `<ACTION>` ∈ {SUCCESS, FAILED, DENIED, SUMMARY, READ, WRITE, MIGRATE, REPAIR, ARCHIVE, RUN, ALL, STAGE, ...}
 - `<MODIFIER>` optional, qualifies further
 
@@ -95,6 +95,12 @@ Where:
 | `API_AUTH_WHOAMI_DETAILED` | `GET /api/auth/whoami-detailed` (rate-limit-exempt diagnostic) | `username, role, scope` *(added v10.502 Batch 5d — emitted since Stage C Batch 2b)* |
 | `API_PASSWORD_CHANGE_SUCCESS` | Successful `POST /api/auth/change-password` | `username, jti revoked, must_rotate cleared` *(added v10.502 Batch 5d — emitted since Phase 2 Arc A)* |
 | `API_PASSWORD_CHANGE_FAILED` | Failed `POST /api/auth/change-password` (wrong current_password OR rejected by `validate_password_policy`) | `username, reason (policy/credentials)` *(added v10.502 Batch 5d — emitted since Phase 2 Arc A)* |
+
+#### Rate limiting (1 event)
+
+| Event | Trigger | Detail field example |
+|---|---|---|
+| `API_RATE_LIMITED` | slowapi 429 handler fired on rate-limit-bearing endpoint (`/api/auth/login` at 10/min/IP; `/api/auth/change-password` at 5/min/token) | `route, identifier_hash (no raw token/IP), limit_window` *(added v10.502 Batch 5e closing-hotfix — emitted since Phase 2 Arc B; missed during Batch 5d AST walk because Phase 2 Arc B code is post-5d-sandbox-baseline. G392 caught the drift on operator verification.)* |
 
 #### Resource summaries (9 events)
 
