@@ -1,4 +1,5 @@
 // v10.500 Phase 1 Batch 3a — Typed API client.
+// v10.510 Phase 4 Batch β1 — extended with pipeline fetchers.
 //
 // Single source for talking to the FastAPI backend. The Vite dev proxy
 // (vite.config.ts) transparently forwards /api/* to localhost:8502 in
@@ -21,6 +22,10 @@
 
 import type { Branding } from '@/types/branding';
 import type { UserIdentity, RoleRegistry } from '@/types/role';
+import type {
+  PipelineDealsListResponse, PipelineDealDetailResponse,
+  PipelineDealsQuery,
+} from '@/types/pipeline';
 
 const API_BASE = '/api';
 
@@ -142,4 +147,62 @@ export async function fetchWhoamiDetailed(): Promise<UserIdentity> {
  */
 export async function fetchRoleRegistry(): Promise<RoleRegistry> {
   return getJson<RoleRegistry>('/roles/registry');
+}
+
+
+// ── Pipeline endpoint fetchers (v10.510 Phase 4 Batch β1) ───────────────
+//
+// Consumes the FastAPI pipeline domain surface built in Arc α (α1-α7).
+// Cascade scoping is applied server-side; each deal carries a per-caller
+// permissions object that the React UI uses to decide button rendering.
+// No client-side authorization logic — the API tells us what's allowed.
+
+
+/**
+ * Fetch the cascade-scoped list of pipeline deals from /api/pipeline/deals.
+ *
+ * Auth: REQUIRED. Server applies the caller's cascade visibility — a
+ * teller sees only own deals; a branch manager sees branch deals; an
+ * admin sees everything. (α2 / G395.)
+ *
+ * Each returned deal carries a `permissions` object (α7 / G400) with
+ * 6 booleans the React UI reads to decide which actions to render.
+ *
+ * Filter params (all optional):
+ *   stage    — exact-match filter on deal.stage
+ *   category — pipeline category (Loans / Accounts / Deposits)
+ *   unit     — organizational unit filter
+ *   offset, limit — server-side pagination
+ */
+export async function fetchPipelineDeals(
+  query: PipelineDealsQuery = {},
+): Promise<PipelineDealsListResponse> {
+  const params = new URLSearchParams();
+  if (query.stage)    params.set('stage',    query.stage);
+  if (query.category) params.set('category', query.category);
+  if (query.unit)     params.set('unit',     query.unit);
+  if (query.offset !== undefined) params.set('offset', String(query.offset));
+  if (query.limit  !== undefined) params.set('limit',  String(query.limit));
+  const qs = params.toString();
+  const path = qs ? `/pipeline/deals?${qs}` : '/pipeline/deals';
+  return getJson<PipelineDealsListResponse>(path);
+}
+
+
+/**
+ * Fetch a single deal by id from /api/pipeline/deals/{deal_id}.
+ *
+ * Auth: REQUIRED. Returns 404 (not 403) when the deal exists but is
+ * outside the caller's cascade scope — deliberate to avoid leaking
+ * deal existence (α7 / G400 design decision).
+ *
+ * Response shape differs from the list: the deal is at `response.deal`
+ * and permissions live at `response.permissions` (not embedded in deal).
+ */
+export async function fetchPipelineDealDetail(
+  dealId: string,
+): Promise<PipelineDealDetailResponse> {
+  return getJson<PipelineDealDetailResponse>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}`,
+  );
 }
