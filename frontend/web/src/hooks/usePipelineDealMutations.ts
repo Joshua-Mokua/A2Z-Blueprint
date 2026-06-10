@@ -1,9 +1,11 @@
 // v10.511 Phase 4 Batch β2 — usePipelineDealMutations hook.
 // v10.512 Phase 4 Batch β3 — extended with create + refer methods.
+// v10.513 Phase 4 Batch β4 — extended with validate + approveCancel.
 //
-// Encapsulates the mutation lifecycle for owner-side actions:
-//   β2: advance stage + request cancellation
-//   β3: create deal + refer to portfolio owner
+// Encapsulates the mutation lifecycle for pipeline actions:
+//   β2: advance stage + request cancellation       (owner-side)
+//   β3: create deal + refer to portfolio owner     (owner-side)
+//   β4: validate / query deal + approve / reject cancel  (manager-side)
 //
 // Each mutation returns a discriminated result the page can switch on:
 //   { ok: true,  data: <response> }
@@ -24,11 +26,10 @@
 // OI-63 lands, this hook becomes a thin wrapper over useMutation.
 //
 // Refetch semantics:
-//   The hook does NOT call PipelineProvider.refetch automatically — it
-//   has no way to (PipelineProvider lives above /pipeline only, not
-//   above the detail or create routes). Pages that need a re-render
-//   after success handle it themselves (detail page reloads its own
-//   deal; create page navigates to detail of the new deal).
+//   The hook does NOT call any provider's refetch automatically. Pages
+//   that need refreshed data after success handle it themselves (queue
+//   pages re-fetch their own queue after each action; detail page
+//   reloads its own deal; create page navigates to detail).
 
 import { useState, useCallback } from 'react';
 import {
@@ -36,6 +37,8 @@ import {
   requestPipelineDealCancel,
   createPipelineDeal,
   referPipelineDeal,
+  validatePipelineDeal,
+  approvePipelineDealCancel,
   ApiValidationError,
   AuthExpiredError,
 } from '@/lib/api';
@@ -44,6 +47,8 @@ import type {
   RequestCancelRequest, RequestCancelResponse,
   CreateDealRequest, CreateDealResponse,
   ReferDealRequest, ReferDealResponse,
+  ValidateDealRequest, ValidateDealResponse,
+  ApproveCancelRequest, ApproveCancelResponse,
 } from '@/types/pipeline';
 
 
@@ -65,6 +70,10 @@ export interface PipelineDealMutationsHookValue {
   create:         (body: CreateDealRequest)  => Promise<MutationResult<CreateDealResponse>>;
   /** Refer a deal to its portfolio owner (β3). Same result shape. */
   refer:          (body: ReferDealRequest)   => Promise<MutationResult<ReferDealResponse>>;
+  /** Validate (approved:true) or query (approved:false) a deal (β4 manager). */
+  validate:       (dealId: string, body: ValidateDealRequest) => Promise<MutationResult<ValidateDealResponse>>;
+  /** Approve or reject a pending cancellation request (β4 manager). */
+  approveCancel:  (dealId: string, body: ApproveCancelRequest) => Promise<MutationResult<ApproveCancelResponse>>;
   /** True while ANY mutation from this hook instance is in flight. */
   loading:        boolean;
 }
@@ -156,5 +165,17 @@ export function usePipelineDealMutations(): PipelineDealMutationsHookValue {
     [runBodyMutation],
   );
 
-  return { advance, requestCancel, create, refer, loading };
+  const validate = useCallback(
+    (dealId: string, body: ValidateDealRequest) =>
+      runMutation(validatePipelineDeal, dealId, body),
+    [runMutation],
+  );
+
+  const approveCancel = useCallback(
+    (dealId: string, body: ApproveCancelRequest) =>
+      runMutation(approvePipelineDealCancel, dealId, body),
+    [runMutation],
+  );
+
+  return { advance, requestCancel, create, refer, validate, approveCancel, loading };
 }

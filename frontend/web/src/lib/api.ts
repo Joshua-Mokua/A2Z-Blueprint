@@ -2,6 +2,8 @@
 // v10.510 Phase 4 Batch β1 — extended with pipeline fetchers.
 // v10.511 Phase 4 Batch β2 — extended with postJson + pipeline mutations.
 // v10.512 Phase 4 Batch β3 — extended with create + refer mutations.
+// v10.513 Phase 4 Batch β4 — extended with manager queues + validate +
+//                              cancel-approve mutations.
 //
 // Single source for talking to the FastAPI backend. The Vite dev proxy
 // (vite.config.ts) transparently forwards /api/* to localhost:8502 in
@@ -31,6 +33,9 @@ import type {
   RequestCancelRequest, RequestCancelResponse,
   CreateDealRequest, CreateDealResponse,
   ReferDealRequest, ReferDealResponse,
+  ValidationQueueResponse, CancellationQueueResponse,
+  ValidateDealRequest, ValidateDealResponse,
+  ApproveCancelRequest, ApproveCancelResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -405,6 +410,89 @@ export async function referPipelineDeal(
 ): Promise<ReferDealResponse> {
   return postJson<ReferDealResponse, ReferDealRequest>(
     '/pipeline/deals/refer',
+    body,
+  );
+}
+
+
+// ── Manager queue + action fetchers (v10.513 Phase 4 Batch β4) ──────────
+//
+// Wraps the α6 manager-only endpoints. Server enforces is_manager()
+// authorization via utils/api_pipeline_manager_actions.py — non-managers
+// get 403 (not 401). The React UI uses lib/role.ts::isManager to avoid
+// surfacing these endpoints to non-managers in the first place, but the
+// server is the security boundary.
+
+
+/**
+ * Fetch the validation queue from /api/pipeline/queues/validation.
+ *
+ * Auth: REQUIRED + manager-only. Returns deals past Lead stage that
+ * haven't been validated yet (and aren't pending cancellation), scoped
+ * to the caller's cascade.
+ *
+ * 403 here means the caller isn't a manager. The page handles this
+ * gracefully by checking isManager(user) before fetch.
+ */
+export async function fetchValidationQueue(): Promise<ValidationQueueResponse> {
+  return getJson<ValidationQueueResponse>('/pipeline/queues/validation');
+}
+
+
+/**
+ * Fetch the cancellation queue from /api/pipeline/queues/cancellation.
+ *
+ * Auth: REQUIRED + manager-only. Returns deals with pending cancellation
+ * requests awaiting manager decision, scoped to caller's cascade.
+ */
+export async function fetchCancellationQueue(): Promise<CancellationQueueResponse> {
+  return getJson<CancellationQueueResponse>('/pipeline/queues/cancellation');
+}
+
+
+/**
+ * Validate or query a deal via POST /api/pipeline/deals/{id}/validate.
+ *
+ * Auth: REQUIRED + manager-only + deal must be in caller's cascade scope.
+ *
+ * Two outcomes based on body.approved:
+ *   true  → DEAL_VALIDATED, deal joins forecast (manager_validated:true)
+ *   false → DEAL_QUERIED, deal returns to owner with note (still
+ *           manager_validated:false; the note is visible to owner)
+ *
+ * Throws ApiValidationError on validation failure (rare — server
+ * accepts any boolean+note).
+ */
+export async function validatePipelineDeal(
+  dealId: string,
+  body: ValidateDealRequest,
+): Promise<ValidateDealResponse> {
+  return postJson<ValidateDealResponse, ValidateDealRequest>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/validate`,
+    body,
+  );
+}
+
+
+/**
+ * Approve or reject a cancellation request via
+ * POST /api/pipeline/deals/{id}/cancel/approve.
+ *
+ * Auth: REQUIRED + manager-only + deal must have pending cancel_requested.
+ *
+ * Two outcomes based on body.approve:
+ *   true  → CANCEL_APPROVED, deal transitions to Closed Lost
+ *   false → CANCEL_REJECTED, deal continues, cancel_requested cleared
+ *
+ * Throws ApiValidationError if the deal has no pending cancel request
+ * (server rejects with 400).
+ */
+export async function approvePipelineDealCancel(
+  dealId: string,
+  body: ApproveCancelRequest,
+): Promise<ApproveCancelResponse> {
+  return postJson<ApproveCancelResponse, ApproveCancelRequest>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/cancel/approve`,
     body,
   );
 }

@@ -21,28 +21,25 @@
 //   - Pipeline route element is wrapped in PipelineProvider so the
 //     deal list state lives only where it's consumed — not hoisted to
 //     app-level. Keeps the G381-protected provider chain unchanged.
-//   - PipelineProvider sits INSIDE ProtectedRoute so it doesn't attempt
-//     to fetch when the caller isn't authenticated yet (ProtectedRoute
-//     renders null while auth.status === 'initializing'; PipelineProvider
-//     never mounts in that window).
 // v10.511 Phase 4 Batch β2:
 //   - /pipeline/:dealId route added (protected, requireAuth).
-//   - Detail page is NOT wrapped in PipelineProvider — the page fetches
-//     its own deal data via GET /api/pipeline/deals/{id} and refetches
-//     after each successful mutation. The list page's provider will
-//     re-fetch on its next mount when user navigates back.
-//   - G381 chain still byte-for-byte unchanged.
+//   - Detail page is page-local — no PipelineProvider wrap.
 // v10.512 Phase 4 Batch β3:
-//   - /pipeline/new route added (protected, requireAuth).
-//   - Route declaration ORDER is load-bearing: /pipeline/new MUST come
-//     before /pipeline/:dealId. React Router 6 matches in declaration
-//     order; without this the literal "new" would be captured as a
-//     :dealId param and the detail page would try to fetch a deal
-//     with ID "new" (and 404).
-//   - Create page is page-local — no PipelineProvider wrap. After
-//     successful create or refer, navigates to /pipeline/{newId} (the
-//     detail page), which fetches the new deal fresh.
-//   - G381 chain still byte-for-byte unchanged.
+//   - /pipeline/new route added BEFORE /pipeline/:dealId. RR6 ranks
+//     static routes above dynamic ones automatically, but explicit
+//     ordering documents intent for future maintainers.
+// v10.513 Phase 4 Batch β4:
+//   - /pipeline/queues route added (manager-only via page guard).
+//   - AppShell layout route introduced wrapping all protected routes
+//     EXCEPT /change-password. The shell renders the persistent
+//     Sidebar; pages render via React Router 6's <Outlet />.
+//   - /change-password deliberately stays OUTSIDE AppShell — user
+//     in must_rotate status would see a mocking sidebar of nav
+//     links they can't use otherwise.
+//   - /login and /components stay outside AppShell as before
+//     (public, no auth needed).
+//   - G381 byte-for-byte chain still unchanged:
+//     QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter
 //
 // CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
 //
@@ -52,10 +49,8 @@
 //   - `<QueryClientProvider client={queryClient}>`
 //   - `<AuthProvider><WebSocketProvider><BrowserRouter>` — chain order
 //   - Existing route paths `/`, `/perform`, `/profitability`, `/components`,
-//     `/login`, `/change-password`
-//
-// AMENDED CHAIN (v10.496, unchanged in Batch 3a/3b/β1):
-//   QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter
+//     `/login`, `/change-password`, `/pipeline`, `/pipeline/new`,
+//     `/pipeline/:dealId`
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -67,6 +62,7 @@ import { WebSocketProvider } from './providers/WebSocketProvider';
 import { PipelineProvider } from './providers/PipelineProvider';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AppShell } from './components/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
@@ -76,6 +72,7 @@ import { ChangePassword } from './pages/ChangePassword';
 import { Pipeline } from './pages/Pipeline';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
+import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
 
 const queryClient = new QueryClient();
 
@@ -91,56 +88,43 @@ function App() {
                 {/* Public — design-system showcase (Batch 3a) */}
                 <Route path="/components" element={<Showcase />} />
 
-                {/* Protected — operational surfaces */}
-                <Route path="/" element={
-                    <ProtectedRoute requireAuth><Dashboard /></ProtectedRoute>
-                } />
-                <Route path="/perform" element={
-                    <ProtectedRoute requireAuth><Perform /></ProtectedRoute>
-                } />
-                <Route path="/profitability" element={
-                    <ProtectedRoute requireAuth><Profitability /></ProtectedRoute>
-                } />
-
-                {/* Protected — pipeline read surface (β1) */}
-                {/* PipelineProvider scoped to this route only — avoids
-                    fetching deal data on pages that don't render it. */}
-                <Route path="/pipeline" element={
-                    <ProtectedRoute requireAuth>
-                        <PipelineProvider>
-                            <Pipeline />
-                        </PipelineProvider>
-                    </ProtectedRoute>
-                } />
-
-                {/* Protected — pipeline deal detail + owner actions (β2) */}
-                {/* No PipelineProvider wrap — the detail page fetches
-                    its own deal directly via GET /api/pipeline/deals/{id}.
-                    Mutations refetch the same page-local state. The
-                    list view will re-fetch on its next mount when
-                    user navigates back to /pipeline. */}
-
-                {/* CRITICAL: /pipeline/new MUST be declared BEFORE
-                    /pipeline/:dealId. React Router 6 matches in order,
-                    and without this the literal "new" would be captured
-                    as a :dealId param and the detail page would try to
-                    fetch a deal with ID "new". */}
-                <Route path="/pipeline/new" element={
-                    <ProtectedRoute requireAuth>
-                        <PipelineCreate />
-                    </ProtectedRoute>
-                } />
-                <Route path="/pipeline/:dealId" element={
-                    <ProtectedRoute requireAuth>
-                        <PipelineDealDetail />
-                    </ProtectedRoute>
-                } />
-
-                {/* Protected — password rotation (Batch 3b) */}
-                {/* Reachable for both must_rotate and authenticated states. */}
+                {/* Protected (no shell) — password rotation must be
+                    standalone so must_rotate users don't see a sidebar
+                    of nav links they can't use until rotation completes. */}
                 <Route path="/change-password" element={
                     <ProtectedRoute requireAuth><ChangePassword /></ProtectedRoute>
                 } />
+
+                {/* Protected (with shell) — all operational surfaces
+                    share the AppShell layout with persistent Sidebar.
+                    Pages render via <Outlet /> inside AppShell. */}
+                <Route element={
+                    <ProtectedRoute requireAuth>
+                        <AppShell />
+                    </ProtectedRoute>
+                }>
+                    {/* Dashboard at root */}
+                    <Route path="/" element={<Dashboard />} />
+
+                    {/* BSC + Profitability */}
+                    <Route path="/perform" element={<Perform />} />
+                    <Route path="/profitability" element={<Profitability />} />
+
+                    {/* Pipeline list — wrapped in PipelineProvider for the
+                        cascade-scoped deal list state. */}
+                    <Route path="/pipeline" element={
+                        <PipelineProvider>
+                            <Pipeline />
+                        </PipelineProvider>
+                    } />
+
+                    {/* Pipeline subroutes — order: static before dynamic.
+                        RR6 ranks these automatically but explicit ordering
+                        documents intent. */}
+                    <Route path="/pipeline/new"     element={<PipelineCreate />} />
+                    <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
+                    <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
+                </Route>
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>
         </ToastProvider>

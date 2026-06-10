@@ -370,3 +370,63 @@ export interface ReferDealResponse {
   status:         string;  // 'referred'
   bsc_triggered:  boolean;
 }
+
+
+// ── Manager queue types (v10.513 Phase 4 Batch β4) ──────────────────────
+// Manager-only endpoints. Server enforces 403 on these for non-managers
+// (per utils/api_pipeline_manager_actions.py::is_manager). React uses
+// lib/role.ts::isManager to hide nav links + page guards as UX.
+
+/** Validation queue: deals past Lead stage awaiting manager validation
+ *  (manager_validated:false, stage in active set, not cancel_requested). */
+export interface ValidationQueueResponse {
+  deals:  PipelineDeal[];
+  count:  number;
+  queue:  'validation';
+}
+
+/** Cancellation queue: deals with cancel_requested:true AND
+ *  cancel_approved:null/false (awaiting manager decision). */
+export interface CancellationQueueResponse {
+  deals:  PipelineDeal[];
+  count:  number;
+  queue:  'cancellation';
+}
+
+
+// ── Validate deal mutation (v10.513 Phase 4 Batch β4) ──────────────────
+// POST /api/pipeline/deals/{id}/validate. Manager either VALIDATES
+// (approved:true → deal joins forecast) or QUERIES (approved:false →
+// deal returns to owner with note). Mirrors Streamlit pages/3_pipeline.py.
+
+export interface ValidateDealRequest {
+  /** True = validate (include in forecast); False = query (return to owner). */
+  approved:  boolean;
+  /** Manager's note. Server doesn't enforce length, matching Streamlit. */
+  note?:     string;
+}
+
+export interface ValidateDealResponse {
+  deal:           PipelineDeal;
+  status:         string;  // 'validated' | 'queried' depending on approved
+  bsc_triggered:  boolean;
+}
+
+
+// ── Approve/reject cancellation (v10.513 Phase 4 Batch β4) ──────────────
+// POST /api/pipeline/deals/{id}/cancel/approve. Manager either APPROVES
+// (approve:true → deal moves to Closed Lost) or REJECTS (approve:false →
+// deal continues, cancel_requested flag cleared).
+
+export interface ApproveCancelRequest {
+  /** True = approve cancellation; False = reject (deal continues). */
+  approve:   boolean;
+  /** Manager's decision note. Visible on the deal for audit. */
+  note?:     string;
+}
+
+export interface ApproveCancelResponse {
+  deal:           PipelineDeal;
+  status:         string;  // 'cancel_approved' | 'cancel_rejected'
+  bsc_triggered:  boolean;
+}
