@@ -31,11 +31,15 @@ development across multiple concurrent arcs.
 **Phase 1 closure commit:** `f268330` (v10.500 Phase 1 Batch 3d — doctrine refresh)
 **Last shipped batch:** v10.501 Phase 2 Arc A Batch 4a — 2026-06-10 (password policy hardening)
 **Phase 1 status:** **CLOSED** — 10/10 gates green
-**Phase 2 status:** **CLOSED.** All three arcs complete. Arc A (GAP-001 + GAP-005), Arc B (GAP-006), Arc C (GAP-002). Push to origin scheduled at phase boundary (this batch).
+**Phase 2 status:** **CLOSED** (pushed to origin/main at `535b477`). All three arcs complete.
+**Stage C status:** Arc D RESUMED. Arc D1 doctrine baseline alignment (Batch 5a) is the current focus. See Active Workstreams below.
 **Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) + intentionally-tracked credential data discipline (Batch 4c) — all active
-**Gate count:** 418 total (verified at commit `49e804f`)
+**Gate count:** 388 total (verified same-turn at HEAD `535b477` via `grep -c '^\s*("G[0-9]+",' scripts/audit.py`). The v10.498-era "418 verified at commit `49e804f`" attribution was stale — corrected v10.502 Stage C Arc D1 Batch 5a per CGR1.
+**Stage C commits (newest first):**
+- `[pending]` v10.502 Stage C Arc D1 Batch 5a — doctrine baseline alignment (GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded)
+
 **Phase 2 commits (newest first):**
-- `[pending]` v10.501 Phase 2 Arc C Batch 4c — `.gitignore` doctrine fix + OPERATIONAL_PROTOCOL section + httpx dev-dep bundle (closes GAP-002; PHASE 2 CLOSED)
+- `535b477` v10.501 Phase 2 Arc C Batch 4c — `.gitignore` doctrine fix + OPERATIONAL_PROTOCOL section + httpx dev-dep bundle (closes GAP-002; PHASE 2 CLOSED)
 - `97fb635` v10.501 Phase 2 Arc B Batch 4b — slowapi rate limiting on login + change-password (closes GAP-006); single-worker FastAPI operational constraint codified
 - `e542acd` v10.501 Phase 2 Arc A Batch 4a — password policy helper + Streamlit `current_password` parity (closes GAP-001 + GAP-005)
 
@@ -102,30 +106,21 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 
 ## Active workstreams
 
-1. **Stage C governance enforcement (resumes — natural next focus).**
-   Paused at start of Phase 1 React substrate work. ~5/35 gates wired
-   through Batch 2e. Remaining gates G388-G417 tracked in `OI-66`.
-   Doctrine surface is healthy; OPERATIONAL_PROTOCOL grew two new
-   sections during Phase 2 (single-worker FastAPI constraint,
-   intentionally-tracked credential data). Picking up Stage C means
-   resuming the gate-authoring discipline.
+1. **Stage C Arc D — Doctrine baseline + reality-classification (active focus).**
+   Resumed v10.502 after Phase 2 closure. Sub-arc structure that emerged from same-turn inspection (Batch 5a orientation findings):
+   - **Arc D1 — Doctrine baseline alignment.** Single batch (5a, this batch). GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded (gate count drift; G10463 cluster pathology; ledger drift; Stage C scope overcount).
+   - **Arc D2 — Reality-check the 8 provisional artifacts.** 4 batches paired by artifact shape. Each batch ships 1-2 new audit gates in the G388+ range + index updates + CGR1 correction if drift found. Pairings: (5b) CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY; (5c) API_CONTRACTS + DATA_DICTIONARY; (5d) CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP; (5e) ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE.
+   - **Arc D3 — Ledger backfill (optional).** ~75 v10.380-v10.413 + v10.463 gates exist with no ledger entries. Either backfill retroactive entries or formally accept the gap. 1 batch (5f).
 
-2. **PostgreSQL migration (incremental).**
-   27/52 tables migrated. G163 ratchet enforces no regression.
+2. **PostgreSQL migration (incremental).** 27/52 tables migrated. G163 ratchet enforces no regression.
 
-3. **mlops_model_registry adoption (incremental).**
-   11 engines pending registration per G386.
+3. **mlops_model_registry adoption (incremental).** 11 engines pending registration per G386.
 
 4. **Post-Phase-2 hygiene candidates (optional, non-gating).**
-   - `@app.on_event("startup")` → lifespan handler migration
-     (`utils/api.py:258`). FastAPI is emitting deprecation warnings.
-     Not breaking; pre-dates Phase 2; small hygiene arc.
-   - GAP-007 `_APP_VERSION` stamp policy formalisation. De facto
-     applied (bumped per batch in 4a/4b/4c); decide whether to make
-     it audit-gate-enforced doctrine or formally informational.
-   - Two `docs/` untracked items (`KPA Pin.pdf`,
-     `architecture/survey_inputs/`) — decide what they are and either
-     gitignore, commit, or delete.
+   - `@app.on_event("startup")` → lifespan handler migration (`utils/api.py:258`). FastAPI emits deprecation warnings.
+   - GAP-007 `_APP_VERSION` stamp policy formalisation. De facto applied in 4a/4b/4c/5a.
+   - Two `docs/` untracked items (`KPA Pin.pdf`, `architecture/survey_inputs/`).
+   - G10463 cluster cleanup (Finding 2 in Batch 5a CGR1 correction) — 21 gates collapse to 7 OR genuine differentiation.
 
 ---
 
@@ -236,11 +231,12 @@ status:
 
 Paste this into a new Claude chat:
 
-> Continuing A2Z v10.501. Last commit: `[pending Arc C push]`.
-> Phase 1 complete: 10/10 gates green. Phase 2 complete: 4 gaps
-> closed across 3 arcs (GAP-001, GAP-005, GAP-006, GAP-002).
-> 30/30 regression suite green. Next focus is Stage C governance
-> enforcement resumption (~30 gates remaining, OI-66). Read
+> Continuing A2Z v10.502 Stage C Arc D. Last pushed commit: `535b477`
+> (Phase 2 Arc C Batch 4c — Phase 2 closed). Stage C Arc D1 (doctrine
+> baseline alignment) Batch 5a is in working tree pending commit. Phase
+> 1 complete: 10/10 gates. Phase 2 complete: 4 gaps closed.
+> Stage C Arc D2 (reality-check 8 provisional artifacts) is the next
+> focus across 4 paired batches (5b-5e). Read
 > `docs/continuity/SESSION_BOOTSTRAP.md` for current state.
 
 That plus `userMemories` gives Claude full context immediately.

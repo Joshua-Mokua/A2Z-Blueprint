@@ -413,18 +413,13 @@ new section "Intentionally-tracked credential data" added to
 `OPERATIONAL_PROTOCOL.md`. Bundled dev-dep fix: `httpx>=0.27.0`
 added to `requirements-dev.txt`.
 
-**Phase 2 status: CLOSED.** 4 gaps closed across 3 arcs.
-Net status of POLICY_GAPS at Phase 2 boundary: 1 OPEN (GAP-007 —
-`_APP_VERSION` stamp policy), 2 DEFERRED (GAP-003 envelope
-retirement, GAP-004 must_rotate token lifetime).
+**Phase 2 status: CLOSED** (pushed to origin/main at `535b477`).
+4 gaps closed across 3 arcs. Net status at Phase 2 boundary:
+1 OPEN (GAP-007 — `_APP_VERSION` stamp policy), 2 DEFERRED (GAP-003 envelope retirement, GAP-004 must_rotate token lifetime).
 
-**Push to `origin/main` happens at this phase boundary** per
-the established workflow (commit per batch, push at phase
-boundaries).
+**Stage C Arc D status:** Arc D1 (doctrine baseline alignment) in progress as v10.502 Batch 5a — surfaced 4 CGR1 corrections (gate count drift; G10463 cluster pathology; ledger drift for v10.380-v10.413 and v10.463; Stage C scope overcount). Arc D2 (reality-check 8 provisional artifacts) and Arc D3 (optional ledger backfill) follow.
 
-**GAP-003 / GAP-004 remain DEFERRED** per original recommendations —
-their triggers (observability data for GAP-003, established Phase 2
-token discipline for GAP-004) have not materialised yet.
+**GAP-003 / GAP-004 remain DEFERRED** per original recommendations — their triggers (observability data for GAP-003, established Phase 2 token discipline for GAP-004) have not materialised yet.
 
 **GAP-007** is the only remaining OPEN item. The `_APP_VERSION`
 stamping discipline was applied de facto across all three Phase 2

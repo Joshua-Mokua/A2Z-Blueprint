@@ -61,6 +61,65 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.502 Stage C Arc D1 Batch 5a — Doctrine baseline alignment
+
+**Type:** Doctrine harmonization + CGR1 reality-check (4 distinct findings recorded)
+**Owner:** Joshua + Claude
+**Rationale:** Phase 2 closed cleanly with 4 gap closures, but the orientation work that preceded Stage C resumption surfaced significant drift between doctrine and reality. Rather than start authoring new audit gates (the original Stage C plan), Arc D1 establishes a clean doctrine baseline first — analogous to Phase 1 Batch 3d's role in closing Phase 1. The findings are not regressions from Phase 2; they are pre-existing drift that the Phase 2 work touched the edges of but did not address. Per CGR1 (reality grounds doctrine), each finding gets a recorded correction; remediation is then sequenced or accepted as appropriate.
+
+**Files shipped (5 modified, 1 new):**
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — multiple surgical edits: (1) fixed malformed `##`-prefixed paragraph at line 310 (text accidentally promoted to H2 — demoted to prose); (2) replaced truncated end-of-file stamp with proper completion + chronological reading order note; (3) added a positive Batch 2b correction entry recording the legitimate `require_role` implementation at `d740b98` (previously the index's last word on `require_role` was the 2a-rollback marking it ASPIRATIONAL — no positive transition was ever recorded); (4) added 3 missing artifact rows to the classification table (OPERATIONAL_PROTOCOL.md, POLICY_GAPS.md, GOVERNANCE_REALITY_INDEX.md itself); (5) removed the "(~18 remaining artifacts)" claim that was wrong from authoring; (6) added inventory correction note explaining the original count was wrong; (7) added new Batch 5a CGR1 correction at end documenting all four findings below.
+
+- `docs/continuity/SESSION_BOOTSTRAP.md` — gate count fixed from "418 verified at commit `49e804f`" to "388 verified same-turn at HEAD `535b477`". Active workstreams section rewritten to reflect the realistic Stage C Arc D sub-arc structure (D1 doctrine baseline, D2 reality-check across 4 paired batches, D3 optional ledger backfill). Resume-in-fresh-session prompt updated. Stage C commits row added; Phase 2 commits row updated to show 4c is now committed at `535b477`. Governance doctrine list extended with Phase 2's two new OPERATIONAL_PROTOCOL sections (single-worker FastAPI constraint, intentionally-tracked credential data).
+
+- `docs/architecture/POLICY_GAPS.md` — phase summary extended with Stage C Arc D status row.
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+
+- `docs/CHANGELOG_v10502_batch5a.md` NEW — per-batch closure record.
+
+- `app.py` — `_APP_VERSION` bumped to `v10.502-batch5a-2026.06.10`.
+
+**Four CGR1 findings recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch 5a correction):**
+
+1. **Gate count drift.** `SESSION_BOOTSTRAP.md` cited "418 verified at commit `49e804f`". Actual: 388. Cause: ~50 v10.4xx batches landed without bootstrap refresh. Corrected to 388.
+
+2. **G10463 cluster pathology.** 21 audit gates in the form `G10463_<DEPT>_<TYPE>` (7 departments × 3 types each) — same-turn `diff` confirmed all three gates per department execute IDENTICAL code (`module_doctrine_audit.audit_module("admin").doctrine_health_pct < 50.0`). 21 gates = 7 unique checks × 3 duplicated. Real check, but template-pasted three-gate-per-department pattern overstates coverage. Classification: TRANSITIONAL. Remediation: collapse-to-one-per-department or genuine differentiation — future arc, not this batch.
+
+3. **REVIVAL_LEDGER drift.** Only 28 entries total. The v10.380-v10.413 work (audit gates G250-G299, ~50 gates) and the v10.463 work (21 G10463 gates + 75 KB `utils/module_doctrine_audit.py`) have ZERO individual ledger entries. The "Implicit, pre-this-session — v10.470-v10.494" entry covers 25 batches as a single non-entry — itself an RL2 violation (one entry per harmonization event) and an RL3 violation (every entry has a rationale). Remediation deferred to Arc D3 (optional backfill).
+
+4. **Stage C scope overcount.** Original framing of "30 gates remaining to reality-check ~28 provisional artifacts" was wrong by ~3x. Actual: 19 .md files exist in `docs/architecture/`; 16 named in the index (4 classified, 8 provisional, 2 operationally ACTIVE, 2 constitutional); 3 added later by Phase 1 Batch 3d (OPERATIONAL_PROTOCOL, POLICY_GAPS, this index). Real Arc D2 scope: 8 provisional artifacts × 1-2 gates each = ~8-12 gates, not 30. The G388+ ID range remains available per hybrid numbering decision.
+
+**Verification:**
+
+- Same-turn `grep -c '^\s*("G[0-9]+",' scripts/audit.py` confirmed 388 gates.
+- Same-turn `diff` of `gate_v10463_admin_health` vs `gate_v10463_admin_revival_complete` confirmed identical bodies modulo id/name/summary strings.
+- Same-turn `ls docs/architecture/*.md | wc -l` confirmed 19 artifacts.
+- Same-turn `grep -c "^### " docs/architecture/REVIVAL_LEDGER.md` confirmed 28 entries before this batch (29 after).
+- Manual structural verification of GOVERNANCE_REALITY_INDEX.md after edits: 10 `^## ` headings, none malformed, no orphan section markers, chronological reading order documented in the Batch 2b entry's closing paragraph.
+
+**Trap discipline applied:**
+
+- **Trap #11** — every finding grounded in same-turn inspection commands cited verbatim in the index correction. Zero claims made from memory.
+- **Trap #12** — ZIP delivery, full replacement files for each modified path, namespaced `_batch5a_payload/` staging.
+- **Trap #14** — staging folder cannot collide with `docs/`, `app.py` at destination.
+- **Backup-before-mutation** — N/A. Zero credential or audit data writes.
+- **Silent-except** — no new exception handlers introduced; doctrine and version bump only.
+- **RL1 (append-only)** — this entry appended at top; no historical entries deleted or rewritten. Previous "Implicit, pre-this-session" entry preserved despite being flagged as RL2/RL3-violating; remediation deferred not enacted.
+
+**What this batch DID NOT do:**
+
+- Did not author new audit gates. Arc D2 batches (5b-5e) will do that.
+- Did not modify `scripts/audit.py`. The G10463 duplication is documented, not remediated.
+- Did not backfill the ~75 missing ledger entries. Arc D3 (optional, batch 5f) is the placeholder.
+- Did not touch any `.py` file outside `app.py`'s version stamp. Zero behavioural code changes.
+- Did not change `SYSTEM_CONSTITUTION.md`, `ROLE_GOVERNANCE.md`, or any other artifact beyond the 4 doctrine files modified.
+
+**Cross-references:** Phase 2 closure (commit `535b477`) is the predecessor. Arc D2 Batch 5b (CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-check) is the natural next batch. Full Batch 5a CGR1 corrections in `docs/architecture/GOVERNANCE_REALITY_INDEX.md` at the end of file.
+
+---
+
 ### 2026-06-10 v10.501 Phase 2 Arc C Batch 4c — `users.json` tracking via Path B (closes GAP-002) + dev-dep fix + PHASE 2 CLOSED
 
 **Type:** Doctrine harmonization + hygiene

@@ -51,7 +51,11 @@ pending Batch 2-7 reality checks (tracked as OI-66).
 | RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL (provisional) | G373-G380 ladder ACTIVE; full Olympic certification TRANSITIONAL   |
 | REVIVAL_LEDGER.md                          | ACTIVE                     | This is the operational log; always reflects reality by definition |
 | CHANGELOG_MASTER.md                        | ACTIVE                     | CM1 doctrine ACTIVE since v10.498                                  |
-| (~18 remaining artifacts)                  | ACTIVE (provisional)       | Reality check scheduled Batch 5-7                                  |
+| OPERATIONAL_PROTOCOL.md                    | ACTIVE                     | Introduced v10.500 Phase 1 Batch 3d. Codifies Traps #11/#12/#14 + backup-before-mutation + silent-except + intentionally-tracked credential data (v10.501 Batch 4c) + single-worker FastAPI constraint (v10.501 Batch 4b) |
+| POLICY_GAPS.md                             | ACTIVE                     | Introduced v10.500 Phase 1 Batch 3d. Phase 2 closed 4/7 gaps (GAP-001/002/005/006); 1 OPEN (GAP-007), 2 DEFERRED (GAP-003/004) |
+| GOVERNANCE_REALITY_INDEX.md                | ACTIVE                     | This index. Updated v10.502 Stage C Arc D1 Batch 5a (this batch).  |
+
+**Inventory note (corrected v10.502 Stage C Arc D1 Batch 5a):** the line below this note in the original v10.498 authoring claimed "(~18 remaining artifacts)" — the claim was wrong from authoring. The actual `docs/architecture/` tree at the time contained 16 artifacts (4 reality-checked, 8 provisional, 2 operationally ACTIVE, 2 constitutional). Phase 1 Batch 3d added 2 more (OPERATIONAL_PROTOCOL, POLICY_GAPS). The 19th is this index itself. No "~18 remaining" pool ever existed. Stage C Arc D scope is the 8 named provisional artifacts above, not 28.
 
 ---
 
@@ -307,6 +311,104 @@ The claim was a fabrication. The function does not exist in `utils/auth_jwt.py`.
 
 ### How the fabrication was caught
 
-## During Batch 2b execution planning, Joshua opened `utils/auth_jwt.py` in VS Code and searched for `require_role` by reading the actual file content. The function was not found. Joshua flagged this discrepancy ("i have pasted the entire code, it does not reference anywhere to require_role"). Three terminal commands then verified the discrepancy mechanically:
+During Batch 2b execution planning, Joshua opened `utils/auth_jwt.py` in VS Code and searched for `require_role` by reading the actual file content. The function was not found. Joshua flagged this discrepancy ("i have pasted the entire code, it does not reference anywhere to require_role"). Three terminal commands then verified the discrepancy mechanically:
 
-**End of GOVERNANCE_REALITY_INDEX.md (last updated v10.499 Stage C Batch 2a-rollback — `require_role` reclassification reversed to ASPIRATIONAL; shadcn reclassification preserved).**
+```
+grep -n "def require_role" utils/auth_jwt.py    → 0 hits
+grep -n "require_role" utils/auth_jwt.py        → 0 hits
+git log --all --oneline | head -5               → no commit introduced it
+```
+
+The CGR1 standing procedure (inspect → compare → classify → record) caught the fabrication BEFORE any work was authored against the false-positive ACTIVE classification. The reversal entry was authored immediately; the doctrine returned to ASPIRATIONAL until Batch 2b legitimately implemented the factory.
+
+---
+
+## CGR1 Reality-Check Correction (v10.499 Stage C Batch 2b) — `require_role` legitimately implemented
+
+**Date:** 2026-05-23
+**Inspected by:** Joshua + Claude, via fresh-clone inspection at commit `d740b98`
+**Doctrine status correction:** ASPIRATIONAL (from 2a-rollback) → **ACTIVE**
+
+### What changed
+
+After the Batch 2a-rollback reversed the false-positive ACTIVE classification, Batch 2b legitimately implemented the `require_role(roles: list[str])` factory in `utils/auth_jwt.py` (commit `d740b98`). The implementation:
+
+- Lives at `utils/auth_jwt.py:319-337` (Stage C Batch 2b addition, comment block dated v10.499)
+- Generalizes `require_admin` to arbitrary role lists
+- Returns a FastAPI Depends-compatible callable
+- Raises 403 on insufficient role (not 401 — distinguishes "token valid, role insufficient" from "no valid token")
+- Validates non-empty role list at construction time
+
+Per same-turn inspection (`grep -n "require_role\|require_admin" utils/auth_jwt.py` from a v10.501 Phase 2 orientation session, post-`92c2e0a`):
+
+```
+319:# ── require_role factory (v10.499 Stage C Batch 2b) ───────────────────────
+337:def require_role(accepted_roles: list[str]):
+```
+
+### Why this entry exists
+
+Without this entry, the index's last word on `require_role` was the 2a-rollback marking it ASPIRATIONAL. The factory has been ACTIVE since Batch 2b (`d740b98`); the index lacked a positive record. A future Claude session reading the index newest-correction-first would see only the rollback and incorrectly conclude `require_role` was still aspirational. Batch 5a (v10.502 Stage C Arc D1) adds this entry to close the loop.
+
+### Procedural lesson
+
+The first time `require_role` was claimed ACTIVE, the claim was fabricated (Batch 2a). The second time it became ACTIVE (Batch 2b), the index never recorded the legitimate transition. Both failures stem from the same root cause: doctrinal artifacts updated only when things go wrong, not when things go right. Future arcs should record positive transitions with the same discipline as corrections. The classification table at the top of this index now reflects the post-Batch-2b reality; the corrections section below tells the full story.
+
+---
+
+## CGR1 Reality-Check Correction (v10.502 Stage C Arc D1 Batch 5a) — Doctrine baseline alignment
+
+**Date:** 2026-06-10
+**Inspected by:** Claude, same-turn inspection of `scripts/audit.py`, `docs/architecture/REVIVAL_LEDGER.md`, `docs/architecture/`, `utils/module_doctrine_audit.py`
+**Doctrine status corrections:** four discrete drift findings; each summarised below.
+
+### Finding 1 — Gate count was 388, not 418
+
+`SESSION_BOOTSTRAP.md` and `POLICY_GAPS.md` both cited "418 total (verified at commit `49e804f`)". Same-turn `grep -c '^\s*("G[0-9]+",' scripts/audit.py` against the working tree returns **388**. The `49e804f` attribution is stale by ~50 v10.4xx batches. SESSION_BOOTSTRAP corrected in this batch; POLICY_GAPS reference unchanged because that document doesn't claim a total (only references the count narratively). Gate count is now grounded.
+
+### Finding 2 — G10463 cluster is functional but pathological
+
+21 audit gates exist in the form `G10463_<DEPT>_<TYPE>` for 7 departments (ADMIN, ICT, FINANCE, TREASURY, LEGAL, RISK, COMPLIANCE) × 3 types (HEALTH, REVIVAL_COMPLETE, DOCTRINE_SATISFIED). Same-turn `diff` of `gate_v10463_admin_health` vs `gate_v10463_admin_revival_complete` confirms they execute IDENTICAL code — both check `module_doctrine_audit.audit_module("admin").doctrine_health_pct < 50.0`. The third gate (`DOCTRINE_SATISFIED`) is structurally identical. 21 gates = 7 unique checks × 3 duplicated each.
+
+The gates DO run — `utils/module_doctrine_audit.py` exists (75 KB) and `audit_module()` is real. But the three-gate-per-department pattern is template-pasted aspirational structure, not real differentiation. Docstring cites "Phase 2 QA1 audit criterion" — a "QA1" criterion that does not appear in `OPERATIONAL_PROTOCOL.md` or `POLICY_GAPS.md`.
+
+**Classification:** the 21 G10463 gates are **TRANSITIONAL** — they enforce a real check, but the three-gate-per-department structure overstates coverage. A future arc should either (a) collapse to one gate per department (7 gates total) or (b) genuinely differentiate the HEALTH/REVIVAL_COMPLETE/DOCTRINE_SATISFIED checks. No remediation in this batch; finding recorded.
+
+### Finding 3 — REVIVAL_LEDGER has 28 entries; ~75 audit gates and at least one new module landed without ledger records
+
+Same-turn `grep -c "^### " docs/architecture/REVIVAL_LEDGER.md` returns 28 entries. The ledger contains an "(Implicit, pre-this-session) — v10.470-v10.494 — Resilience certification ladder" non-entry covering 25 batches — itself an RL2 violation (one entry per harmonization event). The v10.380-v10.413 work (audit gates G250-G299, ~50 gates) and the v10.463 work (21 G10463 gates plus 75 KB `utils/module_doctrine_audit.py` module) have **zero individual ledger entries**. Per RL3 (every entry has a rationale), the doctrine record is missing the "why" for substantial body of work.
+
+**Remediation deferred to Arc D3.** A backfill batch would inspect each gate / module against git log to derive rationale, then author retroactive ledger entries. Not done in 5a; arc scoped.
+
+### Finding 4 — Stage C scope was overcounted by ~3x
+
+Original doctrine framed Stage C as "30 gates remaining to reality-check ~28 provisional artifacts." Actual inventory: 19 `.md` files in `docs/architecture/`, of which 16 are named in the index (4 reality-checked, 8 provisional, 2 operationally ACTIVE, 2 constitutional) plus 3 added later (OPERATIONAL_PROTOCOL, POLICY_GAPS, this index itself — now in the table above). Stage C Arc D scope is **the 8 named provisional artifacts**, not 28. Realistic gate budget for Arc D2: 8-12 new gates, not 30. The G388-G417 ID range remains available for the reality-check gates per hybrid numbering decision (D3 pre-decision, Phase 2 orientation).
+
+### What this batch DID
+
+Surgical doctrine edits only — zero behavioural code changes.
+
+- Fixed malformed `##`-prefixed paragraph at the prior end-of-file (was promoted to H2 incorrectly).
+- Added the missing Batch 2b positive correction entry (`require_role` legitimately implemented at `d740b98`) so the chronological story is complete.
+- Added 3 missing artifact rows to the classification table (OPERATIONAL_PROTOCOL, POLICY_GAPS, GOVERNANCE_REALITY_INDEX) with accurate provenance.
+- Removed the "(~18 remaining artifacts)" line; replaced with an inventory note explaining the original count was wrong from authoring.
+- Added this Batch 5a CGR1 correction recording all four findings above.
+- Refreshed end-of-file stamp.
+
+### What this batch DID NOT do
+
+- Did not modify any audit gate definitions in `scripts/audit.py`. The G10463 duplication is documented, not remediated.
+- Did not backfill the ~75 missing v10.380-v10.413 + v10.463 ledger entries. Deferred to Arc D3.
+- Did not add new audit gates. Arc D2 will do that for the 8 provisional artifacts.
+- Did not change `SESSION_CONSTITUTION.md`, `ROLE_GOVERNANCE.md`, or any of the 4 already-classified artifacts.
+
+### Cross-references
+
+- POLICY_GAPS phase summary updated to reflect Stage C Arc D start.
+- REVIVAL_LEDGER gets a Batch 5a entry above this one (top of ledger per RL1 append-only discipline).
+- SESSION_BOOTSTRAP gate count fixed to 388; workstream narrative updated to reflect Stage C resumption.
+- `CHANGELOG_v10502_batch5a.md` new per-batch record.
+
+---
+
+For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
