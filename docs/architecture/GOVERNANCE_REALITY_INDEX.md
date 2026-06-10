@@ -44,9 +44,9 @@ pending Batch 2-7 reality checks (tracked as OI-66).
 | SYSTEM_CONSTITUTION.md                     | ACTIVE                     | Received CGR1 article in this batch                                |
 | API_CONTRACTS.md                           | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5c. **81 endpoints documented, 276 actual** across 16 router files. G389 (`gate_api_contract_inventory`) enforces transitional ceiling of 300 and surfaces drift as INFO. 5 surgical Auth-domain corrections applied. Substantive rewrite to document the 195 undocumented endpoints deferred to future arc. |
 | ORGANS_REGISTRY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5e                                    |
-| CANONICAL_DEPENDENCY_MAP.md                | ACTIVE (provisional)       | D2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
+| CANONICAL_DEPENDENCY_MAP.md                | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5d. G391 (`gate_canonical_dependency_map_sync`) enforces D5 (no cycles) via Tarjan's SCC algorithm; KNOWN_CYCLES allowlist holds 2 existing multi-module SCCs to be drained by future arcs. 32 self-loops surfaced as INFO with doctrine-exemption note (Python's import system handles re-imports as no-ops). D2 already enforced by G384. |
 | DATA_DICTIONARY.md                         | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5c. 4 surgical fixes applied (users.json+jwt_blocklist.json gitignored; super_user_registry.json ORPHANED; observability_metrics.json git-tracked). DD5 PII claim corrected. G390 (`gate_data_dictionary_tracking_claims`) enforces git-tracked/gitignored claims mechanically. |
-| TELEMETRY_MAP.md                           | ACTIVE (provisional)       | T2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
+| TELEMETRY_MAP.md                           | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5d. G392 (`gate_telemetry_event_naming`) enforces T1+T2 — every `_audit()` literal event in `utils/api*.py` must appear in the documented vocabulary. 4 undeclared events (API_LOGIN_FORCE_PW, API_AUTH_WHOAMI_DETAILED, API_PASSWORD_CHANGE_SUCCESS, API_PASSWORD_CHANGE_FAILED) added to Auth section. T2 + Stage-C-planned `gate_event_bus_publisher_purity` already enforced by G384. |
 | DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL (provisional) | Twin exists; full parity ASPIRATIONAL; reality check Batch 5e      |
 | RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL (provisional) | G373-G380 ladder ACTIVE; full Olympic certification TRANSITIONAL   |
 | REVIVAL_LEDGER.md                          | ACTIVE                     | This is the operational log; always reflects reality by definition |
@@ -507,7 +507,84 @@ After this batch: **389 total gates** (G388 authored and registered).
 
 ---
 
-For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b → Batch 5c. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b → Batch 5c → Batch 5d. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+
+---
+
+## CGR1 Reality-Check Correction (v10.502 Stage C Arc D2 Batch 5d) — CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP reality-checked
+
+**Date:** 2026-06-10
+**Inspected by:** Claude, same-turn AST walk of `utils/*.py` (528 modules, 802 intra-utils edges) for dependency graph; same-turn AST walk of `utils/api*.py` (16 files) for `_audit()` calls; regex parse of TELEMETRY_MAP for canonical vocabulary.
+**Doctrine status corrections:** both artifacts promoted from `ACTIVE (provisional)` to **ACTIVE**. Both gates pass post-corrections.
+
+### Finding 1 — `gate_canonical_dependency_map_sync` named in D4 doctrine but never existed
+
+Same as Batch 5b Finding 1 for CANONICAL_TRUTH_REGISTRY's D4: the artifact's doctrine line stated "Stage C gate `gate_canonical_dependency_map_sync` enforces" but same-turn `grep -n "gate_canonical_dependency_map_sync" scripts/audit.py` returned **zero hits**. Same fabrication-by-omission pattern.
+
+**Closed in this batch.** G391 authored. Tarjan's SCC algorithm + self-loop detection. Tests verify drift catches and allowlist semantics.
+
+### Finding 2 — Import graph has 2 multi-module SCCs and 32 self-loops
+
+Same-turn Tarjan analysis revealed:
+
+**Multi-module SCCs (KNOWN_CYCLES allowlist captures both):**
+- `actuals_engine ↔ bsc_engine ↔ core ↔ core_audit ↔ core_kpi` (5-module SCC — core BSC computation graph)
+- `credit_doctrine_audit ↔ credit_section_audit_engine` (2-module mutual)
+
+**32 self-loops** (modules importing themselves, primarily for `from utils.X import Y` patterns inside conditional blocks or `if __name__ == "__main__"` self-tests; see e.g. `auth_jwt.py:38`, `db.py:10`, `api_cockpit.py:134`). Per Python's import semantics these are no-ops at runtime (the module is in `sys.modules` at the point of re-import). D5 doctrine still flags them as cycles, but their resolution is a refactor/doctrine-amendment decision deferred to a future arc. G391 surfaces them as INFO with explicit doctrine-exemption note.
+
+**Not closed substantively, captured mechanically.** Future arcs should drain KNOWN_CYCLES to zero by either refactoring the SCCs or amending D5 to explicitly permit these structural patterns.
+
+### Finding 3 — `gate_telemetry_event_naming` named in TELEMETRY_MAP's "Stage C gates planned" section but never existed
+
+TELEMETRY_MAP's "Stage C gates planned" section listed 5 gates by name. Same-turn check:
+
+| Gate | Status before Batch 5d |
+|---|---|
+| `gate_telemetry_event_naming` | **missing** |
+| `gate_event_bus_publisher_purity` | EXISTS (this is G384, registered v10.498 Batch 1b) |
+| `gate_event_bus_subscriber_idempotent` | missing |
+| `gate_observability_freshness` | missing |
+| `gate_audit_event_schema_compliance` | missing |
+
+**Closed in this batch.** G392 authored — verifies every literal `_audit(EVENT, ...)` call in `utils/api*.py` against the canonical vocabulary in TELEMETRY_MAP. Dynamically-constructed event names (f-strings, vars) are silently skipped. Reverse direction (documented-but-not-in-code) reported as INFO, not violation. Stage C gates planned section updated to reflect G384 + G392 status.
+
+The other 3 planned gates (subscriber_idempotent, observability_freshness, audit_event_schema_compliance) remain unauthored — deferred to future arcs.
+
+### Finding 4 — 4 events emitted by code were undocumented in TELEMETRY_MAP
+
+Same-turn AST walk found these literal `_audit()` events in code, NOT in TELEMETRY_MAP:
+
+- `API_LOGIN_FORCE_PW` — emitted since Phase 1 Batch 3b (must_change_password lifecycle)
+- `API_AUTH_WHOAMI_DETAILED` — emitted since v10.499 Stage C Batch 2b
+- `API_PASSWORD_CHANGE_SUCCESS` — emitted since Phase 2 Arc A
+- `API_PASSWORD_CHANGE_FAILED` — emitted since Phase 2 Arc A
+
+**Closed.** All 4 added to TELEMETRY_MAP's Auth section (bumped from "3 events" to "7 events" header). The DOMAIN list in the naming-convention section extended with AUTH and PASSWORD_CHANGE. `API_LOGIN_SUCCESS` detail-field example corrected from `"mode (cookie/bearer)"` to `"mode=bearer"` (Phase 1 Batch 3a rollback of the cookie path).
+
+### What this batch DID
+
+- Authored `gate_canonical_dependency_map_sync` (G391, ~180 LOC) — Tarjan's SCC + self-loop detection + KNOWN_CYCLES allowlist.
+- Authored `gate_telemetry_event_naming` (G392, ~110 LOC) — AST scan of `utils/api*.py` + regex parse of TELEMETRY_MAP.
+- Registered both gates in the GATES dispatch table.
+- Made 4 surgical edits to `TELEMETRY_MAP.md`: 4 new Auth events added; DOMAIN list extended; `API_LOGIN_SUCCESS` detail field cookie/bearer corrected; "Stage C gates planned" section updated with status column showing G384 + G392 ACTIVE.
+- Updated classification table: both artifacts ACTIVE.
+- Authored `tests/test_gate_dependency_and_telemetry.py` (17 tests, all green).
+
+### What this batch DID NOT do
+
+- Did NOT enforce D1 stratification (transport → manager → engine → foundation). Stratum membership not exhaustively declared; full enforcement is multi-batch.
+- Did NOT refactor any of the 2 multi-module SCCs or 32 self-loops. Captured in allowlist; resolution deferred.
+- Did NOT author the remaining 3 TELEMETRY_MAP "planned" gates (subscriber_idempotent, observability_freshness, audit_event_schema_compliance). Future arcs.
+- Did NOT modify `CANONICAL_DEPENDENCY_MAP.md` content. The artifact's claims held up; only its mechanical enforcement was missing.
+- Did NOT change any other artifact's classification.
+
+### Gate count delta
+
+Before this batch: 391 (post-5c).
+After this batch: **393** (G391 + G392 added).
+
+---
 
 ---
 

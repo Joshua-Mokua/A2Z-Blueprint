@@ -78,19 +78,23 @@ Both sinks are **gitignored** per `DATA_DICTIONARY.md`.
 `API_<DOMAIN>_<ACTION>[_<MODIFIER>]`
 
 Where:
-- `<DOMAIN>` ∈ {LOGIN, LOGOUT, BSC, PIPELINE, CREDIT, AML, USERS, DASHBOARD, CACHE, INTEGRATION, ROLE_WEIGHTS, KPI_DEDUP, BACKUP_RETENTION, TEST_CLEANUP, BSC_PILLAR, BSC_LIBRARY, BSC_COMPLETENESS, BSC_WEIGHTS, BSC_CODES, ADMIN_VALIDATION, CASCADE_360, HARMONIZE, ONBOARDING, EXIT_RISK, HR_AUDIT, PEER_LEARNING, COACHING, PREDICT, GAMIFICATION, EFFICIENCY, WELLNESS, HR_ACTUALS, VITALS}
+- `<DOMAIN>` ∈ {LOGIN, LOGOUT, AUTH, BSC, PIPELINE, CREDIT, AML, USERS, DASHBOARD, CACHE, INTEGRATION, ROLE_WEIGHTS, KPI_DEDUP, BACKUP_RETENTION, TEST_CLEANUP, BSC_PILLAR, BSC_LIBRARY, BSC_COMPLETENESS, BSC_WEIGHTS, BSC_CODES, ADMIN_VALIDATION, CASCADE_360, HARMONIZE, ONBOARDING, EXIT_RISK, HR_AUDIT, PEER_LEARNING, COACHING, PREDICT, GAMIFICATION, EFFICIENCY, WELLNESS, HR_ACTUALS, VITALS, PASSWORD_CHANGE} *(extended v10.502 Batch 5d — AUTH and PASSWORD_CHANGE domains were undocumented despite active emitters)*
 - `<ACTION>` ∈ {SUCCESS, FAILED, DENIED, SUMMARY, READ, WRITE, MIGRATE, REPAIR, ARCHIVE, RUN, ALL, STAGE, ...}
 - `<MODIFIER>` optional, qualifies further
 
 ### Complete event vocabulary (post v10.497 P1.3)
 
-#### Auth (3 events)
+#### Auth (7 events)
 
 | Event | Trigger | Detail field example |
 |---|---|---|
-| `API_LOGIN_SUCCESS` | Successful `/api/auth/login` | `username, role, mode (cookie/bearer)` |
+| `API_LOGIN_SUCCESS` | Successful `/api/auth/login` | `username, role, mode=bearer` *(corrected v10.502 Batch 5d — Bearer-header only; cookie path was rolled back per Phase 1 Batch 3a)* |
 | `API_LOGIN_FAILED` | Failed `/api/auth/login` | `username (if provided), reason` |
 | `API_LOGOUT_SUCCESS` | Successful `/api/auth/logout` | `username, jti revoked` |
+| `API_LOGIN_FORCE_PW` | `/api/auth/login` succeeded but `must_change_password` is set; client must rotate before scope opens | `username, must_rotate=true` *(added v10.502 Batch 5d — emitted since Phase 1 Batch 3b)* |
+| `API_AUTH_WHOAMI_DETAILED` | `GET /api/auth/whoami-detailed` (rate-limit-exempt diagnostic) | `username, role, scope` *(added v10.502 Batch 5d — emitted since Stage C Batch 2b)* |
+| `API_PASSWORD_CHANGE_SUCCESS` | Successful `POST /api/auth/change-password` | `username, jti revoked, must_rotate cleared` *(added v10.502 Batch 5d — emitted since Phase 2 Arc A)* |
+| `API_PASSWORD_CHANGE_FAILED` | Failed `POST /api/auth/change-password` (wrong current_password OR rejected by `validate_password_policy`) | `username, reason (policy/credentials)` *(added v10.502 Batch 5d — emitted since Phase 2 Arc A)* |
 
 #### Resource summaries (9 events)
 
@@ -420,13 +424,13 @@ Per `DATA_DICTIONARY.md::DD5` and `SYSTEM_CONSTITUTION.md::§5.5`:
 
 ## Stage C gates planned
 
-| Gate | Purpose | Severity |
-|---|---|---|
-| `gate_telemetry_event_naming` | Verify all `_audit()` event names match canonical vocabulary | HIGH |
-| `gate_event_bus_publisher_purity` | Verify transports don't publish events directly | CRITICAL |
-| `gate_event_bus_subscriber_idempotent` | Verify subscribers are decorated as idempotent | MEDIUM |
-| `gate_observability_freshness` | Verify metrics are within freshness window | MEDIUM |
-| `gate_audit_event_schema_compliance` | Verify audit events conform to canonical schema | HIGH |
+| Gate | Purpose | Severity | Status |
+|---|---|---|---|
+| `gate_telemetry_event_naming` | Verify all `_audit()` event names match canonical vocabulary | HIGH | **ACTIVE** — registered as G392 in v10.502 Stage C Arc D2 Batch 5d |
+| `gate_event_bus_publisher_purity` | Verify transports don't publish events directly | CRITICAL | **ACTIVE** — registered as G384 in v10.498 Stage C Batch 1b |
+| `gate_event_bus_subscriber_idempotent` | Verify subscribers are decorated as idempotent | MEDIUM | planned |
+| `gate_observability_freshness` | Verify metrics are within freshness window | MEDIUM | planned |
+| `gate_audit_event_schema_compliance` | Verify audit events conform to canonical schema | HIGH | planned |
 
 ---
 

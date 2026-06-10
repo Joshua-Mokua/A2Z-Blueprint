@@ -60308,6 +60308,327 @@ def gate_data_dictionary_tracking_claims() -> Dict[str, Any]:
     }
 
 
+def gate_canonical_dependency_map_sync() -> Dict[str, Any]:
+    """G391 — v10.502 Stage C Arc D2 Batch 5d — CANONICAL_DEPENDENCY_MAP
+    D5 cycle enforcement (closes the stated-vs-enforced gap on D5).
+
+    Per `docs/architecture/CANONICAL_DEPENDENCY_MAP.md` D5 doctrine:
+
+        "Circular dependencies are forbidden. The import graph must be
+         a DAG. Cycles are CRITICAL violations."
+
+    And D4:
+
+        "Shadow dependencies are CRITICAL violations. ... Stage C gate
+         `gate_canonical_dependency_map_sync` enforces."
+
+    Same-turn `grep -n "gate_canonical_dependency_map_sync"
+    scripts/audit.py` returned zero hits before Batch 5d — classic
+    stated-vs-enforced gap. This gate closes it.
+
+    What this gate enforces
+    -----------------------
+    Builds the import graph for `utils/*.py` modules (Stratum 3+ in
+    D1 stratification). For each `from utils.X import Y` or
+    `import utils.X` statement, records an edge `module -> X`.
+
+    Then runs Tarjan's SCC algorithm to find strongly-connected
+    components of size > 1 (multi-module cycles). These are the
+    structurally significant cycles per D5.
+
+    Also detects self-imports (`from utils.X import Y` inside
+    `utils/X.py`) — these are 1-cycles. Per Python's import semantics
+    they are benign (the module is already in `sys.modules` when
+    re-imported), but D5 doctrine still flags them as cycles. The
+    gate surfaces self-loops as INFO (with explicit doctrine
+    exemption note) rather than violations, since the resolution is
+    a refactor / doctrine amendment decision left to a future arc.
+
+    Multi-module cycles match against KNOWN_CYCLES allowlist
+    capturing Batch 5d's snapshot. The gate FAILS if a NEW cycle
+    appears outside the allowlist. The allowlist is intentionally
+    drained-not-grown over future arcs.
+
+    What this gate does NOT enforce
+    -------------------------------
+    - D1 stratification (transport → manager → engine → foundation
+      → data layering). Stratum membership is not exhaustively
+      declared in the artifact; full enforcement is multi-batch work
+      deferred to a future arc.
+    - D2 event bus discipline. Already enforced by G384.
+    - D3 universal-foundations importability. Implicit in the graph
+      walk; not separately asserted.
+
+    Cost: ~1.5s isolated (AST parse of ~528 modules + Tarjan).
+    """
+    import ast as _ast
+    import sys as _sys
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    utils_dir = repo / "utils"
+
+    if not utils_dir.exists():
+        return {
+            "id": "G391",
+            "name": "canonical_dependency_map_sync",
+            "passed": False,
+            "violations": [f"utils/ directory not found at {utils_dir}"],
+            "summary": "utils tree missing — cannot build import graph",
+        }
+
+    # ── Multi-module cycles allowlist (Batch 5d snapshot) ─────────────────
+    # Each entry is a frozenset of module names in the SCC. The gate fails
+    # if a non-trivial SCC appears outside this set. Future arcs should
+    # shrink this list as cycles are refactored away.
+    KNOWN_CYCLES = {
+        frozenset({"actuals_engine", "bsc_engine", "core", "core_audit", "core_kpi"}),
+        frozenset({"credit_doctrine_audit", "credit_section_audit_engine"}),
+    }
+
+    # ── Build graph ────────────────────────────────────────────────────────
+    graph: Dict[str, set] = {}
+    modules = set()
+    self_loops: List[str] = []
+    parse_failures: List[str] = []
+
+    for f in sorted(utils_dir.glob("*.py")):
+        name = f.stem
+        modules.add(name)
+        graph.setdefault(name, set())
+        try:
+            text = f.read_text(encoding="utf-8")
+            tree = _ast.parse(text)
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            parse_failures.append(f"{name}: {type(exc).__name__}")
+            continue
+        # Detect self-imports via raw text first (covers conditional imports
+        # in function bodies that AST still produces)
+        if (f"from utils.{name} import" in text
+                or f"import utils.{name}" in text):
+            self_loops.append(name)
+        # AST walk for explicit imports
+        for node in _ast.walk(tree):
+            if isinstance(node, _ast.ImportFrom):
+                mod = node.module or ""
+                if mod.startswith("utils"):
+                    parts = mod.split(".")
+                    if len(parts) >= 2 and parts[1] != name:
+                        graph[name].add(parts[1])
+            elif isinstance(node, _ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith("utils."):
+                        parts = alias.name.split(".")
+                        if len(parts) >= 2 and parts[1] != name:
+                            graph[name].add(parts[1])
+
+    # ── Tarjan's SCC algorithm ─────────────────────────────────────────────
+    _sys.setrecursionlimit(max(_sys.getrecursionlimit(), 10000))
+    index_counter = [0]
+    stack: List[str] = []
+    lowlinks: Dict[str, int] = {}
+    indices: Dict[str, int] = {}
+    on_stack: Dict[str, bool] = {}
+    sccs: List[List[str]] = []
+
+    def _strongconnect(node: str) -> None:
+        indices[node] = index_counter[0]
+        lowlinks[node] = index_counter[0]
+        index_counter[0] += 1
+        stack.append(node)
+        on_stack[node] = True
+        for succ in graph.get(node, set()):
+            if succ not in modules:
+                continue
+            if succ not in indices:
+                _strongconnect(succ)
+                lowlinks[node] = min(lowlinks[node], lowlinks[succ])
+            elif on_stack.get(succ):
+                lowlinks[node] = min(lowlinks[node], indices[succ])
+        if lowlinks[node] == indices[node]:
+            scc: List[str] = []
+            while True:
+                w = stack.pop()
+                on_stack[w] = False
+                scc.append(w)
+                if w == node:
+                    break
+            if len(scc) > 1:
+                sccs.append(scc)
+
+    for m in sorted(modules):
+        if m not in indices:
+            _strongconnect(m)
+
+    # ── Check against allowlist ───────────────────────────────────────────
+    actual_cycles = {frozenset(scc) for scc in sccs}
+    new_cycles = actual_cycles - KNOWN_CYCLES
+    drained = KNOWN_CYCLES - actual_cycles
+
+    for cycle in sorted(new_cycles, key=lambda c: sorted(c)):
+        violations.append(
+            f"NEW multi-module cycle outside KNOWN_CYCLES allowlist: "
+            f"{sorted(cycle)}"
+        )
+
+    # ── INFO output ───────────────────────────────────────────────────────
+    info.append(
+        f"INFO: modules={len(modules)} edges={sum(len(v) for v in graph.values())} "
+        f"multi_module_cycles={len(sccs)} self_loops={len(self_loops)}"
+    )
+    if self_loops:
+        info.append(
+            f"INFO: {len(self_loops)} self-loops detected — Python's import "
+            "system handles these as no-ops at runtime; D5 doctrine flags "
+            "them as cycles but full resolution deferred (refactor vs "
+            "doctrine amendment is future-arc decision). First 5: "
+            + ", ".join(sorted(self_loops)[:5])
+        )
+    if drained:
+        info.append(
+            f"INFO: {len(drained)} cycle(s) from KNOWN_CYCLES no longer "
+            "present — allowlist can be tightened in next batch: "
+            + str([sorted(c) for c in drained])
+        )
+    if parse_failures:
+        info.append(
+            f"INFO: {len(parse_failures)} modules failed to parse: "
+            + ", ".join(parse_failures[:5])
+        )
+
+    summary = (
+        f"modules={len(modules)} multi_module_cycles={len(sccs)} "
+        f"(allowed={len(KNOWN_CYCLES)}, new={len(new_cycles)}) "
+        f"self_loops={len(self_loops)}"
+    )
+
+    return {
+        "id": "G391",
+        "name": "canonical_dependency_map_sync",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
+def gate_telemetry_event_naming() -> Dict[str, Any]:
+    """G392 — v10.502 Stage C Arc D2 Batch 5d — TELEMETRY_MAP event
+    naming convention enforcement.
+
+    Per `docs/architecture/TELEMETRY_MAP.md` T1 + T2:
+
+        T1 — Every state change emits a signal.
+        T2 — One canonical emitter per signal type. API audit events
+             have **one** emitter (`utils/api.py::_audit`).
+
+    And TELEMETRY_MAP's "Stage C gates planned" section explicitly
+    listed `gate_telemetry_event_naming` with severity HIGH.
+    Same-turn check confirmed: the gate did not exist before
+    Batch 5d. This gate closes the gap.
+
+    What this gate enforces
+    -----------------------
+    1. AST-walks every `utils/api*.py` file for `_audit(LITERAL,
+       ...)` calls and extracts the first positional string argument
+       (the canonical event name).
+    2. Regex-parses `docs/architecture/TELEMETRY_MAP.md` for
+       backtick-quoted `API_*` event names.
+    3. Every actual event in code MUST appear in the documented
+       vocabulary. Undeclared events are violations.
+
+    Dynamically-constructed event names (e.g. `_audit(f"API_{x}",
+    ...)`) are silently skipped — they cannot be statically
+    verified.
+
+    The reverse direction (documented events not in code) is NOT a
+    violation. Documented-but-not-emitted events may be planned,
+    emitted by handlers outside `utils/api*.py` (page handlers,
+    engines), or constructed dynamically.
+
+    Cost: ~0.5s isolated (AST parse of ~16 api*.py files + regex
+    scan of TELEMETRY_MAP).
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+
+    tm_path = repo / "docs" / "architecture" / "TELEMETRY_MAP.md"
+    if not tm_path.exists():
+        return {
+            "id": "G392",
+            "name": "telemetry_event_naming",
+            "passed": False,
+            "violations": [f"TELEMETRY_MAP.md not found at {tm_path}"],
+            "summary": "telemetry map artifact missing — cannot verify",
+        }
+
+    content = tm_path.read_text(encoding="utf-8")
+    documented = set(re.findall(r"`(API_[A-Z0-9_]+)`", content))
+
+    actual: set[str] = set()
+    parse_failures: List[str] = []
+    files_scanned = 0
+    for f in sorted((repo / "utils").glob("api*.py")):
+        files_scanned += 1
+        try:
+            tree = _ast.parse(f.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            parse_failures.append(f"{f.name}: {type(exc).__name__}")
+            continue
+        for node in _ast.walk(tree):
+            if (isinstance(node, _ast.Call)
+                    and isinstance(node.func, _ast.Name)
+                    and node.func.id == "_audit"
+                    and node.args
+                    and isinstance(node.args[0], _ast.Constant)
+                    and isinstance(node.args[0].value, str)):
+                actual.add(node.args[0].value)
+
+    undeclared = sorted(actual - documented)
+    for event in undeclared:
+        violations.append(
+            f"event {event!r} emitted via _audit() but not documented "
+            f"in TELEMETRY_MAP.md (T1 + T2 require declared vocabulary)"
+        )
+
+    doc_not_in_code = sorted(documented - actual)
+
+    info.append(
+        f"INFO: files_scanned={files_scanned} "
+        f"documented={len(documented)} "
+        f"actual_literal={len(actual)} "
+        f"undeclared={len(undeclared)} "
+        f"documented_not_in_literal_code={len(doc_not_in_code)}"
+    )
+    if doc_not_in_code:
+        info.append(
+            f"INFO: first 3 documented-but-not-in-literal-code events "
+            "(may exist via dynamic construction or non-api*.py emitters): "
+            + ", ".join(doc_not_in_code[:3])
+        )
+    if parse_failures:
+        info.append(
+            f"INFO: {len(parse_failures)} files failed to parse: "
+            + ", ".join(parse_failures[:5])
+        )
+
+    summary = (
+        f"documented={len(documented)} actual={len(actual)} "
+        f"undeclared={len(undeclared)} violations={len(violations)}"
+    )
+
+    return {
+        "id": "G392",
+        "name": "telemetry_event_naming",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -60384,6 +60705,8 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G392", gate_telemetry_event_naming),                       # v10.502 STAGE C ARC D2 — HIGH — TELEMETRY_MAP T1+T2 event-naming discipline
+    ("G391", gate_canonical_dependency_map_sync),                # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_DEPENDENCY_MAP D5 cycle enforcement
     ("G390", gate_data_dictionary_tracking_claims),             # v10.502 STAGE C ARC D2 — CRITICAL — DATA_DICTIONARY tracking-claim integrity
     ("G389", gate_api_contract_inventory),                       # v10.502 STAGE C ARC D2 — TRANSITIONAL — API_CONTRACTS inventory drift surveillance
     ("G388", gate_canonical_truth_registry_sync),               # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_TRUTH_REGISTRY D4 pointer integrity
