@@ -265,7 +265,54 @@ check before `um.change_password()`. Minimal surface change.
 
 ## GAP-006 — No rate limiting on auth endpoints
 
-**Status:** OPEN
+**Status:** CLOSED (v10.501 Phase 2 Arc B Batch 4b)
+**Surfaced during:** Phase 1 Batch 3b inspection
+**Closed during:** Phase 2 Arc B Batch 4b
+
+**Resolution:** `slowapi` mounted on the FastAPI app via SlowAPIMiddleware
++ a custom 429 exception handler. Per-endpoint policy now enforced:
+
+- `/api/auth/login` — 10 attempts per minute per IP + 100 per hour per IP
+  (`@limiter.limit("10/minute;100/hour")`, keyed by remote address).
+- `/api/auth/change-password` — 5 attempts per minute per bearer token
+  (`@limiter.limit("5/minute", key_func=_ratelimit_key_by_token)`).
+  Token-keyed rather than IP-keyed because NAT'd corporate networks
+  would otherwise share a 5/min budget across hundreds of users.
+- `/api/auth/whoami-detailed` — explicitly NOT decorated (legitimate
+  dashboard polling).
+
+429 responses additionally write an `API_RATE_LIMITED` audit row via
+the custom `_ratelimit_exceeded_handler` in `utils/api.py`, with
+path + method + IP + limit detail. The handler best-efforts the
+authenticated username from the bearer token (where available) but
+NEVER includes the raw JWT in the audit payload — pinned by
+`test_429_handler_does_not_leak_token_in_audit`.
+
+X-RateLimit-* response headers are intentionally disabled
+(`headers_enabled=False`) to avoid leaking remaining-quota
+information to brute-forcing attackers.
+
+Regression coverage: `tests/test_rate_limit_auth.py` — 8 test cases
+covering: per-IP 10/min on login (PASS up to 10, 429 on 11th), 429
+response shape (Retry-After + JSON detail), credential non-leakage
+in 429 body, per-token 5/min on change-password, per-token-vs-per-IP
+independence (two tokens from the same host get separate buckets),
+whoami-detailed unlimited (30 requests, zero 429s), audit row
+written on 429, audit row does NOT contain the raw JWT.
+
+**Operational constraint declared:** In-memory storage (slowapi's
+default) is correct ONLY for single-worker FastAPI deployment.
+Multi-worker would let an attacker's requests round-robin across
+workers, each with its own counter. The single-worker constraint is
+now codified in `OPERATIONAL_PROTOCOL.md` (introduced this batch).
+Multi-worker scaling becomes a future arc gated on switching the
+limiter storage backend to Redis or memcached.
+
+---
+
+## GAP-006 — (historical record preserved below)
+
+**Status (historical, pre-closure):** OPEN
 **Surfaced during:** Phase 1 Batch 3b inspection
 
 **Gap:** `/api/auth/login`, `/api/auth/change-password`, and
@@ -309,19 +356,23 @@ Pick one and codify in `OPERATIONAL_PROTOCOL.md`.
 **Phase 1 (closed, v10.500 commit f268330 / HEAD 92c2e0a):** 7 gaps
 recorded. 0 closed at Phase 1 boundary. 5 OPEN, 2 DEFERRED.
 
-**Phase 2 Arc A (CLOSED, v10.501 Batch 4a):** GAP-001 and GAP-005
-closed via shared `validate_password_policy` helper + Streamlit
-`current_password` parity. Net status: 3 OPEN, 2 DEFERRED.
+**Phase 2 Arc A (CLOSED, v10.501 Batch 4a, commit `e542acd`):**
+GAP-001 and GAP-005 closed via shared `validate_password_policy`
+helper + Streamlit `current_password` parity. Net status: 3 OPEN,
+2 DEFERRED.
 
-**Phase 2 Arc B (next):** GAP-006 (rate limiting). Planned per
-SESSION_BOOTSTRAP. Persistence strategy: in-memory `slowapi`,
-single-worker FastAPI declared as operational constraint in
-`OPERATIONAL_PROTOCOL.md` when Arc B lands.
+**Phase 2 Arc B (CLOSED, v10.501 Batch 4b):** GAP-006 closed via
+slowapi mount with per-IP login limit and per-token change-password
+limit. Custom 429 handler writes audit row; single-worker FastAPI
+declared as operational constraint in `OPERATIONAL_PROTOCOL.md`.
+Net status: 2 OPEN (GAP-002, GAP-007), 2 DEFERRED (GAP-003, GAP-004).
 
-**Phase 2 Arc C (after Arc B):** GAP-002 (`users.json` tracking) —
+**Phase 2 Arc C (next):** GAP-002 (`users.json` tracking) —
 direction (B) accept-and-document selected. Single-batch arc.
 
 **GAP-003 / GAP-004 / GAP-007 remain DEFERRED** per original
 recommendations — their triggers (observability data, established
 Phase 2 token discipline, OPERATIONAL_PROTOCOL section) have not
-materialised yet.
+materialised yet. (GAP-007 will likely become a candidate when
+Arc C lands and `_APP_VERSION` stamping discipline becomes more
+visible.)

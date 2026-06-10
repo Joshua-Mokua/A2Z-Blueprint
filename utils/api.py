@@ -45,10 +45,21 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException, Query, Depends, Body
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+# v10.501 Phase 2 Arc B Batch 4b — rate limiting (closes GAP-006).
+# slowapi provides per-IP and per-key rate limiting for FastAPI.
+# In-memory storage is the default; OPERATIONAL_PROTOCOL.md declares
+# the single-worker FastAPI operational constraint so that in-memory
+# counts remain consistent across requests. Multi-worker deployment
+# would require Redis or memcached backing (out of scope for Arc B).
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from utils.auth_jwt import (
     create_access_token,
@@ -125,6 +136,123 @@ app.add_middleware(
         "X-Requested-With",  # Conventional ajax indicator
     ],
 )
+
+
+# ── Rate limiting (v10.501 Phase 2 Arc B Batch 4b — closes GAP-006) ──
+# Per POLICY_GAPS.md:
+#   /api/auth/login          — 10 attempts per minute per IP, 100 per hour
+#   /api/auth/change-password — 5 attempts per minute per token
+#   /api/auth/whoami-detailed — no limit (legitimate dashboard polling)
+#
+# Reference model: Streamlit's existing 5-attempts-then-15-min lockout at
+# pages/_login.py:194-204. The API is now in parity. Failed attempts
+# already audit-log via API_LOGIN_FAILED / API_PASSWORD_CHANGE_FAILED;
+# 429 responses additionally write an API_RATE_LIMITED audit row so the
+# operator can see when an attacker hits the wall vs. when they're just
+# guessing slowly.
+#
+# OPERATIONAL_PROTOCOL.md: in-memory storage is correct for single-worker
+# FastAPI. Multi-worker would require Redis or memcached as the storage
+# backend (slowapi supports both via the `storage_uri` kwarg).
+
+def _ratelimit_key_by_token(request: Request) -> str:
+    """Rate-limit key for token-scoped endpoints (change-password).
+
+    Returns a stable string derived from the bearer token in the
+    Authorization header. Hashed so the raw JWT never appears in
+    storage keys, error messages, or tracebacks (SECURITY: matches
+    OPERATIONAL_PROTOCOL.md log-content constraints).
+
+    Falls back to per-IP if no Authorization header is present —
+    which shouldn't happen on credentialed endpoints (the JWT
+    dependency would reject before this runs) but provides
+    defence-in-depth.
+    """
+    import hashlib
+    auth_hdr = request.headers.get("Authorization", "")
+    if auth_hdr.startswith("Bearer "):
+        token = auth_hdr[len("Bearer "):]
+        # 16 hex chars = 64 bits of namespace — plenty for keying,
+        # avoids putting the full JWT in any storage structure.
+        return f"token:{hashlib.sha256(token.encode()).hexdigest()[:16]}"
+    return f"ip:{get_remote_address(request)}"
+
+
+# Limiter instance — default key is per-IP. Endpoints requiring
+# per-token keying pass key_func=_ratelimit_key_by_token to
+# @limiter.limit.
+#
+# headers_enabled=False intentionally: slowapi's X-RateLimit-* headers
+# would leak remaining-quota information to an attacker probing the
+# auth endpoints (telling them how many more attempts they have before
+# the wall). The 429 response is sufficient — clients learn the limit
+# only by hitting it. Disabling header injection also avoids slowapi's
+# requirement that every rate-limited route declare a `response:
+# Response` parameter.
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[],   # no global default — each endpoint opts in
+    headers_enabled=False,
+)
+app.state.limiter = limiter
+
+
+def _ratelimit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Custom 429 handler that also writes an A2Z audit row.
+
+    Overrides slowapi's default _rate_limit_exceeded_handler so each
+    429 produces an API_RATE_LIMITED audit entry. Best-effort
+    extraction of the authenticated username from the bearer token
+    for endpoints where the user is known; falls back to "anonymous".
+
+    NEVER returns the candidate password, the JWT, the hashed token
+    key, or any other auth material in the response body or audit
+    payload. The response is a generic 429 with a Retry-After header.
+    """
+    # Best-effort identity for the audit row. NOT a security control —
+    # if the token is invalid/expired we still want the audit row to
+    # be written, just with a less-specific identifier.
+    user_identifier = "anonymous"
+    auth_hdr = request.headers.get("Authorization", "")
+    if auth_hdr.startswith("Bearer "):
+        try:
+            from utils.auth_jwt import decode_token
+            payload = decode_token(auth_hdr[len("Bearer "):])
+            user_identifier = payload.get("username", "unknown") or "unknown"
+        except Exception as e:
+            # Silent-except is a latent bug per OPERATIONAL_PROTOCOL —
+            # logged at debug level here because this is audit metadata
+            # only, not a security boundary. The 429 fires regardless.
+            logger.debug(
+                "Could not decode bearer for rate-limit audit: %s: %s",
+                type(e).__name__, e,
+            )
+
+    try:
+        _audit(
+            "API_RATE_LIMITED",
+            {"username": user_identifier},
+            f"path={request.url.path} method={request.method} "
+            f"ip={get_remote_address(request)} limit={exc.detail}",
+        )
+    except Exception as e:
+        # Audit failure must NOT prevent the 429 response. Log loudly
+        # so the operator notices an observability gap.
+        logger.error(
+            "Failed to write API_RATE_LIMITED audit row: %s: %s",
+            type(e).__name__, e,
+            exc_info=True,
+        )
+
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}"},
+        headers={"Retry-After": "60"},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, _ratelimit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 
 @app.on_event("startup")
@@ -295,12 +423,17 @@ class ChangePasswordRequest(BaseModel):
 
 
 @app.post("/api/auth/login", response_model=TokenResponse)
-def login(req: LoginRequest):
+@limiter.limit("10/minute;100/hour")
+def login(request: Request, req: LoginRequest):
     """Exchange username + password for a 30-minute bearer JWT.
 
     Verifies via UserManager.authenticate (which uses bcrypt per V-003 fix
     and rehashes legacy SHA-256 on success). Audit log fires on both
     success and failure so brute-force attempts are visible.
+
+    v10.501 Phase 2 Arc B Batch 4b: rate-limited to 10/minute and
+    100/hour per IP (closes GAP-006). The `request: Request` parameter
+    is required by slowapi to extract the client IP for keying.
     """
     try:
         from utils.core import UserManager
@@ -453,7 +586,9 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
 # stolen must_rotate-scope token would otherwise let an attacker set
 # an arbitrary password. Documented in CHANGELOG_v10500_batch3b.md.
 @app.post("/api/auth/change-password", response_model=TokenResponse)
+@limiter.limit("5/minute", key_func=_ratelimit_key_by_token)
 def change_password(
+    request: Request,
     req: ChangePasswordRequest,
     user: dict = Depends(get_current_user_allow_rotation),
 ):
@@ -462,6 +597,14 @@ def change_password(
     Accepts both full-scope and must_rotate-scope tokens. On success,
     persists the new bcrypt hash, clears must_change_password, audits,
     and returns a fresh full-scope TokenResponse.
+
+    v10.501 Phase 2 Arc B Batch 4b: rate-limited to 5/minute per
+    bearer token (closes GAP-006). Token-keyed rather than IP-keyed
+    because a NAT'd corporate network could legitimately share an
+    IP across hundreds of users — the 5/min ceiling is meaningful
+    only at per-user granularity. The token has already authenticated;
+    the limit protects against a compromised token being used to
+    brute-force the current_password check.
     """
     username = user["username"]
     forced   = (user.get("scope") == TOKEN_SCOPE_MUST_ROTATE)

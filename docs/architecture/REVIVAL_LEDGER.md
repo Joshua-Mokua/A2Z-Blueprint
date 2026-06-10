@@ -61,6 +61,50 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.501 Phase 2 Arc B Batch 4b — API rate limiting (closes GAP-006)
+
+**Type:** Security hardening + operational doctrine codification
+**Owner:** Joshua + Claude
+**Rationale:** Phase 1 inspection (Batch 3b) identified that `/api/auth/login`, `/api/auth/change-password`, and `/api/auth/whoami-detailed` had no rate limiting — audit logging caught failed attempts but did not throttle. With bcrypt's ~25ms per check, an attacker could attempt ~40 logins/second per thread; across 1438 user accounts that's a usable brute-force surface. Streamlit already had a 5-attempts-then-15-min lockout at `pages/_login.py:194-204` (POLICY_GAPS GAP-006 named it as the reference model). Phase 2 Arc B closes the API/Streamlit parity gap and introduces the operational constraint (single-worker FastAPI) needed for in-memory rate-limit state to be consistent.
+
+**Files shipped:**
+- `requirements.txt` — `slowapi>=0.1.9` added to the API tier section, with a comment block citing the operational constraint declared in `OPERATIONAL_PROTOCOL.md`.
+- `utils/api.py` — six discrete additions, no other changes:
+  - `Request` added to the `fastapi` import line; `slowapi.{Limiter, errors.RateLimitExceeded, middleware.SlowAPIMiddleware, util.get_remote_address}` imported with a citation comment.
+  - `_ratelimit_key_by_token(request)` helper — derives a stable 64-bit hashed key from the bearer token in the `Authorization` header; falls back to per-IP if no header present. SHA-256 hash is 16 hex chars wide so the raw JWT never appears in any storage structure.
+  - `Limiter` instantiated with `headers_enabled=False` (intentional: avoids leaking remaining-quota information to brute-forcing attackers, and avoids slowapi's requirement that every limited route declare a `response: Response` parameter).
+  - `_ratelimit_exceeded_handler(request, exc)` — custom 429 handler that writes an `API_RATE_LIMITED` audit row (best-effort username extraction from the token; never the raw JWT) and returns a generic 429 with `Retry-After: 60`. Audit-write failure is logged loudly but does NOT prevent the 429 (availability over observability for the error path).
+  - `app.add_exception_handler(RateLimitExceeded, _ratelimit_exceeded_handler)` + `app.add_middleware(SlowAPIMiddleware)`.
+  - `/api/auth/login` decorated with `@limiter.limit("10/minute;100/hour")` (per-IP); `/api/auth/change-password` decorated with `@limiter.limit("5/minute", key_func=_ratelimit_key_by_token)` (per-token). `request: Request` parameter added to both function signatures as required by slowapi. `/api/auth/whoami-detailed` deliberately NOT decorated.
+- `tests/test_rate_limit_auth.py` NEW — 8 test cases covering: per-IP 10/min on login (10 PASS, 11th 429), 429 response shape (Retry-After header + JSON detail), credential non-leakage in 429 body, per-token 5/min on change-password, per-token-vs-per-IP independence (two tokens from same host get separate buckets), whoami-detailed unlimited (30 consecutive requests, zero 429s), `API_RATE_LIMITED` audit row written on 429, audit row does NOT contain the raw JWT (SECURITY pin). Limiter state reset between tests via `limiter.reset()` autouse fixture.
+- `docs/architecture/OPERATIONAL_PROTOCOL.md` — new section "Single-worker FastAPI operational constraint" inserted before Future Protocol Candidates. Codifies the rule (single uvicorn worker), trigger (any deployment with `--workers N` where N > 1), failure mode if violated (independent per-worker counters, N × budget for attacker), and the future migration path to Redis/memcached when multi-worker becomes necessary.
+- `docs/architecture/POLICY_GAPS.md` — GAP-006 flipped to CLOSED with full closure summary; historical OPEN record preserved below per RL1. Phase summary updated: Arc A + Arc B both CLOSED; Arc C is now next.
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+- `docs/continuity/SESSION_BOOTSTRAP.md` — Arc B status updated to CLOSED in the Phase 2 commit list and active workstreams.
+- `docs/CHANGELOG_v10501_batch4b.md` NEW — per-batch closure record.
+- `app.py` — `_APP_VERSION` bumped to `v10.501-batch4b-2026.06.10`.
+
+**Verification:**
+- Python `ast.parse` clean on the modified `utils/api.py`.
+- Integration test run: 8/8 in `tests/test_rate_limit_auth.py` PASSED against the actual A2Z FastAPI app with slowapi mounted. Confirmed: the 11th login attempt returns 429 (not the 10th); the 6th change-password attempt with the SAME token returns 429 while the FIRST attempt with a DIFFERENT token does NOT (per-token semantics confirmed); 30 consecutive whoami-detailed requests produce zero 429s; the `API_RATE_LIMITED` audit row contains the path but never the JWT.
+- Cross-batch regression: 22/22 Batch 4a tests in `tests/test_validate_password_policy.py` still pass. Combined 30/30.
+
+**Operational notes:**
+- **Single-worker FastAPI is now a binding operational constraint.** If `uvicorn` is ever invoked with `--workers N` where N > 1 (in deployment scripts, container configs, or any other artifact), the rate limit becomes effectively N × the stated rate. This is now codified in `OPERATIONAL_PROTOCOL.md`. Future arc when multi-worker is needed: swap slowapi's in-memory storage for Redis or memcached.
+- **The 429 audit handler best-efforts username extraction but logs the bare exception class on failure (`logger.debug`).** Per OPERATIONAL_PROTOCOL silent-except discipline, this is logged-not-silent — but downgraded to DEBUG because it's audit metadata, not a security control. The 429 fires regardless.
+- **No frontend changes shipped in this batch.** The React `Login.tsx` and `ChangePassword.tsx` already display API error responses generically; they will render the 429 detail string as-is. A future polish batch could add explicit "Too many attempts — please wait one minute" copy for 429 responses, but it's not required for closure.
+
+**Trap discipline applied:**
+- **Trap #11** — every claim in this entry is grounded in same-turn inspection of the modified files. Helper imports, decorator placements, and test assertions were each verified by `grep` against the staging tree before being described. The slowapi library behaviour itself was verified by a standalone toy-app smoke test (5 requests against a 3/minute endpoint produced `[200, 200, 200, 429, 429]` — exact expected sequence) BEFORE the full A2Z integration was attempted.
+- **Trap #12** — ZIP delivery, full replacement files for each modified path, namespaced `_batch4b_payload/` staging.
+- **Trap #14** — staging folder cannot collide with `utils/`, `tests/`, `docs/`, `requirements.txt`, or `app.py` at destination.
+- **Backup-before-mutation** — N/A. This batch makes zero writes to credential or audit data files. Code, tests, and doctrine only.
+- **Silent-except** — only one new broad-except was introduced (in `_ratelimit_exceeded_handler`'s best-effort token decode). It logs at DEBUG with exception class + message, which satisfies the "logged but non-fatal" pattern. No bare `pass` swallows.
+
+**Cross-references:** GAP-006 closure record in `docs/architecture/POLICY_GAPS.md`. Single-worker operational constraint in `docs/architecture/OPERATIONAL_PROTOCOL.md`. Regression test in `tests/test_rate_limit_auth.py`. Phase 2 Arc A predecessor entry below. Phase 2 Arc C (next batch — closes GAP-002 `users.json` tracking via Path (B) accept-and-document) follows.
+
+---
+
 ### 2026-06-10 v10.501 Phase 2 Arc A Batch 4a — Password policy hardening (closes GAP-001 + GAP-005)
 
 **Type:** Security hardening + doctrine harmonization

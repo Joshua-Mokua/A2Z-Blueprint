@@ -31,11 +31,12 @@ development across multiple concurrent arcs.
 **Phase 1 closure commit:** `f268330` (v10.500 Phase 1 Batch 3d — doctrine refresh)
 **Last shipped batch:** v10.501 Phase 2 Arc A Batch 4a — 2026-06-10 (password policy hardening)
 **Phase 1 status:** **CLOSED** — 10/10 gates green
-**Phase 2 status:** Arc A CLOSED (GAP-001 + GAP-005 closed). Arc B (rate limiting, GAP-006) next. Arc C (`users.json` tracking, GAP-002) after.
-**Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) — all active
+**Phase 2 status:** Arc A CLOSED (GAP-001 + GAP-005 closed). Arc B CLOSED (GAP-006 closed via slowapi). Arc C (`users.json` tracking, GAP-002) next.
+**Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) — all active
 **Gate count:** 418 total (verified at commit `49e804f`)
 **Phase 2 commits (newest first):**
-- `[pending]` v10.501 Phase 2 Arc A Batch 4a — password policy helper + Streamlit `current_password` parity (closes GAP-001 + GAP-005)
+- `[pending]` v10.501 Phase 2 Arc B Batch 4b — slowapi rate limiting on login + change-password (closes GAP-006); single-worker FastAPI operational constraint codified
+- `e542acd` v10.501 Phase 2 Arc A Batch 4a — password policy helper + Streamlit `current_password` parity (closes GAP-001 + GAP-005)
 
 **Phase 1 commits (newest first):**
 - `92c2e0a` v10.500 Batch 3d follow-up — gitignore runtime audit files
@@ -100,26 +101,19 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 
 ## Active workstreams
 
-1. **Phase 2 Arc B — API rate limiting (next focus).**
-   GAP-006 closure. Persistence: in-memory `slowapi`, single-worker
-   FastAPI declared as operational constraint. Reference model:
-   Streamlit's existing 5-attempts-then-15-min lockout at
-   `pages/_login.py:194-204`. Target endpoints: `/api/auth/login`
-   (10/min/IP, 100/hr), `/api/auth/change-password` (5/min/token),
-   whoami-detailed unlimited.
+1. **Phase 2 Arc C — `users.json` tracking (next focus).**
+   GAP-002 closure via Path (B) — accept-and-document. One
+   `.gitignore` comment update, no behavioural change. Single-batch
+   arc.
 
-2. **Phase 2 Arc C — `users.json` tracking (after Arc B).**
-   GAP-002 closure via Path (B) — accept-and-document.
-   One `.gitignore` comment update, no behavioural change.
-
-3. **Stage C governance enforcement (paused).**
+2. **Stage C governance enforcement (paused).**
    ~5/35 gates wired through Batch 2e. Remaining gates G388-G417
    tracked in `OI-66`. Will resume after Phase 2 closure.
 
-4. **PostgreSQL migration (incremental).**
+3. **PostgreSQL migration (incremental).**
    27/52 tables migrated. G163 ratchet enforces no regression.
 
-5. **mlops_model_registry adoption (incremental).**
+4. **mlops_model_registry adoption (incremental).**
    11 engines pending registration per G386.
 
 ---
@@ -205,13 +199,18 @@ Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
    Batch 4a. `validate_password_policy(pw)` in `utils/core.py` is the
    single source of truth, called from Streamlit `change_pw` +
    `force_change_pw` forms and FastAPI `/api/auth/change-password`.
-2. **Envelope retirement.** Phase 2 should plan when to drop the
+2. ~~**No rate limiting on auth endpoints.**~~ **CLOSED** in v10.501
+   Batch 4b. slowapi mounted on FastAPI: per-IP 10/min on
+   `/api/auth/login`, per-token 5/min on `/api/auth/change-password`,
+   whoami-detailed unlimited. Custom 429 handler writes audit row.
+   Single-worker FastAPI declared as operational constraint.
+3. **Envelope retirement.** Phase 2 should plan when to drop the
    transitional envelope verify path. Trigger: when the
    "Envelope-backed credential authenticated" INFO log stops appearing
    in production logs for ≥30 days. Status: DEFERRED.
-3. **`data/users.json` tracking inconsistency.** The file is listed in
+4. **`data/users.json` tracking inconsistency.** The file is listed in
    `.gitignore` but is tracked. Phase 2 Arc C planned — Path (B) accept-and-document.
-4. **Auto-upgrade re-hash on envelope success.** Currently deferred —
+5. **Auto-upgrade re-hash on envelope success.** Currently deferred —
    envelope hashes stay envelope-wrapped indefinitely. Phase 2 hardening
    could add observable staged normalization. Status: DEFERRED.
 
@@ -221,12 +220,11 @@ Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
 
 Paste this into a new Claude chat:
 
-> Continuing A2Z v10.501. Last commit: `92c2e0a` (Phase 1 Batch 3d
-> follow-up) + Batch 4a working tree (Phase 2 Arc A closure pending
-> commit). Phase 1 complete: 10/10 gates green. Phase 2 Arc A
-> complete: GAP-001 + GAP-005 closed via shared
-> `validate_password_policy` helper. Arc B (rate limiting, GAP-006)
-> is the next focus. Read `docs/continuity/SESSION_BOOTSTRAP.md` for
-> current state.
+> Continuing A2Z v10.501. Last commit: `e542acd` (Phase 2 Arc A Batch 4a)
+> + Batch 4b working tree (Phase 2 Arc B closure pending commit).
+> Phase 1 complete: 10/10 gates green. Phase 2 Arcs A + B complete:
+> GAP-001, GAP-005, GAP-006 closed. Arc C (`users.json` tracking,
+> GAP-002) is the next focus. Read `docs/continuity/SESSION_BOOTSTRAP.md`
+> for current state.
 
 That plus `userMemories` gives Claude full context immediately.

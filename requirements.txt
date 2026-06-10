@@ -25,3 +25,9 @@ PyJWT>=2.8.0
 # API tier
 fastapi>=0.100.0
 uvicorn>=0.23.0
+# v10.501 Phase 2 Arc B Batch 4b — rate limiting for auth endpoints
+# (closes GAP-006). slowapi wraps the `limits` library and integrates
+# with FastAPI's dependency model. In-memory storage by default;
+# OPERATIONAL_PROTOCOL.md declares the single-worker FastAPI constraint
+# that makes in-memory keying correct across requests.
+slowapi>=0.1.9

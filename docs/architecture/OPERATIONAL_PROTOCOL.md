@@ -252,6 +252,57 @@ statement is in `REVIVAL_LEDGER.md::Doctrine::RL1`.
 
 ---
 
+## Single-worker FastAPI operational constraint
+
+**Rule:** The FastAPI API tier (`utils/api.py`) MUST be deployed as a
+single uvicorn worker. Multi-worker deployment is a breaking change
+that requires switching the slowapi rate-limit storage backend from
+in-memory to a shared cache (Redis or memcached).
+
+**Trigger:** Any deployment artifact, scaling proposal, or
+infrastructure change that would invoke `uvicorn` with
+`--workers N` where N > 1.
+
+**Mechanism (positive):** Single worker means every request hits the
+same Python process, which means slowapi's in-memory counters are
+authoritative across all requests. A login attempt that bumps the
+per-IP counter to 9 is visible to the same counter on attempt 10
+because there's only one counter.
+
+**Mechanism (failure mode if violated):** Two workers means two
+independent in-memory counters. An attacker hitting `/api/auth/login`
+gets a fresh 10-per-minute budget on each worker the load balancer
+routes them to. With N workers and a round-robin balancer, the
+effective budget becomes N × 10 per minute — and audit logging
+still fires, so the operator sees lots of `API_LOGIN_FAILED` rows
+but no `API_RATE_LIMITED` rows until each worker individually
+fills its bucket. GAP-006 closure regression.
+
+**Codified during:** v10.501 Phase 2 Arc B Batch 4b (introduction of
+slowapi rate limiting).
+
+**How to verify in production:** the uvicorn invocation in
+`run_all.bat` (or equivalent deployment script) must use the default
+single-worker mode OR explicitly pass `--workers 1`. Any deployment
+documentation should make this constraint explicit and reference this
+section.
+
+**Future migration path (when multi-worker becomes necessary):**
+1. Introduce Redis or memcached as a shared cache backend
+2. Switch `Limiter(...)` instantiation in `utils/api.py` to use
+   `storage_uri="redis://..."` or `"memcached://..."` instead of the
+   default in-memory backend
+3. Add the cache service to deployment topology
+4. Add health checks and failover behaviour (if Redis goes down, do
+   we fail-open or fail-closed on auth rate limiting?)
+5. Remove this operational constraint section as RESOLVED
+6. Update `tests/test_rate_limit_auth.py` to use a fakeredis fixture
+   instead of `limiter.reset()`
+
+This is a single-batch arc when it lands; not in scope for Phase 2.
+
+---
+
 ## Future protocol candidates (under consideration)
 
 These have not yet been codified but may be added in Phase 2:
