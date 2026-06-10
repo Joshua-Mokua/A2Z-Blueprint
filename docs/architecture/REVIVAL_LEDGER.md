@@ -61,6 +61,70 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.502 Stage C Arc D2 Batch 5c — API_CONTRACTS + DATA_DICTIONARY reality-checked; G389 + G390 authored
+
+**Type:** Second Arc D2 pairing — interface-shaped artifacts. One new TRANSITIONAL-mode surveillance gate + one new strict-enforcement gate.
+**Owner:** Joshua + Claude
+**Rationale:** Per Arc D2 pairing plan, the API_CONTRACTS + DATA_DICTIONARY pair tackles "interface-shaped" doctrine — declarations about the HTTP surface and the persistent-data surface. Same-turn AST + git inspection found very different shapes of drift in the two artifacts: API_CONTRACTS had a 3.5x numerical drift (81 documented vs 276 actual endpoints) plus 3 stale Auth-domain entries; DATA_DICTIONARY had 4 incorrect tracking claims out of 73 rows, all locally fixable. The two gates reflect this difference: G389 runs in TRANSITIONAL mode (drift surveillance, ceiling enforcement) while G390 is strict (rows-must-match-git-reality).
+
+**Files shipped (8 modified, 2 new):**
+
+- `scripts/audit.py` — TWO new gate functions before `GATES = [`: (1) `gate_api_contract_inventory` (~130 LOC) which AST-walks every `utils/api*.py` for `@app.METHOD` / `@router.METHOD` / `@<name>_router.METHOD` decorators, regex-extracts documented (method, path) tuples from API_CONTRACTS.md table rows, computes set diff, reports counts as INFO, FAILS only when actual surface exceeds `_TRANSITIONAL_CEILING = 300`; (2) `gate_data_dictionary_tracking_claims` (~115 LOC) which parses every row containing `git-tracked` or `gitignored` and validates the claim against `git check-ignore` + `git ls-files`, handles glob patterns by first-match sampling, accepts orphan paths only for `gitignored` claims with an INFO note. Both registered in GATES dispatch table just above G388.
+
+- `docs/architecture/API_CONTRACTS.md` — 5 surgical edits: (1) artifact header Status field changed from `canonical_with_transitional_subareas` to `transitional` with explicit "81 documented, 276 actual; G389 enforces ceiling" note; (2) Last-updated field bumped to 2026-06-10; (3) Authoritative source extended to `utils/api.py + 15 mounted routers`; (4) Endpoint inventory section header rewritten with doctrine-debt declaration (paraphrasing: "documented baseline still accurate for what it describes; substantive rewrite deferred; G389 enforces transitional ceiling"); (5) Auth domain table — `POST /api/auth/login` cookie behavior corrected to Bearer-header-only, `POST /api/auth/logout` cookie-clearing claim corrected, and 2 new rows added (`POST /api/auth/change-password` with Phase 2 enforcement notes, `GET /api/auth/whoami-detailed` with rate-limit-exempt note).
+
+- `docs/architecture/DATA_DICTIONARY.md` — 5 surgical edits: (1) `data/users.json` row corrected to **gitignored** with `.gitignore:52` reference + GAP-002 cross-ref; (2) `data/jwt_blocklist.json` row corrected to **gitignored** runtime-generated; (3) `data/super_user_registry.json` row marked **ORPHANED** (file does not exist on disk and is not gitignored; future arc must create with real owner OR remove the row); (4) `data/observability_metrics.json` row corrected to **git-tracked** (reverse drift — doctrine said "TBD likely gitignored" but file is and always was tracked); (5) DD5 doctrine line corrected from "users.json is in git (intentional — seed data with synthetic identities)" to "users.json is gitignored (`.gitignore:52`)" with cross-ref to Batch 5b CGR1 correction.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — classification table updated: API_CONTRACTS `ACTIVE (provisional)` → `TRANSITIONAL`; DATA_DICTIONARY `ACTIVE (provisional)` → `ACTIVE`. New Batch 5c CGR1 correction appended. Chronological reading order note extended.
+
+- `docs/architecture/POLICY_GAPS.md` — Stage C Arc D status row updated.
+
+- `docs/continuity/SESSION_BOOTSTRAP.md` — gate count 389 → 391; Stage C commits row + active workstreams updated.
+
+- `docs/CHANGELOG_v10502_batch5c.md` NEW — per-batch closure record.
+
+- `tests/test_gate_api_and_data_dictionary.py` NEW — 16 regression tests covering both gates: G389 has 8 (registration, function exists, current state passes, summary shape, INFO emission, missing-file handling, ceiling-enforcement via synthetic 301-endpoint router, AST-walk recognizes @app.METHOD / @router.METHOD / @<custom>_router.METHOD / async). G390 has 8 (registration, function exists, current state passes, summary shape, missing-file handling, wrong-git-tracked claim caught in synthetic git repo, correct claims accepted in synthetic git repo, wrong-gitignored claim caught in synthetic git repo).
+
+- `app.py` — `_APP_VERSION` bumped to `v10.502-batch5c-2026.06.10`.
+
+**Three CGR1 findings recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch 5c correction):**
+
+1. **API_CONTRACTS documents 81 endpoints; actual surface is 276 across 16 routers.** Confirmed via AST walk. The 195-endpoint gap accumulated during the Stage-C-paused period — v10.412 capacity_feedback, v10.413 cascade, and the entire api_cockpit/compliance/legal/product/strategy/telemetry/treasury router family landed without being added to the contract. **Closed mechanically:** G389 runs in TRANSITIONAL mode, ceiling 300, surfaces drift as INFO. **Closed surgically:** 5 Auth-domain row corrections. **Substantive rewrite deferred** to future arc.
+
+2. **DATA_DICTIONARY had 4 incorrect tracking claims.** users.json + jwt_blocklist.json wrongly claimed git-tracked (actually gitignored); super_user_registry.json wrongly claimed git-tracked (file does not exist); observability_metrics.json wrongly claimed gitignored (actually tracked). All 4 surgically corrected. DD5 PII doctrine line also corrected. G390 mechanically prevents regression.
+
+3. **Both gates registered and tested.** G389 has 8 tests including synthetic 301-endpoint scenario proving ceiling enforcement. G390 has 8 tests including synthetic git repo scenarios proving both directions of drift detection. 16/16 green.
+
+**Verification:**
+
+- Same-turn AST walk produced the 16-file endpoint count: 81+1+5+29+0+25+21+8+0+16+24+11+1+19+0+43 = **276**.
+- Same-turn `git check-ignore -v` + `git ls-files --error-unmatch` confirmed the 4 DATA_DICTIONARY drift entries.
+- Post-correction G389 run: `documented=83 actual=276 undocumented=195 (TRANSITIONAL ceiling 300) PASS`.
+- Post-correction G390 run: `rows_checked=74 rows_ok=74 violations=0 PASS`.
+- G388 still passes (sanity check that adjacent edits didn't break the 5b gate).
+- 16/16 new gate tests green in sandbox.
+
+**Trap discipline applied:**
+
+- **Trap #11** — every drift finding cited the same-turn inspection command (AST walk + grep, `git check-ignore`, `git ls-files`).
+- **Trap #12** — ZIP delivery, full-file replacement for scripts/audit.py (now 2.7 MB) and the two artifacts.
+- **Trap #14** — staging folder cannot collide with any destination.
+- **Backup-before-mutation** — N/A; no credential or runtime-data writes.
+- **Silent-except** — gates use targeted try/except for AST parse failures and subprocess timeouts; both emit explicit INFO logging when they swallow an exception. No bare `except: pass`.
+- **RL1 append-only** — this entry at top; no historical entries rewritten.
+
+**What this batch DID NOT do:**
+
+- Did NOT do the substantive API_CONTRACTS rewrite (documenting all 276 endpoints). Multi-batch scope; deferred.
+- Did NOT modify any `utils/api*.py` router file. Those are authoritative; the contract follows them.
+- Did NOT remove the `data/super_user_registry.json` row. Marked ORPHANED for future decision.
+- Did NOT address the G10463 cluster duplication finding from Batch 5a — separate remediation arc.
+- Did NOT backfill v10.380-v10.413 / v10.463 ledger entries — Arc D3 placeholder.
+
+**Cross-references:** Batch 5b is the immediate predecessor. Arc D2 Batch 5d (CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP reality-check; both have partial G384 coverage) is the natural next batch. Full Batch 5c CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
+
+---
+
 ### 2026-06-10 v10.502 Stage C Arc D2 Batch 5b — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked; G388 authored
 
 **Type:** First gate-authoring batch of Stage C Arc D2 + 4 CGR1 surgical corrections inside CANONICAL_TRUTH_REGISTRY

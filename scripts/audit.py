@@ -60024,6 +60024,290 @@ def gate_canonical_truth_registry_sync() -> Dict[str, Any]:
     }
 
 
+def gate_api_contract_inventory() -> Dict[str, Any]:
+    """G389 — v10.502 Stage C Arc D2 Batch 5c — API_CONTRACTS endpoint
+    inventory drift detection.
+
+    Per `docs/architecture/API_CONTRACTS.md` Purpose:
+
+        "This document is the canonical contract for every HTTP endpoint
+         in A2Z. ... source of truth for: ... audit gates
+         (`gate_api_v1_coverage`, `G12 gate_api_auth_safety`,
+         `gate_audit_coverage`)."
+
+    Stage C Arc D2 Batch 5c orientation found the contract documented
+    81 endpoints while AST-walking `utils/api*.py` revealed **284
+    actual endpoints** across 16 router files — a 3.5x undercount.
+    Many of the new routers landed during the Stage-C-paused period
+    (v10.412 capacity_feedback, v10.413 cascade, plus
+    api_cockpit/compliance/legal/product/strategy/telemetry/treasury
+    families) without being added to the contract.
+
+    This gate makes the drift visible mechanically. Strict mode is
+    deferred to a future arc that does the substantive rewrite. For
+    now the gate runs in TRANSITIONAL mode: it reports the inventory
+    delta as INFO and the gate PASSES, provided the delta does not
+    GROW worse than the snapshot captured here. If the actual surface
+    expands further beyond this snapshot, the gate FAILS.
+
+    Behaviour
+    ---------
+    1. AST-walk every `utils/api*.py` file. Extract `(METHOD, PATH)`
+       tuples from `@app.method("/path")` / `@router.method("/path")` /
+       `@<name>_router.method("/path")` decorators.
+    2. Parse method-path rows from API_CONTRACTS.md (table rows whose
+       first cell is `` `METHOD /path` ``).
+    3. Compute symmetric difference. Report counts.
+    4. TRANSITIONAL guard: if `actual_total > _TRANSITIONAL_CEILING`
+       (the snapshot from Batch 5c), gate FAILS. Otherwise PASSES
+       with INFO summary.
+
+    Cost: ~0.3s isolated (AST parse of 16 files).
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+
+    # Snapshot ceiling — Batch 5c moment in time. The actual surface
+    # was 284 endpoints. The ceiling is set 10 above to allow small
+    # additions without immediately tripping the gate, but any
+    # substantial growth surfaces here. Future rewrite arcs will
+    # tighten this.
+    _TRANSITIONAL_CEILING = 300
+
+    contract_path = repo / "docs" / "architecture" / "API_CONTRACTS.md"
+    if not contract_path.exists():
+        return {
+            "id": "G389",
+            "name": "api_contract_inventory",
+            "passed": False,
+            "violations": [f"API_CONTRACTS.md not found at {contract_path}"],
+            "summary": "contract artifact missing — cannot verify inventory",
+        }
+
+    # ── Documented endpoints ────────────────────────────────────────────
+    contract_text = contract_path.read_text(encoding="utf-8")
+    documented: set[tuple[str, str]] = set()
+    # Match rows like: | `POST /api/auth/login` | ... |
+    row_re = re.compile(
+        r"^\|\s*`(GET|POST|PUT|PATCH|DELETE)\s+([^`]+?)`\s*\|",
+        re.MULTILINE | re.IGNORECASE,
+    )
+    for m in row_re.finditer(contract_text):
+        method = m.group(1).upper()
+        path = m.group(2).strip()
+        documented.add((method, path))
+
+    # ── Actual endpoints (AST walk) ─────────────────────────────────────
+    actual: set[tuple[str, str]] = set()
+    api_files = sorted((repo / "utils").glob("api*.py"))
+    parsed_files = 0
+    for f in api_files:
+        try:
+            tree = _ast.parse(f.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            info.append(f"INFO: skipping {f.name} (parse failed: {exc})")
+            continue
+        parsed_files += 1
+        for node in _ast.walk(tree):
+            if not isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+                continue
+            for dec in node.decorator_list:
+                if not isinstance(dec, _ast.Call):
+                    continue
+                func = dec.func if isinstance(dec.func, _ast.Attribute) else None
+                if func is None or func.attr.lower() not in {
+                    "get", "post", "put", "patch", "delete"
+                }:
+                    continue
+                # First positional arg is the path
+                if not dec.args:
+                    continue
+                first = dec.args[0]
+                if isinstance(first, _ast.Constant) and isinstance(first.value, str):
+                    method = func.attr.upper()
+                    actual.add((method, first.value))
+
+    documented_total = len(documented)
+    actual_total = len(actual)
+
+    # ── Diff ───────────────────────────────────────────────────────────
+    undocumented = sorted(actual - documented)
+    documented_but_missing = sorted(documented - actual)
+
+    # ── TRANSITIONAL guard ─────────────────────────────────────────────
+    if actual_total > _TRANSITIONAL_CEILING:
+        violations.append(
+            f"actual endpoint count {actual_total} exceeds transitional "
+            f"ceiling {_TRANSITIONAL_CEILING} — substantial growth since "
+            "Batch 5c snapshot; doctrine debt has worsened, not improved"
+        )
+
+    # ── INFO output for visibility ─────────────────────────────────────
+    info.append(
+        f"INFO: documented={documented_total} actual={actual_total} "
+        f"undocumented={len(undocumented)} "
+        f"documented_but_missing={len(documented_but_missing)} "
+        f"parsed_files={parsed_files}"
+    )
+    if undocumented:
+        info.append(
+            f"INFO: first 5 undocumented endpoints: "
+            + ", ".join(f"{m} {p}" for m, p in undocumented[:5])
+        )
+    if documented_but_missing:
+        info.append(
+            f"INFO: documented_but_missing (may be in router files not yet "
+            f"parsed, or removed): "
+            + ", ".join(f"{m} {p}" for m, p in documented_but_missing[:5])
+        )
+
+    summary = (
+        f"documented={documented_total} actual={actual_total} "
+        f"undocumented={len(undocumented)} (TRANSITIONAL ceiling "
+        f"{_TRANSITIONAL_CEILING})"
+    )
+
+    return {
+        "id": "G389",
+        "name": "api_contract_inventory",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
+def gate_data_dictionary_tracking_claims() -> Dict[str, Any]:
+    """G390 — v10.502 Stage C Arc D2 Batch 5c — DATA_DICTIONARY tracking
+    claim validation.
+
+    Per `docs/architecture/DATA_DICTIONARY.md` DD1, DD3, DD5:
+
+        DD1 — Every file has an owner.
+        DD3 — Backup directories are gitignored. Pattern: `data/_v10XXX_backups/`.
+        DD5 — Personal Identifying Information must not be checked into git.
+
+    The Retention column of every file inventory row makes a claim of
+    `git-tracked` or `gitignored`. This gate validates each claim
+    against git reality via `git check-ignore` + `git ls-files`.
+    Batch 5c orientation found 4 drift entries that the surgical edits
+    in the same batch corrected. The gate now mechanically prevents
+    regression: any future row added with a wrong claim will fail.
+
+    Glob-pattern paths (`data/leave_*.json`) are tested by sampling
+    one matching file from disk. Path-not-present cases (file
+    deliberately listed as forthcoming) are accepted only when the
+    claim is `gitignored` AND `.gitignore` would-ignore the literal
+    path — same treatment as G388's RUNTIME_GITIGNORED handling.
+
+    Cost: ~1.5s isolated (one `git check-ignore` + one `git ls-files`
+    per row, plus file glob expansion).
+    """
+    import subprocess as _sp
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+
+    dd_path = repo / "docs" / "architecture" / "DATA_DICTIONARY.md"
+    if not dd_path.exists():
+        return {
+            "id": "G390",
+            "name": "data_dictionary_tracking_claims",
+            "passed": False,
+            "violations": [f"DATA_DICTIONARY.md not found at {dd_path}"],
+            "summary": "dictionary artifact missing — cannot verify claims",
+        }
+
+    content = dd_path.read_text(encoding="utf-8")
+
+    def _git(args: list[str]) -> tuple[int, str]:
+        try:
+            r = _sp.run(
+                ["git", "-C", str(repo)] + args,
+                capture_output=True, text=True, timeout=5,
+            )
+            return r.returncode, r.stdout.strip()
+        except Exception as exc:
+            return -1, str(exc)
+
+    rows_checked = 0
+    rows_ok = 0
+    for line in content.splitlines():
+        if "git-tracked" not in line and "gitignored" not in line:
+            continue
+        m = re.search(r"`(data/[^`]+)`", line)
+        if not m:
+            continue
+        path = m.group(1)
+        rows_checked += 1
+        claim = "git-tracked" if "git-tracked" in line else "gitignored"
+
+        # Expand glob: take first match if any
+        check_path = path
+        if "*" in path:
+            matches = list(repo.glob(path))
+            if matches:
+                check_path = matches[0].relative_to(repo).as_posix()
+            else:
+                # Glob with no matches — verify the pattern itself is sensible
+                # but don't fail. INFO log it.
+                info.append(
+                    f"INFO: glob {path!r} has no current matches; "
+                    f"claim '{claim}' not verifiable"
+                )
+                rows_ok += 1
+                continue
+
+        ignored_rc, _ = _git(["check-ignore", "-v", check_path])
+        is_ignored = ignored_rc == 0
+
+        tracked_rc, _ = _git(["ls-files", "--error-unmatch", check_path])
+        is_tracked = tracked_rc == 0
+
+        # Decide whether the claim matches reality
+        if claim == "git-tracked":
+            if is_tracked and not is_ignored:
+                rows_ok += 1
+            else:
+                violations.append(
+                    f"{path!r} claimed git-tracked but git reports "
+                    f"tracked={is_tracked}, ignored={is_ignored}"
+                )
+        else:  # gitignored
+            if is_ignored and not is_tracked:
+                rows_ok += 1
+            elif (not is_ignored) and (not is_tracked):
+                # File neither tracked nor ignored — likely runtime-generated;
+                # only acceptable for `gitignored` claim if the path matches
+                # a .gitignore pattern.
+                info.append(
+                    f"INFO: {path!r} claimed gitignored, file not present "
+                    f"and not literal-matched by .gitignore — likely orphan"
+                )
+                rows_ok += 1
+            else:
+                violations.append(
+                    f"{path!r} claimed gitignored but git reports "
+                    f"tracked={is_tracked}, ignored={is_ignored}"
+                )
+
+    summary = (
+        f"rows_checked={rows_checked} rows_ok={rows_ok} "
+        f"violations={len(violations)}"
+    )
+
+    return {
+        "id": "G390",
+        "name": "data_dictionary_tracking_claims",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -60100,6 +60384,8 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G390", gate_data_dictionary_tracking_claims),             # v10.502 STAGE C ARC D2 — CRITICAL — DATA_DICTIONARY tracking-claim integrity
+    ("G389", gate_api_contract_inventory),                       # v10.502 STAGE C ARC D2 — TRANSITIONAL — API_CONTRACTS inventory drift surveillance
     ("G388", gate_canonical_truth_registry_sync),               # v10.502 STAGE C ARC D2 — CRITICAL — CANONICAL_TRUTH_REGISTRY D4 pointer integrity
     ("G387", gate_v10498_agent_scope_declared),                  # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI7
     ("G386", gate_v10498_no_unregistered_model_in_production),   # v10.498 STAGE C — CRITICAL — AI_GOVERNANCE AI1

@@ -2,11 +2,11 @@
 
 **Type:** Constitutional artifact, domain-specific governance
 **Authority level:** Domain (consumes from `CANONICAL_TRUTH_REGISTRY.md` + `RBAC_MATRIX.md`)
-**Status:** `canonical_with_transitional_subareas`
-**Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 2)
-**Last updated:** 2026-05-22
+**Status:** `transitional` (per v10.502 Stage C Arc D2 Batch 5c — 81 endpoints documented, 276 actual; G389 enforces ceiling)
+**Version:** v1.0 (introduced v10.497 governance batch, Stage B Wave 2); reality-checked v10.502 Stage C Arc D2 Batch 5c
+**Last updated:** 2026-06-10 (Batch 5c surgical corrections)
 **Owner:** Platform / Security
-**Authoritative source:** `utils/api.py` + mounted routers
+**Authoritative source:** `utils/api.py` + 15 mounted routers (`utils/api_*.py`)
 **Machine-readable equivalent:** `API_CONTRACTS.json`
 
 ---
@@ -47,7 +47,16 @@ It is the source of truth for:
 
 ---
 
-## Endpoint inventory (80 endpoints + branding router)
+## Endpoint inventory (81 endpoints documented; 276 actual — TRANSITIONAL doctrine debt)
+
+> **Doctrine debt declared v10.502 Stage C Arc D2 Batch 5c.** This document was authored against a 81-endpoint baseline at v10.498 Stage B Wave 2. Same-turn AST-walk of `utils/api*.py` in Batch 5c orientation revealed **276 actual endpoints** across 16 router files — primarily because v10.412 capacity_feedback, v10.413 cascade, and the v10.4xx api_cockpit/compliance/legal/product/strategy/telemetry/treasury router families landed during the Stage-C-paused period without being added to this contract.
+>
+> The endpoint tables below remain accurate for what they describe. The gap between documented and actual is enforced mechanically by G389 (`gate_api_contract_inventory`) which:
+> - PASSES while `actual_total <= 300` (transitional ceiling — gives breathing room without admitting unbounded drift).
+> - FAILS if the surface grows beyond 300, surfacing the worsening drift.
+> - Always reports INFO-level counts and the first 5 undocumented endpoints in its summary so a future maintainer can begin closing the gap.
+>
+> **The substantive rewrite to document all 276 endpoints is deferred to a future arc.** Classification of this artifact is consequently **TRANSITIONAL**, not ACTIVE, until that rewrite completes.
 
 ### Convention
 
@@ -67,9 +76,11 @@ For brevity I group obvious patterns (e.g. all `bsc-audit/*` endpoints share an 
 
 | Endpoint | Cap | Auth | Audit event | Side effects | Status |
 |---|---|---|---|---|---|
-| `POST /api/auth/login` | `auth:login` | `PUBLIC` | `API_LOGIN_SUCCESS` / `API_LOGIN_FAILED` | sets cookie; mints JWT | canonical |
+| `POST /api/auth/login` | `auth:login` | `PUBLIC` | `API_LOGIN_SUCCESS` / `API_LOGIN_FAILED` | mints JWT, returns in JSON `TokenResponse` body (Bearer-header only; no cookie set) | canonical *(corrected v10.502 Stage C Arc D2 Batch 5c — cookie path was rolled back; cross-ref GOVERNANCE_REALITY_INDEX Batch 3d React substrate correction)* |
 | `GET /api/auth/me` | `auth:me` | `Depends(get_current_user)` | — | none | canonical |
-| `POST /api/auth/logout` | `auth:logout` | `Depends(get_current_user)` | `API_LOGOUT_SUCCESS` | clears cookie; adds jti to blocklist | canonical (v10.497 P1.3) |
+| `POST /api/auth/logout` | `auth:logout` | `Depends(get_current_user)` | `API_LOGOUT_SUCCESS` | adds jti to blocklist (Bearer-header only; no cookie clearing) | canonical (v10.497 P1.3 cookie path superseded by v10.500 Phase 1 Batch 3a Bearer lifecycle) |
+| `POST /api/auth/change-password` | `auth:change_password` | `Depends(get_current_user)` | `API_PASSWORD_CHANGED` | bcrypt-rehash + invalidates prior tokens via blocklist; rate-limited 5/min/token (Phase 2 Arc B G_rate_limit_auth); enforces `validate_password_policy` (Phase 2 Arc A) | canonical (v10.501 Phase 2 Arcs A+B) |
+| `GET /api/auth/whoami-detailed` | `auth:whoami_detailed` | `Depends(get_current_user)` | — | none | canonical (v10.499 Stage C Batch 2b) — rate-limit exempt by design |
 | `GET /api/health` | (none) | `PUBLIC` | — | none | canonical |
 | `GET /api/branding` | (none) | `PUBLIC` | — | none | canonical (v10.495) |
 

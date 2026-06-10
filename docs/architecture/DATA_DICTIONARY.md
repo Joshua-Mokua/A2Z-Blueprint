@@ -35,7 +35,7 @@ Per Article VI of `SYSTEM_CONSTITUTION.md`: every file in `data/` has a declared
 
 **DD4 — Append-only data has different rules than mutable data.** Audit logs and event streams are append-only (never edit historical entries). Configuration files and registries are mutable but every change is audited.
 
-**DD5 — Personal Identifying Information must not be checked into git.** `users.json` is in git (intentional — seed data with synthetic identities); `audit_log.json` is gitignored; `cookies.txt` is gitignored.
+**DD5 — Personal Identifying Information must not be checked into git.** `data/users.json` is **gitignored** (`.gitignore:52` — locally-generated bcrypt envelope password store; never committed); `audit_log.json` is gitignored; `cookies.txt` is gitignored. *(Corrected v10.502 Stage C Arc D2 Batch 5c — previously claimed users.json was "in git (intentional — seed data with synthetic identities)"; same-turn `git ls-files data/users.json` returned empty, `git check-ignore -v data/users.json` confirmed `.gitignore:52`. The narrative confusion was traced to Phase 2 Arc C / Batch 4c closure being misread; full detail in GOVERNANCE_REALITY_INDEX Batch 5b CGR1 correction.)*
 
 ---
 
@@ -45,10 +45,10 @@ Per Article VI of `SYSTEM_CONSTITUTION.md`: every file in `data/` has a declared
 
 | File | Owner | Authority | Schema | Consumers | Retention |
 |---|---|---|---|---|---|
-| `data/users.json` | `UserManager` | canonical | TBD | All auth flows, hierarchy synth, BSC, cascade, all role-aware engines | git-tracked; backups by batch |
-| `data/jwt_blocklist.json` | `utils/auth_jwt.py::revoke_token` | canonical | inline (jti → exp epoch) | `_is_revoked` | git-tracked; auto-prunes expired entries |
+| `data/users.json` | `UserManager` | canonical | TBD | All auth flows, hierarchy synth, BSC, cascade, all role-aware engines | **gitignored** (`.gitignore:52`) — locally-generated; bcrypt envelope password store; never committed per GAP-002 closure (v10.501 Phase 2 Arc C Batch 4c) |
+| `data/jwt_blocklist.json` | `utils/auth_jwt.py::revoke_token` | canonical | inline (jti → exp epoch) | `_is_revoked` | **gitignored** — runtime-generated; populated on revoke_token calls; auto-prunes expired entries |
 | `data/pending_tokens.json` | TBD (likely auth flow) | unknown | none | TBD | TBD — surveyed in Stage A inventory but content unknown |
-| `data/super_user_registry.json` | `utils/super_user_registry.py` | canonical | TBD | Admin operations | git-tracked |
+| `data/super_user_registry.json` | `utils/super_user_registry.py` | **ORPHANED** | n/a | Admin operations (intended) | **does not exist on disk and not gitignored — orphaned reference**, surfaced v10.502 Stage C Arc D2 Batch 5c; future arc must either create the file with a real owner, or remove this row |
 
 **OI-25** — `pending_tokens.json` purpose and lifecycle to be confirmed in Stage C.
 
@@ -170,7 +170,7 @@ Per Article VI of `SYSTEM_CONSTITUTION.md`: every file in `data/` has a declared
 | `data/audit_trail.jsonl` | Various | canonical | JSONL | Audit dashboards | **gitignored** |
 | `data/audit_baselines.json` | Audit engines | canonical | TBD | Drift detection | git-tracked |
 | `data/audit_reviews.json` | Audit reviewers | canonical | TBD | Audit history | git-tracked |
-| `data/observability_metrics.json` | `observability_monitoring` | canonical | TBD | Metrics dashboards | TBD (likely gitignored) |
+| `data/observability_metrics.json` | `observability_monitoring` | canonical | TBD | Metrics dashboards | **git-tracked** (corrected v10.502 Stage C Arc D2 Batch 5c — DATA_DICTIONARY originally claimed "TBD (likely gitignored)" but file is and always was tracked) |
 | `audit_trail_certification` outputs | `utils/audit_trail_certification` | canonical | TBD | Certification ledger | TBD |
 
 ### Validation & schema

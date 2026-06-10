@@ -42,10 +42,10 @@ pending Batch 2-7 reality checks (tracked as OI-66).
 | CANONICAL_TRUTH_REGISTRY.md                | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5b. G388 (`gate_canonical_truth_registry_sync`) authored to mechanically enforce D4 pointer integrity. 3 stale entries corrected (Auth cookie/Bearer; auth.py name collision RESOLVED; bcrypt migration COMPLETE). Frontend domain split into ACTIVE bespoke + ASPIRATIONAL shadcn parts. |
 | GOVERNANCE_CLASSIFICATION_REGISTRY.md      | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5b. G1-G5 doctrine holds; the classification mechanism is in active use across this index. Open registry items are forward-looking work, not drift. |
 | SYSTEM_CONSTITUTION.md                     | ACTIVE                     | Received CGR1 article in this batch                                |
-| API_CONTRACTS.md                           | ACTIVE (provisional)       | Reality check scheduled Batch 5c                                    |
+| API_CONTRACTS.md                           | TRANSITIONAL               | Reality-checked v10.502 Stage C Arc D2 Batch 5c. **81 endpoints documented, 276 actual** across 16 router files. G389 (`gate_api_contract_inventory`) enforces transitional ceiling of 300 and surfaces drift as INFO. 5 surgical Auth-domain corrections applied. Substantive rewrite to document the 195 undocumented endpoints deferred to future arc. |
 | ORGANS_REGISTRY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5e                                    |
 | CANONICAL_DEPENDENCY_MAP.md                | ACTIVE (provisional)       | D2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
-| DATA_DICTIONARY.md                         | ACTIVE (provisional)       | Reality check scheduled Batch 5c                                    |
+| DATA_DICTIONARY.md                         | ACTIVE                     | Reality-checked v10.502 Stage C Arc D2 Batch 5c. 4 surgical fixes applied (users.json+jwt_blocklist.json gitignored; super_user_registry.json ORPHANED; observability_metrics.json git-tracked). DD5 PII claim corrected. G390 (`gate_data_dictionary_tracking_claims`) enforces git-tracked/gitignored claims mechanically. |
 | TELEMETRY_MAP.md                           | ACTIVE (provisional)       | T2 enforced by G384, passed; broader coverage scheduled Batch 5d   |
 | DIGITAL_TWIN_ARCHITECTURE.md               | TRANSITIONAL (provisional) | Twin exists; full parity ASPIRATIONAL; reality check Batch 5e      |
 | RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md | TRANSITIONAL (provisional) | G373-G380 ladder ACTIVE; full Olympic certification TRANSITIONAL   |
@@ -507,4 +507,89 @@ After this batch: **389 total gates** (G388 authored and registered).
 
 ---
 
-For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+For chronological reading order, the CGR1 corrections section above is best read in date order: Batch 2a (false-positive) → Batch 2a-shadcn → Batch 2a-rollback → Batch 2b (positive) → Batch 3d → Batch 5a → Batch 5b → Batch 5c. The section is not strictly in document order due to the append-history layering of the file; each correction is timestamped at its header.
+
+---
+
+## CGR1 Reality-Check Correction (v10.502 Stage C Arc D2 Batch 5c) — API_CONTRACTS + DATA_DICTIONARY reality-checked
+
+**Date:** 2026-06-10
+**Inspected by:** Claude, same-turn AST-walk of `utils/api*.py`, regex parsing of `docs/architecture/API_CONTRACTS.md`, `git check-ignore` + `git ls-files` verification of every tracking claim in `docs/architecture/DATA_DICTIONARY.md`
+**Doctrine status corrections:** API_CONTRACTS moves from `ACTIVE (provisional)` to **TRANSITIONAL** (substantive doctrine debt — 195 endpoints undocumented); DATA_DICTIONARY moves from `ACTIVE (provisional)` to **ACTIVE** (4 surgical fixes closed all drift).
+
+### Finding 1 — API_CONTRACTS documents 81 endpoints; actual surface is 276 across 16 routers
+
+Same-turn AST walk of `utils/api*.py`:
+
+```
+   81  utils/api.py
+    1  utils/api_branding.py
+    5  utils/api_capacity_feedback.py
+   29  utils/api_cascade.py
+    0  utils/api_client.py
+   25  utils/api_cockpit.py
+   21  utils/api_compliance.py
+    8  utils/api_crud.py
+    0  utils/api_gateway_developer_portal.py
+   16  utils/api_legal.py
+   24  utils/api_product.py
+   11  utils/api_resource_optimization.py
+    1  utils/api_roles.py
+   19  utils/api_strategy.py
+    0  utils/api_telemetry.py
+   43  utils/api_treasury.py
+  ----
+  276  TOTAL
+```
+
+API_CONTRACTS documented 81 endpoints (verified: regex match of method-path table rows). The 195-endpoint gap accumulated primarily during the Stage-C-paused period — v10.412 capacity_feedback, v10.413 cascade, and the entire api_cockpit/compliance/legal/product/strategy/telemetry/treasury family landed without being added to the contract.
+
+**Closed in this batch via mechanical surveillance, not substantive rewrite.** G389 (`gate_api_contract_inventory`) runs in TRANSITIONAL mode: ceiling 300 (surface 276 + breathing room), PASSES while ≤ ceiling, FAILS if surface grows further. INFO summary always emits documented/actual/undocumented counts so a future maintainer sees the gap. Substantive rewrite to document all 276 endpoints is multi-batch work deferred to a future arc.
+
+**Side-effect corrections:** 5 Auth-domain rows updated in API_CONTRACTS — login/logout cookie behavior corrected to Bearer-header-only (cross-ref Batch 3d / Batch 5b corrections); change-password row added with rate-limit + password-policy enforcement notes; whoami-detailed row added with rate-limit-exempt note.
+
+### Finding 2 — DATA_DICTIONARY had 4 incorrect tracking claims; all corrected this batch
+
+Same-turn validation of every `git-tracked` / `gitignored` claim against `git check-ignore -v` + `git ls-files --error-unmatch`:
+
+| Path | Claim | Reality | Action |
+|---|---|---|---|
+| `data/users.json` | git-tracked | gitignored | Corrected to **gitignored** with cross-ref to GAP-002 closure |
+| `data/jwt_blocklist.json` | git-tracked | gitignored (file does not exist; runtime-generated) | Corrected to **gitignored** with runtime-generated note |
+| `data/super_user_registry.json` | git-tracked | neither tracked NOR ignored; file does not exist | Marked **ORPHANED** with explicit note for future cleanup |
+| `data/observability_metrics.json` | "TBD (likely gitignored)" | tracked | Corrected to **git-tracked** |
+
+DD5 doctrine line corrected: previously claimed "users.json is in git (intentional — seed data with synthetic identities)" — same-turn `git ls-files data/users.json` returned empty, `git check-ignore -v` confirmed `.gitignore:52`. Same narrative confusion source as Batch 5b Finding 2; closed at the doctrine layer here.
+
+**Closed.** G390 (`gate_data_dictionary_tracking_claims`) now runs `git check-ignore -v` + `git ls-files --error-unmatch` against every row's tracking claim. Post-correction: 74/74 rows pass, 0 violations.
+
+### Finding 3 — Both gates registered and tested
+
+- G389 `gate_api_contract_inventory` — AST-walks utils/api*.py via standard library `ast` module; parses contract via regex; computes set difference; reports drift as INFO when within ceiling, violation when over. 8 regression tests including a synthetic 301-endpoint scenario that proves the ceiling triggers FAIL.
+- G390 `gate_data_dictionary_tracking_claims` — shells out to `git check-ignore` and `git ls-files` per row; handles globs by sampling first match; tolerates orphan paths (no file + no ignore rule) only for gitignored claims with an INFO note. 8 regression tests including a fresh-git-repo scenario that proves both directions of drift (wrong git-tracked AND wrong gitignored) are caught.
+
+Both pass against the current corrected state.
+
+### What this batch DID
+
+- Authored `gate_api_contract_inventory` (G389) in `scripts/audit.py` with AST walk + regex inventory parse + TRANSITIONAL ceiling enforcement.
+- Authored `gate_data_dictionary_tracking_claims` (G390) in `scripts/audit.py` with `git check-ignore` + `git ls-files` validation per row.
+- Registered both G389 and G390 in the GATES dispatch table.
+- Made 5 surgical edits to `API_CONTRACTS.md`: artifact header Status field → TRANSITIONAL; inventory section header rewritten with doctrine-debt declaration; 3 Auth-domain rows corrected + 2 new rows added for change-password and whoami-detailed.
+- Made 5 surgical edits to `DATA_DICTIONARY.md`: 4 row corrections (users.json, jwt_blocklist.json, super_user_registry.json, observability_metrics.json) + DD5 PII doctrine line corrected.
+- Updated classification table: API_CONTRACTS → TRANSITIONAL; DATA_DICTIONARY → ACTIVE.
+- Authored `tests/test_gate_api_and_data_dictionary.py` (16 tests, all green).
+
+### What this batch DID NOT do
+
+- Did NOT do the substantive API_CONTRACTS rewrite to document all 276 endpoints. Deferred — multi-batch scope.
+- Did NOT modify any of the `utils/api*.py` router files. Those are authoritative sources; the contract should follow them, not vice versa.
+- Did NOT remove the `data/super_user_registry.json` row from DATA_DICTIONARY. Marked ORPHANED with a note; removal vs creation is a future-arc decision.
+- Did NOT change SYSTEM_CONSTITUTION, GOVERNANCE_CLASSIFICATION_REGISTRY, or any other artifact beyond the two reality-checked here.
+
+### Gate count delta
+
+Before this batch: 389 (post-5b).
+After this batch: **391** (G389 + G390 added).
+
+---

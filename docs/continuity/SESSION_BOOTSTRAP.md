@@ -34,8 +34,9 @@ development across multiple concurrent arcs.
 **Phase 2 status:** **CLOSED** (pushed to origin/main at `535b477`). All three arcs complete.
 **Stage C status:** Arc D RESUMED. Arc D1 doctrine baseline alignment (Batch 5a) is the current focus. See Active Workstreams below.
 **Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) + single-worker FastAPI constraint (Batch 4b) + intentionally-tracked credential data discipline (Batch 4c) — all active
-**Gate count:** 389 total (verified same-turn at HEAD `[pending Batch 5b commit]`). G388 `gate_canonical_truth_registry_sync` authored in Stage C Arc D2 Batch 5b to close the D4 stated-vs-enforced gap. The v10.498-era "418 verified at commit `49e804f`" attribution had been stale by ~50 v10.4xx batches — corrected to 388 in v10.502 Stage C Arc D1 Batch 5a per CGR1, then to 389 with the G388 addition in 5b.
+**Gate count:** 391 total. G388-G390 authored in Stage C Arc D2. G388 closes CANONICAL_TRUTH_REGISTRY D4 (Batch 5b); G389 surveils API_CONTRACTS inventory drift in TRANSITIONAL mode; G390 enforces DATA_DICTIONARY tracking claims (both Batch 5c). The v10.498-era "418 verified at commit `49e804f`" attribution was stale by ~50 v10.4xx batches — corrected to 388 in Batch 5a, 389 in 5b, 391 in 5c.
 **Stage C commits (newest first):**
+- `[pending]` v10.502 Stage C Arc D2 Batch 5c — API_CONTRACTS + DATA_DICTIONARY reality-checked; G389 `gate_api_contract_inventory` + G390 `gate_data_dictionary_tracking_claims` authored; API_CONTRACTS classified TRANSITIONAL (81 documented vs 276 actual; doctrine debt declared); DATA_DICTIONARY classified ACTIVE post-4-fixes; 16/16 new gate tests green
 - `[pending]` v10.502 Stage C Arc D2 Batch 5b — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked; G388 `gate_canonical_truth_registry_sync` authored (closes D4 stated-vs-enforced gap); 4 stale entries in CANONICAL_TRUTH_REGISTRY corrected; 11/11 new gate tests green
 - `72b1f1f` v10.502 Stage C Arc D1 Batch 5a — doctrine baseline alignment (GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded)
 
@@ -112,7 +113,7 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
    - **Arc D1 — Doctrine baseline alignment.** CLOSED (Batch 5a, commit `72b1f1f`). GOVERNANCE_REALITY_INDEX restructure + 4 CGR1 corrections recorded (gate count drift; G10463 cluster pathology; ledger drift; Stage C scope overcount).
    - **Arc D2 — Reality-check the 8 provisional artifacts.** In progress.
      - 5b CLOSED `[pending commit]` — CANONICAL_TRUTH_REGISTRY + GOVERNANCE_CLASSIFICATION_REGISTRY reality-checked, G388 authored, 4 stale entries corrected.
-     - 5c pending — API_CONTRACTS + DATA_DICTIONARY.
+     - 5c CLOSED `[pending commit]` — API_CONTRACTS + DATA_DICTIONARY reality-checked; G389 (TRANSITIONAL ceiling) + G390 (tracking claims) authored. API_CONTRACTS now TRANSITIONAL with explicit 195-endpoint doctrine debt; DATA_DICTIONARY now ACTIVE post-4-fixes.
      - 5d pending — CANONICAL_DEPENDENCY_MAP + TELEMETRY_MAP.
      - 5e pending — ORGANS_REGISTRY + DIGITAL_TWIN_ARCHITECTURE + RESILIENCE_AND_CERTIFICATION_GOVERNANCE.
    - **Arc D3 — Ledger backfill (optional).** ~75 v10.380-v10.413 + v10.463 gates exist with no ledger entries. 1 batch (5f). Decide at end of D2 whether to backfill or accept gap.
