@@ -119,3 +119,5 @@ data/users.json.batch3c_tmp
 *.pre_batch*_hotfix
 utils/*.pre_*
 utils/*.preBatch*
+frontend_inspection.zip
+frontend_inspection.zip
