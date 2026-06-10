@@ -990,6 +990,100 @@ def pipeline_deals(
 # the next GET reflects the mutation.
 
 
+@app.post("/api/pipeline/deals/refer", status_code=201)
+def pipeline_deal_refer(
+    payload: "PipelineDealRefer",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Create a referral-only pipeline deal.
+
+    Conflict resolution path #1 (audit Section 15.4): the referring
+    RM defers pursuit to the portfolio owner. A new deal record is
+    created with ``is_referral=True``, ``deal_value=0``,
+    ``product_type="Referral"``, ``stage="Lead"``. The portfolio
+    owner can later pick this up via their own deal queue and either
+    pursue or decline.
+
+    Mirrors the Streamlit referral flow at ``pages/3_pipeline.py:558-577``
+    exactly — same field shape, same auto-set values, same audit
+    emission. Streamlit isn't migrated to use this endpoint in
+    α5; that's a separate small batch later.
+
+    Authorization: any authenticated user may refer. The validator
+    rejects self-referrals (where staff_code == portfolio_owner_code)
+    since that's a no-op.
+    """
+    _audit("API_PIPELINE_REFER_ATTEMPT", user,
+           f"client={payload.client_name} owner={payload.portfolio_owner_code}")
+
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        validate_refer_payload,
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+
+    deal_dict = payload.model_dump(exclude_unset=False)
+    ok, reason = validate_refer_payload(deal_dict)
+    if not ok:
+        _audit("API_PIPELINE_REFER_REJECTED", user, reason)
+        raise HTTPException(status_code=400, detail=reason)
+
+    # Build the referral record. Auto-set values match
+    # pages/3_pipeline.py:561-572 exactly.
+    from datetime import date as _dt
+    referral_record = {
+        "staff_code":           payload.staff_code,
+        "staff_name":           payload.staff_name,
+        "unit":                 payload.unit or "",
+        "client_name":          payload.client_name,
+        "account_number":       payload.account_number or "",
+        "client_type":          "Existing",
+        "product_type":         "Referral",
+        "deal_value":           0,
+        "stage":                "Lead",
+        "probability":          0.05,
+        "next_action":          (
+            f"Referred to {payload.referred_to}: {payload.referral_note}"
+            if payload.referral_note else f"Referred to {payload.referred_to}"
+        ),
+        "next_action_date":     str(_dt.today()),
+        "source":               "Referral",
+        "portfolio_owner_code": payload.portfolio_owner_code,
+        "portfolio_owner_name": payload.portfolio_owner_name,
+        "is_referral":          True,
+        "referred_to":          payload.referred_to,
+        "referral_note":        payload.referral_note or "",
+        "is_ntb":               False,
+        # BSC credit goes to whoever closes the referred deal — typically
+        # the portfolio owner. Default to portfolio_owner_name; the
+        # picking-up RM can override later.
+        "bsc_credit_to":        payload.portfolio_owner_name,
+    }
+
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    new_id = pm.add_deal(referral_record)
+
+    # Mirror Streamlit's audit emission (line 573: DEAL_REFERRED)
+    _audit("DEAL_REFERRED", user,
+           f"{new_id}|{payload.client_name}->{payload.referred_to}")
+
+    # BSC trigger + cache invalidation (matches Streamlit behavior)
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    created = pm.get_deal(new_id) or referral_record
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(created),
+        status="referred",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
 @app.post("/api/pipeline/deals", status_code=201)
 def pipeline_deal_create(
     payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy

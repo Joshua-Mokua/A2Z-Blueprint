@@ -117,6 +117,113 @@ REQUIRED_CREATE_FIELDS: Tuple[str, ...] = (
 )
 
 
+# ────────────────────────────────────────────────────────────────────
+# Conflict resolution helpers (v10.507 Phase 3 Arc α Batch α5)
+# ────────────────────────────────────────────────────────────────────
+#
+# Per audit Section 15.4, conflict resolution has three distinct
+# paths when a deal's portfolio owner is someone other than the
+# creating RM:
+#
+# 1. REFER (separate endpoint POST /api/pipeline/deals/refer):
+#    RM defers to portfolio owner. Creates a referral-only deal
+#    record with is_referral=True. BSC credit (when the referred
+#    deal closes) goes to whoever ultimately closes it.
+#
+# 2. SEEK PERMISSION (implicit creation-time semantics):
+#    RM pursues with external/verbal permission from portfolio
+#    owner. The deal has portfolio_owner_code != staff_code AND
+#    bsc_credit_to set to the assignee/staff_name. No new endpoint
+#    needed — it's a field-value combination at deal creation.
+#
+# 3. OVERRIDE (extended validation on POST /api/pipeline/deals):
+#    RM pursues WITHOUT portfolio owner's permission. Requires
+#    manager_override_note (>= MIN_OVERRIDE_NOTE_LEN chars). The
+#    deal has portfolio_owner_code != staff_code AND bsc_credit_to
+#    routed to the portfolio_owner_name (default) for audit trail.
+
+
+# Minimum characters for a manager override note. Long enough to be
+# meaningful (rule out "ok" / "yes" / "approved"), short enough to
+# not friction-burn the user. Matches the Streamlit page's implicit
+# expectation that the note explain why an override is appropriate.
+MIN_OVERRIDE_NOTE_LEN: int = 10
+
+
+# Required fields on the referral endpoint. The endpoint creates a
+# deal record with is_referral=True; these are the minimum fields
+# needed to make the referral actionable for the portfolio owner.
+REQUIRED_REFER_FIELDS: Tuple[str, ...] = (
+    "client_name",
+    "staff_code",          # the referring RM
+    "staff_name",
+    "portfolio_owner_code", # who they're referring TO (owner per CBS)
+    "portfolio_owner_name",
+    "referred_to",         # the named recipient (often == portfolio_owner_name)
+)
+
+
+def is_override_semantics(deal_data: Dict[str, Any]) -> bool:
+    """Return True if the deal payload represents an OVERRIDE
+    conflict resolution (RM pursuing without portfolio owner's
+    permission).
+
+    Detection rule:
+    - portfolio_owner_code is set AND non-empty
+    - portfolio_owner_code != staff_code (i.e., real conflict exists)
+    - bsc_credit_to is NOT the portfolio_owner_name (i.e., the RM is
+      claiming the BSC credit, not deferring it to the owner)
+
+    The "seek permission" path is the inverse — when conflict exists
+    but bsc_credit_to == portfolio_owner_name. Those payloads pass
+    validation without an override note.
+    """
+    po_code = str(deal_data.get("portfolio_owner_code", "") or "").strip()
+    staff_code = str(deal_data.get("staff_code", "") or "").strip()
+    if not po_code or po_code == staff_code:
+        # No conflict — not override semantics
+        return False
+
+    po_name = str(deal_data.get("portfolio_owner_name", "") or "").strip()
+    bsc_credit_to = str(deal_data.get("bsc_credit_to", "") or "").strip()
+
+    # If bsc_credit_to is unset or equals portfolio owner → seek-permission
+    # path (the RM is deferring BSC credit). NOT override.
+    if not bsc_credit_to:
+        return False
+    if bsc_credit_to == po_name:
+        return False
+
+    # Conflict exists AND RM is claiming the BSC credit → override semantics
+    return True
+
+
+def validate_refer_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
+    """Return (ok, reason) for a referral creation payload.
+
+    Differs from validate_create_payload in REQUIRED_FIELDS set
+    (no deal_value/product_type/stage — these are auto-set by the
+    endpoint). Referrals don't have a meaningful deal_value at
+    creation time; the portfolio owner sets it when they pick up
+    the referred deal.
+    """
+    for field in REQUIRED_REFER_FIELDS:
+        v = deal_data.get(field)
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return False, f"Missing required field for referral: {field}"
+
+    # The referring RM cannot refer to themselves — that's a no-op
+    staff_code = str(deal_data.get("staff_code", "") or "").strip()
+    po_code = str(deal_data.get("portfolio_owner_code", "") or "").strip()
+    if staff_code == po_code:
+        return False, (
+            "Cannot refer to yourself — portfolio_owner_code "
+            "must differ from staff_code"
+        )
+
+    return True, ""
+
+
 def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
     """Return (ok, reason) for a deal creation payload.
 
@@ -125,6 +232,11 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
       - `deal_value` is a non-negative number
       - `stage` is in ALLOWED_ADVANCE_STAGES (cannot create directly
         at an LMS stage either — must advance through proper flow)
+      - **Override semantics detected → manager_override_note required**
+        (v10.507 Phase 3 Arc α Batch α5). When the payload indicates
+        the RM is claiming BSC credit despite a portfolio conflict
+        existing, a manager_override_note of at least
+        MIN_OVERRIDE_NOTE_LEN characters must be present.
 
     `reason` is safe to expose to the API caller; do not include
     sensitive context.
@@ -154,6 +266,27 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
         )
     if stage not in ALLOWED_ADVANCE_STAGES:
         return False, f"Unknown stage: '{stage}'"
+
+    # Override semantics check (v10.507 α5). If the RM is claiming
+    # BSC credit despite a portfolio conflict, require a manager
+    # override note. This is the API enforcement for what Streamlit
+    # promises ("requires manager override note") but never actually
+    # collects — a latent UX bug surfaced in α5 inspection.
+    if is_override_semantics(deal_data):
+        note = str(deal_data.get("manager_override_note", "") or "").strip()
+        if not note:
+            return False, (
+                "Override semantics detected (portfolio conflict + "
+                "RM claiming BSC credit) but no manager_override_note "
+                "provided. This combination requires a written "
+                "rationale for manager review per audit Section 15.4."
+            )
+        if len(note) < MIN_OVERRIDE_NOTE_LEN:
+            return False, (
+                f"manager_override_note too short ({len(note)} chars); "
+                f"minimum {MIN_OVERRIDE_NOTE_LEN} characters required "
+                "to be meaningful for manager review."
+            )
 
     return True, ""
 

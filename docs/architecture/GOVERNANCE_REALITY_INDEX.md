@@ -1251,3 +1251,126 @@ After α4, the FastAPI surface and Streamlit surface produce **subtly different 
 This divergence is **deliberate and time-bounded** — it lasts only until the migration batch that switches Streamlit to use the canonical method. The `created_via` field lets forensics distinguish which surface created any given record during the migration window.
 
 ---
+
+## CGR1 Reality-Check Correction (v10.507 Phase 3 Arc α Batch α5) — Pipeline conflict resolution + latent Streamlit UX bug documented
+
+**Type:** Implements the three-path conflict resolution surface from audit Section 15.4. One new CRITICAL enforcement gate. One new dedicated endpoint (refer). One extended validator (override enforcement). One latent Streamlit UX bug documented.
+
+**Scope:** `utils/api_pipeline_mutations.py` (extended) + `utils/api_pipeline_models.py` (+`PipelineDealRefer`, extended `PipelineDealCreate`) + `utils/api.py` (+`pipeline_deal_refer`) + `scripts/audit.py` (+G398) + `tests/test_pipeline_conflict_resolution.py` (NEW).
+
+### Drift identified
+
+GAP-005 was originally framed in PIPELINE_DOMAIN_AUDIT.md Section 10 as "1 permission endpoint". Section 15.4 — a deeper inspection added during α1 — refined this: it's not 1 endpoint, it's three distinct paths with different downstream semantics. After α4, the FastAPI surface could create, update, advance, and trigger LMS handoff — but couldn't handle the case where a deal's portfolio owner per CBS is someone other than the creating RM. That case is roughly 30% of new deals (every "Existing customer" who already had an RM assigned), so without α5 the API was missing a load-bearing scenario.
+
+### One latent Streamlit UX bug surfaced during inspection
+
+Streamlit's `pages/3_pipeline.py:550-554` presents three radio options for conflict resolution:
+- "Seek permission — I will get approval from the portfolio owner"
+- "Refer to portfolio owner"
+- "Pursue and credit to my BSC (requires manager override note)"
+
+The third option's label promises a manager override note will be collected. But the form at line 867 only has a checkbox: "I acknowledge the conflict above". The actual `manager_override_note` field is **never collected anywhere in the form**. The deal is saved with no note, the manager queue (when reviewing) has no rationale to evaluate, and the audit trail is silent on why an override was applied.
+
+This is a real UX-vs-implementation drift in Streamlit that has been in production for months. Every override deal created via Streamlit is missing the note that the UI label says is required. **α5's canonical API requires the note (correct behavior).** Streamlit-side fix deferred to migration batch.
+
+### Resolution
+
+`utils/api_pipeline_mutations.py` extended with:
+- `MIN_OVERRIDE_NOTE_LEN = 10` — minimum characters for a meaningful override rationale
+- `REQUIRED_REFER_FIELDS` — 6 fields required on the refer endpoint
+- `is_override_semantics(deal_data) -> bool` — the detection rule
+- `validate_refer_payload(deal_data) -> (ok, reason)` — referral-specific validator
+- `validate_create_payload` extended: when override semantics detected, demands `manager_override_note >= MIN_OVERRIDE_NOTE_LEN` chars
+
+The detection rule for override semantics:
+1. `portfolio_owner_code` is set AND non-empty
+2. `portfolio_owner_code != staff_code` (real conflict exists)
+3. `bsc_credit_to` is non-empty AND `bsc_credit_to != portfolio_owner_name`
+
+If all three hold, the RM is claiming BSC credit despite a conflict → require override note. Otherwise (no conflict, or seek-permission, or no BSC credit specified), no override note required.
+
+`utils/api_pipeline_models.py`:
+- NEW `PipelineDealRefer` model — 6 required fields (client_name, staff_code, staff_name, portfolio_owner_code, portfolio_owner_name, referred_to) + 3 optional (referral_note, account_number, unit)
+- `PipelineDealCreate` extended with optional `manager_override_note: Optional[str]`
+
+`utils/api.py::pipeline_deal_refer` (NEW endpoint):
+- `POST /api/pipeline/deals/refer` (status 201)
+- Validates via `validate_refer_payload`
+- Builds canonical referral record matching `pages/3_pipeline.py:561-572` exactly: auto-sets `is_referral=True`, `is_ntb=False`, `client_type="Existing"`, `product_type="Referral"`, `deal_value=0`, `stage="Lead"`, `probability=0.05`, `next_action="Referred to {name}: {note}"`, `source="Referral"`, `bsc_credit_to=portfolio_owner_name` (default)
+- Routes through `PipelineManager.add_deal`
+- Emits `DEAL_REFERRED` audit event (matching Streamlit line 573)
+- Triggers BSC recompute + invalidates cache
+- Returns the deal with `status="referred"`
+
+### Gate authored
+
+`G398 gate_pipeline_conflict_resolution_present` (`scripts/audit.py`, ~210 LOC). Five checks plus runtime sanity:
+
+1. AST walk: `pipeline_deal_refer` endpoint exists in `utils/api.py`
+2. AST walk: refer endpoint calls `validate_refer_payload`
+3. AST walk: mutations module defines `is_override_semantics`, `validate_refer_payload`, `REQUIRED_REFER_FIELDS`, `MIN_OVERRIDE_NOTE_LEN`
+4. AST walk: `validate_create_payload` calls `is_override_semantics` (load-bearing override enforcement)
+5. AST walk: `PipelineDealRefer` model + `manager_override_note` field on `PipelineDealCreate` exist
+6. Runtime: import the mutations module, construct an override payload, call `validate_create_payload`, assert it returns `(False, reason)`. Catches the case where the AST checks pass but the function body is wrong.
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification)
+
+Same-turn counter-test: the `is_override_semantics` call was removed from `validate_create_payload` programmatically, G398 was re-run, and the gate FAILED with the precise violation: "`validate_create_payload` does not call `is_override_semantics` — override semantics are NOT enforced; callers could claim BSC credit on conflicted deals without providing a manager_override_note (Streamlit UX bug ported to API surface)". After restore, G398 PASSED again.
+
+### Tests
+
+`tests/test_pipeline_conflict_resolution.py` (NEW, ~280 LOC) — 20 regression tests, all green:
+
+| # | Tests | Confirms |
+|---|---|---|
+| 1-4 | G398 registration / callable / well-formed / passes | Gate plumbing |
+| 5-9 | `is_override_semantics` across 5 scenarios | Detection logic |
+| 10-14 | `validate_create_payload` override enforcement (5 scenarios) | Override required when conflict + RM claims credit |
+| 15-17 | `validate_refer_payload` (happy / missing fields × 6 / self-referral) | Refer validation |
+| 18-19 | Pydantic models parse correctly | Schema correctness |
+| 20 | Refer endpoint has route decorator | Endpoint surface |
+
+90 cumulative tests pass: 20 α5 + 19 α4 + 19 α3 + 13 α2 + 10 α1 + 9 Arc D2. **No prior tests modified** — α5 is purely additive at the test level.
+
+### What this batch DID
+
+- Added `is_override_semantics`, `validate_refer_payload`, `MIN_OVERRIDE_NOTE_LEN`, `REQUIRED_REFER_FIELDS` to mutations module.
+- Extended `validate_create_payload` with override enforcement.
+- Added `PipelineDealRefer` model + `manager_override_note` field on `PipelineDealCreate`.
+- Added `POST /api/pipeline/deals/refer` endpoint.
+- Authored `gate_pipeline_conflict_resolution_present` (G398).
+- Authored 20-test regression suite.
+- Documented latent Streamlit UX bug (manager_override_note never collected by form).
+- Appended Batch α5 entry to REVIVAL_LEDGER.
+- Appended this CGR1 correction.
+
+### What this batch DID NOT do
+
+- Did NOT migrate Streamlit's refer flow to use the new endpoint. Streamlit continues using inline `pm.add_deal()` with referral fields.
+- Did NOT add a CBS portfolio-lookup endpoint. The React frontend needs to check portfolio assignment somehow before the user picks a conflict-resolution path — but how to expose that is deferred.
+- Did NOT add manager-side endpoints for reviewing override notes — that's α6's scope (manager queues).
+- Did NOT touch `PipelineManager` or `LoanApplicationManager`.
+- Did NOT touch the PostgreSQL primary path.
+- Did NOT write React frontend code.
+
+### Gate count delta
+
+Before this batch: 397 (post-α4).
+After this batch: **398** (G398 added).
+
+### Streamlit/API divergence note (carried forward + extended)
+
+Tracker of differences between Streamlit-created vs API-created records:
+
+| Surface | Issue | Source batch |
+|---|---|---|
+| LoanApplication.product field | Streamlit reads `product` (empty for Gen B); API reads `product_type` | α4 |
+| LoanApplication.id | Streamlit uses `len+1` (collision risk); API uses `max+1` | α4 |
+| LoanApplication.created_via | Streamlit doesn't set; API sets to `"api_pipeline_advance"` | α4 |
+| PipelineDeal.manager_override_note | Streamlit never collects (UX bug); API requires when override semantics | **α5** |
+
+This divergence is deliberate and time-bounded. A future migration batch (~α7-α8) will switch Streamlit to use the canonical methods.
+
+---

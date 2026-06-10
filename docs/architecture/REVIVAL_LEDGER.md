@@ -61,6 +61,70 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.507 Phase 3 Arc α Batch α5 — Pipeline conflict resolution implemented; G398 authored; GAP-005 closed; latent Streamlit UX bug documented
+
+**Type:** Closes the three-path conflict resolution surface per audit Section 15.4. One new CRITICAL enforcement gate. One new dedicated endpoint (refer). One extended validator (override enforcement). One latent Streamlit UX bug documented (manager_override_note promised but never collected by the page form).
+**Owner:** Joshua + Claude
+**Rationale:** GAP-005 was originally framed in Section 10 as "1 permission endpoint" but Section 15.4's refined analysis revealed three distinct paths with different downstream semantics: refer (creates referral deal, RM doesn't pursue), seek permission (RM pursues with verbal permission from owner, BSC credit to owner), override (RM pursues without permission, BSC credit to RM, requires manager review). α5 implements all three: refer as a dedicated endpoint, override as extended validation on the existing create endpoint, seek permission as implicit field semantics that the validator now recognizes.
+
+**One latent Streamlit UX bug surfaced:**
+
+Same-turn inspection of `pages/3_pipeline.py:550-554` revealed: the "Pursue and credit to my BSC" radio option label says **"(requires manager override note)"** but the form (line 867) only has a checkbox "I acknowledge the conflict above". The actual `manager_override_note` field is **never collected**. So Streamlit promises manager review based on a written rationale, but no rationale is ever captured. Override deals go through with only a checkbox flag. α5's canonical API enforces the note (correct behavior). Streamlit-side fix deferred to migration batch — until then, Streamlit-created override deals will continue to lack the note, and the manager queue (α6 scope) will need to handle that legacy data.
+
+**Files shipped (4 modified, 1 new):**
+
+- `utils/api_pipeline_mutations.py` — extended (~120 LOC added):
+  - NEW `MIN_OVERRIDE_NOTE_LEN = 10` constant
+  - NEW `REQUIRED_REFER_FIELDS` tuple (client_name, staff_code, staff_name, portfolio_owner_code, portfolio_owner_name, referred_to)
+  - NEW `is_override_semantics(deal_data) -> bool` — detects override per the rule: portfolio_owner_code set AND != staff_code AND bsc_credit_to != portfolio_owner_name AND bsc_credit_to non-empty
+  - NEW `validate_refer_payload(deal_data) -> (ok, reason)` — required fields + self-referral check
+  - `validate_create_payload` extended with override semantics check (rejects payloads with override semantics but no manager_override_note ≥ 10 chars)
+
+- `utils/api_pipeline_models.py` — extended (~70 LOC added):
+  - NEW `PipelineDealRefer` request model with 6 required fields + 3 optional
+  - `PipelineDealCreate` extended with optional `manager_override_note: Optional[str]` field
+
+- `utils/api.py` — new endpoint inserted above pipeline_deal_create (~95 LOC):
+  - `POST /api/pipeline/deals/refer` (status 201) — validates via `validate_refer_payload`, builds canonical referral record matching Streamlit lines 561-572 exactly (auto-sets `is_referral=True`, `deal_value=0`, `product_type="Referral"`, `stage="Lead"`, etc.), routes through `PipelineManager.add_deal`, emits `DEAL_REFERRED` audit event (matching Streamlit's emission at line 573), triggers BSC + cache invalidation, returns the created deal with `status="referred"`.
+
+- `scripts/audit.py` — NEW `gate_pipeline_conflict_resolution_present` (~210 LOC, G398). Five checks: (1) `pipeline_deal_refer` endpoint exists, (2) refer endpoint calls `validate_refer_payload`, (3) mutations module exports the load-bearing constants + functions, (4) `validate_create_payload` calls `is_override_semantics` (load-bearing override enforcement), (5) `PipelineDealRefer` model + `manager_override_note` field exist. Runtime sanity check: exercises validate_create_payload with an override payload to verify enforcement is active. Registered above G397 in GATES dispatch.
+
+- `tests/test_pipeline_conflict_resolution.py` — NEW (~280 LOC, 20 tests). Coverage:
+  - G398 plumbing (4)
+  - `is_override_semantics` detection across all 5 scenarios (no conflict, own portfolio, seek permission, no bsc_credit_to specified, override) (5)
+  - `validate_create_payload` override enforcement: no conflict passes / override without note rejected / override with short note rejected / override with valid note passes / seek permission passes (5)
+  - `validate_refer_payload`: happy path / missing required fields (all 6 covered via parametrized loop) / self-referral rejected (3)
+  - `PipelineDealRefer` Pydantic model parses (1)
+  - `PipelineDealCreate` accepts `manager_override_note` (1)
+  - Refer endpoint has route decorator (1)
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — CGR1 correction appended; gate count 397 → 398.
+
+**Verification:**
+
+- All modified files parse with `ast.parse(open('FILE', encoding='utf-8').read())`.
+- G393 (Arc D2), G394 (α1), G395 (α2), G396 (α3), G397 (α4) all still PASS.
+- G398 PASSES with INFO: "conflict resolution surface present — refer endpoint, override enforcement, seek-permission implicit; all three paths from audit Section 15.4 wired in".
+- G398 counter-test: removing the `is_override_semantics` call from `validate_create_payload` makes G398 FAIL with precise violation: "override semantics are NOT enforced; callers could claim BSC credit on conflicted deals without providing a manager_override_note (Streamlit UX bug ported to API surface)". After restore, PASSES again.
+- Live validation tests: is_override_semantics returns correct result for all 5 scenarios; validate_create_payload rejects override without note (with explanatory reason), rejects short note (with character count), passes seek-permission without note, passes no-conflict without note; validate_refer_payload accepts good payload, rejects each of 6 required fields individually, rejects self-referral.
+- 90 cumulative tests pass: 20 α5 + 19 α4 + 19 α3 + 13 α2 + 10 α1 + 9 Arc D2.
+- **No α1-α4 tests modified** — α5 is purely additive at the test level.
+
+**Explicitly NOT done in this batch:**
+
+- Did NOT migrate `pages/3_pipeline.py:558-577` (Streamlit refer flow) to use the new endpoint. Streamlit continues using inline `pm.add_deal()` with referral fields. Migration is a small follow-up batch.
+- Did NOT add a CBS portfolio-lookup endpoint (`GET /api/customers/{account_number}/portfolio-status`). The React frontend will need to check portfolio assignment somehow before the user picks a conflict-resolution path; this endpoint would be the natural way to expose that. Deferred — not in α5 scope and not yet on the Arc α roadmap.
+- Did NOT add manager-side endpoints for reviewing override notes (e.g., approve/reject a flagged override). That's α6 (manager queues).
+- Did NOT touch `PipelineManager` or `LoanApplicationManager`.
+- Did NOT touch the PostgreSQL primary path.
+- Did NOT write any React frontend code.
+
+**Cross-references:** Phase 3 Arc α4 (commit `037a06c`) is the immediate predecessor. Arc α6 (manager queue endpoints — validation queue, cancellation queue, approve/reject actions, closes GAP-011) is the natural next batch and will need to handle override notes from α5 (for manager review). Full Batch α5 CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`. The pipeline domain API now has end-to-end coverage of deal creation, scope enforcement, mutations, advance, LMS handoff, and conflict resolution — Arc α α6-α10 add manager UX and permissions surfaces but the load-bearing flow is in place.
+
+---
+
 ### 2026-06-10 v10.506 Phase 3 Arc α Batch α4 — Pipeline LMS handoff implemented; G397 authored; α3 Option C superseded; GAP-013 closed; two latent Streamlit bugs fixed
 
 **Type:** Largest single batch in Arc α. Closes the pipeline→credit bridge. One new CRITICAL enforcement gate. One new canonical method on `LoanApplicationManager`. Two latent Streamlit bug fixes (ID collision, product_type field). Inverts one α3 test (first time previous-batch behavior is changed in this arc).

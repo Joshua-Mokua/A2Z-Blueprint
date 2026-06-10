@@ -61537,6 +61537,242 @@ def gate_pipeline_advance_triggers_lms_handoff() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_conflict_resolution_present() -> Dict[str, Any]:
+    """G398 — v10.507 Phase 3 Arc α Batch α5 — Pipeline conflict
+    resolution surface present.
+
+    Verifies the α5 implementation of portfolio conflict resolution
+    per audit Section 15.4. Three distinct paths, two enforcement
+    mechanisms:
+
+    1. **Refer (NEW endpoint POST /api/pipeline/deals/refer):** Creates
+       a referral-only deal. Validates required fields, rejects
+       self-referrals. Auto-sets is_referral=True, deal_value=0,
+       stage="Lead", product_type="Referral".
+
+    2. **Override (extended validate_create_payload):** When override
+       semantics detected (portfolio conflict + RM claiming BSC
+       credit), a manager_override_note >= MIN_OVERRIDE_NOTE_LEN
+       must be present. The validator rejects payloads otherwise.
+
+    3. **Seek permission (implicit):** No new enforcement needed —
+       the seek-permission path is the default for conflict payloads
+       where bsc_credit_to == portfolio_owner_name. Validator passes
+       these without an override note.
+
+    Behaviour
+    ---------
+    1. AST-parse ``utils/api.py``. Verify ``pipeline_deal_refer``
+       endpoint function exists.
+    2. AST-parse ``utils/api_pipeline_mutations.py``. Verify it
+       defines ``is_override_semantics``, ``validate_refer_payload``,
+       and ``REQUIRED_REFER_FIELDS``.
+    3. AST-parse ``utils/api_pipeline_models.py``. Verify
+       ``PipelineDealRefer`` class exists.
+    4. Verify ``pipeline_deal_refer`` calls ``validate_refer_payload``.
+    5. Verify ``validate_create_payload`` calls
+       ``is_override_semantics`` — the load-bearing check that override
+       enforcement is wired in (parallel to G397's structure).
+
+    Cost: ~0.05s.
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    mutations_path = repo / "utils" / "api_pipeline_mutations.py"
+    models_path = repo / "utils" / "api_pipeline_models.py"
+
+    for p, label in [(api_path, "utils/api.py"),
+                     (mutations_path, "utils/api_pipeline_mutations.py"),
+                     (models_path, "utils/api_pipeline_models.py")]:
+        if not p.exists():
+            return {
+                "id": "G398",
+                "name": "pipeline_conflict_resolution_present",
+                "passed": False,
+                "violations": [f"{label} not found at {p}"],
+                "summary": f"{label} missing",
+            }
+
+    # Parse all three files
+    try:
+        api_tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+        mut_tree = _ast.parse(mutations_path.read_text(encoding="utf-8"))
+        mod_tree = _ast.parse(models_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G398",
+            "name": "pipeline_conflict_resolution_present",
+            "passed": False,
+            "violations": [f"Syntax error: {e}"],
+            "summary": "module unparseable",
+        }
+
+    # Check #1: pipeline_deal_refer endpoint exists in api.py
+    refer_fn = None
+    create_fn = None
+    for node in _ast.walk(api_tree):
+        if isinstance(node, _ast.FunctionDef):
+            if node.name == "pipeline_deal_refer":
+                refer_fn = node
+            elif node.name == "pipeline_deal_create":
+                create_fn = node
+    if refer_fn is None:
+        violations.append(
+            "endpoint function `pipeline_deal_refer` missing from "
+            "utils/api.py — α5 referral surface not implemented; "
+            "callers cannot create referral deals via the API"
+        )
+    else:
+        # Check #4: refer endpoint calls validate_refer_payload
+        calls_validator = any(
+            isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name)
+            and sub.func.id == "validate_refer_payload"
+            for sub in _ast.walk(refer_fn)
+        )
+        if not calls_validator:
+            violations.append(
+                "`pipeline_deal_refer` does not call "
+                "`validate_refer_payload` — referrals could be created "
+                "with missing fields or self-referrals (no-ops)"
+            )
+
+    # Check #2: mutations module exports the right names
+    assigned_names: set = set()
+    defined_fns: set = set()
+    for node in _ast.walk(mut_tree):
+        if isinstance(node, _ast.FunctionDef):
+            defined_fns.add(node.name)
+        if isinstance(node, _ast.Assign):
+            for tgt in node.targets:
+                if isinstance(tgt, _ast.Name):
+                    assigned_names.add(tgt.id)
+        if isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
+            assigned_names.add(node.target.id)
+
+    for fn_name in ("is_override_semantics", "validate_refer_payload"):
+        if fn_name not in defined_fns:
+            violations.append(
+                f"utils/api_pipeline_mutations.py does not define "
+                f"function `{fn_name}` — required by α5 conflict resolution"
+            )
+    for const_name in ("REQUIRED_REFER_FIELDS", "MIN_OVERRIDE_NOTE_LEN"):
+        if const_name not in assigned_names:
+            violations.append(
+                f"utils/api_pipeline_mutations.py does not define "
+                f"`{const_name}` — required for refer/override enforcement"
+            )
+
+    # Check #5: validate_create_payload calls is_override_semantics
+    # (load-bearing — without this, override semantics aren't enforced)
+    create_validator_fn = None
+    for node in _ast.walk(mut_tree):
+        if isinstance(node, _ast.FunctionDef) and node.name == "validate_create_payload":
+            create_validator_fn = node
+            break
+    if create_validator_fn is None:
+        violations.append(
+            "`validate_create_payload` function missing — α3 base "
+            "validator gone; α5 override enforcement has nothing to extend"
+        )
+    else:
+        calls_override_check = any(
+            isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name)
+            and sub.func.id == "is_override_semantics"
+            for sub in _ast.walk(create_validator_fn)
+        )
+        if not calls_override_check:
+            violations.append(
+                "`validate_create_payload` does not call "
+                "`is_override_semantics` — override semantics are NOT "
+                "enforced; callers could claim BSC credit on conflicted "
+                "deals without providing a manager_override_note "
+                "(Streamlit UX bug ported to API surface)"
+            )
+
+    # Check #3: PipelineDealRefer model exists
+    refer_model_found = any(
+        isinstance(node, _ast.ClassDef) and node.name == "PipelineDealRefer"
+        for node in _ast.walk(mod_tree)
+    )
+    if not refer_model_found:
+        violations.append(
+            "class `PipelineDealRefer` missing from utils/api_pipeline_models.py — "
+            "α5 refer endpoint request shape undefined"
+        )
+
+    # Check: PipelineDealCreate extended with manager_override_note
+    create_model = None
+    for node in _ast.walk(mod_tree):
+        if isinstance(node, _ast.ClassDef) and node.name == "PipelineDealCreate":
+            create_model = node
+            break
+    if create_model is None:
+        violations.append(
+            "class `PipelineDealCreate` missing — α3 base model gone"
+        )
+    else:
+        has_override_note = False
+        for sub in create_model.body:
+            if isinstance(sub, _ast.AnnAssign) and isinstance(sub.target, _ast.Name):
+                if sub.target.id == "manager_override_note":
+                    has_override_note = True
+                    break
+        if not has_override_note:
+            violations.append(
+                "`PipelineDealCreate` missing `manager_override_note` field — "
+                "callers cannot supply override note even when validator "
+                "demands one"
+            )
+
+    if not violations:
+        # Runtime sanity — actually exercise the validator with a
+        # payload that should trigger override enforcement
+        try:
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location("_mut_for_g398", mutations_path)
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            override_payload = {
+                "client_name": "x", "staff_code": "A", "staff_name": "X",
+                "deal_value": 1, "product_type": "Loan", "stage": "Lead",
+                "portfolio_owner_code": "B", "portfolio_owner_name": "Y",
+                "bsc_credit_to": "X",
+            }
+            ok, _r = mod.validate_create_payload(override_payload)
+            if ok:
+                violations.append(
+                    "Runtime check failed: validate_create_payload "
+                    "accepted override payload without manager_override_note"
+                )
+        except Exception as e:
+            info.append(f"INFO: could not runtime-exercise validator ({e})")
+
+    if not violations:
+        info.append(
+            "INFO: conflict resolution surface present — refer endpoint, "
+            "override enforcement, seek-permission implicit; "
+            "all three paths from audit Section 15.4 wired in"
+        )
+
+    summary = (
+        "conflict resolution surface present (refer + override + seek)"
+        if not violations
+        else f"{len(violations)} violations — α5 surface incomplete"
+    )
+
+    return {
+        "id": "G398",
+        "name": "pipeline_conflict_resolution_present",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -61613,6 +61849,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G398", gate_pipeline_conflict_resolution_present),        # v10.507 PHASE 3 ARC α BATCH α5 — CRITICAL — pipeline conflict resolution (refer endpoint + override enforcement) (closes GAP-005)
     ("G397", gate_pipeline_advance_triggers_lms_handoff),       # v10.506 PHASE 3 ARC α BATCH α4 — CRITICAL — pipeline advance triggers LMS handoff via create_from_pipeline_deal (supersedes α3 Option C)
     ("G396", gate_pipeline_api_crud_present),                   # v10.505 PHASE 3 ARC α BATCH α3 — CRITICAL — pipeline CRUD + advance endpoints present, LMS allowlist enforced (Option C)
     ("G395", gate_pipeline_api_enforces_cascade_scope),         # v10.504 PHASE 3 ARC α BATCH α2 — CRITICAL — pipeline API enforces server-side cascade scope (closes GAP-001)

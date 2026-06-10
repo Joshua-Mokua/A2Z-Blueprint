@@ -314,6 +314,62 @@ class PipelineDealCreate(BaseModel):
     portfolio_owner_code: Optional[str] = Field(default=None)
     portfolio_owner_name: Optional[str] = Field(default=None)
     bsc_credit_to: Optional[str] = Field(default=None)
+    manager_override_note: Optional[str] = Field(
+        default=None,
+        description="Required when override semantics detected — see "
+                    "validate_create_payload in api_pipeline_mutations.py. "
+                    "Minimum 10 characters when required. Added v10.507 α5."
+    )
+
+
+class PipelineDealRefer(BaseModel):
+    """Request body for POST /api/pipeline/deals/refer.
+
+    Creates a referral-only deal record where the current RM defers
+    pursuit to the portfolio owner. Auto-sets:
+    - is_referral = True
+    - is_ntb = False
+    - product_type = "Referral"
+    - stage = "Lead"
+    - deal_value = 0
+    - probability = 0.05
+
+    Required fields enforced at validation by REQUIRED_REFER_FIELDS
+    in api_pipeline_mutations.py. The referring RM (staff_code) must
+    differ from the portfolio owner (portfolio_owner_code) — referring
+    to oneself is a no-op and rejected.
+
+    Audit Section 15.4 (Phase 3 Arc α Batch α5).
+    """
+    model_config = ConfigDict(extra="allow")
+
+    client_name: str = Field(description="Customer display name")
+    staff_code: str = Field(description="Referring RM staff code")
+    staff_name: str = Field(description="Referring RM display name")
+
+    # Portfolio owner — who the deal is being referred TO
+    portfolio_owner_code: str = Field(
+        description="Staff code of the portfolio owner per CBS"
+    )
+    portfolio_owner_name: str = Field(
+        description="Display name of the portfolio owner"
+    )
+    referred_to: str = Field(
+        description="Named recipient — typically equals portfolio_owner_name "
+                    "but may be a different person in the same team"
+    )
+
+    # Optional context fields
+    referral_note: Optional[str] = Field(
+        default="",
+        description="Free-text note about the referral — context for the "
+                    "portfolio owner about what the customer needs"
+    )
+    account_number: Optional[str] = Field(
+        default=None,
+        description="CBS account number if the customer is existing"
+    )
+    unit: Optional[str] = Field(default=None)
 
 
 class PipelineDealUpdate(BaseModel):
@@ -384,7 +440,7 @@ class PipelineDealMutationResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     deal: PipelineDeal
-    status: str = Field(description="'created' | 'updated' | 'advanced'")
+    status: str = Field(description="'created' | 'updated' | 'advanced' | 'referred'")
     bsc_triggered: bool = Field(
         description="True if BSC recompute was invoked successfully"
     )
