@@ -1,5 +1,6 @@
 // v10.500 Phase 1 Batch 3a — Typed API client.
 // v10.510 Phase 4 Batch β1 — extended with pipeline fetchers.
+// v10.511 Phase 4 Batch β2 — extended with postJson + pipeline mutations.
 //
 // Single source for talking to the FastAPI backend. The Vite dev proxy
 // (vite.config.ts) transparently forwards /api/* to localhost:8502 in
@@ -25,6 +26,8 @@ import type { UserIdentity, RoleRegistry } from '@/types/role';
 import type {
   PipelineDealsListResponse, PipelineDealDetailResponse,
   PipelineDealsQuery,
+  AdvanceDealRequest, AdvanceDealResponse,
+  RequestCancelRequest, RequestCancelResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -94,6 +97,79 @@ async function getJson<T>(path: string): Promise<T> {
     );
   }
   return res.json() as Promise<T>;
+}
+
+
+// ── Central JSON POST/PUT wrapper (v10.511 Phase 4 Batch β2) ────────────
+// Mirrors getJson semantics — same auth header injection, same 401
+// callback dispatch — but for write operations. Body is JSON-serialized
+// from the second argument. The method defaults to POST; pass 'PUT' for
+// update operations.
+//
+// Error handling shape:
+//   - 401: dispatch on401, throw AuthExpiredError (same as getJson)
+//   - 400 with JSON body containing `detail`: throw Error with the
+//     server's detail message (so the UI can show "Reason too short"
+//     rather than a generic "Bad Request")
+//   - 403/404/5xx: throw Error with status code + statusText
+//
+// The 400-with-detail handling is load-bearing for β2's UX. The
+// FastAPI HTTPException machinery returns {"detail": "..."} on
+// validation failure; surfacing that detail to the user is what
+// makes the form interactions feel responsive.
+
+export class ApiValidationError extends Error {
+  constructor(public readonly detail: string, public readonly status: number) {
+    super(detail);
+    this.name = 'ApiValidationError';
+  }
+}
+
+async function postJson<TResponse, TBody = unknown>(
+  path: string,
+  body: TBody,
+  method: 'POST' | 'PUT' = 'POST',
+): Promise<TResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (_currentToken) {
+    headers['Authorization'] = `Bearer ${_currentToken}`;
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401) {
+    if (_on401Callback) _on401Callback();
+    throw new AuthExpiredError(path);
+  }
+
+  if (res.status === 400 || res.status === 422) {
+    // Try to extract the server's detail message
+    let detail = `Validation failed (${res.status})`;
+    try {
+      const errBody = await res.json();
+      if (errBody && typeof errBody.detail === 'string') {
+        detail = errBody.detail;
+      } else if (errBody && Array.isArray(errBody.detail)) {
+        // Pydantic 422 errors come as array of {loc, msg, type}
+        const first = errBody.detail[0];
+        if (first && first.msg) detail = String(first.msg);
+      }
+    } catch { /* keep default */ }
+    throw new ApiValidationError(detail, res.status);
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      `API ${path} failed: ${res.status} ${res.statusText}`,
+    );
+  }
+
+  return res.json() as Promise<TResponse>;
 }
 
 
@@ -204,5 +280,68 @@ export async function fetchPipelineDealDetail(
 ): Promise<PipelineDealDetailResponse> {
   return getJson<PipelineDealDetailResponse>(
     `/pipeline/deals/${encodeURIComponent(dealId)}`,
+  );
+}
+
+
+// ── Pipeline mutation fetchers (v10.511 Phase 4 Batch β2) ───────────────
+//
+// Wraps the α3 advance + α6 cancel-request endpoints. Server enforces
+// the load-bearing rules (authorization, scope, stage transitions,
+// minimum reason length); these fetchers just shape the request/
+// response.
+
+
+/**
+ * Advance a deal to a new stage via POST /api/pipeline/deals/{id}/advance.
+ *
+ * Auth: REQUIRED. Server enforces α3 + α4 logic — only valid stage
+ * transitions allowed, LMS handoff triggered automatically when
+ * advancing into Compliance, scope check applied (caller must own
+ * the deal, back it up, or be a manager-in-scope).
+ *
+ * Throws ApiValidationError (400) on:
+ *   - invalid target stage
+ *   - terminal-stage deal (cannot advance Closed Won/Lost)
+ *   - scope violation
+ *
+ * Response includes the updated deal + LMS handoff metadata when
+ * the advance crossed into a credit-stage.
+ */
+export async function advancePipelineDeal(
+  dealId: string,
+  body: AdvanceDealRequest,
+): Promise<AdvanceDealResponse> {
+  return postJson<AdvanceDealResponse, AdvanceDealRequest>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/advance`,
+    body,
+  );
+}
+
+
+/**
+ * Request cancellation of a deal via POST /api/pipeline/deals/{id}/cancel/request.
+ *
+ * Auth: REQUIRED. Any authenticated user with scope access — the
+ * asymmetric authorization model from α6 (anyone can request, only
+ * managers can approve). Reason must be ≥ MIN_CANCEL_REASON_LEN (5)
+ * chars per server validation.
+ *
+ * Throws ApiValidationError (400) on:
+ *   - missing or too-short reason
+ *   - terminal-stage deal
+ *   - already-pending cancel request
+ *
+ * After success, the deal carries `cancel_requested: true` and
+ * `awaiting_manager: true` — surfaces in the manager's cancellation
+ * queue (α6) for approve/reject decision.
+ */
+export async function requestPipelineDealCancel(
+  dealId: string,
+  body: RequestCancelRequest,
+): Promise<RequestCancelResponse> {
+  return postJson<RequestCancelResponse, RequestCancelRequest>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/cancel/request`,
+    body,
   );
 }

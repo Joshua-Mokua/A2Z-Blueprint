@@ -1,4 +1,8 @@
 // v10.496 — Input primitive.
+// v10.510 β1 type fix — Omit native 'prefix' from extended InputHTMLAttributes.
+//   The bespoke ReactNode prefix conflicted with the native string prefix
+//   (the HTML <input> prefix attribute, used for some legacy doc contexts).
+//   Same pattern as the pre-existing Omit on 'size'.
 //
 // Text input with label, optional helper text, optional error state,
 // optional prefix/suffix icons or text. Three sizes matching Button.
@@ -17,7 +21,7 @@ import { cn } from '@/lib/cn';
 import type { Size } from '@/lib/tokens';
 
 export interface InputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'prefix'> {
   label?: ReactNode;
   helper?: ReactNode;
   error?: ReactNode;

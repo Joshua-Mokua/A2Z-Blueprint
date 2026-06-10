@@ -25,6 +25,13 @@
 //     to fetch when the caller isn't authenticated yet (ProtectedRoute
 //     renders null while auth.status === 'initializing'; PipelineProvider
 //     never mounts in that window).
+// v10.511 Phase 4 Batch β2:
+//   - /pipeline/:dealId route added (protected, requireAuth).
+//   - Detail page is NOT wrapped in PipelineProvider — the page fetches
+//     its own deal data via GET /api/pipeline/deals/{id} and refetches
+//     after each successful mutation. The list page's provider will
+//     re-fetch on its next mount when user navigates back.
+//   - G381 chain still byte-for-byte unchanged.
 //
 // CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
 //
@@ -56,6 +63,7 @@ import { Showcase } from './pages/Showcase';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { Pipeline } from './pages/Pipeline';
+import { PipelineDealDetail } from './pages/PipelineDealDetail';
 
 const queryClient = new QueryClient();
 
@@ -90,6 +98,18 @@ function App() {
                         <PipelineProvider>
                             <Pipeline />
                         </PipelineProvider>
+                    </ProtectedRoute>
+                } />
+
+                {/* Protected — pipeline deal detail + owner actions (β2) */}
+                {/* No PipelineProvider wrap — the detail page fetches
+                    its own deal directly via GET /api/pipeline/deals/{id}.
+                    Mutations refetch the same page-local state. The
+                    list view will re-fetch on its next mount when
+                    user navigates back to /pipeline. */}
+                <Route path="/pipeline/:dealId" element={
+                    <ProtectedRoute requireAuth>
+                        <PipelineDealDetail />
                     </ProtectedRoute>
                 } />
 

@@ -25,6 +25,7 @@
 // Composition: 100% bespoke v10.496 primitives. No new visual atoms.
 
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
@@ -63,6 +64,7 @@ export function Pipeline() {
   const { branding } = useBranding();
   const { user } = useRole();
   const { deals, count, loading, error, refetch } = usePipelineDeals();
+  const navigate = useNavigate();
 
   // Derived KPIs — memoized so re-renders from props don't recompute
   const totalValue = useMemo(() => totalActiveValue(deals), [deals]);
@@ -236,6 +238,7 @@ export function Pipeline() {
               rows={deals}
               rowKey="id"
               loading={loading}
+              onRowClick={(row) => navigate(`/pipeline/${encodeURIComponent(row.id)}`)}
               empty={
                 <div className="py-8">
                   <div className="text-base text-gray-700 font-medium">
@@ -254,12 +257,10 @@ export function Pipeline() {
         <Card className="mt-6">
           <Card.Body>
             <div className="text-xs text-gray-500 leading-relaxed">
-              This is the read-only first cut of the Pipeline page.
-              Create, edit, advance, refer, validate, and cancellation
-              flows ship in subsequent β-batches. The{' '}
-              <span className="font-semibold">You can</span> column
-              shows what the server says you're allowed to do per deal —
-              that's α7's per-deal permission resolution wired through.
+              Click any deal row to view its detail page. Advance and
+              cancel-request actions live there, gated by the per-deal
+              permissions from α7. Create-deal and manager queues land
+              in subsequent β-batches.
             </div>
           </Card.Body>
         </Card>

@@ -131,6 +131,48 @@ export interface PipelineDealsQuery {
 }
 
 
+// ── Mutation request bodies (v10.511 Phase 4 Batch β2) ──────────────────
+// Match the FastAPI Pydantic models in utils/api_pipeline_models.py.
+
+/** POST /api/pipeline/deals/{id}/advance — body shape. */
+export interface AdvanceDealRequest {
+  /** Target stage to advance to. Server validates against allowed stages. */
+  target_stage: string;
+  /** Optional probability override (server uses default if omitted). */
+  probability?: number;
+  /** Optional note recorded on the deal. */
+  note?: string;
+}
+
+/** POST /api/pipeline/deals/{id}/cancel/request — body shape (α6). */
+export interface RequestCancelRequest {
+  /** Why the deal should be cancelled. Min 5 chars per server validation. */
+  reason: string;
+}
+
+
+// ── Mutation response envelopes ────────────────────────────────────────
+// Mutation endpoints return the updated deal + status metadata. Per α7
+// design note, mutation responses do NOT carry a permissions object —
+// the React UI refetches the list (or single deal) after mutation.
+
+export interface AdvanceDealResponse {
+  deal:                  PipelineDeal;
+  status:                string;       // 'advanced' on success
+  bsc_triggered?:        boolean;
+  lms_triggered?:        boolean;
+  lms_application_id?:   string;
+  lms_error?:            string;
+}
+
+export interface RequestCancelResponse {
+  deal:               PipelineDeal;
+  status:             string;          // 'cancel_requested'
+  cancel_requested:   boolean;
+  awaiting_manager:   boolean;
+}
+
+
 // ── Display helpers — pure data, no React ───────────────────────────────
 
 /** Stage → Badge tone mapping. Drives PermissionBadges and DealCard. */
@@ -164,3 +206,27 @@ export const STAGE_TONE: Record<string, 'neutral' | 'info' | 'warning' | 'succes
 export function stageTone(stage: string): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
   return STAGE_TONE[stage] ?? 'neutral';
 }
+
+
+/** Common target stages a user can advance a deal to.
+ *
+ * Conservative subset — the server validates the actual transition,
+ * so this list doesn't need to encode the full stage graph (which is
+ * a server-side concern per α3 doctrine). LMS-handoff stages (Credit
+ * Review, Approval, etc.) are reachable via α4's allowlist but are
+ * intentionally omitted from this dropdown — those transitions are
+ * triggered server-side as side effects of advancing TO Compliance,
+ * not by manually selecting them.
+ *
+ * If the server rejects an advance with 400, the React UI surfaces
+ * the error message rather than pre-filtering options here.
+ */
+export const ADVANCE_TARGET_STAGES: readonly string[] = [
+  'Contacted',
+  'Qualified',
+  'Proposal',
+  'Negotiation',
+  'Compliance',
+  'Closed Won',
+  'Closed Lost',
+] as const;

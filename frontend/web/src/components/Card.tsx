@@ -1,4 +1,7 @@
 // v10.496 — Card primitive.
+// v10.510 β1 type fix — Omit native 'title' from extended HTMLAttributes
+//   so the bespoke ReactNode title prop type-checks without clashing
+//   with the native div title="..." tooltip attribute.
 //
 // The wrapper for almost every dashboard panel. White background,
 // subtle shadow, rounded corners, internal padding. Optional
@@ -28,7 +31,7 @@ import { cn } from '@/lib/cn';
 
 type Stripe = boolean | 'primary' | 'secondary' | 'accent';
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   title?: ReactNode;
   stripe?: Stripe;
   padding?: 'none' | 'sm' | 'md' | 'lg';
@@ -42,7 +45,7 @@ const PADDING_CLASSES = {
   lg:   'p-6',
 } as const;
 
-function resolveStripeColor(stripe: Stripe): string | undefined {
+function resolveStripeColor(stripe: Stripe | undefined): string | undefined {
   if (!stripe) return undefined;
   if (stripe === true || stripe === 'primary') return 'var(--brand-primary)';
   if (stripe === 'secondary') return 'var(--brand-secondary)';
