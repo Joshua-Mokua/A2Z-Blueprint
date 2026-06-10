@@ -967,10 +967,67 @@ def pipeline_deals(
     if unit:
         deals = [d for d in deals if d.get("unit") == unit]
 
+    # α7: enrich each deal with caller-specific permissions object.
+    # visible_codes already computed above for cascade scope filtering.
+    from utils.api_pipeline_permissions import enrich_deal_with_permissions
+    enriched = [
+        enrich_deal_with_permissions(d, user, visible_codes)
+        for d in deals[offset:offset + limit]
+    ]
+
     return {
-        "deals":  deals[offset:offset + limit],
+        "deals":  enriched,
         "count":  len(deals),
         "source": "pipeline_manager",
+    }
+
+
+# ── Pipeline Single-Deal Endpoint (v10.509 Phase 3 Arc α Batch α7) ──
+#
+# Standalone deal-detail endpoint per audit Section 15.6 + line 828.
+# Returns the deal record + per-caller permissions object. Cascade
+# scope is enforced: 404 (not 403) if the caller can't see this deal,
+# to avoid leaking the existence of deals outside their visibility.
+
+
+@app.get("/api/pipeline/deals/{deal_id}")
+def pipeline_deal_detail(
+    deal_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Fetch a single pipeline deal by id, with caller-specific
+    permissions.
+
+    Returns:
+        {"deal": {...}, "permissions": {can_view, can_edit, ...}}
+
+    404 if the deal doesn't exist OR is outside the caller's cascade
+    scope. The 404-not-403 choice is deliberate: returning 403 would
+    leak the existence of deals the caller shouldn't know about.
+
+    The permissions object follows the v10.509 α7 contract — see
+    utils/api_pipeline_permissions.py for the resolution rules.
+    """
+    _audit("API_PIPELINE_DEAL_DETAIL", user, f"deal_id={deal_id}")
+
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Scope check — return 404 not 403 to avoid existence leak
+    visible_codes = get_visible_staff_codes(user)
+    permissions = resolve_deal_permissions(deal, user, visible_codes)
+    if not permissions.get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    return {
+        "deal":         deal,
+        "permissions":  permissions,
     }
 
 
@@ -1349,14 +1406,21 @@ def pipeline_queue_validation(user: dict = Depends(get_current_user)):
 
     from utils.api_pipeline_models import PipelineDeal
     from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import enrich_deal_with_permissions
     from utils.core import PipelineManager as _PM_for_api
 
     visible_codes = get_visible_staff_codes(user)
     pm = _PM_for_api()
     deals = pm.get_pending_validations(manager_codes=visible_codes)
 
+    # α7: each deal carries caller-specific permissions
     return {
-        "deals":  [PipelineDeal.model_validate(d).model_dump() for d in deals],
+        "deals":  [
+            enrich_deal_with_permissions(
+                PipelineDeal.model_validate(d).model_dump(), user, visible_codes
+            )
+            for d in deals
+        ],
         "count":  len(deals),
         "queue":  "validation",
     }
@@ -1383,14 +1447,21 @@ def pipeline_queue_cancellation(user: dict = Depends(get_current_user)):
 
     from utils.api_pipeline_models import PipelineDeal
     from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import enrich_deal_with_permissions
     from utils.core import PipelineManager as _PM_for_api
 
     visible_codes = get_visible_staff_codes(user)
     pm = _PM_for_api()
     deals = pm.get_cancel_requests(manager_codes=visible_codes)
 
+    # α7: each deal carries caller-specific permissions
     return {
-        "deals":  [PipelineDeal.model_validate(d).model_dump() for d in deals],
+        "deals":  [
+            enrich_deal_with_permissions(
+                PipelineDeal.model_validate(d).model_dump(), user, visible_codes
+            )
+            for d in deals
+        ],
         "count":  len(deals),
         "queue":  "cancellation",
     }

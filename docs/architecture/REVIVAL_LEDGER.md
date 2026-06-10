@@ -61,6 +61,84 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.509 Phase 3 Arc α Batch α7 — Per-deal permissions resolution; G400 authored; GAP-012 closed
+
+**Type:** Closes the per-deal permission resolution surface. One new CRITICAL enforcement gate. One new helper module. One new endpoint (`GET /api/pipeline/deals/{deal_id}`). Three existing list endpoints enriched with permissions objects.
+**Owner:** Joshua + Claude
+**Rationale:** Before α7, the React UI had two bad choices for deciding whether to render an "Advance", "Edit", "Validate", or "Approve cancel" button on each deal card: (a) duplicate the server's authorization logic in TypeScript — which guarantees drift against `is_manager` + scope rules, or (b) attempt the action and handle 403 responses — which means rendering buttons that explode when clicked. α7 ships the standard solution: the API resolves permissions server-side for each (caller, deal) pair and returns the result alongside the deal data. The React UI just reads `deal.permissions.can_edit` and renders accordingly.
+
+**The 6-permission contract (from audit Section 15.6 + GAP-012):**
+
+| Permission | Owner | Backup-only | Manager-in-scope | Out of scope |
+|---|---|---|---|---|
+| `can_view` | ✓ | ✓ | ✓ | ✗ |
+| `can_edit` | ✓ | **✗** | ✓ | ✗ |
+| `can_advance_stage` | ✓¹ | ✓¹ | ✓¹ | ✗ |
+| `can_request_cancel` | ✓² | ✓² | ✓² | ✗ |
+| `can_approve_cancel` | ✗ | ✗ | ✓³ | ✗ |
+| `can_validate` | ✗ | ✗ | ✓⁴ | ✗ |
+
+State gates: ¹ not in `{Closed Won, Closed Lost, Account Opened, Funded}`; ² not in terminal + not already requested; ³ `cancel_requested AND not cancel_approved`; ⁴ stage in `VALIDATION_STAGES` AND not validated AND not in cancel flow AND not draft.
+
+The load-bearing rule from Section 15.6 line 656: **backup-only callers cannot edit details, only advance the stage.** This is the one rule that distinguishes backup permissions from owner permissions; if it drifts, RMs who back each other up could silently overwrite each other's deal records.
+
+**Files shipped (3 modified, 2 new):**
+
+- `utils/api_pipeline_permissions.py` — NEW (~220 LOC). Defines `PERMISSION_KEYS` (the 6-tuple), `TERMINAL_STAGES` (set of 4 stages where no action is sensible), `VALIDATION_STAGES` (set of 13 stages past the validation threshold), `resolve_deal_permissions(deal, user, visible_codes) -> dict` (the canonical resolver), `is_backup_only(...)` (helper for the no-edit-as-backup rule), `enrich_deal_with_permissions(deal_dict, user, visible_codes)` (non-mutating wrapper that adds the permissions field). Defensive on all inputs — empty/None deal or user returns all-False rather than raising.
+
+- `utils/api.py` — extended (~75 LOC added). NEW endpoint `GET /api/pipeline/deals/{deal_id}` (`pipeline_deal_detail` function): returns `{"deal": {...}, "permissions": {...}}`. Returns 404 (not 403) if the deal is outside the caller's cascade scope — the 404 choice is deliberate to avoid leaking the existence of deals the caller shouldn't know about. Plus three existing list endpoints modified to enrich each returned deal: `pipeline_deals` (GET /api/pipeline/deals), `pipeline_queue_validation` (GET /api/pipeline/queues/validation), `pipeline_queue_cancellation` (GET /api/pipeline/queues/cancellation).
+
+- `scripts/audit.py` — NEW `gate_pipeline_per_deal_permissions_present` (~210 LOC, G400). Five checks: (1) permissions module exports required names, (2) `pipeline_deal_detail` endpoint exists, (3) all 3 list endpoints call `enrich_deal_with_permissions`, (4) `PERMISSION_KEYS` matches the audit Section 15.6 spec exactly, (5) runtime exercise of `resolve_deal_permissions` returns all 6 keys. Registered above G399.
+
+- `tests/test_pipeline_per_deal_permissions.py` — NEW (~310 LOC, 21 tests). Coverage:
+  - G400 plumbing (4)
+  - PERMISSION_KEYS invariant matching audit Section 15.6 (1)
+  - 5 relationship scenarios (owner / backup-only / manager-in-scope / out-of-scope / admin) (5)
+  - 5 state gates (terminal blocks advance, pending-cancel blocks new request, manager can approve pending cancel, validated blocks validate, draft blocks validate) (5)
+  - 2 enrich wrapper tests (non-mutating, overwrites stale field) (2)
+  - 2 defensive tests (empty deal, empty user) (2)
+  - 2 endpoint surface tests (detail endpoint exists, 3 list endpoints call enrich) (2)
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — CGR1 correction appended; gate count 399 → 400.
+
+**Design decisions made unilaterally:**
+
+1. **Permissions embedded per-deal in responses, not parallel.** Each deal in the list response carries its own `permissions: {...}` object. The React UI can pass `deal + permissions` to a single component without correlation logic.
+
+2. **Only GET endpoints enriched.** The 5 mutation endpoints (POST/PUT/advance/refer/validate/cancel/approve) do NOT include permissions in their responses. The React UI typically refetches the list after a mutation; including permissions on mutation responses is marginal benefit for double the code surface. If this turns out to be a UX problem in practice, a small follow-up batch can add it.
+
+3. **NEW helper module rather than putting the logic in `api_pipeline_mutations.py` or `api_pipeline_manager_actions.py`.** Per-deal permissions is a distinct concern from mutation validation or manager role detection; it deserves its own module. The lazy import inside `resolve_deal_permissions` avoids circular dependency on `api_pipeline_manager_actions`.
+
+4. **State gates included alongside authorization gates.** A deal at Closed Won has `can_advance_stage=False` for the owner — even though the owner has authority to advance, advancing a closed deal makes no sense. The React UI needs both to be False before the button hides; building two layers of filtering on the client would be wasteful.
+
+5. **G400 verifies enrichment is wired in all 3 list endpoints.** This is the structural guard against silent regression. If a future batch adds a 4th list endpoint and forgets to enrich, G400 doesn't currently catch it (it only knows about the 3 names). If a 4th endpoint is added, the G400 check function's `list_endpoints` set needs updating.
+
+6. **Streamlit "rejected-but-still-shows" cancel edge case mirrored.** When a manager rejects a cancel request, Streamlit sets `cancel_approved=False` (explicit False, not just clearing). The queue filter `cancel_requested AND not cancel_approved` evaluates `not False == True`, keeping the deal in the queue. α7's `can_approve_cancel` matches this exactly. Documented as a finding; fix deferred to a future Streamlit-cleanup batch.
+
+**Verification:**
+
+- All modified files parse with `ast.parse(open('FILE', encoding='utf-8').read())`.
+- G393, G394, G395, G396, G397, G398, G399 all still PASS — α7 is purely additive.
+- G400 PASSES with INFO: "per-deal permissions wired into 3 list endpoints + 1 new detail endpoint; PERMISSION_KEYS matches audit Section 15.6 (6 keys); resolve_deal_permissions returns all keys".
+- G400 counter-test: removing the `enrich_deal_with_permissions` call from `pipeline_deals` makes G400 FAIL with: "`pipeline_deals` does not call `enrich_deal_with_permissions` — deals in the response will not carry a permissions object". After restore, PASSES again.
+- Live behavior tests across 8 scenarios: owner of active deal, backup-only, manager-in-scope, out-of-scope, terminal stage, cancel-requested (owner perspective), cancel-requested (manager perspective), admin — all correct.
+- **124 cumulative tests pass: 21 α7 + 22 α6 + 20 α5 + 19 α4 + 19 α3 + 13 α2 + 10 α1.**
+- No prior tests modified.
+
+**Explicitly NOT done in this batch:**
+
+- Did NOT migrate Streamlit's RBAC enforcement to use the new resolver. Streamlit continues to compute permission flags inline as it always has.
+- Did NOT add the `permissions` field to `PipelineDeal` Pydantic model. Permissions are caller-specific runtime data, not part of the deal schema. Adding it as a model field would create a category error (every consumer of PipelineDeal would have to handle permissions).
+- Did NOT enrich mutation endpoint responses. POST/PUT/advance/refer/validate/cancel/approve still return `{deal: {...}, status: ...}` without a permissions object. Deferred.
+- Did NOT fix the Streamlit rejected-cancel edge case (deal shows in queue after rejection because `cancel_approved=False` is falsy). Mirrored, documented, fix deferred.
+- Did NOT touch `PipelineManager`, `LoanApplicationManager`, PostgreSQL, or React frontend.
+
+**Cross-references:** Phase 3 Arc α6 (commit `e5f5c9d`) is the immediate predecessor. Arc α8 (Loan Application endpoints — list, detail, lifecycle transitions per Section 12 Arc α5) is the next batch. After α7, the pipeline domain API has **complete** coverage of the load-bearing flows: discovery (read), creation (CRUD), advance with LMS handoff, conflict resolution, manager queues, AND now per-deal permission resolution for the React UI.
+
+---
+
 ### 2026-06-10 v10.508 Phase 3 Arc α Batch α6 — Pipeline manager queues + actions; G399 authored; GAP-011 closed
 
 **Type:** Closes the manager-side action surface. One new CRITICAL enforcement gate. One new helper module (`api_pipeline_manager_actions.py`). Five new endpoints. The first batch in Arc α to ship an asymmetric authorization model: any RM can request cancellation; only managers can approve.

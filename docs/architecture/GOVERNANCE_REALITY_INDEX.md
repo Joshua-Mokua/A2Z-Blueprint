@@ -1514,3 +1514,117 @@ The α4/α5 divergence tracker remains valid:
 `MANAGER_ROLE_KEYWORDS` is duplicated between `utils/api_pipeline_manager_actions.py` and `pages/3_pipeline.py:39`. If a new manager role is added (e.g., "team lead", "deputy manager"), BOTH files must be updated. This duplication is the price of α6 not modifying Streamlit. A future migration batch could lift the constant into a shared module that both surfaces import — but it's a small risk given how rarely role taxonomy changes.
 
 ---
+
+## CGR1 Reality-Check Correction (v10.509 Phase 3 Arc α Batch α7) — Per-deal permission resolution
+
+**Type:** Closes the per-deal permission resolution surface. One new CRITICAL enforcement gate. One new helper module. One new endpoint. Three existing list endpoints enriched.
+
+**Scope:** `utils/api_pipeline_permissions.py` (NEW) + `utils/api.py` (+ pipeline_deal_detail endpoint, + enrichment in 3 list endpoints) + `scripts/audit.py` (+G400) + `tests/test_pipeline_per_deal_permissions.py` (NEW).
+
+### Drift identified
+
+Before α7, the React UI had no way to know per-deal what the caller was authorized to do without either duplicating server-side authorization logic in TypeScript (drift risk against `is_manager` + scope rules — change one, the other goes stale) or attempting actions and handling 403 errors (terrible UX — buttons that "shouldn't" be clickable still render). GAP-012 in `PIPELINE_DOMAIN_AUDIT.md` explicitly called for the standard solution: server-side per-deal permission resolution with the result attached to every deal response.
+
+### The 4-relationship × 6-permission contract
+
+From audit Section 15.6:
+
+- **Owner** (`staff_code == caller`): can_view + can_edit + can_advance + can_request_cancel
+- **Backup only** (in `backup_staff_codes`): can_view + can_advance + can_request_cancel — **NO can_edit** (the load-bearing distinction)
+- **Manager in scope** (`is_manager` AND deal owner in caller's cascade): everything + can_validate + can_approve_cancel
+- **Out of scope**: nothing
+
+Plus state gates: terminal stages block advance + cancel request; pending cancel blocks new request; manager_validated blocks validate; cancel_requested blocks validate; draft blocks validate.
+
+### Resolution
+
+`utils/api_pipeline_permissions.py` (NEW) defines:
+
+```python
+PERMISSION_KEYS = (
+    "can_view", "can_edit", "can_advance_stage",
+    "can_request_cancel", "can_approve_cancel", "can_validate",
+)
+TERMINAL_STAGES = {"Closed Won", "Closed Lost", "Account Opened", "Funded"}
+VALIDATION_STAGES = {"Contacted", "Qualified", "Proposal", ...}  # 13 stages
+
+def resolve_deal_permissions(deal, user, visible_staff_codes) -> dict:
+    # Defensive returns all-False for empty/None inputs
+    # Computes is_owner, is_backup, is_manager_in_scope
+    # Out-of-scope returns all-False
+    # Applies state gates to authorization
+    # Returns the 6-key dict
+```
+
+This is the canonical resolver. Single source of truth for the rule set. If a rule changes, only one file moves.
+
+`utils/api.py` adds:
+
+1. **NEW endpoint** `GET /api/pipeline/deals/{deal_id}` (`pipeline_deal_detail`). Returns `{"deal": {...}, "permissions": {...}}`. Returns 404 (not 403) when the deal exists but is out of scope — avoids leaking existence of deals the caller shouldn't know about.
+
+2. **Three list endpoints enriched** — each returned deal carries its own `permissions: {...}` object:
+   - `pipeline_deals` (GET /api/pipeline/deals)
+   - `pipeline_queue_validation` (GET /api/pipeline/queues/validation)
+   - `pipeline_queue_cancellation` (GET /api/pipeline/queues/cancellation)
+
+### Gate authored
+
+`G400 gate_pipeline_per_deal_permissions_present` (`scripts/audit.py`, ~210 LOC). Five checks:
+
+1. AST: permissions module defines `resolve_deal_permissions`, `enrich_deal_with_permissions`, `PERMISSION_KEYS`, `TERMINAL_STAGES`, `VALIDATION_STAGES`
+2. AST: `pipeline_deal_detail` endpoint exists in `utils/api.py`
+3. AST: all 3 list endpoints (`pipeline_deals`, `pipeline_queue_validation`, `pipeline_queue_cancellation`) call `enrich_deal_with_permissions`
+4. Runtime: `PERMISSION_KEYS` matches exact audit Section 15.6 spec
+5. Runtime: `resolve_deal_permissions` returns all 6 keys for a sample input + owner has `can_edit=True`
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification)
+
+Same-turn counter-test: removed the `enrich_deal_with_permissions` call from `pipeline_deals`. G400 FAILED with precise message: "`pipeline_deals` does not call `enrich_deal_with_permissions` — deals in the response will not carry a permissions object; the React UI cannot decide which buttons to show without trial-and-error or client-side authorization duplication". After restore, G400 PASSED.
+
+### Tests
+
+`tests/test_pipeline_per_deal_permissions.py` (NEW, ~310 LOC) — 21 tests:
+
+| # | Tests | Confirms |
+|---|---|---|
+| 1-4 | G400 plumbing | Gate registered + callable + well-formed + passes |
+| 5 | PERMISSION_KEYS invariant | The 6-key contract matches audit Section 15.6 |
+| 6-10 | 5 relationship scenarios | Owner / backup-only / manager / out-of-scope / admin |
+| 11-15 | 5 state gates | Terminal blocks advance, pending-cancel logic, validated blocks validate, draft blocks validate |
+| 16-17 | enrich wrapper | Non-mutating, overwrites stale permissions field |
+| 18-19 | Defensive | Empty/None deal + empty/None user return all-False |
+| 20-21 | Endpoint surface | Detail endpoint exists, 3 list endpoints call enrich |
+
+124 cumulative tests pass: 21 α7 + 22 α6 + 20 α5 + 19 α4 + 19 α3 + 13 α2 + 10 α1.
+
+### What this batch DID
+
+- Added `PERMISSION_KEYS`, `TERMINAL_STAGES`, `VALIDATION_STAGES` constants
+- Added `resolve_deal_permissions`, `is_backup_only`, `enrich_deal_with_permissions` functions
+- Added `GET /api/pipeline/deals/{deal_id}` endpoint
+- Wired enrichment into 3 list endpoints
+- Authored `gate_pipeline_per_deal_permissions_present` (G400)
+- Authored 21-test regression suite
+- Appended Batch α7 entry to REVIVAL_LEDGER
+- Appended this CGR1 correction
+
+### What this batch DID NOT do
+
+- Did NOT migrate Streamlit's RBAC enforcement
+- Did NOT add `permissions` to `PipelineDeal` Pydantic model (caller-specific runtime data, not schema)
+- Did NOT enrich mutation endpoint responses (only GETs)
+- Did NOT fix the Streamlit rejected-cancel edge case (mirrored, documented)
+- Did NOT touch `PipelineManager`, `LoanApplicationManager`, PostgreSQL, or React frontend
+
+### Gate count delta
+
+Before this batch: 399 (post-α6).
+After this batch: **400** (G400 added).
+
+### Forward-looking concern: list-endpoint enrichment is name-matched
+
+G400's check 3 verifies the 3 named list endpoints (`pipeline_deals`, `pipeline_queue_validation`, `pipeline_queue_cancellation`) call `enrich_deal_with_permissions`. If a future batch adds a 4th list endpoint (e.g., `pipeline_deals_by_unit`) and forgets to enrich, G400 will NOT catch it — the gate only knows about the 3 names. The structural fix (later) would be a decorator or convention that makes the enrichment automatic, but for now, the operator must remember to update G400's `list_endpoints` set when adding new endpoints.
+
+---

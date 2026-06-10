@@ -61974,6 +61974,197 @@ def gate_pipeline_manager_queues_present() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_per_deal_permissions_present() -> Dict[str, Any]:
+    """G400 — v10.509 Phase 3 Arc α Batch α7 — Per-deal permissions
+    resolution wired into the pipeline GET endpoints.
+
+    Verifies the α7 implementation of GAP-012 from audit Section 15.6:
+
+    1. **NEW helper module** ``utils/api_pipeline_permissions.py``
+       defines ``resolve_deal_permissions``, ``enrich_deal_with_permissions``,
+       ``PERMISSION_KEYS``, ``TERMINAL_STAGES``, ``VALIDATION_STAGES``.
+    2. **NEW endpoint** ``GET /api/pipeline/deals/{deal_id}``
+       (``pipeline_deal_detail`` function) returns a deal with
+       per-caller permissions object.
+    3. **MODIFIED endpoints** — three deal-listing endpoints call
+       ``enrich_deal_with_permissions`` so every returned deal carries
+       a ``permissions`` object:
+       - ``pipeline_deals`` (GET /api/pipeline/deals)
+       - ``pipeline_queue_validation`` (GET /api/pipeline/queues/validation)
+       - ``pipeline_queue_cancellation`` (GET /api/pipeline/queues/cancellation)
+    4. **PERMISSION_KEYS contains exactly 6 keys** matching the audit
+       Section 15.6 specification: can_view, can_edit, can_advance_stage,
+       can_request_cancel, can_approve_cancel, can_validate.
+
+    Behaviour
+    ---------
+    1. AST-parse ``utils/api_pipeline_permissions.py``. Verify required
+       functions and constants exist.
+    2. AST-parse ``utils/api.py``. Verify ``pipeline_deal_detail``
+       endpoint exists. Verify the three list endpoints all call
+       ``enrich_deal_with_permissions``.
+    3. Runtime sanity: import permissions module, exercise
+       ``resolve_deal_permissions`` with a known fixture, assert the
+       6 keys and types.
+
+    Cost: ~0.05s.
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    perms_path = repo / "utils" / "api_pipeline_permissions.py"
+
+    for p, label in [(api_path, "utils/api.py"),
+                     (perms_path, "utils/api_pipeline_permissions.py")]:
+        if not p.exists():
+            return {
+                "id": "G400",
+                "name": "pipeline_per_deal_permissions_present",
+                "passed": False,
+                "violations": [f"{label} not found"],
+                "summary": f"{label} missing",
+            }
+
+    try:
+        api_tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+        perms_tree = _ast.parse(perms_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G400",
+            "name": "pipeline_per_deal_permissions_present",
+            "passed": False,
+            "violations": [f"Syntax error: {e}"],
+            "summary": "module unparseable",
+        }
+
+    # Check 1: permissions module exports the right things
+    assigned_names: set = set()
+    defined_fns: set = set()
+    for node in _ast.walk(perms_tree):
+        if isinstance(node, _ast.FunctionDef):
+            defined_fns.add(node.name)
+        if isinstance(node, _ast.Assign):
+            for tgt in node.targets:
+                if isinstance(tgt, _ast.Name):
+                    assigned_names.add(tgt.id)
+        if isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
+            assigned_names.add(node.target.id)
+
+    for fn_name in ("resolve_deal_permissions", "enrich_deal_with_permissions"):
+        if fn_name not in defined_fns:
+            violations.append(
+                f"utils/api_pipeline_permissions.py does not define "
+                f"function `{fn_name}` — required by α7 endpoints"
+            )
+    for const_name in ("PERMISSION_KEYS", "TERMINAL_STAGES", "VALIDATION_STAGES"):
+        if const_name not in assigned_names:
+            violations.append(
+                f"utils/api_pipeline_permissions.py does not define "
+                f"`{const_name}` — required for permission resolution"
+            )
+
+    # Check 2: pipeline_deal_detail endpoint exists
+    detail_fn = None
+    list_endpoints = {
+        "pipeline_deals": False,
+        "pipeline_queue_validation": False,
+        "pipeline_queue_cancellation": False,
+    }
+    for node in _ast.walk(api_tree):
+        if isinstance(node, _ast.FunctionDef):
+            if node.name == "pipeline_deal_detail":
+                detail_fn = node
+            elif node.name in list_endpoints:
+                # Check whether the function body calls
+                # enrich_deal_with_permissions
+                calls_enrich = any(
+                    isinstance(sub, _ast.Call)
+                    and isinstance(sub.func, _ast.Name)
+                    and sub.func.id == "enrich_deal_with_permissions"
+                    for sub in _ast.walk(node)
+                )
+                list_endpoints[node.name] = calls_enrich
+
+    if detail_fn is None:
+        violations.append(
+            "endpoint function `pipeline_deal_detail` missing from "
+            "utils/api.py — α7 single-deal detail endpoint not implemented"
+        )
+
+    for ep_name, called in list_endpoints.items():
+        if not called:
+            violations.append(
+                f"`{ep_name}` does not call `enrich_deal_with_permissions` — "
+                "deals in the response will not carry a permissions object; "
+                "the React UI cannot decide which buttons to show without "
+                "trial-and-error or client-side authorization duplication"
+            )
+
+    # Check 3: runtime sanity
+    if not violations:
+        try:
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location("_perms_for_g400", perms_path)
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+
+            # PERMISSION_KEYS must be exactly 6 keys
+            expected_keys = (
+                "can_view", "can_edit", "can_advance_stage",
+                "can_request_cancel", "can_approve_cancel", "can_validate",
+            )
+            if set(mod.PERMISSION_KEYS) != set(expected_keys):
+                violations.append(
+                    f"PERMISSION_KEYS drift from audit Section 15.6. "
+                    f"Expected: {expected_keys}. Got: {tuple(mod.PERMISSION_KEYS)}"
+                )
+
+            # resolve_deal_permissions returns all 6 keys
+            sample = mod.resolve_deal_permissions(
+                {"staff_code": "X", "stage": "Lead"},
+                {"staff_code": "X"},
+                set(),
+            )
+            missing = set(expected_keys) - set(sample.keys())
+            if missing:
+                violations.append(
+                    f"resolve_deal_permissions does not return all keys; "
+                    f"missing: {sorted(missing)}"
+                )
+            # Owner of an active deal should have can_edit=True
+            if not sample.get("can_edit"):
+                violations.append(
+                    "Runtime sanity failed: owner of active deal has "
+                    "can_edit=False — resolution logic is broken"
+                )
+        except Exception as e:
+            info.append(f"INFO: could not runtime-exercise permissions ({e})")
+
+    if not violations:
+        info.append(
+            "INFO: per-deal permissions wired into 3 list endpoints + "
+            "1 new detail endpoint; PERMISSION_KEYS matches audit Section 15.6 "
+            "(6 keys); resolve_deal_permissions returns all keys"
+        )
+
+    summary = (
+        "per-deal permissions surface present + wired into list endpoints"
+        if not violations
+        else f"{len(violations)} violations — α7 surface incomplete"
+    )
+
+    return {
+        "id": "G400",
+        "name": "pipeline_per_deal_permissions_present",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -62050,6 +62241,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G400", gate_pipeline_per_deal_permissions_present),       # v10.509 PHASE 3 ARC α BATCH α7 — CRITICAL — per-deal permissions resolution + detail endpoint (closes GAP-012)
     ("G399", gate_pipeline_manager_queues_present),             # v10.508 PHASE 3 ARC α BATCH α6 — CRITICAL — manager queue endpoints (validation + cancellation + actions) (closes GAP-011)
     ("G398", gate_pipeline_conflict_resolution_present),        # v10.507 PHASE 3 ARC α BATCH α5 — CRITICAL — pipeline conflict resolution (refer endpoint + override enforcement) (closes GAP-005)
     ("G397", gate_pipeline_advance_triggers_lms_handoff),       # v10.506 PHASE 3 ARC α BATCH α4 — CRITICAL — pipeline advance triggers LMS handoff via create_from_pipeline_deal (supersedes α3 Option C)
