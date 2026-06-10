@@ -61329,6 +61329,214 @@ def gate_pipeline_api_crud_present() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_advance_triggers_lms_handoff() -> Dict[str, Any]:
+    """G397 — v10.506 Phase 3 Arc α Batch α4 — LMS handoff wired into
+    the pipeline advance endpoint.
+
+    Verifies the α4 implementation of the LoanApplication auto-create
+    flow that α3 deferred (Option C — the LMS_DEFERRED_STAGES were
+    explicitly rejected in α3). α4 implements the canonical handoff:
+
+    1. ``LoanApplicationManager`` in ``utils/core.py`` exposes a new
+       method ``create_from_pipeline_deal(deal, username)`` — the
+       canonical handoff function. It's idempotent (returns existing
+       app id if linked) and uses ``max(existing_ids) + 1`` for ID
+       generation (fixes the Streamlit ``len + 1`` collision bug).
+
+    2. ``utils/api_pipeline_mutations.py`` exposes
+       ``handle_lms_handoff(deal, old_stage, new_stage, username)`` —
+       the thin orchestrator that decides when to fire and calls the
+       canonical method. ``is_lms_handoff_transition`` is the
+       trigger-condition helper.
+
+    3. ``utils/api.py::pipeline_deal_advance`` calls
+       ``handle_lms_handoff`` after a successful ``pm.update_stage``.
+
+    The gate verifies all three pieces are wired in. If a future
+    batch silently disconnects the handoff (e.g., removes the
+    ``handle_lms_handoff`` call from the endpoint), G397 fails with
+    a precise message.
+
+    Behaviour
+    ---------
+    1. AST-parse ``utils/api.py``. Verify ``pipeline_deal_advance``
+       calls ``handle_lms_handoff``.
+    2. AST-parse ``utils/api_pipeline_mutations.py``. Verify it
+       exports ``handle_lms_handoff`` and
+       ``is_lms_handoff_transition``.
+    3. AST-parse ``utils/core.py``. Verify
+       ``LoanApplicationManager`` defines
+       ``create_from_pipeline_deal``.
+    4. Verify ``validate_advance_target`` no longer rejects LMS
+       stages — sanity check that α4 superseded α3's Option C.
+
+    Cost: ~0.2s (core.py is large).
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    mutations_path = repo / "utils" / "api_pipeline_mutations.py"
+    core_path = repo / "utils" / "core.py"
+
+    if not api_path.exists():
+        return {
+            "id": "G397",
+            "name": "pipeline_advance_triggers_lms_handoff",
+            "passed": False,
+            "violations": [f"utils/api.py not found at {api_path}"],
+            "summary": "api.py missing",
+        }
+    if not mutations_path.exists():
+        return {
+            "id": "G397",
+            "name": "pipeline_advance_triggers_lms_handoff",
+            "passed": False,
+            "violations": [f"utils/api_pipeline_mutations.py not found"],
+            "summary": "mutations module missing",
+        }
+    if not core_path.exists():
+        return {
+            "id": "G397",
+            "name": "pipeline_advance_triggers_lms_handoff",
+            "passed": False,
+            "violations": [f"utils/core.py not found at {core_path}"],
+            "summary": "core.py missing",
+        }
+
+    # Check #1: pipeline_deal_advance calls handle_lms_handoff
+    try:
+        api_tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G397",
+            "name": "pipeline_advance_triggers_lms_handoff",
+            "passed": False,
+            "violations": [f"utils/api.py has syntax error: {e}"],
+            "summary": "api.py unparseable",
+        }
+
+    advance_fn = None
+    for node in _ast.walk(api_tree):
+        if isinstance(node, _ast.FunctionDef) and node.name == "pipeline_deal_advance":
+            advance_fn = node
+            break
+    if advance_fn is None:
+        violations.append(
+            "function `pipeline_deal_advance` not found in utils/api.py — "
+            "α3 endpoint missing; G397 cannot verify α4 handoff"
+        )
+    else:
+        calls_handoff = False
+        for sub in _ast.walk(advance_fn):
+            if isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name):
+                if sub.func.id == "handle_lms_handoff":
+                    calls_handoff = True
+                    break
+        if not calls_handoff:
+            violations.append(
+                "`pipeline_deal_advance` does not call `handle_lms_handoff` — "
+                "advance to an LMS stage will NOT create the linked "
+                "LoanApplication; α4 doctrine broken; deals will sit at "
+                "Credit Review/Approval/etc. without an application record"
+            )
+
+    # Check #2: mutations module exports handle_lms_handoff + is_lms_handoff_transition
+    try:
+        mut_tree = _ast.parse(mutations_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        violations.append(
+            f"utils/api_pipeline_mutations.py has syntax error: {e}"
+        )
+    else:
+        fn_names = {
+            node.name
+            for node in _ast.walk(mut_tree)
+            if isinstance(node, _ast.FunctionDef)
+        }
+        for required in ("handle_lms_handoff", "is_lms_handoff_transition"):
+            if required not in fn_names:
+                violations.append(
+                    f"utils/api_pipeline_mutations.py does not define "
+                    f"`{required}` — required by α4 handoff orchestration"
+                )
+
+    # Check #3: LoanApplicationManager.create_from_pipeline_deal exists
+    try:
+        core_tree = _ast.parse(core_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        violations.append(f"utils/core.py has syntax error: {e}")
+    else:
+        lam_class = None
+        for node in _ast.walk(core_tree):
+            if isinstance(node, _ast.ClassDef) and node.name == "LoanApplicationManager":
+                lam_class = node
+                break
+        if lam_class is None:
+            violations.append(
+                "class `LoanApplicationManager` not found in utils/core.py — "
+                "α4 canonical handoff target missing"
+            )
+        else:
+            method_names = {
+                n.name for n in lam_class.body
+                if isinstance(n, _ast.FunctionDef)
+            }
+            if "create_from_pipeline_deal" not in method_names:
+                violations.append(
+                    "`LoanApplicationManager` does not define "
+                    "`create_from_pipeline_deal` — the canonical handoff "
+                    "function added in α4 is missing; the API's "
+                    "handle_lms_handoff helper will fail at runtime"
+                )
+
+    # Check #4: validate_advance_target no longer rejects LMS stages
+    # (sanity check that α4 superseded α3 Option C). We do this by
+    # loading the module and exercising the function — a structural
+    # check is hard because the change is in the function body logic
+    # rather than its signature.
+    if not violations:
+        try:
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location("_mut_for_g397", mutations_path)
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            # Try a stage that α3 would have rejected
+            ok, _reason = mod.validate_advance_target("Credit Review")
+            if not ok:
+                violations.append(
+                    "`validate_advance_target` still rejects 'Credit Review' — "
+                    "α3 Option C not superseded by α4; the advance endpoint "
+                    "will never reach the handoff branch"
+                )
+        except Exception as e:
+            info.append(f"INFO: could not exercise validate_advance_target ({e})")
+
+    if not violations:
+        info.append(
+            "INFO: LMS handoff wired end-to-end — pipeline_deal_advance "
+            "calls handle_lms_handoff; mutations module exports orchestrator; "
+            "LoanApplicationManager.create_from_pipeline_deal is canonical; "
+            "validate_advance_target permits LMS stages (α3 superseded)"
+        )
+
+    summary = (
+        "LMS handoff wired end-to-end; α3 Option C superseded by α4"
+        if not violations
+        else f"{len(violations)} violations — α4 handoff incomplete"
+    )
+
+    return {
+        "id": "G397",
+        "name": "pipeline_advance_triggers_lms_handoff",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -61405,6 +61613,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G397", gate_pipeline_advance_triggers_lms_handoff),       # v10.506 PHASE 3 ARC α BATCH α4 — CRITICAL — pipeline advance triggers LMS handoff via create_from_pipeline_deal (supersedes α3 Option C)
     ("G396", gate_pipeline_api_crud_present),                   # v10.505 PHASE 3 ARC α BATCH α3 — CRITICAL — pipeline CRUD + advance endpoints present, LMS allowlist enforced (Option C)
     ("G395", gate_pipeline_api_enforces_cascade_scope),         # v10.504 PHASE 3 ARC α BATCH α2 — CRITICAL — pipeline API enforces server-side cascade scope (closes GAP-001)
     ("G394", gate_pipeline_api_uses_canonical_manager),         # v10.503 PHASE 3 ARC α BATCH α1 — CRITICAL — pipeline API uses PipelineManager (no pipeline.json bypass)

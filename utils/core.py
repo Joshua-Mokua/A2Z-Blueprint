@@ -5345,6 +5345,144 @@ class LoanApplicationManager:
             rm_kpis[rm]["New Accounts"]      += 1
         return {rm: dict(kpis) for rm, kpis in rm_kpis.items()}
 
+    def create_from_pipeline_deal(self, deal: dict, username: str = ""):
+        """Create a LoanApplication record from a pipeline deal.
+
+        Canonical handoff function — v10.506 Phase 3 Arc α Batch α4
+        adds this. It replaces the inline `lam.apps.append(...)` block
+        in `pages/3_pipeline.py:1239-1287` AS A CANONICAL TARGET; the
+        Streamlit page is not migrated to use it in this batch (a
+        separate small batch can do that without behavioral change).
+
+        Behaviour
+        ---------
+        - **Idempotent.** If an application already exists with a
+          matching `pipeline_deal_id`, returns the existing app's id
+          and does NOT create a duplicate. The deal can be re-advanced
+          to an LMS stage repeatedly without side effects.
+        - **ID generation uses `max(existing_ids) + 1`** rather than
+          `len(apps) + 1`. The latter formula has a latent collision
+          bug — same-turn inspection at α4 found existing data state
+          where `len + 1` would collide with an existing id (724
+          apps but highest id = LMS00725, one gap somewhere).
+        - **Field mapping prefers Generation B canonical names.**
+          `product_type` (Gen B) is preferred over `product` (Gen A);
+          this fixes a latent bug in the Streamlit handoff where
+          `product` was always empty for Gen B deals, breaking the
+          KPI routing in `bsc_actuals()`.
+        - **Swim lane bands** match the Streamlit handoff exactly:
+          `Express` if amount ≤ 5M, `Complex` if ≥ 100M, `Standard`
+          otherwise.
+
+        Parameters
+        ----------
+        deal : dict
+            A pipeline deal record (typically from
+            `PipelineManager.get_deal(id)`).
+        username : str, optional
+            For the audit breadcrumb. The endpoint caller's username.
+
+        Returns
+        -------
+        Optional[str]
+            The created application's id (e.g. `"LMS00726"`), OR the
+            existing app's id if already linked, OR `None` if the
+            deal lacks the minimum fields required to create an
+            application.
+
+        Raises
+        ------
+        IOError, OSError
+            If saving to disk fails. The caller (endpoint) decides
+            how to handle this — α4's pipeline_deal_advance endpoint
+            catches and returns lms_error in the response.
+        """
+        if not deal:
+            return None
+        deal_id = str(deal.get("id", "") or "")
+        if not deal_id:
+            return None
+
+        # Idempotency: check for an existing application with this
+        # pipeline_deal_id. If found, return its id without creating
+        # a duplicate. This makes the handoff safely re-runnable.
+        for a in self.apps:
+            if str(a.get("pipeline_deal_id", "") or "") == deal_id:
+                return str(a.get("id", "") or "")
+
+        # ID generation — use max + 1 not len + 1, so gaps in the
+        # sequence don't cause collisions. Defensive against the
+        # latent bug present in the Streamlit handoff.
+        existing_nums = []
+        for a in self.apps:
+            aid = str(a.get("id", "") or "")
+            if aid.startswith("LMS") and len(aid) > 3:
+                try:
+                    existing_nums.append(int(aid[3:]))
+                except ValueError:
+                    continue
+        next_num = (max(existing_nums) + 1) if existing_nums else 1
+        new_id = f"LMS{next_num:05d}"
+
+        # Field mapping. product_type (Gen B canonical) preferred over
+        # product (Gen A legacy). amount from canonical deal_value.
+        amount = 0.0
+        try:
+            amount = float(deal.get("deal_value", 0) or 0)
+        except (TypeError, ValueError):
+            amount = 0.0
+        if not amount:
+            # Some legacy records have amount instead of deal_value
+            try:
+                amount = float(deal.get("amount", 0) or 0)
+            except (TypeError, ValueError):
+                amount = 0.0
+
+        product = (deal.get("product_type") or deal.get("product") or "").strip()
+
+        if amount <= 5_000_000:
+            swim_lane = "Express"
+        elif amount >= 100_000_000:
+            swim_lane = "Complex"
+        else:
+            swim_lane = "Standard"
+
+        today = datetime.now().date().isoformat()
+
+        app = {
+            "id":              new_id,
+            "pipeline_deal_id": deal_id,
+            "client_name":     deal.get("client_name", ""),
+            "client_cif":      str(deal.get("client_cif", "") or ""),
+            "product":         product,
+            "amount":          amount,
+            "currency":        "KES",
+            "swim_lane":       swim_lane,
+            "status":          "submitted",
+            "application_date": today,
+            "rm_code":         str(deal.get("staff_code", "") or ""),
+            "rm_name":         deal.get("staff_name", ""),
+            "rm_unit":         deal.get("unit", ""),
+            "analyst":         None,
+            "is_repeat_borrower":     False,
+            "clean_repayment_history": False,
+            "docs_required":   [],
+            "docs_submitted":  [],
+            "completeness_score": 0,
+            "compliance_flag":    False,
+            "compliance_type":    None,
+            "decision":           None,
+            "tat_days":           0,
+            "sla_target_days":    10,
+            "last_updated":       today,
+            # Provenance breadcrumb — useful for forensics
+            "created_by":         username or "",
+            "created_via":        "api_pipeline_advance",
+        }
+        self.apps.append(app)
+        self.save()
+        return new_id
+
 
 class CreditAdminManager:
     """Persist credit_admin.json — pre-disbursement conditions."""

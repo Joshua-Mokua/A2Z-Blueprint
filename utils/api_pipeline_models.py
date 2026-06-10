@@ -369,6 +369,17 @@ class PipelineDealMutationResponse(BaseModel):
     caller's UX. The `bsc_triggered` flag indicates whether the
     side-effect BSC recompute succeeded (failure is non-fatal per
     Section 15.6 — the K041 breadcrumb is best-effort).
+
+    LMS handoff fields (v10.506 Phase 3 Arc α Batch α4) — only
+    populated on advance operations. When advancing to a stage in
+    LMS_DEFERRED_STAGES, the endpoint attempts to create a linked
+    LoanApplication via LoanApplicationManager.create_from_pipeline_deal:
+    - lms_triggered=True + lms_application_id set + lms_error=None
+      means the application exists (newly created or already linked).
+    - lms_triggered=False + lms_error set means the handoff was
+      attempted but failed; the advance itself succeeded.
+    - All three None means no handoff was applicable (non-LMS stage
+      or no transition happened).
     """
     model_config = ConfigDict(extra="allow")
 
@@ -376,5 +387,23 @@ class PipelineDealMutationResponse(BaseModel):
     status: str = Field(description="'created' | 'updated' | 'advanced'")
     bsc_triggered: bool = Field(
         description="True if BSC recompute was invoked successfully"
+    )
+    lms_triggered: Optional[bool] = Field(
+        default=None,
+        description="True if LMS handoff completed (new or idempotent). "
+                    "Only set on advance operations."
+    )
+    lms_application_id: Optional[str] = Field(
+        default=None,
+        description="The LoanApplication id (new or existing) linked to "
+                    "this deal. Format 'LMS#####'. Only set when "
+                    "lms_triggered is True."
+    )
+    lms_error: Optional[str] = Field(
+        default=None,
+        description="Error message if LMS handoff was attempted and "
+                    "failed. The advance itself still succeeded; this "
+                    "indicates the caller should retry the handoff or "
+                    "escalate."
     )
 

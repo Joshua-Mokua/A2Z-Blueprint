@@ -61,6 +61,79 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.506 Phase 3 Arc α Batch α4 — Pipeline LMS handoff implemented; G397 authored; α3 Option C superseded; GAP-013 closed; two latent Streamlit bugs fixed
+
+**Type:** Largest single batch in Arc α. Closes the pipeline→credit bridge. One new CRITICAL enforcement gate. One new canonical method on `LoanApplicationManager`. Two latent Streamlit bug fixes (ID collision, product_type field). Inverts one α3 test (first time previous-batch behavior is changed in this arc).
+**Owner:** Joshua + Claude
+**Rationale:** α3 explicitly deferred the LMS handoff (Option C — advance to LMS stages was rejected with HTTP 400 pointing at α4). α4 implements that handoff. The mechanism: when a deal advances to a stage in `LMS_DEFERRED_STAGES`, the endpoint calls `LoanApplicationManager.create_from_pipeline_deal(deal, username)` — a new canonical method that auto-creates the linked LoanApplication with proper field mapping, swim-lane band assignment, and idempotency. The Streamlit page's inline equivalent (lines 1239-1287 of `pages/3_pipeline.py`) is NOT migrated in this batch; that's a separate small refactor batch later. The canonical method exists; both paths are valid; future work harmonizes them.
+
+**Two latent Streamlit bugs fixed in the canonical method:**
+
+1. **ID collision via `len(apps)+1`.** Same-turn inspection at α4 found: 724 apps on disk, highest ID `LMS00725`, **one gap somewhere** in the sequence. The Streamlit formula `f"LMS{len+1:05d}"` would yield `LMS00725` — a duplicate. Any handoff via Streamlit today would crash on save (or worse, silently overwrite the existing record depending on storage semantics). α4's canonical method uses `max(existing_ids) + 1` = `LMS00726`. Streamlit-side bug remains until the Streamlit page is migrated; α4 documents and ships the canonical fix.
+
+2. **`product` vs `product_type` field naming.** The Streamlit handoff reads `_sd.get("product","")`. Generation B canonical deals (α1 onwards) use `product_type`. Result: applications created via Streamlit handoff have empty `product` field, which breaks the KPI routing in `bsc_actuals()` (line 5328 routes by `product` substring matching — empty string falls into the MSME bucket as default). α4's canonical method prefers `product_type` and falls back to `product`. Streamlit-side bug remains until migration.
+
+**Files shipped (5 modified, 1 new):**
+
+- `utils/core.py` — added `LoanApplicationManager.create_from_pipeline_deal(deal, username)` method (~110 LOC). Idempotent via `pipeline_deal_id` linkage check. Safe ID generation via `max+1`. Field mapping prefers `product_type` over `product`. Swim lane bands match Streamlit exactly (`Express` ≤5M, `Complex` ≥100M, `Standard` between). Provenance breadcrumbs (`created_by`, `created_via`) added to distinguish API-created from Streamlit-created applications. Defensive: returns `None` for empty/None deals, deals without id, deals lacking required fields.
+
+- `utils/api_pipeline_mutations.py` — three changes:
+  - `validate_advance_target` modified: LMS_DEFERRED_STAGES now PERMITTED (was rejected in α3). Documents the α3→α4 doctrine transition in the docstring.
+  - NEW `is_lms_handoff_transition(old_stage, new_stage) -> bool` helper — encapsulates the trigger condition (matches Streamlit page line 1242 exactly).
+  - NEW `handle_lms_handoff(deal, old_stage, new_stage, username) -> (bool, str|None, str|None)` orchestrator — checks trigger condition, calls canonical method on LAM, returns `(triggered, app_id, error)`. Failure semantics: handoff failure does NOT roll back advance; endpoint returns 200 with `lms_error` in response.
+
+- `utils/api_pipeline_models.py` — `PipelineDealMutationResponse` extended with three optional fields: `lms_triggered: Optional[bool]`, `lms_application_id: Optional[str]`, `lms_error: Optional[str]`. None on POST/PUT, populated on advance.
+
+- `utils/api.py` — `pipeline_deal_advance` endpoint extended (~20 LOC added). After successful `pm.update_stage()`, calls `handle_lms_handoff(updated_deal, old_stage, new_stage, username)`. Emits `LMS_APPLICATION_CREATED` audit on success (matching Streamlit's emission convention) or `API_PIPELINE_ADVANCE_LMS_FAILED` on failure. Response includes all three new fields.
+
+- `scripts/audit.py` — NEW `gate_pipeline_advance_triggers_lms_handoff` (~180 LOC, G397). Four checks: (1) endpoint calls `handle_lms_handoff`, (2) mutations module exports `handle_lms_handoff` + `is_lms_handoff_transition`, (3) `LoanApplicationManager` defines `create_from_pipeline_deal`, (4) `validate_advance_target` actually permits LMS stages (loaded + exercised — sanity check that α3 was properly superseded). Registered above G396 in GATES dispatch.
+
+- `tests/test_pipeline_crud_advance.py` — **inverted one test**. `test_validate_advance_target_rejects_lms_stages` (α3 doctrine: reject) replaced with `test_validate_advance_target_no_longer_rejects_lms_stages_post_alpha4` (α4 doctrine: accept). The docstring explicitly references the doctrine transition; git history preserves the original assertion.
+
+- `tests/test_pipeline_lms_handoff.py` — NEW (~340 LOC, 19 tests). Coverage:
+  - G397 plumbing (4)
+  - Doctrine transition: LMS stages accepted on advance, still rejected on create (2)
+  - `is_lms_handoff_transition` trigger conditions (4)
+  - `create_from_pipeline_deal` happy path + idempotency + swim lane bands + product_type preference + product fallback + ID gap fix (6)
+  - Defensive: empty/None inputs return None; no-id returns None; non-LMS advance is no-op (3)
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — CGR1 correction appended; gate count 396 → 397.
+
+**Verification:**
+
+- All edited files parse with `ast.parse(open('FILE', encoding='utf-8').read())`.
+- G393 (Arc D2) still PASSES.
+- G394 (α1) still PASSES.
+- G395 (α2) still PASSES.
+- G396 (α3) still PASSES — the validator change is forward-compatible since G396 only checks `validate_advance_target` is CALLED, not its return value.
+- G397 PASSES with INFO: "LMS handoff wired end-to-end — pipeline_deal_advance calls handle_lms_handoff; mutations module exports orchestrator; LoanApplicationManager.create_from_pipeline_deal is canonical; validate_advance_target permits LMS stages (α3 superseded)".
+- G397 counter-test: removing the `handle_lms_handoff` block from `pipeline_deal_advance` makes G397 FAIL with the precise message: "advance to an LMS stage will NOT create the linked LoanApplication; α4 doctrine broken; deals will sit at Credit Review/Approval/etc. without an application record". After restore, PASSES again.
+- Live behavior tests against real `loan_applications.json` (724 records baseline copied to tmp dir): happy path creates `LMS00726` (verifying max+1 fix vs `LMS00725` that Streamlit would have collided with), idempotency returns same id with no duplicate, swim lane bands correct at all 6 sample points across thresholds, `product_type` preferred over `product`, falls back to `product` when `product_type` is None.
+- 70 cumulative tests pass: 19 α4 + 19 α3 + 13 α2 + 10 α1 + 9 Arc D2 G393. The α3 test count is unchanged because one test was inverted, not added/removed.
+
+**Explicitly NOT done in this batch:**
+
+- Did NOT migrate `pages/3_pipeline.py:1239-1287` to use the new canonical `create_from_pipeline_deal` method. Streamlit's inline handoff continues to work (with its latent bugs). Migration is a small follow-up batch — could be a polish/housekeeping batch alongside ORGANS_REGISTRY cleanup. Important note: this means **Streamlit and API may produce subtly different LoanApplication records** until migration — Streamlit's records will have empty `product` field; API's will have the canonical `product_type`. Forensic flag `created_via` distinguishes them.
+- Did NOT touch the PostgreSQL primary path. Same reason as α1/α2/α3.
+- Did NOT add the manager queue endpoints (validation, cancel). That's α6.
+- Did NOT add conflict resolution endpoints (3-path refer/override). That's α5.
+- Did NOT add per-deal permissions resolution. That's α7.
+- Did NOT add Loan Application endpoints (list, detail, lifecycle transitions). That's α8.
+- Did NOT add Credit Admin endpoints. That's α9.
+- Did NOT write any React frontend code.
+
+**Two CGR1 findings recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch α4 correction):**
+
+1. **Streamlit ID generation latent collision.** Same-turn inspection of `data/loan_applications.json` found a state where Streamlit's `LMS{len+1:05d}` formula would collide with an existing record. α4 documents this finding and ships the canonical fix in `create_from_pipeline_deal`. The Streamlit-side fix is deferred to migration batch.
+
+2. **Streamlit `product` field empty for Gen B deals.** Discovered when comparing Streamlit handoff code (line 1256: `_sd.get("product","")`) against the Generation B canonical shape from α1 (which uses `product_type`). API-created applications now have correct `product` field; Streamlit-created applications still don't.
+
+**Cross-references:** Phase 3 Arc α3 (commit `74af462`) is the immediate predecessor. Arc α5 (conflict resolution endpoints — refer/override paths, closes GAP-005) is the natural next batch. Full Batch α4 CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`. The pipeline→credit bridge is now end-to-end on the FastAPI surface; the React frontend can drive the full discovery → application lifecycle (modulo α5-α9 endpoints which are deal-management UX rather than core flow).
+
+---
+
 ### 2026-06-10 v10.505 Phase 3 Arc α Batch α3 — Pipeline CRUD + advance + BSC trigger; G396 authored; Option C LMS allowlist enforced; closes GAP-002/013/014 partial
 
 **Type:** First mutation-capable batch in Arc α. One new CRITICAL enforcement gate. One new mutation-helpers module. Pydantic model extensions. Three new endpoints.

@@ -193,18 +193,28 @@ def test_validate_create_payload_rejects_lms_stage():
     assert "LMS handoff" in reason or "Arc α4" in reason
 
 
-def test_validate_advance_target_rejects_lms_stages():
-    """The load-bearing Option C guarantee at the advance surface.
-    Each of the 7 LMS-deferred stages must be rejected."""
+def test_validate_advance_target_no_longer_rejects_lms_stages_post_alpha4():
+    """ALPHA4 DOCTRINE TRANSITION (Phase 3 Arc α Batch α4): this test
+    REPLACES the original α3 assertion that LMS stages get rejected.
+    α4 implements the LoanApplication auto-create handoff and lifts
+    the restriction — LMS stages are now permitted at the validator
+    layer.
+
+    The original α3 assertion was: 'Each of the 7 LMS-deferred stages
+    must be rejected.' That was correct for α3's Option C scope.
+    α4 supersedes it. See REVIVAL_LEDGER for the explicit transition
+    record. tests/test_pipeline_lms_handoff.py covers the new
+    handoff mechanism end-to-end.
+    """
     _setup_repo_path()
     from utils.api_pipeline_mutations import (
         validate_advance_target, LMS_DEFERRED_STAGES,
     )
     for stage in LMS_DEFERRED_STAGES:
         ok, reason = validate_advance_target(stage)
-        assert not ok, f"LMS stage '{stage}' wrongly accepted"
-        assert "α4" in reason or "Arc" in reason, (
-            f"Rejection for '{stage}' lacks α4 pointer: {reason}"
+        assert ok, (
+            f"LMS stage '{stage}' wrongly rejected post-α4. "
+            f"reason: {reason}"
         )
 
 

@@ -161,27 +161,104 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
 def validate_advance_target(new_stage: str) -> Tuple[bool, str]:
     """Return (ok, reason) for an advance request.
 
-    Option C: advance is permitted only to stages in
-    ALLOWED_ADVANCE_STAGES. Advance to any LMS_DEFERRED_STAGES is
-    rejected with an explanatory message pointing at α4.
+    Post-α4 doctrine: advance is permitted to any stage in
+    ``ALLOWED_ADVANCE_STAGES`` OR ``LMS_DEFERRED_STAGES``. When the
+    target is an LMS stage, the caller (endpoint) is expected to
+    invoke ``handle_lms_handoff`` to auto-create the linked
+    LoanApplication.
+
+    α3 originally rejected LMS stages outright (Option C); α4 lifts
+    that restriction by implementing the handoff. The set name
+    `LMS_DEFERRED_STAGES` is retained for backward compatibility
+    with prior tests/imports — semantically these are now "LMS
+    handoff trigger stages" but the constant name documents the
+    historical transition.
     """
     if not new_stage or not isinstance(new_stage, str):
         return False, "new_stage must be a non-empty string"
 
     if new_stage in LMS_DEFERRED_STAGES:
-        return False, (
-            f"Stage '{new_stage}' requires LMS handoff (planned for "
-            "Arc α4). Use the Streamlit pipeline page for this "
-            "transition until α4 lands."
-        )
+        # α4: permitted, handoff triggered by caller. No longer rejected.
+        return True, ""
 
     if new_stage not in ALLOWED_ADVANCE_STAGES:
         return False, (
             f"Unknown stage: '{new_stage}'. "
-            f"Allowed stages: {sorted(ALLOWED_ADVANCE_STAGES)}"
+            f"Allowed stages: {sorted(ALLOWED_ADVANCE_STAGES | LMS_DEFERRED_STAGES)}"
         )
 
     return True, ""
+
+
+def is_lms_handoff_transition(old_stage: str, new_stage: str) -> bool:
+    """Return True if (old, new) represents an LMS handoff transition.
+
+    A handoff fires when the deal IS entering an LMS stage AND the
+    transition is real (not a no-op). Matches the Streamlit page
+    condition at line 1242: ``_nst in _LMS_STAGES and _nst != _sd.get("stage")``.
+
+    Returns False if:
+    - ``new_stage`` is not an LMS stage (no handoff needed)
+    - ``new_stage == old_stage`` (no-op, no handoff)
+
+    LMS→LMS transitions (Credit Review → Approval, etc.) return True
+    here; idempotency in ``LoanApplicationManager.create_from_pipeline_deal``
+    handles those safely — returns the existing app id instead of
+    creating a duplicate.
+    """
+    if new_stage not in LMS_DEFERRED_STAGES:
+        return False
+    if new_stage == old_stage:
+        return False
+    return True
+
+
+def handle_lms_handoff(
+    deal: Dict[str, Any],
+    old_stage: str,
+    new_stage: str,
+    username: str,
+) -> Tuple[bool, Any, Any]:
+    """Trigger LMS handoff if applicable.
+
+    Returns
+    -------
+    (triggered, app_id, error)
+        triggered : bool
+            True if a new application was created OR an existing one
+            was found (deal is now linked to an application).
+            False if the transition didn't qualify for handoff at all.
+        app_id : Optional[str]
+            The application id (new or existing). None on failure or
+            on no-handoff case.
+        error : Optional[str]
+            Error message if handoff was attempted and failed. None
+            on success or non-handoff. The endpoint should include
+            this in the response so the caller knows.
+
+    Failure semantics: handoff failure does NOT roll back the advance.
+    The deal has already transitioned (PipelineManager.update_stage
+    is complete by the time this function is called). The endpoint
+    returns HTTP 200 with `lms_error` in the response body. An audit
+    event `API_PIPELINE_ADVANCE_LMS_FAILED` should be emitted by the
+    caller alongside.
+    """
+    if not is_lms_handoff_transition(old_stage, new_stage):
+        return False, None, None
+
+    try:
+        # Lazy import — pulls a fair amount of surface area
+        from utils.core import LoanApplicationManager
+        lam = LoanApplicationManager()
+        app_id = lam.create_from_pipeline_deal(deal, username)
+        if not app_id:
+            return False, None, (
+                "create_from_pipeline_deal returned None — deal "
+                "lacks required fields for application creation"
+            )
+        return True, app_id, None
+    except Exception as e:
+        return False, None, f"LMS handoff failed: {type(e).__name__}: {e}"
 
 
 # ────────────────────────────────────────────────────────────────────

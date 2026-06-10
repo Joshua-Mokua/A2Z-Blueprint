@@ -1151,10 +1151,12 @@ def pipeline_deal_advance(
         validate_advance_target,
         emit_bsc_trigger,
         invalidate_pipeline_caches,
+        handle_lms_handoff,
     )
     from utils.api_pipeline_scope import get_visible_staff_codes
 
-    # Stage allowlist check (Option C — LMS handoff deferred to α4)
+    # Stage validation (post-α4: LMS stages now permitted; handoff
+    # triggered below after successful update_stage)
     ok, reason = validate_advance_target(payload.new_stage)
     if not ok:
         _audit("API_PIPELINE_ADVANCE_REJECTED", user, reason)
@@ -1188,14 +1190,35 @@ def pipeline_deal_advance(
     _audit("API_PIPELINE_ADVANCED", user,
            f"{deal_id}|{old_stage}->{payload.new_stage}")
 
+    # LMS handoff (v10.506 Phase 3 Arc α Batch α4 — supersedes α3
+    # Option C deferral). If the new stage is an LMS-handoff stage
+    # AND this is a real transition, auto-create the linked
+    # LoanApplication via the canonical
+    # LoanApplicationManager.create_from_pipeline_deal method.
+    # Idempotent — same deal twice returns same app id without
+    # creating a duplicate. Failure is non-fatal: advance has
+    # already succeeded, lms_error is reported in response.
+    updated_deal = pm.get_deal(deal_id) or deal
+    lms_triggered, lms_app_id, lms_err = handle_lms_handoff(
+        updated_deal, old_stage, payload.new_stage, user.get("username", "")
+    )
+    if lms_triggered:
+        _audit("LMS_APPLICATION_CREATED", user,
+               f"{deal_id}|{updated_deal.get('client_name','')}|{lms_app_id}|pipeline->credit")
+    elif lms_err:
+        _audit("API_PIPELINE_ADVANCE_LMS_FAILED", user,
+               f"{deal_id}|{lms_err}")
+
     bsc_ok = emit_bsc_trigger(user.get("username", ""))
     invalidate_pipeline_caches()
 
-    advanced = pm.get_deal(deal_id) or deal
     return PipelineDealMutationResponse(
-        deal=PipelineDeal.model_validate(advanced),
+        deal=PipelineDeal.model_validate(updated_deal),
         status="advanced",
         bsc_triggered=bsc_ok,
+        lms_triggered=lms_triggered if (lms_triggered or lms_err) else None,
+        lms_application_id=lms_app_id,
+        lms_error=lms_err,
     ).model_dump()
 
 
