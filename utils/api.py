@@ -857,6 +857,29 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     pm = _PM_for_api()
     deals = pm.get_deals()
 
+    # Cascade scope enforcement (v10.504 Phase 3 Arc α Batch α2).
+    #
+    # Closes GAP-001 from PIPELINE_DOMAIN_AUDIT Section 10. Before α2
+    # this endpoint returned all PipelineManager deals regardless of
+    # caller. The Streamlit page filtered client-side via
+    # `get_visible_staff(user_data, staff_scores)` from
+    # `pages/3_pipeline.py:47`; the API path had no equivalent.
+    #
+    # `get_visible_staff_codes` wraps the canonical cascade-walk
+    # function (utils/core_audit.py:190::get_visible_staff) — no
+    # duplicate business logic. It supplies the staff_register roster
+    # the API path lacks and projects the result to a code set for
+    # set-membership filtering.
+    #
+    # G395 (gate_pipeline_api_enforces_cascade_scope) verifies this
+    # filter is applied in both pipeline endpoints.
+    from utils.api_pipeline_scope import (
+        get_visible_staff_codes,
+        filter_deals_by_visible_codes,
+    )
+    visible_codes = get_visible_staff_codes(user)
+    deals = filter_deals_by_visible_codes(deals, visible_codes)
+
     by_stage: dict = {}
     total_val = 0.0
     won_val   = 0.0
@@ -922,6 +945,16 @@ def pipeline_deals(
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
     deals = pm.get_deals()
+
+    # Cascade scope enforcement (v10.504 Phase 3 Arc α Batch α2).
+    # Closes GAP-001. See pipeline_summary above for the doctrine.
+    # G395 verifies this filter is applied here as well.
+    from utils.api_pipeline_scope import (
+        get_visible_staff_codes,
+        filter_deals_by_visible_codes,
+    )
+    visible_codes = get_visible_staff_codes(user)
+    deals = filter_deals_by_visible_codes(deals, visible_codes)
 
     if stage:
         deals = [d for d in deals if d.get("stage") == stage]

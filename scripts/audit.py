@@ -60951,6 +60951,168 @@ def gate_pipeline_api_uses_canonical_manager() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_api_enforces_cascade_scope() -> Dict[str, Any]:
+    """G395 — v10.504 Phase 3 Arc α Batch α2 — Pipeline Cascade Scope
+    Enforcement. Verifies the FastAPI pipeline endpoints apply
+    server-side cascade scope filtering via
+    `utils.api_pipeline_scope.get_visible_staff_codes` and
+    `filter_deals_by_visible_codes` (or equivalent) so that callers
+    only see deals their role permits.
+
+    Doctrine context
+    ----------------
+    Per `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 10 GAP-001
+    and Section 15.10 (RBAC visibility chain). The Streamlit page
+    filters client-side via `get_visible_staff(user_data, staff_scores)`
+    in `utils.core_audit`. Before α2, the API path had no equivalent
+    — every authenticated caller saw every deal regardless of their
+    cascade scope. That was a real visibility hole the moment any
+    non-Streamlit client (the React frontend) called the endpoints.
+
+    α2 closes the hole by adding `utils/api_pipeline_scope.py` —
+    a server-side adapter that wraps the canonical
+    `get_visible_staff` (no duplicate business logic) and projects
+    the result to a code set the endpoint can use for set-membership
+    filtering. Both `/api/pipeline/summary` and `/api/pipeline/deals`
+    apply this filter before any other processing.
+
+    Behaviour
+    ---------
+    1. AST-parse `utils/api.py`.
+    2. Locate `pipeline_summary` and `pipeline_deals` function
+       definitions.
+    3. For each, walk the body for `Call` nodes whose function name
+       is `get_visible_staff_codes`. **Fail if absent** — the scope
+       filter is required.
+    4. Walk each body for `Call` nodes whose function name is
+       `filter_deals_by_visible_codes`. **Fail if absent** — the
+       set-membership filter step is required.
+    5. Verify `utils/api_pipeline_scope.py` exists and exports the
+       three required helper functions.
+
+    Cost: ~0.05s isolated.
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    scope_path = repo / "utils" / "api_pipeline_scope.py"
+
+    if not api_path.exists():
+        return {
+            "id": "G395",
+            "name": "pipeline_api_enforces_cascade_scope",
+            "passed": False,
+            "violations": [f"utils/api.py not found at {api_path}"],
+            "summary": "api.py missing",
+        }
+    if not scope_path.exists():
+        violations.append(
+            "utils/api_pipeline_scope.py is missing — the scope helper "
+            "module that wraps utils.core_audit.get_visible_staff must "
+            "exist for cascade scope enforcement"
+        )
+
+    try:
+        tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G395",
+            "name": "pipeline_api_enforces_cascade_scope",
+            "passed": False,
+            "violations": [f"utils/api.py has syntax error: {e}"],
+            "summary": "api.py unparseable",
+        }
+
+    target_fns = {"pipeline_summary", "pipeline_deals"}
+    fns_found: Dict[str, _ast.FunctionDef] = {}
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.FunctionDef) and node.name in target_fns:
+            fns_found[node.name] = node
+
+    for fn_name in target_fns:
+        if fn_name not in fns_found:
+            violations.append(
+                f"function `{fn_name}` not found in utils/api.py — "
+                "endpoint was removed or renamed; G395 cannot verify "
+                "cascade scope enforcement"
+            )
+            continue
+
+        fn = fns_found[fn_name]
+        applies_visibility = False
+        applies_filter = False
+
+        for sub in _ast.walk(fn):
+            if isinstance(sub, _ast.Call):
+                if isinstance(sub.func, _ast.Name):
+                    if sub.func.id == "get_visible_staff_codes":
+                        applies_visibility = True
+                    elif sub.func.id == "filter_deals_by_visible_codes":
+                        applies_filter = True
+
+        if not applies_visibility:
+            violations.append(
+                f"`{fn_name}` does not call `get_visible_staff_codes(user)` — "
+                "cascade scope is not being computed for this request; "
+                "the endpoint will return data outside the caller's "
+                "RBAC scope (GAP-001 reopened)"
+            )
+        if not applies_filter:
+            violations.append(
+                f"`{fn_name}` does not call `filter_deals_by_visible_codes(...)` — "
+                "scope-set membership filtering is not applied; deals "
+                "outside the caller's visibility will leak into the "
+                "response (GAP-001 reopened)"
+            )
+
+    if scope_path.exists():
+        try:
+            stree = _ast.parse(scope_path.read_text(encoding="utf-8"))
+            expected_fns = {
+                "get_staff_roster",
+                "get_visible_staff_codes",
+                "filter_deals_by_visible_codes",
+            }
+            found_fns = set()
+            for node in _ast.walk(stree):
+                if isinstance(node, _ast.FunctionDef) and node.name in expected_fns:
+                    found_fns.add(node.name)
+            missing = expected_fns - found_fns
+            if missing:
+                violations.append(
+                    f"utils/api_pipeline_scope.py is missing required "
+                    f"functions: {sorted(missing)}"
+                )
+        except SyntaxError as e:
+            violations.append(
+                f"utils/api_pipeline_scope.py has syntax error: {e}"
+            )
+
+    if not violations:
+        info.append(
+            "INFO: pipeline endpoints apply server-side cascade scope "
+            "via get_visible_staff_codes + filter_deals_by_visible_codes; "
+            "scope helper present and well-formed (GAP-001 closed)"
+        )
+
+    summary = (
+        "pipeline API cascade scope enforcement intact"
+        if not violations
+        else f"{len(violations)} violations — cascade scope drift detected"
+    )
+
+    return {
+        "id": "G395",
+        "name": "pipeline_api_enforces_cascade_scope",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -61027,6 +61189,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G395", gate_pipeline_api_enforces_cascade_scope),         # v10.504 PHASE 3 ARC α BATCH α2 — CRITICAL — pipeline API enforces server-side cascade scope (closes GAP-001)
     ("G394", gate_pipeline_api_uses_canonical_manager),         # v10.503 PHASE 3 ARC α BATCH α1 — CRITICAL — pipeline API uses PipelineManager (no pipeline.json bypass)
     ("G393", gate_organs_registry_coverage),                    # v10.502 STAGE C ARC D2 — TRANSITIONAL — ORGANS_REGISTRY O5 coverage surveillance
     ("G392", gate_telemetry_event_naming),                       # v10.502 STAGE C ARC D2 — HIGH — TELEMETRY_MAP T1+T2 event-naming discipline

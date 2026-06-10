@@ -61,6 +61,53 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.504 Phase 3 Arc α Batch α2 — Pipeline cascade scope enforcement on server-side; G395 authored; GAP-001 closed
+
+**Type:** Architectural drift correction (presentation-canonical alignment, RBAC scope hole closed). One new CRITICAL enforcement gate. One new server-side helper module. Two endpoint surgical edits.
+**Owner:** Joshua + Claude
+**Rationale:** Closes GAP-001 from PIPELINE_DOMAIN_AUDIT Section 10. Before α2, the FastAPI pipeline endpoints (`/api/pipeline/summary` and `/api/pipeline/deals`) returned all PipelineManager deals regardless of caller identity. The Streamlit page in `pages/3_pipeline.py:47` filtered client-side via `get_visible_staff(user_data, staff_scores)` from `utils.core_audit`; the API path had no equivalent server-side filter. That left a visibility hole the moment any non-Streamlit client (the React frontend being introduced incrementally per α1) called the endpoints — every authenticated user would see every deal regardless of role. α2 closes this by introducing `utils/api_pipeline_scope.py` as a thin server-side adapter that **wraps the canonical cascade-walk function** (no duplicate business logic — the same REPORTING_TREE config that drives Streamlit visibility now drives API visibility).
+
+**Files shipped (4 modified, 2 new):**
+
+- `utils/api_pipeline_scope.py` — NEW (~210 LOC). Three public functions: `get_staff_roster()` (cached 60s TTL load of data/staff_register.xlsx, thread-safe), `get_visible_staff_codes(user_data) -> set[str]` (wraps `utils.core_audit.get_visible_staff` and projects to a code set), `filter_deals_by_visible_codes(deals, visible_codes)` (set-membership filter on staff_code OR portfolio_owner_code per Section 15.4 portfolio-sovereignty model). Plus `invalidate_staff_roster_cache()` for admin endpoints + tests.
+
+- `utils/api.py` — surgical edits to both pipeline endpoints. In each, after `PipelineManager().get_deals()`, two new lines apply the scope filter: `visible_codes = get_visible_staff_codes(user)` and `deals = filter_deals_by_visible_codes(deals, visible_codes)`. The filter runs BEFORE existing stage/category/unit filters and before pagination. PostgreSQL primary path is untouched (data store, separate concern).
+
+- `scripts/audit.py` — NEW `gate_pipeline_api_enforces_cascade_scope` (~130 LOC, G395). AST-walks `utils/api.py`, locates both endpoint functions, walks each body for `get_visible_staff_codes` and `filter_deals_by_visible_codes` calls (FAIL if either absent). Verifies `utils/api_pipeline_scope.py` exports the three required functions. Registered in GATES dispatch above G394.
+
+- `tests/test_pipeline_scope_enforcement.py` — NEW (~290 LOC, 13 tests). Coverage: G395 registration (3), G395 behavior (1), scope helper structure (3), live behavior against real PipelineManager records (4: admin sees all 8, teller sees 1, branch manager sees 1, random user sees 0), cache mechanics (2). All 13 pass.
+
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry, appended at top of entries section.
+
+- `docs/architecture/GOVERNANCE_REALITY_INDEX.md` — CGR1 Reality-Check Correction for α2 appended at end-of-file + gate count delta (394 → 395).
+
+**Verification:**
+
+- `python3 -c "import ast; ast.parse(open('utils/api.py', encoding='utf-8').read())"` — passes.
+- `python3 -c "import ast; ast.parse(open('scripts/audit.py', encoding='utf-8').read())"` — passes.
+- Live behavior against real data: Admin sees 1438 codes → 8 deals; Teller 300722 (Rodgers Weru) sees 1 code → 1 deal (D0006); Branch Manager 300600 (Helena Mwaburi, Dagoretti) sees 6 codes → 1 deal (D0005); Random Teller 300100 sees 1 code → 0 deals.
+- G395 invocation: PASSES, summary "pipeline API cascade scope enforcement intact".
+- G395 counter-test: when scope filter is removed from `pipeline_deals`, gate FAILS with 2 precise violations identifying the offending function. After restore, PASSES again. Counter-test for `pipeline_summary` symmetric.
+- 13 α2 regression tests pass via `pytest`.
+- 19/19 cumulative — α2 (13) + α1 (10) + Arc D2 G393 (9) — pass; minus duplicates 19 unique = full prior surface still intact (α1 + Arc D2 unbroken).
+
+**Explicitly NOT done in this batch:**
+
+- Did NOT modify the PostgreSQL primary path in either endpoint. PG-side scope enforcement is a separate concern (requires SQL `staff_code IN (...)` clause) and depends on PG migration timing.
+- Did NOT modify `utils.core_audit.get_visible_staff`. The canonical cascade function stays as-is; α2's helper wraps it without altering it. No risk to Streamlit consumers.
+- Did NOT modify REPORTING_TREE or any role config. The cascade ruleset stays exactly as Streamlit sees it.
+- Did NOT add CRUD endpoints. That remains α3.
+- Did NOT add the LMS handoff endpoint. That's α4.
+- Did NOT write any React code.
+
+**One CGR1 finding recorded (full detail in GOVERNANCE_REALITY_INDEX.md Batch α2 correction):**
+
+The Streamlit page already enforced RBAC via the same cascade-walk function this batch invokes. The "drift" closed by α2 was therefore a **presentation-layer asymmetry** — Streamlit was correct, the API was not. α2 brings the API up to Streamlit's behavior. No business logic was reimplemented in the process; the helper module is a thin adapter that reuses `get_visible_staff` exactly as Streamlit does.
+
+**Cross-references:** Phase 3 Arc α1 (commit `886bd44`) is the immediate predecessor. Arc α3 (Pipeline CRUD endpoints) is the natural next batch. Full Batch α2 CGR1 correction in `docs/architecture/GOVERNANCE_REALITY_INDEX.md`.
+
+---
+
 ### 2026-06-10 v10.503 Phase 3 Arc α Batch α1 — Pipeline API consolidation; FastAPI endpoints routed through PipelineManager; G394 authored; PIPELINE_DOMAIN_AUDIT amended with Section 16
 
 **Type:** Architectural drift correction (presentation-canonical alignment). One new CRITICAL enforcement gate. One new Pydantic models module. One audit doc amendment.

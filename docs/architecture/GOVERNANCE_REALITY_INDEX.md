@@ -906,3 +906,113 @@ Before this batch: 393 (post-Arc-D2).
 After this batch: **394** (G394 added).
 
 ---
+
+## CGR1 Reality-Check Correction (v10.504 Phase 3 Arc α Batch α2) — Pipeline cascade scope enforcement
+
+**Type:** Architectural drift correction (presentation-canonical asymmetry).
+**Scope:** `utils/api.py` pipeline endpoints + new `utils/api_pipeline_scope.py` helper + new `scripts/audit.py::gate_pipeline_api_enforces_cascade_scope` (G395) + `tests/test_pipeline_scope_enforcement.py`.
+
+### Drift identified
+
+Before α2, the FastAPI pipeline endpoints (`/api/pipeline/summary` and `/api/pipeline/deals`, post-α1 routed through PipelineManager) returned the full PipelineManager dataset to any authenticated caller — no server-side scope filtering. The Streamlit page `pages/3_pipeline.py:47` filtered client-side via `get_visible_staff(user_data, staff_scores)` from `utils.core_audit`. **The cascade RBAC logic existed and was correctly applied for Streamlit; the API path simply did not invoke it.**
+
+This was documented as GAP-001 in `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Section 10:
+
+> "Cascade visibility not server-side. `/api/pipeline/deals` returns all deals regardless of caller. RBAC is currently client-side in Streamlit via `get_visible_staff()`. Production go-live REQUIRES server-side scope enforcement in every loan-workflow endpoint."
+
+Section 15.10 of the same audit traced the existing visibility chain end-to-end:
+
+```
+1. Page imports get_visible_staff from utils.core_audit
+2. Caller invokes: vis_staff = get_visible_staff(user_data, staff_scores)
+3. get_visible_staff walks REPORTING_TREE per role
+4. Page extracts vis_names + vis_codes from filtered DataFrame
+5. Page filters deals by staff_name in vis_names OR staff_code in vis_codes
+6. Backup deals appended regardless (out-of-tree exception)
+```
+
+The API path was missing steps 2-5 entirely.
+
+### Resolution
+
+A new module `utils/api_pipeline_scope.py` was created. It exports three public functions:
+
+- `get_staff_roster()` — caches `data/staff_register.xlsx` (1,438 rows verified same-turn) for 60 seconds. Thread-safe via module-level lock. Lazy-imports pandas.
+- `get_visible_staff_codes(user_data) -> set[str]` — wraps the canonical `get_visible_staff(user_data, get_staff_roster())` call and projects the result to a Python set of staff codes. Always includes the caller's own staff_code as a floor (safe default).
+- `filter_deals_by_visible_codes(deals, visible_codes)` — set-membership filter on `staff_code` OR `portfolio_owner_code` (per audit Section 15.4 portfolio-sovereignty model — the portfolio owner sees their deals even when another RM is actively pursuing them).
+
+Plus `invalidate_staff_roster_cache()` for admin endpoints (future arc) and tests.
+
+**The cascade-walk logic itself is NOT reimplemented.** The new module is a thin server-side adapter that supplies the roster DataFrame the API path otherwise lacks. If `REPORTING_TREE` changes, the API visibility changes automatically alongside Streamlit visibility — no duplicate-logic drift possible.
+
+Both `/api/pipeline/summary` and `/api/pipeline/deals` now apply the filter BEFORE any other processing (stage/category/unit filters, pagination, aggregation). The PostgreSQL primary path is untouched (data store concern, deferred).
+
+### Gate authored
+
+`G395 gate_pipeline_api_enforces_cascade_scope` (`scripts/audit.py`, ~130 LOC). AST-walks `utils/api.py`, locates `pipeline_summary` and `pipeline_deals` functions, walks each body for:
+
+- **`get_visible_staff_codes(user)` calls** — FAIL if absent.
+- **`filter_deals_by_visible_codes(...)` calls** — FAIL if absent.
+
+Additionally verifies `utils/api_pipeline_scope.py` exists and exports the three required functions.
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification)
+
+Same-turn counter-test executed: the scope filter block was removed programmatically from `pipeline_deals`, G395 was re-run, and the gate FAILED with two precise violations identifying both the missing `get_visible_staff_codes` and missing `filter_deals_by_visible_codes` calls. The file was then restored, G395 re-run, PASSED. The gate mechanically detects scope-enforcement drift.
+
+### Live behavior verification
+
+Tested against the real PipelineManager dataset (8 deals) + real staff_register.xlsx (1,438 rows):
+
+| Caller | Role / unit | Visible codes | Deals returned |
+|---|---|---|---|
+| `ADMIN001` (System Admin) | admin | 1,438 (full roster) | 8 of 8 |
+| `300722` Rodgers Weru | Teller, Thika | 1 (self only) | 1 (D0006, owned by 300722) |
+| `300600` Helena Mwaburi | Branch Manager, Dagoretti | 6 (her branch staff) | 1 (D0005, owned by 300600) |
+| `300100` (Random Teller) | Teller, Eastleigh | 1 (self only) | 0 (no deals owned by 300100) |
+
+Behavior matches the canonical `get_visible_staff` cascade walk exactly, because the same function is being invoked.
+
+### Tests
+
+`tests/test_pipeline_scope_enforcement.py` (NEW, ~290 LOC) — 13 regression tests, all green:
+
+| # | Test | Confirms |
+|---|---|---|
+| 1-3 | G395 registration / function exists / well-formed result | Gate is reachable |
+| 4 | G395 passes against current code | Post-α2 state clean |
+| 5-7 | Scope helper module structural tests | Helper file + 3 functions + endpoints invoke them |
+| 8 | Admin sees all pipeline deals | Live verification (admin) |
+| 9 | Teller sees only own deals | Live verification (self-only) |
+| 10 | Branch Manager sees branch staff deals | Live verification (unit-scoped) |
+| 11 | Random user with no deals sees none | Live verification (empty visibility) |
+| 12-13 | Roster cache behavior (TTL + invalidation) | Cache mechanics |
+
+19/19 cumulative tests (α2 13 + α1 10 + Arc D2 G393 9) pass — full prior surface intact.
+
+### What this batch DID
+
+- Authored `utils/api_pipeline_scope.py` (~210 LOC) — server-side cascade scope adapter wrapping the canonical `get_visible_staff` function.
+- Surgical edits to `utils/api.py` to invoke the scope helper in both pipeline endpoints. ~10 lines added per endpoint; PostgreSQL paths untouched.
+- Authored `gate_pipeline_api_enforces_cascade_scope` (G395) in `scripts/audit.py`. Registered above G394 in GATES dispatch.
+- Authored `tests/test_pipeline_scope_enforcement.py` (13 tests, all green).
+- Appended this CGR1 correction.
+- Appended Batch α2 entry to REVIVAL_LEDGER.md at top of entries section.
+
+### What this batch DID NOT do
+
+- Did NOT modify the PostgreSQL primary path. PG-side scope (requires `WHERE staff_code IN (...)` parameterized SQL) is a separate concern; covered in a later arc once data store migration roadmap is clearer.
+- Did NOT modify `utils.core_audit.get_visible_staff` or any REPORTING_TREE config. The canonical function stays as-is; α2 is purely additive (server-side adapter wrapping it).
+- Did NOT alter Streamlit pipeline page. Streamlit's pre-existing client-side filter continues to work; α2 simply makes the API match.
+- Did NOT add CRUD endpoints (α3 scope).
+- Did NOT add LMS handoff endpoint (α4 scope).
+- Did NOT write any React frontend code.
+
+### Gate count delta
+
+Before this batch: 394 (post-α1).
+After this batch: **395** (G395 added).
+
+---
