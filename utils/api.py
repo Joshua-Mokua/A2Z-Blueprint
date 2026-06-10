@@ -1316,6 +1316,308 @@ def pipeline_deal_advance(
     ).model_dump()
 
 
+# ── Pipeline Manager Queue Endpoints (v10.508 Phase 3 Arc α Batch α6) ──
+#
+# Manager-only endpoints for the validation queue + cancellation queue,
+# plus the cancel-request endpoint (open to any authenticated user).
+# Manager authority is determined by role-keyword matching (see
+# utils/api_pipeline_manager_actions.py::is_manager — Streamlit parity).
+# Cascade scope filtering reuses α2's get_visible_staff_codes.
+
+
+@app.get("/api/pipeline/queues/validation")
+def pipeline_queue_validation(user: dict = Depends(get_current_user)):
+    """List deals awaiting manager validation in caller's cascade.
+
+    Filter: stage in [Contacted...] AND not manager_validated AND
+    not cancel_requested AND not draft. Same filter as Streamlit
+    page line 1293-1294.
+
+    Manager-only — 403 for non-managers. The scope filter ensures
+    a manager only sees deals from staff under their cascade
+    (G395 alignment).
+    """
+    from utils.api_pipeline_manager_actions import is_manager
+    if not is_manager(user):
+        _audit("API_PIPELINE_QUEUE_FORBIDDEN", user, "validation queue access denied")
+        raise HTTPException(
+            status_code=403,
+            detail="Manager role required to access validation queue",
+        )
+
+    _audit("API_PIPELINE_QUEUE_VALIDATION", user)
+
+    from utils.api_pipeline_models import PipelineDeal
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    visible_codes = get_visible_staff_codes(user)
+    pm = _PM_for_api()
+    deals = pm.get_pending_validations(manager_codes=visible_codes)
+
+    return {
+        "deals":  [PipelineDeal.model_validate(d).model_dump() for d in deals],
+        "count":  len(deals),
+        "queue":  "validation",
+    }
+
+
+@app.get("/api/pipeline/queues/cancellation")
+def pipeline_queue_cancellation(user: dict = Depends(get_current_user)):
+    """List deals with pending cancel requests in caller's cascade.
+
+    Filter: cancel_requested AND not cancel_approved. Matches
+    Streamlit page line 1292.
+
+    Manager-only — 403 for non-managers.
+    """
+    from utils.api_pipeline_manager_actions import is_manager
+    if not is_manager(user):
+        _audit("API_PIPELINE_QUEUE_FORBIDDEN", user, "cancellation queue access denied")
+        raise HTTPException(
+            status_code=403,
+            detail="Manager role required to access cancellation queue",
+        )
+
+    _audit("API_PIPELINE_QUEUE_CANCELLATION", user)
+
+    from utils.api_pipeline_models import PipelineDeal
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    visible_codes = get_visible_staff_codes(user)
+    pm = _PM_for_api()
+    deals = pm.get_cancel_requests(manager_codes=visible_codes)
+
+    return {
+        "deals":  [PipelineDeal.model_validate(d).model_dump() for d in deals],
+        "count":  len(deals),
+        "queue":  "cancellation",
+    }
+
+
+@app.post("/api/pipeline/deals/{deal_id}/validate")
+def pipeline_deal_validate(
+    deal_id: str,
+    payload: "PipelineDealValidate",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Manager validates or queries a deal.
+
+    approved=True → DEAL_VALIDATED audit, deal becomes part of forecast.
+    approved=False → DEAL_QUERIED audit, deal returns to owner with note.
+
+    Mirrors Streamlit page 1329-1336.
+
+    Authorization: manager + scope. Note that the scope check uses
+    the existing α2 helper — a regional head can validate deals from
+    any staff under their region; a branch manager only their branch.
+    """
+    from utils.api_pipeline_manager_actions import is_manager
+    if not is_manager(user):
+        _audit("API_PIPELINE_VALIDATE_FORBIDDEN", user, f"deal_id={deal_id}")
+        raise HTTPException(
+            status_code=403,
+            detail="Manager role required to validate deals",
+        )
+
+    _audit("API_PIPELINE_VALIDATE_ATTEMPT", user,
+           f"deal_id={deal_id} approved={payload.approved}")
+
+    from utils.api_pipeline_mutations import (
+        emit_bsc_trigger, invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Scope check — manager can only validate deals under their cascade
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    if sc not in visible_codes:
+        _audit("API_PIPELINE_VALIDATE_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    pm.validate_deal(
+        deal_id,
+        user.get("username", ""),
+        payload.approved,
+        payload.note or "",
+    )
+
+    # Emit audit event matching Streamlit (line 1331 / 1335)
+    if payload.approved:
+        _audit("DEAL_VALIDATED", user, f"{deal_id}|note={(payload.note or '')[:60]}")
+    else:
+        _audit("DEAL_QUERIED", user, f"{deal_id}|note={(payload.note or '')[:60]}")
+
+    emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    updated = pm.get_deal(deal_id) or deal
+    return {
+        "deal":           updated,
+        "status":         "validated" if payload.approved else "queried",
+        "manager_validated": bool(payload.approved),
+    }
+
+
+@app.post("/api/pipeline/deals/{deal_id}/cancel/request")
+def pipeline_deal_cancel_request(
+    deal_id: str,
+    payload: "PipelineDealCancelRequest",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """RM requests cancellation of a deal in their cascade scope.
+
+    The request enters the manager's cancellation queue (see
+    /api/pipeline/queues/cancellation) for approve/reject decision.
+
+    Mirrors Streamlit page 1460-1463.
+
+    Authorization: any authenticated user, but the deal must be in
+    caller's scope (an RM can request cancel on their own deals; a
+    manager can request on any deal in their cascade). The actual
+    APPROVAL is restricted to managers (see /cancel/approve below).
+    """
+    _audit("API_PIPELINE_CANCEL_REQUEST_ATTEMPT", user, f"deal_id={deal_id}")
+
+    from utils.api_pipeline_manager_actions import validate_cancel_request_payload
+    from utils.api_pipeline_mutations import (
+        emit_bsc_trigger, invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    # Payload validation
+    payload_dict = payload.model_dump(exclude_unset=False)
+    ok, reason_text = validate_cancel_request_payload(payload_dict)
+    if not ok:
+        _audit("API_PIPELINE_CANCEL_REQUEST_REJECTED", user, reason_text)
+        raise HTTPException(status_code=400, detail=reason_text)
+
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Scope check
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if sc not in visible_codes and (not po or po not in visible_codes):
+        _audit("API_PIPELINE_CANCEL_REQUEST_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    pm.request_cancel(deal_id, user.get("username", ""), payload.reason)
+
+    # Match Streamlit audit emission (line 1462)
+    _audit("CANCEL_REQUESTED", user, f"{deal_id}|{payload.reason}")
+
+    emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    updated = pm.get_deal(deal_id) or deal
+    return {
+        "deal":               updated,
+        "status":             "cancel_requested",
+        "cancel_requested":   True,
+        "awaiting_manager":   True,
+    }
+
+
+@app.post("/api/pipeline/deals/{deal_id}/cancel/approve")
+def pipeline_deal_cancel_approve(
+    deal_id: str,
+    payload: "PipelineDealCancelApprove",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Manager approves or rejects a pending cancel request.
+
+    approve=True → deal transitions to Closed Lost, loss_reason set,
+    CANCEL_APPROVED audit.
+    approve=False → deal continues (cancel_approved flag set to False
+    on the record for audit), CANCEL_REJECTED audit.
+
+    Mirrors Streamlit page 1307-1315.
+
+    Authorization: manager + scope.
+    """
+    from utils.api_pipeline_manager_actions import is_manager
+    if not is_manager(user):
+        _audit("API_PIPELINE_CANCEL_APPROVE_FORBIDDEN", user, f"deal_id={deal_id}")
+        raise HTTPException(
+            status_code=403,
+            detail="Manager role required to approve cancellations",
+        )
+
+    _audit("API_PIPELINE_CANCEL_APPROVE_ATTEMPT", user,
+           f"deal_id={deal_id} approve={payload.approve}")
+
+    from utils.api_pipeline_mutations import (
+        emit_bsc_trigger, invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api
+
+    pm = _PM_for_api()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    if not deal.get("cancel_requested"):
+        raise HTTPException(
+            status_code=400,
+            detail="No pending cancellation request on this deal",
+        )
+
+    # Scope check
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    if sc not in visible_codes:
+        _audit("API_PIPELINE_CANCEL_APPROVE_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    pm.approve_cancel(
+        deal_id,
+        user.get("username", ""),
+        payload.approve,
+        payload.note or "",
+    )
+
+    # Match Streamlit audit emission (line 1309 / 1313)
+    if payload.approve:
+        _audit("CANCEL_APPROVED", user, f"{deal_id}|note={(payload.note or '')[:60]}")
+    else:
+        _audit("CANCEL_REJECTED", user, f"{deal_id}|note={(payload.note or '')[:60]}")
+
+    emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    updated = pm.get_deal(deal_id) or deal
+    return {
+        "deal":            updated,
+        "status":          "cancel_approved" if payload.approve else "cancel_rejected",
+        "cancel_approved": bool(payload.approve),
+    }
+
+
 # ── Credit Monitoring Endpoints ───────────────────────────────────
 @app.get("/api/credit/summary")
 def credit_summary(user: dict = Depends(get_current_user)):

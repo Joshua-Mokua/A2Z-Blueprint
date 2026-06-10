@@ -463,3 +463,85 @@ class PipelineDealMutationResponse(BaseModel):
                     "escalate."
     )
 
+
+# ────────────────────────────────────────────────────────────────────
+# Manager queue models (v10.508 Phase 3 Arc α Batch α6)
+# ────────────────────────────────────────────────────────────────────
+
+
+class PipelineDealValidate(BaseModel):
+    """Request body for POST /api/pipeline/deals/{id}/validate.
+
+    Manager either VALIDATES (approved=True → DEAL_VALIDATED audit,
+    deal becomes part of forecast) or QUERIES (approved=False →
+    DEAL_QUERIED audit, deal returns to owner with the note).
+
+    Mirrors Streamlit pages/3_pipeline.py:1329-1336.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    approved: bool = Field(
+        description="True = validate (include in forecast); "
+                    "False = query (return to owner)"
+    )
+    note: Optional[str] = Field(
+        default="",
+        description="Manager's note. Permissive — matches Streamlit "
+                    "which doesn't enforce a note on query either."
+    )
+
+
+class PipelineDealCancelRequest(BaseModel):
+    """Request body for POST /api/pipeline/deals/{id}/cancel/request.
+
+    Any RM can request cancellation of a deal in their cascade scope.
+    The request enters the manager's cancellation queue for review.
+    Validation requires a non-trivial reason (>= MIN_CANCEL_REASON_LEN
+    chars from utils/api_pipeline_manager_actions.py).
+
+    Mirrors Streamlit pages/3_pipeline.py:1460-1463.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    reason: str = Field(
+        min_length=1,
+        description="Why the deal should be cancelled. Visible to "
+                    "manager in their cancellation queue."
+    )
+
+
+class PipelineDealCancelApprove(BaseModel):
+    """Request body for POST /api/pipeline/deals/{id}/cancel/approve.
+
+    Manager either APPROVES the cancellation (approve=True -> deal
+    transitions to Closed Lost, CANCEL_APPROVED audit) or REJECTS it
+    (approve=False -> deal continues, CANCEL_REJECTED audit).
+
+    Mirrors Streamlit pages/3_pipeline.py:1307-1315.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    approve: bool = Field(
+        description="True = approve cancellation; False = reject "
+                    "(deal continues, cancel_requested flag cleared)"
+    )
+    note: Optional[str] = Field(
+        default="",
+        description="Manager's decision note. Visible on the deal "
+                    "record for audit trail."
+    )
+
+
+class PipelineManagerQueueResponse(BaseModel):
+    """Response shape for the two manager-queue GET endpoints.
+
+    Returns the filtered list of deals + count + queue identifier.
+    Same general shape as PipelineDealsResponse but with queue
+    metadata for the caller to distinguish which queue this came from.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    deals: List[PipelineDeal]
+    count: int
+    queue: str = Field(description="'validation' | 'cancellation'")
+

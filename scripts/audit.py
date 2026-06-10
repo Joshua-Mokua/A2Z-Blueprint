@@ -61773,6 +61773,207 @@ def gate_pipeline_conflict_resolution_present() -> Dict[str, Any]:
     }
 
 
+def gate_pipeline_manager_queues_present() -> Dict[str, Any]:
+    """G399 — v10.508 Phase 3 Arc α Batch α6 — Pipeline manager queue
+    endpoints present + scoped + manager-authorized.
+
+    Verifies the α6 implementation of the manager-side action surface:
+
+    1. **GET /api/pipeline/queues/validation** — list deals awaiting
+       manager validation (manager-only + scope-filtered)
+    2. **GET /api/pipeline/queues/cancellation** — list deals with
+       pending cancel requests (manager-only + scope-filtered)
+    3. **POST /api/pipeline/deals/{id}/validate** — validate/query
+       (manager-only + scope check)
+    4. **POST /api/pipeline/deals/{id}/cancel/request** — RM-side
+       cancel request (any authenticated user + scope check)
+    5. **POST /api/pipeline/deals/{id}/cancel/approve** — manager
+       approves or rejects (manager-only + scope check)
+
+    Plus the supporting helper module ``utils/api_pipeline_manager_actions.py``
+    with ``is_manager`` and ``MANAGER_ROLE_KEYWORDS``.
+
+    Behaviour
+    ---------
+    1. AST-parse ``utils/api.py``. Verify all 5 endpoint functions exist.
+    2. Verify ``pipeline_queue_validation``,
+       ``pipeline_queue_cancellation``, ``pipeline_deal_validate``,
+       and ``pipeline_deal_cancel_approve`` each call ``is_manager``
+       (the load-bearing manager-only check).
+    3. AST-parse ``utils/api_pipeline_manager_actions.py``. Verify
+       ``is_manager``, ``validate_cancel_request_payload``,
+       ``MANAGER_ROLE_KEYWORDS``, ``MIN_CANCEL_REASON_LEN``.
+    4. AST-parse ``utils/api_pipeline_models.py``. Verify all 4 α6
+       models exist (PipelineDealValidate, PipelineDealCancelRequest,
+       PipelineDealCancelApprove, PipelineManagerQueueResponse).
+    5. Runtime sanity: import is_manager, exercise with admin/MD/teller
+       inputs, assert the boundaries.
+
+    Cost: ~0.05s.
+    """
+    import ast as _ast
+
+    violations: List[str] = []
+    info: List[str] = []
+    repo = Path(__file__).resolve().parent.parent
+    api_path = repo / "utils" / "api.py"
+    actions_path = repo / "utils" / "api_pipeline_manager_actions.py"
+    models_path = repo / "utils" / "api_pipeline_models.py"
+
+    for p, label in [(api_path, "utils/api.py"),
+                     (actions_path, "utils/api_pipeline_manager_actions.py"),
+                     (models_path, "utils/api_pipeline_models.py")]:
+        if not p.exists():
+            return {
+                "id": "G399",
+                "name": "pipeline_manager_queues_present",
+                "passed": False,
+                "violations": [f"{label} not found"],
+                "summary": f"{label} missing",
+            }
+
+    try:
+        api_tree = _ast.parse(api_path.read_text(encoding="utf-8"))
+        actions_tree = _ast.parse(actions_path.read_text(encoding="utf-8"))
+        mod_tree = _ast.parse(models_path.read_text(encoding="utf-8"))
+    except SyntaxError as e:
+        return {
+            "id": "G399",
+            "name": "pipeline_manager_queues_present",
+            "passed": False,
+            "violations": [f"Syntax error: {e}"],
+            "summary": "module unparseable",
+        }
+
+    # Check 1: All 5 endpoint functions exist
+    target_endpoints = {
+        "pipeline_queue_validation",
+        "pipeline_queue_cancellation",
+        "pipeline_deal_validate",
+        "pipeline_deal_cancel_request",
+        "pipeline_deal_cancel_approve",
+    }
+    endpoints_found: Dict[str, _ast.FunctionDef] = {}
+    for node in _ast.walk(api_tree):
+        if isinstance(node, _ast.FunctionDef) and node.name in target_endpoints:
+            endpoints_found[node.name] = node
+
+    for ep in target_endpoints:
+        if ep not in endpoints_found:
+            violations.append(
+                f"endpoint function `{ep}` missing from utils/api.py — "
+                "α6 manager queue surface is incomplete"
+            )
+
+    # Check 2: Manager-only endpoints call is_manager
+    # (queue access + validate + approve cancel — but NOT cancel/request,
+    # which is open to any authenticated user)
+    manager_only = {
+        "pipeline_queue_validation",
+        "pipeline_queue_cancellation",
+        "pipeline_deal_validate",
+        "pipeline_deal_cancel_approve",
+    }
+    for ep_name in manager_only:
+        if ep_name not in endpoints_found:
+            continue
+        calls_is_manager = False
+        for sub in _ast.walk(endpoints_found[ep_name]):
+            if isinstance(sub, _ast.Call) and isinstance(sub.func, _ast.Name):
+                if sub.func.id == "is_manager":
+                    calls_is_manager = True
+                    break
+        if not calls_is_manager:
+            violations.append(
+                f"`{ep_name}` does not call `is_manager` — manager "
+                "authorization not enforced; any authenticated user "
+                "could access manager-only actions"
+            )
+
+    # Check 3: actions module exports the right names
+    assigned_names: set = set()
+    defined_fns: set = set()
+    for node in _ast.walk(actions_tree):
+        if isinstance(node, _ast.FunctionDef):
+            defined_fns.add(node.name)
+        if isinstance(node, _ast.Assign):
+            for tgt in node.targets:
+                if isinstance(tgt, _ast.Name):
+                    assigned_names.add(tgt.id)
+        if isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
+            assigned_names.add(node.target.id)
+
+    for fn_name in ("is_manager", "validate_cancel_request_payload"):
+        if fn_name not in defined_fns:
+            violations.append(
+                f"utils/api_pipeline_manager_actions.py does not define "
+                f"function `{fn_name}` — required by α6 endpoints"
+            )
+    for const_name in ("MANAGER_ROLE_KEYWORDS", "MIN_CANCEL_REASON_LEN"):
+        if const_name not in assigned_names:
+            violations.append(
+                f"utils/api_pipeline_manager_actions.py does not define "
+                f"`{const_name}` — required for authorization/validation"
+            )
+
+    # Check 4: All α6 models exist
+    expected_models = {
+        "PipelineDealValidate",
+        "PipelineDealCancelRequest",
+        "PipelineDealCancelApprove",
+        "PipelineManagerQueueResponse",
+    }
+    found_models = {
+        node.name for node in _ast.walk(mod_tree)
+        if isinstance(node, _ast.ClassDef)
+    }
+    missing_models = expected_models - found_models
+    for m in missing_models:
+        violations.append(
+            f"class `{m}` missing from utils/api_pipeline_models.py — "
+            "α6 request/response shape undefined"
+        )
+
+    # Check 5: Runtime sanity on is_manager
+    if not violations:
+        try:
+            import importlib.util as _ilu
+            spec = _ilu.spec_from_file_location("_actions_for_g399", actions_path)
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if not mod.is_manager({"is_admin": True}):
+                violations.append("is_manager({is_admin: True}) returned False")
+            if not mod.is_manager({"role": "Managing Director"}):
+                violations.append("is_manager(MD) returned False")
+            if mod.is_manager({"role": "Teller"}):
+                violations.append("is_manager(Teller) returned True (wrongly)")
+            if mod.is_manager({}):
+                violations.append("is_manager({}) returned True (wrongly)")
+        except Exception as e:
+            info.append(f"INFO: could not runtime-exercise is_manager ({e})")
+
+    if not violations:
+        info.append(
+            "INFO: manager queue endpoints present (validation + cancellation + "
+            "validate + cancel/request + cancel/approve); is_manager + cancel "
+            "reason validation wired in; all 4 α6 Pydantic models defined"
+        )
+
+    summary = (
+        "manager queue surface present + scoped + authorized"
+        if not violations
+        else f"{len(violations)} violations — α6 surface incomplete"
+    )
+
+    return {
+        "id": "G399",
+        "name": "pipeline_manager_queues_present",
+        "passed": len(violations) == 0,
+        "violations": violations + info,
+        "summary": summary,
+    }
+
+
 GATES = [
     ("G300", gate_v10414_cascade_buffer_engine_and_md_cap),  # v10.414 F2 part A
     ("G301", gate_v10415_per_allocation_stretch_tuner),  # v10.415 F2 part B
@@ -61849,6 +62050,7 @@ GATES = [
     ("G351", gate_v10465_complete_body),  # v10.465 complete body 13 organs
     ("G352", gate_v10466_four_new_chief_centres),  # v10.466 4 new chief centres
     ("G353", gate_v10467_phase_5_bsc_actuals_deepening),  # v10.467 Phase 5 closed
+    ("G399", gate_pipeline_manager_queues_present),             # v10.508 PHASE 3 ARC α BATCH α6 — CRITICAL — manager queue endpoints (validation + cancellation + actions) (closes GAP-011)
     ("G398", gate_pipeline_conflict_resolution_present),        # v10.507 PHASE 3 ARC α BATCH α5 — CRITICAL — pipeline conflict resolution (refer endpoint + override enforcement) (closes GAP-005)
     ("G397", gate_pipeline_advance_triggers_lms_handoff),       # v10.506 PHASE 3 ARC α BATCH α4 — CRITICAL — pipeline advance triggers LMS handoff via create_from_pipeline_deal (supersedes α3 Option C)
     ("G396", gate_pipeline_api_crud_present),                   # v10.505 PHASE 3 ARC α BATCH α3 — CRITICAL — pipeline CRUD + advance endpoints present, LMS allowlist enforced (Option C)

@@ -1374,3 +1374,143 @@ Tracker of differences between Streamlit-created vs API-created records:
 This divergence is deliberate and time-bounded. A future migration batch (~α7-α8) will switch Streamlit to use the canonical methods.
 
 ---
+
+## CGR1 Reality-Check Correction (v10.508 Phase 3 Arc α Batch α6) — Pipeline manager queue surface
+
+**Type:** Closes the manager-side action surface. One new CRITICAL enforcement gate. One new helper module. Five new endpoints. First batch in Arc α to ship an asymmetric authorization model.
+
+**Scope:** `utils/api_pipeline_manager_actions.py` (NEW) + `utils/api_pipeline_models.py` (extended with 4 new models) + `utils/api.py` (+5 endpoints) + `scripts/audit.py` (+G399) + `tests/test_pipeline_manager_queues.py` (NEW).
+
+### Drift identified
+
+Before α6, the FastAPI surface had read endpoints (α1-α2), CRUD + advance + LMS handoff (α3-α4), and conflict resolution (α5) — but no manager-side actions. A React frontend could create deals, advance them through pre-credit stages, trigger LMS handoff, even handle portfolio conflicts. But it couldn't VALIDATE deals (the pre-forecast manager gate per Streamlit page lines 1316-1336) or APPROVE CANCELLATIONS (the manager queue per lines 1290-1315). For both of those, the user had to fall back to Streamlit.
+
+This was the largest remaining gap in the basic-flow surface. GAP-011 explicitly called it out.
+
+### Asymmetric authorization — the load-bearing design choice
+
+α6 introduces a pattern that's new for this arc: the same endpoint *family* has different authorization rules for different members.
+
+- **Queue READs** are manager-only — non-managers shouldn't see other people's pending validations or cancellations
+- **Validate/query action** is manager-only — only managers can decide whether a deal enters the forecast
+- **Cancel REQUEST** is open to any authenticated user (with scope check) — RMs cancel their own work all the time ("lost to NCBA", "duplicate", "wrong segment")
+- **Cancel APPROVE** is manager-only — the request enters the manager's queue for decision
+
+The pattern mirrors Streamlit's flow exactly. Without it, RMs would have no API way to mark deals as cancelled — they'd have to ask a manager to do it via Streamlit, which defeats the purpose of having the API surface.
+
+**G399 protects this asymmetry structurally.** The gate verifies that:
+- 4 manager-only endpoints call `is_manager`
+- The cancel/request endpoint does NOT call `is_manager` (its dedicated test asserts the negation)
+
+If a future batch silently widens cancel/request to require manager role, the test fails. If a future batch silently narrows a queue endpoint to skip the manager check, G399 fails. Both directions of drift are guarded.
+
+### Resolution
+
+`utils/api_pipeline_manager_actions.py` (NEW) defines:
+
+```python
+MANAGER_ROLE_KEYWORDS = (
+    "managing",       # MD
+    "director",       # Director Retail / Director Commercial
+    "head of",        # Head of Retail / Head of SME / Head of Corporate
+    "regional",       # Regional Head
+    "branch manager", # Branch Manager
+    "chief",          # Chief Risk Officer, etc.
+    "manager",        # Generic — Branch Credit Manager / Operations Mgr
+    "supervisor",     # Operations supervisors
+    "credit manager", # Explicit (redundant with "manager" but explicit)
+    "operations manager",  # Explicit (redundant)
+)
+
+def is_manager(user):
+    if not user: return False
+    if user.get("is_admin"): return True
+    role = str(user.get("role", "") or "").lower().strip()
+    if not role: return False
+    return any(kw in role for kw in MANAGER_ROLE_KEYWORDS)
+```
+
+This is the exact mirror of `pages/3_pipeline.py:39`. The list is the load-bearing source of truth for α6 authorization.
+
+`utils/api.py` adds 5 endpoints (~280 LOC). The pattern for each:
+
+1. Optional manager check via `is_manager(user)` (skipped for cancel/request)
+2. Lazy imports (avoid circular deps)
+3. Optional payload validation (`validate_cancel_request_payload` for cancel/request)
+4. Fetch deal, 404 if absent
+5. Scope check via α2's `get_visible_staff_codes`, 403 if not in scope
+6. Call canonical `PipelineManager` method (`request_cancel` / `approve_cancel` / `validate_deal` or `get_pending_validations` / `get_cancel_requests`)
+7. Emit audit event matching Streamlit conventions exactly
+8. Trigger BSC recompute + invalidate cache
+9. Return updated deal
+
+### Gate authored
+
+`G399 gate_pipeline_manager_queues_present` (`scripts/audit.py`, ~210 LOC). Five checks:
+
+1. AST: all 5 endpoint functions exist
+2. AST: 4 manager-only endpoints call `is_manager`
+3. AST: actions module exports `is_manager`, `validate_cancel_request_payload`, `MANAGER_ROLE_KEYWORDS`, `MIN_CANCEL_REASON_LEN`
+4. AST: 4 α6 Pydantic models exist
+5. Runtime: import is_manager, exercise with admin/MD/teller inputs, assert boundaries
+
+Cost: ~0.05s.
+
+### Counter-test (CGR1 verification)
+
+Same-turn counter-test: the `is_manager` check was removed from `pipeline_deal_validate`. G399 FAILED with: "`pipeline_deal_validate` does not call `is_manager` — manager authorization not enforced; any authenticated user could access manager-only actions". After restore, G399 PASSED.
+
+### Tests
+
+`tests/test_pipeline_manager_queues.py` (NEW, ~310 LOC) — 22 tests:
+
+| # | Tests | Confirms |
+|---|---|---|
+| 1-4 | G399 plumbing | Gate registered + callable + well-formed + passes |
+| 5-13 | is_manager detection (9 scenarios) | Match Streamlit page line 39 across all 10 keywords + admin + defensive + case-insensitive |
+| 14-16 | validate_cancel_request_payload (happy / missing / too short) | Reason length enforcement |
+| 17-19 | Pydantic models parse + enforce required fields | Schema correctness |
+| 20 | All 5 route decorators present | Endpoint surface |
+| 21 | 4 manager-only endpoints call is_manager | Authorization wiring |
+| 22 | cancel/request endpoint does NOT call is_manager | Asymmetric authorization invariant |
+
+112 cumulative tests pass: 22 α6 + 20 α5 + 19 α4 + 19 α3 + 13 α2 + 10 α1 + 9 Arc D2.
+
+### What this batch DID
+
+- Added `is_manager`, `MANAGER_ROLE_KEYWORDS`, `validate_cancel_request_payload`, `MIN_CANCEL_REASON_LEN`.
+- Added 4 Pydantic models.
+- Added 5 endpoints with asymmetric authorization.
+- Authored `gate_pipeline_manager_queues_present` (G399).
+- Authored 22-test regression suite.
+- Appended Batch α6 entry to REVIVAL_LEDGER.
+- Appended this CGR1 correction.
+
+### What this batch DID NOT do
+
+- Did NOT migrate Streamlit's manager queue UX. Streamlit's inline queue rendering continues to work.
+- Did NOT add bulk-action endpoints (validate-all-matching-filter).
+- Did NOT add a dedicated "override notes pending review" view. Override notes are stored on the deal record (α5) and visible via the validation queue, but no dedicated review surface. Potential α7+ scope.
+- Did NOT touch `PipelineManager`, `LoanApplicationManager`, PostgreSQL, or React frontend.
+
+### Gate count delta
+
+Before this batch: 398 (post-α5).
+After this batch: **399** (G399 added).
+
+### Streamlit/API divergence note (carried forward)
+
+The α4/α5 divergence tracker remains valid:
+
+| Surface | Issue | Source |
+|---|---|---|
+| LoanApplication.product / id / created_via | Streamlit gaps fixed in API canonical method | α4 |
+| PipelineDeal.manager_override_note | Streamlit never collects; API requires | α5 |
+
+α6 does not introduce new divergence — both Streamlit and API use the same `PipelineManager` methods (`request_cancel`, `approve_cancel`, `validate_deal`) directly. Audit events emitted by both surfaces are identical.
+
+### Manager keyword drift risk (forward-looking)
+
+`MANAGER_ROLE_KEYWORDS` is duplicated between `utils/api_pipeline_manager_actions.py` and `pages/3_pipeline.py:39`. If a new manager role is added (e.g., "team lead", "deputy manager"), BOTH files must be updated. This duplication is the price of α6 not modifying Streamlit. A future migration batch could lift the constant into a shared module that both surfaces import — but it's a small risk given how rarely role taxonomy changes.
+
+---
