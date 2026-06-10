@@ -27,26 +27,33 @@ development across multiple concurrent arcs.
 
 ## Current certified state
 
-**Last commit on main:** `216171d` (v10.500 Phase 1 Batch 3d — doctrine refresh)
-**Last shipped batch:** v10.500 Phase 1 Batch 3d — 2026-05-26
+**Last commit on main:** `92c2e0a` (v10.500 Batch 3d follow-up — gitignored runtime audit files)
+**Phase 1 closure commit:** `f268330` (v10.500 Phase 1 Batch 3d — doctrine refresh)
+**Last shipped batch:** v10.501 Phase 2 Arc A Batch 4a — 2026-06-10 (password policy hardening)
 **Phase 1 status:** **CLOSED** — 10/10 gates green
+**Phase 2 status:** Arc A CLOSED (GAP-001 + GAP-005 closed). Arc B (rate limiting, GAP-006) next. Arc C (`users.json` tracking, GAP-002) after.
 **Governance doctrine in force:** CGR1 (reality-grounding) + Trap #11 (no fabrication) + Trap #12 (no paste cascade) + Trap #14 (no path-colliding extractions) — all active
 **Gate count:** 418 total (verified at commit `49e804f`)
+**Phase 2 commits (newest first):**
+- `[pending]` v10.501 Phase 2 Arc A Batch 4a — password policy helper + Streamlit `current_password` parity (closes GAP-001 + GAP-005)
+
 **Phase 1 commits (newest first):**
-- `216171d` v10.500 Phase 1 Batch 3d — doctrine refresh, observability regression test, OPERATIONAL_PROTOCOL.md, POLICY_GAPS.md
-- `[commit]`  v10.500 Phase 1 Batch 3c — bcrypt envelope migration + verify_pw multi-path + auto-upgrade instrumentation (1437 SHA-256 → envelope-wrapped)
+- `92c2e0a` v10.500 Batch 3d follow-up — gitignore runtime audit files
+- `f268330` v10.500 Phase 1 Batch 3d — doctrine refresh, observability regression test, OPERATIONAL_PROTOCOL.md, POLICY_GAPS.md (Phase 1 closed at 10/10 gates)
+- `216171d` v10.500 Phase 1 Batch 3c — bcrypt envelope migration + verify_pw multi-path + auto-upgrade instrumentation (1437 SHA-256 → envelope-wrapped)
 - `2aab56b` v10.500 Phase 1 Batch 3b — FastAPI must_change_password enforcement via must_rotate JWT scope + core.py hash_pw hotfix
 - `13d5258` v10.500 Phase 1 Batch 3a — Real AuthProvider + login lifecycle (replaces v10.495 stub)
 
 For full ledger: `docs/architecture/REVIVAL_LEDGER.md` (newest entry on top)
 For Phase 1 closure record: `docs/CHANGELOG_v10500_batch3d.md`
+For Phase 2 Arc A closure record: `docs/CHANGELOG_v10501_batch4a.md`
 For operational discipline: `docs/architecture/OPERATIONAL_PROTOCOL.md` (introduced Batch 3d)
 
 ---
 
 ## Current architectural reality (CGR1-grounded)
 
-These statements describe runtime as of commit `216171d`:
+These statements describe runtime as of commit `92c2e0a` + Batch 4a working tree:
 
 - **Governance Stage C is paused at the start of Phase 2.** Stage B
   (32 constitutional artifacts) shipped. Stage C wired ~5/35 gates
@@ -93,23 +100,26 @@ When in doubt about whether something is ACTIVE or ASPIRATIONAL, consult
 
 ## Active workstreams
 
-1. **Phase 2 planning (next focus).**
-   Now that Phase 1 React auth substrate is closed, Phase 2 scope to be
-   determined. Candidate themes: forced normalization to direct bcrypt
-   (replacing envelope), audit-log file gitignore migration with
-   `git rm --cached`, password policy strengthening (close the
-   stated-vs-enforced gap from `POLICY_GAPS.md`), `_APP_VERSION`
-   stamp policy formalization, additional React substrate features
-   (settings, voluntary password change, password reset).
+1. **Phase 2 Arc B — API rate limiting (next focus).**
+   GAP-006 closure. Persistence: in-memory `slowapi`, single-worker
+   FastAPI declared as operational constraint. Reference model:
+   Streamlit's existing 5-attempts-then-15-min lockout at
+   `pages/_login.py:194-204`. Target endpoints: `/api/auth/login`
+   (10/min/IP, 100/hr), `/api/auth/change-password` (5/min/token),
+   whoami-detailed unlimited.
 
-2. **Stage C governance enforcement (paused).**
+2. **Phase 2 Arc C — `users.json` tracking (after Arc B).**
+   GAP-002 closure via Path (B) — accept-and-document.
+   One `.gitignore` comment update, no behavioural change.
+
+3. **Stage C governance enforcement (paused).**
    ~5/35 gates wired through Batch 2e. Remaining gates G388-G417
-   tracked in `OI-66`. Will resume after Phase 2 planning.
+   tracked in `OI-66`. Will resume after Phase 2 closure.
 
-3. **PostgreSQL migration (incremental).**
+4. **PostgreSQL migration (incremental).**
    27/52 tables migrated. G163 ratchet enforces no regression.
 
-4. **mlops_model_registry adoption (incremental).**
+5. **mlops_model_registry adoption (incremental).**
    11 engines pending registration per G386.
 
 ---
@@ -191,22 +201,19 @@ See `docs/architecture/OPERATIONAL_PROTOCOL.md` for full doctrine. Key rules:
 
 Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
 
-1. **Stated-vs-enforced password policy.** `utils/core.py:313` email
-   template advertises "uppercase, lowercase, number, special character"
-   but `pages/_login.py:286-291` and Batch 3b's
-   `/api/auth/change-password` enforce length-only. Cross-platform
-   consistent; just weaker than advertised.
+1. ~~**Stated-vs-enforced password policy.**~~ **CLOSED** in v10.501
+   Batch 4a. `validate_password_policy(pw)` in `utils/core.py` is the
+   single source of truth, called from Streamlit `change_pw` +
+   `force_change_pw` forms and FastAPI `/api/auth/change-password`.
 2. **Envelope retirement.** Phase 2 should plan when to drop the
    transitional envelope verify path. Trigger: when the
    "Envelope-backed credential authenticated" INFO log stops appearing
-   in production logs for ≥30 days.
+   in production logs for ≥30 days. Status: DEFERRED.
 3. **`data/users.json` tracking inconsistency.** The file is listed in
-   `.gitignore` but is tracked. `git rm --cached` would un-track but
-   requires a bootstrap-from-generator workflow that hasn't been
-   designed.
+   `.gitignore` but is tracked. Phase 2 Arc C planned — Path (B) accept-and-document.
 4. **Auto-upgrade re-hash on envelope success.** Currently deferred —
    envelope hashes stay envelope-wrapped indefinitely. Phase 2 hardening
-   could add observable staged normalization.
+   could add observable staged normalization. Status: DEFERRED.
 
 ---
 
@@ -214,9 +221,12 @@ Recorded in `docs/architecture/POLICY_GAPS.md`. Highlights:
 
 Paste this into a new Claude chat:
 
-> Continuing A2Z v10.500. Last commit: `216171d` (Phase 1 Batch 3d closed).
-> Phase 1 complete: 10/10 gates green, React auth substrate fully wired.
-> Ready for Phase 2 scoping. Read `docs/continuity/SESSION_BOOTSTRAP.md`
-> for current state.
+> Continuing A2Z v10.501. Last commit: `92c2e0a` (Phase 1 Batch 3d
+> follow-up) + Batch 4a working tree (Phase 2 Arc A closure pending
+> commit). Phase 1 complete: 10/10 gates green. Phase 2 Arc A
+> complete: GAP-001 + GAP-005 closed via shared
+> `validate_password_policy` helper. Arc B (rate limiting, GAP-006)
+> is the next focus. Read `docs/continuity/SESSION_BOOTSTRAP.md` for
+> current state.
 
-That plus `userMemories` gives Claude full Phase 1 context immediately.
+That plus `userMemories` gives Claude full context immediately.

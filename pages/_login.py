@@ -7,7 +7,7 @@ import streamlit as st
 import hashlib, base64
 from pathlib import Path
 from utils.core_audit import audit_log
-from utils.core import UserManager
+from utils.core import UserManager, validate_password_policy
 
 try:
     from utils.core import get_org_config as _goc
@@ -232,13 +232,17 @@ div[data-testid="stForm"] {
                     st.error("Current password is incorrect.")
                 elif cp_new != cp_confirm:
                     st.error("New passwords do not match.")
-                elif len(cp_new) < 8:
-                    st.error("Password must be at least 8 characters.")
                 else:
-                    um.change_password(cp_user, cp_new)
-                    st.success("✅ Password updated. Please sign in.")
-                    st.session_state["login_mode"] = "login"
-                    st.rerun()
+                    # v10.501 Batch 4a — GAP-001 closure: enforce the
+                    # complexity policy advertised in utils/core.py:313.
+                    pw_ok, pw_reason = validate_password_policy(cp_new)
+                    if not pw_ok:
+                        st.error(pw_reason)
+                    else:
+                        um.change_password(cp_user, cp_new)
+                        st.success("✅ Password updated. Please sign in.")
+                        st.session_state["login_mode"] = "login"
+                        st.rerun()
             if c2.form_submit_button("← Back", use_container_width=True):
                 st.session_state["login_mode"] = "login"
                 st.rerun()
@@ -284,25 +288,47 @@ div[data-testid="stForm"] {
                 "🔑 <b>You must set a new password before continuing.</b></div>",
                 unsafe_allow_html=True)
             st.markdown(f"**Setting password for: {_fc_user}**")
+            # v10.501 Batch 4a — GAP-005 closure: require current password
+            # even on forced rotation, matching the FastAPI endpoint's
+            # defensive divergence. A user holding only a must_rotate
+            # session can no longer set an arbitrary password without
+            # proving knowledge of the current credential.
+            fp_current = st.text_input("Current password", type="password",
+                                        key="force_pw_current")
             fp_new     = st.text_input("New password", type="password",
-                                        placeholder="At least 8 characters")
+                                        placeholder="At least 8 characters, uppercase, "
+                                                    "lowercase, digit, special")
             fp_confirm = st.text_input("Confirm new password", type="password")
             if st.form_submit_button("Set password & sign in →", type="primary",
                                       use_container_width=True):
-                if fp_new != fp_confirm:
+                # Verify current password first — defensive even for
+                # forced rotation. Mirrors utils/api.py change-password
+                # endpoint behaviour (Batch 3b convention).
+                cur_ok, _cur_data = um.authenticate(_fc_user, fp_current)
+                if not cur_ok:
+                    audit_log("PASSWORD_CHANGE_FAILED", _fc_user,
+                              "current_password mismatch (force_change_pw)")
+                    st.error("Current password is incorrect.")
+                elif fp_new != fp_confirm:
                     st.error("Passwords do not match.")
-                elif len(fp_new) < 8:
-                    st.error("Password must be at least 8 characters.")
                 else:
-                    um.change_password(_fc_user, fp_new)
-                    _, user_data2 = um.authenticate(_fc_user, fp_new)
-                    if user_data2:
-                        st.session_state["logged_in"]  = True
-                        st.session_state["username"]   = _fc_user
-                        st.session_state["user_data"]  = user_data2
-                        st.session_state.pop("pending_pw_change", None)
-                        audit_log("PASSWORD_CHANGED", _fc_user, "Forced change on login")
-                        st.rerun()
+                    # v10.501 Batch 4a — GAP-001 closure: enforce the
+                    # complexity policy advertised in utils/core.py:313.
+                    pw_ok, pw_reason = validate_password_policy(fp_new)
+                    if not pw_ok:
+                        st.error(pw_reason)
+                    elif fp_new == fp_current:
+                        st.error("New password must differ from current password.")
+                    else:
+                        um.change_password(_fc_user, fp_new)
+                        _, user_data2 = um.authenticate(_fc_user, fp_new)
+                        if user_data2:
+                            st.session_state["logged_in"]  = True
+                            st.session_state["username"]   = _fc_user
+                            st.session_state["user_data"]  = user_data2
+                            st.session_state.pop("pending_pw_change", None)
+                            audit_log("PASSWORD_CHANGED", _fc_user, "Forced change on login")
+                            st.rerun()
 
     # ── IP / confidentiality notice ───────────────────────────────
     st.markdown(f"""

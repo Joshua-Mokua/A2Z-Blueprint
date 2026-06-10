@@ -30,7 +30,42 @@ intentional divergences that future work should consider closing.
 
 ## GAP-001 — Password complexity advertised but not enforced
 
-**Status:** OPEN
+**Status:** CLOSED (v10.501 Phase 2 Batch 4a)
+**Surfaced during:** Phase 1 Batch 3b (FastAPI `/api/auth/change-password`
+endpoint design)
+**Closed during:** Phase 2 Arc A Batch 4a (commit pending — pushed at
+Arc A phase boundary per OPERATIONAL_PROTOCOL)
+
+**Resolution:** Introduced `validate_password_policy(pw) -> (ok, reason)`
+in `utils/core.py` as the single source of truth for the policy
+(uppercase + lowercase + digit + special + min 8). Three call sites
+now share it:
+
+- `pages/_login.py` voluntary `change_pw` form (line 238)
+- `pages/_login.py` `force_change_pw` form (line 317)
+- `utils/api.py` `/api/auth/change-password` endpoint (line 501)
+
+Regression coverage: `tests/test_validate_password_policy.py` — 14
+test cases including every rule (positive + negative), every
+attacker-dictionary entry named in this gap's original risk paragraph
+(`password`, `12345678`, `Password1`, etc.), empty/non-string defensive
+cases, and a SECURITY pin that the reason string never echoes the
+candidate password.
+
+**Operational note on existing credentials:** the policy gates *new*
+passwords only — `verify_pw` is unchanged, so the 1438 existing
+bcrypt-backed and envelope-wrapped accounts continue to authenticate
+with their current credentials. The synthetic `EcoStaff<NNNN>`
+convention does not meet the new policy and would be rejected if
+proposed as a *new* password during testing; test scenarios that
+involve setting a fresh password must use a compliant string (e.g.
+`EcoStaff0001!`).
+
+---
+
+## GAP-001 — (historical record preserved below)
+
+**Status (historical, pre-closure):** OPEN
 **Surfaced during:** Phase 1 Batch 3b (FastAPI `/api/auth/change-password`
 endpoint design)
 
@@ -182,7 +217,25 @@ This is a small hardening; depth-of-defense rather than primary control.
 
 ## GAP-005 — Streamlit `force_change_pw` flow does not require current password
 
-**Status:** DEFERRED (defensive divergence already in place on API)
+**Status:** CLOSED (v10.501 Phase 2 Batch 4a)
+**Surfaced during:** Phase 1 Batch 3b
+**Closed during:** Phase 2 Arc A Batch 4a
+
+**Resolution:** `pages/_login.py` `force_change_pw` form now requires a
+`Current password` input field and verifies it via
+`um.authenticate(_fc_user, fp_current)` before applying the change.
+Streamlit is now at parity with FastAPI's stricter behaviour
+(introduced in Batch 3b). Failed-current-password attempts are
+audit-logged as `PASSWORD_CHANGE_FAILED` with reason
+`current_password mismatch (force_change_pw)`. The same form also
+adopts `validate_password_policy` (GAP-001 closure) and rejects
+new-equals-current (matching the FastAPI endpoint contract).
+
+---
+
+## GAP-005 — (historical record preserved below)
+
+**Status (historical, pre-closure):** DEFERRED (defensive divergence already in place on API)
 **Surfaced during:** Phase 1 Batch 3b
 
 **Gap:** Streamlit's forced-rotation flow at `pages/_login.py::elif
@@ -253,10 +306,22 @@ Pick one and codify in `OPERATIONAL_PROTOCOL.md`.
 
 ## Phase-by-phase status summary
 
-**Phase 1 (closed, v10.500 commit 216171d):** 7 gaps recorded. 0
-closed. 5 OPEN, 2 DEFERRED.
+**Phase 1 (closed, v10.500 commit f268330 / HEAD 92c2e0a):** 7 gaps
+recorded. 0 closed at Phase 1 boundary. 5 OPEN, 2 DEFERRED.
 
-**Phase 2 (next):** prioritize closing GAP-001 (policy strengthening)
-and GAP-002 (users.json tracking) — these have direct security
-relevance. GAP-006 (rate limiting) is also high-priority. GAP-003
-through GAP-005 are hygiene items.
+**Phase 2 Arc A (CLOSED, v10.501 Batch 4a):** GAP-001 and GAP-005
+closed via shared `validate_password_policy` helper + Streamlit
+`current_password` parity. Net status: 3 OPEN, 2 DEFERRED.
+
+**Phase 2 Arc B (next):** GAP-006 (rate limiting). Planned per
+SESSION_BOOTSTRAP. Persistence strategy: in-memory `slowapi`,
+single-worker FastAPI declared as operational constraint in
+`OPERATIONAL_PROTOCOL.md` when Arc B lands.
+
+**Phase 2 Arc C (after Arc B):** GAP-002 (`users.json` tracking) —
+direction (B) accept-and-document selected. Single-batch arc.
+
+**GAP-003 / GAP-004 / GAP-007 remain DEFERRED** per original
+recommendations — their triggers (observability data, established
+Phase 2 token discipline, OPERATIONAL_PROTOCOL section) have not
+materialised yet.

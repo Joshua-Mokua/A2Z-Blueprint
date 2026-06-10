@@ -467,7 +467,7 @@ def change_password(
     forced   = (user.get("scope") == TOKEN_SCOPE_MUST_ROTATE)
 
     try:
-        from utils.core import UserManager
+        from utils.core import UserManager, validate_password_policy
         um = UserManager()
     except Exception as e:
         logger.error(f"UserManager init failed during password change: {e}")
@@ -492,16 +492,19 @@ def change_password(
         )
 
     # ── Validate new password ────────────────────────────────────────
-    # Length-only policy mirrors Streamlit's actual enforcement at
-    # pages/_login.py:286. Stricter complexity rules are documented as
-    # aspirational in core.py:313 but not currently enforced anywhere —
-    # Batch 3b matches reality, not doctrine, per CGR1.
-    if len(req.new_password) < 8:
+    # v10.501 Batch 4a: closes GAP-001 by enforcing the same complexity
+    # policy advertised in utils/core.py:313 (the new-account email
+    # template). validate_password_policy() is the single source of
+    # truth, shared with Streamlit's change_pw and force_change_pw forms.
+    # The helper returns (ok, reason); the reason is safe to expose to
+    # the caller as the HTTPException detail.
+    pw_ok, pw_reason = validate_password_policy(req.new_password)
+    if not pw_ok:
         _audit("API_PASSWORD_CHANGE_FAILED", user,
-               "new_password too short (<8 chars)")
+               f"new_password policy violation: {pw_reason}")
         raise HTTPException(
             status_code=400,
-            detail="New password must be at least 8 characters",
+            detail=pw_reason,
         )
     if req.new_password == req.current_password:
         _audit("API_PASSWORD_CHANGE_FAILED", user,

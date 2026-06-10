@@ -5630,6 +5630,62 @@ def photo_avatar_html(staff_code: str, staff_name: str,
     return ""
 
 
+# ── Password policy validator (v10.501 Batch 4a) ─────────────────────
+# Closes GAP-001: doctrine and email templates advertised a strong
+# password policy (uppercase + lowercase + digit + special character,
+# minimum 8) but enforcement at every call site was length-only. This
+# helper is the SINGLE SOURCE OF TRUTH for the policy. Called from:
+#
+#   - pages/_login.py  (voluntary change_pw form + force_change_pw form)
+#   - utils/api.py     (/api/auth/change-password endpoint)
+#
+# CGR1 doctrine: this validator matches what utils/core.py:313 advertises
+# in the new-account email template. If the policy ever changes, the
+# email template and this function must change together.
+#
+# SECURITY: never logs, returns, or includes the password in the reason
+# string. Only the rule that was violated is named.
+
+# Character classes used by the policy. Defined as module-level constants
+# so tests can introspect what the policy enforces without parsing strings.
+_PWD_MIN_LENGTH      = 8
+_PWD_SPECIAL_CHARS   = "!@#$%^&*()_+-=[]{}|;:'\",.<>/?`~\\"
+
+def validate_password_policy(pw: str) -> tuple:
+    """Validate a candidate password against the A2Z policy.
+
+    Returns:
+        (ok: bool, reason: str)
+        - (True, "")                         on accept
+        - (False, "<human-readable reason>") on reject
+
+    Policy (mirrors utils/core.py:313 new-account email template):
+        - At least 8 characters
+        - Contains at least one uppercase letter (A-Z)
+        - Contains at least one lowercase letter (a-z)
+        - Contains at least one digit (0-9)
+        - Contains at least one special character from _PWD_SPECIAL_CHARS
+
+    The reason string is suitable for direct display to end users
+    (Streamlit st.error, FastAPI HTTPException detail). It never
+    includes the password itself.
+    """
+    if not isinstance(pw, str):
+        return False, "Password must be a string."
+    if len(pw) < _PWD_MIN_LENGTH:
+        return False, f"Password must be at least {_PWD_MIN_LENGTH} characters."
+    if not any(c.isupper() for c in pw):
+        return False, "Password must contain at least one uppercase letter."
+    if not any(c.islower() for c in pw):
+        return False, "Password must contain at least one lowercase letter."
+    if not any(c.isdigit() for c in pw):
+        return False, "Password must contain at least one digit."
+    if not any(c in _PWD_SPECIAL_CHARS for c in pw):
+        return False, ("Password must contain at least one special "
+                       "character (e.g. !@#$%^&*).")
+    return True, ""
+
+
 class UserManager:
     def __init__(self):
         self.users_file = DATA_DIR / "users.json"

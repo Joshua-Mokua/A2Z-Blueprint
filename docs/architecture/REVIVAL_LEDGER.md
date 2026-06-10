@@ -61,6 +61,45 @@ Each entry follows this shape:
 
 ---
 
+### 2026-06-10 v10.501 Phase 2 Arc A Batch 4a — Password policy hardening (closes GAP-001 + GAP-005)
+
+**Type:** Security hardening + doctrine harmonization
+**Owner:** Joshua + Claude
+**Rationale:** Phase 1 closed with seven recorded policy gaps in `POLICY_GAPS.md`. The two highest-blast-radius items pair naturally — GAP-001 (password complexity advertised in the new-account email template at `utils/core.py:313` but enforced as length-only everywhere) and GAP-005 (Streamlit's `force_change_pw` flow lacks the `current_password` verify that the FastAPI endpoint requires). They touch the same forms in `pages/_login.py` and bundle without scope creep. The voluntary `change_pw` block was also included in scope after same-turn inspection found it had the same length-only weakness — fixing only the forced flow would have left the policy asymmetric and would have failed the CGR1 honesty test ("doctrine bends to reality, not reality to doctrine"). Single source of truth approach chosen — `validate_password_policy(pw) -> (ok, reason)` in `utils/core.py` — to make asymmetric weakening impossible going forward.
+
+**Files shipped:**
+- `utils/core.py` — new module-level `validate_password_policy()` (55 lines including docstring) inserted before `class UserManager:`. Pure function, no UserManager state, suitable for both Streamlit and FastAPI call paths. Module-level constants `_PWD_MIN_LENGTH = 8` and `_PWD_SPECIAL_CHARS` exposed so tests can introspect without parsing strings.
+- `utils/api.py` — `/api/auth/change-password` endpoint (line 455) replaces the length-only check at the former line 499 with a `validate_password_policy()` call. Deferred import pattern follows the existing convention (matches the `UserManager` import at the same call site). Stale CGR1 comment ("Length-only policy mirrors Streamlit's actual enforcement... Batch 3b matches reality, not doctrine") replaced with the Batch 4a closure comment.
+- `pages/_login.py` — voluntary `change_pw` form (now line 238) and `force_change_pw` form (now line 317) both adopt the helper. `force_change_pw` additionally gains a `Current password` input field, a `um.authenticate()` verify call, and a `PASSWORD_CHANGE_FAILED` audit log on current-password mismatch. Defensive `new == current` check added to `force_change_pw` to match the FastAPI endpoint contract.
+- `tests/test_validate_password_policy.py` NEW — 14 test cases including parameterised accept cases, one negative per rule, every attacker-dictionary entry named in GAP-001's risk paragraph (`password`, `12345678`, `Password1`, `aaaaaaaa`, etc.), defensive non-string inputs, contract tests (return shape), and a SECURITY pin that the reason string never echoes the candidate password.
+- `docs/architecture/POLICY_GAPS.md` — GAP-001 and GAP-005 flipped to CLOSED with batch references; historical pre-closure records preserved below the new status block per RL1 append-only discipline. Phase-by-phase summary updated.
+- `docs/architecture/REVIVAL_LEDGER.md` — this entry.
+- `docs/continuity/SESSION_BOOTSTRAP.md` — refreshed stale commit hash references (the Phase 1 closure section had `216171d` labelled as Batch 3d, but `216171d` is Batch 3c; actual Batch 3d is `f268330`; HEAD is `92c2e0a`). Phase 2 status section added. Closes drift watchlist item #1 from the Phase 2 orientation assessment.
+- `docs/CHANGELOG_v10501_batch4a.md` NEW — per-batch closure record.
+- `app.py` — `_APP_VERSION` bumped to `v10.501-batch4a-2026.06.10`.
+
+**Verification:**
+- Python `ast.parse` clean on all three modified `.py` files (`utils/core.py`, `utils/api.py`, `pages/_login.py`).
+- Helper smoke-tested against 14 representative inputs during batch authoring — all pass including the GAP-001 risk-paragraph cases (`password`, `12345678`, `Password1` all correctly rejected; `Abcdef1!`, `MyP@ssw0rd` correctly accepted).
+- `grep` confirmed zero `len(...) < 8` length-only checks remain on the password change paths across all three files.
+- Regression test ships in the same batch as the closure (mandatory-test-per-closure pattern that OPERATIONAL_PROTOCOL flagged as a Phase 2 protocol candidate — elevated here).
+
+**Operational notes:**
+- The policy gates *new* passwords only — `verify_pw` is unchanged. All 1438 existing bcrypt-backed and envelope-wrapped accounts continue to authenticate with their current credentials.
+- The synthetic `EcoStaff<NNNN>` credential convention does NOT meet the new policy. Existing accounts using this convention can still log in; what cannot pass is *proposing* such a string as a NEW password during testing. Test flows that exercise password rotation must use a compliant string (e.g. `EcoStaff0001!`).
+- `verify_pw` is intentionally not retroactively applying the policy — that would invalidate every existing credential, which is a separate (and probably-unwanted) decision belonging to a different arc.
+
+**Trap discipline applied:**
+- **Trap #11** — every claim in this entry is grounded in same-turn inspection: `utils/core.py:5730-5808` (helper neighbours), `pages/_login.py:215-244` (voluntary change_pw template), `pages/_login.py:278-305` (force_change_pw block), `utils/api.py:455-540` (endpoint), `utils/core.py:313` (email template), POLICY_GAPS GAP-001 and GAP-005 sections in full.
+- **Trap #12** — ZIP delivery, full replacement files for each modified path, operator extracts via `xcopy` / `copy /Y` per OPERATIONAL_PROTOCOL.
+- **Trap #14** — staging folder `_batch4a_payload/` is namespaced and cannot collide with `utils/`, `pages/`, `tests/`, `docs/`, or `app.py` at destination.
+- **Backup-before-mutation** — N/A. This batch makes zero writes to credential or audit data files. Code-only changes; no `data/users.json` mutation.
+- **Silent-except discipline** — no new bare `except Exception: pass` introduced. Audit logging on every failed-path branch.
+
+**Cross-references:** GAP-001 and GAP-005 closure records in `docs/architecture/POLICY_GAPS.md`. Regression test in `tests/test_validate_password_policy.py`. Phase 2 Arc B (rate limiting, closes GAP-006) sequenced next per Phase 2 orientation plan.
+
+---
+
 ### 2026-05-26 v10.500 Phase 1 Batch 3d — Doctrine refresh + Phase 1 closure
 
 **Type:** Doctrine harmonization + observability gap closure
