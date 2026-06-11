@@ -36,7 +36,7 @@
 //   - Linked deals for accounts pipeline
 //   - Manager "assign to" override
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
@@ -125,9 +125,37 @@ export function PipelineCreate() {
   const overrideNoteTooShort = hasConflict && conflictPath === 'override'
     && overrideNote.trim().length < MIN_OVERRIDE_NOTE_LEN;
 
-  // When category changes, ensure stage is valid for the new category
-  // (don't auto-mutate stage here — let the user see the change explicitly)
+  // When category changes, ensure stage is valid for the new category.
+  // β5.1: AUTO-UPDATE stage to the first option for the new category.
+  // β3 originally chose NOT to auto-update ("let user see change explicitly")
+  // but that creates a confusing failure mode where the dropdown LOOKS
+  // filled with a valid-seeming value (e.g. "Lead") but is invalid for
+  // the current category, and submit fails with a "Stage X not valid for
+  // Y pipeline" error that users find confusing because the field appears
+  // filled. Auto-update eliminates that failure entirely.
   const stageIsValidForCategory = stageOptions.includes(stage);
+
+  useEffect(() => {
+    if (!stageOptions.includes(stage)) {
+      setStage(stageOptions[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, stageOptions]);
+
+  // ── Live field error clearing (β5.1) ─────────────────────────────────
+  //
+  // When a user starts typing in a field that's currently flagged red,
+  // clear that field's error immediately — don't wait for re-submit.
+  // Without this, users see a red field, fix it, and the red persists
+  // until they hit Submit again, which feels broken.
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   // ── Validation ───────────────────────────────────────────────────────
   //
@@ -437,6 +465,24 @@ export function PipelineCreate() {
           </div>
         )}
 
+        {/* ─────────── Required fields hint (β5.1) ───────────
+            Single-line caption telling user what's required for the
+            current submission path. Updates dynamically when the user
+            toggles "has conflict" or picks "Refer" path.
+        */}
+        <div className="mb-4 px-4 py-2 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-900">
+          <span className="font-semibold">Required for this path:</span>{' '}
+          {isReferPath ? (
+            <>Client name · Portfolio owner staff code · Portfolio owner name · Referred-to name</>
+          ) : hasConflict && conflictPath === 'override' ? (
+            <>Client name · Product type · Deal value · Stage · Portfolio owner code/name · Override note (≥{MIN_OVERRIDE_NOTE_LEN} chars)</>
+          ) : hasConflict ? (
+            <>Client name · Product type · Deal value · Stage · Portfolio owner code/name</>
+          ) : (
+            <>Client name · Product type · Deal value · Stage</>
+          )}
+        </div>
+
         {/* ─────────── Customer section ─────────── */}
         <Card stripe="primary">
           <Card.Header>
@@ -450,7 +496,7 @@ export function PipelineCreate() {
                   label="Client name *"
                   placeholder="e.g. John Otieno Kamau"
                   value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
+                  onChange={(e) => { setClientName(e.target.value); clearFieldError('clientName'); }}
                   disabled={mutations.loading}
                   error={fieldErrors.clientName}
                 />
@@ -545,7 +591,7 @@ export function PipelineCreate() {
                 label="Product type *"
                 placeholder="e.g. Business Loan"
                 value={productType}
-                onChange={(e) => setProductType(e.target.value)}
+                onChange={(e) => { setProductType(e.target.value); clearFieldError('productType'); }}
                 disabled={mutations.loading}
                 helper="Quick pick from common products below, or type your own."
                 error={fieldErrors.productType}
@@ -576,7 +622,7 @@ export function PipelineCreate() {
                   placeholder={category === 'Account' ? 'e.g. 1' : 'e.g. 5000000'}
                   type="number"
                   value={dealValue}
-                  onChange={(e) => setDealValue(e.target.value)}
+                  onChange={(e) => { setDealValue(e.target.value); clearFieldError('dealValue'); }}
                   disabled={mutations.loading}
                   helper={Number.isFinite(dealValueNum) && dealValueNum > 0
                     ? `${branding?.currency_symbol ?? 'KES'} ${dealValueNum.toLocaleString()}`
@@ -590,7 +636,7 @@ export function PipelineCreate() {
                 </label>
                 <select
                   value={stage}
-                  onChange={(e) => setStage(e.target.value)}
+                  onChange={(e) => { setStage(e.target.value); clearFieldError('stage'); }}
                   disabled={mutations.loading}
                   aria-invalid={!!fieldErrors.stage}
                   className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-base text-gray-900 focus:outline-none focus:ring-2 ${
@@ -727,7 +773,7 @@ export function PipelineCreate() {
                     label="Portfolio owner staff code *"
                     placeholder="e.g. 0123"
                     value={portfolioOwnerCode}
-                    onChange={(e) => setPortfolioOwnerCode(e.target.value)}
+                    onChange={(e) => { setPortfolioOwnerCode(e.target.value); clearFieldError('portfolioOwnerCode'); }}
                     disabled={mutations.loading}
                     error={fieldErrors.portfolioOwnerCode}
                   />
@@ -737,7 +783,7 @@ export function PipelineCreate() {
                     label="Portfolio owner name *"
                     placeholder="e.g. Jane Mwangi"
                     value={portfolioOwnerName}
-                    onChange={(e) => setPortfolioOwnerName(e.target.value)}
+                    onChange={(e) => { setPortfolioOwnerName(e.target.value); clearFieldError('portfolioOwnerName'); }}
                     disabled={mutations.loading}
                     error={fieldErrors.portfolioOwnerName}
                   />
@@ -783,7 +829,7 @@ export function PipelineCreate() {
                     label="Referred to (named recipient) *"
                     placeholder="Usually the portfolio owner"
                     value={referredTo}
-                    onChange={(e) => setReferredTo(e.target.value)}
+                    onChange={(e) => { setReferredTo(e.target.value); clearFieldError('referredTo'); }}
                     disabled={mutations.loading}
                     error={fieldErrors.referredTo}
                   />
@@ -811,7 +857,7 @@ export function PipelineCreate() {
                 </label>
                 <textarea
                   value={overrideNote}
-                  onChange={(e) => setOverrideNote(e.target.value)}
+                  onChange={(e) => { setOverrideNote(e.target.value); clearFieldError('overrideNote'); }}
                   disabled={mutations.loading}
                   placeholder="Why is the override appropriate? This is reviewed by management."
                   rows={3}
