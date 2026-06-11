@@ -256,6 +256,74 @@ These routers are imported and mounted by `utils/api.py` in the startup block:
 
 ---
 
+
+### Pipeline domain (12 endpoints; Arc α α1–α7, v10.502–v10.509)
+
+Endpoints expose `PipelineManager` (`utils/core.py`) to React. All require Bearer JWT auth. All filter by cascade scope via `get_visible_staff_codes` (`utils/api_pipeline_scope.py`). Mutating endpoints emit audit events via the canonical `_audit(...)` wrapper (`utils/api.py:312`) per T2 doctrine.
+
+**Pattern note:** Pipeline uses an attempt/outcome dual-emit pattern. Every mutation emits an `API_PIPELINE_X_ATTEMPT` event first (the gate event) and one of `API_PIPELINE_X_REJECTED` / `_FORBIDDEN` / business-success-event (e.g. `DEAL_ADDED`). The dual emission allows audit dashboards to reconstruct intent-vs-outcome separately.
+
+**Read endpoints (5):**
+
+| Verb | Path | Audit (success) | Auth gate |
+|---|---|---|---|
+| GET | `/api/pipeline/summary` | `API_PIPELINE_SUMMARY` | In scope (returns aggregate) |
+| GET | `/api/pipeline/deals?stage=X&unit=Y&limit=N` | `API_PIPELINE_DEALS` | In scope, query filters applied post-scope |
+| GET | `/api/pipeline/deals/{deal_id}` | `API_PIPELINE_DEAL_DETAIL` | In scope + per-deal permissions object returned |
+| GET | `/api/pipeline/queues/validation` | `API_PIPELINE_QUEUE_VALIDATION` (success) / `API_PIPELINE_QUEUE_FORBIDDEN` (denied) | Manager-tier |
+| GET | `/api/pipeline/queues/cancellation` | `API_PIPELINE_QUEUE_CANCELLATION` (success) / `API_PIPELINE_QUEUE_FORBIDDEN` (denied) | Manager-tier |
+
+**Write endpoints (7):**
+
+| Verb | Path | Audit events emitted | Auth gate |
+|---|---|---|---|
+| POST | `/api/pipeline/deals` (201) | `API_PIPELINE_CREATE_ATTEMPT` + `DEAL_ADDED` (success) or `API_PIPELINE_CREATE_REJECTED` (validation failure) | In scope + α5 conflict-resolution semantics |
+| POST | `/api/pipeline/deals/refer` (201) | `API_PIPELINE_REFER_ATTEMPT` + `DEAL_REFERRED` (success) or `API_PIPELINE_REFER_REJECTED` | In scope; portfolio owner becomes target |
+| PUT | `/api/pipeline/deals/{deal_id}` | `API_PIPELINE_UPDATE_ATTEMPT` + `DEAL_UPDATED` (success) or `API_PIPELINE_UPDATE_FORBIDDEN` (no permission) | Owner or manager-in-scope |
+| POST | `/api/pipeline/deals/{deal_id}/advance` | `API_PIPELINE_ADVANCE_ATTEMPT` + `API_PIPELINE_ADVANCED` (success) or `API_PIPELINE_ADVANCE_REJECTED` / `API_PIPELINE_ADVANCE_FORBIDDEN`. On Won→LMS handoff also emits `LMS_APPLICATION_CREATED`; if LMS create fails: `API_PIPELINE_ADVANCE_LMS_FAILED` | Owner or manager-in-scope |
+| POST | `/api/pipeline/deals/{deal_id}/validate` | `API_PIPELINE_VALIDATE_ATTEMPT` + `DEAL_VALIDATED` (approved) or `DEAL_QUERIED` (needs info) or `API_PIPELINE_VALIDATE_FORBIDDEN` | Manager-tier |
+| POST | `/api/pipeline/deals/{deal_id}/cancel/request` | `API_PIPELINE_CANCEL_REQUEST_ATTEMPT` + `CANCEL_REQUESTED` (success) or `API_PIPELINE_CANCEL_REQUEST_REJECTED` / `API_PIPELINE_CANCEL_REQUEST_FORBIDDEN` | Owner only (the RM requests; manager approves) |
+| POST | `/api/pipeline/deals/{deal_id}/cancel/approve` | `API_PIPELINE_CANCEL_APPROVE_ATTEMPT` + `CANCEL_APPROVED` (approve) or `CANCEL_REJECTED` (reject the cancel request) or `API_PIPELINE_CANCEL_APPROVE_FORBIDDEN` | Manager-tier |
+
+**Domain audit detail:** Cross-references `docs/architecture/PIPELINE_DOMAIN_AUDIT.md` Sections 1–17 for the full doctrine (cascade walk semantics, α5 conflict-resolution model, validation-queue mechanics, BSC credit attribution).
+
+---
+
+### LMS domain (5 endpoints; α8, v10.515)
+
+Endpoints expose `LoanApplicationManager` (`utils/core.py:5267`) to React. **Mounted via `APIRouter`** (`utils/api_lms_routes.py`) rather than `@app.method` decorators directly in `api.py` — first use of APIRouter pattern in this codebase. All require Bearer JWT auth.
+
+**Audit emission note — T2 canonical-emitter gap:** These routes call `utils.core_audit.audit_log(...)` directly rather than the `_audit(...)` wrapper at `utils/api.py:312`. See `TELEMETRY_MAP.md` candidate GAP-018 for the T2 discipline issue this creates and resolution paths.
+
+| Verb | Path | Audit | Auth gate |
+|---|---|---|---|
+| GET | `/api/lms/applications` | (no audit — read-only) | Cascade scope + analyst override (caller's staff_code matches `analyst.code` overrides cascade) |
+| GET | `/api/lms/applications/{app_id}` | (no audit — read-only) | Per-app permissions object returned (`can_view`, `can_update`, `can_assign`, `can_record_decision`) |
+| POST | `/api/lms/applications/{app_id}/assign` | `LMS_ANALYST_ASSIGNED` (detail: `{app_id}\|{analyst_code}`) | Manager-tier, status must be `submitted` |
+| PUT | `/api/lms/applications/{app_id}` | `LMS_APPLICATION_UPDATED` (detail: `{app_id}`) | Owner / assigned analyst / manager-in-scope, status must be `submitted` or `assigned` |
+| POST | `/api/lms/applications/{app_id}/decision` | `LMS_DECISION_APPROVED` / `LMS_DECISION_DECLINED` / `LMS_DECISION_RETURNED` (detail: `{app_id}\|{authority}`) | Manager-tier, status must be `submitted` or `assigned` |
+
+**Domain audit detail:** Cross-references `PIPELINE_DOMAIN_AUDIT.md` Section 18 (α8 batch specification, scope exclusions, enum-vs-data discrepancy as candidate GAP-017).
+
+---
+
+### Credit Admin domain (4 endpoints; α9, v10.518)
+
+Endpoints expose `CreditAdminManager` (`utils/core.py`) to React. **Mounted via `APIRouter`** (`utils/api_credit_admin_routes.py`) — second use of the pattern after α8. All require Bearer JWT auth.
+
+**Same T2 gap as LMS** — uses `audit_log()` directly. See GAP-018.
+
+| Verb | Path | Audit | Auth gate |
+|---|---|---|---|
+| GET | `/api/credit-admin/cases` | (no audit) | Cascade scope by `rm_code` (no analyst-override; see Section 19.5) |
+| GET | `/api/credit-admin/cases/{case_id}` | (no audit) | Per-case permissions object (`can_view`, `can_fulfill_condition`, `can_disburse`) |
+| POST | `/api/credit-admin/cases/{case_id}/conditions/fulfill` | `CREDIT_ADMIN_CONDITION_FULFILLED` (detail: `{case_id}\|{condition_type}\|{officer_name}`) | Anyone in scope, case not disbursed |
+| POST | `/api/credit-admin/cases/{case_id}/disburse` | `CREDIT_ADMIN_DISBURSED` (detail: `{case_id}\|{authority}`) | Manager-tier, all_conditions_met required, case not already disbursed |
+
+**Domain audit detail:** Cross-references `PIPELINE_DOMAIN_AUDIT.md` Section 19 (α9 batch specification, deliberate scope exclusions including no `disbursed=True` setter — that's a finance-system handoff).
+
+**Arc α surface summary:** 21 endpoints (Pipeline 12 + LMS 5 + Credit Admin 4) across three loan-origination domains. Same auth model (cascade scope + tier check + state guardrails). Same response shape (`{detail, application/deal/case, permissions, status}`). Same audit detail format (`{entity_id}|{additional_keys}`). The contract uniformity means React frontend batches consuming these APIs (β5 LMS UI, β6 Credit Admin UI, post-β5) can use near-identical code patterns.
+
 ## Resolution of OI-7
 
 The two routes flagged in survey require code-level verification. Joshua should run:

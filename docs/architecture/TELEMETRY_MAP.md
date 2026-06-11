@@ -160,6 +160,169 @@ Where:
 | `API_PEER_LEARNING_GENERATE` | `POST /api/v1/peer-learning/generate-cards` (OI-7 confirmed canonical) |
 | `API_GAMIFICATION_EVALUATE` | `POST /api/v1/gamification/evaluate/{staff_code}` |
 
+
+#### Pipeline (33 events; α1–α7, v10.502–v10.509)
+
+Two naming patterns coexist in pipeline:
+
+- **`API_PIPELINE_*` prefix** — gate events (ATTEMPT / REJECTED / FORBIDDEN) emitted from validation and authorization layers. Useful for reconstructing intent.
+- **Bare-noun-verb pattern** (`DEAL_*`, `CANCEL_*`) — successful business state changes. Useful for reconstructing outcomes.
+
+Every mutating operation emits at least 2 events: one ATTEMPT (gate-side), one outcome (business-side or rejection). This dual-emit lets audit dashboards distinguish "user tried to do X but was denied" from "user did X successfully" at the event-vocabulary level rather than parsing detail strings.
+
+**Read events (5):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_SUMMARY` | `GET /api/pipeline/summary` success | (none) |
+| `API_PIPELINE_DEALS` | `GET /api/pipeline/deals` success | `stage={s} unit={u} limit={n}` |
+| `API_PIPELINE_DEAL_DETAIL` | `GET /api/pipeline/deals/{id}` success | `deal_id={id}` |
+| `API_PIPELINE_QUEUE_VALIDATION` | `GET /api/pipeline/queues/validation` success | (none) |
+| `API_PIPELINE_QUEUE_CANCELLATION` | `GET /api/pipeline/queues/cancellation` success | (none) |
+
+**Read-denial event (1, shared):**
+
+| `API_PIPELINE_QUEUE_FORBIDDEN` | Either queue endpoint denied (non-manager caller) | `validation queue access denied` or `cancellation queue access denied` |
+
+**Refer flow (3):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_REFER_ATTEMPT` | `POST /api/pipeline/deals/refer` reached the handler | client_name, portfolio_owner_code, referred_to |
+| `API_PIPELINE_REFER_REJECTED` | Validation failed (missing fields, self-refer, etc.) | rejection reason |
+| `DEAL_REFERRED` | Referral persisted | deal_id, referred_to |
+
+**Create flow (3):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_CREATE_ATTEMPT` | `POST /api/pipeline/deals` reached handler | client_name, deal_value, product_type, stage |
+| `API_PIPELINE_CREATE_REJECTED` | Validation failed (missing required, α5 conflict semantics violated, etc.) | rejection reason |
+| `DEAL_ADDED` | Deal persisted | deal_id, summary |
+
+**Update flow (3):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_UPDATE_ATTEMPT` | `PUT /api/pipeline/deals/{id}` reached handler | `deal_id={id}` |
+| `API_PIPELINE_UPDATE_FORBIDDEN` | Caller is not owner or manager-in-scope | `deal_id={id}` |
+| `DEAL_UPDATED` | Deal updated | `deal_id={id}`, changed fields |
+
+**Advance flow (6 — includes LMS handoff side effects):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_ADVANCE_ATTEMPT` | `POST /api/pipeline/deals/{id}/advance` reached handler | `deal_id={id} new_stage={s}` |
+| `API_PIPELINE_ADVANCE_REJECTED` | Validation failed (invalid target stage, etc.) | rejection reason |
+| `API_PIPELINE_ADVANCE_FORBIDDEN` | Caller lacks permission | `deal_id={id}` |
+| `API_PIPELINE_ADVANCED` | Stage transition persisted | `deal_id={id} {old}->{new}` |
+| `LMS_APPLICATION_CREATED` | Won→LMS handoff succeeded (emitted by **pipeline /advance handler**, not by LMS API) | `deal_id, app_id, swim_lane` |
+| `API_PIPELINE_ADVANCE_LMS_FAILED` | Won transition succeeded BUT LMS handoff failed | rejection reason from LoanApplicationManager.create_from_pipeline_deal |
+
+**Validate (manager review) flow (4):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_VALIDATE_ATTEMPT` | `POST /api/pipeline/deals/{id}/validate` reached handler | `deal_id={id} action={validate\|query}` |
+| `API_PIPELINE_VALIDATE_FORBIDDEN` | Caller not manager-tier or out of scope | `deal_id={id}` |
+| `DEAL_VALIDATED` | Manager approved the validation | `{deal_id}\|note={first 60 chars}` |
+| `DEAL_QUERIED` | Manager queried (needs more info) | `{deal_id}\|note={first 60 chars}` |
+
+**Cancel request flow (4):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_CANCEL_REQUEST_ATTEMPT` | `POST /api/pipeline/deals/{id}/cancel/request` reached handler | `deal_id={id}` |
+| `API_PIPELINE_CANCEL_REQUEST_REJECTED` | Validation failed (pending request exists, etc.) | rejection reason |
+| `API_PIPELINE_CANCEL_REQUEST_FORBIDDEN` | Caller not the owner | rejection reason |
+| `CANCEL_REQUESTED` | Request persisted, queued for manager | `{deal_id}\|{reason}` |
+
+**Cancel approve flow (4):**
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `API_PIPELINE_CANCEL_APPROVE_ATTEMPT` | `POST /api/pipeline/deals/{id}/cancel/approve` reached handler | `deal_id={id}` |
+| `API_PIPELINE_CANCEL_APPROVE_FORBIDDEN` | Caller not manager-tier or out of scope | `deal_id={id}` |
+| `CANCEL_APPROVED` | Manager approved the cancellation; deal closed | `{deal_id}\|note={first 60 chars}` |
+| `CANCEL_REJECTED` | Manager rejected the cancellation; deal remains active | `{deal_id}\|note={first 60 chars}` |
+
+**Pipeline subtotal: 33 events.**
+
+---
+
+#### LMS (5 events; α8, v10.515)
+
+Loan Application Management System routes. **Emitted via `utils.core_audit.audit_log(...)` directly**, not via the `_audit(...)` wrapper — see candidate GAP-018 below for the T2 discipline gap.
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `LMS_ANALYST_ASSIGNED` | `POST /api/lms/applications/{id}/assign` success | `{app_id}\|{analyst_code}` |
+| `LMS_APPLICATION_UPDATED` | `PUT /api/lms/applications/{id}` success | `{app_id}` |
+| `LMS_DECISION_APPROVED` | `POST /api/lms/applications/{id}/decision` with verdict=approved | `{app_id}\|{authority}` |
+| `LMS_DECISION_DECLINED` | Same endpoint, verdict=declined | `{app_id}\|{authority}` |
+| `LMS_DECISION_RETURNED` | Same endpoint, verdict=returned | `{app_id}\|{authority}` |
+
+Note `LMS_APPLICATION_CREATED` is **not** in this group — it's emitted by `POST /api/pipeline/deals/{id}/advance` on Won→LMS handoff, attributed to the pipeline domain.
+
+**LMS subtotal: 5 events.**
+
+---
+
+#### Credit Admin (2 events; α9, v10.518)
+
+CALMS (Credit Admin) routes. **Same T2 gap as LMS** — emits via `audit_log()` directly.
+
+| Event name | Trigger | Detail field |
+|---|---|---|
+| `CREDIT_ADMIN_CONDITION_FULFILLED` | `POST /api/credit-admin/cases/{id}/conditions/fulfill` success | `{case_id}\|{condition_type}\|{officer_name}` |
+| `CREDIT_ADMIN_DISBURSED` | `POST /api/credit-admin/cases/{id}/disburse` success | `{case_id}\|{authority}` |
+
+The `officer_name` in the fulfillment event is recorded separately from the JWT `username` because the API allows mark-on-behalf-of (the officer who collected the document may not be the same person logged in entering it). The JWT username is the audit accountability anchor; the officer is the operations attribution.
+
+**Credit Admin subtotal: 2 events.**
+
+---
+
+#### GAP-018 candidate: T2 canonical-emitter discipline drift (Arc α)
+
+**Filed:** 2026-06-11 in α10 (this batch).
+**Status:** Candidate. Promotion to numbered GAP requires operator decision on resolution path.
+
+##### What's wrong
+
+`docs/architecture/TELEMETRY_MAP.md` T2 doctrine requires **one canonical emitter** per signal type. For API audit events, the canonical emitter is `utils/api.py::_audit(action, user, detail)`. G392 (`gate_telemetry_event_naming`, `scripts/audit.py:60515`) AST-walks `utils/api*.py` for `_audit(LITERAL, ...)` calls and validates them against the documented vocabulary.
+
+**α8 (`utils/api_lms_routes.py`) and α9 (`utils/api_credit_admin_routes.py`) routes bypass the wrapper.** They call `utils.core_audit.audit_log(...)` directly:
+
+```python
+# What α8/α9 do (bypasses wrapper):
+audit_log(
+    "LMS_ANALYST_ASSIGNED",
+    str(user.get('username', '') or ''),
+    f"{app_id}|{payload.analyst_code}",
+)
+
+# What T2 doctrine expects:
+_audit("LMS_ANALYST_ASSIGNED", user, f"{app_id}|{payload.analyst_code}")
+```
+
+##### Consequences
+
+1. Events emit correctly — `audit_log` is the underlying write — but they bypass the canonical wrapper.
+2. **G392 passes vacuously for α8/α9 routes** because its AST walk looks for `_audit(...)` calls, finds zero in those files, and doesn't realize events are being emitted via the direct path.
+3. T2 "one canonical emitter" doctrine is technically violated.
+4. The 7 events listed above (`LMS_*` × 5 + `CREDIT_ADMIN_*` × 2) are documented here but **not enforced by G392** until the gap is closed.
+
+##### Resolution paths
+
+- **(A) Wrap LMS/CA emissions through `_audit`.** Requires `_audit` to be importable outside `api.py` (currently file-local). Add an export, update both route files to import and call `_audit` instead. ~10 lines of code change. Most aligned with T2 doctrine.
+
+- **(B) Update G392 to scan for `audit_log()` literals as well.** AST-walk extended to also extract first positional arg from `utils.core_audit.audit_log(...)` calls in all `utils/api*.py` files. ~30 lines of audit.py change. Doesn't enforce single-emitter doctrine but does catch undocumented events.
+
+- **(C) Both A and B.** Most robust: canonical emitter is single, and the gate catches drift in either direction.
+
+**Recommendation:** **A** (refactor α8/α9 routes through `_audit`). Sized as a small follow-up batch, ideally before β5 ships so the React frontend doesn't depend on the current direct-emit pattern.
+
 ### Total API audit event count
 
 **36 distinct event types** documented above. Additional events may exist in router modules (cascade, capacity feedback, branding, +17 unverified routers per OI-14 follow-up). Wave 4 amendment will enumerate router-emitted events.

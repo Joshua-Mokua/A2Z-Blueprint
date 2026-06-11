@@ -1409,3 +1409,88 @@ This section does not file the deliberate exclusions as numbered GAPs. They are 
 ---
 
 **End of Section 19.**
+
+
+---
+
+# Section 20 — α10 Documentation sync (Arc α closeout)
+
+**Authored:** 2026-06-11 (Batch α10 — Phase 3 Arc α docs sync)
+**Type:** Append-only amendment. Closes Arc α by syncing documentation to runtime reality.
+
+---
+
+## 20.1 What α10 ships
+
+Pure documentation batch. **No code changes.** Two existing canonical docs updated to reflect Arc α's 21 endpoints and ~40 audit events:
+
+1. **`docs/architecture/API_CONTRACTS.md`** — three new H3 sections inserted between `### Mounted routers` and `## Resolution of OI-7`:
+   - `### Pipeline domain (12 endpoints)`
+   - `### LMS domain (5 endpoints)`
+   - `### Credit Admin domain (4 endpoints)`
+
+2. **`docs/architecture/TELEMETRY_MAP.md`** — three new H4 subsections inserted between `#### HR write events` and `### Total API audit event count`:
+   - `#### Pipeline (33 events)`
+   - `#### LMS (5 events)`
+   - `#### Credit Admin (2 events)`
+   - Plus candidate **GAP-018** entry (T2 canonical-emitter discipline gap)
+
+Inserts are positional via Python apply script to avoid disturbing existing trailing sections (`## Open items` etc.).
+
+---
+
+## 20.2 What Arc α now provides (definitive endpoint inventory)
+
+| Domain | Endpoints | Audit events | Mount style | Manager class |
+|---|---|---|---|---|
+| Pipeline (α1–α7) | 12 | 33 | `@app.method` direct | `PipelineManager` |
+| LMS (α8) | 5 | 5 | `APIRouter` | `LoanApplicationManager` |
+| Credit Admin (α9) | 4 | 2 | `APIRouter` | `CreditAdminManager` |
+| **Total Arc α** | **21** | **40** | — | — |
+
+All endpoints share: Bearer JWT auth, cascade-scope filtering, per-action tier gates where applicable, state-machine-lite guardrails, consistent `{detail, entity, permissions, status}` response shape, consistent `{entity_id}|{key_metadata}` audit detail format.
+
+---
+
+## 20.3 New candidate GAP filed in α10
+
+### GAP-018 — T2 canonical-emitter discipline drift
+
+**Filed in:** `TELEMETRY_MAP.md` (α10 insert) — see that file for the full entry.
+
+**Summary:** α8 and α9 routes emit audit events via `utils.core_audit.audit_log()` directly rather than the canonical `utils/api.py::_audit(...)` wrapper. G392 (`gate_telemetry_event_naming`) only scans for `_audit(...)` calls, so passes vacuously for these routes. T2 "one canonical emitter" doctrine is technically violated for the 7 events in LMS + Credit Admin.
+
+**Recommendation:** Refactor LMS and CA routes to import and use `_audit` (resolution path A). Small follow-up batch, ideally before β5 React frontend depends on the current direct-emit pattern.
+
+This is a CGR1-relevant finding: the gate's claimed enforcement diverged from runtime reality during α8/α9 implementation. α10's role is to **acknowledge the gap honestly in documentation** rather than retroactively pretend it doesn't exist. The fix is small and explicit.
+
+---
+
+## 20.4 Remaining for Arc α full closure (post-α10)
+
+α10 closes the documentation arc. Post-α10 there are no required Arc α deliverables — the React β-arc can now consume the entire loan-origination backend with documented contracts and an honestly-classified gate gap.
+
+Optional follow-ups (not blockers, prioritize by need):
+
+- **GAP-018 resolution** — refactor α8/α9 to use `_audit`. ~10 LOC across 2 files. Should ship before β5 if possible.
+- **GAP-017 reconciliation** (from α8) — decide enum-vs-data direction for ApplicationState.
+- **Pipeline route migration to APIRouter** — hygiene scope, unifies the API surface pattern.
+- **G392 vocabulary refresh** — add the 40 new events to the canonical-vocabulary registry the gate validates against. Once GAP-018 is closed, G392 will fail until these are added; do them together.
+
+---
+
+## 20.5 What this section does NOT do
+
+This section does not edit Sections 1–19.
+
+This section does not refactor any code. α10 is documentation-only. The 7 α8/α9 events emit via the direct-path; this is documented as candidate GAP-018, not fixed.
+
+This section does not update the G392 vocabulary registry (scripts/audit.py). When GAP-018 is resolved, that update happens in the same follow-up batch.
+
+This section does not document non-Arc-α endpoints (BSC, integration, admin, HR, etc.). Those are already partially in `API_CONTRACTS.md` and are out of scope for α10. The "276 actual" endpoint claim in `API_CONTRACTS.md` line 50 remains transitional documentation debt — α10 narrows the gap to roughly 21 endpoints, but does not close it.
+
+---
+
+**End of Section 20.**
+
+**Arc α is closed.** Pipeline + LMS + Credit Admin backends are React-ready, documented, and audit-classified.
