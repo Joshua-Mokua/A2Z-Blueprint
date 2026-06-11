@@ -188,18 +188,21 @@ export type ApplicationStatus = typeof APPLICATION_STATUSES[number];
 /**
  * Visual tone mapping for status badges (mirrors stageTone in
  * types/pipeline.ts). Used by list and detail pages.
+ *
+ * Returns BadgeTone-compatible values only. 'neutral' is the BadgeTone
+ * name for the gray/default tone.
  */
-export function statusTone(status: string | undefined): 'gray' | 'brand' | 'warning' | 'success' | 'danger' {
-  if (!status) return 'gray';
+export function statusTone(status: string | undefined): 'neutral' | 'brand' | 'warning' | 'success' | 'danger' {
+  if (!status) return 'neutral';
   const s = status.toLowerCase();
-  if (s === 'submitted')   return 'gray';
+  if (s === 'submitted')   return 'neutral';
   if (s === 'assigned')    return 'brand';
   if (s === 'approved')    return 'success';
   if (s === 'disbursed')   return 'success';
   if (s === 'returned')    return 'warning';
   if (s === 'declined')    return 'danger';
   if (s === 'credit_admin') return 'brand';
-  return 'gray';
+  return 'neutral';
 }
 
 /**

@@ -158,7 +158,7 @@ export function Lms() {
 
         {/* ── Error state ─────────────────────────────────────────── */}
         {error && (
-          <Card className="mb-4" stripe="danger">
+          <Card className="mb-4">
             <Card.Body>
               <div className="text-sm text-red-800">
                 <div className="font-semibold mb-1">Failed to load applications</div>

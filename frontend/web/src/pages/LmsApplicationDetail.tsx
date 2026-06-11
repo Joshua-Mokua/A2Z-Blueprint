@@ -16,9 +16,8 @@
 // is now 'assigned').
 
 import { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
-import { useRole } from '@/hooks/useRole';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
 import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
@@ -33,7 +32,6 @@ import {
   COMMON_AUTHORITIES,
   type DecisionVerdict,
   type LoanApplication,
-  type LoanApplicationPermissions,
 } from '@/types/lms';
 
 
@@ -57,7 +55,6 @@ export function LmsApplicationDetail() {
   const { appId } = useParams<{ appId: string }>();
   const navigate = useNavigate();
   const { branding } = useBranding();
-  const { user } = useRole();
   const { toast } = useToast();
 
   const { application, permissions, loading, error, refetch } =
@@ -99,7 +96,7 @@ export function LmsApplicationDetail() {
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-6 py-6">
-          <Card stripe="danger">
+          <Card >
             <Card.Body>
               <div className="text-sm text-red-800 mb-3">
                 <div className="font-semibold">Could not load application</div>
@@ -197,11 +194,7 @@ export function LmsApplicationDetail() {
 
         {/* ─────────── Decision card (only if recorded) ─────────── */}
         {application.decision?.verdict && (
-          <Card stripe={
-            application.decision.verdict === 'approved' ? 'success' :
-            application.decision.verdict === 'declined' ? 'danger' :
-            'warning'
-          }>
+          <Card stripe="accent">
             <Card.Header>
               <h2 className="text-base font-semibold text-gray-900">
                 Decision: {application.decision.verdict}
@@ -404,7 +397,7 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
 
   if (!open) {
     return (
-      <Card stripe="brand">
+      <Card stripe="accent">
         <Card.Body>
           <div className="flex items-center justify-between">
             <div>
@@ -440,7 +433,7 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
   };
 
   return (
-    <Card stripe="brand">
+    <Card stripe="accent">
       <Card.Header>
         <h3 className="text-sm font-semibold text-gray-900">Assign credit analyst</h3>
       </Card.Header>
@@ -483,10 +476,24 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
 
 
 // ── ACTION PANEL: Update Application ────────────────────────────────────
+//
+// Has its own props interface (not extending ActionPanelProps) because
+// Update uses application.id internally rather than receiving appId as
+// a separate prop — the form needs the application object anyway to
+// pre-fill fields.
+
+interface ActionPanelUpdateProps {
+  application:   LoanApplication;
+  open:          boolean;
+  setOpen:       (v: boolean) => void;
+  mutations:     ReturnType<typeof useLmsMutations>;
+  onSuccess:     () => void | Promise<void>;
+  toast:         ReturnType<typeof useToast>['toast'];
+}
 
 function ActionPanelUpdate({
   application, open, setOpen, mutations, onSuccess, toast,
-}: ActionPanelProps & { application: LoanApplication }) {
+}: ActionPanelUpdateProps) {
   const [completenessScore, setCompletenessScore] = useState<string>(
     application.completeness_score !== undefined ? String(application.completeness_score) : ''
   );
@@ -497,7 +504,7 @@ function ActionPanelUpdate({
 
   if (!open) {
     return (
-      <Card stripe="brand">
+      <Card stripe="accent">
         <Card.Body>
           <div className="flex items-center justify-between">
             <div>
@@ -552,7 +559,7 @@ function ActionPanelUpdate({
   };
 
   return (
-    <Card stripe="brand">
+    <Card stripe="accent">
       <Card.Header>
         <h3 className="text-sm font-semibold text-gray-900">Update application fields</h3>
       </Card.Header>
@@ -634,7 +641,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
 
   if (!open) {
     return (
-      <Card stripe="brand">
+      <Card stripe="accent">
         <Card.Body>
           <div className="flex items-center justify-between">
             <div>
@@ -678,7 +685,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   };
 
   return (
-    <Card stripe="brand">
+    <Card stripe="accent">
       <Card.Header>
         <h3 className="text-sm font-semibold text-gray-900">Record decision</h3>
       </Card.Header>
