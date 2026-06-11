@@ -4397,3 +4397,8 @@ app.include_router(lms_router)
 # should mirror this structure unless there's a specific reason not to.
 from utils.api_credit_admin_routes import router as credit_admin_router
 app.include_router(credit_admin_router)
+
+
+# v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
+from utils.api_cbs_routes import router as cbs_router
+app.include_router(cbs_router)
