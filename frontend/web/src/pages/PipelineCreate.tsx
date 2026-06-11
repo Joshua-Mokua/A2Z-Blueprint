@@ -98,8 +98,19 @@ export function PipelineCreate() {
   const [overrideNote,       setOverrideNote]       = useState('');     // override path only
 
   // ── Submit state ─────────────────────────────────────────────────────
+  //
+  // β5.0 polish: replaced single submitError with two state slices so we
+  // can render field-level errors inline AND a banner for non-field
+  // errors (network/server failures). Pattern:
+  //   fieldErrors[fieldName] = "human readable message"  → inline + red border
+  //   formError              = "human readable message"  → banner at top
+  //
+  // The banner sits at the TOP of the form (not bottom) so users can
+  // see it without scrolling — the bug β5.0 fixes is that the old
+  // banner was at the bottom and users missed it entirely.
 
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError,   setFormError]   = useState<string | null>(null);
 
   // ── Derived values ───────────────────────────────────────────────────
 
@@ -119,58 +130,145 @@ export function PipelineCreate() {
   const stageIsValidForCategory = stageOptions.includes(stage);
 
   // ── Validation ───────────────────────────────────────────────────────
+  //
+  // β5.0 polish: returns Record<field-name, message> instead of single
+  // string. Collects ALL errors so the user can see every missing field
+  // at once rather than fixing them one at a time.
+  //
+  // Field names match the state variable names (clientName,
+  // portfolioOwnerCode, etc.) — the form's per-field rendering uses
+  // these as keys when looking up errors.
 
   const isReferPath = hasConflict && conflictPath === 'refer';
 
-  const validate = (): string | null => {
-    if (!clientName.trim()) return 'Client name is required.';
+  const validate = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!clientName.trim()) errors.clientName = 'Client name is required.';
 
     if (isReferPath) {
       // Refer path has different required fields
-      if (!portfolioOwnerCode.trim()) return 'Portfolio owner staff code is required for referral.';
-      if (!portfolioOwnerName.trim()) return 'Portfolio owner name is required for referral.';
-      if (!referredTo.trim())          return 'Referred-to name is required.';
+      if (!portfolioOwnerCode.trim()) errors.portfolioOwnerCode = 'Portfolio owner staff code is required for referral.';
+      if (!portfolioOwnerName.trim()) errors.portfolioOwnerName = 'Portfolio owner name is required for referral.';
+      if (!referredTo.trim())         errors.referredTo         = 'Referred-to name is required.';
       if (user?.staff_code && portfolioOwnerCode.trim() === user.staff_code) {
-        return "You can't refer a deal to yourself.";
+        errors.portfolioOwnerCode = "You can't refer a deal to yourself.";
       }
-      return null;
+      return errors;
     }
 
     // Standard create path
-    if (!productType.trim())        return 'Product type is required.';
-    if (!stage.trim())              return 'Stage is required.';
-    if (!stageIsValidForCategory)   return `Stage "${stage}" is not valid for ${category} pipeline.`;
+    if (!productType.trim())        errors.productType = 'Product type is required.';
+    if (!stage.trim())              errors.stage       = 'Stage is required.';
+    if (stage.trim() && !stageIsValidForCategory) {
+      errors.stage = `Stage "${stage}" is not valid for ${category} pipeline.`;
+    }
     if (!Number.isFinite(dealValueNum) || dealValueNum < 0) {
-      return 'Deal value must be a non-negative number.';
+      errors.dealValue = 'Deal value must be a non-negative number.';
     }
 
     if (hasConflict) {
-      if (!portfolioOwnerCode.trim()) return 'Portfolio owner staff code is required.';
-      if (!portfolioOwnerName.trim()) return 'Portfolio owner name is required.';
+      if (!portfolioOwnerCode.trim()) errors.portfolioOwnerCode = 'Portfolio owner staff code is required.';
+      if (!portfolioOwnerName.trim()) errors.portfolioOwnerName = 'Portfolio owner name is required.';
       if (user?.staff_code && portfolioOwnerCode.trim() === user.staff_code) {
-        return 'Portfolio owner cannot be yourself — uncheck conflict if you own this portfolio.';
+        errors.portfolioOwnerCode = 'Portfolio owner cannot be yourself — uncheck conflict if you own this portfolio.';
       }
       if (conflictPath === 'override' && overrideNote.trim().length < MIN_OVERRIDE_NOTE_LEN) {
-        return `Manager override note must be at least ${MIN_OVERRIDE_NOTE_LEN} characters.`;
+        errors.overrideNote = `Manager override note must be at least ${MIN_OVERRIDE_NOTE_LEN} characters (current: ${overrideNote.trim().length}).`;
       }
     }
-    return null;
+    return errors;
+  };
+
+  // ── Server error → field mapping ────────────────────────────────────
+  //
+  // β5.0 polish: try to map server detail strings back to specific
+  // fields. Backend validators in utils/api_pipeline_mutations.py
+  // emit messages like "Missing required field: client_name". When
+  // we recognise the snake_case field, map it to the camelCase state
+  // variable and set a fieldError. Otherwise fall back to the banner.
+
+  const SERVER_FIELD_MAP: Record<string, string> = {
+    client_name:          'clientName',
+    staff_code:           'clientName',   // shouldn't happen — we set this
+    staff_name:           'clientName',   // shouldn't happen — we set this
+    deal_value:           'dealValue',
+    product_type:         'productType',
+    stage:                'stage',
+    portfolio_owner_code: 'portfolioOwnerCode',
+    portfolio_owner_name: 'portfolioOwnerName',
+    referred_to:          'referredTo',
+    manager_override_note: 'overrideNote',
+  };
+
+  const parseServerError = (serverDetail: string): { fieldKey: string | null; message: string } => {
+    if (!serverDetail) return { fieldKey: null, message: 'Submission failed.' };
+    // Match "Missing required field: X" pattern
+    const m1 = serverDetail.match(/Missing required field:\s*(\w+)/i);
+    if (m1 && SERVER_FIELD_MAP[m1[1].toLowerCase()]) {
+      return { fieldKey: SERVER_FIELD_MAP[m1[1].toLowerCase()], message: serverDetail };
+    }
+    // Match "manager_override_note required" pattern (α5 override semantics)
+    if (/manager_override_note/i.test(serverDetail)) {
+      return { fieldKey: 'overrideNote', message: serverDetail };
+    }
+    // Match "portfolio_owner_code" mentions
+    if (/portfolio_owner_code/i.test(serverDetail)) {
+      return { fieldKey: 'portfolioOwnerCode', message: serverDetail };
+    }
+    return { fieldKey: null, message: serverDetail };
+  };
+
+  // ── Scroll-to-error helper ──────────────────────────────────────────
+  //
+  // β5.0 polish: after submit fails, scroll the first errored field
+  // into view and focus it. Uses the data-field attr added to each
+  // input wrapper. If the field can't be found, scroll to the form
+  // top so the banner is visible.
+
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const firstField = Object.keys(errors)[0];
+    if (!firstField) return;
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`[data-field="${firstField}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Try to focus the first focusable descendant
+        const focusable = el.querySelector<HTMLElement>('input, textarea, select');
+        if (focusable) focusable.focus({ preventScroll: true });
+      } else {
+        // Fall back: scroll to top so banner is visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
   // ── Submit ───────────────────────────────────────────────────────────
 
   const onSubmit = async () => {
-    setSubmitError(null);
-    const v = validate();
-    if (v) {
-      setSubmitError(v);
+    // Reset any previous error state
+    setFormError(null);
+    setFieldErrors({});
+
+    // Client-side validation: collect all errors
+    const localErrors = validate();
+    if (Object.keys(localErrors).length > 0) {
+      setFieldErrors(localErrors);
+      // Toast in case user scrolled past the banner
+      toast({
+        tone: 'danger',
+        message: `Please fix ${Object.keys(localErrors).length} issue${Object.keys(localErrors).length > 1 ? 's' : ''} in the form.`,
+      });
+      scrollToFirstError(localErrors);
       return;
     }
 
     // Guard against missing user identity (shouldn't happen given the
     // route is ProtectedRoute requireAuth, but type system needs it)
     if (!user?.staff_code || !user?.full_name) {
-      setSubmitError('Your user identity is not loaded. Try refreshing the page.');
+      setFormError('Your user identity is not loaded. Try refreshing the page.');
+      toast({ tone: 'danger', message: 'User identity not loaded — please refresh.' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -198,7 +296,16 @@ export function PipelineCreate() {
         });
         navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
       } else {
-        setSubmitError(result.error);
+        // Server validation failure — try to map to a field
+        const parsed = parseServerError(result.error);
+        if (parsed.fieldKey) {
+          setFieldErrors({ [parsed.fieldKey]: parsed.message });
+          scrollToFirstError({ [parsed.fieldKey]: parsed.message });
+        } else {
+          setFormError(parsed.message);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        toast({ tone: 'danger', message: parsed.message });
       }
       return;
     }
@@ -249,7 +356,16 @@ export function PipelineCreate() {
       toast({ tone: 'success', message: 'Deal created.' });
       navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
     } else {
-      setSubmitError(result.error);
+      // Server validation failure — try to map to a field
+      const parsed = parseServerError(result.error);
+      if (parsed.fieldKey) {
+        setFieldErrors({ [parsed.fieldKey]: parsed.message });
+        scrollToFirstError({ [parsed.fieldKey]: parsed.message });
+      } else {
+        setFormError(parsed.message);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      toast({ tone: 'danger', message: parsed.message });
     }
   };
 
@@ -286,8 +402,40 @@ export function PipelineCreate() {
           <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
             ← Back to pipeline
           </Button>
-          <Badge tone="brand" size="sm">β3</Badge>
+          <Badge tone="brand" size="sm">β3 + β5.0 polish</Badge>
         </div>
+
+        {/* ─────────── Error summary banner (β5.0 polish) ───────────
+            Renders at the top so users see it without scrolling.
+            Shows either:
+              - formError (banner-level: network/server/identity errors), OR
+              - a summary count of fieldErrors with a "review fields"
+                hint, since each field also shows its own inline message
+        */}
+        {(formError || Object.keys(fieldErrors).length > 0) && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-4 px-4 py-3 rounded-md bg-red-50 border-l-4 border-red-500 text-sm text-red-900 shadow-sm"
+          >
+            {formError ? (
+              <div>
+                <div className="font-semibold mb-0.5">Submission failed</div>
+                <div>{formError}</div>
+              </div>
+            ) : (
+              <div>
+                <div className="font-semibold mb-0.5">
+                  Please fix {Object.keys(fieldErrors).length} field
+                  {Object.keys(fieldErrors).length > 1 ? 's' : ''} below
+                </div>
+                <div className="text-xs">
+                  Each problem is highlighted in red next to the relevant input.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ─────────── Customer section ─────────── */}
         <Card stripe="primary">
@@ -297,13 +445,16 @@ export function PipelineCreate() {
           </Card.Header>
           <Card.Body>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Client name *"
-                placeholder="e.g. John Otieno Kamau"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                disabled={mutations.loading}
-              />
+              <div data-field="clientName">
+                <Input
+                  label="Client name *"
+                  placeholder="e.g. John Otieno Kamau"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  disabled={mutations.loading}
+                  error={fieldErrors.clientName}
+                />
+              </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Customer type
@@ -389,7 +540,7 @@ export function PipelineCreate() {
               </p>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4" data-field="productType">
               <Input
                 label="Product type *"
                 placeholder="e.g. Business Loan"
@@ -397,6 +548,7 @@ export function PipelineCreate() {
                 onChange={(e) => setProductType(e.target.value)}
                 disabled={mutations.loading}
                 helper="Quick pick from common products below, or type your own."
+                error={fieldErrors.productType}
               />
               <div className="flex gap-2 mt-2 flex-wrap">
                 {productSuggestions.map((p) => (
@@ -418,18 +570,21 @@ export function PipelineCreate() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <Input
-                label={category === 'Account' ? 'Number of accounts *' : 'Deal value (KES) *'}
-                placeholder={category === 'Account' ? 'e.g. 1' : 'e.g. 5000000'}
-                type="number"
-                value={dealValue}
-                onChange={(e) => setDealValue(e.target.value)}
-                disabled={mutations.loading}
-                helper={Number.isFinite(dealValueNum) && dealValueNum > 0
-                  ? `${branding?.currency_symbol ?? 'KES'} ${dealValueNum.toLocaleString()}`
-                  : undefined}
-              />
-              <div>
+              <div data-field="dealValue">
+                <Input
+                  label={category === 'Account' ? 'Number of accounts *' : 'Deal value (KES) *'}
+                  placeholder={category === 'Account' ? 'e.g. 1' : 'e.g. 5000000'}
+                  type="number"
+                  value={dealValue}
+                  onChange={(e) => setDealValue(e.target.value)}
+                  disabled={mutations.loading}
+                  helper={Number.isFinite(dealValueNum) && dealValueNum > 0
+                    ? `${branding?.currency_symbol ?? 'KES'} ${dealValueNum.toLocaleString()}`
+                    : undefined}
+                  error={fieldErrors.dealValue}
+                />
+              </div>
+              <div data-field="stage">
                 <label className="text-sm font-medium text-gray-700">
                   Initial stage *
                 </label>
@@ -437,12 +592,20 @@ export function PipelineCreate() {
                   value={stage}
                   onChange={(e) => setStage(e.target.value)}
                   disabled={mutations.loading}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                  aria-invalid={!!fieldErrors.stage}
+                  className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-base text-gray-900 focus:outline-none focus:ring-2 ${
+                    fieldErrors.stage
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-gray-300 focus:border-brand-primary focus:ring-brand-primary/20'
+                  }`}
                 >
                   {stageOptions.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
+                {fieldErrors.stage && (
+                  <p className="mt-1 text-xs text-red-700">{fieldErrors.stage}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   Most deals start at Lead.
                 </p>
@@ -559,20 +722,26 @@ export function PipelineCreate() {
 
             {hasConflict && (
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Portfolio owner staff code *"
-                  placeholder="e.g. 0123"
-                  value={portfolioOwnerCode}
-                  onChange={(e) => setPortfolioOwnerCode(e.target.value)}
-                  disabled={mutations.loading}
-                />
-                <Input
-                  label="Portfolio owner name *"
-                  placeholder="e.g. Jane Mwangi"
-                  value={portfolioOwnerName}
-                  onChange={(e) => setPortfolioOwnerName(e.target.value)}
-                  disabled={mutations.loading}
-                />
+                <div data-field="portfolioOwnerCode">
+                  <Input
+                    label="Portfolio owner staff code *"
+                    placeholder="e.g. 0123"
+                    value={portfolioOwnerCode}
+                    onChange={(e) => setPortfolioOwnerCode(e.target.value)}
+                    disabled={mutations.loading}
+                    error={fieldErrors.portfolioOwnerCode}
+                  />
+                </div>
+                <div data-field="portfolioOwnerName">
+                  <Input
+                    label="Portfolio owner name *"
+                    placeholder="e.g. Jane Mwangi"
+                    value={portfolioOwnerName}
+                    onChange={(e) => setPortfolioOwnerName(e.target.value)}
+                    disabled={mutations.loading}
+                    error={fieldErrors.portfolioOwnerName}
+                  />
+                </div>
               </div>
             )}
 
@@ -609,13 +778,16 @@ export function PipelineCreate() {
 
             {hasConflict && conflictPath === 'refer' && (
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Referred to (named recipient) *"
-                  placeholder="Usually the portfolio owner"
-                  value={referredTo}
-                  onChange={(e) => setReferredTo(e.target.value)}
-                  disabled={mutations.loading}
-                />
+                <div data-field="referredTo">
+                  <Input
+                    label="Referred to (named recipient) *"
+                    placeholder="Usually the portfolio owner"
+                    value={referredTo}
+                    onChange={(e) => setReferredTo(e.target.value)}
+                    disabled={mutations.loading}
+                    error={fieldErrors.referredTo}
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700">
                     Referral note (optional)
@@ -633,7 +805,7 @@ export function PipelineCreate() {
             )}
 
             {hasConflict && conflictPath === 'override' && (
-              <div className="mt-4">
+              <div className="mt-4" data-field="overrideNote">
                 <label className="text-sm font-medium text-gray-700">
                   Manager override note * (min {MIN_OVERRIDE_NOTE_LEN} chars)
                 </label>
@@ -643,28 +815,29 @@ export function PipelineCreate() {
                   disabled={mutations.loading}
                   placeholder="Why is the override appropriate? This is reviewed by management."
                   rows={3}
-                  className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+                  aria-invalid={!!fieldErrors.overrideNote}
+                  className={`mt-1 w-full px-3 py-2 rounded-md border bg-white text-base text-gray-900 focus:outline-none focus:ring-2 resize-y ${
+                    fieldErrors.overrideNote
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-gray-300 focus:border-brand-primary focus:ring-brand-primary/20'
+                  }`}
                 />
-                {overrideNote.length > 0 && overrideNoteTooShort && (
-                  <p className="text-xs text-red-600 mt-1">
+                {fieldErrors.overrideNote ? (
+                  <p className="mt-1 text-xs text-red-700">{fieldErrors.overrideNote}</p>
+                ) : overrideNote.length > 0 && overrideNoteTooShort ? (
+                  <p className="text-xs text-amber-600 mt-1">
                     {overrideNote.trim().length} / {MIN_OVERRIDE_NOTE_LEN} characters.
                   </p>
-                )}
+                ) : null}
               </div>
             )}
           </Card.Body>
         </Card>
 
-        {/* ─────────── Submit ─────────── */}
-        {submitError && (
-          <Card className="mt-6">
-            <Card.Body>
-              <div className="px-3 py-2 rounded-md bg-red-50 border border-red-200 text-sm text-red-800">
-                {submitError}
-              </div>
-            </Card.Body>
-          </Card>
-        )}
+        {/* (β5.0 polish: bottom error banner removed.
+             Errors now shown at the TOP of the form for visibility
+             plus inline next to each errored field.) */}
+
 
         <div className="mt-6 flex items-center justify-between gap-4">
           <Button
