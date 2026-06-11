@@ -73,6 +73,8 @@ import { Pipeline } from './pages/Pipeline';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
+import { Lms } from './pages/Lms';
+import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 
 const queryClient = new QueryClient();
 
@@ -124,6 +126,10 @@ function App() {
                     <Route path="/pipeline/new"     element={<PipelineCreate />} />
                     <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
+
+                    {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
+                    <Route path="/lms"         element={<Lms />} />
+                    <Route path="/lms/:appId"  element={<LmsApplicationDetail />} />
                 </Route>
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>

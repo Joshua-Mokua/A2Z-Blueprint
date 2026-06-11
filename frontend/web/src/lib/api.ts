@@ -496,3 +496,115 @@ export async function approvePipelineDealCancel(
     body,
   );
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// LMS (Loan Application Management System) fetchers
+// β5 Phase 4 — consumes α8 backend (utils/api_lms_routes.py)
+//
+// 5 endpoints under /api/lms/applications. All require Bearer JWT.
+// Cascade-scoped (rm_code + analyst-override). Audit emission per α8.
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  LoanApplicationsResponse,
+  LoanApplicationDetailResponse,
+  LoanAppMutationResponse,
+  AssignAnalystRequest,
+  LoanAppUpdateRequest,
+  RecordDecisionRequest,
+} from '@/types/lms';
+
+
+/**
+ * Fetch the cascade-scoped list of loan applications.
+ *
+ * Auth: REQUIRED. Server filters by caller's visible_codes (cascade
+ * walk) PLUS analyst-override (caller's staff_code matches
+ * application.analyst.code). Admins see everything.
+ *
+ * Returns: { applications: [], count: N, source: 'loan_application_manager' }
+ */
+export async function fetchLmsApplications(): Promise<LoanApplicationsResponse> {
+  return getJson<LoanApplicationsResponse>('/lms/applications');
+}
+
+
+/**
+ * Fetch a single application by id.
+ *
+ * Auth: REQUIRED. Returns 404 if not found, 403 if out-of-scope.
+ * Response includes per-caller permissions object that React uses
+ * to decide which action buttons to enable.
+ */
+export async function fetchLmsApplicationDetail(
+  appId: string,
+): Promise<LoanApplicationDetailResponse> {
+  return getJson<LoanApplicationDetailResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}`,
+  );
+}
+
+
+/**
+ * Assign a credit analyst to a submitted application. Manager-tier only.
+ *
+ * Throws ApiValidationError (400) on:
+ *   - Missing analyst_code or analyst_name
+ *   - Application status != 'submitted' (re-assignment not allowed)
+ * Server returns 403 if caller is not manager-tier.
+ */
+export async function assignLmsAnalyst(
+  appId: string,
+  body: AssignAnalystRequest,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, AssignAnalystRequest>(
+    `/lms/applications/${encodeURIComponent(appId)}/assign`,
+    body,
+  );
+}
+
+
+/**
+ * Partial update to application fields.
+ *
+ * Throws ApiValidationError (400) on:
+ *   - Status not in {submitted, assigned} (no edits after decision)
+ *   - completeness_score out of 0..100 range
+ *   - No updatable fields provided (empty body)
+ * Server returns 403 if caller has no stake (not owner/analyst/manager).
+ *
+ * Uses PUT method via postJson's 3rd arg.
+ */
+export async function updateLmsApplication(
+  appId: string,
+  body: LoanAppUpdateRequest,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, LoanAppUpdateRequest>(
+    `/lms/applications/${encodeURIComponent(appId)}`,
+    body,
+    'PUT',
+  );
+}
+
+
+/**
+ * Record approve/decline/return decision. Manager-tier only.
+ *
+ * Throws ApiValidationError (400) on:
+ *   - Missing verdict or authority
+ *   - verdict not in {approve, approved, decline, declined, return, returned}
+ *   - Status not in {submitted, assigned}
+ * Server returns 403 if caller not manager-tier.
+ *
+ * Verdict normalized server-side to canonical {approved|declined|returned}.
+ */
+export async function recordLmsDecision(
+  appId: string,
+  body: RecordDecisionRequest,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, RecordDecisionRequest>(
+    `/lms/applications/${encodeURIComponent(appId)}/decision`,
+    body,
+  );
+}

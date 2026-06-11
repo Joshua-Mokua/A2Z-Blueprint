@@ -57,6 +57,11 @@ const NAV_ITEMS: NavItem[] = [
     visibleFor:  (isMgr) => isMgr,
   },
   {
+    path:        '/lms',
+    label:       'Loan Applications',
+    matchActive: (p) => p === '/lms' || p.startsWith('/lms/'),
+  },
+  {
     path:        '/perform',
     label:       'BSC Performance',
     matchActive: (p) => p === '/perform',
