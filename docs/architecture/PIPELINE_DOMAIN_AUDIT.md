@@ -1042,3 +1042,183 @@ This section does not retroactively change β3's commit. β3 shipped with the in
 ---
 
 **End of Section 17.**
+
+
+---
+
+# Section 18 — α8 Loan Application backend (Arc α continuation)
+
+**Authored:** 2026-06-11 (Batch α8 — Phase 3 Arc α, Loan Application domain)
+**Type:** Append-only amendment. Marks completion of α8 from the Arc α plan in Section 16.3. Documents the endpoint surface decisions made during implementation and the deferred work parked for later batches.
+
+---
+
+## 18.1 What α8 ships
+
+Five REST endpoints under `/api/lms/applications` exposing `LoanApplicationManager` (`utils/core.py:5267`) to React:
+
+| Verb | Path | Auth |
+|---|---|---|
+| GET | `/api/lms/applications` | required + cascade scope filter |
+| GET | `/api/lms/applications/{id}` | required + per-app permissions object |
+| POST | `/api/lms/applications/{id}/assign` | required + manager-tier |
+| PUT | `/api/lms/applications/{id}` | required + can_update permission |
+| POST | `/api/lms/applications/{id}/decision` | required + manager-tier |
+
+Plus 5 new helper modules mirroring the pipeline-domain shape:
+
+- `utils/api_lms_models.py` — Pydantic request/response models
+- `utils/api_lms_scope.py` — cascade-scope filter (delegates to `api_pipeline_scope.get_visible_staff_codes`, adds analyst-override layer)
+- `utils/api_lms_mutations.py` — payload validators + status-guardrail constants
+- `utils/api_lms_permissions.py` — per-caller-per-app permission resolver
+- `utils/api_lms_routes.py` — `APIRouter` with the 5 endpoint handlers
+
+Mounted in `utils/api.py` via a 2-line append (`import` + `app.include_router(lms_router)`).
+
+### Architectural note: first use of APIRouter
+
+α8 is the **first batch to use FastAPI's `APIRouter`** in this codebase. Pipeline endpoints predate this and live as raw `@app.method` decorators inside `utils/api.py`. The router pattern was chosen for α8 because:
+
+1. It keeps `utils/api.py` changes to a 2-line append rather than ~400 lines of new endpoint code inside an already-4000-line file.
+2. The route module becomes self-contained and grep-able as a unit.
+3. It's the FastAPI-idiomatic pattern and a precedent for α9 and beyond.
+
+Existing pipeline routes are NOT migrated in this batch — that's not a refactor scope α8 wanted to take on. They remain as `@app.method` in `api.py`. A future hygiene batch can migrate them to `pipeline_router` if Joshua wants the pattern unified.
+
+---
+
+## 18.2 Authorization model
+
+Three tiers stacked per endpoint:
+
+### Tier 1 — Cascade scope
+
+Reuses `get_visible_staff_codes(user)` from `api_pipeline_scope.py`. An application is visible to a caller if EITHER:
+
+- `app.rm_code` is in the caller's `visible_codes` set (RM cascade), OR
+- `app.analyst.code` matches the caller's `staff_code` (analyst override)
+
+The analyst override exists because credit analysts at HQ work across cascades — without it, an assigned analyst at HQ wouldn't see applications submitted by branch RMs whose cascade the analyst is otherwise outside.
+
+Admins span the whole roster (their `visible_codes` includes every staff code), so admin sees everything.
+
+### Tier 2 — Manager-tier check
+
+Reuses `is_manager(user)` from `api_pipeline_manager_actions.py`. Same keyword set as the pipeline manager-queue gates (managing, director, head of, regional, branch manager, chief, manager, supervisor, credit manager, operations manager). Applied to:
+
+- `POST /assign` — only managers can assign analysts (per Q1 in α8 planning)
+- `POST /decision` — only managers can record decisions (per Q2)
+
+### Tier 3 — Status guardrails
+
+State-machine-lite enforcement on mutations:
+
+- `PUT /` (update) — requires status in `{submitted, assigned}` (no edits after approve/decline/return)
+- `POST /assign` — requires status in `{submitted}` (no re-assignment)
+- `POST /decision` — requires status in `{submitted, assigned}`
+
+These constants live in `api_lms_mutations.py` (`STATUSES_PERMITTING_UPDATE`, etc.) and are read by both the endpoint handlers (enforcement) AND the permission resolver (UX hints).
+
+### Per-application permissions object
+
+`GET /applications/{id}` returns:
+
+```json
+{
+  "can_view":           true,
+  "can_update":         true,
+  "can_assign":         false,
+  "can_record_decision": false
+}
+```
+
+React UI uses these to enable/disable controls. The server still enforces the same gates on every mutation — these flags are UX hints, not the security boundary.
+
+---
+
+## 18.3 Audit events emitted
+
+Five new event types added to the audit inventory:
+
+| Event | Detail format |
+|---|---|
+| `LMS_ANALYST_ASSIGNED` | `{app_id}\|{analyst_code}` |
+| `LMS_APPLICATION_UPDATED` | `{app_id}` |
+| `LMS_DECISION_APPROVED` | `{app_id}\|{authority}` |
+| `LMS_DECISION_DECLINED` | `{app_id}\|{authority}` |
+| `LMS_DECISION_RETURNED` | `{app_id}\|{authority}` |
+
+All emit via `utils.core_audit.audit_log(action, username, detail)`. The decision event name is derived from the normalized verdict, giving downstream audit dashboards three clean event types instead of one ambiguous `LMS_DECISION_RECORDED`.
+
+Existing `LMS_APPLICATION_CREATED` (emitted by α4's pipeline handoff) remains as the lifecycle-creation event. The five events above cover the four mutations α8 surfaces — together they form the full LMS-side audit trail for an application from create to decision.
+
+---
+
+## 18.4 Deliberate scope exclusions
+
+The following capabilities are **not** in α8 — they are explicit candidates for future batches, parked here for traceability:
+
+- **Committee referral / committee approval workflows.** The `ApplicationState` enum (`utils/credit_workflow.py:41-125`) defines `REFERRED_TO_COMMITTEE` / `COMMITTEE_PENDING` / `COMMITTEE_APPROVED` / `COMMITTEE_DECLINED` states. `LoanApplicationManager` doesn't currently expose committee-routing methods. **α8b candidate.**
+- **Document checkoff CRUD.** α8 allows PUT to replace `docs_submitted` wholesale but doesn't add per-document submit/verify operations. **α8c candidate.**
+- **Manager-specific queues.** For LMS the natural queues are: unassigned applications (manager assigns analyst), decision-pending applications (manager records decision). Equivalent of pipeline α6's validation/cancellation queues. **α8d candidate.**
+- **eKYC / Bureau Pull / Documentation states.** The `ApplicationState` enum defines these as discrete states with transition rules. The data file uses simpler status strings. α8 honors the data-file vocabulary (see Section 18.5). Migrating to the enum granularity is a substantial scope.
+- **Reverse-decision endpoint.** No `POST /decision/reverse` in α8 — once approved/declined/returned, the application is immutable from the LMS-side API. If a decision needs reversal, that's a future operations-recovery scope.
+
+---
+
+## 18.5 Enum-vs-data discrepancy (potential GAP-017)
+
+Same-turn inspection during α8 surfaced a discrepancy between two sources of "what is a valid application status":
+
+**`utils/credit_workflow.py::ApplicationState`** (19 states, UPPER_CASE, with `ALLOWED_TRANSITIONS` graph):
+
+```
+DRAFT, SUBMITTED, EKYC_PENDING, EKYC_FAILED, BUREAU_PULL_PENDING,
+DECISION_PENDING, APPROVED, CONDITIONALLY_APPROVED, DECLINED,
+REFERRED_TO_COMMITTEE, COMMITTEE_PENDING, COMMITTEE_APPROVED,
+COMMITTEE_DECLINED, DOCUMENTATION_PENDING, DISBURSEMENT_PENDING,
+DISBURSED, WITHDRAWN_BY_APPLICANT, EXPIRED
+```
+
+**`data/loan_applications.json`** runtime data (~7 states, lowercase, no transition graph):
+
+```
+submitted, assigned, approved, declined, returned, credit_admin, disbursed
+```
+
+Overlap analysis (case-insensitive):
+
+| Data status | Closest enum match | Notes |
+|---|---|---|
+| `submitted` | `SUBMITTED` | matches |
+| `approved` | `APPROVED` | matches |
+| `declined` | `DECLINED` | matches |
+| `disbursed` | `DISBURSED` | matches |
+| `assigned` | (none) | enum has `EKYC_PENDING` after submission but semantics differ |
+| `returned` | (none) | no enum equivalent |
+| `credit_admin` | (none) | post-approval handoff state, no enum equivalent |
+
+**The enum is more granular than the runtime data.** It's an aspirational model that hasn't been realized in the data layer. α8 implements against the data-file vocabulary because per CGR1, doctrine bends to runtime reality — the enforced behaviour wins over the documented intent until reality is migrated.
+
+**Recommendation (decision for a follow-up batch):**
+
+- **(A)** Demote `ApplicationState` to "aspirational reference" — rename the file/class or add a docstring marking it as `ApplicationStateAspirational`, document that the data file uses a simpler subset.
+- **(B)** Plan a Phase 4 batch (separate from React arc) to migrate data records to the enum's granularity. This is a substantial migration: backend logic changes, BSC computation updates, data backfill.
+
+α8 defers this decision. If treated as a tracked divergence, it would become **GAP-017** in a future audit amendment. That entry is not authored in this batch — needs Joshua's reconciliation direction first.
+
+---
+
+## 18.6 What this section does NOT do
+
+This section does not edit Sections 1-17.
+
+This section does not file the enum-vs-data finding as a numbered GAP. That promotion needs an operator decision (path A or path B in 18.5) and would be a separate small batch.
+
+This section does not introduce React-side changes. α8 is backend-only. The React batch consuming α8 (loan application list/detail/decision UI) will be a separate β-arc batch — natural number β5 if no other pipeline-depth work intervenes.
+
+This section does not migrate existing pipeline endpoints from `@app.method` to `APIRouter`. That's a follow-up hygiene batch if Joshua wants the pattern unified across the API surface.
+
+---
+
+**End of Section 18.**

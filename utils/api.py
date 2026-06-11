@@ -4367,3 +4367,18 @@ if __name__ == "__main__":
 # Engine: finance_actuals_engine
 # Engine: nudge_engine
 # Engine: pillar_impact_engine
+
+
+# ============================================================
+# v10.515 Phase 3 Arc alpha Batch alpha8 — LMS Routes Mount
+# ============================================================
+# Mounts the LMS (Loan Application) router authored in
+# utils/api_lms_routes.py. Five endpoints under /api/lms/applications.
+# See PIPELINE_DOMAIN_AUDIT.md Section 18 for the domain spec.
+#
+# This is the FIRST use of APIRouter in utils/api.py. Earlier route
+# modules (pipeline, BSC, etc.) use @app.method decorators directly.
+# APIRouter keeps this batch's api.py footprint minimal: import +
+# include_router, no per-endpoint additions to this file.
+from utils.api_lms_routes import router as lms_router
+app.include_router(lms_router)
