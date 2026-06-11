@@ -941,3 +941,104 @@ This section does not propose new architecture. It cites and names an architectu
 ---
 
 **End of Section 16.**
+
+
+---
+
+# Section 17 — Streamlit α5 bsc_credit inversion (post-α5 finding surfaced during React Batch β3)
+
+**Authored:** 2026-06-11 (governance sweep batch, post-β4 close)
+**Type:** Append-only amendment. Surfaced during React Phase 4 Batch β3 (v10.512, commit `a796bc8`) when implementing the conflict-resolution UX on top of the α5 backend. Refines understanding of GAP-005's closure without modifying it.
+
+---
+
+## 17.1 The finding
+
+When implementing the React conflict-resolution flow in β3, same-turn cross-inspection of:
+
+- `utils/api_pipeline_mutations.py::is_override_semantics` (the α5 backend validator)
+- `pages/3_pipeline.py::_bsc_credit` (the Streamlit deal-creation path)
+
+…revealed that the Streamlit `_bsc_credit` field assignment is **inverted** relative to what the α5 backend now expects.
+
+The α5 backend (`utils/api_pipeline_mutations.py`) decides whether a create payload is in override-semantics or seek-permission-semantics by comparing `bsc_credit_to` against the caller's name:
+
+| Backend interpretation | `bsc_credit_to` value | Override note required? |
+|---|---|---|
+| **OVERRIDE** | equals caller's name | YES (≥10 chars) |
+| **SEEK PERMISSION** | equals portfolio_owner_name | NO |
+
+The Streamlit `_bsc_credit` calculation does the opposite mapping:
+
+| Streamlit user choice | Streamlit sets `bsc_credit_to` to | Backend then interprets as | Outcome |
+|---|---|---|---|
+| "Seek permission" | caller (creator) | OVERRIDE | **400 rejection** (no note collected by Streamlit) |
+| "Pursue override" | portfolio_owner_name | SEEK PERMISSION | accepted without override note (audit weakness) |
+
+**The polite path errors. The override path silently bypasses the note requirement.**
+
+---
+
+## 17.2 Same-turn evidence
+
+Verified in commit `a796bc8` (v10.512 Phase 4 Batch β3, React frontend):
+
+```
+utils/api_pipeline_mutations.py::is_override_semantics():
+    returns True iff bsc_credit_to == caller_name
+    when True, the validator requires manager_override_note (min 10 chars)
+
+pages/3_pipeline.py::_bsc_credit():
+    when user picks "Seek permission":   bsc_credit_to = current user name
+    when user picks "Pursue override":   bsc_credit_to = portfolio_owner_name
+```
+
+The α5 doctrine note in `api_pipeline_mutations.py` itself flags this as "the API enforcement for what Streamlit promises (requires manager override note) but never actually collects." That note correctly identifies that Streamlit doesn't collect the note. The deeper finding here is that Streamlit's mapping of *user choice → `bsc_credit_to`* is itself reversed — even the "Seek permission" path silently asks the backend for override semantics.
+
+---
+
+## 17.3 Why this surfaced now (not at α5)
+
+The α5 backend validator (added in v10.507 commit `fa61c81`) introduced semantics-by-value-of-`bsc_credit_to`. Streamlit was written earlier under a different convention. The two have been silently incompatible since v10.507. Existing Streamlit users would have experienced "Seek permission" submits failing with 400, but the failure mode was likely attributed to API teething issues rather than a documented inversion.
+
+React β3 only exposed it because β3 had to choose which side to mirror, forcing a deliberate same-turn comparison. React β3 implements the **backend** semantics (internally consistent — the server validates what the server expects). The Streamlit side is the artifact that needs fixing.
+
+---
+
+## 17.4 GAP-016 — Streamlit α5 bsc_credit inversion
+
+**Status:** OPEN
+**Surfaced during:** React Phase 4 Batch β3 (v10.512, commit `a796bc8`)
+**File affected:** `pages/3_pipeline.py::_bsc_credit` (and its call sites at deal-creation submit)
+
+**Gap:** Streamlit's `_bsc_credit` calculation maps user choice to `bsc_credit_to` in the inverse of what the α5 backend validator expects. The "Seek permission" path silently 400s because no override note is collected for a payload the server interprets as override semantics. The "Pursue override" path silently bypasses the note requirement because the server interprets it as seek-permission.
+
+**Stated location:** `pages/3_pipeline.py` — `_bsc_credit` definition and its call sites in the deal-creation submit handler.
+
+**Enforced location (backend):** `utils/api_pipeline_mutations.py::is_override_semantics`.
+
+**Risk:**
+
+1. **Stated functionality broken.** A Streamlit user who picks "Seek permission" cannot create a deal — they get a 400 with no clear UX recovery path.
+2. **Audit weakness.** A Streamlit user who picks "Pursue override" creates the deal without a manager override note, defeating the audit trail α5 was supposed to enforce on overrides.
+3. **Doctrine drift (CGR1).** Streamlit and React now have different conflict-resolution semantics for the same backend. Per the "Streamlit stays, React additive" doctrine (Section 16), both presentation layers must consume identical backend semantics.
+
+**Recommendation:** Swap the two assignments in `_bsc_credit`. When user picks "Seek permission", set `bsc_credit_to = portfolio_owner_name`. When user picks "Pursue override", set `bsc_credit_to = current_user_name` AND collect the `manager_override_note` input field (≥10 chars, matching backend validation). Both behaviours then match backend semantics. The fix is small (function-local swap plus one new text input field for the override path).
+
+**Scope:** Streamlit-only fix. No backend changes (backend is correct as of α5). No React changes (β3 already implements backend semantics). A single Streamlit-targeted batch closes this gap.
+
+---
+
+## 17.5 What this section does NOT do
+
+This section does not edit Sections 1-16. The append-only discipline holds.
+
+This section does not propose a fix batch. It documents the finding. The actual fix to `pages/3_pipeline.py` would be a separate batch (Streamlit-side only, no React or backend impact).
+
+This section does not change the closure status of GAP-005. GAP-005 (Conflict resolution endpoints) remains CLOSED for its original scope: the API endpoints exist and are mutually consistent with React. GAP-016 is a separate gap targeting the Streamlit-side consumer of those endpoints.
+
+This section does not retroactively change β3's commit. β3 shipped with the inversion already documented in its commit message (commit `a796bc8`). This section formalises that documentation in the canonical audit artifact and assigns the gap a stable identifier (GAP-016) so future batches can reference it.
+
+---
+
+**End of Section 17.**
