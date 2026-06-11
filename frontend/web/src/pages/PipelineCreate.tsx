@@ -46,12 +46,14 @@ import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { CustomerSearchInput } from '@/components/CustomerSearchInput';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
   MIN_OVERRIDE_NOTE_LEN,
   type PipelineCategory, type CreateDealRequest, type ReferDealRequest,
 } from '@/types/pipeline';
+import { segmentToCustomerType, type CbsCustomer } from '@/types/cbs';
 
 
 // ── Conflict resolution path discriminator ──────────────────────────────
@@ -74,6 +76,12 @@ export function PipelineCreate() {
   const [clientType,  setClientType]  = useState<'Individual' | 'Business'>('Individual');
   const [isNtb,       setIsNtb]       = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
+
+  // γ2: Tracks the CBS customer picked via the autofill dropdown.
+  // null means no autofill match (free-text fallback). The picked
+  // customer drives the "✓ matched in CBS" badge under the input
+  // and lets us derive isNtb=false automatically.
+  const [pickedCustomer, setPickedCustomer] = useState<CbsCustomer | null>(null);
 
   const [category,    setCategory]    = useState<PipelineCategory>('Loan');
   const [productType, setProductType] = useState('');
@@ -492,11 +500,22 @@ export function PipelineCreate() {
           <Card.Body>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-field="clientName">
-                <Input
+                <CustomerSearchInput
                   label="Client name *"
-                  placeholder="e.g. John Otieno Kamau"
+                  placeholder="Type a name (min 3 chars) to search CBS, or enter free text"
                   value={clientName}
-                  onChange={(e) => { setClientName(e.target.value); clearFieldError('clientName'); }}
+                  onChange={(v) => { setClientName(v); clearFieldError('clientName'); }}
+                  onCustomerPicked={(c) => {
+                    // γ2 autofill — when user picks from CBS dropdown,
+                    // populate related fields automatically.
+                    setPickedCustomer(c);
+                    setClientType(segmentToCustomerType(c.segment));
+                    // Customer is in CBS, so by definition not New-To-Bank.
+                    setIsNtb(false);
+                    clearFieldError('clientName');
+                  }}
+                  onCustomerCleared={() => setPickedCustomer(null)}
+                  pickedCustomer={pickedCustomer}
                   disabled={mutations.loading}
                   error={fieldErrors.clientName}
                 />

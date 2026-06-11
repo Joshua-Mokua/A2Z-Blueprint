@@ -695,3 +695,65 @@ export async function disburseCreditAdminCase(
     body,
   );
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// CBS (Core Banking System) lookup fetchers
+// γ2 Phase 5 — consumes γ1 backend (utils/api_cbs_routes.py)
+//
+// 5 endpoints under /api/cbs. All require Bearer JWT. Bank-wide scope
+// (no cascade filter). Read-only.
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  CbsCustomerSearchResponse,
+  CbsCustomerResponse,
+  CbsAccountsResponse,
+  CbsBranchesResponse,
+  CbsAggregatesResponse,
+} from '@/types/cbs';
+
+
+/**
+ * Search customers by name substring (min 3 chars activates server-side).
+ * Empty query returns empty list (debounce safety).
+ */
+export async function searchCbsCustomers(
+  query: string,
+  limit: number = 10,
+): Promise<CbsCustomerSearchResponse> {
+  const params = new URLSearchParams();
+  params.set('q',     query);
+  params.set('limit', String(limit));
+  return getJson<CbsCustomerSearchResponse>(`/cbs/customers?${params.toString()}`);
+}
+
+
+/**
+ * Exact CIF lookup. 404 if not found.
+ * Server emits CBS_CUSTOMER_LOOKUP audit event.
+ */
+export async function fetchCbsCustomer(cif: string): Promise<CbsCustomerResponse> {
+  return getJson<CbsCustomerResponse>(`/cbs/customers/${encodeURIComponent(cif)}`);
+}
+
+
+/**
+ * All accounts for a CIF. 404 if CIF not found. Empty array if customer
+ * has zero accounts (rare but possible). Server emits CBS_ACCOUNTS_LOOKUP.
+ */
+export async function fetchCbsCustomerAccounts(cif: string): Promise<CbsAccountsResponse> {
+  return getJson<CbsAccountsResponse>(`/cbs/customers/${encodeURIComponent(cif)}/accounts`);
+}
+
+
+/** 35-branch reference. Not audited. */
+export async function fetchCbsBranches(): Promise<CbsBranchesResponse> {
+  return getJson<CbsBranchesResponse>('/cbs/branches');
+}
+
+
+/** Bundled bank-level aggregates. Not audited. */
+export async function fetchCbsAggregates(): Promise<CbsAggregatesResponse> {
+  return getJson<CbsAggregatesResponse>('/cbs/aggregates');
+}

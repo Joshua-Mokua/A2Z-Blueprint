@@ -67,6 +67,11 @@ const NAV_ITEMS: NavItem[] = [
     matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'),
   },
   {
+    path:        '/cbs',
+    label:       'Customer Lookup',
+    matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'),
+  },
+  {
     path:        '/perform',
     label:       'BSC Performance',
     matchActive: (p) => p === '/perform',
