@@ -4382,3 +4382,18 @@ if __name__ == "__main__":
 # include_router, no per-endpoint additions to this file.
 from utils.api_lms_routes import router as lms_router
 app.include_router(lms_router)
+
+
+# ============================================================
+# v10.518 Phase 3 Arc alpha Batch alpha9 -- Credit Admin Routes Mount
+# ============================================================
+# Mounts the Credit Admin (CALMS) router authored in
+# utils/api_credit_admin_routes.py. Four endpoints under
+# /api/credit-admin/cases. See PIPELINE_DOMAIN_AUDIT.md Section 19
+# for the domain spec.
+#
+# Second use of APIRouter in utils/api.py (the first was α8 LMS).
+# The pattern is now established for backend routes; future batches
+# should mirror this structure unless there's a specific reason not to.
+from utils.api_credit_admin_routes import router as credit_admin_router
+app.include_router(credit_admin_router)

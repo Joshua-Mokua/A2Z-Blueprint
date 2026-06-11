@@ -1222,3 +1222,190 @@ This section does not migrate existing pipeline endpoints from `@app.method` to 
 ---
 
 **End of Section 18.**
+
+
+---
+
+# Section 19 — α9 Credit Admin backend (Arc α completion)
+
+**Authored:** 2026-06-11 (Batch α9 — Phase 3 Arc α, Credit Admin domain)
+**Type:** Append-only amendment. Marks **Arc α backend completion** — the third and final loan-origination entity domain (after Pipeline α1-α7 and LMS α8) is now exposed to React via REST.
+
+---
+
+## 19.1 What α9 ships
+
+Four REST endpoints under `/api/credit-admin/cases` exposing `CreditAdminManager` (`utils/core.py`) to React:
+
+| Verb | Path | Auth |
+|---|---|---|
+| GET | `/api/credit-admin/cases` | required + cascade scope filter |
+| GET | `/api/credit-admin/cases/{id}` | required + per-case permissions object |
+| POST | `/api/credit-admin/cases/{id}/conditions/fulfill` | required + cascade scope |
+| POST | `/api/credit-admin/cases/{id}/disburse` | required + manager-tier |
+
+Plus 5 new helper modules mirroring the α8 LMS shape:
+
+- `utils/api_credit_admin_models.py` — Pydantic request/response models
+- `utils/api_credit_admin_scope.py` — cascade-scope filter (delegates to `api_pipeline_scope.get_visible_staff_codes`)
+- `utils/api_credit_admin_mutations.py` — payload validators + state guardrails
+- `utils/api_credit_admin_permissions.py` — per-case permission resolver
+- `utils/api_credit_admin_routes.py` — `APIRouter` with 4 endpoint handlers
+
+Mounted in `utils/api.py` via a 2-line append. This is the SECOND use of APIRouter in `utils/api.py` (the first was α8). The pattern is now established for backend routes; future API additions should mirror this structure.
+
+---
+
+## 19.2 Domain semantics
+
+The Credit Admin (CALMS) domain holds **approved loan applications that are now in the disbursement pipeline**. A case (`CALMS####`) has a list of disbursement conditions (board resolutions, debentures, KYC documentation, insurance certificates, etc.) that must all be fulfilled before funds can be disbursed.
+
+### Lifecycle
+
+```
+Approved LMS application
+  ↓ (handoff)
+Credit Admin case created
+  ↓
+Conditions added (e.g. "Board resolution", "Debenture")
+  ↓
+Officers mark conditions fulfilled one by one
+  ↓
+all_conditions_met flips True (computed by manager)
+  ↓
+Manager clears for disbursement → ready_for_disbursement=True
+  ↓
+[Out of scope for α9: actual fund transfer → disbursed=True]
+```
+
+### Key data shape
+
+From `data/credit_admin.json`:
+
+```json
+{
+  "id": "CALMS00002",
+  "application_id": "LMS00002",
+  "client_name": "Nanyuki Airfield Services",
+  "rm_code": "300272",
+  "approval_date": "2026-03-18",
+  "conditions": [
+    { "type": "Board resolution", "required": true, "fulfilled": true,
+      "date_set": "...", "date_met": "...", "officer": "...", "notes": "" },
+    { "type": "Debenture", "required": true, "fulfilled": true, ... }
+  ],
+  "all_conditions_met": true,
+  "ready_for_disbursement": true,
+  "disbursed": false,
+  "disbursement_date": null
+}
+```
+
+Computed gates:
+- `all_conditions_met` — set True by `fulfill_condition` when every required condition is fulfilled
+- `ready_for_disbursement` — set True by `clear_for_disbursement` (manager action)
+- `disbursed` — finance-system action, NOT touched by α9 API
+
+---
+
+## 19.3 Authorization model
+
+Three tiers stacked per endpoint:
+
+### Tier 1 — Cascade scope
+
+Reuses `get_visible_staff_codes(user)` from `api_pipeline_scope.py`. A case is visible to a caller if `case.rm_code` is in the caller's `visible_codes` set. Admins span the whole roster.
+
+**No analyst/officer override.** Unlike LMS (α8) which adds an analyst-override layer because credit analysts work across cascades, credit-admin cases don't have an "assigned officer" field that drives scope. The `conditions[i].officer` is a fulfillment audit trail, not a scope assignment. Operations officers typically have department-level access via their role keywords (Credit Admin / Operations Manager), which already widens their cascade. See Section 19.5 for the deliberate exclusion.
+
+### Tier 2 — Manager-tier check (disburse only)
+
+Reuses `is_manager(user)` from `api_pipeline_manager_actions.py`. Applied to:
+
+- `POST /disburse` — only managers can clear cases for disbursement (per α9 planning decision)
+
+**NOT applied to** `POST /conditions/fulfill` — anyone in scope can mark a condition met (operations action — collecting documents, marking board resolutions received, etc.). The `officer_name` field on the request records who did it for audit.
+
+### Tier 3 — State guardrails
+
+State-machine-lite enforcement:
+
+- `POST /conditions/fulfill` — case must NOT be disbursed (no edits to closed cases)
+- `POST /disburse` — case must NOT be disbursed AND `all_conditions_met` must be True
+
+Plus a friendly precondition: when `/conditions/fulfill` is called with a `condition_type` that doesn't exist on the case, the endpoint returns a 400 with the list of available conditions rather than a silent 500 from the manager method.
+
+### Per-case permissions object
+
+`GET /cases/{id}` returns:
+
+```json
+{
+  "can_view":             true,
+  "can_fulfill_condition": true,
+  "can_disburse":         false
+}
+```
+
+React UI consumes these to enable/disable controls. Server still enforces the same checks on every mutation.
+
+---
+
+## 19.4 Audit events emitted
+
+Two new event types added to the audit inventory:
+
+| Event | Detail format |
+|---|---|
+| `CREDIT_ADMIN_CONDITION_FULFILLED` | `{case_id}\|{condition_type}\|{officer_name}` |
+| `CREDIT_ADMIN_DISBURSED` | `{case_id}\|{authority}` |
+
+The `officer_name` in the fulfillment event is recorded separately from the JWT `username` because the API allows mark-on-behalf-of (the officer who collected the document may not be the same person logged in entering it). The username is the audit accountability anchor; the officer is the operations attribution.
+
+---
+
+## 19.5 Deliberate scope exclusions
+
+Candidates for future batches, parked here for traceability:
+
+- **Actual disbursement (setting `disbursed=True` + `disbursement_date`).** This is a finance-system handoff, not a credit-admin API responsibility. Adding it would couple this API to treasury/cash-management which is outside the loan-origination arc.
+- **Condition CRUD (add/remove/edit conditions on an existing case).** α9 lets officers fulfill conditions but doesn't let them add new ones. Conditions are set at case creation by the approval authority. Adding mid-case is a separate scope.
+- **Officer-override on scope** (analogous to LMS analyst-override). Documented above in 19.3. Add only if operations officers report can't see their assigned cases.
+- **Reverse-clearance** (un-clear a case that was cleared in error). After `clear_for_disbursement` the case is considered ready; reversing that would be a separate ops-recovery scope.
+- **Bulk condition fulfillment** (mark multiple conditions met in one call). Possible α9b candidate if the React UI needs it for efficient operations workflows.
+
+---
+
+## 19.6 What Arc α now provides end-to-end
+
+With α9 shipped, the entire three-entity loan-origination chain is exposed to React:
+
+| Domain | Manager class | Endpoints | Lifecycle stage |
+|---|---|---|---|
+| **Pipeline** (α1-α7) | `PipelineManager` | 11 endpoints under `/api/pipeline` | Lead → Qualified → Proposal → Won/Lost |
+| **LMS** (α8) | `LoanApplicationManager` | 5 endpoints under `/api/lms` | Submitted → Assigned → Approved/Declined/Returned |
+| **Credit Admin** (α9) | `CreditAdminManager` | 4 endpoints under `/api/credit-admin` | Conditions fulfillment → Clearance |
+
+**20 total endpoints across 3 domains.** A React frontend can now drive the full loan-origination workflow from lead capture (pipeline) through approval (LMS) to disbursement clearance (credit admin) without ever calling Streamlit.
+
+Arc α is **functionally complete**. What remains:
+
+- **α10** — Documentation sync: API_CONTRACTS doc, TELEMETRY_MAP doc updates. Smaller scope, pure documentation.
+
+After α10, the React frontend (β-arc) can consume the entire loan-origination backend without gaps.
+
+---
+
+## 19.7 What this section does NOT do
+
+This section does not edit Sections 1-18.
+
+This section does not introduce React-side changes. α9 is backend-only. React batches consuming α9 (Credit Admin UI: case list + detail + condition fulfillment + disburse) will be separate β-arc batches.
+
+This section does not migrate existing pipeline routes from `@app.method` to `APIRouter`. With α8 and α9 both using APIRouter, the pattern is now precedent for new routes. Migrating the existing pipeline routes is a hygiene scope for a future batch if Joshua wants the full API surface unified.
+
+This section does not file the deliberate exclusions as numbered GAPs. They are documented here as "future candidate" — they become GAPs only if treated as tracked divergences requiring operator decisions.
+
+---
+
+**End of Section 19.**
