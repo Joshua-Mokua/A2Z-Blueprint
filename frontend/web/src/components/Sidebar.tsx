@@ -62,6 +62,11 @@ const NAV_ITEMS: NavItem[] = [
     matchActive: (p) => p === '/lms' || p.startsWith('/lms/'),
   },
   {
+    path:        '/credit-admin',
+    label:       'Credit Admin',
+    matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'),
+  },
+  {
     path:        '/perform',
     label:       'BSC Performance',
     matchActive: (p) => p === '/perform',

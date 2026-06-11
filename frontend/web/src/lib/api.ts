@@ -608,3 +608,90 @@ export async function recordLmsDecision(
     body,
   );
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Credit Admin (CALMS) fetchers
+// β6 Phase 4 — consumes α9 backend (utils/api_credit_admin_routes.py)
+//
+// 4 endpoints under /api/credit-admin/cases. All require Bearer JWT.
+// Cascade-scoped (rm_code-based). Audit emission per α9.
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  CreditAdminCasesResponse,
+  CreditAdminCaseDetailResponse,
+  CreditAdminMutationResponse,
+  FulfillConditionRequest,
+  DisburseCaseRequest,
+} from '@/types/creditAdmin';
+
+
+/**
+ * Fetch cascade-scoped list of credit-admin cases.
+ *
+ * Auth: REQUIRED. Server filters by caller's visible_codes against
+ * case.rm_code. No analyst-override layer (per Section 19.3) — credit
+ * admin officers typically have department-level role widening.
+ */
+export async function fetchCreditAdminCases(): Promise<CreditAdminCasesResponse> {
+  return getJson<CreditAdminCasesResponse>('/credit-admin/cases');
+}
+
+
+/**
+ * Fetch single case detail + permissions.
+ *
+ * Auth: REQUIRED. 404 if not found, 403 if out-of-scope.
+ */
+export async function fetchCreditAdminCaseDetail(
+  caseId: string,
+): Promise<CreditAdminCaseDetailResponse> {
+  return getJson<CreditAdminCaseDetailResponse>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}`,
+  );
+}
+
+
+/**
+ * Mark a condition fulfilled on a case. Anyone in scope, case not disbursed.
+ *
+ * Throws ApiValidationError (400) on:
+ *   - condition_type or officer_name missing
+ *   - Case is already disbursed
+ *   - Condition with given type doesn't exist on the case
+ * Server returns 403 if caller out-of-scope.
+ */
+export async function fulfillCreditAdminCondition(
+  caseId: string,
+  body: FulfillConditionRequest,
+): Promise<CreditAdminMutationResponse> {
+  return postJson<CreditAdminMutationResponse, FulfillConditionRequest>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/conditions/fulfill`,
+    body,
+  );
+}
+
+
+/**
+ * Clear case for disbursement. Manager-tier only; requires all conditions met.
+ *
+ * Calls cam.clear_for_disbursement() under the hood — sets
+ * ready_for_disbursement=True. The actual fund transfer (disbursed=True)
+ * is OUT OF SCOPE (finance system handles it).
+ *
+ * Throws ApiValidationError (400) on:
+ *   - Missing authority
+ *   - all_conditions_met is False (returns list of unmet)
+ *   - Case is already disbursed
+ * Server returns 403 if caller not manager-tier.
+ */
+export async function disburseCreditAdminCase(
+  caseId: string,
+  body: DisburseCaseRequest,
+): Promise<CreditAdminMutationResponse> {
+  return postJson<CreditAdminMutationResponse, DisburseCaseRequest>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/disburse`,
+    body,
+  );
+}

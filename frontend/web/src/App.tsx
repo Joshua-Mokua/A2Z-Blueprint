@@ -75,6 +75,8 @@ import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
 import { Lms } from './pages/Lms';
 import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
+import { CreditAdmin } from './pages/CreditAdmin';
+import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
 
 const queryClient = new QueryClient();
 
@@ -130,6 +132,10 @@ function App() {
                     {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
                     <Route path="/lms"         element={<Lms />} />
                     <Route path="/lms/:appId"  element={<LmsApplicationDetail />} />
+
+                    {/* Credit Admin subroutes — β6. */}
+                    <Route path="/credit-admin"          element={<CreditAdmin />} />
+                    <Route path="/credit-admin/:caseId"  element={<CreditAdminCaseDetail />} />
                 </Route>
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>
