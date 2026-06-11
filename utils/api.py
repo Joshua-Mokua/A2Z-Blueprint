@@ -4402,3 +4402,8 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+
+
+# v10.532 Phase 5 Batch gamma3 -- Target Cascade read-only routes
+from utils.api_cascade_routes import router as cascade_api_router
+app.include_router(cascade_api_router)
