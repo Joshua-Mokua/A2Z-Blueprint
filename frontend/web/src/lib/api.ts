@@ -757,3 +757,46 @@ export async function fetchCbsBranches(): Promise<CbsBranchesResponse> {
 export async function fetchCbsAggregates(): Promise<CbsAggregatesResponse> {
   return getJson<CbsAggregatesResponse>('/cbs/aggregates');
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Target Cascade fetchers
+// γ3b Phase 5 — consumes γ3a backend (utils/api_cascade_routes.py)
+//
+// 4 endpoints under /api/cascade. Read-only. All require Bearer JWT.
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  BankTargetsResponse,
+  MyAllocationsResponse,
+  GivenToMeResponse,
+  CoverageResponse,
+} from '@/types/cascade';
+
+
+export async function fetchBankTargets(period: string = '2026'): Promise<BankTargetsResponse> {
+  return getJson<BankTargetsResponse>(`/cascade/bank-targets?period=${encodeURIComponent(period)}`);
+}
+
+
+export async function fetchMyCascadeAllocations(period: string = '2026'): Promise<MyAllocationsResponse> {
+  return getJson<MyAllocationsResponse>(`/cascade/my-allocations?period=${encodeURIComponent(period)}`);
+}
+
+
+export async function fetchGivenToMe(period: string = '2026'): Promise<GivenToMeResponse> {
+  return getJson<GivenToMeResponse>(`/cascade/given-to-me?period=${encodeURIComponent(period)}`);
+}
+
+
+export async function fetchCascadeCoverage(
+  fromCode: string,
+  kpi: string,
+  period: string = '2026',
+): Promise<CoverageResponse> {
+  const params = new URLSearchParams();
+  params.set('from_code', fromCode);
+  params.set('kpi',       kpi);
+  params.set('period',    period);
+  return getJson<CoverageResponse>(`/cascade/coverage?${params.toString()}`);
+}

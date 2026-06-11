@@ -79,6 +79,7 @@ import { CreditAdmin } from './pages/CreditAdmin';
 import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
 import { Cbs } from './pages/Cbs';
 import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
+import { Cascade } from './pages/Cascade';
 
 const queryClient = new QueryClient();
 
@@ -142,6 +143,9 @@ function App() {
                     {/* CBS Customer Lookup — γ2. */}
                     <Route path="/cbs"         element={<Cbs />} />
                     <Route path="/cbs/:cif"    element={<CbsCustomerDetail />} />
+
+                    {/* Target Cascade — γ3 (read-only). */}
+                    <Route path="/cascade"     element={<Cascade />} />
                 </Route>
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>

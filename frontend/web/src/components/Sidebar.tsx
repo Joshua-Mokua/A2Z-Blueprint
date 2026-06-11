@@ -72,6 +72,11 @@ const NAV_ITEMS: NavItem[] = [
     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'),
   },
   {
+    path:        '/cascade',
+    label:       'Target Cascade',
+    matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'),
+  },
+  {
     path:        '/perform',
     label:       'BSC Performance',
     matchActive: (p) => p === '/perform',
