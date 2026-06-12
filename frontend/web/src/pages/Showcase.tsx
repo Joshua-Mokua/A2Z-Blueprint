@@ -19,6 +19,12 @@ import { Skeleton } from '@/components/Skeleton';
 import { Table, type Column } from '@/components/Table';
 import { useToast } from '@/components/Toast';
 import { useBranding } from '@/hooks/useBranding';
+// Phase P Batch P3a — intelligence-display primitives.
+import { RagChip } from '@/components/RagChip';
+import { VarianceBadge } from '@/components/VarianceBadge';
+import { KpiTile } from '@/components/KpiTile';
+import { EmptyState } from '@/components/EmptyState';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface DemoRow {
   id: number;
@@ -75,6 +81,9 @@ export function Showcase() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [tableLoading, setTableLoading] = useState(false);
+  // Phase P Batch P3a — ConfirmDialog demo state.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const fireDemoToast = (
     tone: 'success' | 'warning' | 'danger' | 'info',
@@ -266,6 +275,79 @@ export function Showcase() {
               tone: 'info',
               message: `Clicked: ${row.client}`,
             })}
+          />
+        </Section>
+
+        {/* ── P3a: Intelligence-display primitives ───────── */}
+        <Section title="RAG Chips (P3a)">
+          <div className="flex flex-wrap items-center gap-2">
+            <RagChip status="on_track" dot />
+            <RagChip status="at_risk" dot />
+            <RagChip status="off_track" dot />
+            <RagChip status="no_data" dot />
+            <RagChip status="at_risk" label="Behind" size="sm" />
+          </div>
+        </Section>
+
+        <Section title="Variance Badges (P3a)">
+          <div className="flex flex-wrap items-center gap-4">
+            <VarianceBadge actual={108} target={100} />
+            <VarianceBadge actual={92} target={100} />
+            <span className="text-xs text-gray-400">NPL (invert):</span>
+            <VarianceBadge actual={9.5} target={11} invert />
+            <VarianceBadge actual={12.4} target={11} invert />
+            <VarianceBadge actual={5} target={0} />
+          </div>
+        </Section>
+
+        <Section title="KPI Tiles (P3a)">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiTile label="Profit Before Tax" actual="KES 4.2B"
+                     target="KES 5.0B" variancePct={-16} status="at_risk" />
+            <KpiTile label="Retail Deposit Growth" actual="KES 1.42T"
+                     target="KES 1.30T" variancePct={9.2} status="on_track" />
+            <KpiTile label="NPL Ratio" actual="9.5%" target="11.0%"
+                     variancePct={-13.6} invert status="on_track" />
+            <KpiTile label="New Accounts" actual={1820} loading />
+          </div>
+        </Section>
+
+        <Section title="Empty State (P3a)">
+          <Card padding="none">
+            <EmptyState
+              title="No customers found"
+              message="Try a different name, or check the CIF and search again."
+              action={
+                <Button variant="ghost" size="sm"
+                        onClick={() => toast({ tone: 'info', message: 'Reset search' })}>
+                  Clear search
+                </Button>
+              }
+            />
+          </Card>
+        </Section>
+
+        <Section title="Confirm Dialog (P3a)">
+          <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+            Clear case for disbursement…
+          </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            title="Clear case for disbursement?"
+            message="This marks the case ready for the finance system. This action is audited."
+            confirmLabel="Disburse"
+            tone="danger"
+            loading={confirmLoading}
+            onCancel={() => setConfirmOpen(false)}
+            onConfirm={() => {
+              setConfirmLoading(true);
+              // Simulate an async mutation for the demo.
+              setTimeout(() => {
+                setConfirmLoading(false);
+                setConfirmOpen(false);
+                toast({ tone: 'success', message: 'Case cleared (demo)' });
+              }, 900);
+            }}
           />
         </Section>
 
