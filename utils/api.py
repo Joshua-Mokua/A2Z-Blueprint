@@ -4407,3 +4407,8 @@ app.include_router(cbs_router)
 # v10.532 Phase 5 Batch gamma3 -- Target Cascade read-only routes
 from utils.api_cascade_routes import router as cascade_api_router
 app.include_router(cascade_api_router)
+
+
+# v10.540 Phase 8 Batch gamma4a -- Strategic Initiatives read-only routes
+from utils.api_initiatives_routes import router as initiatives_api_router
+app.include_router(initiatives_api_router)
