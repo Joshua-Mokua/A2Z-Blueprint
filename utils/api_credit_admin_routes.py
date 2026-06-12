@@ -313,5 +313,13 @@ def credit_admin_disburse(
         f"{case_id}|{payload.authority}",
     )
 
+    # P1 (2026-06-12): recompute BSC actuals from operational modules.
+    # Best-effort — a recompute failure must not fail a successful
+    # disbursement clearance. Clearing a case moves Disbursements /
+    # Collection Throughput / downstream PAR on the clearer's scorecard.
+    # Mirrors the Pipeline routes' wiring. See utils/api_bsc_bridge.py.
+    from utils.api_bsc_bridge import emit_bsc_trigger
+    emit_bsc_trigger(str(user.get('username', '') or ''))
+
     updated = cam.get(case_id)
     return {"case": updated, "status": "cleared_for_disbursement"}

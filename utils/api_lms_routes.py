@@ -431,6 +431,14 @@ def lms_application_decision(
         f"{app_id}|{payload.authority}",
     )
 
+    # P1 (2026-06-12): recompute BSC actuals from operational modules.
+    # Best-effort — a recompute failure must not fail a recorded decision.
+    # An approved/declined loan moves Disbursements / Loan Book Growth /
+    # Number of Business Borrowers on the decider's scorecard. Mirrors the
+    # Pipeline routes' emit_bsc_trigger wiring. See utils/api_bsc_bridge.py.
+    from utils.api_bsc_bridge import emit_bsc_trigger
+    emit_bsc_trigger(str(user.get('username', '') or ''))
+
     updated = lam.get(app_id)
     return {
         "application": updated,
