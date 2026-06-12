@@ -43,6 +43,7 @@ export interface PipelineDeal {
   // Identity
   id:                   string;
   client_name:          string;
+  client_cif?:          string;     // δ2: CBS CIF when matched to a CBS customer
   client_type?:         string;
   is_ntb?:              boolean;
   is_referral?:         boolean;
@@ -317,6 +318,7 @@ export interface CreateDealRequest {
 
   // Optional but commonly supplied
   client_type?:          string;     // 'Individual' or 'Business'
+  client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
   pipeline_category?:    PipelineCategory;
   probability?:          number;     // 0..1 (NOT 0..100)

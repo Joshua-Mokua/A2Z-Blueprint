@@ -47,6 +47,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
+import { fetchCbsCustomer, ApiValidationError } from '@/lib/api';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
@@ -82,6 +83,15 @@ export function PipelineCreate() {
   // customer drives the "✓ matched in CBS" badge under the input
   // and lets us derive isNtb=false automatically.
   const [pickedCustomer, setPickedCustomer] = useState<CbsCustomer | null>(null);
+
+  // δ2: Direct CIF entry. Separate from pickedCustomer so users who
+  // KNOW the CIF can type it without name-searching first. Auto-populated
+  // when user picks a customer via the name dropdown. The "Fetch" button
+  // does a GET /api/cbs/customers/{cif} lookup and autofills the form
+  // from the returned customer record.
+  const [clientCif,     setClientCif]     = useState<string>('');
+  const [cifLookupLoading, setCifLookupLoading] = useState<boolean>(false);
+  const [cifLookupError,   setCifLookupError]   = useState<string | null>(null);
 
   const [category,    setCategory]    = useState<PipelineCategory>('Loan');
   const [productType, setProductType] = useState('');
@@ -163,6 +173,45 @@ export function PipelineCreate() {
       delete next[key];
       return next;
     });
+  };
+
+  // δ2 (2026-06-12): direct CIF lookup. User types a CIF in the
+  // "Client CIF" input and clicks "Fetch from CBS" (or presses Enter).
+  // We GET /api/cbs/customers/{cif}; on success we autofill clientName,
+  // clientType, pickedCustomer, isNtb (same shape as picking from the
+  // name dropdown). 404 surfaces as an error message under the input.
+  const onFetchCif = async () => {
+    const cif = clientCif.trim();
+    if (!cif) {
+      setCifLookupError('Enter a CIF to fetch.');
+      return;
+    }
+    setCifLookupLoading(true);
+    setCifLookupError(null);
+    try {
+      const resp = await fetchCbsCustomer(cif);
+      const customer = resp.customer;
+      // Mirror the onCustomerPicked branch from the name-search dropdown
+      setPickedCustomer(customer);
+      setClientName(customer.full_name);
+      setClientType(segmentToCustomerType(customer.segment));
+      setIsNtb(false);
+      setClientCif(customer.cif);
+      clearFieldError('clientName');
+      toast({
+        tone: 'success',
+        message: `✓ Customer found: ${customer.full_name}`,
+      });
+    } catch (e) {
+      if (e instanceof ApiValidationError) {
+        setCifLookupError(e.detail || 'CIF lookup failed.');
+      } else {
+        const msg = e instanceof Error ? e.message : 'CIF lookup failed.';
+        setCifLookupError(msg);
+      }
+    } finally {
+      setCifLookupLoading(false);
+    }
   };
 
   // ── Validation ───────────────────────────────────────────────────────
@@ -357,6 +406,7 @@ export function PipelineCreate() {
 
       // Optional
       client_type:        clientType,
+      client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
       is_ntb:             isNtb,
       pipeline_category:  category,
       probability:        probability / 100,
@@ -498,6 +548,51 @@ export function PipelineCreate() {
             <span className="text-xs text-gray-400">Who is this deal for?</span>
           </Card.Header>
           <Card.Body>
+            {/* δ2 (2026-06-12): CIF direct-entry row. Users who know the CIF
+                can type it and click "Fetch" to autofill the form from CBS,
+                independent of the name-search dropdown above. */}
+            <div className="mb-4" data-field="clientCif">
+              <label className="text-sm font-medium text-gray-700">
+                Client CIF (optional — to fetch from CBS)
+              </label>
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  value={clientCif}
+                  onChange={(e) => {
+                    setClientCif(e.target.value);
+                    if (cifLookupError) setCifLookupError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && clientCif.trim() && !cifLookupLoading) {
+                      e.preventDefault();
+                      void onFetchCif();
+                    }
+                  }}
+                  placeholder="e.g. 100123456"
+                  disabled={mutations.loading || cifLookupLoading}
+                  autoComplete="off"
+                  className="flex-1 h-10 px-3 rounded-md border border-gray-300 bg-white text-sm font-mono focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                />
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => void onFetchCif()}
+                  disabled={!clientCif.trim() || mutations.loading || cifLookupLoading}
+                >
+                  {cifLookupLoading ? 'Fetching…' : 'Fetch from CBS'}
+                </Button>
+              </div>
+              {cifLookupError && (
+                <div className="mt-1 text-xs text-red-700">{cifLookupError}</div>
+              )}
+              {!cifLookupError && pickedCustomer && clientCif === pickedCustomer.cif && (
+                <div className="mt-1 text-xs text-green-700">
+                  ✓ CIF matches picked customer
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-field="clientName">
                 <CustomerSearchInput
@@ -512,6 +607,9 @@ export function PipelineCreate() {
                     setClientType(segmentToCustomerType(c.segment));
                     // Customer is in CBS, so by definition not New-To-Bank.
                     setIsNtb(false);
+                    // δ2: also capture the CIF so it persists on the deal.
+                    setClientCif(c.cif);
+                    setCifLookupError(null);
                     clearFieldError('clientName');
                   }}
                   onCustomerCleared={() => setPickedCustomer(null)}

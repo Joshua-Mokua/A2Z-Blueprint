@@ -82,6 +82,10 @@ class PipelineDeal(BaseModel):
     client_name: str = Field(
         description="Customer display name"
     )
+    client_cif: Optional[str] = Field(
+        default=None,
+        description="CBS customer identifier (CIF) if the deal client is matched in CBS",
+    )
 
     # ── Money ──────────────────────────────────────────────────────
     # Canonical amount field is `deal_value` (NOT `amount`).
@@ -279,6 +283,10 @@ class PipelineDealCreate(BaseModel):
 
     # Required (validated at endpoint via validate_create_payload)
     client_name: str = Field(description="Customer display name")
+    client_cif: Optional[str] = Field(
+        default=None,
+        description="CBS customer identifier (CIF) when the client is matched in CBS",
+    )
     staff_code: str = Field(description="Owning RM staff code")
     staff_name: str = Field(description="Owning RM display name")
     deal_value: float = Field(
