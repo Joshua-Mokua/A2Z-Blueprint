@@ -77,6 +77,33 @@ def _safe_user_field(user: dict, *keys: str, default: str = "") -> str:
     return default
 
 
+def _enrich(user: dict) -> dict:
+    """
+    Merge JWT claims with the full user record from users.json.
+
+    Canonical pattern mirrored from utils/api.py:526 — comment there
+    says "Identity (from users.json — never trust JWT for these)".
+    The JWT carries only username + token claims; staff_code, role,
+    full_name etc. live in users.json. Endpoints that gate on those
+    fields MUST do this lookup or they will silently fall back to
+    username (causing data-scope misses) or to default "Staff" role
+    (causing MD/permission misses).
+
+    γ5b-hotfix1 (2026-06-12): added after live test showed /my-allocations
+    returning (0) for the MD — root cause was user.get("staff_code")
+    returning None because staff_code isn't in the JWT.
+    """
+    from utils.core import UserManager
+    username = user.get("username", "")
+    if not username:
+        return dict(user)
+    um = UserManager()
+    full = um.users.get(username) or {}
+    # users.json is canonical for identity + role; layer JWT on top
+    # so JWT claims (iat, exp, etc.) survive.
+    return {**user, **full}
+
+
 def _is_md(user: dict) -> bool:
     """True if the caller is the Managing Director per the role registry.
 
@@ -85,6 +112,9 @@ def _is_md(user: dict) -> bool:
     well as the bare 'Managing Director' canonical form. Both should
     pass; non-MD director roles (e.g. 'Director Retail Banking') do not
     contain 'managing director' so they don't false-positive.
+
+    NOTE: callers should pass an ENRICHED user dict (via _enrich) — the
+    raw JWT user has no role field and would always fail the check.
     """
     role = str(user.get("role", "")).lower()
     return "managing director" in role
@@ -112,9 +142,15 @@ def fetch_given_to_me(
     period: str = Query("2026"),
     user: dict = Depends(get_current_user),
 ):
+    """
+    What was allocated to the caller (incoming cascade).
+    Returns a list of allocations from various 'from' parents,
+    one item per KPI the caller appears as a 'to' for.
+    """
     cam = _get_cam()
-    staff_code = _safe_user_field(user, "staff_code", "username")
-    staff_name = _safe_user_field(user, "full_name", "name")
+    enriched = _enrich(user)
+    staff_code = _safe_user_field(enriched, "staff_code", "username")
+    staff_name = _safe_user_field(enriched, "full_name", "name")
     if not staff_code:
         raise HTTPException(status_code=400, detail="No staff_code on session.")
 
@@ -134,8 +170,13 @@ def fetch_my_allocations(
     period: str = Query("2026"),
     user: dict = Depends(get_current_user),
 ):
+    """
+    What the caller has cascaded OUT (outgoing).
+    Returns the caller's allocations across all KPIs they're a 'from' on.
+    """
     cam = _get_cam()
-    staff_code = _safe_user_field(user, "staff_code", "username")
+    enriched = _enrich(user)
+    staff_code = _safe_user_field(enriched, "staff_code", "username")
     if not staff_code:
         raise HTTPException(status_code=400, detail="No staff_code on session.")
 
@@ -209,7 +250,8 @@ def set_bank_target(
     MD-only: set a bank-level target for (kpi, period).
     Wraps CascadeManager.set_bank_target. 403 for non-MD callers.
     """
-    if not _is_md(user):
+    enriched = _enrich(user)
+    if not _is_md(enriched):
         raise HTTPException(
             status_code=403,
             detail="Only the Managing Director can set bank targets.",
@@ -224,7 +266,7 @@ def set_bank_target(
     )
     _log.info(
         "CASCADE_BANK_TARGET_SET by=%s kpi=%s period=%s target=%s buffer_pct=%s",
-        user.get("username"), payload.kpi, payload.period, payload.target, payload.buffer_pct,
+        enriched.get("username"), payload.kpi, payload.period, payload.target, payload.buffer_pct,
     )
 
     return {
@@ -247,13 +289,12 @@ def set_allocations(
     Caller must equal payload.from_code (you can only cascade YOUR OWN targets).
     Wraps CascadeManager.set_allocation.
     """
-    caller_code = _safe_user_field(user, "staff_code", "username")
+    enriched = _enrich(user)
+    caller_code = _safe_user_field(enriched, "staff_code", "username")
     if not caller_code:
         raise HTTPException(status_code=400, detail="No staff_code on session.")
 
     # Scope: from_code MUST be the caller's own staff_code.
-    # (Admins/MD can use the Streamlit page for cross-tree edits; React
-    # surface is intentionally narrow here.)
     if payload.from_code.strip() != caller_code.strip():
         raise HTTPException(
             status_code=403,
