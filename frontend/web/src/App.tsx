@@ -80,6 +80,8 @@ import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
 import { Cbs } from './pages/Cbs';
 import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
 import { Cascade } from './pages/Cascade';
+import { Initiatives } from './pages/Initiatives';
+import { InitiativeDetail } from './pages/InitiativeDetail';
 
 const queryClient = new QueryClient();
 
@@ -146,6 +148,10 @@ function App() {
 
                     {/* Target Cascade — γ3 (read-only). */}
                     <Route path="/cascade"     element={<Cascade />} />
+
+                    {/* Strategic Initiatives — γ4 (read-only). */}
+                    <Route path="/initiatives"                  element={<Initiatives />} />
+                    <Route path="/initiatives/:initiativeId"    element={<InitiativeDetail />} />
                 </Route>
             </Routes>
         </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>

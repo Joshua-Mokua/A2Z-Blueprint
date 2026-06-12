@@ -830,3 +830,23 @@ export async function setCascadeAllocations(req: SetAllocationRequest): Promise<
     'PUT',
   );
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Strategic Initiatives fetchers (γ4b)
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  PortfolioSummaryResponse,
+  InitiativeDetailResponse,
+} from '@/types/initiatives';
+
+
+export async function fetchPortfolioSummary(): Promise<PortfolioSummaryResponse> {
+  return getJson<PortfolioSummaryResponse>('/initiatives/portfolio-summary');
+}
+
+
+export async function fetchInitiativeDetail(initiativeId: string): Promise<InitiativeDetailResponse> {
+  return getJson<InitiativeDetailResponse>(`/initiatives/${encodeURIComponent(initiativeId)}`);
+}
