@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useMyCascade } from '@/hooks/useMyCascade';
-import { setBankTarget, ApiValidationError } from '@/lib/api';
+import { setBankTarget, setCascadeAllocations, ApiValidationError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -256,7 +256,22 @@ export function Cascade() {
             {!outgoingLoading && !outgoingError && outgoing.length > 0 && (
               <div className="divide-y divide-gray-100">
                 {outgoing.map((entry, i) => (
-                  <OutgoingRow key={`${entry.kpi}-${i}`} entry={entry} symbol={currencySymbol} />
+                  <OutgoingRow
+                    key={`${entry.kpi}-${i}`}
+                    entry={entry}
+                    symbol={currencySymbol}
+                    canEdit={
+                      // γ5b: only the entry's from_code can edit (server enforces;
+                      // client mirrors). Compare trimmed strings to avoid whitespace
+                      // mismatches between users.json staff codes and cascade JSON.
+                      (entry.from_code ?? '').trim() === (user?.staff_code ?? '').trim()
+                    }
+                    onSaved={() => {
+                      toast({ tone: 'success', message: `✓ Allocations saved for ${entry.kpi}` });
+                      void refetch();
+                    }}
+                    onError={(msg) => toast({ tone: 'danger', message: msg })}
+                  />
                 ))}
               </div>
             )}
@@ -303,38 +318,156 @@ function IncomingRow({ allocation: a, symbol }: { allocation: IncomingAllocation
 }
 
 
-// ── Outgoing row (expandable allocations list) ──────────────────────────
+// ── Outgoing row (expandable + editable allocations list) ───────────────
+// γ5b (2026-06-12): Each leader can edit their outgoing cascade
+// allocations. Server-side gate (γ5a backend) enforces that the
+// caller's staff_code == entry.from_code; the client-side flag here
+// just hides the affordance when it would 403.
 
-function OutgoingRow({ entry, symbol }: { entry: CascadeEntry; symbol: string }) {
+interface OutgoingRowProps {
+  entry:       CascadeEntry;
+  symbol:      string;
+  canEdit:     boolean;
+  onSaved:     () => void;
+  onError:     (msg: string) => void;
+}
+
+function OutgoingRow({ entry, symbol, canEdit, onSaved, onError }: OutgoingRowProps) {
   const [expanded, setExpanded] = useState(false);
+  const [editing,  setEditing]  = useState(false);
+  const [saving,   setSaving]   = useState(false);
+
+  // Local draft state — array of { to_code, to_name, amountText }.
+  // amountText is a string so user can type freely (cleared input,
+  // partial number, etc.) without React fighting them.
+  type DraftRow = { to_code: string; to_name: string; amountText: string };
+  const initialDraft: DraftRow[] = (entry.allocations ?? []).map((a) => ({
+    to_code:    a.to_code ?? '',
+    to_name:    a.to_name ?? '',
+    amountText: String(a.amount ?? 0),
+  }));
+  const [draft, setDraft] = useState<DraftRow[]>(initialDraft);
+
   const unit = unitForKpiName(entry.kpi);
   const status = coverageStatus(entry.total_target, entry.allocated_sum);
   const tone = coverageTone(status);
   const label = coverageLabel(status, entry.total_target, entry.allocated_sum);
 
+  // Live sum of draft amounts (only in edit mode)
+  const draftSum = draft.reduce((acc, r) => {
+    const n = Number(r.amountText);
+    return acc + (Number.isFinite(n) ? n : 0);
+  }, 0);
+  const draftStatus = coverageStatus(entry.total_target, draftSum);
+  const draftTone = coverageTone(draftStatus);
+  const draftLabel = coverageLabel(draftStatus, entry.total_target, draftSum);
+
+  const onClickEdit = () => {
+    // Reset draft from current entry state
+    setDraft(
+      (entry.allocations ?? []).map((a) => ({
+        to_code:    a.to_code ?? '',
+        to_name:    a.to_name ?? '',
+        amountText: String(a.amount ?? 0),
+      })),
+    );
+    setEditing(true);
+  };
+
+  const onClickCancel = () => {
+    setEditing(false);
+  };
+
+  const onAddRow = () => {
+    setDraft((d) => [...d, { to_code: '', to_name: '', amountText: '0' }]);
+  };
+
+  const onRemoveRow = (idx: number) => {
+    setDraft((d) => d.filter((_, i) => i !== idx));
+  };
+
+  const onChangeField = (idx: number, field: keyof DraftRow, value: string) => {
+    setDraft((d) => d.map((row, i) => (i === idx ? { ...row, [field]: value } : row)));
+  };
+
+  const onClickSave = async () => {
+    // Validate
+    for (let i = 0; i < draft.length; i++) {
+      const r = draft[i];
+      if (!r.to_code.trim()) {
+        onError(`Row ${i + 1}: recipient code is required.`);
+        return;
+      }
+      const n = Number(r.amountText);
+      if (!Number.isFinite(n) || n < 0) {
+        onError(`Row ${i + 1} (${r.to_code}): amount must be a non-negative number.`);
+        return;
+      }
+    }
+    setSaving(true);
+    try {
+      await setCascadeAllocations({
+        from_code:    entry.from_code,
+        kpi:          entry.kpi,
+        period:       entry.period,
+        total_target: entry.total_target,
+        allocations:  draft.map((r) => ({
+          to_code: r.to_code.trim(),
+          to_name: r.to_name.trim(),
+          amount:  Number(r.amountText),
+        })),
+      });
+      setEditing(false);
+      onSaved();
+    } catch (e) {
+      if (e instanceof ApiValidationError) {
+        onError(e.detail || 'Save failed.');
+      } else {
+        onError(e instanceof Error ? e.message : 'Save failed.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="px-6 py-3">
+      {/* Collapsed/expanded header */}
       <div
-        onClick={() => setExpanded((x) => !x)}
-        className="flex items-center justify-between gap-3 cursor-pointer"
+        onClick={() => !editing && setExpanded((x) => !x)}
+        className={`flex items-center justify-between gap-3 ${editing ? '' : 'cursor-pointer'}`}
       >
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-gray-900">{entry.kpi}</span>
             <Badge tone={tone} size="sm">{label}</Badge>
+            {editing && draftStatus !== status && (
+              <Badge tone={draftTone} size="sm">draft: {draftLabel}</Badge>
+            )}
           </div>
           <div className="text-xs text-gray-600 mt-1">
             Target: <span className="font-mono">{formatTargetValue(entry.total_target, unit, symbol)}</span>
             <span className="text-gray-400 mx-2">→</span>
-            Allocated: <span className="font-mono">{formatTargetValue(entry.allocated_sum, unit, symbol)}</span>
-            <span className="text-gray-400 ml-2">across {entry.allocations?.length || 0} recipients</span>
+            Allocated: <span className="font-mono">{formatTargetValue(editing ? draftSum : entry.allocated_sum, unit, symbol)}</span>
+            <span className="text-gray-400 ml-2">across {(editing ? draft.length : entry.allocations?.length) || 0} recipients</span>
           </div>
         </div>
-        <span className="text-gray-400 text-sm">{expanded ? '▾' : '▸'}</span>
+        {!editing && (
+          <span className="text-gray-400 text-sm">{expanded ? '▾' : '▸'}</span>
+        )}
       </div>
 
-      {expanded && entry.allocations && entry.allocations.length > 0 && (
+      {/* Read-only allocations list (collapsed expanded view) */}
+      {expanded && !editing && entry.allocations && entry.allocations.length > 0 && (
         <div className="mt-3 pl-4 border-l-2 border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wide">Recipients</div>
+            {canEdit && (
+              <Button variant="ghost" size="sm" onClick={onClickEdit}>
+                Edit allocations
+              </Button>
+            )}
+          </div>
           <table className="w-full text-sm">
             <thead className="text-xs font-medium text-gray-500 uppercase tracking-wide">
               <tr>
@@ -356,6 +489,92 @@ function OutgoingRow({ entry, symbol }: { entry: CascadeEntry; symbol: string })
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Editable allocations list */}
+      {editing && (
+        <div className="mt-3 pl-4 border-l-2 border-brand-primary bg-blue-50/30 rounded-r-md py-2 pr-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-gray-700 font-medium">Editing allocations for {entry.kpi}</div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={onClickCancel} disabled={saving}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => void onClickSave()} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <tr>
+                <th className="text-left pb-1 w-1/4">Code</th>
+                <th className="text-left pb-1">Name</th>
+                <th className="text-right pb-1 w-1/4">Amount</th>
+                <th className="pb-1 w-12"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {draft.map((row, i) => (
+                <tr key={i}>
+                  <td className="py-1">
+                    <input
+                      type="text"
+                      value={row.to_code}
+                      onChange={(e) => onChangeField(i, 'to_code', e.target.value)}
+                      disabled={saving}
+                      placeholder="staff_code"
+                      className="w-full h-7 px-2 rounded border border-gray-300 bg-white text-xs font-mono focus:outline-none focus:border-brand-primary"
+                      autoComplete="off"
+                    />
+                  </td>
+                  <td className="py-1 pl-2">
+                    <input
+                      type="text"
+                      value={row.to_name}
+                      onChange={(e) => onChangeField(i, 'to_name', e.target.value)}
+                      disabled={saving}
+                      placeholder="recipient name (optional)"
+                      className="w-full h-7 px-2 rounded border border-gray-300 bg-white text-xs focus:outline-none focus:border-brand-primary"
+                      autoComplete="off"
+                    />
+                  </td>
+                  <td className="py-1 pl-2">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={row.amountText}
+                      onChange={(e) => onChangeField(i, 'amountText', e.target.value)}
+                      disabled={saving}
+                      className="w-full h-7 px-2 text-right rounded border border-gray-300 bg-white text-xs font-mono focus:outline-none focus:border-brand-primary"
+                      autoComplete="off"
+                    />
+                  </td>
+                  <td className="py-1 pl-2 text-right">
+                    <button
+                      onClick={() => onRemoveRow(i)}
+                      disabled={saving}
+                      className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                      title="Remove recipient"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-2 flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={onAddRow} disabled={saving}>
+              + Add recipient
+            </Button>
+            <div className="text-xs text-gray-600">
+              Sum: <span className="font-mono">{formatTargetValue(draftSum, unit, symbol)}</span>
+              <span className="text-gray-400 mx-1">/</span>
+              Target: <span className="font-mono">{formatTargetValue(entry.total_target, unit, symbol)}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
