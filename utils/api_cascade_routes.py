@@ -78,9 +78,16 @@ def _safe_user_field(user: dict, *keys: str, default: str = "") -> str:
 
 
 def _is_md(user: dict) -> bool:
-    """True if the caller is the Managing Director per the role registry."""
-    role = str(user.get("role", "")).strip()
-    return role == "Managing Director"
+    """True if the caller is the Managing Director per the role registry.
+
+    Lenient match: real-world user records have role strings like
+    'Chief Executive & Managing Director' (William Mwanake's title) as
+    well as the bare 'Managing Director' canonical form. Both should
+    pass; non-MD director roles (e.g. 'Director Retail Banking') do not
+    contain 'managing director' so they don't false-positive.
+    """
+    role = str(user.get("role", "")).lower()
+    return "managing director" in role
 
 
 # ── READ endpoints (γ3a — unchanged) ─────────────────────────────────────

@@ -51,7 +51,12 @@ export function Cascade() {
   // γ5a: only the MD can edit bank-level targets (server enforces 403
   // for non-MD callers; we hide the affordance client-side to avoid
   // showing a button that would 403).
-  const isMd = (user?.role ?? '').trim() === 'Managing Director';
+  // γ5a-hotfix1: lenient match — real-world user records have
+  // 'Chief Executive & Managing Director' (William's title) and bare
+  // 'Managing Director'. Match either. Director-prefix roles like
+  // 'Director Retail Banking' don't contain 'managing director' so
+  // they don't false-positive.
+  const isMd = (user?.role ?? '').toLowerCase().includes('managing director');
 
   const {
     bankTargets,    bankTargetsLoading,    bankTargetsError,
@@ -92,7 +97,15 @@ export function Cascade() {
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">
             {user?.full_name && (
-              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})</>
+              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})
+              {/* γ5a-hotfix1 diagnostic: surface role + MD status so we can see
+                  what user.role actually looks like and confirm the MD gate. */}
+              <span className="ml-3 text-gray-400">·</span>
+              <span className="ml-3">role: <span className="font-mono text-gray-700">{user.role || '(none)'}</span></span>
+              {isMd && (
+                <span className="ml-3 inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-[10px] font-medium">MD</span>
+              )}
+              </>
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
