@@ -800,3 +800,33 @@ export async function fetchCascadeCoverage(
   params.set('period',    period);
   return getJson<CoverageResponse>(`/cascade/coverage?${params.toString()}`);
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Target Cascade WRITE fetchers (γ5a)
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  SetBankTargetRequest,
+  SetBankTargetResponse,
+  SetAllocationRequest,
+  SetAllocationResponse,
+} from '@/types/cascade';
+
+
+export async function setBankTarget(req: SetBankTargetRequest): Promise<SetBankTargetResponse> {
+  return postJson<SetBankTargetResponse, SetBankTargetRequest>(
+    '/cascade/bank-targets',
+    req,
+    'PUT',
+  );
+}
+
+
+export async function setCascadeAllocations(req: SetAllocationRequest): Promise<SetAllocationResponse> {
+  return postJson<SetAllocationResponse, SetAllocationRequest>(
+    '/cascade/allocations',
+    req,
+    'PUT',
+  );
+}

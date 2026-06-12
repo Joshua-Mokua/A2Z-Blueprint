@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useMyCascade } from '@/hooks/useMyCascade';
+import { setBankTarget, ApiValidationError } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -22,6 +24,7 @@ import {
   coverageStatus,
   coverageTone,
   coverageLabel,
+  type BankTarget,
   type CascadeEntry,
   type IncomingAllocation,
 } from '@/types/cascade';
@@ -42,7 +45,13 @@ function unitForKpiName(kpi: string): 'percent' | 'count' | 'currency' {
 export function Cascade() {
   const { branding } = useBranding();
   const { user } = useRole();
+  const { toast } = useToast();
   const [period, setPeriod] = useState<string>('2026');
+
+  // γ5a: only the MD can edit bank-level targets (server enforces 403
+  // for non-MD callers; we hide the affordance client-side to avoid
+  // showing a button that would 403).
+  const isMd = (user?.role ?? '').trim() === 'Managing Director';
 
   const {
     bankTargets,    bankTargetsLoading,    bankTargetsError,
@@ -128,20 +137,23 @@ export function Cascade() {
                       <th className="px-4 py-3 text-right">Target</th>
                       <th className="px-4 py-3 text-right">Buffer</th>
                       <th className="px-4 py-3">Unit</th>
+                      {isMd && <th className="px-4 py-3 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {bankTargets.map((t) => (
-                      <tr key={t.kpi}>
-                        <td className="px-4 py-2 font-medium text-gray-900">{t.kpi}</td>
-                        <td className="px-4 py-2 text-right font-mono">
-                          {formatTargetValue(t.target, t.unit, currencySymbol)}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono text-xs text-gray-600">
-                          {t.buffer_pct ? `${t.buffer_pct}%` : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-xs text-gray-500">{t.unit}</td>
-                      </tr>
+                      <BankTargetRow
+                        key={t.kpi}
+                        target={t}
+                        period={period}
+                        currencySymbol={currencySymbol}
+                        canEdit={isMd}
+                        onSaved={() => {
+                          toast({ tone: 'success', message: `✓ Updated ${t.kpi}` });
+                          void refetch();
+                        }}
+                        onError={(msg) => toast({ tone: 'danger', message: msg })}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -334,5 +346,138 @@ function OutgoingRow({ entry, symbol }: { entry: CascadeEntry; symbol: string })
         </div>
       )}
     </div>
+  );
+}
+
+
+// ── BankTargetRow (γ5a) — editable when canEdit ─────────────────────────
+
+interface BankTargetRowProps {
+  target:         BankTarget;
+  period:         string;
+  currencySymbol: string;
+  canEdit:        boolean;
+  onSaved:        () => void;
+  onError:        (msg: string) => void;
+}
+
+function BankTargetRow({
+  target: t,
+  period,
+  currencySymbol,
+  canEdit,
+  onSaved,
+  onError,
+}: BankTargetRowProps) {
+  const [editing,    setEditing]    = useState<boolean>(false);
+  const [targetText, setTargetText] = useState<string>(String(t.target));
+  const [bufferText, setBufferText] = useState<string>(String(t.buffer_pct));
+  const [saving,     setSaving]     = useState<boolean>(false);
+
+  // Reset edit-state if the underlying target prop changes (e.g. after refetch)
+  // — handled by re-rendering with fresh defaults when not editing.
+
+  const onClickEdit = () => {
+    setTargetText(String(t.target));
+    setBufferText(String(t.buffer_pct));
+    setEditing(true);
+  };
+
+  const onClickCancel = () => {
+    setEditing(false);
+  };
+
+  const onClickSave = async () => {
+    const targetNum = Number(targetText);
+    const bufferNum = Number(bufferText);
+    if (!Number.isFinite(targetNum) || targetNum < 0) {
+      onError('Target must be a non-negative number.');
+      return;
+    }
+    if (!Number.isFinite(bufferNum) || bufferNum < 0 || bufferNum > 100) {
+      onError('Buffer must be a number between 0 and 100.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await setBankTarget({
+        kpi:        t.kpi,
+        period:     period,
+        target:     targetNum,
+        buffer_pct: bufferNum,
+      });
+      setEditing(false);
+      onSaved();
+    } catch (e) {
+      if (e instanceof ApiValidationError) {
+        onError(e.detail || 'Save failed.');
+      } else {
+        onError(e instanceof Error ? e.message : 'Save failed.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <tr>
+        <td className="px-4 py-2 font-medium text-gray-900">{t.kpi}</td>
+        <td className="px-4 py-2 text-right font-mono">
+          {formatTargetValue(t.target, t.unit, currencySymbol)}
+        </td>
+        <td className="px-4 py-2 text-right font-mono text-xs text-gray-600">
+          {t.buffer_pct ? `${t.buffer_pct}%` : '—'}
+        </td>
+        <td className="px-4 py-2 text-xs text-gray-500">{t.unit}</td>
+        {canEdit && (
+          <td className="px-4 py-2 text-right">
+            <Button variant="ghost" size="sm" onClick={onClickEdit}>
+              Edit
+            </Button>
+          </td>
+        )}
+      </tr>
+    );
+  }
+
+  // Editing row
+  return (
+    <tr className="bg-blue-50/30">
+      <td className="px-4 py-2 font-medium text-gray-900">{t.kpi}</td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          inputMode="decimal"
+          value={targetText}
+          onChange={(e) => setTargetText(e.target.value)}
+          disabled={saving}
+          className="w-full h-8 px-2 text-right rounded-md border border-gray-300 bg-white text-sm font-mono focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+          autoComplete="off"
+        />
+      </td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          inputMode="decimal"
+          value={bufferText}
+          onChange={(e) => setBufferText(e.target.value)}
+          disabled={saving}
+          className="w-full h-8 px-2 text-right rounded-md border border-gray-300 bg-white text-sm font-mono focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+          autoComplete="off"
+        />
+      </td>
+      <td className="px-4 py-2 text-xs text-gray-500">{t.unit}</td>
+      <td className="px-4 py-2 text-right">
+        <div className="flex gap-2 justify-end">
+          <Button variant="ghost" size="sm" onClick={onClickCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => void onClickSave()} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 }

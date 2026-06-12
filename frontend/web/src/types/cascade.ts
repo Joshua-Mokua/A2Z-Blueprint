@@ -198,3 +198,44 @@ export function normalizeCascadeEntries(
   if (typeof data === 'object') return Object.values(data);
   return [];
 }
+
+
+// ── γ5a write surfaces ───────────────────────────────────────────────────
+
+/** PUT /api/cascade/bank-targets — MD only. */
+export interface SetBankTargetRequest {
+  kpi:        string;
+  period:     string;
+  target:     number;
+  buffer_pct: number;
+}
+
+export interface SetBankTargetResponse {
+  ok:         boolean;
+  kpi:        string;
+  period:     string;
+  target:     number;
+  buffer_pct: number;
+  source:     string;
+}
+
+/** PUT /api/cascade/allocations — caller must equal from_code. */
+export interface AllocationRowIn {
+  to_code: string;
+  to_name?: string;
+  amount: number;
+}
+
+export interface SetAllocationRequest {
+  from_code:    string;
+  kpi:          string;
+  period:       string;
+  total_target: number;
+  allocations:  AllocationRowIn[];
+}
+
+export interface SetAllocationResponse {
+  ok:     boolean;
+  entry:  CascadeEntry;
+  source: string;
+}
