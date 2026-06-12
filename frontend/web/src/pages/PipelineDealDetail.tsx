@@ -216,6 +216,18 @@ export function PipelineDealDetail() {
             {deal.manager_validated && (
               <Badge tone="success" size="sm">Validated</Badge>
             )}
+            {/* δ1 (2026-06-12): LMS cross-link when backend has created
+                a loan application from this deal (typically after advancing
+                to Compliance). Mirrors the Credit Admin → LMS cross-link
+                pattern from β6 so users can trace a deal's downstream lifecycle. */}
+            {deal.lms_application_id && (
+              <button
+                onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
+                className="text-xs text-brand-primary hover:underline font-medium"
+              >
+                View Loan Application →
+              </button>
+            )}
           </div>
           <span className="font-mono text-xs text-gray-500">{deal.id}</span>
         </Card.Header>
@@ -292,8 +304,18 @@ export function PipelineDealDetail() {
         <AdvancePanel
           deal={deal}
           mutations={mutations}
-          onSuccess={() => {
-            toast({ tone: 'success', message: 'Deal advanced.' });
+          onSuccess={(meta) => {
+            // δ1 (2026-06-12): Advancing to Compliance silently triggers
+            // LMS application creation server-side (α4 doctrine). Surface
+            // that to the user via the toast so they know what happened.
+            if (meta?.targetStage === 'Compliance') {
+              toast({
+                tone:    'success',
+                message: '✓ Stage advanced. Loan application created.',
+              });
+            } else {
+              toast({ tone: 'success', message: 'Deal advanced.' });
+            }
             void reloadDeal();
           }}
         />
@@ -387,10 +409,19 @@ function DetailField({
 
 // ── Action panel: Advance Stage ─────────────────────────────────────────
 
+/**
+ * Shared props for action panels (Advance + RequestCancel).
+ *
+ * δ1 (2026-06-12): onSuccess accepts an optional meta arg. Advance
+ * passes { targetStage } so the parent can render a stage-aware toast
+ * (e.g. "Loan application created" when targetStage was 'Compliance').
+ * RequestCancelPanel calls onSuccess() with no args — backward-compatible
+ * because the meta arg is optional.
+ */
 interface ActionPanelProps {
   deal:      PipelineDeal;
   mutations: ReturnType<typeof usePipelineDealMutations>;
-  onSuccess: () => void;
+  onSuccess: (meta?: { targetStage?: string }) => void;
 }
 
 function AdvancePanel({ deal, mutations, onSuccess }: ActionPanelProps) {
@@ -411,7 +442,7 @@ function AdvancePanel({ deal, mutations, onSuccess }: ActionPanelProps) {
       note: note.trim() || undefined,
     });
     if (result.ok) {
-      onSuccess();
+      onSuccess({ targetStage });
       setNote('');
     } else {
       setError(result.error);

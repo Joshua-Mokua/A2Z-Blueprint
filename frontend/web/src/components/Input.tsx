@@ -93,6 +93,7 @@ function Input(
             SIZE_CLASSES[size],
             className,
           )}
+          autoComplete="off"
           {...rest}
         />
         {suffix !== undefined && (
