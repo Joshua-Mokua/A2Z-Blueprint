@@ -1,57 +1,97 @@
-// v10.495 -> v10.496 — MD Cockpit shell, refactored to use design
-// system primitives (Stat, Card, Badge). Visual output identical;
-// the code is now composed instead of hand-rolled with inline styles.
+// v10.545 Phase P Batch P4 — CEO / MD Command Centre (live).
 //
-// All bank identity continues to come from useBranding() — no hard-
-// coded strings anywhere. Audit gates G381 and G382 both enforce
-// this.
+// Replaces the v10.496 shell. Consumes /api/dashboard/md via
+// useMdDashboard and renders the executive aggregate with the P3a
+// intelligence primitives (KpiTile + RagChip) plus Stat for raw values.
 //
-// Note: this Dashboard is still a SHELL. Real /api/dashboard/md
-// integration lands in v10.499.
+// RAG thresholds below are PRESENTATION HEURISTICS for the executive
+// glance — not authoritative targets. Authoritative RAG should come from
+// the Target Cascade once bank-level targets are wired into this payload;
+// until then these give a sensible red/amber/green without inventing
+// precise numbers into the data layer.
 
 import { useBranding } from '@/hooks/useBranding';
+import { useRole } from '@/hooks/useRole';
+import { useMdDashboard } from '@/hooks/useMdDashboard';
 import { Card } from '@/components/Card';
 import { Stat } from '@/components/Stat';
-import { Badge } from '@/components/Badge';
+import { KpiTile } from '@/components/KpiTile';
+import { Button } from '@/components/Button';
+import type { RagStatus } from '@/components/RagChip';
+import type { MdDashboardResponse } from '@/types/dashboard';
+
+// ── RAG heuristics (presentation only) ──────────────────────────────────
+function bscStatus(avg: number): RagStatus {
+  if (avg >= 80) return 'on_track';
+  if (avg >= 65) return 'at_risk';
+  return 'off_track';
+}
+function nplStatus(pct: number): RagStatus {
+  // Lower is better. Industry-style bands; tune when real targets land.
+  if (pct <= 5) return 'on_track';
+  if (pct <= 10) return 'at_risk';
+  return 'off_track';
+}
+
+// ── Number formatting ───────────────────────────────────────────────────
+function abbrev(n: number): string {
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6)  return (n / 1e6).toFixed(1) + 'M';
+  if (a >= 1e3)  return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
 
 export function Dashboard() {
-  const { branding, loading } = useBranding();
+  const { branding, loading: brandingLoading } = useBranding();
+  const { user } = useRole();
+  const { data, loading, error, refetch } = useMdDashboard();
 
-  if (loading) {
+  if (brandingLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen
-                       text-gray-500">
+      <div className="flex items-center justify-center min-h-screen text-gray-500">
         Loading…
       </div>
     );
   }
-
   if (!branding) {
     return (
-      <div className="flex items-center justify-center min-h-screen
-                       text-red-700">
+      <div className="flex items-center justify-center min-h-screen text-red-700">
         Branding unavailable.
       </div>
     );
   }
 
+  const sym = branding.currency_symbol || '';
+  const kes = (v: number) => `${sym} ${abbrev(v)}`.trim();
+
+  // Null-safe accessor: returns the formatted value, or '—' when data
+  // isn't present (error state with loading already false).
+  const d: MdDashboardResponse | null = data;
+  const show = (fn: (x: MdDashboardResponse) => string): string =>
+    d ? fn(d) : '—';
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top bar — uses brand secondary (deep navy) */}
+      {/* Header */}
       <header
         className="px-6 py-5 text-white shadow-sm"
         style={{ background: branding.brand.secondary }}
       >
-        <div className="max-w-7xl mx-auto flex items-center
-                         justify-between flex-wrap gap-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
-            <div className="text-[11px] uppercase tracking-[2.5px]
-                             font-bold opacity-70">
+            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
               {branding.bank_name}
             </div>
             <h1 className="text-xl font-bold mt-1">
-              {branding.app_name} MIS 360 — MD Command Centre
+              {branding.app_name} MIS 360 — Executive Command Centre
             </h1>
+            {user && (
+              <div className="text-xs opacity-70 mt-1">
+                {user.full_name} · {user.role}
+              </div>
+            )}
           </div>
           <div className="text-right text-xs opacity-70 leading-relaxed">
             <div>{branding.regulator_full}</div>
@@ -60,72 +100,101 @@ export function Dashboard() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* KPI strip — three placeholder Stat tiles. Real values
-            arrive in v10.499 once /api/dashboard/md is wired up. */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Stat
-            label="Total Deposits"
-            value="—"
-            sub={`${branding.currency_symbol} (placeholder)`}
+        {error && (
+          <Card className="mb-6 border-red-200">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-red-700">
+                Couldn't load the dashboard: {error}
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => refetch()}>
+                Retry
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Performance & Risk — RAG tiles */}
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+          Performance &amp; Risk
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiTile
+            label="BSC Score (bank avg)"
+            actual={show((x) => x.bsc.overall_avg.toFixed(1))}
+            target="100"
+            status={d ? bscStatus(d.bsc.overall_avg) : undefined}
+            loading={loading}
           />
-          <Stat
+          <KpiTile
             label="NPL Ratio"
-            value="—"
-            sub="live in v10.499"
+            actual={show((x) => `${x.credit.npl_ratio_pct.toFixed(1)}%`)}
+            invert
+            status={d ? nplStatus(d.credit.npl_ratio_pct) : undefined}
+            loading={loading}
           />
           <Stat
-            label="Active RMs"
-            value="—"
-            sub="232 expected"
+            label="Loan Book"
+            value={show((x) => `${sym} ${x.credit.outstanding_bn.toFixed(1)}B`)}
+            loading={loading}
+            stripe="secondary"
+          />
+          <Stat
+            label="Total Accounts"
+            value={show((x) => x.credit.total_accounts.toLocaleString())}
+            loading={loading}
+            stripe="secondary"
           />
         </div>
 
-        {/* Status panel — explains what v10.495 / v10.496 are */}
-        <Card className="mt-8">
-          <Card.Header>
-            <h2 className="text-lg font-semibold text-brand-secondary">
-              v10.496 — Design System Live
-            </h2>
-            <Badge tone="success">Active</Badge>
-          </Card.Header>
-          <Card.Body>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              This page is now composed from the v10.496 design
-              system primitives (Stat, Card, Badge). Branding is
-              loaded from{' '}
-              <code className="bg-gray-100 px-1 rounded text-xs">
-                /api/branding
-              </code>{' '}
-              via your real FastAPI backend. Multi-tenant from day
-              1: change{' '}
-              <code className="bg-gray-100 px-1 rounded text-xs">
-                data/org_config.json
-              </code>{' '}
-              and this page reflects the new tenant with no code
-              change.
-            </p>
-            <p className="text-sm text-gray-500 mt-3">
-              Tour the component library at{' '}
-              <a href="/components"
-                  className="text-brand-primary hover:underline
-                             font-medium">
-                /components
-              </a>
-              .
-            </p>
-            <p className="text-xs text-gray-400 mt-3">
-              Next: v10.497 JWT auth · v10.498 enterprise shell ·
-              v10.499 live MD data · v10.500 testing + audit gates
-              G383–G385.
-            </p>
-          </Card.Body>
-        </Card>
+        {/* Pipeline */}
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
+          Pipeline
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Stat label="Open Pipeline Value"
+                value={show((x) => kes(x.pipeline.pipeline_value))}
+                loading={loading} />
+          <Stat label="Closed-Won Value"
+                value={show((x) => kes(x.pipeline.won_value))}
+                loading={loading} />
+          <Stat label="Total Deals"
+                value={show((x) => x.pipeline.total_deals.toLocaleString())}
+                loading={loading} />
+        </div>
 
-        {/* IP notice footer — verbatim from /api/branding */}
-        <footer className="mt-12 pb-6 text-center text-[11px]
-                            text-gray-400 leading-relaxed">
+        {/* Compliance & Org */}
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
+          Compliance &amp; Organisation
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Stat label="AML Open Alerts"
+                value={show((x) => x.aml.open_alerts.toLocaleString())}
+                loading={loading} />
+          <Stat label="High-Risk Flags"
+                value={show((x) => x.aml.high_risk.toLocaleString())}
+                loading={loading} />
+          <Stat label="Active Staff"
+                value={show((x) => x.org.total_staff.toLocaleString())}
+                loading={loading} />
+          <Stat label="Departments"
+                value={show((x) => x.org.departments.toLocaleString())}
+                loading={loading} />
+        </div>
+
+        {/* Footer: freshness + refresh + ip notice */}
+        <div className="mt-8 flex items-center justify-between gap-4 flex-wrap">
+          <div className="text-xs text-gray-400">
+            {d?.generated_at
+              ? `Snapshot: ${new Date(d.generated_at).toLocaleString()}`
+              : ''}
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </Button>
+        </div>
+
+        <footer className="mt-10 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
           {branding.ip_notice}
         </footer>
       </main>

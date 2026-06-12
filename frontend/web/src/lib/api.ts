@@ -850,3 +850,17 @@ export async function fetchPortfolioSummary(): Promise<PortfolioSummaryResponse>
 export async function fetchInitiativeDetail(initiativeId: string): Promise<InitiativeDetailResponse> {
   return getJson<InitiativeDetailResponse>(`/initiatives/${encodeURIComponent(initiativeId)}`);
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// MD / CEO Dashboard fetcher (P4)
+// Consumes /api/dashboard/md (utils/api.py::md_dashboard) — the single
+// executive aggregate (bsc + pipeline + credit + aml + org). Cached
+// server-side. Any authenticated user; bank-wide (not cascade-scoped).
+// ──────────────────────────────────────────────────────────────────────
+
+import type { MdDashboardResponse } from '@/types/dashboard';
+
+export async function fetchMdDashboard(): Promise<MdDashboardResponse> {
+  return getJson<MdDashboardResponse>('/dashboard/md');
+}
