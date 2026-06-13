@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "description": "A2Z MIS 360 React SPA — Standard #37 (v10.495)",
+  "description": "A2Z MIS 360 React SPA \u2014 Standard #37 (v10.495)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -15,7 +15,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
-    "@tanstack/react-query": "^5.51.0"
+    "@tanstack/react-query": "^5.51.0",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

@@ -25,6 +25,11 @@ import { VarianceBadge } from '@/components/VarianceBadge';
 import { KpiTile } from '@/components/KpiTile';
 import { EmptyState } from '@/components/EmptyState';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+// Phase P Batch P3b — enterprise chart library.
+import { ChartCard } from '@/components/charts/ChartCard';
+import { TrendChart } from '@/components/charts/TrendChart';
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
+import { DonutChart } from '@/components/charts/DonutChart';
 
 interface DemoRow {
   id: number;
@@ -349,6 +354,58 @@ export function Showcase() {
               }, 900);
             }}
           />
+        </Section>
+
+        {/* ── P3b: Enterprise chart library ──────────────── */}
+        <Section title="Trend Chart (P3b)">
+          <ChartCard title="BSC Score Trend" subtitle="Bank average, monthly">
+            <TrendChart
+              xKey="m"
+              series={[
+                { key: 'bsc', label: 'BSC' },
+                { key: 'target', label: 'Target' },
+              ]}
+              data={[
+                { m: 'Jan', bsc: 71, target: 80 },
+                { m: 'Feb', bsc: 73, target: 80 },
+                { m: 'Mar', bsc: 76, target: 80 },
+                { m: 'Apr', bsc: 75, target: 80 },
+                { m: 'May', bsc: 79, target: 80 },
+                { m: 'Jun', bsc: 82, target: 80 },
+              ]}
+              area
+            />
+          </ChartCard>
+        </Section>
+
+        <Section title="Category Bar Chart (P3b)">
+          <ChartCard title="Disbursements by Product" subtitle="KES millions">
+            <CategoryBarChart
+              xKey="product"
+              series={[{ key: 'value', label: 'Disbursed' }]}
+              data={[
+                { product: 'Retail', value: 420 },
+                { product: 'MSME', value: 310 },
+                { product: 'Corporate', value: 680 },
+                { product: 'Trade', value: 240 },
+              ]}
+            />
+          </ChartCard>
+        </Section>
+
+        <Section title="Donut Chart (P3b)">
+          <ChartCard title="Portfolio Mix">
+            <DonutChart
+              centerValue="KES 2.6T"
+              centerLabel="Loan Book"
+              data={[
+                { name: 'Retail', value: 38 },
+                { name: 'MSME', value: 22 },
+                { name: 'Corporate', value: 31 },
+                { name: 'Trade', value: 9 },
+              ]}
+            />
+          </ChartCard>
         </Section>
 
         <footer className="mt-12 text-center text-xs text-gray-400">
