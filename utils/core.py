@@ -5531,6 +5531,60 @@ class CreditAdminManager:
                 return True
         return False
 
+    def create_case_from_application(self, app: dict, conditions=None,
+                                      authority: str = "") -> str:
+        """Create a credit-admin case from an approved LMS application.
+
+        P2 (2026-06-12): the live LMS-approval -> credit-admin handoff.
+        Idempotent — the case id is deterministically 'CA'+application_id
+        (matching generate_lms_data.py), so a re-approval or retry no-ops
+        instead of duplicating or resetting an in-flight case. Returns the
+        case id ('' if the app has no id).
+        """
+        app_id = str(app.get("id", "") or "")
+        if not app_id:
+            return ""
+        case_id = f"CA{app_id}"
+        if self.get(case_id):
+            # Already handed off — never clobber fulfilled conditions or a
+            # disbursed flag on retry/re-approval.
+            return case_id
+
+        today = datetime.now().date().isoformat()
+        cond_src = conditions if conditions is not None else (
+            app.get("decision", {}).get("conditions", []) or []
+        )
+        case_conditions = [{
+            "type":      str(c),
+            "required":  True,
+            "fulfilled": False,
+            "date_set":  today,
+            "date_met":  None,
+            "officer":   None,
+            "notes":     "",
+        } for c in cond_src]
+        all_met = all(c["fulfilled"] for c in case_conditions)  # True iff none
+
+        self.cases.append({
+            "id":                     case_id,
+            "application_id":         app_id,
+            "client_name":            app.get("client_name", ""),
+            "product":                app.get("product", ""),
+            "amount":                 app.get("amount", 0),
+            "rm_code":                app.get("rm_code", ""),
+            "rm_name":                app.get("rm_name", ""),
+            "approval_date":          today,
+            "conditions":             case_conditions,
+            "all_conditions_met":     all_met,
+            "ready_for_disbursement": False,  # manager clears explicitly
+            "disbursed":              False,
+            "disbursement_date":      None,
+            "last_updated":           today,
+            "authority":              authority,
+        })
+        self.save()
+        return case_id
+
 
 class ComplianceManager:
     """Persist compliance_cases.json."""

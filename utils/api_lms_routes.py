@@ -439,8 +439,26 @@ def lms_application_decision(
     from utils.api_bsc_bridge import emit_bsc_trigger
     emit_bsc_trigger(str(user.get('username', '') or ''))
 
+    # P2 (2026-06-12): live LMS-approval -> credit-admin handoff. On an
+    # approval, create the CALMS case so the credit chain is continuous in
+    # React (previously cases existed only via data generation). Best-effort
+    # and idempotent — a failure must not fail an already-recorded decision.
+    credit_admin_case_id = ""
+    if verdict_normalized == "approved":
+        try:
+            from utils.core import CreditAdminManager
+            fresh = lam.get(app_id) or app
+            credit_admin_case_id = CreditAdminManager().create_case_from_application(
+                fresh,
+                conditions=(payload.conditions or None),
+                authority=payload.authority,
+            )
+        except Exception:
+            credit_admin_case_id = ""
+
     updated = lam.get(app_id)
     return {
         "application": updated,
         "status": f"decision_{verdict_normalized}",
+        "credit_admin_case_id": credit_admin_case_id,
     }
