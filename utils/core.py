@@ -5830,36 +5830,85 @@ class UserManager:
         self.users = self._load()
 
     def _load(self):
-        try:
-            raw = self.users_file.read_text()
-            users = json.loads(raw) if raw.strip() else {}
-            if not users: raise ValueError("empty")
-            # Always ensure admin account exists and cannot be permanently removed
-            if 'admin' not in users:
-                users['admin'] = {
-                    "password":   self.hash_pw("admin123"),
-                    "full_name":  "System Admin",
-                    "role":       "Admin",
-                    "department": "All",
-                    "can_view_all": True,
-                    "managed_roles": [], "managed_units": [],
-                    "managed_staff_codes": [],
-                    "staff_code": "ADMIN001",
-                    "email":      "admin@bank.com",
-                    "active":     True,
-                    "_protected": True,
-                }
-            else:
-                users['admin'].update({
-                    'can_view_all': True,
-                    'role': 'Admin',
-                    'active': True,
-                    '_protected': True,
-                })
-            self._save(users)
-            return users
-        except:
+        # Hardened (P-AUTH-b): a transient read error or a corrupt file must
+        # NEVER cause a silent fall-back to defaults, because _defaults()
+        # immediately re-saves and would overwrite a recoverable real file
+        # (this is exactly what wiped the seeded test logins). We distinguish:
+        #   - absent / empty file          -> first run, defaults are correct
+        #   - exists but unreadable/corrupt -> back up + fail loud (no overwrite)
+        file_exists = self.users_file.exists()
+        raw = ""
+        if file_exists:
+            try:
+                raw = self.users_file.read_text(encoding="utf-8")
+            except Exception as e:
+                self._backup_unreadable("read-error")
+                raise RuntimeError(
+                    f"users.json exists but could not be read ({e!r}). "
+                    "Refusing to overwrite it with defaults; a backup was "
+                    "written. Resolve the error or restore a backup."
+                ) from e
+
+        if not raw.strip():
+            # Genuinely absent or empty -> first-run defaults are correct.
             return self._defaults()
+
+        try:
+            users = json.loads(raw)
+        except Exception as e:
+            self._backup_unreadable("parse-error")
+            raise RuntimeError(
+                f"users.json is present but not valid JSON ({e!r}). A backup "
+                "was written; refusing to overwrite with defaults."
+            ) from e
+
+        if not isinstance(users, dict):
+            self._backup_unreadable("shape-error")
+            raise RuntimeError("users.json parsed to a non-object shape.")
+        if not users:
+            return self._defaults()
+
+        # Always ensure admin account exists and cannot be permanently removed
+        if 'admin' not in users:
+            users['admin'] = {
+                "password":   self.hash_pw("admin123"),
+                "full_name":  "System Admin",
+                "role":       "Admin",
+                "department": "All",
+                "can_view_all": True,
+                "managed_roles": [], "managed_units": [],
+                "managed_staff_codes": [],
+                "staff_code": "ADMIN001",
+                "email":      "admin@bank.com",
+                "active":     True,
+                "_protected": True,
+            }
+        else:
+            users['admin'].update({
+                'can_view_all': True,
+                'role': 'Admin',
+                'active': True,
+                '_protected': True,
+            })
+        self._save(users)
+        return users
+
+    def _backup_unreadable(self, tag: str) -> None:
+        """Copy an unreadable/corrupt users.json aside before failing loud.
+
+        Best-effort: a backup failure must never mask the original error.
+        """
+        try:
+            if self.users_file.exists():
+                import datetime as _dt
+                import shutil as _shutil
+                ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+                bak = self.users_file.with_name(f"users.json.corrupt-{tag}-{ts}")
+                _shutil.copy2(self.users_file, bak)
+                print(f"[UserManager] users.json unreadable ({tag}); "
+                      f"backup written -> {bak}")
+        except Exception:
+            pass
 
     def _defaults(self):
         u = {
