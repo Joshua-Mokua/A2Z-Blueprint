@@ -13,10 +13,15 @@
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useMdDashboard } from '@/hooks/useMdDashboard';
+import { useCreditOpenWork } from '@/hooks/useCreditOpenWork';
 import { Card } from '@/components/Card';
 import { Stat } from '@/components/Stat';
 import { KpiTile } from '@/components/KpiTile';
 import { Button } from '@/components/Button';
+import { ChartCard } from '@/components/charts/ChartCard';
+import { DonutChart } from '@/components/charts/DonutChart';
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
+import { ragColor } from '@/lib/chartTheme';
 import type { RagStatus } from '@/components/RagChip';
 import type { MdDashboardResponse } from '@/types/dashboard';
 
@@ -47,6 +52,7 @@ export function Dashboard() {
   const { branding, loading: brandingLoading } = useBranding();
   const { user } = useRole();
   const { data, loading, error, refetch } = useMdDashboard();
+  const { data: credit, loading: creditLoading } = useCreditOpenWork();
 
   if (brandingLoading) {
     return (
@@ -180,6 +186,59 @@ export function Dashboard() {
           <Stat label="Departments"
                 value={show((x) => x.org.departments.toLocaleString())}
                 loading={loading} />
+        </div>
+
+        {/* Credit Risk — charts from /api/cockpit/credit/open-work */}
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
+          Credit Risk
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartCard
+            title="IFRS9 Stage Distribution"
+            subtitle="Loan book by impairment stage"
+            loading={creditLoading}
+            empty={!credit || credit.ifrs9_total === 0}
+            emptyMessage="No IFRS9 loan records available."
+          >
+            <DonutChart
+              centerValue={credit ? credit.ifrs9_total.toLocaleString() : ''}
+              centerLabel="IFRS9 Loans"
+              data={[
+                { name: 'Stage 1 — Performing', value: credit?.ifrs9_stage1 ?? 0, color: ragColor.on_track },
+                { name: 'Stage 2 — Watch (SICR)', value: credit?.ifrs9_stage2 ?? 0, color: ragColor.at_risk },
+                { name: 'Stage 3 — NPL', value: credit?.ifrs9_stage3 ?? 0, color: ragColor.off_track },
+              ]}
+            />
+          </ChartCard>
+
+          <ChartCard
+            title="Loan Applications by Lane"
+            subtitle="Open credit work landscape"
+            loading={creditLoading}
+            empty={!credit || Object.keys(credit.applications_by_stage || {}).length === 0}
+            emptyMessage="No loan applications in flight."
+          >
+            <CategoryBarChart
+              xKey="lane"
+              series={[{ key: 'count', label: 'Applications' }]}
+              data={Object.entries(credit?.applications_by_stage ?? {}).map(
+                ([lane, count]) => ({ lane, count }),
+              )}
+            />
+          </ChartCard>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Stat label="NPL (IFRS9 Stage 3)"
+                value={creditLoading ? '—'
+                  : (credit?.npl_pct == null ? 'n/a' : `${credit.npl_pct.toFixed(1)}%`)}
+                loading={creditLoading} />
+          <Stat label="Watchlist Entries"
+                value={creditLoading ? '—' : (credit?.watchlist_count ?? 0).toLocaleString()}
+                loading={creditLoading} />
+          <Stat label="Open Applications"
+                value={creditLoading ? '—' : (credit?.applications_open ?? 0).toLocaleString()}
+                loading={creditLoading} />
         </div>
 
         {/* Footer: freshness + refresh + ip notice */}

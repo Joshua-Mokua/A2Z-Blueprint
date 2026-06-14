@@ -864,3 +864,16 @@ import type { MdDashboardResponse } from '@/types/dashboard';
 export async function fetchMdDashboard(): Promise<MdDashboardResponse> {
   return getJson<MdDashboardResponse>('/dashboard/md');
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// Credit cockpit fetcher (P5)
+// Consumes /api/cockpit/credit/open-work — bank-wide applications-by-lane +
+// IFRS9 stage distribution + NPL%. Feeds the dashboard Credit Risk panel.
+// ──────────────────────────────────────────────────────────────────────
+
+import type { CreditOpenWork } from '@/types/cockpit';
+
+export async function fetchCreditOpenWork(): Promise<CreditOpenWork> {
+  return getJson<CreditOpenWork>('/cockpit/credit/open-work');
+}
