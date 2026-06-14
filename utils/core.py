@@ -27,7 +27,13 @@ import string
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-DATA_DIR = Path("data")
+# P-AUTH-c: anchor DATA_DIR to an ABSOLUTE path derived from this file's
+# location, NOT the process working directory. Previously `Path("data")`
+# resolved against the CWD, so launching the app from a different folder
+# (e.g. a nested duplicate tree) silently pointed UserManager at a DIFFERENT
+# users.json — a root cause of vanishing test logins. This ties the data
+# dir to wherever core.py physically lives (<repo>/data).
+DATA_DIR = (Path(__file__).resolve().parent.parent / "data")
 DATA_DIR.mkdir(exist_ok=True)
 
 # Batch 3c — module logger for auth-path observability (envelope-verify
@@ -5879,9 +5885,54 @@ def validate_password_policy(pw: str) -> tuple:
 
 
 class UserManager:
+    # P-AUTH-c: canonical test logins that must ALWAYS be available during
+    # the frontend phase. ensure_test_logins() recreates any that are missing
+    # on construction — belt-and-suspenders alongside the absolute DATA_DIR
+    # and the _load hardening. The full 49-role set is (re)seeded via
+    # scripts/seed_test_logins.py; this guarantees only the CEO login can
+    # never silently vanish.
+    _CANONICAL_TEST_LOGINS = [
+        # (username, password, full_name, role, staff_code)
+        ("william001", "EcoStaff0001", "William Mwangi",
+         "Chief Executive & Managing Director", "0001"),
+    ]
+
     def __init__(self):
         self.users_file = DATA_DIR / "users.json"
         self.users = self._load()
+        self.ensure_test_logins()
+
+    def ensure_test_logins(self) -> int:
+        """Recreate any missing canonical test logins. Returns count restored.
+
+        Cheap: a membership check; only writes when something was actually
+        missing, so the per-request cost (UserManager is built per request)
+        is a dict lookup when healthy. Guarantees the CEO test login can
+        never silently disappear after a reset.
+        """
+        restored = 0
+        for username, password, full_name, role, staff_code in self._CANONICAL_TEST_LOGINS:
+            if username in self.users:
+                continue
+            self.add_user(
+                username, password, full_name,
+                email=f"{username}@bank.com", role=role,
+                staff_code=staff_code, can_view_all=True, can_execute=True,
+            )
+            self.users[username]["_protected"] = True
+            self.users[username]["must_change_password"] = False
+            restored += 1
+        if restored:
+            self.save_users()
+            try:
+                logger.warning(
+                    "UserManager self-heal: restored %d canonical test "
+                    "login(s): %s", restored,
+                    [u[0] for u in self._CANONICAL_TEST_LOGINS],
+                )
+            except Exception:
+                pass
+        return restored
 
     def _load(self):
         # Hardened (P-AUTH-b): a transient read error or a corrupt file must
