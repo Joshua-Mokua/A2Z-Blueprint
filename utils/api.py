@@ -1084,6 +1084,18 @@ def pipeline_deal_refer(
     )
 
     deal_dict = payload.model_dump(exclude_unset=False)
+    # H1 (2026-06-14): server-authoritative caller identity (see the create
+    # route). Derive staff_code/staff_name from users.json when the client
+    # omitted them, so a thin client identity can't fail the referral.
+    if (not str(deal_dict.get("staff_code") or "").strip()
+            or not str(deal_dict.get("staff_name") or "").strip()):
+        from utils.core import UserManager as _UM_id
+        _full = _UM_id().users.get(str(user.get("username", "") or "")) or {}
+        if not str(deal_dict.get("staff_code") or "").strip():
+            deal_dict["staff_code"] = str(_full.get("staff_code", "") or "")
+        if not str(deal_dict.get("staff_name") or "").strip():
+            deal_dict["staff_name"] = str(
+                _full.get("full_name", "") or user.get("username", "") or "")
     ok, reason = validate_refer_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_REFER_REJECTED", user, reason)
@@ -1174,6 +1186,23 @@ def pipeline_deal_create(
 
     # Validate required fields + numeric sanity + stage allowlist
     deal_dict = payload.model_dump(exclude_unset=False)
+    # H1 (2026-06-14): the server is authoritative for caller identity.
+    # get_current_user carries only JWT claims (username/role) — NOT
+    # staff_code/full_name (whoami_detailed re-fetches those from
+    # users.json: "never trust JWT for these"). If the client omitted them
+    # (thin identity), derive from the caller's record so creation can't be
+    # rejected for "Missing required field: staff_code" and the client
+    # cannot assert an arbitrary owner. Managers/admins may still create on
+    # behalf by explicitly supplying a different staff_code (a5/GAP-005).
+    if (not str(deal_dict.get("staff_code") or "").strip()
+            or not str(deal_dict.get("staff_name") or "").strip()):
+        from utils.core import UserManager as _UM_id
+        _full = _UM_id().users.get(str(user.get("username", "") or "")) or {}
+        if not str(deal_dict.get("staff_code") or "").strip():
+            deal_dict["staff_code"] = str(_full.get("staff_code", "") or "")
+        if not str(deal_dict.get("staff_name") or "").strip():
+            deal_dict["staff_name"] = str(
+                _full.get("full_name", "") or user.get("username", "") or "")
     ok, reason = validate_create_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
