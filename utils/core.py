@@ -5905,13 +5905,21 @@ class UserManager:
     def ensure_test_logins(self) -> int:
         """Recreate any missing canonical test logins. Returns count restored.
 
-        Cheap: a membership check; only writes when something was actually
-        missing, so the per-request cost (UserManager is built per request)
-        is a dict lookup when healthy. Guarantees the CEO test login can
-        never silently disappear after a reset.
+        Sources the full per-role set from utils.test_logins (the same source
+        scripts/seed_test_logins.py uses, so they cannot drift). If that import
+        fails for any reason, falls back to guaranteeing at least the CEO login
+        so a taxonomy problem can never lock everyone out.
+
+        Cheap when healthy: membership checks only, no writes.
         """
+        try:
+            from utils.test_logins import canonical_test_logins
+            canon = canonical_test_logins()
+        except Exception:
+            canon = self._CANONICAL_TEST_LOGINS  # CEO-only fallback
+
         restored = 0
-        for username, password, full_name, role, staff_code in self._CANONICAL_TEST_LOGINS:
+        for username, password, full_name, role, staff_code in canon:
             if username in self.users:
                 continue
             self.add_user(
@@ -5927,8 +5935,7 @@ class UserManager:
             try:
                 logger.warning(
                     "UserManager self-heal: restored %d canonical test "
-                    "login(s): %s", restored,
-                    [u[0] for u in self._CANONICAL_TEST_LOGINS],
+                    "login(s)", restored,
                 )
             except Exception:
                 pass

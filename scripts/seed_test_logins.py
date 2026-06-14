@@ -79,11 +79,6 @@ def main() -> int:
         print(f"ABORT: {users_file} missing/empty — refusing to run.")
         return 2
 
-    roles = list_all_classified_roles()
-    role_names = sorted(
-        (r.get("role") if isinstance(r, dict) else str(r)) for r in roles
-    )
-
     um = UserManager()
 
     # ── backup before mutation ─────────────────────────────────────────
@@ -93,18 +88,13 @@ def main() -> int:
         shutil.copy2(users_file, backup)
         print(f"Backup written: {backup}")
 
-    # ── assign staff codes (skip 0001, reserved for william001) ────────
-    rows = []          # (username, role, staff_code, password)
-    next_code = 2
-    for role in role_names:
-        username = USERNAME_OVERRIDES.get(role, _slug(role))
-        if username in STAFFCODE_OVERRIDES:
-            code = STAFFCODE_OVERRIDES[username]
-        else:
-            code = f"{next_code:04d}"
-            next_code += 1
-        password = "EcoStaff" + code[-4:]
-        rows.append((username, role, code, password))
+    # ── canonical accounts (shared source of truth with the self-heal) ──
+    from utils.test_logins import canonical_test_logins  # type: ignore
+    # rows: (username, role, staff_code, password) — adapted from the shared
+    # (username, password, full_name, role, staff_code) tuples so the seed
+    # and UserManager.ensure_test_logins can never drift.
+    rows = [(u, role, code, pw)
+            for (u, pw, _full, role, code) in canonical_test_logins()]
 
     # ── create / refresh ───────────────────────────────────────────────
     created = 0
