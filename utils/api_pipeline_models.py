@@ -287,8 +287,17 @@ class PipelineDealCreate(BaseModel):
         default=None,
         description="CBS customer identifier (CIF) when the client is matched in CBS",
     )
-    staff_code: str = Field(description="Owning RM staff code")
-    staff_name: str = Field(description="Owning RM display name")
+    staff_code: Optional[str] = Field(
+        default=None,
+        description="Owning RM staff code. Optional on the wire: when omitted "
+                    "the server derives it from the authenticated caller "
+                    "(H1, 2026-06-14). Required value still enforced by "
+                    "validate_create_payload after server-side injection.",
+    )
+    staff_name: Optional[str] = Field(
+        default=None,
+        description="Owning RM display name. Server-derived when omitted (H1).",
+    )
     deal_value: float = Field(
         description="Deal amount in canonical currency (typically KES). "
                     "Must be non-negative."
@@ -352,8 +361,14 @@ class PipelineDealRefer(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     client_name: str = Field(description="Customer display name")
-    staff_code: str = Field(description="Referring RM staff code")
-    staff_name: str = Field(description="Referring RM display name")
+    staff_code: Optional[str] = Field(
+        default=None,
+        description="Referring RM staff code. Server-derived when omitted (H1).",
+    )
+    staff_name: Optional[str] = Field(
+        default=None,
+        description="Referring RM display name. Server-derived when omitted (H1).",
+    )
 
     # Portfolio owner — who the deal is being referred TO
     portfolio_owner_code: str = Field(
