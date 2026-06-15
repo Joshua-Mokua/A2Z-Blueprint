@@ -1202,6 +1202,138 @@ def pipeline_deal_detail(
     }
 
 
+# ── Credit submission gate (v10.573 Batch B9) ────────────────────────
+#
+# Explicit "Submit to Credit Analysis" with a document-checklist gate,
+# replacing the silent stage trigger. Required documents come from
+# lms_config.json's tiered document_checklist (default + amount/product
+# add-ons). Submission is BLOCKED (400 + missing list) until every required
+# document is marked provided; on success it creates the linked loan
+# application via the canonical handoff (create_from_pipeline_deal).
+
+
+class SubmitToCreditRequest(BaseModel):
+    documents_provided: List[str] = []
+
+
+def _get_required_documents_for_deal(deal: dict) -> list:
+    """Required credit documents for a deal, from lms_config's tiered
+    document_checklist: default + amount/product add-ons. Order preserved,
+    de-duplicated."""
+    cfg = _load_json("lms_config.json") or {}
+    dc = cfg.get("document_checklist", {}) if isinstance(cfg, dict) else {}
+    req = list(dc.get("default", []))
+    try:
+        amount = float(deal.get("deal_value") or deal.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    if amount > 10_000_000:
+        req += dc.get("above_10m", [])
+    text = " ".join(str(deal.get(k, "")) for k in
+                    ("product_type", "product", "pipeline_category",
+                     "deal_category")).lower()
+    if "corporate" in text:
+        req += dc.get("corporate", [])
+    if "mortgage" in text or "home loan" in text:
+        req += dc.get("mortgage", [])
+    seen, out = set(), []
+    for d in req:
+        if d not in seen:
+            seen.add(d)
+            out.append(d)
+    return out
+
+
+def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict:
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    required = _get_required_documents_for_deal(deal)
+    provided = list(deal.get("documents_provided", []) or [])
+    missing = [d for d in required if d not in provided]
+    already = bool(deal.get("lms_application_id"))
+    perms = resolve_deal_permissions(deal, user, visible_codes)
+    my_code = str(user.get("staff_code", "") or "").strip()
+    is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
+    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    terminal = str(deal.get("stage", "")) in ("Closed Won", "Closed Lost")
+    return {
+        "required": required,
+        "provided": provided,
+        "missing": missing,
+        "already_submitted": already,
+        "lms_application_id": deal.get("lms_application_id"),
+        "can_submit": (is_owner or is_admin_like) and not already
+                      and not terminal and perms.get("can_view", False),
+    }
+
+
+@app.get("/api/pipeline/deals/{deal_id}/credit-checklist")
+def pipeline_credit_checklist(deal_id: str, user: dict = Depends(get_current_user)):
+    """Required vs provided credit documents for a deal + whether the caller
+    may submit it to credit (owner or admin, active, not already submitted)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM_for_api
+    _audit("API_PIPELINE_CREDIT_CHECKLIST", user, f"deal_id={deal_id}")
+    pm = _PM_for_api()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible_codes = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible_codes).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return _credit_submission_state(deal, user, visible_codes)
+
+
+@app.post("/api/pipeline/deals/{deal_id}/submit-to-credit")
+def pipeline_submit_to_credit(
+    deal_id: str,
+    payload: SubmitToCreditRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Submit a deal to credit analysis. Blocks (400 + missing list) until every
+    required document is provided; on success creates the linked loan
+    application (canonical handoff) and records it on the deal."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM_for_api, LoanApplicationManager
+    _audit("API_PIPELINE_SUBMIT_TO_CREDIT", user, f"deal_id={deal_id}")
+    pm = _PM_for_api()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible_codes = get_visible_staff_codes(user)
+    state = _credit_submission_state(deal, user, visible_codes)
+    if not state["can_submit"]:
+        if state["already_submitted"]:
+            raise HTTPException(status_code=400,
+                detail=f"Deal already submitted to credit "
+                       f"(application {state['lms_application_id']}).")
+        raise HTTPException(status_code=403,
+            detail="Only the deal owner (or an admin) can submit it to credit.")
+    provided = list(payload.documents_provided or [])
+    missing = [d for d in state["required"] if d not in provided]
+    if missing:
+        raise HTTPException(status_code=400, detail={
+            "message": "Cannot submit to credit — required documents missing.",
+            "missing": missing,
+            "required": state["required"],
+        })
+    # Gate passed — create the linked credit application (canonical handoff).
+    lam = LoanApplicationManager()
+    app_id = lam.create_from_pipeline_deal(deal, str(user.get("username", "")))
+    if not app_id:
+        raise HTTPException(status_code=500,
+            detail="Could not create the loan application from this deal.")
+    pm.update_deal(deal_id, {
+        "documents_provided": provided,
+        "lms_application_id": app_id,
+        "submitted_to_credit": True,
+    }, str(user.get("username", "")))
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    _db_sync_pipeline_deal(deal)
+    _audit("API_PIPELINE_SUBMIT_TO_CREDIT_OK", user, f"deal_id={deal_id} app={app_id}")
+    return {"application_id": app_id, "status": "submitted_to_credit", "missing": []}
+
+
 # ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──
 #
 # POST/PUT/advance for pipeline deals. Adds API-side equivalents of
