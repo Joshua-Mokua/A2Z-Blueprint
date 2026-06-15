@@ -4077,8 +4077,12 @@ class PipelineManager:
     def get_pending_validations(self, manager_codes: set = None):
         """Deals at Contacted+ stage that need manager validation."""
         idx = STAGE_NAMES.index(PIPELINE_VALIDATE_STAGE) if PIPELINE_VALIDATE_STAGE in STAGE_NAMES else 1
+        # STAGE_NAMES[idx:] runs to the end of the list, which includes the
+        # terminal stages (Closed Won / Closed Lost). A closed deal never needs
+        # validation, so intersect with ACTIVE_STAGES to drop terminal deals.
         result = [d for d in self.deals
                   if d['stage'] in STAGE_NAMES[idx:]
+                  and d['stage'] in ACTIVE_STAGES
                   and not d.get('manager_validated')
                   and not d.get('cancel_requested')]
         if manager_codes:
