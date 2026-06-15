@@ -192,14 +192,22 @@ def resolve_deal_permissions(
     # ── Permission computation ─────────────────────────────────────
     can_view = is_owner or is_backup or is_manager_in_scope
 
-    # Backup explicitly cannot edit (Section 15.6 line 656)
-    can_edit = (is_owner or is_manager_in_scope) and not is_backup_only(
+    # B7: a non-admin manager oversees/validates/queries but does NOT operate a
+    # subordinate's deal — the owner drives it (advance/edit). Admin retains
+    # full operate rights and is the interim continuity path for reassigning a
+    # departed RM's deals until the dedicated admin reassignment lands.
+    is_admin_like = is_admin or "admin" in str(user.get("role", "")).lower()
+
+    # Backup explicitly cannot edit (Section 15.6 line 656). Managers no longer
+    # edit a subordinate's deal; owner + admin only.
+    can_edit = (is_owner or is_admin_like) and not is_backup_only(
         is_owner, is_backup, is_manager_in_scope
     )
 
-    # All three roles can advance, gated on non-terminal stage
+    # Owner + backup advance their own/covered deal; admin retains advance.
+    # Non-admin managers validate/query instead of advancing.
     can_advance_stage = (
-        (is_owner or is_backup or is_manager_in_scope)
+        (is_owner or is_backup or is_admin_like)
         and not in_terminal_stage
     )
 

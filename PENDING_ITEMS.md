@@ -1,61 +1,64 @@
 # A2Z Blueprint — Pending Items Tracker
-_Living backlog so nothing gets lost. Updated 2026-06-15 (post v10.569)._
+_Living backlog so nothing gets lost. Updated 2026-06-15 (post v10.571)._
 
-## Pipeline → Credit submission (NEXT BATCH — approved approach)
-- [ ] **Explicit "Submit to Credit Analysis" button** on the loan deal detail,
-      replacing the silent stage-trigger. Calls a new
-      `POST /api/pipeline/deals/{id}/submit-to-credit`.
-- [ ] **Document-checklist gate**: validate provided ⊇ required (required from
-      config — category `docs_required` / swim-lane `document_checklist`).
-      Missing → 400 listing the missing documents; complete → create the credit
-      application (`create_from_pipeline_deal`) and link it.
-- [ ] **Capture "document provided"** via tick-the-checklist on the deal now
-      (simulation), EDMS-backed later (decision: checklist now, EDMS wiring later).
-- [ ] **Remove the silent Compliance auto-trigger** (v10.568 stopgap) once the
-      explicit gated button exists, so credit submission happens ONLY through it.
+## Deal ownership & continuity
+- [x] Manager oversees but does NOT operate a subordinate's deal — view +
+      validate + query + approve-cancel only; owner drives edit/advance; admin
+      retains full operate (B7, v10.571).
+- [ ] **Admin reassignment** (NEXT, you requested): a sanctioned action to
+      change a deal's owner when a staff member leaves without handover.
+      - Endpoint `POST /api/pipeline/deals/{id}/reassign {new_owner_staff_code}`.
+      - `can_reassign` = admin OR a role the **admin has authorized** to reassign.
+      - **Admin-defined authorized roles** in config (e.g. org_config key
+        `reassign_authorized_roles`, default Admin only; admin can add e.g.
+        Regional Head / Head of Branches).
+      - Audit REASSIGNED; re-sync owner to DB (H5).
+      - Frontend: reassign action gated by `can_reassign`, new owner picked from
+        scoped staff.
+      - Interim: admin can already reassign by editing the deal owner.
+
+## Pipeline → Credit submission (approved approach)
+- [ ] Explicit "Submit to Credit Analysis" button (replaces the silent stage
+      trigger). `POST /api/pipeline/deals/{id}/submit-to-credit`.
+- [ ] Document-checklist gate: required from config (category `docs_required` /
+      swim-lane `document_checklist`); missing → 400 listing missing docs;
+      complete → create the credit application and link it.
+- [ ] Capture "document provided" via tick-the-checklist now (sim), EDMS later.
+- [ ] Remove the silent Compliance auto-trigger (v10.568) once the gated button exists.
 
 ## EDMS (backend exists — wire to the flow)
-- [ ] For **existing clients**, link EDMS documents (data/edms_documents.json,
-      linked by client_cif / linked_id) so on-file docs auto-satisfy checklist
-      items. Note: current synthetic EDMS rows have blank linked_id.
-- [ ] Add an EDMS API endpoint + a documents panel on deal / LMS detail
-      (currently Streamlit-only: pages/31_edms.py).
+- [ ] Link EDMS docs (edms_documents.json, by client_cif / linked_id) so an
+      existing client's on-file docs auto-satisfy checklist items.
+- [ ] EDMS API endpoint + documents panel on deal / LMS detail (Streamlit-only today).
 
-## CBS fetch for existing clients (verify still tight)
-- [ ] Confirm the CIF lookup → autopopulate path is intact after recent changes
-      (Josh flagged hoping it's still tight). Add a regression check.
+## CBS fetch for existing clients
+- [ ] Verify the CIF lookup → autopopulate path is still tight; add a regression check.
 
 ## Scope (data-driven cascade)
-- [x] Branch-head sees own branch (B2, v10.565).
-- [x] CEO/register-root all-view from data (B1, v10.562).
-- [ ] **Area Manager → their region's branches** — BLOCKED on register data:
-      Area Managers are tagged Region="Head Office". Josh to allocate real
-      regions from the admin module; then extend the resolver one tier up.
-- [ ] Reconcile "Branch Manager" vs "Senior Branch Manager" (same level — Josh
-      confirmed; both already branch heads in B2).
-- [ ] After area scope proven: extend to Head of Branches / CRBO; then retire
-      hardcoded REPORTING_TREE / _ALL_VIEW_ROLES.
+- [x] B1 data-driven all-view (root) · [x] B2 branch-head sees own branch.
+- [ ] Area Manager → region's branches — BLOCKED on register data (Area Managers
+      tagged Region="Head Office"). Josh allocating real regions from admin;
+      then extend resolver one tier up.
+- [ ] After area proven: Head of Branches / CRBO; then retire hardcoded
+      REPORTING_TREE / _ALL_VIEW_ROLES.
 
 ## Validation / anti-ghost-deal
-- [x] Validate at creation (Lead) — deal surfaces for line-manager validation
-      (B5, v10.569).
-- [ ] Confirm/implement that **unvalidated deals are excluded from pipeline
-      value & forecast** (the full anti-inflation effect, not just the queue).
+- [x] Validate at creation (Lead) — B5. [x] Terminal deals excluded from queue — B3.
+- [ ] Confirm/implement: unvalidated deals excluded from pipeline value & forecast.
 
 ## Surfacing track (config-driven UI)
-- [ ] Create form from config (category → category-specific stages + sector +
-      decision-level).
-- [ ] Surface credit workflow on LMS detail (swim lanes / mandate matrix /
-      document checklist from lms_config).
-- [ ] Stage-funnel dashboards for Pipeline + Credit/LMS (config-driven).
+- [ ] Create form from config (category → stages + sector + decision-level).
+- [ ] Credit workflow on LMS detail (swim lanes / mandate matrix / doc checklist).
+- [ ] Stage-funnel dashboards for Pipeline + Credit/LMS.
 
-## Data / housekeeping
-- [ ] Re-run `reset_test_data.py --confirm` for a clean slate (clears stale
-      JSON deals like D0007 that predate the run).
-- [ ] Complete org_config.hierarchy (place CEO at top + 63 unplaced roles) —
-      admin-module/data task; makes more roles config-driven with no code change.
+## Login / data housekeeping
+- [x] Branch test logins self-heal across users.json resets (B6, v10.570).
+- [ ] Root-cause what empties users.json between sessions (self-heal masks it now).
+- [ ] Re-run reset_test_data.py --confirm for a clean slate (clears stale JSON
+      deals like D0006/D0007 that predate the run).
+- [ ] Complete org_config.hierarchy (CEO + 63 unplaced roles) — admin/data task.
 
-## Recently closed (context)
-- v10.562 B1 data-driven all-view · v10.565 B2 branch-head scope ·
-  v10.567 B3 validation queue excludes terminal · v10.568 B4 Compliance handoff
-  (stopgap) + login diagnostic · v10.569 B5 validate-at-creation.
+## Recently closed
+- B1 all-view · B2 branch-head scope · B3 validation-queue terminal fix ·
+  B4 Compliance handoff (stopgap) + login diagnostic · B5 validate-at-creation +
+  tracker · B6 branch-login self-heal · B7 manager can't operate subordinate deal.
