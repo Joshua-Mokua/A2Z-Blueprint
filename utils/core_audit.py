@@ -221,6 +221,47 @@ def _register_root_roles() -> "frozenset[str]":
         return frozenset()
 
 
+# Branch-level head roles that legitimately see everyone in their own branch
+# (bounded to a single Unit — no cross-branch visibility). Kept explicit so the
+# set is easy to audit/extend. Matched case-insensitively.
+BRANCH_HEAD_ROLES = frozenset({
+    "senior branch manager",
+    "branch manager",
+})
+
+
+@lru_cache(maxsize=1)
+def _register_staff_index() -> dict:
+    """staff_code -> {'role','unit','region','name'} from the staff register.
+
+    Batch B2 (2026-06-15): data-driven branch-head scope. Lets a branch head be
+    scoped to their OWN branch Unit (resolved from the authoritative register by
+    staff_code), rather than self-only. Reads data/staff_register.xlsx; cached;
+    empty on any error so callers fall back safely. Carries no tree inference —
+    only the clean Unit/Region/Role columns — so it cannot over-scope.
+    """
+    try:
+        import pandas as _pd
+        path = DATA_DIR / "staff_register.xlsx"
+        if not path.exists():
+            return {}
+        df = _pd.read_excel(path)
+        idx = {}
+        for _, r in df.iterrows():
+            code = str(r.get("Staff Code", "")).strip()
+            if not code:
+                continue
+            idx[code] = {
+                "role": str(r.get("Role", "")).strip(),
+                "unit": str(r.get("Unit", "")).strip(),
+                "region": str(r.get("Region", "")).strip(),
+                "name": str(r.get("Staff Name", "")).strip(),
+            }
+        return idx
+    except Exception:
+        return {}
+
+
 def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     """
     Return only the staff_scores rows this user is allowed to see,
@@ -244,6 +285,18 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
             or role_l in _ALL_VIEW_ROLES
             or role_l in _register_root_roles()):   # B1: data-driven top role
         return staff_scores.copy()
+
+    # B2: register-driven branch-head scope. A branch head sees everyone in
+    # their OWN branch Unit (resolved from the register by staff_code), bounded
+    # to that single Unit — no cross-branch leakage. Falls through to the
+    # legacy tree / self-only logic if the role isn't a branch head, the
+    # staff_code is unknown, or the Unit looks like a non-branch (Head Office).
+    if role_l in BRANCH_HEAD_ROLES:
+        staff_code = str(user_data.get("staff_code", "")).strip()
+        rec = _register_staff_index().get(staff_code)
+        unit = (rec.get("unit") if rec else "") or str(my_unit).strip()
+        if unit and unit.lower() != "head office":
+            return staff_scores[staff_scores["Unit"] == unit].copy()
 
     # Find tree config
     tree_cfg = REPORTING_TREE.get(role)
