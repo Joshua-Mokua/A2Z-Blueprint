@@ -1,64 +1,59 @@
 # A2Z Blueprint — Pending Items Tracker
-_Living backlog so nothing gets lost. Updated 2026-06-15 (post v10.571)._
+_Living backlog so nothing gets lost. Updated 2026-06-15 (post v10.572)._
 
-## Deal ownership & continuity
-- [x] Manager oversees but does NOT operate a subordinate's deal — view +
-      validate + query + approve-cancel only; owner drives edit/advance; admin
-      retains full operate (B7, v10.571).
-- [ ] **Admin reassignment** (NEXT, you requested): a sanctioned action to
-      change a deal's owner when a staff member leaves without handover.
-      - Endpoint `POST /api/pipeline/deals/{id}/reassign {new_owner_staff_code}`.
-      - `can_reassign` = admin OR a role the **admin has authorized** to reassign.
-      - **Admin-defined authorized roles** in config (e.g. org_config key
-        `reassign_authorized_roles`, default Admin only; admin can add e.g.
-        Regional Head / Head of Branches).
-      - Audit REASSIGNED; re-sync owner to DB (H5).
-      - Frontend: reassign action gated by `can_reassign`, new owner picked from
-        scoped staff.
-      - Interim: admin can already reassign by editing the deal owner.
-
-## Pipeline → Credit submission (approved approach)
-- [ ] Explicit "Submit to Credit Analysis" button (replaces the silent stage
-      trigger). `POST /api/pipeline/deals/{id}/submit-to-credit`.
+## NEXT: Pipeline → Credit submission (you chose to finalize credit)
+- [ ] Explicit "Submit to Credit Analysis" button (replaces silent stage trigger).
+      `POST /api/pipeline/deals/{id}/submit-to-credit`.
 - [ ] Document-checklist gate: required from config (category `docs_required` /
-      swim-lane `document_checklist`); missing → 400 listing missing docs;
-      complete → create the credit application and link it.
+      swim-lane `document_checklist`); missing -> 400 listing missing docs;
+      complete -> create the credit application and link it.
 - [ ] Capture "document provided" via tick-the-checklist now (sim), EDMS later.
 - [ ] Remove the silent Compliance auto-trigger (v10.568) once the gated button exists.
 
-## EDMS (backend exists — wire to the flow)
-- [ ] Link EDMS docs (edms_documents.json, by client_cif / linked_id) so an
-      existing client's on-file docs auto-satisfy checklist items.
-- [ ] EDMS API endpoint + documents panel on deal / LMS detail (Streamlit-only today).
+## Deal store / data integrity
+- [x] Postgres list enforces scope + permissions (B8) — was a leak + empty YOU CAN.
+- [ ] **Unify reads on one store.** List reads Postgres; validation queue +
+      get_pending_validations read JSON (PipelineManager). They diverge (a deal
+      visible in the queue but not the list). Durable fix: read all pipeline
+      views from Postgres (the architectural aim). Interim: clean reset so both
+      stores align, then create fresh (H5 syncs both).
+- [ ] Root-cause what empties pipeline_deals / users.json between sessions.
 
-## CBS fetch for existing clients
-- [ ] Verify the CIF lookup → autopopulate path is still tight; add a regression check.
+## Deal ownership & continuity
+- [x] Manager oversees, owner operates (B7).
+- [ ] Admin reassignment of a deal's owner (staff departure), with the set of
+      authorized-to-reassign roles defined by admin in config. Interim: admin edits owner.
+
+## Manager pipeline view (you raised)
+- [ ] Managers can create their OWN deals (the +New Deal button is already
+      present) — confirm create works for managers and that their own deals show.
+- [ ] "My deals" vs "My team's deals" filter so a manager can switch between
+      their own pipeline and their cascade.
+
+## Sectorization / CVP (you raised — untouched)
+- [ ] Pipeline views by SECTOR and by CVP head. pipeline_settings has sectors[13];
+      deals carry a sector. A sector/CVP head should see deals in their sector
+      (a scope dimension orthogonal to the reporting hierarchy). Design needed:
+      how sector/CVP heads are defined and how sector scope composes with cascade scope.
 
 ## Scope (data-driven cascade)
-- [x] B1 data-driven all-view (root) · [x] B2 branch-head sees own branch.
-- [ ] Area Manager → region's branches — BLOCKED on register data (Area Managers
-      tagged Region="Head Office"). Josh allocating real regions from admin;
-      then extend resolver one tier up.
-- [ ] After area proven: Head of Branches / CRBO; then retire hardcoded
-      REPORTING_TREE / _ALL_VIEW_ROLES.
+- [x] B1 all-view (root) · [x] B2 branch-head sees own branch.
+- [ ] Area Manager -> region's branches — BLOCKED on register data (Area Managers
+      tagged Region="Head Office"); Josh allocating real regions from admin.
+- [ ] Then Head of Branches / CRBO; then retire hardcoded REPORTING_TREE.
 
 ## Validation / anti-ghost-deal
-- [x] Validate at creation (Lead) — B5. [x] Terminal deals excluded from queue — B3.
-- [ ] Confirm/implement: unvalidated deals excluded from pipeline value & forecast.
+- [x] Validate at creation (B5) · [x] Terminal excluded from queue (B3).
+- [ ] Unvalidated deals excluded from pipeline value & forecast.
 
-## Surfacing track (config-driven UI)
-- [ ] Create form from config (category → stages + sector + decision-level).
+## Surfacing / housekeeping
+- [ ] Create form from config (category -> stages + sector + decision-level).
 - [ ] Credit workflow on LMS detail (swim lanes / mandate matrix / doc checklist).
-- [ ] Stage-funnel dashboards for Pipeline + Credit/LMS.
-
-## Login / data housekeeping
-- [x] Branch test logins self-heal across users.json resets (B6, v10.570).
-- [ ] Root-cause what empties users.json between sessions (self-heal masks it now).
-- [ ] Re-run reset_test_data.py --confirm for a clean slate (clears stale JSON
-      deals like D0006/D0007 that predate the run).
-- [ ] Complete org_config.hierarchy (CEO + 63 unplaced roles) — admin/data task.
+- [ ] Stage-funnel dashboards (Pipeline + Credit/LMS).
+- [x] Branch test logins self-heal (B6).
+- [ ] EDMS API + panel; complete org_config.hierarchy (CEO + 63 unplaced roles).
 
 ## Recently closed
-- B1 all-view · B2 branch-head scope · B3 validation-queue terminal fix ·
-  B4 Compliance handoff (stopgap) + login diagnostic · B5 validate-at-creation +
-  tracker · B6 branch-login self-heal · B7 manager can't operate subordinate deal.
+- B1 all-view · B2 branch scope · B3 terminal-queue fix · B4 Compliance handoff +
+  diagnostic · B5 validate-at-creation · B6 login self-heal · B7 manager-no-operate ·
+  B8 DB list scope+permissions.

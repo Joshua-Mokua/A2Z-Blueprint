@@ -1082,6 +1082,10 @@ def pipeline_deals(
     if _db_available():
         try:
             from utils.db import db as _db
+            from utils.api_pipeline_scope import (
+                get_visible_staff_codes, filter_deals_by_visible_codes,
+            )
+            from utils.api_pipeline_permissions import enrich_deal_with_permissions
             where  = []
             params = []
             if stage:    where.append("stage = %s");        params.append(stage)
@@ -1089,9 +1093,20 @@ def pipeline_deals(
             if unit:     where.append("unit = %s");         params.append(unit)
             sql = "SELECT * FROM pipeline_deals"
             if where: sql += " WHERE " + " AND ".join(where)
-            sql += f" ORDER BY open_date DESC LIMIT {limit} OFFSET {offset}"
+            sql += " ORDER BY open_date DESC"
             rows = _db.fetch_all(sql, tuple(params))
-            return {"deals": [_normalize_db_deal_row(d) for d in _serialize(rows)], "count": len(rows), "source": "postgresql"}
+            deals = [_normalize_db_deal_row(d) for d in _serialize(rows)]
+            # B8: cascade scope + permission enrichment — parity with the
+            # PipelineManager branch below. The DB branch previously skipped
+            # BOTH, which leaked every deal across scope when Postgres was
+            # active and left the per-deal "YOU CAN" permissions empty.
+            visible_codes = get_visible_staff_codes(user)
+            deals = filter_deals_by_visible_codes(deals, visible_codes)
+            enriched = [
+                enrich_deal_with_permissions(d, user, visible_codes)
+                for d in deals[offset:offset + limit]
+            ]
+            return {"deals": enriched, "count": len(deals), "source": "postgresql"}
         except Exception as e:
             logger.error(f"Pipeline deals DB error: {e}")
 
