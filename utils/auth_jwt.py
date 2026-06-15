@@ -221,6 +221,34 @@ def _extract_token_payload(authorization: Optional[str]) -> dict:
     }
 
 
+def _enrich_identity_from_store(user: dict) -> None:
+    """Fill authoritative identity (staff_code, full_name, scope flags) from
+    users.json onto the thin JWT dict.
+
+    H3 (2026-06-14): get_current_user returns only JWT claims
+    (username/role/scope). Downstream consumers — pipeline cascade scope
+    (get_visible_staff_codes), deal creation, manager queues — assume
+    staff_code/full_name are present, so without this they silently receive
+    an EMPTY identity (a user could not even see a deal they just created).
+    JWT is never trusted for these values; users.json is the source (same
+    rule as whoami_detailed). Only missing/blank keys are filled — explicit
+    token claims (e.g. role) are never overwritten. Best-effort: auth still
+    succeeds with the thin dict if the store is unreadable.
+    """
+    try:
+        from utils.core import UserManager  # lazy: avoid import cycle
+        rec = UserManager().users.get(str(user.get("username", "") or "")) or {}
+        if not rec:
+            return
+        for key in ("staff_code", "full_name", "can_view_all",
+                    "managed_staff_codes", "managed_roles", "managed_units",
+                    "department"):
+            if key in rec and (key not in user or user.get(key) in (None, "")):
+                user[key] = rec[key]
+    except Exception:
+        pass
+
+
 def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     """FastAPI Depends — extract + validate bearer token, return user dict.
 
@@ -245,6 +273,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
                 "to set a new password before accessing any other endpoint."
             ),
         )
+    _enrich_identity_from_store(user)  # H3: authoritative identity from users.json
     return user
 
 
