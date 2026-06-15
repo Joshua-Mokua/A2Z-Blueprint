@@ -378,6 +378,92 @@ def _db_available() -> bool:
     except Exception:
         return False
 
+
+def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
+    """Upsert a pipeline deal into Postgres so DB-backed reads reflect runtime
+    mutations. H5 (2026-06-14): pipeline reads are DB-first but mutations
+    write only the JSON store, so created/changed deals were invisible in the
+    DB-backed list. No-op when Postgres is unavailable. Best-effort. Field
+    map: JSON deal_value->amount, product_type->product; pipeline_category
+    kept in metadata.
+    """
+    if not deal or not _db_available():
+        return
+    try:
+        import json as _json
+        from datetime import date as _date
+        from utils.db import db as _db
+        today = _date.today().isoformat()
+
+        def _date_or_none(v):
+            v = (str(v).strip() if v is not None else "")
+            return v or None
+
+        row = {
+            "id":            str(deal.get("id", "") or ""),
+            "staff_code":    str(deal.get("staff_code", "") or ""),
+            "staff_name":    str(deal.get("staff_name", "") or ""),
+            "unit":          deal.get("unit"),
+            "role":          deal.get("role"),
+            "client_name":   deal.get("client_name"),
+            "client_cif":    deal.get("client_cif"),
+            "product":       deal.get("product") or deal.get("product_type"),
+            "stage":         deal.get("stage"),
+            "deal_category": (deal.get("deal_category")
+                              or deal.get("pipeline_category") or "New Facility"),
+            "amount":        (deal.get("amount")
+                              if deal.get("amount") is not None
+                              else deal.get("deal_value")),
+            "currency":      deal.get("currency", "KES"),
+            "open_date":     _date_or_none(deal.get("open_date")) or today,
+            "expected_close": _date_or_none(deal.get("expected_close")),
+            "probability":   deal.get("probability"),
+            "notes":         deal.get("notes"),
+            "last_updated":  today,
+            "metadata":      _json.dumps({
+                "pipeline_category":   deal.get("pipeline_category"),
+                "client_type":         deal.get("client_type"),
+                "is_ntb":              deal.get("is_ntb"),
+                "source":              deal.get("source"),
+                "portfolio_owner_code": deal.get("portfolio_owner_code"),
+                "portfolio_owner_name": deal.get("portfolio_owner_name"),
+            }),
+        }
+        if not row["id"]:
+            return
+        cols = list(row.keys())
+        placeholders = ", ".join(["%s"] * len(cols))
+        updates = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c != "id")
+        sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
+               f"VALUES ({placeholders}) "
+               f"ON CONFLICT (id) DO UPDATE SET {updates}")
+        _db.execute(sql, tuple(row[c] for c in cols))
+    except Exception as e:
+        logger.error(f"Pipeline deal DB sync failed for {deal.get('id')}: {e}")
+
+
+def _normalize_db_deal_row(row):
+    """Map pipeline_deals DB columns to the field names the React frontend
+    expects (amount->deal_value, product->product_type, metadata->
+    pipeline_category) so the DB read path matches the JSON read path. H5."""
+    if not isinstance(row, dict):
+        return row
+    r = dict(row)
+    if r.get("deal_value") in (None, ""):
+        r["deal_value"] = r.get("amount")
+    if not r.get("product_type"):
+        r["product_type"] = r.get("product")
+    md = r.get("metadata")
+    if isinstance(md, str):
+        try:
+            import json as _json
+            md = _json.loads(md)
+        except Exception:
+            md = {}
+    if isinstance(md, dict) and not r.get("pipeline_category"):
+        r["pipeline_category"] = md.get("pipeline_category")
+    return r
+
 def _safe_float(val) -> float:
     try:
         from decimal import Decimal
@@ -951,7 +1037,7 @@ def pipeline_deals(
             if where: sql += " WHERE " + " AND ".join(where)
             sql += f" ORDER BY open_date DESC LIMIT {limit} OFFSET {offset}"
             rows = _db.fetch_all(sql, tuple(params))
-            return {"deals": _serialize(rows), "count": len(rows), "source": "postgresql"}
+            return {"deals": [_normalize_db_deal_row(d) for d in _serialize(rows)], "count": len(rows), "source": "postgresql"}
         except Exception as e:
             logger.error(f"Pipeline deals DB error: {e}")
 
@@ -1152,6 +1238,7 @@ def pipeline_deal_refer(
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
     new_id = pm.add_deal(referral_record)
+    _db_sync_pipeline_deal(pm.get_deal(new_id))  # H5: mirror to DB-backed reads
 
     # Mirror Streamlit's audit emission (line 573: DEAL_REFERRED)
     _audit("DEAL_REFERRED", user,
@@ -1228,6 +1315,7 @@ def pipeline_deal_create(
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
     new_id = pm.add_deal(deal_dict)
+    _db_sync_pipeline_deal(pm.get_deal(new_id))  # H5: mirror to DB-backed reads
 
     # Mirror Streamlit's emission convention (DEAL_ADDED, line 965)
     _audit("DEAL_ADDED", user,
@@ -1304,6 +1392,7 @@ def pipeline_deal_update(
         )
 
     pm.update_deal(deal_id, updates, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
     _audit("DEAL_UPDATED", user,
            f"{deal_id}|fields={sorted(updates.keys())}")
 
@@ -1383,6 +1472,7 @@ def pipeline_deal_advance(
         payload.note or "",
         user.get("username", ""),
     )
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
     _audit("API_PIPELINE_ADVANCED", user,
            f"{deal_id}|{old_stage}->{payload.new_stage}")
 
@@ -1638,6 +1728,7 @@ def pipeline_deal_cancel_request(
         )
 
     pm.request_cancel(deal_id, user.get("username", ""), payload.reason)
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
 
     # Match Streamlit audit emission (line 1462)
     _audit("CANCEL_REQUESTED", user, f"{deal_id}|{payload.reason}")
@@ -1716,6 +1807,7 @@ def pipeline_deal_cancel_approve(
         payload.approve,
         payload.note or "",
     )
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
 
     # Match Streamlit audit emission (line 1309 / 1313)
     if payload.approve:
