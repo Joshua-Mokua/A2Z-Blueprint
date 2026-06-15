@@ -71,6 +71,22 @@ from utils.auth_jwt import (
     TOKEN_SCOPE_MUST_ROTATE,
 )
 
+# H2 (2026-06-14): import the pipeline request models at MODULE LEVEL so
+# FastAPI can resolve the forward-ref annotations on the pipeline routes
+# (`payload: "PipelineDealCreate"` etc.). These models were never imported
+# into this module, so the forward-refs could not bind the real (patched)
+# classes — and a clean start of this file would raise NameError at route
+# setup. api_pipeline_models imports only stdlib + pydantic (no cycle).
+from utils.api_pipeline_models import (
+    PipelineDealCreate,
+    PipelineDealRefer,
+    PipelineDealUpdate,
+    PipelineDealAdvance,
+    PipelineDealValidate,
+    PipelineDealCancelRequest,
+    PipelineDealCancelApprove,
+)
+
 logger = logging.getLogger("a2z.api")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
