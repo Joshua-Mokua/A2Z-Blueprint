@@ -1312,11 +1312,11 @@ def pipeline_submit_to_credit(
     provided = list(payload.documents_provided or [])
     missing = [d for d in state["required"] if d not in provided]
     if missing:
-        raise HTTPException(status_code=400, detail={
-            "message": "Cannot submit to credit — required documents missing.",
-            "missing": missing,
-            "required": state["required"],
-        })
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot submit to credit — missing documents: "
+                   + ", ".join(missing),
+        )
     # Gate passed — create the linked credit application (canonical handoff).
     lam = LoanApplicationManager()
     app_id = lam.create_from_pipeline_deal(deal, str(user.get("username", "")))

@@ -88,9 +88,10 @@ ALLOWED_ADVANCE_STAGES: Set[str] = {
 # set is the explicit COMPLEMENT to ALLOWED_ADVANCE_STAGES for the
 # loan workflow; G396 verifies neither set is silently widened.
 LMS_DEFERRED_STAGES: Set[str] = {
-    "Compliance",        # loan pipeline handoff point (frontend ADVANCE_TARGET_STAGES
-                         # offers this and shows "Loan application created"; the
-                         # backend must trigger the handoff here to match)
+    # NOTE: "Compliance" was removed (v10.574 B10). Credit submission is now an
+    # explicit, document-gated action (POST /submit-to-credit), not a silent
+    # side-effect of advancing a stage. These config credit stages remain for
+    # config-flow deals that advance through them directly.
     "Credit Review",
     "Approval",
     "Bank Approval",

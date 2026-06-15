@@ -461,3 +461,23 @@ export interface ApproveCancelResponse {
   status:         string;  // 'cancel_approved' | 'cancel_rejected'
   bsc_triggered:  boolean;
 }
+
+
+// ── Credit submission gate (v10.574 Batch B10) ─────────────────────────
+// GET /api/pipeline/deals/{id}/credit-checklist response, and the
+// POST /api/pipeline/deals/{id}/submit-to-credit response.
+
+export interface CreditChecklistResponse {
+  required:            string[];
+  provided:            string[];
+  missing:             string[];
+  already_submitted:   boolean;
+  lms_application_id:   string | null;
+  can_submit:          boolean;
+}
+
+export interface SubmitToCreditResponse {
+  application_id:  string;
+  status:          string;   // 'submitted_to_credit'
+  missing:         string[];
+}

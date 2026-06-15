@@ -37,6 +37,7 @@ import type {
   ValidationQueueResponse, CancellationQueueResponse,
   ValidateDealRequest, ValidateDealResponse,
   ApproveCancelRequest, ApproveCancelResponse,
+  CreditChecklistResponse, SubmitToCreditResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -299,6 +300,42 @@ export async function fetchPipelineDealDetail(
 ): Promise<PipelineDealDetailResponse> {
   return getJson<PipelineDealDetailResponse>(
     `/pipeline/deals/${encodeURIComponent(dealId)}`,
+  );
+}
+
+
+/**
+ * Fetch the credit-submission checklist for a deal
+ * (GET /api/pipeline/deals/{id}/credit-checklist).
+ *
+ * Returns the required documents (from lms_config's tiered checklist),
+ * which are already provided, which are still missing, whether the deal
+ * has already been submitted, and whether the caller may submit it.
+ */
+export async function fetchCreditChecklist(
+  dealId: string,
+): Promise<CreditChecklistResponse> {
+  return getJson<CreditChecklistResponse>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/credit-checklist`,
+  );
+}
+
+
+/**
+ * Submit a deal to credit analysis
+ * (POST /api/pipeline/deals/{id}/submit-to-credit).
+ *
+ * Auth: REQUIRED. Owner or admin only. Throws ApiValidationError (400)
+ * when required documents are missing — the message lists them. On
+ * success the deal is linked to a new loan application.
+ */
+export async function submitDealToCredit(
+  dealId: string,
+  documentsProvided: string[],
+): Promise<SubmitToCreditResponse> {
+  return postJson<SubmitToCreditResponse, { documents_provided: string[] }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/submit-to-credit`,
+    { documents_provided: documentsProvided },
   );
 }
 

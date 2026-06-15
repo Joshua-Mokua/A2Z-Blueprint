@@ -36,7 +36,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, AuthExpiredError } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, ApiValidationError, AuthExpiredError } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -48,6 +48,7 @@ import {
   ADVANCE_TARGET_STAGES,
   type PipelineDeal,
   type DealPermissions,
+  type CreditChecklistResponse,
 } from '@/types/pipeline';
 
 
@@ -304,22 +305,20 @@ export function PipelineDealDetail() {
         <AdvancePanel
           deal={deal}
           mutations={mutations}
-          onSuccess={(meta) => {
-            // δ1 (2026-06-12): Advancing to Compliance silently triggers
-            // LMS application creation server-side (α4 doctrine). Surface
-            // that to the user via the toast so they know what happened.
-            if (meta?.targetStage === 'Compliance') {
-              toast({
-                tone:    'success',
-                message: '✓ Stage advanced. Loan application created.',
-              });
-            } else {
-              toast({ tone: 'success', message: 'Deal advanced.' });
-            }
+          onSuccess={() => {
+            // Credit submission is now an explicit, document-gated action
+            // (the Submit to Credit Analysis panel), not a side-effect of
+            // advancing a stage — so advancing just reports the advance.
+            toast({ tone: 'success', message: 'Deal advanced.' });
             void reloadDeal();
           }}
         />
       )}
+
+      {/* Action: submit to credit — gated by the document checklist (B10).
+          The panel fetches its own checklist and renders only when the
+          caller may submit, or when the deal is already submitted. */}
+      <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
 
       {/* Action: request cancellation — gated by α7 can_request_cancel */}
       {permissions?.can_request_cancel && (
@@ -403,6 +402,144 @@ function DetailField({
         <div className="text-[11px] text-gray-400 mt-0.5 font-mono">{sub}</div>
       )}
     </div>
+  );
+}
+
+
+// ── Action panel: Submit to Credit Analysis (v10.574 Batch B10) ─────────
+
+interface CreditPanelProps {
+  deal:      PipelineDeal;
+  onChanged: () => void;
+}
+
+function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
+  const [checked,    setChecked]    = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchCreditChecklist(deal.id)
+      .then((c) => {
+        if (!alive) return;
+        setChecklist(c);
+        setChecked(new Set(c.provided));
+      })
+      .catch(() => { /* checklist unavailable — panel stays hidden */ });
+    return () => { alive = false; };
+  }, [deal.id]);
+
+  if (!checklist) return null;
+
+  // Already submitted — show the cross-link, no form.
+  if (checklist.already_submitted) {
+    return (
+      <Card className="mt-6" stripe="accent">
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Credit analysis</h3>
+          <Badge tone="success" size="sm">Submitted</Badge>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-700">
+            This deal has been submitted to credit analysis.
+            {checklist.lms_application_id && (
+              <>
+                {' '}
+                <button
+                  onClick={() =>
+                    navigate(`/lms/${encodeURIComponent(checklist.lms_application_id!)}`)}
+                  className="text-brand-primary hover:underline font-medium"
+                >
+                  View Loan Application →
+                </button>
+              </>
+            )}
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
+
+  // Only the owner / admin sees the submission form.
+  if (!checklist.can_submit) return null;
+
+  const toggle = (doc: string) => {
+    setError(null);
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(doc)) next.delete(doc);
+      else next.add(doc);
+      return next;
+    });
+  };
+
+  const missing = checklist.required.filter((d) => !checked.has(d));
+
+  const onSubmit = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await submitDealToCredit(deal.id, Array.from(checked));
+      toast({
+        tone: 'success',
+        message: `✓ Submitted to credit — application ${res.application_id}.`,
+      });
+      onChanged();
+    } catch (e) {
+      if (e instanceof ApiValidationError) setError(e.detail);
+      else if (e instanceof AuthExpiredError) { /* handled globally */ }
+      else setError('Submission failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="mt-6" stripe="accent">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
+        <Badge tone="info" size="sm">document gate</Badge>
+      </Card.Header>
+      <Card.Body>
+        <p className="text-xs text-gray-500 mb-3">
+          Confirm each required document is on file. All required documents
+          must be checked before the deal can be submitted to credit analysis.
+        </p>
+        <div className="space-y-2">
+          {checklist.required.map((doc) => (
+            <label key={doc} className="flex items-center gap-2 text-sm text-gray-800">
+              <input
+                type="checkbox"
+                checked={checked.has(doc)}
+                onChange={() => toggle(doc)}
+                disabled={submitting}
+                className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary/30"
+              />
+              <span>{doc}</span>
+            </label>
+          ))}
+        </div>
+        {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
+        {!error && missing.length > 0 && (
+          <div className="mt-3 text-xs text-amber-600">
+            {missing.length} document{missing.length === 1 ? '' : 's'} still required.
+          </div>
+        )}
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={() => void onSubmit()}
+            loading={submitting}
+            disabled={missing.length > 0}
+          >
+            Submit to Credit Analysis
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
   );
 }
 

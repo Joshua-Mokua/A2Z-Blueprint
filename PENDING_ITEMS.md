@@ -1,59 +1,46 @@
-# A2Z Blueprint — Pending Items Tracker
-_Living backlog so nothing gets lost. Updated 2026-06-15 (post v10.572)._
+# A2Z — Pending Items (living backlog)
 
-## NEXT: Pipeline → Credit submission (you chose to finalize credit)
-- [ ] Explicit "Submit to Credit Analysis" button (replaces silent stage trigger).
-      `POST /api/pipeline/deals/{id}/submit-to-credit`.
-- [ ] Document-checklist gate: required from config (category `docs_required` /
-      swim-lane `document_checklist`); missing -> 400 listing missing docs;
-      complete -> create the credit application and link it.
-- [ ] Capture "document provided" via tick-the-checklist now (sim), EDMS later.
-- [ ] Remove the silent Compliance auto-trigger (v10.568) once the gated button exists.
+Last updated: v10.574 (B10). Newest-first within each group.
 
-## Deal store / data integrity
-- [x] Postgres list enforces scope + permissions (B8) — was a leak + empty YOU CAN.
-- [ ] **Unify reads on one store.** List reads Postgres; validation queue +
-      get_pending_validations read JSON (PipelineManager). They diverge (a deal
-      visible in the queue but not the list). Durable fix: read all pipeline
-      views from Postgres (the architectural aim). Interim: clean reset so both
-      stores align, then create fresh (H5 syncs both).
-- [ ] Root-cause what empties pipeline_deals / users.json between sessions.
+## DONE (recent)
+- [x] Submit-to-Credit document gate — explicit, config-sourced checklist,
+      blocks on missing docs, creates linked loan application.
+      Backend B9 (v10.573) + Frontend B10 (v10.574). Silent Compliance
+      trigger removed; gated button is the only path to credit.
 
-## Deal ownership & continuity
-- [x] Manager oversees, owner operates (B7).
-- [ ] Admin reassignment of a deal's owner (staff departure), with the set of
-      authorized-to-reassign roles defined by admin in config. Interim: admin edits owner.
+## PENDING — next up (code, ready when you are)
+- [ ] Admin reassignment of a deal's owner (staff departure/handover):
+      POST /api/pipeline/deals/{id}/reassign {new_owner_staff_code};
+      can_reassign = admin OR admin-configured roles; audit REASSIGNED;
+      owner re-sync; frontend control. Interim: admin edits owner directly.
+- [ ] Managers: "My deals" vs "My team's deals" filter (managers can already
+      create; this is the view split).
+- [ ] Unvalidated deals excluded from pipeline VALUE & forecast (full
+      anti-ghost effect, not just the validation queue).
 
-## Manager pipeline view (you raised)
-- [ ] Managers can create their OWN deals (the +New Deal button is already
-      present) — confirm create works for managers and that their own deals show.
-- [ ] "My deals" vs "My team's deals" filter so a manager can switch between
-      their own pipeline and their cascade.
+## PENDING — needs your input / data
+- [ ] Allocate real Area Manager regions from the admin module (all 10 are
+      currently Region="Head Office"). Then I extend the scope resolver one
+      tier up (region-scoped, bounded to the region's branches), then Head of
+      Branches / CRBO, then retire the hardcoded reporting tree.
+- [ ] Complete org_config.hierarchy (CEO + ~63 unplaced roles) — admin/data.
+- [ ] Sectorization / CVP heads — pipeline views by sector and CVP head;
+      orthogonal scope dimension to the reporting hierarchy; needs design
+      (how sector/CVP heads are defined, how sector scope composes with
+      cascade scope). EDMS exists for existing clients (data/edms_documents.json,
+      linked by client_cif, Streamlit-only) — wire later to auto-satisfy the
+      checklist for existing clients.
 
-## Sectorization / CVP (you raised — untouched)
-- [ ] Pipeline views by SECTOR and by CVP head. pipeline_settings has sectors[13];
-      deals carry a sector. A sector/CVP head should see deals in their sector
-      (a scope dimension orthogonal to the reporting hierarchy). Design needed:
-      how sector/CVP heads are defined and how sector scope composes with cascade scope.
+## PENDING — architecture / hygiene
+- [ ] Unify pipeline reads on Postgres. The list reads the DB; the validation
+      queue reads JSON (PipelineManager) — they can disagree. Durable fix is
+      one source of truth.
+- [ ] Root-cause what empties pipeline_deals / users.json between sessions
+      (the self-heal masks it).
+- [ ] Verify CBS fetch for existing clients (CIF lookup -> autopopulate) is
+      intact; add a regression check.
 
-## Scope (data-driven cascade)
-- [x] B1 all-view (root) · [x] B2 branch-head sees own branch.
-- [ ] Area Manager -> region's branches — BLOCKED on register data (Area Managers
-      tagged Region="Head Office"); Josh allocating real regions from admin.
-- [ ] Then Head of Branches / CRBO; then retire hardcoded REPORTING_TREE.
-
-## Validation / anti-ghost-deal
-- [x] Validate at creation (B5) · [x] Terminal excluded from queue (B3).
-- [ ] Unvalidated deals excluded from pipeline value & forecast.
-
-## Surfacing / housekeeping
-- [ ] Create form from config (category -> stages + sector + decision-level).
+## PENDING — surfacing track (config-driven UX)
+- [ ] Create-deal form from config (category -> stages + sector + decision level).
 - [ ] Credit workflow on LMS detail (swim lanes / mandate matrix / doc checklist).
-- [ ] Stage-funnel dashboards (Pipeline + Credit/LMS).
-- [x] Branch test logins self-heal (B6).
-- [ ] EDMS API + panel; complete org_config.hierarchy (CEO + 63 unplaced roles).
-
-## Recently closed
-- B1 all-view · B2 branch scope · B3 terminal-queue fix · B4 Compliance handoff +
-  diagnostic · B5 validate-at-creation · B6 login self-heal · B7 manager-no-operate ·
-  B8 DB list scope+permissions.
+- [ ] Stage-funnel dashboards.
