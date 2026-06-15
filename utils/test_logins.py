@@ -59,3 +59,34 @@ def canonical_test_logins() -> List[TestLogin]:
     if _CACHE is None:
         _CACHE = _build()
     return _CACHE
+
+
+# ── Register-staff branch test chain (self-healed, like the canonical set) ──
+# These are REAL staff_register people (300xxx) for one branch (Thika),
+# frontline → CEO, used for scope testing. They're listed here so
+# UserManager.ensure_branch_test_logins() can restore them after any users.json
+# reset — the same "express" persistence the canonical logins have. can_view_all
+# is False for everyone except the register root (CEO), so cascade scope is
+# exercised honestly (deal scope is role-based regardless, but we keep the flag
+# correct). Password = EcoStaff + last-4 of staff_code.
+# (username, password, full_name, role, staff_code, unit, region, can_view_all)
+BranchTestLogin = Tuple[str, str, str, str, str, str, str, bool]
+
+_BRANCH_TEST_LOGINS: List[BranchTestLogin] = [
+    ("oscar0720",      "EcoStaff0720", "Oscar Abdullahi",    "Teller",                               "300720", "Thika",       "Mt Kenya West", False),
+    ("gilbert0724",    "EcoStaff0724", "Gilbert Wanjala",    "Customer Service Officer",             "300724", "Thika",       "Mt Kenya West", False),
+    ("frank0731",      "EcoStaff0731", "Frank Wanyama",      "Relationship Officer-Personal Banker", "300731", "Thika",       "Mt Kenya West", False),
+    ("isaac0718",      "EcoStaff0718", "Isaac Mugambi",      "Branch Operations Supervisor",         "300718", "Thika",       "Mt Kenya West", False),
+    ("vincent0728",    "EcoStaff0728", "Vincent Mohamed",    "Branch Relationship Manager",          "300728", "Thika",       "Mt Kenya West", False),
+    ("zachary0717",    "EcoStaff0717", "Zachary Baya",       "Branch Operations Manager",            "300717", "Thika",       "Mt Kenya West", False),
+    ("immaculate0716", "EcoStaff0716", "Immaculate Njoroge", "Senior Branch Manager",                "300716", "Thika",       "Mt Kenya West", False),
+    ("beatrice1501",   "EcoStaff1501", "Beatrice Musyoka",   "Area Manager",                         "301501", "Head Office", "Head Office",   False),
+    ("veronica1500",   "EcoStaff1500", "Veronica Mutai",     "Head of Branches",                     "301500", "Head Office", "Head Office",   False),
+    ("nicholas0002",   "EcoStaff0002", "Nicholas Ndegwa",    "Chief Retail Banking Officer",         "300002", "Head Office", "Head Office",   False),
+    ("william0001",    "EcoStaff0001", "William Mwanake",    "Chief Executive & Managing Director",  "300001", "Head Office", "Head Office",   True),
+]
+
+
+def branch_test_logins() -> List[BranchTestLogin]:
+    """Return the register-staff branch test chain (Thika, frontline → CEO)."""
+    return list(_BRANCH_TEST_LOGINS)

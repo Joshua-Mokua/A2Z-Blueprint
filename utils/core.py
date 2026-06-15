@@ -5944,6 +5944,7 @@ class UserManager:
         self.users_file = DATA_DIR / "users.json"
         self.users = self._load()
         self.ensure_test_logins()
+        self.ensure_branch_test_logins()
 
     def ensure_test_logins(self) -> int:
         """Recreate any missing canonical test logins. Returns count restored.
@@ -5979,6 +5980,45 @@ class UserManager:
                 logger.warning(
                     "UserManager self-heal: restored %d canonical test "
                     "login(s)", restored,
+                )
+            except Exception:
+                pass
+        return restored
+
+    def ensure_branch_test_logins(self) -> int:
+        """Recreate any missing register-staff branch test logins. Returns count.
+
+        Parity with ensure_test_logins: the canonical role logins self-heal, but
+        the register branch chain (300xxx, used for scope testing) did not — so
+        any users.json reset wiped them while the canonical set returned. This
+        restores them from utils.test_logins.branch_test_logins() with the
+        correct can_view_all (False except the register root), unit and region.
+
+        Cheap when healthy: membership checks only, no writes.
+        """
+        try:
+            from utils.test_logins import branch_test_logins
+            chain = branch_test_logins()
+        except Exception:
+            return 0
+        restored = 0
+        for uname, pw, full, role, code, unit, region, cva in chain:
+            if uname in self.users:
+                continue
+            self.add_user(
+                uname, pw, full, email=f"{uname}@bank.com", role=role,
+                unit=unit, staff_code=code, can_view_all=cva, can_execute=True,
+            )
+            self.users[uname]["region"] = region
+            self.users[uname]["_protected"] = True
+            self.users[uname]["must_change_password"] = False
+            restored += 1
+        if restored:
+            self.save_users()
+            try:
+                logger.warning(
+                    "UserManager self-heal: restored %d branch test login(s)",
+                    restored,
                 )
             except Exception:
                 pass
