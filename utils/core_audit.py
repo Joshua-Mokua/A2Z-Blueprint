@@ -31,6 +31,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime
+from functools import lru_cache
 
 # ── Module-level constants we still need from utils.core ────────────────
 # These remain in core.py because they're referenced by lots of other
@@ -187,6 +188,39 @@ def submit_for_approval(item: dict, data_path) -> str:
 # ─── get_visible_staff (was core.py L5535–L5613) ───
 
 
+@lru_cache(maxsize=1)
+def _register_root_roles() -> "frozenset[str]":
+    """Roles that are ROOTS in the staff register (blank 'Reports To') — the
+    top of the org, which therefore sees everyone.
+
+    Batch B1 (2026-06-15): data-driven all-view determination. Reads
+    data/staff_register.xlsx (the authoritative reporting source) so the CEO
+    role ("Chief Executive & Managing Director") is recognized as all-view
+    WITHOUT hardcoding — retiring the H4 _ALL_VIEW_ROLES band-aid's necessity
+    (that set is retained as a fallback). Cached; empty on any error so the
+    hardcoded set still applies. Only genuine roots become all-view, so this
+    cannot over-scope a mid-level role (verified: the register has exactly one
+    root, the CEO).
+    """
+    try:
+        import pandas as _pd
+        path = DATA_DIR / "staff_register.xlsx"
+        if not path.exists():
+            return frozenset()
+        df = _pd.read_excel(path)
+        if "Reports To" not in df.columns or "Role" not in df.columns:
+            return frozenset()
+        rt = df["Reports To"].astype(str).str.strip()
+        roots = df[df["Reports To"].isna() | rt.isin(["", "None", "nan", "NaN"])]
+        return frozenset(
+            str(r).strip().lower()
+            for r in roots["Role"].dropna().unique()
+            if str(r).strip()
+        )
+    except Exception:
+        return frozenset()
+
+
 def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     """
     Return only the staff_scores rows this user is allowed to see,
@@ -206,7 +240,9 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
 
     # Only true admins and MD see everyone — not just anyone with can_view_all
     # can_view_all is a legacy flag; tree_access is now role-based
-    if is_admin or "admin" in role_l or role_l in _ALL_VIEW_ROLES:
+    if (is_admin or "admin" in role_l
+            or role_l in _ALL_VIEW_ROLES
+            or role_l in _register_root_roles()):   # B1: data-driven top role
         return staff_scores.copy()
 
     # Find tree config
