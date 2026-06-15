@@ -297,12 +297,8 @@ def _configured_stage_names() -> Set[str]:
     Batch A (2026-06-15). Lazy import to avoid a cycle; best-effort.
     """
     try:
-        from utils.core import get_pipeline_stages
-        return {
-            str(s.get("stage", "")).strip()
-            for s in (get_pipeline_stages() or [])
-            if str(s.get("stage", "")).strip()
-        }
+        from utils.core import get_all_pipeline_stage_names
+        return get_all_pipeline_stage_names()
     except Exception:
         return set()
 

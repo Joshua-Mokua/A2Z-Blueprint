@@ -1055,9 +1055,18 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
     truth for the frontend's stage dropdowns + filters, so the UI reflects the
     bank's configured workflow instead of hardcoded stage strings.
     """
-    from utils.core import get_pipeline_stages
-    stages = get_pipeline_stages() or []
-    return {"stages": stages, "count": len(stages)}
+    from utils.core import get_pipeline_settings, get_pipeline_stages
+    cfg = get_pipeline_settings() or {}
+    return {
+        "stages":            cfg.get("stages") or get_pipeline_stages() or [],
+        "deal_categories":   cfg.get("deal_categories", []),
+        "sectors":           cfg.get("sectors", []),
+        "decision_levels":   cfg.get("decision_levels", []),
+        "probability_map":   cfg.get("probability_map", {}),
+        "deal_types":        cfg.get("deal_types", []),
+        "product_catalogue": cfg.get("product_catalogue", {}),
+        "currency":          cfg.get("currency", "KES"),
+    }
 
 
 @app.get("/api/pipeline/deals")

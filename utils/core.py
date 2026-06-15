@@ -1833,6 +1833,29 @@ def save_pipeline_settings(settings: dict):
     _f = DATA_DIR / "pipeline_settings.json"
     _f.write_text(json.dumps(settings, indent=2))
 
+def get_all_pipeline_stage_names() -> set:
+    """Every stage name across the configured pipeline — top-level stages plus
+    each deal_category's flow — from pipeline_settings.json. Batch A2
+    (2026-06-15): the advance gate accepts any configured stage so all 9
+    deal-category flows (17+ stages) work without hardcoding.
+    """
+    names = set()
+    try:
+        cfg = get_pipeline_settings()
+        for st in cfg.get("stages", []):
+            n = str(st.get("stage", "")).strip() if isinstance(st, dict) else str(st).strip()
+            if n:
+                names.add(n)
+        for cat in cfg.get("deal_categories", []):
+            for st in cat.get("stages", []):
+                n = str(st).strip()
+                if n:
+                    names.add(n)
+    except Exception:
+        pass
+    return names
+
+
 def get_custom_product_types() -> list:
     """Return product types, using custom list if admin has configured one."""
     settings = get_pipeline_settings()
