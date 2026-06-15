@@ -5775,7 +5775,17 @@ _UNIT_SCOPED_ROLES = {
 }
 # Regional Heads scope by Region column, not Unit
 _REGION_SCOPED_ROLES = {"regional head"}
-_ALL_VIEW_ROLES = {"managing director","admin"}
+_ALL_VIEW_ROLES = {
+    "managing director",
+    "admin",
+    # H4 (2026-06-14): the canonical top-exec role is "Chief Executive &
+    # Managing Director" (role_taxonomy), NOT "Managing Director". Without
+    # these entries the CEO fell through to self-only visibility and could
+    # not see all deals. Variants included for resilience to title spelling.
+    "chief executive & managing director",
+    "chief executive officer",
+    "chief executive",
+}
 
 
 # ─── PROFILE PHOTO HELPERS ────────────────────────────────────────────
