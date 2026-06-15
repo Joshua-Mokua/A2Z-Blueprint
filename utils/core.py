@@ -1355,7 +1355,10 @@ LOSS_REASONS   = [
 # Pipeline delete/cancel approval levels (by stage reached)
 # Stages up to this index can be self-deleted; beyond requires manager approval
 PIPELINE_DELETE_SELF_MAX = "Lead"     # can self-delete only at Lead stage
-PIPELINE_VALIDATE_STAGE  = "Contacted"  # stage at which manager must validate
+PIPELINE_VALIDATE_STAGE  = "Lead"  # validate at creation: a newly created deal
+                                   # (Lead) must be confirmed real by the line
+                                   # manager before it counts — first defense
+                                   # against ghost deals inflating the pipeline
 
 # ── KPI Library — persistent configuration ───────────────────────────
 KPI_LIBRARY_FILE = DATA_DIR / "kpi_library.json"

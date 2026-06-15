@@ -66,6 +66,7 @@ TERMINAL_STAGES: Set[str] = {
 # This list mirrors what PipelineManager.get_pending_validations
 # considers "post-validation-threshold" — see utils/core.py:4045-4053.
 VALIDATION_STAGES: Set[str] = {
+    "Lead",          # validate at creation (first defense against ghost deals)
     "Contacted",
     "Qualified",
     "Proposal",
