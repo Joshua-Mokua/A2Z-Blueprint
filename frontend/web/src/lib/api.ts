@@ -29,6 +29,7 @@ import type { UserIdentity, RoleRegistry } from '@/types/role';
 import type {
   PipelineDealsListResponse, PipelineDealDetailResponse,
   PipelineDealsQuery,
+  PipelineConfig,
   AdvanceDealRequest, AdvanceDealResponse,
   RequestCancelRequest, RequestCancelResponse,
   CreateDealRequest, CreateDealResponse,
@@ -270,6 +271,16 @@ export async function fetchPipelineDeals(
   const qs = params.toString();
   const path = qs ? `/pipeline/deals?${qs}` : '/pipeline/deals';
   return getJson<PipelineDealsListResponse>(path);
+}
+
+
+/**
+ * Fetch the admin-configured pipeline config (categories, stages, sectors,
+ * decision levels) from /api/pipeline/stages. Single source for the filter
+ * + create-form dropdowns so the UI matches the bank's configured workflow.
+ */
+export async function fetchPipelineConfig(): Promise<PipelineConfig> {
+  return getJson<PipelineConfig>('/pipeline/stages');
 }
 
 

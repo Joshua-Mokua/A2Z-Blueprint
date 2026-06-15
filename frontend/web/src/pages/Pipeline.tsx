@@ -24,18 +24,19 @@
 //
 // Composition: 100% bespoke v10.496 primitives. No new visual atoms.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
+import { fetchPipelineConfig } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Stat } from '@/components/Stat';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
 import { PermissionBadges } from '@/components/PermissionBadges';
-import { stageTone, type PipelineDeal } from '@/types/pipeline';
+import { stageTone, type PipelineDeal, type PipelineConfig } from '@/types/pipeline';
 
 
 // ── Display helpers ─────────────────────────────────────────────────────
@@ -64,6 +65,39 @@ export function Pipeline() {
   const { branding } = useBranding();
   const { user } = useRole();
   const { deals, count, loading, error, refetch } = usePipelineDeals();
+
+  // Batch A: admin-configured category/stage filters (from /api/pipeline/stages)
+  const [config, setConfig] = useState<PipelineConfig | null>(null);
+  const [catFilter, setCatFilter] = useState('');
+  const [stageFilter, setStageFilter] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetchPipelineConfig()
+      .then((c) => { if (active) setConfig(c); })
+      .catch(() => { /* dropdowns stay empty if config can't load */ });
+    return () => { active = false; };
+  }, []);
+
+  // Stage options narrow to the selected category's flow; else all stages.
+  const stageOptions = useMemo(() => {
+    if (!config) return [] as string[];
+    if (catFilter) {
+      const cat = config.deal_categories.find((c) => c.category === catFilter);
+      if (cat) return cat.stages;
+    }
+    return config.stages.map((s) => s.stage);
+  }, [config, catFilter]);
+
+  const onCategoryChange = (value: string) => {
+    setCatFilter(value);
+    setStageFilter('');
+    void refetch({ category: value || undefined });
+  };
+  const onStageChange = (value: string) => {
+    setStageFilter(value);
+    void refetch({ category: catFilter || undefined, stage: value || undefined });
+  };
   const navigate = useNavigate();
 
   // Derived KPIs — memoized so re-renders from props don't recompute
@@ -224,6 +258,28 @@ export function Pipeline() {
               <Badge tone="brand" size="sm">v10.510 β1</Badge>
             </div>
             <div className="flex items-center gap-2">
+              <select
+                value={catFilter}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                aria-label="Filter by deal category"
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              >
+                <option value="">All categories</option>
+                {config?.deal_categories.map((c) => (
+                  <option key={c.category} value={c.category}>{c.category}</option>
+                ))}
+              </select>
+              <select
+                value={stageFilter}
+                onChange={(e) => onStageChange(e.target.value)}
+                aria-label="Filter by stage"
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              >
+                <option value="">All stages</option>
+                {stageOptions.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
               <Button
                 variant="ghost"
                 size="sm"

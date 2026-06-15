@@ -132,6 +132,35 @@ export interface PipelineDealsQuery {
 }
 
 
+// ── Admin-configured pipeline config (from /api/pipeline/stages) ─────────
+// Single source of truth for category/stage/sector/decision-level dropdowns.
+// Driven by data/pipeline_settings.json (Batch A2).
+
+export interface PipelineStageConfig {
+  stage:         string;
+  description?:  string;
+  color?:        string;
+  prob_default?: number;
+}
+
+export interface DealCategoryConfig {
+  category:     string;
+  description?: string;
+  stages:       string[];
+}
+
+export interface PipelineConfig {
+  stages:            PipelineStageConfig[];
+  deal_categories:   DealCategoryConfig[];
+  sectors:           string[];
+  decision_levels:   string[];
+  probability_map:   Record<string, number>;
+  deal_types:        string[];
+  product_catalogue: Record<string, string[]>;
+  currency:          string;
+}
+
+
 // ── Mutation request bodies (v10.511 Phase 4 Batch β2) ──────────────────
 // Match the FastAPI Pydantic models in utils/api_pipeline_models.py.
 
