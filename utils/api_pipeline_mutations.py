@@ -291,6 +291,22 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
     return True, ""
 
 
+def _configured_stage_names() -> Set[str]:
+    """Stage names from the admin-configured pipeline (org_config), so
+    per-bank custom/configured stages advance without code changes.
+    Batch A (2026-06-15). Lazy import to avoid a cycle; best-effort.
+    """
+    try:
+        from utils.core import get_pipeline_stages
+        return {
+            str(s.get("stage", "")).strip()
+            for s in (get_pipeline_stages() or [])
+            if str(s.get("stage", "")).strip()
+        }
+    except Exception:
+        return set()
+
+
 def validate_advance_target(new_stage: str) -> Tuple[bool, str]:
     """Return (ok, reason) for an advance request.
 
@@ -314,10 +330,12 @@ def validate_advance_target(new_stage: str) -> Tuple[bool, str]:
         # α4: permitted, handoff triggered by caller. No longer rejected.
         return True, ""
 
-    if new_stage not in ALLOWED_ADVANCE_STAGES:
+    if (new_stage not in ALLOWED_ADVANCE_STAGES
+            and new_stage not in _configured_stage_names()):
         return False, (
             f"Unknown stage: '{new_stage}'. "
-            f"Allowed stages: {sorted(ALLOWED_ADVANCE_STAGES | LMS_DEFERRED_STAGES)}"
+            f"Allowed stages: "
+            f"{sorted(ALLOWED_ADVANCE_STAGES | LMS_DEFERRED_STAGES | _configured_stage_names())}"
         )
 
     return True, ""

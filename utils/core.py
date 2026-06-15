@@ -3925,6 +3925,9 @@ class PipelineManager:
         d['id']         = f"D{len(self.deals)+1:04d}"
         d['created_at'] = datetime.now().isoformat()
         d['updated_at'] = datetime.now().isoformat()
+        # Batch A: stamp open_date so new deals have a real date for the
+        # open_date-DESC list ordering (was unset -> created deals sorted oddly).
+        d.setdefault('open_date', datetime.now().strftime('%Y-%m-%d'))
         d['staff_code'] = clean_code(d.get('staff_code',''))
         self.deals.append(d)
         self._save_deals()

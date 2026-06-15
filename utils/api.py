@@ -1048,6 +1048,18 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     _set_cache("pipeline_summary", result)
     return result
 
+@app.get("/api/pipeline/stages")
+def pipeline_stages_config(user: dict = Depends(get_current_user)):
+    """Admin-configured pipeline stages (names, colors, default
+    probabilities) from org_config. Batch A (2026-06-15) — single source of
+    truth for the frontend's stage dropdowns + filters, so the UI reflects the
+    bank's configured workflow instead of hardcoded stage strings.
+    """
+    from utils.core import get_pipeline_stages
+    stages = get_pipeline_stages() or []
+    return {"stages": stages, "count": len(stages)}
+
+
 @app.get("/api/pipeline/deals")
 def pipeline_deals(
     stage:    Optional[str] = None,
