@@ -88,6 +88,9 @@ ALLOWED_ADVANCE_STAGES: Set[str] = {
 # set is the explicit COMPLEMENT to ALLOWED_ADVANCE_STAGES for the
 # loan workflow; G396 verifies neither set is silently widened.
 LMS_DEFERRED_STAGES: Set[str] = {
+    "Compliance",        # loan pipeline handoff point (frontend ADVANCE_TARGET_STAGES
+                         # offers this and shows "Loan application created"; the
+                         # backend must trigger the handoff here to match)
     "Credit Review",
     "Approval",
     "Bank Approval",
