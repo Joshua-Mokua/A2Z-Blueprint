@@ -427,6 +427,7 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "source":              deal.get("source"),
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
+                "lms_application_id":   deal.get("lms_application_id"),
             }),
         }
         if not row["id"]:
@@ -462,6 +463,8 @@ def _normalize_db_deal_row(row):
             md = {}
     if isinstance(md, dict) and not r.get("pipeline_category"):
         r["pipeline_category"] = md.get("pipeline_category")
+    if isinstance(md, dict) and not r.get("lms_application_id"):
+        r["lms_application_id"] = md.get("lms_application_id")
     return r
 
 def _safe_float(val) -> float:
@@ -1494,6 +1497,16 @@ def pipeline_deal_advance(
     elif lms_err:
         _audit("API_PIPELINE_ADVANCE_LMS_FAILED", user,
                f"{deal_id}|{lms_err}")
+
+    # H6: persist the created application id back onto the deal so the
+    # Pipeline->LMS cross-link (frontend reads deal.lms_application_id) shows
+    # on detail/list and survives reload. Without this the handoff was a
+    # silent side-effect with no durable link from the deal to its credit app.
+    if lms_triggered and lms_app_id:
+        pm.update_deal(deal_id, {"lms_application_id": lms_app_id},
+                       user.get("username", ""))
+        updated_deal = pm.get_deal(deal_id) or updated_deal
+        _db_sync_pipeline_deal(updated_deal)
 
     bsc_ok = emit_bsc_trigger(user.get("username", ""))
     invalidate_pipeline_caches()
