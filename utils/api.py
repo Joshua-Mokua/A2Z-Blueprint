@@ -467,6 +467,36 @@ def _normalize_db_deal_row(row):
         r["lms_application_id"] = md.get("lms_application_id")
     return r
 
+
+def _get_or_hydrate_deal(pm, deal_id: str):
+    """Return a deal by id, DB-first.
+
+    H7 (2026-06-14): the LIST read is DB-first but detail + mutation routes
+    read only the JSON store, so the 294 Postgres-seeded deals 404'd on open
+    and could not be advanced. This returns the JSON deal if present;
+    otherwise it loads the row from Postgres and registers it on the
+    request-scoped PipelineManager so update_stage/update_deal can operate on
+    it. Mutations then re-sync to Postgres via _db_sync_pipeline_deal (H5),
+    keeping the DB authoritative. Returns None if the deal is in neither store.
+    """
+    deal = pm.get_deal(deal_id)
+    if deal:
+        return deal
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            row = _db.fetch_one("SELECT * FROM pipeline_deals WHERE id = %s", (deal_id,))
+            if row:
+                hydrated = _normalize_db_deal_row(_serialize(row))
+                try:
+                    pm.deals.append(hydrated)  # register for in-request mutation
+                except Exception:
+                    pass
+                return hydrated
+        except Exception as e:
+            logger.error(f"Pipeline deal hydrate failed for {deal_id}: {e}")
+    return None
+
 def _safe_float(val) -> float:
     try:
         from decimal import Decimal
@@ -1120,7 +1150,7 @@ def pipeline_deal_detail(
     from utils.core import PipelineManager as _PM_for_api
 
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
@@ -1371,7 +1401,7 @@ def pipeline_deal_update(
 
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
@@ -1452,7 +1482,7 @@ def pipeline_deal_advance(
 
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
@@ -1650,7 +1680,7 @@ def pipeline_deal_validate(
     from utils.core import PipelineManager as _PM_for_api
 
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
@@ -1724,7 +1754,7 @@ def pipeline_deal_cancel_request(
         raise HTTPException(status_code=400, detail=reason_text)
 
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
@@ -1793,7 +1823,7 @@ def pipeline_deal_cancel_approve(
     from utils.core import PipelineManager as _PM_for_api
 
     pm = _PM_for_api()
-    deal = pm.get_deal(deal_id)
+    deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
