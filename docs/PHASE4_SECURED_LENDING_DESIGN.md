@@ -483,3 +483,25 @@ objects (backend + React).
 - NON-GATING: the disburse gate is NOT yet enforced on these (that is P4-6,
   once legal/perfection/insurance/coverage exist to gate on). Next: P4-2b React
   CP/CS panel, then P4-3 collateral + coverage ratio.
+
+## P4-3 — Collateral linkage + coverage ratio + Credit Policy Matrix: DELIVERED (backend)
+
+- data/credit_policy_matrix.json — admin-configurable required coverage % per
+  collateral type (Cash/FD 100, Residential 125, Commercial 120, Motor 130,
+  Debenture 150, Stock/Inventory 150); over_secured_multiple 1.25;
+  valuation_max_age_days 365. No hardcoded ratios.
+- utils/collateral_coverage.py — pure engine: CreditPolicyMatrix (loud-on-corrupt,
+  conservative-on-absent), compute_coverage_ratio (FSV KES capped at allocation /
+  facility KES), classify_security (unsecured/partially/fully/over gradient),
+  assess_facility. FX-aware (normalizes native collateral values via fx_engine).
+- core.py CreditAdminManager: link_collateral / unlink_collateral (snapshot the
+  security value on the link) + _recompute_coverage (writes coverage_ratio,
+  required_ratio, security_total_kes, security_classification onto the case).
+- API: POST /collateral/link, /collateral/unlink, GET /policy-matrix (auth).
+- Tests: test_p4_3_coverage.py (9) + test_p4_3_link_recompute.py (2).
+- Harness: link collateral -> assert coverage computed + classification set.
+- Over-secured boundary uses over_secured_multiple (1.25) — CONFIRM Ecobank's
+  real definition before go-live (see matrix _over_secured_note).
+- NON-GATING still: coverage/classification computed + surfaced; the disburse
+  HARD-GATE that consumes them is P4-6. Next: P4-4 Legal Review + P4-5
+  Perfection/Insurance, then P4-6 gate, then combined React (P4-2b/3b/4b/5b).

@@ -5834,6 +5834,72 @@ class CreditAdminManager:
                 out.append(c.get("type"))
         return out
 
+    def _recompute_coverage(self, case: dict) -> None:
+        """Recompute coverage_ratio + security_classification on the case from
+        its linked collateral, using the admin Credit Policy Matrix. Best-effort
+        — never raises into a mutation path."""
+        try:
+            from utils.collateral_coverage import assess_facility, CreditPolicyMatrix
+            linked = case.get("linked_collateral", []) or []
+            # Facility exposure in KES (prefer the normalized amount_kes).
+            fac_kes = case.get("amount_kes")
+            if fac_kes is None:
+                fac_kes = case.get("amount", 0)
+            assessment = assess_facility(
+                fac_kes, linked,
+                subtype_override=case.get("security_subtype"),
+                matrix=CreditPolicyMatrix())
+            case["coverage_ratio"] = assessment["coverage_ratio"]
+            case["required_ratio"] = assessment["required_ratio"]
+            case["security_total_kes"] = assessment["security_total_kes"]
+            case["security_classification"] = assessment["security_classification"]
+        except Exception:
+            pass
+
+    def link_collateral(self, case_id: str, collateral_id: str,
+                        collateral_type: str, forced_sale_value,
+                        currency: str = "KES", market_value=None,
+                        allocated_value_kes=None, valuation_date: str = None) -> bool:
+        """Link a collateral item to the facility and recompute coverage +
+        security classification. Stores a snapshot of the security value on the
+        link (coverage is a point-in-time assessment + audit anchor)."""
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            links = case.setdefault("linked_collateral", [])
+            # replace existing link for the same collateral_id
+            links[:] = [l for l in links if l.get("collateral_id") != collateral_id]
+            links.append({
+                "collateral_id":     collateral_id,
+                "collateral_type":   collateral_type,
+                "forced_sale_value": forced_sale_value,
+                "market_value":      market_value,
+                "currency":          currency or "KES",
+                "allocated_value_kes": allocated_value_kes,
+                "valuation_date":    valuation_date,
+                "linked_at":         datetime.now().date().isoformat(),
+            })
+            self._recompute_coverage(case)
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def unlink_collateral(self, case_id: str, collateral_id: str) -> bool:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            links = case.get("linked_collateral", []) or []
+            before = len(links)
+            links[:] = [l for l in links if l.get("collateral_id") != collateral_id]
+            if len(links) == before:
+                return False
+            self._recompute_coverage(case)
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
     def _two_layer_enabled(self) -> bool:
         """Whether the Credit-Admin two-layer authorization policy is on
         (admin config). Defaults to on. Best-effort; no hard dependency."""

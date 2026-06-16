@@ -1,0 +1,16 @@
+{
+  "_doc": "Admin-configurable Credit Policy Matrix (P4-3). Required collateral coverage ratio per security/collateral type, as a PERCENT of the facility's KES-equivalent exposure. The CHECK is hardcoded; these THRESHOLDS are config. Tune per bank governance.",
+  "_schema_version": "p4-3-v1",
+  "required_coverage_pct": {
+    "Cash / Fixed Deposit":  100,
+    "Residential Property":  125,
+    "Commercial Property":   120,
+    "Motor Vehicle":         130,
+    "Debenture":             150,
+    "Stock / Inventory":     150
+  },
+  "over_secured_multiple": 1.25,
+  "_over_secured_note": "A facility is 'over_secured' when coverage_ratio exceeds required_ratio * over_secured_multiple. 1.25 => e.g. residential (125% required) is over-secured above ~156% coverage. Confirm Ecobank's real definition (some banks trigger release-of-excess-collateral here).",
+  "valuation_max_age_days": 365,
+  "_valuation_note": "Collateral valuation older than this fails the freshness check at the P4-6 gate."
+}

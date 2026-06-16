@@ -211,6 +211,18 @@ def happy_path(base, committee=False):
                     admin, {"facility_security_type": "secured", "security_subtype": "debenture"})
     step("credit-admin: classify facility (secured/debenture)", (200, 201), st, body)
 
+    # 8c. (P4-3) Link collateral and confirm coverage + classification compute.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/collateral/link",
+                    admin, {"collateral_id": "SIMCOL1", "collateral_type": "Debenture",
+                            "forced_sale_value": 999_000_000_000, "currency": "KES"})
+    _case = body.get("case", {}) if isinstance(body, dict) else {}
+    step("credit-admin: link collateral -> coverage computed", (200, 201), st, body)
+    step("credit-admin: security_classification set", True,
+         _case.get("security_classification") in
+         ("unsecured", "partially_secured", "fully_secured", "over_secured"),
+         {"classification": _case.get("security_classification"),
+          "coverage": _case.get("coverage_ratio")})
+
     # 9. GUARD: disburse before authorize -> blocked.
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager"})

@@ -328,6 +328,90 @@ def credit_admin_classify_facility(
 
 
 # ─────────────────────────────────────────────────────────────────────
+# P4-3: collateral linkage + coverage ratio
+# ─────────────────────────────────────────────────────────────────────
+class _LinkCollateralRequest(BaseModel):
+    collateral_id: str
+    collateral_type: str
+    forced_sale_value: float
+    currency: str = "KES"
+    market_value: Optional[float] = None
+    allocated_value_kes: Optional[float] = None
+    valuation_date: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
+
+
+@router.post("/cases/{case_id}/collateral/link",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_link_collateral(
+    case_id: str,
+    payload: _LinkCollateralRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Link a collateral item to the facility and recompute coverage ratio +
+    security classification (against the admin Credit Policy Matrix)."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    ok = cam.link_collateral(
+        case_id, collateral_id=payload.collateral_id,
+        collateral_type=payload.collateral_type,
+        forced_sale_value=payload.forced_sale_value, currency=payload.currency,
+        market_value=payload.market_value,
+        allocated_value_kes=payload.allocated_value_kes,
+        valuation_date=payload.valuation_date)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Failed to link collateral")
+    updated = cam.get(case_id)
+    audit_log("CREDIT_ADMIN_COLLATERAL_LINKED",
+              str(user.get('username', '') or ''),
+              f"{case_id}|{payload.collateral_id}|{payload.collateral_type}|"
+              f"coverage={updated.get('coverage_ratio')}|"
+              f"class={updated.get('security_classification')}")
+    return {"case": updated, "status": "collateral_linked"}
+
+
+@router.post("/cases/{case_id}/collateral/unlink",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_unlink_collateral(
+    case_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Unlink a collateral item and recompute coverage/classification."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    collateral_id = str(payload.get("collateral_id", "") or "")
+    if not cam.unlink_collateral(case_id, collateral_id):
+        raise HTTPException(status_code=400,
+                            detail=f"Collateral '{collateral_id}' not linked to case")
+    updated = cam.get(case_id)
+    audit_log("CREDIT_ADMIN_COLLATERAL_UNLINKED",
+              str(user.get('username', '') or ''),
+              f"{case_id}|{collateral_id}")
+    return {"case": updated, "status": "collateral_unlinked"}
+
+
+@router.get("/policy-matrix")
+def credit_admin_policy_matrix(user: Dict[str, Any] = Depends(get_current_user)):
+    """Return the admin Credit Policy Matrix (required coverage ratios)."""
+    from utils.collateral_coverage import CreditPolicyMatrix
+    m = CreditPolicyMatrix()
+    return {
+        "required_coverage_pct": m._pct,
+        "over_secured_multiple": float(m.over_secured_multiple),
+        "valuation_max_age_days": m.valuation_max_age_days,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────
 # POST /api/credit-admin/cases/{id}/disburse — clear for disbursement
 # ─────────────────────────────────────────────────────────────────────
 
