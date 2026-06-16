@@ -56,6 +56,11 @@ const NAV_ITEMS: NavItem[] = [
     matchActive: (p) => p.startsWith('/analytics'),
   },
   {
+    path:        '/credit-analytics',
+    label:       'Credit Analytics',
+    matchActive: (p) => p.startsWith('/credit-analytics'),
+  },
+  {
     path:        '/pipeline/queues',
     label:       'Manager Queues',
     matchActive: (p) => p.startsWith('/pipeline/queues'),

@@ -918,3 +918,18 @@ Fix: _acquire_scoped_credit now reads DB-first from credit_watchlist (identity
 columns top-level; classification/outstanding/npl_days flattened out of the
 risk_data JSONB), file fallback for dev/no-PG. MD now sees all 5001; non-MD a
 strict subset. Expected harness: credit branches > 0, scope owner=0 < MD=5001.
+
+## #11 — Credit Analytics page (frontend): DELIVERED (tsc gate)
+
+Mirrors the pipeline Analytics page, pointed at /api/credit/analytics + drill:
+- KPIs: outstanding, NPL outstanding, NPL ratio, accounts, performing.
+- Slicer (Classification / Region / Branch / RM): donut for classification,
+  ranked bars otherwise; NPL ratio shown per slice as a tone Badge
+  (>=10% danger, >=5% warning, else success).
+- Drill: Region -> Branch -> RM -> individual accounts with breadcrumbs
+  (account / class / outstanding / DPD / collateral).
+- types/creditAnalytics.ts, hooks/useCreditAnalytics.ts, lib/api fetchers,
+  /credit-analytics route + sidebar nav.
+- Hierarchy-scoped: an individual sees only their subtree's loan book.
+
+REMAINING: dashboard de-lump (hero figures link into pipeline + credit drills).

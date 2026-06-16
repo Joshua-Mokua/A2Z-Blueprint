@@ -41,6 +41,10 @@ import type {
   PipelineAnalyticsResponse,
   PipelineDrillResponse,
 } from '@/types/pipeline';
+import type {
+  CreditAnalyticsResponse,
+  CreditDrillResponse,
+} from '@/types/creditAnalytics';
 
 const API_BASE = '/api';
 
@@ -304,6 +308,21 @@ export async function fetchPipelineDrill(
   if (rm) p.set('rm', rm);
   const qs = p.toString();
   return getJson<PipelineDrillResponse>(`/pipeline/drill${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchCreditAnalytics(): Promise<CreditAnalyticsResponse> {
+  return getJson<CreditAnalyticsResponse>('/credit/analytics');
+}
+
+export async function fetchCreditDrill(
+  region?: string, branch?: string, rm?: string,
+): Promise<CreditDrillResponse> {
+  const p = new URLSearchParams();
+  if (region) p.set('region', region);
+  if (branch) p.set('branch', branch);
+  if (rm) p.set('rm', rm);
+  const qs = p.toString();
+  return getJson<CreditDrillResponse>(`/credit/drill${qs ? `?${qs}` : ''}`);
 }
 
 
