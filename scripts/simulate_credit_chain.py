@@ -205,6 +205,12 @@ def happy_path(base, committee=False):
     if not case_id:
         return
 
+    # 8b. (P4-2) Classify the facility as secured/debenture — proves the
+    # classification endpoint end-to-end. Non-blocking (gate is P4-6).
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/classify-facility",
+                    admin, {"facility_security_type": "secured", "security_subtype": "debenture"})
+    step("credit-admin: classify facility (secured/debenture)", (200, 201), st, body)
+
     # 9. GUARD: disburse before authorize -> blocked.
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager"})

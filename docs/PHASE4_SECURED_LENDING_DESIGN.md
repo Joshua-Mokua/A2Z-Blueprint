@@ -462,3 +462,24 @@ in P4-3 once coverage is live.)
 money stamping at booking, API, and admin UI. Next: P4-2 — facility
 classification (unsecured/partially/fully/over-secured) + CP/CS as first-class
 objects (backend + React).
+
+## P4-2 — Facility classification + CP/CS first-class objects: DELIVERED (backend)
+
+- core.py create_case_from_application: conditions now carry `classification`
+  ("precedent"|"subsequent"), `mandatory`, `due_date` (default mandatory
+  precedent — safe, blocks until reclassified). Case carries
+  `facility_security_type` + `security_subtype`.
+- core.py create_from_pipeline_deal: application now inherits the deal's
+  currency + normalized money set (fx_rate/amount_kes/currency_book/...) and
+  carries facility_security_type/security_subtype (so FCY/LCY + classification
+  flow pipeline -> LMS -> credit admin). Fixed the hardcoded currency="KES".
+- CreditAdminManager: set_facility_classification, classify_condition,
+  outstanding_mandatory_cp (pure gate-input helper for P4-6).
+- API: POST /api/credit-admin/cases/{id}/conditions/classify and
+  /classify-facility (manager-tier, in-scope, audited).
+- Tests: tests/test_p4_2_cp_cs_classification.py (4) — outstanding-CP logic,
+  safe defaults, classify mutation, facility classification.
+- Harness: classify-facility check added.
+- NON-GATING: the disburse gate is NOT yet enforced on these (that is P4-6,
+  once legal/perfection/insurance/coverage exist to gate on). Next: P4-2b React
+  CP/CS panel, then P4-3 collateral + coverage ratio.

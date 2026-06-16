@@ -5689,7 +5689,18 @@ class LoanApplicationManager:
             "client_cif":      str(deal.get("client_cif", "") or ""),
             "product":         product,
             "amount":          amount,
-            "currency":        "KES",
+            "currency":        str(deal.get("currency", "") or "KES"),
+            # P4-1b: inherit the normalized money set stamped on the deal so the
+            # FCY/LCY dimension flows pipeline -> LMS -> credit admin.
+            "fx_rate":         deal.get("fx_rate"),
+            "amount_kes":      deal.get("amount_kes"),
+            "currency_book":   deal.get("currency_book"),
+            "fx_rate_date":    deal.get("fx_rate_date"),
+            "fx_rate_source":  deal.get("fx_rate_source"),
+            # P4-2: facility security classification (default unsecured; credit
+            # reclassifies). Drives perfection routing; enforced at gate (P4-6).
+            "facility_security_type": str(deal.get("facility_security_type", "") or "unsecured"),
+            "security_subtype":       deal.get("security_subtype"),
             "swim_lane":       swim_lane,
             "status":          "submitted",
             "application_date": today,
@@ -5757,6 +5768,71 @@ class CreditAdminManager:
             self.save()
             return True
         return False
+
+    # ── P4-2: CP/CS + facility classification ────────────────────────
+    def set_facility_classification(self, case_id: str,
+                                    facility_security_type: str,
+                                    security_subtype: str = "") -> bool:
+        """Set the case's facility security type (unsecured/secured) and
+        optional subtype. Additive; does not itself gate anything (the gate is
+        enforced in P4-6)."""
+        fst = str(facility_security_type or "").strip().lower()
+        if fst not in ("unsecured", "secured"):
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            case["facility_security_type"] = fst
+            if security_subtype:
+                case["security_subtype"] = security_subtype
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def classify_condition(self, case_id: str, condition_type: str,
+                           classification: str = None, mandatory: bool = None,
+                           due_date: str = None) -> bool:
+        """Reclassify a condition as Precedent or Subsequent, set whether it is
+        mandatory, and (for Subsequent) an optional due date. Only the provided
+        fields are changed."""
+        if classification is not None and classification not in (
+                "precedent", "subsequent"):
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            hit = False
+            for cond in case.get("conditions", []):
+                if cond.get("type") == condition_type:
+                    if classification is not None:
+                        cond["classification"] = classification
+                    if mandatory is not None:
+                        cond["mandatory"] = bool(mandatory)
+                    if due_date is not None:
+                        cond["due_date"] = due_date or None
+                    hit = True
+                    break
+            if not hit:
+                return False
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    @staticmethod
+    def outstanding_mandatory_cp(case: dict) -> list:
+        """Pure helper — the future disbursement-gate input (P4-6). Returns the
+        mandatory Conditions Precedent that are not yet fulfilled. A condition
+        defaults to mandatory precedent when classification/mandatory are
+        absent (legacy/safe). Conditions Subsequent never appear here."""
+        out = []
+        for c in (case.get("conditions", []) or []):
+            classification = c.get("classification", "precedent")
+            mandatory = c.get("mandatory", True)
+            if classification == "precedent" and mandatory and not c.get("fulfilled"):
+                out.append(c.get("type"))
+        return out
 
     def _two_layer_enabled(self) -> bool:
         """Whether the Credit-Admin two-layer authorization policy is on
@@ -5845,6 +5921,13 @@ class CreditAdminManager:
             "type":      str(c),
             "required":  True,
             "fulfilled": False,
+            # P4-2: CP/CS first-class. Default every condition to a mandatory
+            # Condition Precedent (safest: blocks disbursement until credit
+            # reclassifies). Credit can move a condition to "subsequent"
+            # (tracked post-disbursement, non-blocking) or mark non-mandatory.
+            "classification": "precedent",   # "precedent" | "subsequent"
+            "mandatory":      True,
+            "due_date":       None,          # used by subsequent conditions
             "date_set":  today,
             "date_met":  None,
             "officer":   None,
@@ -5863,6 +5946,11 @@ class CreditAdminManager:
             "approval_date":          today,
             "conditions":             case_conditions,
             "all_conditions_met":     all_met,
+            # P4-2: facility security classification (drives perfection routing,
+            # enforced at the disburse gate in P4-6). Derived default from the
+            # application; "unsecured" until credit classifies.
+            "facility_security_type": str(app.get("facility_security_type", "") or "unsecured"),
+            "security_subtype":       app.get("security_subtype"),
             "ready_for_disbursement": False,  # set on authorize (two-layer) or all-met
             "authorization_requested": False,
             "authorization_requested_by": None,

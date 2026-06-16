@@ -29,9 +29,10 @@ Audit events emitted (action, username, detail):
 """
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from utils.auth_jwt import get_current_user
 from utils.core import CreditAdminManager
@@ -233,6 +234,97 @@ def credit_admin_fulfill_condition(
 
     updated = cam.get(case_id)
     return {"case": updated, "status": "condition_fulfilled"}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# P4-2: CP/CS classification + facility security classification
+# ─────────────────────────────────────────────────────────────────────
+class _ClassifyConditionRequest(BaseModel):
+    condition_type: str
+    classification: Optional[str] = None   # "precedent" | "subsequent"
+    mandatory: Optional[bool] = None
+    due_date: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
+
+
+class _FacilityClassificationRequest(BaseModel):
+    facility_security_type: str            # "unsecured" | "secured"
+    security_subtype: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
+
+
+def _ca_manager_in_scope(user, case):
+    """Classification is a credit decision — require manager-tier (or admin),
+    in scope. Mirrors the scope check used elsewhere in this module."""
+    if user.get("is_admin"):
+        return True
+    visible = get_visible_staff_codes(user)
+    return is_case_in_scope(case, visible)
+
+
+@router.post("/cases/{case_id}/conditions/classify",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_classify_condition(
+    case_id: str,
+    payload: _ClassifyConditionRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Reclassify a condition as Condition Precedent or Subsequent, set whether
+    it is mandatory, and (for Subsequent) an optional due date. CP that is
+    mandatory blocks disbursement (enforced at the P4-6 gate); CS is tracked
+    post-disbursement and never blocks."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    if (payload.classification is not None
+            and payload.classification not in ("precedent", "subsequent")):
+        raise HTTPException(status_code=400,
+                            detail="classification must be 'precedent' or 'subsequent'")
+    ok = cam.classify_condition(
+        case_id, condition_type=payload.condition_type,
+        classification=payload.classification, mandatory=payload.mandatory,
+        due_date=payload.due_date)
+    if not ok:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Condition '{payload.condition_type}' not found on case '{case_id}'")
+    audit_log("CREDIT_ADMIN_CONDITION_CLASSIFIED",
+              str(user.get('username', '') or ''),
+              f"{case_id}|{payload.condition_type}|{payload.classification}|"
+              f"mandatory={payload.mandatory}")
+    return {"case": cam.get(case_id), "status": "condition_classified"}
+
+
+@router.post("/cases/{case_id}/classify-facility",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_classify_facility(
+    case_id: str,
+    payload: _FacilityClassificationRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Set the facility's security type (unsecured/secured) and optional
+    subtype. Drives perfection routing; the disbursement gate enforces it in
+    P4-6."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    ok = cam.set_facility_classification(
+        case_id, facility_security_type=payload.facility_security_type,
+        security_subtype=payload.security_subtype or "")
+    if not ok:
+        raise HTTPException(
+            status_code=400,
+            detail="facility_security_type must be 'unsecured' or 'secured'")
+    audit_log("CREDIT_ADMIN_FACILITY_CLASSIFIED",
+              str(user.get('username', '') or ''),
+              f"{case_id}|{payload.facility_security_type}|{payload.security_subtype}")
+    return {"case": cam.get(case_id), "status": "facility_classified"}
 
 
 # ─────────────────────────────────────────────────────────────────────
