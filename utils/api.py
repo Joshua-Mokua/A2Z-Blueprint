@@ -1661,7 +1661,21 @@ def pipeline_analytics(user: dict = Depends(get_current_user)):
     """Funnel + headline pipeline metrics over the caller's visible deals."""
     _audit("API_PIPELINE_ANALYTICS", user, "")
     deals = _acquire_scoped_deals(user)
-    return _compute_pipeline_analytics(deals)
+    result = _compute_pipeline_analytics(deals)
+    # Scope-aware manager queue counts (one call serves all dashboard tiles).
+    from utils.api_pipeline_manager_actions import is_manager as _is_mgr
+    pending_validation = 0
+    pending_cancel = 0
+    if _is_mgr(user):
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        from utils.core import PipelineManager as _PM_for_api
+        vc = get_visible_staff_codes(user)
+        pm = _PM_for_api()
+        pending_validation = len(pm.get_pending_validations(manager_codes=vc))
+        pending_cancel = len(pm.get_cancel_requests(manager_codes=vc))
+    result["totals"]["pending_validation"] = pending_validation
+    result["totals"]["pending_cancel"] = pending_cancel
+    return result
 
 
 # ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──

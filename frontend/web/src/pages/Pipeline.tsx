@@ -29,14 +29,20 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
-import { fetchPipelineConfig } from '@/lib/api';
+import { fetchPipelineConfig, fetchPipelineAnalytics } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Stat } from '@/components/Stat';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
 import { PermissionBadges } from '@/components/PermissionBadges';
-import { stageTone, type PipelineDeal, type PipelineConfig } from '@/types/pipeline';
+import { PipelineFunnel } from '@/components/PipelineFunnel';
+import {
+  stageTone,
+  type PipelineDeal,
+  type PipelineConfig,
+  type PipelineAnalyticsResponse,
+} from '@/types/pipeline';
 
 
 // ── Display helpers ─────────────────────────────────────────────────────
@@ -50,12 +56,15 @@ function formatValue(v: number, symbol: string): string {
   return `${symbol} ${v.toLocaleString()}`;
 }
 
-/** Sum active (non-terminal, non-draft) deal value. */
-function totalActiveValue(deals: PipelineDeal[]): number {
-  const terminal = new Set(['Closed Won', 'Closed Lost', 'Account Opened', 'Funded']);
-  return deals
-    .filter((d) => !d.draft && !terminal.has(d.stage))
-    .reduce((sum, d) => sum + (Number(d.deal_value) || 0), 0);
+/** Days a deal has been open, from its earliest available timestamp. */
+function daysOpen(deal: PipelineDeal): number | null {
+  const raw = deal.created_at || deal.open_date || deal.updated_at;
+  if (!raw) return null;
+  const start = new Date(raw).getTime();
+  if (!Number.isFinite(start)) return null;
+  const diff = Date.now() - start;
+  if (diff < 0) return 0;
+  return Math.floor(diff / 86_400_000);
 }
 
 
@@ -79,6 +88,19 @@ export function Pipeline() {
     return () => { active = false; };
   }, []);
 
+  // Analytics: validated/pending split, per-class buckets, the validated
+  // funnel, and the scope-aware pending-validation count. Refetched whenever
+  // the deal list settles (after create/validate/advance/refresh).
+  const [analytics, setAnalytics] = useState<PipelineAnalyticsResponse | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    let active = true;
+    fetchPipelineAnalytics()
+      .then((a) => { if (active) setAnalytics(a); })
+      .catch(() => { /* tiles fall back to local sums if analytics fails */ });
+    return () => { active = false; };
+  }, [loading, count]);
+
   // Stage options narrow to the selected category's flow; else all stages.
   const stageOptions = useMemo(() => {
     if (!config) return [] as string[];
@@ -100,18 +122,7 @@ export function Pipeline() {
   };
   const navigate = useNavigate();
 
-  // Derived KPIs — memoized so re-renders from props don't recompute
-  const totalValue = useMemo(() => totalActiveValue(deals), [deals]);
-  const dealsAtRisk = useMemo(
-    () => deals.filter((d) => d.cancel_requested && !d.cancel_approved).length,
-    [deals],
-  );
-  const dealsPending = useMemo(
-    () => deals.filter((d) => !d.manager_validated
-                              && d.stage !== 'Lead'
-                              && !d.draft).length,
-    [deals],
-  );
+  const sym = branding?.currency_symbol ?? '';
 
   // Table column config — typed against PipelineDeal so render functions
   // get full intellisense on row data.
@@ -152,6 +163,21 @@ export function Pipeline() {
           {formatValue(Number(row.deal_value), branding?.currency_symbol ?? '')}
         </span>
       ),
+    },
+    {
+      key: 'aging',
+      header: 'Age',
+      align: 'right',
+      render: (row) => {
+        const d = daysOpen(row);
+        if (d == null) return <span className="text-xs text-gray-400">—</span>;
+        const stale = d > 14;
+        return (
+          <span className={`text-xs font-medium ${stale ? 'text-red-600' : 'text-gray-600'}`}>
+            {d}d{stale ? ' · stale' : ''}
+          </span>
+        );
+      },
     },
     {
       key: 'staff_name',
@@ -205,8 +231,48 @@ export function Pipeline() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* KPI strip — three Stats summarizing what we just loaded */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Assured pipeline by product class — validated value headline,
+            pending-assurance beneath. Sourced from /api/pipeline/analytics. */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Stat
+            label="Asset Pipeline"
+            value={analytics ? formatValue(analytics.pipelines.asset.value, sym) : '—'}
+            sub={analytics && analytics.pipelines.asset.pending_value > 0
+              ? `${formatValue(analytics.pipelines.asset.pending_value, sym)} pending assurance`
+              : 'Assured'}
+            loading={loading}
+            stripe="primary"
+          />
+          <Stat
+            label="Liability Pipeline"
+            value={analytics ? formatValue(analytics.pipelines.liability.value, sym) : '—'}
+            sub={analytics && analytics.pipelines.liability.pending_value > 0
+              ? `${formatValue(analytics.pipelines.liability.pending_value, sym)} pending assurance`
+              : 'Assured'}
+            loading={loading}
+            stripe="secondary"
+          />
+          <Stat
+            label="Insurance"
+            value={analytics ? formatValue(analytics.pipelines.insurance.value, sym) : '—'}
+            sub={analytics && analytics.pipelines.insurance.pending_value > 0
+              ? `${formatValue(analytics.pipelines.insurance.pending_value, sym)} pending assurance`
+              : 'Assured'}
+            loading={loading}
+            stripe="accent"
+          />
+          <Stat
+            label="Other"
+            value={analytics ? formatValue(analytics.pipelines.other.value, sym) : '—'}
+            sub={analytics && analytics.pipelines.other.pending_value > 0
+              ? `${formatValue(analytics.pipelines.other.pending_value, sym)} pending assurance`
+              : 'Assured'}
+            loading={loading}
+          />
+        </div>
+
+        {/* Scope summary row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <Stat
             label="Deals Visible"
             value={loading ? '—' : count}
@@ -214,24 +280,40 @@ export function Pipeline() {
             loading={loading}
           />
           <Stat
-            label="Active Pipeline Value"
-            value={loading
-              ? '—'
-              : formatValue(totalValue, branding?.currency_symbol ?? '')}
-            sub="Excluding closed and drafts"
+            label="Pending Validation"
+            value={analytics ? analytics.totals.pending_validation : (loading ? '—' : 0)}
+            sub={analytics && analytics.totals.pending_validation > 0
+              ? 'Awaiting your sign-off'
+              : 'Nothing to validate'}
             loading={loading}
-            stripe="primary"
+            stripe={analytics && analytics.totals.pending_validation > 0 ? 'accent' : 'secondary'}
           />
           <Stat
-            label="Pending Validation"
-            value={loading ? '—' : dealsPending}
-            sub={dealsAtRisk > 0
-              ? `${dealsAtRisk} cancel request${dealsAtRisk === 1 ? '' : 's'} pending`
-              : 'No cancel requests'}
+            label="Total Assured"
+            value={analytics ? formatValue(analytics.totals.total_value, sym) : '—'}
+            sub={analytics && analytics.totals.pending_value > 0
+              ? `${formatValue(analytics.totals.pending_value, sym)} pending assurance`
+              : 'All validated'}
             loading={loading}
-            stripe={dealsAtRisk > 0 ? 'accent' : 'secondary'}
           />
         </div>
+
+        {/* Validated pipeline funnel */}
+        <Card className="mt-6">
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">
+              Validated pipeline funnel
+            </h2>
+            <span className="text-xs text-gray-400">Assured deals by stage</span>
+          </Card.Header>
+          <Card.Body>
+            <PipelineFunnel
+              stages={analytics?.funnel ?? []}
+              currencySymbol={sym}
+              emptyHint="No validated deals yet — validate deals to populate the funnel."
+            />
+          </Card.Body>
+        </Card>
 
         {/* Error panel — only renders on error */}
         {error && (
@@ -255,7 +337,7 @@ export function Pipeline() {
               <h2 className="text-base font-semibold text-gray-900">
                 Pipeline Deals
               </h2>
-              <Badge tone="brand" size="sm">v10.510 β1</Badge>
+              <Badge tone="brand" size="sm">v10.582 capstone</Badge>
             </div>
             <div className="flex items-center gap-2">
               <select

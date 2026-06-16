@@ -83,6 +83,7 @@ export function PipelineDealDetail() {
 
   const [deal, setDeal] = useState<PipelineDeal | null>(null);
   const [permissions, setPermissions] = useState<DealPermissions | null>(null);
+  const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -98,6 +99,7 @@ export function PipelineDealDetail() {
       const response = await fetchPipelineDealDetail(dealId);
       setDeal(response.deal);
       setPermissions(response.permissions);
+      setStageFlow(response.stage_flow ?? []);
     } catch (e) {
       if (e instanceof AuthExpiredError) {
         // AuthProvider's 401 callback already flipped state; the route
@@ -305,6 +307,7 @@ export function PipelineDealDetail() {
         <AdvancePanel
           deal={deal}
           mutations={mutations}
+          stageFlow={stageFlow}
           onSuccess={() => {
             // Credit submission is now an explicit, document-gated action
             // (the Submit to Credit Analysis panel), not a side-effect of
@@ -559,14 +562,20 @@ interface ActionPanelProps {
   deal:      PipelineDeal;
   mutations: ReturnType<typeof usePipelineDealMutations>;
   onSuccess: (meta?: { targetStage?: string }) => void;
+  /** This deal's product-class stage flow (B17). When present, the advance
+   *  dropdown follows it instead of the flat ADVANCE_TARGET_STAGES list. */
+  stageFlow?: string[];
 }
 
-function AdvancePanel({ deal, mutations, onSuccess }: ActionPanelProps) {
-  // Default to the next plausible stage if current is in the known list.
-  const currentIndex = ADVANCE_TARGET_STAGES.indexOf(deal.stage);
-  const defaultTarget = currentIndex >= 0 && currentIndex < ADVANCE_TARGET_STAGES.length - 1
-    ? ADVANCE_TARGET_STAGES[currentIndex + 1]
-    : ADVANCE_TARGET_STAGES[0];
+function AdvancePanel({ deal, mutations, onSuccess, stageFlow }: ActionPanelProps) {
+  // B17: follow this deal's product-class flow (loan vs deposit vs …) from the
+  // detail response; fall back to the flat list only if config didn't load.
+  const stages = stageFlow && stageFlow.length > 0 ? stageFlow : ADVANCE_TARGET_STAGES;
+  // Default to the next plausible stage if current is in the flow.
+  const currentIndex = stages.indexOf(deal.stage);
+  const defaultTarget = currentIndex >= 0 && currentIndex < stages.length - 1
+    ? stages[currentIndex + 1]
+    : stages[0];
 
   const [targetStage, setTargetStage] = useState<string>(defaultTarget);
   const [note,        setNote]        = useState('');
@@ -604,7 +613,7 @@ function AdvancePanel({ deal, mutations, onSuccess }: ActionPanelProps) {
               disabled={mutations.loading}
               className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
             >
-              {ADVANCE_TARGET_STAGES.map((s) => (
+              {stages.map((s) => (
                 <option key={s} value={s} disabled={s === deal.stage}>
                   {s}{s === deal.stage ? ' (current)' : ''}
                 </option>

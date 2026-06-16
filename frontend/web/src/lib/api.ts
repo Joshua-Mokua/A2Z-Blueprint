@@ -38,6 +38,7 @@ import type {
   ValidateDealRequest, ValidateDealResponse,
   ApproveCancelRequest, ApproveCancelResponse,
   CreditChecklistResponse, SubmitToCreditResponse,
+  PipelineAnalyticsResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -282,6 +283,16 @@ export async function fetchPipelineDeals(
  */
 export async function fetchPipelineConfig(): Promise<PipelineConfig> {
   return getJson<PipelineConfig>('/pipeline/stages');
+}
+
+
+/**
+ * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending
+ * value split, per-class buckets (asset/liability/insurance/other), the
+ * validated funnel, and the scope-aware pending-validation count.
+ */
+export async function fetchPipelineAnalytics(): Promise<PipelineAnalyticsResponse> {
+  return getJson<PipelineAnalyticsResponse>('/pipeline/analytics');
 }
 
 

@@ -69,6 +69,7 @@ export interface PipelineDeal {
 
   // Workflow timestamps
   created_at?:          string;
+  open_date?:           string;      // DB-sourced deals carry this (aging)
   updated_at?:          string;
   next_action?:         string;
   next_action_date?:    string;
@@ -117,6 +118,9 @@ export interface PipelineDealsListResponse {
 export interface PipelineDealDetailResponse {
   deal:         PipelineDeal;
   permissions:  DealPermissions;
+  /** B17: this deal's product-class stage flow (admin config). The advance
+   *  dropdown reads this instead of a flat hardcoded list. */
+  stage_flow?:  string[];
 }
 
 
@@ -480,4 +484,68 @@ export interface SubmitToCreditResponse {
   application_id:  string;
   status:          string;   // 'submitted_to_credit'
   missing:         string[];
+}
+
+
+// ── Pipeline analytics (B14/B15 backend) ────────────────────────────────
+// GET /api/pipeline/analytics. Headline value is VALIDATED (manager-assured);
+// pending_value is unvalidated active ("pending assurance"). Funnel is
+// validated-only. Buckets sourced from admin product_catalogue.
+
+export interface FunnelStage {
+  stage:  string;
+  count:  number;
+  value:  number;
+}
+
+export interface OtherProduct {
+  product:  string;
+  value:    number;
+  count:    number;
+}
+
+export interface OtherSubclass {
+  subclass:  string;
+  value:     number;
+  count:     number;
+  products:  OtherProduct[];
+}
+
+export interface PipelineBucket {
+  label:          string;
+  value:          number;        // assured (validated active)
+  pending_value:  number;        // pending assurance (unvalidated active)
+  weighted:       number;
+  active_count:   number;
+  pending_count:  number;
+  won_value:      number;
+  funnel:         FunnelStage[];
+  breakdown?:     OtherSubclass[];   // only on the "other" bucket
+}
+
+export interface PipelineAnalyticsTotals {
+  total_value:        number;    // validated active (assured)
+  pending_value:      number;    // pending assurance
+  weighted_value:     number;
+  won_value:          number;
+  active_count:       number;
+  pending_count:      number;
+  won_count:          number;
+  lost_count:         number;
+  live_count:         number;
+  win_rate:           number;
+  pending_validation: number;    // scope-aware: deals awaiting this manager
+  pending_cancel:     number;
+}
+
+export interface PipelineAnalyticsResponse {
+  totals:       PipelineAnalyticsTotals;
+  pipelines: {
+    asset:      PipelineBucket;
+    liability:  PipelineBucket;
+    insurance:  PipelineBucket;
+    other:      PipelineBucket;
+  };
+  funnel:       FunnelStage[];
+  by_category:  unknown[];
 }
