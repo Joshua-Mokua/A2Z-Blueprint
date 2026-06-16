@@ -906,3 +906,15 @@ CURRENCY EXPANSION (EcoBank footprint + CNY):
   never overwrites admin edits.
 - PipelineCreate currency picker now orders KES (local), USD, CNY first, then
   the rest alphabetically.
+
+## #9-fix-2 — Credit read DB-first from credit_watchlist (probe-caught, round 2)
+
+The file-direct read still returned 0 for MD: under PG the loan book lives in
+the credit_watchlist TABLE and credit_monitoring.json is emptied. Confirmed all
+232 watchlist rm_codes ARE in staff_register.xlsx, so rm_code scoping is valid —
+the only fault was the read source.
+
+Fix: _acquire_scoped_credit now reads DB-first from credit_watchlist (identity
+columns top-level; classification/outstanding/npl_days flattened out of the
+risk_data JSONB), file fallback for dev/no-PG. MD now sees all 5001; non-MD a
+strict subset. Expected harness: credit branches > 0, scope owner=0 < MD=5001.

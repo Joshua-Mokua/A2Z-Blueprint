@@ -2745,22 +2745,47 @@ def credit_watchlist(
 def _acquire_scoped_credit(user: dict) -> list:
     """Loan-book accounts within the caller's reporting subtree.
 
-    Reads credit_monitoring.json DIRECTLY (not via _load_json, whose dual-mode
-    loader returns [] under PostgreSQL because the loan book was migrated to the
-    watchlist table — leaving the JSON key empty). The file reliably carries
-    rm_code/region/branch_name. Scope: the SAME get_visible_staff_codes the
-    pipeline uses, matched on rm_code — so an individual sees credit exactly as
-    they see pipeline; MD / full-view roles see all.
+    DB-first from the canonical credit_watchlist table (identity columns
+    top-level; risk indicators in the risk_data JSONB — flattened here).
+    Falls back to reading credit_monitoring.json directly for dev/no-PG. The
+    earlier _load_json path returned [] under PG (loan book lives in the table,
+    not a JSON blob), which hid the whole book. Scope: the SAME
+    get_visible_staff_codes the pipeline uses, matched on rm_code — so an
+    individual sees credit exactly as they see pipeline; MD sees all.
     """
     import json as _json
     accts: list = []
-    p = DATA_DIR / "credit_monitoring.json"
-    if p.exists():
+    if _db_available():
         try:
-            raw = _json.loads(p.read_text(encoding="utf-8"))
-            accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+            from utils.db import db as _db
+            rows = _db.fetch_all(
+                "SELECT account_number, cif, branch_code, branch_name, region, "
+                "rm_code, rm_name, risk_data, status, severity "
+                "FROM credit_watchlist", ())
+            for r in _serialize(rows) or []:
+                rd = r.get("risk_data")
+                if isinstance(rd, str):
+                    try:
+                        rd = _json.loads(rd)
+                    except Exception:
+                        rd = {}
+                a = dict(rd) if isinstance(rd, dict) else {}
+                for k in ("account_number", "cif", "branch_code", "branch_name",
+                          "region", "rm_code", "rm_name", "status", "severity"):
+                    if r.get(k) is not None:
+                        a[k] = r.get(k)
+                accts.append(a)
         except Exception as e:
-            logger.error(f"Credit monitoring file read error: {e}")
+            logger.error(f"credit_watchlist read error: {e}")
+            accts = []
+    if not accts:
+        p = DATA_DIR / "credit_monitoring.json"
+        if p.exists():
+            try:
+                raw = _json.loads(p.read_text(encoding="utf-8"))
+                accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+            except Exception as e:
+                logger.error(f"Credit monitoring file read error: {e}")
     from utils.api_pipeline_scope import get_visible_staff_codes
     visible = get_visible_staff_codes(user)
     return [a for a in accts if str(a.get("rm_code") or "") in visible]
