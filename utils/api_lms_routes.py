@@ -55,6 +55,11 @@ from utils.api_lms_models import (
     LoanAppUpdateRequest,
     RecordDecisionRequest,
     LoanAppMutationResponse,
+    RequestInfoRequest,
+    ProvideInfoRequest,
+    SignOfferRequest,
+    ValidateOfferRequest,
+    ConfirmToCreditAdminRequest,
 )
 from utils.api_lms_scope import filter_apps_by_visibility, is_app_in_scope
 from utils.api_lms_mutations import (
@@ -65,6 +70,9 @@ from utils.api_lms_mutations import (
     STATUSES_PERMITTING_UPDATE,
     STATUSES_PERMITTING_DECISION,
     STATUSES_PERMITTING_ASSIGN,
+    get_credit_workflow_config,
+    is_valid_lms_transition,
+    handoff_trigger_status,
 )
 from utils.api_lms_permissions import resolve_application_permissions
 
@@ -440,25 +448,211 @@ def lms_application_decision(
     emit_bsc_trigger(str(user.get('username', '') or ''))
 
     # P2 (2026-06-12): live LMS-approval -> credit-admin handoff. On an
-    # approval, create the CALMS case so the credit chain is continuous in
-    # React (previously cases existed only via data generation). Best-effort
-    # and idempotent — a failure must not fail an already-recorded decision.
-    credit_admin_case_id = ""
+    # v10.584: on approval, route back to the deal owner to issue the
+    # Letter of Offer (status offer_issued) instead of going straight to
+    # credit admin. The CALMS case is created later, at the configured
+    # handoff trigger (offer_signed / offer_validated / analyst_confirmed)
+    # by the offer-workflow endpoints below. Conditions recorded on the
+    # decision are carried into the CALMS case at handoff time.
     if verdict_normalized == "approved":
         try:
-            from utils.core import CreditAdminManager
-            fresh = lam.get(app_id) or app
-            credit_admin_case_id = CreditAdminManager().create_case_from_application(
-                fresh,
-                conditions=(payload.conditions or None),
-                authority=payload.authority,
+            lam.issue_offer(
+                app_id,
+                by=str(user.get("username", "") or ""),
+                note="Auto-issued on approval",
             )
         except Exception:
-            credit_admin_case_id = ""
+            pass
 
     updated = lam.get(app_id)
     return {
         "application": updated,
         "status": f"decision_{verdict_normalized}",
-        "credit_admin_case_id": credit_admin_case_id,
+        "credit_admin_case_id": "",
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Credit workflow endpoints (v10.584) — info-request loop + offer loop
+# ─────────────────────────────────────────────────────────────────────
+# The CALMS (credit-admin) case is created at the configured handoff
+# trigger (offer_signed / offer_validated / analyst_confirmed) — never
+# before the offer is signed. This helper centralizes that so every
+# offer-progress endpoint agrees on where the handoff fires.
+
+def _maybe_handoff_to_credit_admin(lam, app_id: str, user: Dict[str, Any]) -> str:
+    """If the app has reached the configured handoff trigger status, create
+    the CALMS case and move it to credit_admin. Idempotent + best-effort —
+    a handoff failure must not fail the workflow action that preceded it."""
+    cfg = get_credit_workflow_config()
+    app = lam.get(app_id) or {}
+    if app.get("status") != handoff_trigger_status(cfg):
+        return ""
+    if app.get("credit_admin_case_id"):
+        return str(app.get("credit_admin_case_id"))
+    try:
+        from utils.core import CreditAdminManager
+        decision = app.get("decision") or {}
+        case_id = CreditAdminManager().create_case_from_application(
+            app,
+            conditions=(decision.get("conditions") or None),
+            authority=str(decision.get("authority", "") or ""),
+        )
+        if case_id:
+            lam.update(app_id, {"status": "credit_admin",
+                                "credit_admin_case_id": case_id})
+            lam._log_event(app_id, "handoff_to_credit_admin",
+                           str(user.get("username", "") or ""),
+                           f"CALMS case {case_id}")
+        return case_id or ""
+    except Exception:
+        return ""
+
+
+@router.post("/applications/{app_id}/request-info",
+             response_model=LoanAppMutationResponse)
+def lms_request_info(
+    app_id: str,
+    payload: RequestInfoRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Analyst parks the case asking the deal owner for more docs (pre-decision)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if not is_valid_lms_transition(str(app.get("status", "")), "info_requested"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot request info from status '{app.get('status')}'")
+    ok = lam.request_info(app_id, by=str(user.get("username", "") or ""),
+                          reasons=payload.reasons, documents=payload.documents,
+                          note=payload.note)
+    if not ok:
+        raise HTTPException(status_code=500, detail="request-info failed")
+    audit_log("LMS_INFO_REQUESTED", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "info_requested"}
+
+
+@router.post("/applications/{app_id}/provide-info",
+             response_model=LoanAppMutationResponse)
+def lms_provide_info(
+    app_id: str,
+    payload: ProvideInfoRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Deal owner supplies the requested info; case returns to assigned."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "info_requested":
+        raise HTTPException(status_code=400,
+                            detail="No outstanding info request on this application")
+    ok = lam.provide_info(app_id, by=str(user.get("username", "") or ""),
+                          note=payload.note, documents=payload.documents)
+    if not ok:
+        raise HTTPException(status_code=500, detail="provide-info failed")
+    audit_log("LMS_INFO_PROVIDED", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "assigned"}
+
+
+@router.post("/applications/{app_id}/sign-offer",
+             response_model=LoanAppMutationResponse)
+def lms_sign_offer(
+    app_id: str,
+    payload: SignOfferRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Deal owner marks the letter of offer signed + attaches the signed copy."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "offer_issued":
+        raise HTTPException(status_code=400,
+                            detail=f"Offer not in a signable state (status '{app.get('status')}')")
+    cfg = get_credit_workflow_config()
+    attachment = None
+    if payload.attachment_filename or payload.attachment_ref:
+        attachment = {
+            "mode": cfg.get("signed_offer_attachment", "reference"),
+            "filename": payload.attachment_filename or "",
+            "ref": payload.attachment_ref or "",
+            "uploaded_by": str(user.get("username", "") or ""),
+            "uploaded_at": None,  # stamped by sign_offer's last_updated
+        }
+    ok = lam.sign_offer(app_id, by=str(user.get("username", "") or ""),
+                        attachment=attachment, note=payload.note)
+    if not ok:
+        raise HTTPException(status_code=500, detail="sign-offer failed")
+    audit_log("LMS_OFFER_SIGNED", str(user.get("username", "") or ""), app_id)
+    case_id = _maybe_handoff_to_credit_admin(lam, app_id, user)
+    return {"application": lam.get(app_id),
+            "status": str(lam.get(app_id).get("status", "")),
+            "credit_admin_case_id": case_id}
+
+
+@router.post("/applications/{app_id}/validate-offer",
+             response_model=LoanAppMutationResponse)
+def lms_validate_offer(
+    app_id: str,
+    payload: ValidateOfferRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Line manager validates the signed offer (checks & balances)."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403,
+                            detail="Manager authority required to validate the offer")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "offer_signed":
+        raise HTTPException(status_code=400,
+                            detail=f"Offer not awaiting validation (status '{app.get('status')}')")
+    ok = lam.validate_offer(app_id, by=str(user.get("username", "") or ""),
+                            approve=payload.approve, note=payload.note)
+    if not ok:
+        raise HTTPException(status_code=500, detail="validate-offer failed")
+    audit_log("LMS_OFFER_VALIDATED" if payload.approve else "LMS_OFFER_VALIDATION_REJECTED",
+              str(user.get("username", "") or ""), app_id)
+    case_id = _maybe_handoff_to_credit_admin(lam, app_id, user)
+    return {"application": lam.get(app_id),
+            "status": str(lam.get(app_id).get("status", "")),
+            "credit_admin_case_id": case_id}
+
+
+@router.post("/applications/{app_id}/confirm-to-credit-admin",
+             response_model=LoanAppMutationResponse)
+def lms_confirm_to_credit_admin(
+    app_id: str,
+    payload: ConfirmToCreditAdminRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Credit analyst confirms to credit admin to proceed; creates the CALMS case."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if not is_valid_lms_transition(str(app.get("status", "")), "analyst_confirmed"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot confirm to credit admin from status '{app.get('status')}'")
+    ok = lam.confirm_to_credit_admin(app_id, by=str(user.get("username", "") or ""),
+                                     note=payload.note)
+    if not ok:
+        raise HTTPException(status_code=500, detail="confirm-to-credit-admin failed")
+    audit_log("LMS_ANALYST_CONFIRMED", str(user.get("username", "") or ""), app_id)
+    case_id = _maybe_handoff_to_credit_admin(lam, app_id, user)
+    return {"application": lam.get(app_id),
+            "status": str(lam.get(app_id).get("status", "")),
+            "credit_admin_case_id": case_id}

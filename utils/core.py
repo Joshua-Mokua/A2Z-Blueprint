@@ -5368,6 +5368,122 @@ class LoanApplicationManager:
             },
         })
 
+    # ── Credit workflow state machine (v10.584) ──────────────────────
+    # Hardcoded transitions live in utils/api_lms_mutations.py; these are
+    # the data mutations + the shared event log. Every workflow action
+    # appends a history event {event, by, at, note, ...} so the analyst,
+    # the deal owner, and credit admin share one timeline (who's handling
+    # it, when, time taken).
+    def _log_event(self, app_id: str, event: str, by: str,
+                   note: str = "", extra: dict = None) -> None:
+        app = self.get(app_id)
+        if not app:
+            return
+        hist = list(app.get("history") or [])
+        entry = {"event": event, "by": by,
+                 "at": datetime.now().isoformat(), "note": note}
+        if extra:
+            entry.update(extra)
+        hist.append(entry)
+        self.update(app_id, {"history": hist})
+
+    def request_info(self, app_id: str, by: str, reasons: list = None,
+                     documents: list = None, note: str = "") -> bool:
+        """Analyst parks the case asking the deal owner for more docs
+        (pre-decision). Routes visibility to the owner."""
+        if not self.get(app_id):
+            return False
+        self.update(app_id, {
+            "status": "info_requested",
+            "info_request": {
+                "by": by, "at": datetime.now().isoformat(),
+                "reasons": reasons or [], "documents": documents or [],
+                "note": note, "resolved": False,
+            },
+        })
+        self._log_event(app_id, "info_requested", by, note,
+                        {"reasons": reasons or [], "documents": documents or []})
+        return True
+
+    def provide_info(self, app_id: str, by: str, note: str = "",
+                     documents: list = None) -> bool:
+        """Deal owner supplies requested info; case returns to assigned."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        ir = dict(app.get("info_request") or {})
+        ir.update({"resolved": True, "resolved_by": by,
+                   "resolved_at": datetime.now().isoformat()})
+        if documents:
+            ir["provided_documents"] = documents
+        self.update(app_id, {"status": "assigned", "info_request": ir})
+        self._log_event(app_id, "info_provided", by, note,
+                        {"documents": documents or []})
+        return True
+
+    def issue_offer(self, app_id: str, by: str, note: str = "") -> bool:
+        """Route an approved app back to the deal owner to issue the
+        letter of offer (offer_issued)."""
+        if not self.get(app_id):
+            return False
+        self.update(app_id, {
+            "status": "offer_issued",
+            "offer": {"issued_by": by,
+                      "issued_at": datetime.now().isoformat(),
+                      "note": note, "signed": False, "validated": None},
+        })
+        self._log_event(app_id, "offer_issued", by, note)
+        return True
+
+    def sign_offer(self, app_id: str, by: str, attachment: dict = None,
+                   note: str = "") -> bool:
+        """Deal owner marks the offer signed + attaches the signed copy
+        (reference or file ref per config)."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        offer = dict(app.get("offer") or {})
+        offer.update({"signed": True, "signed_by": by,
+                      "signed_at": datetime.now().isoformat()})
+        if attachment:
+            offer["signed_attachment"] = attachment
+        self.update(app_id, {"status": "offer_signed", "offer": offer})
+        self._log_event(app_id, "offer_signed", by, note,
+                        {"attachment": attachment or {}})
+        return True
+
+    def validate_offer(self, app_id: str, by: str, approve: bool = True,
+                       note: str = "") -> bool:
+        """Line manager validates the signed offer (checks & balances).
+        Reject sends it back to offer_signed for re-handling."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        offer = dict(app.get("offer") or {})
+        offer.update({"validated": bool(approve), "validated_by": by,
+                      "validated_at": datetime.now().isoformat()})
+        new_status = "offer_validated" if approve else "offer_signed"
+        self.update(app_id, {"status": new_status, "offer": offer})
+        self._log_event(app_id,
+                        "offer_validated" if approve else "offer_validation_rejected",
+                        by, note)
+        return True
+
+    def confirm_to_credit_admin(self, app_id: str, by: str,
+                                note: str = "") -> bool:
+        """Credit analyst confirms to credit admin to proceed
+        (analyst_confirmed). The route then creates the CALMS case."""
+        if not self.get(app_id):
+            return False
+        self.update(app_id, {
+            "status": "analyst_confirmed",
+            "analyst_confirmation": {"by": by,
+                                     "at": datetime.now().isoformat(),
+                                     "note": note},
+        })
+        self._log_event(app_id, "analyst_confirmed", by, note)
+        return True
+
     def bsc_actuals(self) -> dict:
         """Compute BSC actuals from LMS data for credit KPIs."""
         from collections import defaultdict as _dd

@@ -216,3 +216,98 @@ def normalize_verdict(verdict: str) -> str:
     """
     v = str(verdict or '').strip().lower()
     return _VERDICT_NORMALIZATION.get(v, v)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Credit workflow state machine (v10.584)
+# ─────────────────────────────────────────────────────────────────────
+# HARDCODED: the transition graph + guards. Integrity-critical — a config
+# edit must never let an unsigned offer reach disbursement. What the BANK
+# configures (committee mode, attachment mode, which optional steps are
+# required, offer-letter settings) is read from lms_config.json's
+# `credit_workflow` section by get_credit_workflow_config() below.
+
+import json as _json
+from pathlib import Path as _Path
+
+_CREDIT_WORKFLOW_DEFAULTS: Dict[str, Any] = {
+    "committee_mode": "authority_tier",          # or "committee_voting"
+    "signed_offer_attachment": "reference",      # or "file_upload"
+    "require_line_manager_offer_validation": True,
+    "require_analyst_confirmation": True,
+    "credit_admin_two_layer_authorization": True,
+    "offer_letter": {
+        "template_label": "Letter of Offer",
+        "validity_days": 14,
+        "sla_days": 5,
+    },
+}
+
+
+def get_credit_workflow_config() -> Dict[str, Any]:
+    """Admin policy for the credit workflow. Falls back to hardcoded
+    defaults if lms_config.json lacks the `credit_workflow` section.
+    Reads the file directly (no core import) to stay cycle-free."""
+    cfg = dict(_CREDIT_WORKFLOW_DEFAULTS)
+    try:
+        p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+        if p.exists():
+            section = (_json.loads(p.read_text(encoding="utf-8")) or {}).get(
+                "credit_workflow") or {}
+            if isinstance(section, dict):
+                cfg.update(section)
+    except Exception:
+        pass
+    return cfg
+
+
+# Explicit transition graph (defensible vs free-form). offer_signed and
+# offer_validated each list multiple targets so the config toggles can skip
+# optional steps — the endpoint guards enforce which target is legal given
+# the bank's policy.
+LMS_WORKFLOW_TRANSITIONS: Dict[str, Tuple[str, ...]] = {
+    "submitted":                  ("assigned", "declined"),
+    "assigned":                   ("info_requested", "approved", "declined",
+                                   "referred_to_committee"),
+    "info_requested":             ("assigned",),
+    "referred_to_committee":      ("approved", "declined"),
+    "approved":                   ("offer_issued",),
+    "offer_issued":               ("offer_signed", "declined"),
+    "offer_signed":               ("offer_validated", "analyst_confirmed",
+                                   "credit_admin"),
+    "offer_validated":            ("analyst_confirmed", "credit_admin"),
+    "analyst_confirmed":          ("credit_admin",),
+    "credit_admin":               ("ca_authorization_requested", "disbursed"),
+    "ca_authorization_requested": ("ca_authorized",),
+    "ca_authorized":              ("disbursed",),
+    "returned":                   ("assigned",),
+    "declined":                   (),
+    "disbursed":                  (),
+}
+
+
+def is_valid_lms_transition(from_status: str, to_status: str) -> bool:
+    """True if from_status -> to_status is an allowed workflow transition."""
+    return to_status in LMS_WORKFLOW_TRANSITIONS.get(from_status, ())
+
+
+def handoff_trigger_status(cfg: Dict[str, Any] = None) -> str:
+    """The status at which the CALMS (credit-admin) case is created, given
+    which optional post-approval steps the bank requires. Single source of
+    truth so the routes and the frontend agree on where the handoff fires."""
+    cfg = cfg or get_credit_workflow_config()
+    if cfg.get("require_analyst_confirmation", True):
+        return "analyst_confirmed"
+    if cfg.get("require_line_manager_offer_validation", True):
+        return "offer_validated"
+    return "offer_signed"
+
+
+def next_offer_status_after_sign(cfg: Dict[str, Any] = None) -> str:
+    """After an offer is signed, the next required status per policy."""
+    cfg = cfg or get_credit_workflow_config()
+    if cfg.get("require_line_manager_offer_validation", True):
+        return "offer_validated"
+    if cfg.get("require_analyst_confirmation", True):
+        return "analyst_confirmed"
+    return "credit_admin"

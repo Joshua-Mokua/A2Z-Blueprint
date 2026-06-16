@@ -367,3 +367,50 @@ class LoanAppMutationResponse(BaseModel):
         description="'assigned' | 'updated' | 'decision_approved' | "
                     "'decision_declined' | 'decision_returned'"
     )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Credit workflow request bodies (v10.584)
+# ─────────────────────────────────────────────────────────────────────
+
+class RequestInfoRequest(BaseModel):
+    """POST /api/lms/applications/{id}/request-info — analyst asks the deal
+    owner for more documentation (pre-decision)."""
+    reasons: List[str] = Field(
+        default_factory=list,
+        description="Reason codes (typically from lms_config rework_reasons).")
+    documents: List[str] = Field(
+        default_factory=list,
+        description="Specific documents requested.")
+    note: str = Field(default="", description="Free-text context.")
+
+
+class ProvideInfoRequest(BaseModel):
+    """POST /api/lms/applications/{id}/provide-info — deal owner supplies the
+    requested documentation; case returns to assigned."""
+    documents: List[str] = Field(default_factory=list)
+    note: str = Field(default="")
+
+
+class SignOfferRequest(BaseModel):
+    """POST /api/lms/applications/{id}/sign-offer — deal owner marks the
+    letter of offer signed and attaches the signed copy."""
+    note: str = Field(default="")
+    attachment_filename: Optional[str] = Field(
+        default=None, description="Signed-copy filename (reference mode).")
+    attachment_ref: Optional[str] = Field(
+        default=None, description="Storage ref/URL (file_upload mode).")
+
+
+class ValidateOfferRequest(BaseModel):
+    """POST /api/lms/applications/{id}/validate-offer — line manager
+    validates the signed offer (checks & balances)."""
+    approve: bool = Field(default=True,
+                          description="False sends it back for re-handling.")
+    note: str = Field(default="")
+
+
+class ConfirmToCreditAdminRequest(BaseModel):
+    """POST /api/lms/applications/{id}/confirm-to-credit-admin — analyst
+    confirms to credit admin to proceed; creates the CALMS case."""
+    note: str = Field(default="")

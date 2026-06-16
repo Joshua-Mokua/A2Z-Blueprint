@@ -218,5 +218,17 @@
       "max_amount": 9999999999,
       "min_amount": 500000001
     }
-  ]
+  ],
+  "credit_workflow": {
+    "committee_mode": "authority_tier",
+    "signed_offer_attachment": "reference",
+    "require_line_manager_offer_validation": true,
+    "require_analyst_confirmation": true,
+    "credit_admin_two_layer_authorization": true,
+    "offer_letter": {
+      "template_label": "Letter of Offer",
+      "validity_days": 14,
+      "sla_days": 5
+    }
+  }
 }
