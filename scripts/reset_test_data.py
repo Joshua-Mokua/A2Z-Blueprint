@@ -39,7 +39,9 @@ def _empty_monitoring(d):
     return out
 
 WIPE = [
-    ("pipeline.json", EMPTY_LIST),
+    ("pipeline_deals.json", EMPTY_LIST),       # canonical PipelineManager store
+    ("pipeline_activities.json", EMPTY_LIST),   # deal activity log (same manager)
+    ("pipeline.json", EMPTY_LIST),              # legacy store (defensive; skipped if absent)
     ("loan_applications.json", EMPTY_LIST),
     ("credit_admin.json", EMPTY_LIST),
     ("credit_monitoring.json", _empty_monitoring),
