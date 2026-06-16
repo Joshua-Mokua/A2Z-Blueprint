@@ -323,8 +323,19 @@ class PipelineDealCreate(BaseModel):
     )
     sector: Optional[str] = Field(
         default=None,
-        description="Economic sector (Manufacturing, Agriculture, …) from "
-                    "pipeline_settings.sectors.",
+        description="Economic sector — for BUSINESS clients, the CBK "
+                    "classification from pipeline_settings.business_sectors. "
+                    "Empty for Individual clients (see mou_id).",
+    )
+    mou_id: Optional[str] = Field(
+        default=None,
+        description="For INDIVIDUAL clients: the partnership/MOU id from the "
+                    "active register (data/partnerships_mous.json).",
+    )
+    mou_title: Optional[str] = Field(
+        default=None,
+        description="Display title of the selected MOU (or free-text partner "
+                    "name when 'Other' is chosen).",
     )
     is_ntb: Optional[bool] = Field(
         default=None, description="True if New To Bank"

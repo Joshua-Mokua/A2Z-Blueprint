@@ -165,6 +165,13 @@ export interface PipelineConfig {
   stage_flows?:      Record<string, string[]>;
   /** Segment options per client type (Individual / Business). */
   customer_segments?: Record<string, string[]>;
+  /** CBK economic-sector classification for BUSINESS clients (admin config). */
+  business_sectors?: string[];
+  /** Active partnership/MOU register for INDIVIDUAL clients. */
+  individual_mous?: { id: string; title: string; partner_name?: string }[];
+  /** Allow an "Other…" free-text fallback on the sector / MOU field. */
+  allow_other_sector?: boolean;
+  allow_other_mou?:    boolean;
   currency:          string;
 }
 
@@ -357,7 +364,9 @@ export interface CreateDealRequest {
   client_type?:          string;     // 'Individual' or 'Business'
   currency?:             string;     // ISO code; defaults KES (admin FX table)
   segment?:              string;     // segment within client type (cascade)
-  sector?:               string;     // economic sector
+  sector?:               string;     // CBK economic sector (Business clients)
+  mou_id?:               string;     // partnership/MOU id (Individual clients)
+  mou_title?:            string;     // MOU title or free-text partner ("Other")
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
   pipeline_category?:    PipelineCategory;

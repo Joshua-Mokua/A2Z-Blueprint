@@ -688,3 +688,26 @@ validated/pending, lcy/fcy. This is also more correct: the MD reports in KES, an
 summing mixed native currencies is meaningless. For all-KES data the numbers are
 unchanged (amount_kes == amount at rate 1). Harness reconciliation assertion now
 passes with an FCY deal present.
+
+## #2 — Client-type-aware sector / MOU source: DELIVERED (backend + frontend)
+
+DESIGN (assumption flagged to Josh): the third field's SOURCE switches by client
+type (replace, not alongside). Business -> CBK sector; Individual -> MOU.
+- Config: scripts/seed_sector_config.py seeds business_sectors (from CBK_SECTORS,
+  14 classes) + allow_other_sector/mou into pipeline_settings.json — idempotent,
+  backup-before-mutation, non-destructive (admin edits win).
+- Endpoint /api/pipeline/stages now returns business_sectors (CBK, admin-config
+  with constant fallback), individual_mous (active MOUs read LIVE from
+  partnerships_mous.json — never duplicated), allow_other_sector/mou.
+- Model PipelineDealCreate: + mou_id, mou_title (sector kept for Business).
+  Persisted in deal metadata (_db_sync). extra="allow" already tolerated them.
+- Frontend PipelineCreate: third field is client-type-aware — Business shows
+  "Sector (CBK)" from business_sectors; Individual shows "Partnership / MOU" from
+  individual_mous; both offer "Other…" -> free-text. Selections reset on client-
+  type flip so no stale value rides along. Business sets sector; Individual sets
+  mou_id + mou_title; "Other" sets the free text.
+- Harness: config exposes CBK sectors + active MOUs; Individual deal carries
+  mou_id; Business deal carries CBK sector.
+- ADMIN-CONFIGURABLE per Josh's steer: extend CBK sectors by editing
+  pipeline_settings.business_sectors; MOUs are managed in the partnerships
+  register. No code change to extend either.

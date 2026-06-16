@@ -428,6 +428,8 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
+                "mou_id":               deal.get("mou_id"),
+                "mou_title":            deal.get("mou_title"),
                 "fx_rate":              deal.get("fx_rate"),
                 "amount_kes":           deal.get("amount_kes"),
                 "fx_rate_date":         deal.get("fx_rate_date"),
@@ -1114,10 +1116,37 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
     """
     from utils.core import get_pipeline_settings, get_pipeline_stages
     cfg = get_pipeline_settings() or {}
+    # Business sectors = CBK classification (admin-configurable; falls back to the
+    # canonical CBK_SECTORS constant if not yet seeded). Individual MOUs are read
+    # LIVE from the partnerships register (active only) — never duplicated.
+    try:
+        from utils.core import CBK_SECTORS as _CBK
+    except Exception:
+        _CBK = []
+    business_sectors = cfg.get("business_sectors") or list(_CBK)
+    individual_mous = []
+    try:
+        import os as _os, json as _json
+        _p = _os.path.join("data", "partnerships_mous.json")
+        if _os.path.exists(_p):
+            with open(_p, "r", encoding="utf-8") as _f:
+                for _m in _json.load(_f):
+                    if str(_m.get("status", "")).strip() == "Active":
+                        individual_mous.append({
+                            "id":           _m.get("id"),
+                            "title":        _m.get("title"),
+                            "partner_name": _m.get("partner_name"),
+                        })
+    except Exception as _e:
+        logger.error(f"individual_mous load error: {_e}")
     return {
         "stages":            cfg.get("stages") or get_pipeline_stages() or [],
         "deal_categories":   cfg.get("deal_categories", []),
         "sectors":           cfg.get("sectors", []),
+        "business_sectors":  business_sectors,
+        "individual_mous":   individual_mous,
+        "allow_other_sector": cfg.get("allow_other_sector", True),
+        "allow_other_mou":    cfg.get("allow_other_mou", True),
         "decision_levels":   cfg.get("decision_levels", []),
         "probability_map":   cfg.get("probability_map", {}),
         "deal_types":        cfg.get("deal_types", []),

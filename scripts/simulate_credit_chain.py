@@ -423,6 +423,46 @@ def fx_currency_probe(base):
          note=f"amount_kes={amt_kes} vs native 1,000,000")
 
 
+# ── Sector / MOU source probe (client-type-aware) ───────────────────────
+
+def sector_mou_probe(base):
+    print("\n=== SECTOR / MOU PROBE (client-type-aware) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER") or admin
+    if not admin:
+        return
+    # Config exposes CBK business sectors + active MOUs.
+    st, cfg = _req(base, "GET", "/api/pipeline/stages", admin)
+    biz = cfg.get("business_sectors", []) if isinstance(cfg, dict) else []
+    mous = cfg.get("individual_mous", []) if isinstance(cfg, dict) else []
+    step("config: exposes CBK business_sectors", True, len(biz) >= 10,
+         note=f"{len(biz)} sectors; e.g. {biz[0] if biz else '—'}")
+    step("config: exposes active individual_mous", True, len(mous) >= 1,
+         note=f"{len(mous)} active MOUs; e.g. {mous[0].get('title') if mous else '—'}")
+
+    # Individual deal carries an MOU.
+    mou = mous[0] if mous else {"id": "MOU0001", "title": "Sim MOU"}
+    body = {"client_name": f"SIM Indiv {datetime.now():%H%M%S}", "client_type": "Individual",
+            "product_type": "Personal Loan", "deal_value": 500000, "stage": "Lead",
+            "mou_id": mou.get("id"), "mou_title": mou.get("title")}
+    st, resp = _req(base, "POST", "/api/pipeline/deals", owner, body)
+    d = resp if isinstance(resp, dict) else {}
+    got_mou = d.get("mou_id") or d.get("deal", {}).get("mou_id")
+    step("pipeline: Individual deal carries mou_id", True, got_mou == mou.get("id"),
+         note=f"mou_id={got_mou}")
+
+    # Business deal carries a CBK sector.
+    cbk = biz[0] if biz else "Manufacturing"
+    body2 = {"client_name": f"SIM Biz {datetime.now():%H%M%S}", "client_type": "Business",
+             "product_type": "Term Loan", "deal_value": 2000000, "stage": "Lead",
+             "segment": "SME", "sector": cbk}
+    st, resp2 = _req(base, "POST", "/api/pipeline/deals", owner, body2)
+    d2 = resp2 if isinstance(resp2, dict) else {}
+    got_sec = d2.get("sector") or d2.get("deal", {}).get("sector")
+    step("pipeline: Business deal carries CBK sector", True, got_sec == cbk,
+         note=f"sector={got_sec}")
+
+
 # ── MD dashboard sanity: assured split present ──────────────────────────
 
 def dashboard_check(base):
@@ -499,6 +539,7 @@ def main():
         happy_path(args.base, committee=True)
     negative_override_probe(args.base)
     fx_currency_probe(args.base)
+    sector_mou_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     if args.volume:

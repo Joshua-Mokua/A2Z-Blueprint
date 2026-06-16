@@ -259,7 +259,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -398,5 +398,23 @@
       "Closed Won",
       "Closed Lost"
     ]
-  }
+  },
+  "business_sectors": [
+    "Agriculture, Forestry & Fishing",
+    "Mining & Quarrying",
+    "Manufacturing",
+    "Electricity, Gas & Water Supply",
+    "Building & Construction",
+    "Trade (Wholesale & Retail)",
+    "Tourism, Restaurant & Hotels",
+    "Transport & Communication",
+    "Real Estate & Business Services",
+    "Financial Services",
+    "Community, Social & Personal Services",
+    "Government & Public Sector",
+    "Non-Profit / NGO",
+    "Other / Not Classified"
+  ],
+  "allow_other_sector": true,
+  "allow_other_mou": true
 }

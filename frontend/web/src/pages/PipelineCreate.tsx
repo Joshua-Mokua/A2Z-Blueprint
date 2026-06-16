@@ -114,6 +114,9 @@ export function PipelineCreate() {
   const [segment,     setSegment]     = useState<string>('');
   const [sector,      setSector]      = useState<string>('');
   const [currency,    setCurrency]    = useState<string>('KES');
+  const [mouId,       setMouId]       = useState<string>('');     // Individual: selected MOU id
+  const [otherText,   setOtherText]   = useState<string>('');     // free text when 'Other' chosen
+  const SENTINEL_OTHER = '__OTHER__';
   const [isNtb,       setIsNtb]       = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
 
@@ -203,7 +206,41 @@ export function PipelineCreate() {
     () => config?.customer_segments?.[clientType] ?? [],
     [config, clientType],
   );
-  const sectorOptions = useMemo(() => config?.sectors ?? [], [config]);
+  // Client-type-aware third field: Business -> CBK sectors; Individual -> MOUs.
+  // Both admin-config-driven with an optional "Other…" free-text fallback.
+  const businessSectors = useMemo(
+    () => config?.business_sectors ?? config?.sectors ?? [],
+    [config],
+  );
+  const individualMous = useMemo(() => config?.individual_mous ?? [], [config]);
+  const allowOther = clientType === 'Business'
+    ? (config?.allow_other_sector ?? true)
+    : (config?.allow_other_mou ?? true);
+
+  // Reset the third-field selections when the client type flips, so a stale
+  // sector doesn't ride along on an Individual deal (or a stale MOU on Business).
+  useEffect(() => {
+    setSector('');
+    setMouId('');
+    setOtherText('');
+  }, [clientType]);
+
+  // Resolve what the client-type-aware third field contributes to the payload.
+  const thirdField = useMemo(() => {
+    if (clientType === 'Business') {
+      const s = sector === SENTINEL_OTHER ? otherText.trim() : sector;
+      return { sector: s || undefined, mou_id: undefined as string | undefined,
+               mou_title: undefined as string | undefined };
+    }
+    const isOther = mouId === SENTINEL_OTHER;
+    return {
+      sector: undefined as string | undefined,
+      mou_id: isOther || !mouId ? undefined : mouId,
+      mou_title: isOther
+        ? (otherText.trim() || undefined)
+        : individualMous.find((m) => m.id === mouId)?.title,
+    };
+  }, [clientType, sector, mouId, otherText, individualMous]);
 
   // Currency options come from the admin-maintained FX table (active rates),
   // not a hardcoded list — so extending to other Ecobank affiliates or
@@ -501,7 +538,9 @@ export function PipelineCreate() {
       client_type:        clientType,
       currency:           currency || 'KES',
       segment:            segment || undefined,
-      sector:             sector || undefined,
+      sector:             thirdField.sector,
+      mou_id:             thirdField.mou_id,
+      mou_title:          thirdField.mou_title,
       client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
       is_ntb:             isNtb,
       pipeline_category:  category,
@@ -776,19 +815,50 @@ export function PipelineCreate() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Sector
+                  {clientType === 'Business' ? 'Sector (CBK)' : 'Partnership / MOU'}
                 </label>
-                <select
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
-                  disabled={mutations.loading || sectorOptions.length === 0}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
-                >
-                  <option value="">Select sector (optional)</option>
-                  {sectorOptions.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                {clientType === 'Business' ? (
+                  <select
+                    value={sector}
+                    onChange={(e) => setSector(e.target.value)}
+                    disabled={mutations.loading}
+                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  >
+                    <option value="">Select CBK sector (optional)</option>
+                    {businessSectors.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                    {allowOther && <option value={SENTINEL_OTHER}>Other…</option>}
+                  </select>
+                ) : (
+                  <select
+                    value={mouId}
+                    onChange={(e) => setMouId(e.target.value)}
+                    disabled={mutations.loading}
+                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  >
+                    <option value="">Select partnership / MOU (optional)</option>
+                    {individualMous.map((m) => (
+                      <option key={m.id} value={m.id}>{m.title}</option>
+                    ))}
+                    {allowOther && <option value={SENTINEL_OTHER}>Other…</option>}
+                  </select>
+                )}
+                {(sector === SENTINEL_OTHER || mouId === SENTINEL_OTHER) && (
+                  <input
+                    type="text"
+                    value={otherText}
+                    onChange={(e) => setOtherText(e.target.value)}
+                    disabled={mutations.loading}
+                    placeholder={clientType === 'Business' ? 'Specify sector' : 'Specify partner / MOU'}
+                    className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  {clientType === 'Business'
+                    ? 'CBK economic-sector classification (admin config).'
+                    : 'Active partnerships from the MOU register (admin config).'}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
