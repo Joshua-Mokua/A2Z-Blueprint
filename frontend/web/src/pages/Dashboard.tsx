@@ -80,28 +80,65 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Command band — identity + the hero figure on one navy surface,
+          closed by a thin gold rule. The hero gives the page a single focal
+          point (assured pipeline), with the currency split and key risk
+          read-outs as supporting data. */}
       <header
-        className="px-6 py-5 text-white shadow-sm"
-        style={{ background: branding.brand.secondary }}
+        className="text-white shadow-sm"
+        style={{ background: branding.brand.secondary,
+                 borderBottom: `3px solid ${branding.brand.accent}` }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
-              {branding.bank_name}
-            </div>
-            <h1 className="text-xl font-bold mt-1">
-              {branding.app_name} MIS 360 — Executive Command Centre
-            </h1>
-            {user && (
-              <div className="text-xs opacity-70 mt-1">
-                {user.full_name} · {user.role}
+        <div className="max-w-7xl mx-auto px-6 pt-5">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
+                {branding.bank_name}
               </div>
-            )}
+              <h1 className="text-xl font-bold mt-1">
+                {branding.app_name} MIS 360 — Executive Command Centre
+              </h1>
+              {user && (
+                <div className="text-xs opacity-70 mt-1">
+                  {user.full_name} · {user.role}
+                </div>
+              )}
+            </div>
+            <div className="text-right text-xs opacity-70 leading-relaxed">
+              <div>{branding.regulator_full}</div>
+              <div>{branding.core_banking_system}</div>
+            </div>
           </div>
-          <div className="text-right text-xs opacity-70 leading-relaxed">
-            <div>{branding.regulator_full}</div>
-            <div>{branding.core_banking_system}</div>
+
+          {/* Hero figure */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-end pt-6 pb-6">
+            <div>
+              <div className="text-[11px] uppercase tracking-[2px] font-semibold"
+                   style={{ color: branding.brand.accent }}>
+                Total pipeline · KES-equivalent
+              </div>
+              <div className="text-4xl sm:text-5xl font-bold mt-1 tabular-nums">
+                {show((x) => kes(x.pipeline.pipeline_value))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs opacity-80">
+                <span>Local (LCY) {show((x) => kes(x.pipeline.lcy_value ?? 0))}</span>
+                <span>Foreign (FCY) {show((x) => kes(x.pipeline.fcy_value ?? 0))}</span>
+                <span>{show((x) => x.pipeline.total_deals.toLocaleString())} live deals</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                ['BSC avg', show((x) => x.bsc.overall_avg.toFixed(1))],
+                ['NPL ratio', show((x) => `${x.credit.npl_ratio_pct}%`)],
+                ['Assured', show((x) => kes(x.pipeline.validated_value ?? 0))],
+              ] as [string, string][]).map(([lbl, val]) => (
+                <div key={lbl} className="rounded-lg px-3 py-2"
+                     style={{ background: 'rgba(255,255,255,0.08)' }}>
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">{lbl}</div>
+                  <div className="text-lg font-semibold mt-0.5 tabular-nums">{val}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </header>

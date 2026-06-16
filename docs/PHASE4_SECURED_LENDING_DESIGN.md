@@ -756,3 +756,18 @@ This is the same native-vs-KES class the React-B-fix caught — different read p
 - App.tsx: /analytics route. Sidebar: Analytics nav item after Pipeline.
 - "Showcase all products and items" (#3) now has a real surface.
 - REMAINING: #4 UX/design pass over dashboard + analytics together.
+
+## #4 — UX design pass (Dashboard exemplar): DELIVERED (tsc gate)
+
+DIRECTION: institutional-fintech command centre grounded in the Ecobank palette
+(navy #0e2440 anchor, cyan #1797ce live-data, gold #ffd200 reserved for the one
+headline). Not the AI-default cream/serif or acid-on-black looks — the brand is
+fixed, so the distinctiveness is in hierarchy + restraint.
+
+- pages/Dashboard.tsx: the navy header now carries a HERO figure — Total Pipeline
+  (KES-equivalent) shown large, gold eyebrow, with LCY/FCY + live-deal count as
+  supporting data and three glass read-outs (BSC avg / NPL / Assured). A 3px gold
+  rule closes the command band. Single focal point; everything else stays quiet.
+- This is a DIRECTION exemplar on the highest-visibility surface. Pending Josh's
+  reaction before propagating the treatment (gold accents, hero pattern, spacing)
+  to Analytics and the rest.
