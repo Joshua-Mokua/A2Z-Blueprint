@@ -48,7 +48,7 @@ References
 from __future__ import annotations
 
 from typing import List, Optional, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -427,12 +427,16 @@ class PipelineDealUpdate(BaseModel):
 
 class PipelineDealAdvance(BaseModel):
     """Request body for POST /api/pipeline/deals/{deal_id}/advance."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     new_stage: str = Field(
+        # B16: the React frontend sends `target_stage`; accept both names so
+        # the existing UI works without a rebuild. The endpoint still reads
+        # `payload.new_stage`, which is populated from either key.
+        validation_alias=AliasChoices("new_stage", "target_stage"),
         description="Target stage. Must be in ALLOWED_ADVANCE_STAGES "
-                    "from utils/api_pipeline_mutations.py. LMS-handoff "
-                    "stages are rejected in α3 — use Streamlit until α4."
+                    "from utils/api_pipeline_mutations.py. Sent as "
+                    "`target_stage` by the React client (alias)."
     )
     note: Optional[str] = Field(
         default="",
