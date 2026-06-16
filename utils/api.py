@@ -2745,47 +2745,63 @@ def credit_watchlist(
 def _acquire_scoped_credit(user: dict) -> list:
     """Loan-book accounts within the caller's reporting subtree.
 
-    DB-first from the canonical credit_watchlist table (identity columns
-    top-level; risk indicators in the risk_data JSONB — flattened here).
-    Falls back to reading credit_monitoring.json directly for dev/no-PG. The
-    earlier _load_json path returned [] under PG (loan book lives in the table,
-    not a JSON blob), which hid the whole book. Scope: the SAME
-    get_visible_staff_codes the pipeline uses, matched on rm_code — so an
-    individual sees credit exactly as they see pipeline; MD sees all.
+    The loan book has several possible homes (credit_watchlist table with a
+    risk_data JSONB, a flat watchlist table, or credit_monitoring.json on
+    disk) and which one is populated varies by environment. We try each and
+    accept the FIRST that yields rows carrying rm_code (the scope key). Scope:
+    the SAME get_visible_staff_codes the pipeline uses, matched on rm_code.
     """
     import json as _json
+
+    def _has_rm(rows):
+        return bool(rows) and any(r.get("rm_code") for r in rows[:10])
+
     accts: list = []
     if _db_available():
+        from utils.db import db as _db
+        # 1) canonical credit_watchlist (identity top-level; risk_data JSONB)
         try:
-            from utils.db import db as _db
             rows = _db.fetch_all(
                 "SELECT account_number, cif, branch_code, branch_name, region, "
                 "rm_code, rm_name, risk_data, status, severity "
                 "FROM credit_watchlist", ())
+            cand = []
             for r in _serialize(rows) or []:
                 rd = r.get("risk_data")
                 if isinstance(rd, str):
-                    try:
-                        rd = _json.loads(rd)
-                    except Exception:
-                        rd = {}
+                    try: rd = _json.loads(rd)
+                    except Exception: rd = {}
                 a = dict(rd) if isinstance(rd, dict) else {}
                 for k in ("account_number", "cif", "branch_code", "branch_name",
                           "region", "rm_code", "rm_name", "status", "severity"):
                     if r.get(k) is not None:
                         a[k] = r.get(k)
-                accts.append(a)
+                cand.append(a)
+            if _has_rm(cand):
+                accts = cand
         except Exception as e:
             logger.error(f"credit_watchlist read error: {e}")
-            accts = []
-    if not accts:
+        # 2) flat watchlist table
+        if not _has_rm(accts):
+            try:
+                rows = _db.fetch_all("SELECT * FROM watchlist", ())
+                cand = _serialize(rows) or []
+                if _has_rm(cand):
+                    accts = cand
+            except Exception as e:
+                logger.error(f"watchlist read error: {e}")
+    # 3) credit_monitoring.json on disk (dev / no-PG)
+    if not _has_rm(accts):
         p = DATA_DIR / "credit_monitoring.json"
         if p.exists():
             try:
                 raw = _json.loads(p.read_text(encoding="utf-8"))
-                accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+                cand = raw if isinstance(raw, list) else raw.get("watchlist", [])
+                if _has_rm(cand):
+                    accts = cand
             except Exception as e:
                 logger.error(f"Credit monitoring file read error: {e}")
+
     from utils.api_pipeline_scope import get_visible_staff_codes
     visible = get_visible_staff_codes(user)
     return [a for a in accts if str(a.get("rm_code") or "") in visible]
@@ -2793,7 +2809,10 @@ def _acquire_scoped_credit(user: dict) -> list:
 
 def _compute_credit_analytics(accts: list) -> dict:
     def out(a): return _safe_float(a.get("outstanding", 0))
-    def npl(a): return _safe_int(a.get("npl_days", 0)) >= 90
+    def npl(a):
+        if a.get("npl_flag"):
+            return True
+        return _safe_int(a.get("npl_days", a.get("dpd", 0))) >= 90
 
     def group(field: str, key: str) -> list:
         m: dict = {}
