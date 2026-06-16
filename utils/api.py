@@ -939,7 +939,7 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     if cached:
         return cached
 
-    if _db_available():
+    if _PIPELINE_READ_DB_FIRST and _db_available():
         try:
             from utils.db import db as _db
             rows = _db.fetch_all("""
@@ -1079,7 +1079,7 @@ def pipeline_deals(
     user:     dict = Depends(get_current_user),
 ):
     _audit("API_PIPELINE_DEALS", user, f"stage={stage} unit={unit} limit={limit}")
-    if _db_available():
+    if _PIPELINE_READ_DB_FIRST and _db_available():
         try:
             from utils.db import db as _db
             from utils.api_pipeline_scope import (
@@ -1344,6 +1344,13 @@ def pipeline_submit_to_credit(
 # list endpoint uses (Postgres-first, JSON fallback) so the funnel agrees
 # with the list a user sees.
 
+# B12 (2026-06-16): pipeline reads are JSON-first. The JSON store
+# (PipelineManager) is the synchronous source of truth for every
+# create/mutation; Postgres is a best-effort mirror that lagged (15 of 17
+# deals were JSON-only, invisible to DB-first reads). Flip back to True only
+# once the DB sync is guaranteed — see PENDING: unify pipeline reads on Postgres.
+_PIPELINE_READ_DB_FIRST = False
+
 _STAGE_WEIGHTS = {
     "Lead": 0.05, "Contacted": 0.10, "Qualified": 0.25, "Proposal": 0.40,
     "Negotiation": 0.60, "Compliance": 0.80, "Closed Won": 1.0, "Closed Lost": 0.0,
@@ -1358,14 +1365,19 @@ def _deal_value(d: dict) -> float:
 
 
 def _acquire_scoped_deals(user: dict) -> list:
-    """All deals in the caller's cascade scope, from the same source the list
-    endpoint reads (Postgres-first, JSON fallback). No pagination, no per-deal
-    permission enrichment — for aggregate analytics."""
+    """All deals in the caller's cascade scope.
+
+    JSON-first (B12, 2026-06-16): the JSON store (PipelineManager) is the
+    synchronous source of truth for every create/mutation; Postgres is a
+    best-effort mirror that can lag, so DB-first reads hid freshly-created
+    deals. Reading JSON-first keeps the list, analytics, and validation queue
+    in agreement. Flip _PIPELINE_READ_DB_FIRST back to True once the DB sync is
+    guaranteed (PENDING: unify pipeline reads on Postgres)."""
     from utils.api_pipeline_scope import (
         get_visible_staff_codes, filter_deals_by_visible_codes,
     )
     visible_codes = get_visible_staff_codes(user)
-    if _db_available():
+    if _PIPELINE_READ_DB_FIRST and _db_available():
         try:
             from utils.db import db as _db
             rows = _db.fetch_all(
