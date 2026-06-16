@@ -1334,6 +1334,136 @@ def pipeline_submit_to_credit(
     return {"application_id": app_id, "status": "submitted_to_credit", "missing": []}
 
 
+# ── Pipeline analytics (v10.575 Batch B11) ───────────────────────────
+#
+# Aggregate funnel + headline metrics over the caller's VISIBLE deals.
+# Mirrors the Streamlit pipeline page's calculations (pages/3_pipeline.py:
+# pip_val / wt_val / won_val / conv_r, the per-category funnels, and the
+# stage weights from core.PipelineManager.weighted_pipeline) so the React
+# view matches the canonical numbers. Reads deals from the SAME source the
+# list endpoint uses (Postgres-first, JSON fallback) so the funnel agrees
+# with the list a user sees.
+
+_STAGE_WEIGHTS = {
+    "Lead": 0.05, "Contacted": 0.10, "Qualified": 0.25, "Proposal": 0.40,
+    "Negotiation": 0.60, "Compliance": 0.80, "Closed Won": 1.0, "Closed Lost": 0.0,
+}
+
+
+def _deal_value(d: dict) -> float:
+    try:
+        return float(d.get("deal_value", 0) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _acquire_scoped_deals(user: dict) -> list:
+    """All deals in the caller's cascade scope, from the same source the list
+    endpoint reads (Postgres-first, JSON fallback). No pagination, no per-deal
+    permission enrichment — for aggregate analytics."""
+    from utils.api_pipeline_scope import (
+        get_visible_staff_codes, filter_deals_by_visible_codes,
+    )
+    visible_codes = get_visible_staff_codes(user)
+    if _db_available():
+        try:
+            from utils.db import db as _db
+            rows = _db.fetch_all(
+                "SELECT * FROM pipeline_deals ORDER BY open_date DESC", ())
+            deals = [_normalize_db_deal_row(d) for d in _serialize(rows)]
+            return filter_deals_by_visible_codes(deals, visible_codes)
+        except Exception as e:
+            logger.error(f"Pipeline analytics DB error: {e}")
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deals = pm.get_deals()
+    return filter_deals_by_visible_codes(deals, visible_codes)
+
+
+def _compute_pipeline_analytics(deals: list) -> dict:
+    """Headline totals + overall funnel + per-category funnels. Pure function
+    over a deal list (already scope-filtered) — mirrors 3_pipeline.py."""
+    from utils.core import (
+        ACTIVE_STAGES, ALL_ACTIVE_STAGES,
+        get_pipeline_category, get_stages_for_category,
+    )
+    live = [d for d in deals if not d.get("draft")]
+    active = [d for d in live if d.get("stage") in ACTIVE_STAGES]
+    won = [d for d in live if d.get("stage") == "Closed Won"]
+    lost = [d for d in live if d.get("stage") == "Closed Lost"]
+
+    total_value = sum(_deal_value(d) for d in active)
+    weighted_value = sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+                         for d in live)
+    won_value = sum(_deal_value(d) for d in won)
+    win_rate = (round(len(won) / (len(won) + len(lost)) * 100, 1)
+                if (won or lost) else 0.0)
+
+    # Overall funnel — active stages in canonical union order, non-empty only.
+    o_cnt = {s: 0 for s in ALL_ACTIVE_STAGES}
+    o_val = {s: 0.0 for s in ALL_ACTIVE_STAGES}
+    for d in active:
+        s = d.get("stage")
+        if s in o_cnt:
+            o_cnt[s] += 1
+            o_val[s] += _deal_value(d)
+    funnel = [{"stage": s, "count": o_cnt[s], "value": o_val[s]}
+              for s in ALL_ACTIVE_STAGES if o_cnt[s] > 0]
+
+    # Per-category funnels (mirrors the Streamlit Conversion view).
+    cats: dict = {}
+    for d in live:
+        cat = (d.get("pipeline_category")
+               or get_pipeline_category(d.get("product_type", "")))
+        cats.setdefault(cat, []).append(d)
+    by_category = []
+    for cat, cdeals in cats.items():
+        stages = [s["stage"] for s in get_stages_for_category(cat)]
+        c_cnt = {s: 0 for s in stages}
+        c_val = {s: 0.0 for s in stages}
+        for d in cdeals:
+            s = d.get("stage")
+            if s in c_cnt:
+                c_cnt[s] += 1
+                c_val[s] += _deal_value(d)
+        c_funnel = [{"stage": s, "count": c_cnt[s], "value": c_val[s]}
+                    for s in stages if s != "Closed Lost"]
+        c_active = [d for d in cdeals if d.get("stage") in ACTIVE_STAGES]
+        by_category.append({
+            "category": cat,
+            "count": len(cdeals),
+            "active_count": len(c_active),
+            "value": sum(_deal_value(d) for d in c_active),
+            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+                            for d in cdeals),
+            "funnel": c_funnel,
+        })
+    by_category.sort(key=lambda c: c["value"], reverse=True)
+
+    return {
+        "totals": {
+            "total_value": total_value,
+            "weighted_value": weighted_value,
+            "won_value": won_value,
+            "active_count": len(active),
+            "won_count": len(won),
+            "lost_count": len(lost),
+            "live_count": len(live),
+            "win_rate": win_rate,
+        },
+        "funnel": funnel,
+        "by_category": by_category,
+    }
+
+
+@app.get("/api/pipeline/analytics")
+def pipeline_analytics(user: dict = Depends(get_current_user)):
+    """Funnel + headline pipeline metrics over the caller's visible deals."""
+    _audit("API_PIPELINE_ANALYTICS", user, "")
+    deals = _acquire_scoped_deals(user)
+    return _compute_pipeline_analytics(deals)
+
+
 # ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──
 #
 # POST/PUT/advance for pipeline deals. Adds API-side equivalents of
