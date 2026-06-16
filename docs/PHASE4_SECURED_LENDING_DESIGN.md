@@ -725,3 +725,21 @@ type (replace, not alongside). Business -> CBK sector; Individual -> MOU.
 - Harness: by_product / by_sector / by_currency_book present.
 - NEXT (#3b): React Analytics page consuming totals + funnel + pipelines +
   these breakdowns, with charts (recharts v2), routed + nav.
+
+## #3a-fix — DB-first read path lifts FX money set (probe-caught)
+
+Symptom: analytics by_currency_book FCY = 4,000,000 (native, 4 deals x 1M USD)
+while dashboard FCY = 518,000,000 (KES-equiv). Root cause: _normalize_db_deal_row
+(the DB-first reader feeding analytics) lifted only pipeline_category +
+lms_application_id from metadata, NOT amount_kes/currency_book — so _deal_value
+fell back to NATIVE for FCY deals. The dashboard's DB SQL path extracted amount_kes
+directly, so the two paths disagreed.
+
+Fix: _normalize_db_deal_row now lifts amount_kes, currency_book, fx_rate(_date/
+_source), client_type, mou_id, mou_title, sector, segment from metadata onto the
+deal dict — so ALL DB-first readers see KES-equivalent + the full classification.
+Also persisted sector + segment in _db_sync metadata (were not stored at all, so
+by_sector collapsed to Unclassified on DB-first reads).
+
+Harness: new assertion "analytics FCY == dashboard FCY (KES-equiv, no drift)".
+This is the same native-vs-KES class the React-B-fix caught — different read path.

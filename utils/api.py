@@ -430,6 +430,8 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "lms_application_id":   deal.get("lms_application_id"),
                 "mou_id":               deal.get("mou_id"),
                 "mou_title":            deal.get("mou_title"),
+                "sector":               deal.get("sector"),
+                "segment":              deal.get("segment"),
                 "fx_rate":              deal.get("fx_rate"),
                 "amount_kes":           deal.get("amount_kes"),
                 "fx_rate_date":         deal.get("fx_rate_date"),
@@ -478,6 +480,17 @@ def _normalize_db_deal_row(row):
         r["pipeline_category"] = md.get("pipeline_category")
     if isinstance(md, dict) and not r.get("lms_application_id"):
         r["lms_application_id"] = md.get("lms_application_id")
+    # Lift the FX money set + client-type fields out of metadata so DB-first
+    # readers (analytics, dashboard canonical path) see KES-equivalent values
+    # and the currency book — matching the JSON read path. Without this,
+    # _deal_value falls back to NATIVE for FCY deals and analytics disagrees
+    # with the dashboard.
+    if isinstance(md, dict):
+        for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
+                   "fx_rate_source", "client_type", "mou_id", "mou_title",
+                   "sector", "segment"):
+            if r.get(_k) in (None, "") and md.get(_k) is not None:
+                r[_k] = md.get(_k)
     return r
 
 

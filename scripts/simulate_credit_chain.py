@@ -474,6 +474,15 @@ def sector_mou_probe(base):
     step("analytics: by_currency_book has LCY+FCY", True,
          "LCY" in by_ccy and "FCY" in by_ccy,
          note=f"LCY={by_ccy.get('LCY',{}).get('value')}, FCY={by_ccy.get('FCY',{}).get('value')}")
+    # Consistency: analytics FCY (KES-equiv) must agree with the dashboard FCY —
+    # proves DB-first reads now lift amount_kes from metadata (no native/KES drift).
+    st, dash = _req(base, "GET", "/api/dashboard/md", admin)
+    dash_fcy = (dash.get("pipeline", {}) if isinstance(dash, dict) else {}).get("fcy_value")
+    an_fcy = by_ccy.get("FCY", {}).get("value")
+    consistent = (dash_fcy is not None and an_fcy is not None
+                  and abs(float(an_fcy) - float(dash_fcy)) < max(1.0, float(dash_fcy or 0) * 0.001))
+    step("analytics FCY == dashboard FCY (KES-equiv, no drift)", True, bool(consistent),
+         note=f"analytics={an_fcy} vs dashboard={dash_fcy}")
 
 
 # ── MD dashboard sanity: assured split present ──────────────────────────
