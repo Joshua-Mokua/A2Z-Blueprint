@@ -355,6 +355,7 @@ export interface CreateDealRequest {
 
   // Optional but commonly supplied
   client_type?:          string;     // 'Individual' or 'Business'
+  currency?:             string;     // ISO code; defaults KES (admin FX table)
   segment?:              string;     // segment within client type (cascade)
   sector?:               string;     // economic sector
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup

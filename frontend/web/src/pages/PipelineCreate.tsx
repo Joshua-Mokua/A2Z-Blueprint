@@ -42,6 +42,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useToast } from '@/components/Toast';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
+import { useFxRates } from '@/hooks/useFxRates';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -112,6 +113,7 @@ export function PipelineCreate() {
   const [clientType,  setClientType]  = useState<'Individual' | 'Business'>('Individual');
   const [segment,     setSegment]     = useState<string>('');
   const [sector,      setSector]      = useState<string>('');
+  const [currency,    setCurrency]    = useState<string>('KES');
   const [isNtb,       setIsNtb]       = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
 
@@ -202,6 +204,21 @@ export function PipelineCreate() {
     [config, clientType],
   );
   const sectorOptions = useMemo(() => config?.sectors ?? [], [config]);
+
+  // Currency options come from the admin-maintained FX table (active rates),
+  // not a hardcoded list — so extending to other Ecobank affiliates or
+  // cross-border customers is an admin action, never a code change. KES (base)
+  // is always offered even before any FX rate is configured.
+  const { rates: fxRates } = useFxRates(true);
+  const currencyOptions = useMemo(() => {
+    const set = new Set<string>(['KES']);
+    for (const r of fxRates) if (r.currency) set.add(r.currency.toUpperCase());
+    return Array.from(set).sort((a, b) => (a === 'KES' ? -1 : b === 'KES' ? 1 : a.localeCompare(b)));
+  }, [fxRates]);
+  const selectedRate = useMemo(
+    () => (currency === 'KES' ? 1 : fxRates.find((r) => r.currency?.toUpperCase() === currency)?.rate_to_kes),
+    [currency, fxRates],
+  );
 
   const productSuggestions = useMemo(() => COMMON_PRODUCTS_BY_CATEGORY[category], [category]);
   const dealValueNum       = useMemo(() => {
@@ -482,6 +499,7 @@ export function PipelineCreate() {
 
       // Optional
       client_type:        clientType,
+      currency:           currency || 'KES',
       segment:            segment || undefined,
       sector:             sector || undefined,
       client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
@@ -732,6 +750,28 @@ export function PipelineCreate() {
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   {clientType} segments from admin config.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Currency
+                </label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  disabled={mutations.loading}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  {currencyOptions.map((c) => (
+                    <option key={c} value={c}>{c}{c === 'KES' ? ' (local)' : ''}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {currency === 'KES'
+                    ? 'Local currency book (LCY).'
+                    : selectedRate
+                      ? `Foreign currency book (FCY) · ≈ KES ${(dealValueNum * selectedRate).toLocaleString(undefined, { maximumFractionDigits: 0 })} at ${selectedRate}/${currency}`
+                      : `Foreign currency book (FCY) · no admin FX rate set for ${currency} yet`}
                 </p>
               </div>
               <div>

@@ -402,6 +402,27 @@ def scope_guard(base):
     step("GUARD: foreign deal id not leaked", (403, 404), st, body)
 
 
+# ── FX currency probe: a non-KES deal books FCY (live) ──────────────────
+
+def fx_currency_probe(base):
+    print("\n=== FX CURRENCY PROBE (FCY booking) ===")
+    owner = login(base, "OWNER") or login(base, "ADMIN")
+    if not owner:
+        return
+    body = {"client_name": f"SIM FX Co {datetime.now():%H%M%S}", "client_type": "Business",
+            "product_type": "Trade Finance", "deal_value": 1000000, "stage": "Lead",
+            "segment": "SME", "sector": "Manufacturing", "currency": "USD"}
+    st, resp = _req(base, "POST", "/api/pipeline/deals", owner, body)
+    d = resp if isinstance(resp, dict) else {}
+    book = d.get("currency_book") or d.get("deal", {}).get("currency_book")
+    amt_kes = d.get("amount_kes") or d.get("deal", {}).get("amount_kes")
+    step("fx: USD deal books FCY", True, book == "FCY",
+         note=f"currency_book={book}, amount_kes={amt_kes}")
+    step("fx: USD deal carries KES-equivalent > native", True,
+         amt_kes is not None and float(amt_kes or 0) > 1000000,
+         note=f"amount_kes={amt_kes} vs native 1,000,000")
+
+
 # ── MD dashboard sanity: assured split present ──────────────────────────
 
 def dashboard_check(base):
@@ -477,6 +498,7 @@ def main():
     if not args.skip_committee:
         happy_path(args.base, committee=True)
     negative_override_probe(args.base)
+    fx_currency_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     if args.volume:
