@@ -48,7 +48,7 @@ from functools import lru_cache
 from fastapi import FastAPI, HTTPException, Query, Depends, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # v10.501 Phase 2 Arc B Batch 4b — rate limiting (closes GAP-006).
 # slowapi provides per-IP and per-key rate limiting for FastAPI.
@@ -428,6 +428,11 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
+                "fx_rate":              deal.get("fx_rate"),
+                "amount_kes":           deal.get("amount_kes"),
+                "fx_rate_date":         deal.get("fx_rate_date"),
+                "fx_rate_source":       deal.get("fx_rate_source"),
+                "currency_book":        deal.get("currency_book"),
             }),
         }
         if not row["id"]:
@@ -1898,6 +1903,14 @@ def pipeline_deal_create(
     # Route through canonical manager (G394 alignment)
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
+    # P4-1b: stamp the normalized money set (fx_rate, amount_kes, currency_book,
+    # rate date/source) at booking. Additive + resilient — never blocks create
+    # if a currency rate is unconfigured (currency_book is always computed).
+    try:
+        from utils.fx_engine import stamp_money_fields
+        stamp_money_fields(deal_dict, amount_key="deal_value")
+    except Exception:
+        pass
     new_id = pm.add_deal(deal_dict)
     try:
         _db_sync_pipeline_deal(pm.get_deal(new_id))  # mirror to Postgres (raises on failure)
@@ -2675,6 +2688,56 @@ def clear_cache(user: dict = Depends(require_admin)):
     _cache.clear()
     _cache_ts.clear()
     return {"status":"cleared","message":"All API cache cleared"}
+
+# ── FX rates (P4-1b) ──────────────────────────────────────────────
+# Operational FX rate table — admin-maintained. KES is base (rate=1).
+# List/resolve: any authenticated user (dashboards need the LCY/FCY rate).
+# Upsert: admin-only.
+class _FxRateUpsert(BaseModel):
+    currency: str
+    rate_to_kes: float
+    effective_date: str
+    rate_type: str = "mid"
+    model_config = ConfigDict(extra="allow")
+
+
+@app.get("/api/fx/rates")
+def fx_list_rates(currency: Optional[str] = None, active_only: bool = False,
+                  user: dict = Depends(get_current_user)):
+    from utils.fx_engine import FxRateStore, BASE_CURRENCY
+    st = FxRateStore()
+    return {"base_currency": BASE_CURRENCY,
+            "rates": st.list_rates(currency, active_only)}
+
+
+@app.get("/api/fx/resolve")
+def fx_resolve(currency: str, as_of: Optional[str] = None,
+               rate_type: str = "mid", user: dict = Depends(get_current_user)):
+    from utils.fx_engine import FxRateStore, FxRateError
+    try:
+        r = FxRateStore().resolve_rate(currency, as_of=as_of, rate_type=rate_type)
+        return {"currency": currency.upper(), "rate_to_kes": float(r),
+                "rate_type": rate_type, "as_of": as_of}
+    except FxRateError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/fx/rates")
+def fx_upsert_rate(payload: _FxRateUpsert, user: dict = Depends(require_admin)):
+    from utils.fx_engine import FxRateStore, FxRateError
+    st = FxRateStore()
+    try:
+        row = st.upsert_rate(
+            payload.currency, payload.rate_to_kes, payload.effective_date,
+            rate_type=payload.rate_type, source="admin",
+            entered_by=str(user.get("username", "") or "admin"))
+        st.save()
+    except FxRateError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    _audit("API_FX_RATE_UPSERT", user,
+           f"{payload.currency} {payload.rate_type} "
+           f"{payload.rate_to_kes}@{payload.effective_date}")
+    return {"rate": row, "status": "saved"}
 
 @app.get("/api/cache/stats")
 def cache_stats(user: dict = Depends(get_current_user)):
