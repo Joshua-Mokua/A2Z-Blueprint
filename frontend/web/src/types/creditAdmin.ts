@@ -15,6 +15,9 @@ export interface CreditAdminPermissions {
   can_view:                boolean;
   can_fulfill_condition:   boolean;
   can_disburse:            boolean;
+  // Two-layer authorization (v10.585 / B20)
+  can_request_authorization?: boolean;
+  can_authorize?:             boolean;
 }
 
 
@@ -59,6 +62,14 @@ export interface CreditAdminCase {
   ready_for_disbursement?:   boolean;
   disbursed?:                boolean;
   disbursement_date?:        string | null;
+
+  // Two-layer authorization (v10.585 / B20)
+  authorization_requested?:     boolean;
+  authorization_requested_by?:  string;
+  authorization_requested_at?:  string;
+  authorized?:                  boolean;
+  authorized_by?:               string;
+  authorized_at?:               string;
 
   // Extra tolerated
   [key: string]:         unknown;
@@ -165,3 +176,14 @@ export const COMMON_DISBURSE_AUTHORITIES = [
   'Director Commercial Banking',
   'Managing Director',
 ] as const;
+
+
+// ── Authorization request bodies (v10.585 / B20) ────────────────────────
+
+export interface RequestAuthorizationRequest {
+  note?: string;
+}
+
+export interface AuthorizeRequest {
+  note?: string;
+}

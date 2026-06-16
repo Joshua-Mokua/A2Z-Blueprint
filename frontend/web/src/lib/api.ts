@@ -719,6 +719,8 @@ import type {
   CreditAdminMutationResponse,
   FulfillConditionRequest,
   DisburseCaseRequest,
+  RequestAuthorizationRequest,
+  AuthorizeRequest,
 } from '@/types/creditAdmin';
 
 
@@ -787,6 +789,27 @@ export async function disburseCreditAdminCase(
 ): Promise<CreditAdminMutationResponse> {
   return postJson<CreditAdminMutationResponse, DisburseCaseRequest>(
     `/credit-admin/cases/${encodeURIComponent(caseId)}/disburse`,
+    body,
+  );
+}
+
+// ── Two-layer authorization fetchers (v10.585 / B20) ──
+export async function requestCreditAdminAuthorization(
+  caseId: string,
+  body: RequestAuthorizationRequest,
+): Promise<CreditAdminMutationResponse> {
+  return postJson<CreditAdminMutationResponse, RequestAuthorizationRequest>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/request-authorization`,
+    body,
+  );
+}
+
+export async function authorizeCreditAdminCase(
+  caseId: string,
+  body: AuthorizeRequest,
+): Promise<CreditAdminMutationResponse> {
+  return postJson<CreditAdminMutationResponse, AuthorizeRequest>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/authorize`,
     body,
   );
 }

@@ -7,12 +7,16 @@ import { useState, useCallback } from 'react';
 import {
   fulfillCreditAdminCondition,
   disburseCreditAdminCase,
+  requestCreditAdminAuthorization,
+  authorizeCreditAdminCase,
   ApiValidationError,
   AuthExpiredError,
 } from '@/lib/api';
 import type {
   FulfillConditionRequest,
   DisburseCaseRequest,
+  RequestAuthorizationRequest,
+  AuthorizeRequest,
   CreditAdminMutationResponse,
 } from '@/types/creditAdmin';
 
@@ -25,8 +29,12 @@ export type MutationResult<T> =
 export interface CreditAdminMutationsHookValue {
   /** Mark a condition fulfilled (anyone in scope, case not disbursed). */
   fulfillCondition:  (caseId: string, body: FulfillConditionRequest) => Promise<MutationResult<CreditAdminMutationResponse>>;
-  /** Clear case for disbursement (manager-tier, all conditions met). */
+  /** Clear case for disbursement (manager-tier, ready_for_disbursement). */
   disburse:          (caseId: string, body: DisburseCaseRequest) => Promise<MutationResult<CreditAdminMutationResponse>>;
+  /** Layer 1: officer requests manager authorization (all conditions met). */
+  requestAuthorization: (caseId: string, body: RequestAuthorizationRequest) => Promise<MutationResult<CreditAdminMutationResponse>>;
+  /** Layer 2: manager authorizes disbursement (pending request). */
+  authorize:         (caseId: string, body: AuthorizeRequest) => Promise<MutationResult<CreditAdminMutationResponse>>;
   /** True while any mutation from this instance is in flight. */
   loading:           boolean;
 }
@@ -68,5 +76,17 @@ export function useCreditAdminMutations(): CreditAdminMutationsHookValue {
     [runMutation],
   );
 
-  return { fulfillCondition, disburse, loading };
+  const requestAuthorization = useCallback(
+    (caseId: string, body: RequestAuthorizationRequest) =>
+      runMutation(requestCreditAdminAuthorization, caseId, body),
+    [runMutation],
+  );
+
+  const authorize = useCallback(
+    (caseId: string, body: AuthorizeRequest) =>
+      runMutation(authorizeCreditAdminCase, caseId, body),
+    [runMutation],
+  );
+
+  return { fulfillCondition, disburse, requestAuthorization, authorize, loading };
 }

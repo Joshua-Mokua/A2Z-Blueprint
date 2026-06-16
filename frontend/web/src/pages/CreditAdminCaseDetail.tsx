@@ -310,6 +310,49 @@ export function CreditAdminCaseDetail() {
         </Card>
 
 
+        {/* Two-layer authorization status (v10.585 / B20) */}
+        {(caseRecord.authorization_requested || caseRecord.authorized) && (
+          <Card className="mt-6" stripe="primary">
+            <Card.Body>
+              <div className="text-sm text-gray-700 space-y-1">
+                {caseRecord.authorization_requested && (
+                  <div>
+                    <span className="font-medium">Authorization requested</span>
+                    {caseRecord.authorization_requested_by ? ` by ${caseRecord.authorization_requested_by}` : ''}
+                  </div>
+                )}
+                {caseRecord.authorized
+                  ? <div className="text-green-700"><span className="font-medium">Authorized</span>{caseRecord.authorized_by ? ` by ${caseRecord.authorized_by}` : ''}</div>
+                  : caseRecord.authorization_requested
+                    ? <div className="text-amber-700">Awaiting manager authorization.</div>
+                    : null}
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
+        {/* Layer 1: officer requests authorization */}
+        {permissions.can_request_authorization && (
+          <CaAuthPanel
+            caseId={caseRecord.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="accent" title="Request disbursement authorization"
+            desc="All conditions are met. Confirm the case and request manager authorization (Layer 1)."
+            cta="Request authorization"
+            run={(id, note) => mutations.requestAuthorization(id, { note })}
+            okMsg="Authorization requested." />
+        )}
+
+        {/* Layer 2: manager authorizes */}
+        {permissions.can_authorize && (
+          <CaAuthPanel
+            caseId={caseRecord.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="primary" title="Authorize disbursement"
+            desc="A Layer-1 request is pending. Authorize this case for disbursement (Layer 2)."
+            cta="Authorize"
+            run={(id, note) => mutations.authorize(id, { note })}
+            okMsg="Case authorized for disbursement." />
+        )}
+
         {/* Disburse action panel (if can_disburse) */}
         {permissions.can_disburse && (
           <DisbursePanel
@@ -328,7 +371,8 @@ export function CreditAdminCaseDetail() {
 
 
         {/* If no actions, hint */}
-        {!permissions.can_fulfill_condition && !permissions.can_disburse && (
+        {!permissions.can_fulfill_condition && !permissions.can_disburse &&
+         !permissions.can_request_authorization && !permissions.can_authorize && (
           <Card>
             <Card.Body>
               <div className="text-xs text-gray-500 italic">
@@ -594,6 +638,58 @@ function DisbursePanel({
           </Button>
         </div>
       </Card.Footer>
+    </Card>
+  );
+}
+
+
+// ── Two-layer authorization panel (v10.585 / B20) ───────────────────────
+
+import type { MutationResult } from '@/hooks/useCreditAdminMutations';
+import type { CreditAdminMutationResponse } from '@/types/creditAdmin';
+
+function CaAuthPanel({ caseId, mutations, toast, onDone, stripe, title, desc, cta, run, okMsg }: {
+  caseId: string;
+  mutations: ReturnType<typeof useCreditAdminMutations>;
+  toast: ReturnType<typeof useToast>['toast'];
+  onDone: () => Promise<unknown> | unknown;
+  stripe: 'primary' | 'secondary' | 'accent';
+  title: string;
+  desc: string;
+  cta: string;
+  run: (id: string, note: string) => Promise<MutationResult<CreditAdminMutationResponse>>;
+  okMsg: string;
+}) {
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const onClick = async () => {
+    setError(null);
+    const res = await run(caseId, note.trim());
+    if (res.ok) { await onDone(); toast({ tone: 'success', message: okMsg }); setNote(''); }
+    else setError(res.error);
+  };
+  return (
+    <Card className="mt-6" stripe={stripe}>
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">{title}</h3></Card.Header>
+      <Card.Body>
+        <p className="text-sm text-gray-600 mb-3">{desc}</p>
+        <div>
+          <label className="text-sm font-medium text-gray-700">Note (optional)</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={mutations.loading}
+            className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+          />
+        </div>
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3">
+          <Button variant="primary" onClick={onClick} disabled={mutations.loading}>
+            {mutations.loading ? 'Working…' : cta}
+          </Button>
+        </div>
+      </Card.Body>
     </Card>
   );
 }

@@ -595,6 +595,32 @@ function AdvancePanel({ deal, mutations, onSuccess, stageFlow }: ActionPanelProp
     }
   };
 
+  // v10.588: lock manual advance at the credit-assessment gate. The stage only
+  // progresses via the document-gated "Submit to Credit Analysis" panel below
+  // (which the backend blocks until every required document is attached). Once
+  // submitted (the deal carries an lms_application_id), this unlocks.
+  const isCreditGate = /credit/i.test(deal.stage) && /(assess|analys)/i.test(deal.stage);
+  const submittedToCredit = !!deal.lms_application_id;
+  if (isCreditGate && !submittedToCredit) {
+    return (
+      <Card className="mt-6" stripe="secondary">
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Advance stage</h3>
+          <Badge tone="warning" size="sm">locked at Credit Assessment</Badge>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            This deal is at <span className="font-medium">{deal.stage}</span>. The stage can&apos;t be
+            advanced manually from here — complete the document checklist and use the{' '}
+            <span className="font-medium">Submit to Credit Analysis</span> panel below. Submission is
+            blocked until every required document is attached, and it moves the deal forward
+            automatically once it succeeds.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mt-6" stripe="primary">
       <Card.Header>
