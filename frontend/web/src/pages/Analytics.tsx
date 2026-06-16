@@ -2,8 +2,10 @@
 // dashboard-consistent) and showcases the pipeline across products, sectors,
 // currency book, the conversion funnel, and the four product-class pipelines.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { fetchPipelineDrill } from '@/lib/api';
+import type { UnitBreakdown, PipelineDrillResponse } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Skeleton } from '@/components/Skeleton';
@@ -110,6 +112,9 @@ export function Analytics() {
 
       {/* Model A slicer */}
       <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} />
+
+      {/* Click-to-drill: branch -> RM -> individual deals */}
+      <BranchDrill branches={data.by_unit ?? []} kes={kes} />
 
       {/* Product-class pipelines */}
       <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
@@ -250,5 +255,124 @@ function PipelineSlicer({
         )}
       </Card.Body></Card>
     </>
+  );
+}
+
+// ── #8: click-to-drill — branch → RM → individual deals ──────────────────
+function BranchDrill({ branches, kes }: { branches: UnitBreakdown[]; kes: (n: number) => string }) {
+  const [unit, setUnit] = useState<string | null>(null);
+  const [rm, setRm] = useState<string | null>(null);
+  const [data, setData] = useState<PipelineDrillResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!unit) { setData(null); return; }
+    let live = true;
+    setLoading(true);
+    fetchPipelineDrill(unit, rm ?? undefined)
+      .then((d) => { if (live) setData(d); })
+      .catch(() => { if (live) setData(null); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [unit, rm]);
+
+  const crumb = 'text-brand-primary hover:underline';
+  const here = 'font-semibold text-gray-900';
+
+  return (
+    <>
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
+        Drill down · branch → RM → deals
+      </h2>
+      <Card><Card.Body>
+        <div className="flex items-center gap-2 text-sm mb-4 flex-wrap">
+          <button onClick={() => { setUnit(null); setRm(null); }}
+                  className={unit ? crumb : here}>All branches</button>
+          {unit && <><span className="text-gray-400">›</span>
+            <button onClick={() => setRm(null)} className={rm ? crumb : here}>{unit}</button></>}
+          {rm && <><span className="text-gray-400">›</span><span className={here}>{rm}</span></>}
+        </div>
+
+        {!unit && (
+          branches.length === 0
+            ? <p className="text-sm text-gray-500">No branch data yet.</p>
+            : <DrillTable
+                head={['Branch', 'Value', 'Deals']}
+                rows={branches.slice().sort((a, b) => b.value - a.value).map((b) => ({
+                  key: b.unit, cells: [b.unit, kes(b.value), String(b.count)],
+                  onClick: () => setUnit(b.unit),
+                }))} />
+        )}
+
+        {unit && !rm && (
+          loading ? <Skeleton />
+            : (data?.by_rm.length ?? 0) === 0
+              ? <p className="text-sm text-gray-500">No RMs in this branch.</p>
+              : <DrillTable
+                  head={['Relationship Manager', 'Value', 'Deals']}
+                  rows={(data?.by_rm ?? []).map((r) => ({
+                    key: r.rm, cells: [r.rm, kes(r.value), String(r.count)],
+                    onClick: () => setRm(r.rm),
+                  }))} />
+        )}
+
+        {unit && rm && (
+          loading ? <Skeleton />
+            : (data?.deals.length ?? 0) === 0
+              ? <p className="text-sm text-gray-500">No deals for this RM.</p>
+              : <div className="overflow-auto max-h-96">
+                  <table className="w-full text-sm">
+                    <thead><tr className="text-left text-gray-500 border-b">
+                      <th className="py-1 pr-3">Client</th>
+                      <th className="py-1 pr-3">Product</th>
+                      <th className="py-1 pr-3">Stage</th>
+                      <th className="py-1 pr-3 text-right">Value</th>
+                      <th className="py-1 text-right">Close</th>
+                    </tr></thead>
+                    <tbody>
+                      {(data?.deals ?? []).map((d) => (
+                        <tr key={d.id} className="border-b last:border-0">
+                          <td className="py-1 pr-3">{d.client_name}</td>
+                          <td className="py-1 pr-3">{d.product_type}</td>
+                          <td className="py-1 pr-3">{d.stage}</td>
+                          <td className="py-1 pr-3 text-right tabular-nums">{kes(d.amount_kes)}</td>
+                          <td className="py-1 text-right tabular-nums">{d.expected_close ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+        )}
+      </Card.Body></Card>
+    </>
+  );
+}
+
+function DrillTable({ head, rows }: {
+  head: string[];
+  rows: { key: string; cells: string[]; onClick: () => void }[];
+}) {
+  return (
+    <div className="overflow-auto max-h-96">
+      <table className="w-full text-sm">
+        <thead><tr className="text-left text-gray-500 border-b">
+          {head.map((h, i) => (
+            <th key={h} className={`py-1 pr-3 ${i === 0 ? '' : 'text-right'}`}>{h}</th>
+          ))}
+        </tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key}
+                onClick={r.onClick}
+                className="border-b last:border-0 cursor-pointer hover:bg-gray-50">
+              {r.cells.map((c, i) => (
+                <td key={i} className={`py-1.5 pr-3 tabular-nums ${
+                  i === 0 ? 'text-brand-primary font-medium' : 'text-right'}`}>{c}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

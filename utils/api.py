@@ -1849,6 +1849,61 @@ def pipeline_analytics(user: dict = Depends(get_current_user)):
     return result
 
 
+@app.get("/api/pipeline/drill")
+def pipeline_drill(
+    unit: Optional[str] = None,
+    rm: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """Drill into the pipeline by branch (unit) then relationship manager (rm).
+
+    Reuses _acquire_scoped_deals so cascade scope is enforced (a branch
+    manager only ever drills their own branch). Returns the RM breakdown
+    within the current filter (for the branch level) and the individual deal
+    list (for the RM level), all KES-equivalent. Pure filter over the scoped
+    set — no new query path, so it can't drift from the analytics totals.
+    """
+    _audit("API_PIPELINE_DRILL", user, f"unit={unit} rm={rm}")
+    deals = _acquire_scoped_deals(user)
+    if unit:
+        deals = [d for d in deals if (d.get("unit") or "Unassigned") == unit]
+    if rm:
+        deals = [d for d in deals
+                 if (d.get("staff_name") or d.get("staff_code") or "Unassigned") == rm]
+
+    rm_map: dict = {}
+    for d in deals:
+        nm = d.get("staff_name") or d.get("staff_code") or "Unassigned"
+        e = rm_map.setdefault(nm, {"rm": nm, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    by_rm = sorted(rm_map.values(), key=lambda x: x["value"], reverse=True)
+
+    def _slim(d: dict) -> dict:
+        return {
+            "id": d.get("id"),
+            "client_name": d.get("client_name"),
+            "product_type": d.get("product_type") or d.get("product"),
+            "stage": d.get("stage"),
+            "amount_kes": _deal_value(d),
+            "currency": d.get("currency", "KES"),
+            "staff_name": d.get("staff_name") or d.get("staff_code"),
+            "unit": d.get("unit"),
+            "expected_close": d.get("expected_close"),
+            "probability": d.get("probability"),
+        }
+    deal_list = [_slim(d) for d in
+                 sorted(deals, key=_deal_value, reverse=True)[:200]]
+
+    return {
+        "unit": unit,
+        "rm": rm,
+        "by_rm": by_rm,
+        "deals": deal_list,
+        "totals": {"value": sum(_deal_value(d) for d in deals), "count": len(deals)},
+    }
+
+
 # ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──
 #
 # POST/PUT/advance for pipeline deals. Adds API-side equivalents of

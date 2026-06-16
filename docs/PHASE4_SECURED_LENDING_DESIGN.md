@@ -838,3 +838,24 @@ Now meaningful thanks to #6 seed (35 branches, 212 RMs, 14 sectors).
 
 NEXT: #8 click-to-drill depth (Branch -> RMs -> individual deals); then credit
 drill + dashboard de-lump (figures link into drills).
+
+## #8 — Click-to-drill: branch → RM → individual deals: DELIVERED (tsc gate)
+
+Backend:
+- GET /api/pipeline/drill?unit=&rm= — reuses _acquire_scoped_deals (cascade
+  scope enforced), filters by unit then rm, returns by_rm (branch level) +
+  individual deal list (RM level) + totals. Pure filter over the scoped set,
+  so it can't drift from analytics totals.
+- Harness: drill returns by_rm+deals+totals; unit filter narrows to a branch's
+  RMs; unit+rm yields that RM's individual deals.
+
+Frontend (Analytics page):
+- BranchDrill component below the slicer: breadcrumb All branches › <branch> ›
+  <RM>. Level 1 lists branches (click) -> Level 2 lists that branch's RMs
+  (click) -> Level 3 lists the RM's individual deals (client/product/stage/
+  value/close). fetchPipelineDrill + DrillDeal/PipelineDrillResponse types.
+- This is the "drill to individual level" capstone; coherent because the #6
+  seed gives each branch a stable RM set.
+
+REMAINING: credit-side drill (class/branch/NPL) + dashboard de-lump (hero
+figures link into these drills instead of repeating section totals).

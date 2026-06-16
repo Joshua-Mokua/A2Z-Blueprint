@@ -490,6 +490,29 @@ def sector_mou_probe(base):
          note=f"{len(by_unit)} units; top={by_unit[0].get('unit') if by_unit else '—'}")
     step("analytics: by_rm drill dimension present", True, len(by_rm) >= 1,
          note=f"{len(by_rm)} RMs")
+    # #8: drill endpoint — branch -> RM -> deals (scope-safe).
+    st, dr = _req(base, "GET", "/api/pipeline/drill", admin)
+    drill_ok = isinstance(dr, dict) and "by_rm" in dr and "deals" in dr and "totals" in dr
+    step("drill: endpoint returns by_rm + deals + totals", True, bool(drill_ok),
+         note=f"rms={len(dr.get('by_rm',[])) if isinstance(dr,dict) else 0}")
+    # drill into the top branch, then its top RM, and confirm narrowing.
+    top_unit = by_unit[0].get("unit") if by_unit else None
+    if top_unit:
+        st, du = _req(base, "GET", f"/api/pipeline/drill?unit={top_unit}", admin)
+        unit_rms = du.get("by_rm", []) if isinstance(du, dict) else []
+        step("drill: unit filter narrows to that branch's RMs", True,
+             len(unit_rms) >= 1 and du.get("totals", {}).get("count", 0) >= 1,
+             note=f"unit={top_unit} -> {len(unit_rms)} RMs, {du.get('totals',{}).get('count')} deals")
+        top_rm = unit_rms[0].get("rm") if unit_rms else None
+        if top_rm:
+            import urllib.parse as _up
+            q = f"unit={_up.quote(str(top_unit))}&rm={_up.quote(str(top_rm))}"
+            st, drm = _req(base, "GET", f"/api/pipeline/drill?{q}", admin)
+            dl = drm.get("deals", []) if isinstance(drm, dict) else []
+            step("drill: unit+rm filter yields that RM's individual deals", True,
+                 len(dl) >= 1 and all(x.get("staff_name") == top_rm or
+                                      x.get("unit") == top_unit for x in dl[:5]),
+                 note=f"{len(dl)} deals for {top_rm}")
 
 
 # ── MD dashboard sanity: assured split present ──────────────────────────

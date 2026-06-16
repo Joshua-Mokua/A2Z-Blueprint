@@ -558,6 +558,25 @@ export interface ProductBreakdown { product: string; value: number; count: numbe
 export interface SectorBreakdown  { sector: string; value: number; count: number }
 export interface UnitBreakdown    { unit: string; value: number; count: number }
 export interface RmBreakdown      { rm: string; value: number; count: number }
+export interface DrillDeal {
+  id: string;
+  client_name: string;
+  product_type: string;
+  stage: string;
+  amount_kes: number;
+  currency: string;
+  staff_name: string;
+  unit: string;
+  expected_close: string | null;
+  probability: number | null;
+}
+export interface PipelineDrillResponse {
+  unit: string | null;
+  rm: string | null;
+  by_rm: RmBreakdown[];
+  deals: DrillDeal[];
+  totals: { value: number; count: number };
+}
 export interface CurrencyBookSplit { value: number; count: number }
 
 export interface PipelineAnalyticsResponse {

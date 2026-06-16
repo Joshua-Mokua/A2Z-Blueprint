@@ -39,6 +39,7 @@ import type {
   ApproveCancelRequest, ApproveCancelResponse,
   CreditChecklistResponse, SubmitToCreditResponse,
   PipelineAnalyticsResponse,
+  PipelineDrillResponse,
 } from '@/types/pipeline';
 
 const API_BASE = '/api';
@@ -293,6 +294,16 @@ export async function fetchPipelineConfig(): Promise<PipelineConfig> {
  */
 export async function fetchPipelineAnalytics(): Promise<PipelineAnalyticsResponse> {
   return getJson<PipelineAnalyticsResponse>('/pipeline/analytics');
+}
+
+export async function fetchPipelineDrill(
+  unit?: string, rm?: string,
+): Promise<PipelineDrillResponse> {
+  const p = new URLSearchParams();
+  if (unit) p.set('unit', unit);
+  if (rm) p.set('rm', rm);
+  const qs = p.toString();
+  return getJson<PipelineDrillResponse>(`/pipeline/drill${qs ? `?${qs}` : ''}`);
 }
 
 
