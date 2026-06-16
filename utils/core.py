@@ -6286,11 +6286,14 @@ class CreditAdminManager:
                 satisfied = True
                 required = {"admin"}
             elif hv:
+                # High-value: ALL THREE of Head of Credit, CRO, MD.
                 required = {"head_of_credit", "cro", "md"}
                 satisfied = required <= have
             else:
-                required = {"head_of_credit", "cro"}
-                satisfied = bool(have & required)   # any one
+                # Standard: ANY ONE of Head of Credit, CRO, or MD. The MD
+                # outranks HoC/CRO and is always an acceptable approver.
+                required = {"head_of_credit", "cro", "md"}
+                satisfied = bool(have & required)
             if satisfied:
                 ov["status"] = "authorized"
                 ov["authorized_at"] = datetime.now().isoformat(timespec="seconds")

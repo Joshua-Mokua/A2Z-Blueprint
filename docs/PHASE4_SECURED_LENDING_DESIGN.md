@@ -599,3 +599,16 @@ objects (backend + React).
 - PILOT AFFORDANCE (flagged): admin superuser override is for pilot testing;
   production needs real HoC/CRO/MD seats so the 3-signature high-value control
   is genuinely three people.
+
+
+## P4-6c — Override authority fix (probe-caught)
+
+The live probe caught that a STANDARD facility's override stayed `pending` when
+approved only by the MD. Root cause: required set for standard was {HoC, CRO},
+excluding MD — but the MD outranks both and is always an acceptable approver.
+Corrected model (add_override_approval):
+  - Standard facility    -> ANY ONE of {Head of Credit, CRO, MD}
+  - High-value facility  -> ALL THREE of {Head of Credit, CRO, MD}
+  - 'admin' approval      -> pilot superuser, satisfies any tier (audited)
+This is also the more faithful banking model. Tests unchanged (6 pass); live
+probe now: blocked -> override authorized -> disburse under override.
