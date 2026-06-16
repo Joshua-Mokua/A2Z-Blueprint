@@ -1475,8 +1475,14 @@ _STAGE_WEIGHTS = {
 
 
 def _deal_value(d: dict) -> float:
+    # KES-equivalent: amount_kes when stamped (FCY deals), else native deal_value
+    # (LCY deals coincide at rate 1). Keeps analytics in the bank's reporting
+    # currency, consistent with pipeline_summary.
     try:
-        return float(d.get("deal_value", 0) or 0)
+        v = d.get("amount_kes")
+        if v is None:
+            v = d.get("deal_value", 0)
+        return float(v or 0)
     except (TypeError, ValueError):
         return 0.0
 
@@ -1732,6 +1738,40 @@ def _compute_pipeline_analytics(deals: list) -> dict:
     other_breakdown.sort(key=lambda x: x["value"], reverse=True)
     pipelines["other"]["breakdown"] = other_breakdown
 
+    # ── #3a: cross-cutting breakdowns (KES-equivalent via _deal_value) ──
+    # by_product: every product across all buckets, value + count + won.
+    _prod: dict = {}
+    for d in live:
+        p = d.get("product_type") or d.get("product", "") or "—"
+        e = _prod.setdefault(p, {"product": p, "value": 0.0, "count": 0, "won_value": 0.0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+        if d.get("stage") == "Closed Won":
+            e["won_value"] += _deal_value(d)
+    _by_product = sorted(_prod.values(), key=lambda x: x["value"], reverse=True)
+
+    # by_sector: CBK sector (Business deals). Individual/MOU deals grouped.
+    _sec: dict = {}
+    for d in live:
+        if str(d.get("client_type", "")).strip() == "Individual" or d.get("mou_id"):
+            key = "Individual / Partnership"
+        else:
+            key = d.get("sector") or "Unclassified"
+        e = _sec.setdefault(key, {"sector": key, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_sector = sorted(_sec.values(), key=lambda x: x["value"], reverse=True)
+
+    # by_currency_book: KES-equivalent split (mirrors the dashboard).
+    _by_currency_book = {"LCY": {"value": 0.0, "count": 0},
+                         "FCY": {"value": 0.0, "count": 0}}
+    for d in live:
+        book = d.get("currency_book") or (
+            "FCY" if str(d.get("currency", "KES")).strip() not in ("", "KES") else "LCY")
+        b = _by_currency_book["FCY" if book == "FCY" else "LCY"]
+        b["value"] += _deal_value(d)
+        b["count"] += 1
+
     return {
         "totals": {
             "total_value": total_value,
@@ -1748,6 +1788,9 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "pipelines": pipelines,
         "funnel": funnel,
         "by_category": by_category,
+        "by_product": _by_product,
+        "by_sector": _by_sector,
+        "by_currency_book": _by_currency_book,
     }
 
 

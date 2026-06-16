@@ -711,3 +711,17 @@ type (replace, not alongside). Business -> CBK sector; Individual -> MOU.
 - ADMIN-CONFIGURABLE per Josh's steer: extend CBK sectors by editing
   pipeline_settings.business_sectors; MOUs are managed in the partnerships
   register. No code change to extend either.
+
+## #3a — Analytics enrichment (backend): DELIVERED
+
+- _deal_value now returns KES-equivalent (amount_kes fallback deal_value) — the
+  ENTIRE pipeline analytics endpoint is now in the bank's reporting currency,
+  consistent with pipeline_summary. All-KES data unchanged.
+- _compute_pipeline_analytics adds three cross-cutting breakdowns over live deals:
+  - by_product: [{product, value, count, won_value}] sorted desc.
+  - by_sector: CBK sector (Business); Individual/MOU deals grouped as
+    "Individual / Partnership". [{sector, value, count}] sorted desc.
+  - by_currency_book: {LCY:{value,count}, FCY:{value,count}}.
+- Harness: by_product / by_sector / by_currency_book present.
+- NEXT (#3b): React Analytics page consuming totals + funnel + pipelines +
+  these breakdowns, with charts (recharts v2), routed + nav.
