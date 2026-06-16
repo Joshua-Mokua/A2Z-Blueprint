@@ -1371,6 +1371,62 @@ def _deal_value(d: dict) -> float:
         return 0.0
 
 
+def _norm_product(s: str) -> str:
+    return "".join(ch for ch in str(s or "").lower() if ch.isalnum())
+
+
+def _product_class(product_type: str):
+    """The product_catalogue class for a product, from pipeline_settings.json
+    (admin-owned config). Returns one of: Assets, Liabilities, Transactional,
+    Insurance, Investments — or None if unknown. Exact match first, then a
+    normalized containment fallback so naming drift (e.g. 'Mortgage / Home Loan'
+    vs catalogue 'Mortgage', 'Current Account (CASA)' vs 'Current Account')
+    still classifies correctly."""
+    pt_n = _norm_product(product_type)
+    if not pt_n:
+        return None
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("product_catalogue", {}) if isinstance(cfg, dict) else {}
+    pairs = []
+    if isinstance(cat, dict):
+        for cls, prods in cat.items():
+            if isinstance(prods, list):
+                for p in prods:
+                    pairs.append((_norm_product(p), cls))
+    for p_n, cls in pairs:          # exact
+        if p_n and p_n == pt_n:
+            return cls
+    for p_n, cls in pairs:          # containment
+        if p_n and (p_n in pt_n or pt_n in p_n):
+            return cls
+    return None
+
+
+def _classify_product(product_type: str) -> str:
+    """Headline bucket for a product: 'asset' | 'liability' | 'insurance' |
+    'other'. Sourced from product_catalogue (admin config); keyword fallback
+    only when the product isn't in the catalogue at all."""
+    cls = _product_class(product_type)
+    if cls == "Assets":
+        return "asset"
+    if cls == "Liabilities":
+        return "liability"
+    if cls == "Insurance":
+        return "insurance"
+    if cls in ("Transactional", "Investments"):
+        return "other"
+    low = str(product_type or "").lower()
+    if any(k in low for k in ("insurance", "assurance", "cover")):
+        return "insurance"
+    if any(k in low for k in ("loan", "overdraft", "finance", "mortgage",
+                              "facility", "discount")):
+        return "asset"
+    if any(k in low for k in ("deposit", "account", "casa", "savings",
+                              "current", "call", "notice")):
+        return "liability"
+    return "other"
+
+
 def _acquire_scoped_deals(user: dict) -> list:
     """All deals in the caller's cascade scope.
 
@@ -1459,6 +1515,71 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         })
     by_category.sort(key=lambda c: c["value"], reverse=True)
 
+    # ── Headline buckets (admin product_catalogue): asset / liability /
+    # insurance / other. Replaces the meaningless loan+deposit combined total.
+    def _bucket_stats(dl: list) -> dict:
+        act = [d for d in dl if d.get("stage") in ACTIVE_STAGES]
+        won_ = [d for d in dl if d.get("stage") == "Closed Won"]
+        b_cnt = {s: 0 for s in ALL_ACTIVE_STAGES}
+        b_val = {s: 0.0 for s in ALL_ACTIVE_STAGES}
+        for d in act:
+            s = d.get("stage")
+            if s in b_cnt:
+                b_cnt[s] += 1
+                b_val[s] += _deal_value(d)
+        b_funnel = [{"stage": s, "count": b_cnt[s], "value": b_val[s]}
+                    for s in ALL_ACTIVE_STAGES if b_cnt[s] > 0]
+        return {
+            "value": sum(_deal_value(d) for d in act),
+            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+                            for d in dl),
+            "active_count": len(act),
+            "won_value": sum(_deal_value(d) for d in won_),
+            "funnel": b_funnel,
+        }
+
+    bucket_defs = [("asset", "Asset Pipeline"), ("liability", "Liability Pipeline"),
+                   ("insurance", "Insurance"), ("other", "Other")]
+    bucket_deals: dict = {k: [] for k, _ in bucket_defs}
+    for d in live:
+        bucket_deals[_classify_product(
+            d.get("product_type") or d.get("product", ""))].append(d)
+
+    pipelines: dict = {}
+    for key, label in bucket_defs:
+        stats = _bucket_stats(bucket_deals[key])
+        stats["label"] = label
+        pipelines[key] = stats
+
+    # "Other" drill-down: by product_catalogue sub-class (Transactional /
+    # Investments / unclassified), then by product.
+    sub_map: dict = {}
+    for d in bucket_deals["other"]:
+        sub = _product_class(d.get("product_type") or d.get("product", "")) or "Unclassified"
+        sub_map.setdefault(sub, []).append(d)
+    other_breakdown = []
+    for sub, dl in sub_map.items():
+        prod_map: dict = {}
+        for d in dl:
+            p = d.get("product_type") or d.get("product", "") or "—"
+            prod_map.setdefault(p, []).append(d)
+        products = []
+        for p, pl in prod_map.items():
+            pa = [x for x in pl if x.get("stage") in ACTIVE_STAGES]
+            products.append({"product": p,
+                             "value": sum(_deal_value(x) for x in pa),
+                             "count": len(pa)})
+        products.sort(key=lambda x: x["value"], reverse=True)
+        sa = [d for d in dl if d.get("stage") in ACTIVE_STAGES]
+        other_breakdown.append({
+            "subclass": sub,
+            "value": sum(_deal_value(d) for d in sa),
+            "count": len(sa),
+            "products": products,
+        })
+    other_breakdown.sort(key=lambda x: x["value"], reverse=True)
+    pipelines["other"]["breakdown"] = other_breakdown
+
     return {
         "totals": {
             "total_value": total_value,
@@ -1470,6 +1591,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
             "live_count": len(live),
             "win_rate": win_rate,
         },
+        "pipelines": pipelines,
         "funnel": funnel,
         "by_category": by_category,
     }
