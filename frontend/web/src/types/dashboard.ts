@@ -16,6 +16,12 @@ export interface MdDashboardResponse {
     total_deals: number;
     /** Open weighted/absolute pipeline value (currency units). */
     pipeline_value: number;
+    /** Manager-assured (validated) pipeline value — the management anchor. */
+    validated_value?: number;
+    /** Value still pending validation/assurance. */
+    pending_value?: number;
+    /** Count of deals pending validation (manager scope). */
+    pending_validation?: number;
     /** Closed-won value. */
     won_value: number;
   };

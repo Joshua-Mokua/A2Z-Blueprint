@@ -158,8 +158,9 @@ export function Dashboard() {
           Pipeline
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Stat label="Open Pipeline Value"
-                value={show((x) => kes(x.pipeline.pipeline_value))}
+          <Stat label="Assured Pipeline Value"
+                value={show((x) => kes(x.pipeline.validated_value ?? 0))}
+                sub={show((x) => `${kes(x.pipeline.pending_value ?? 0)} pending assurance`)}
                 loading={loading} />
           <Stat label="Closed-Won Value"
                 value={show((x) => kes(x.pipeline.won_value))}

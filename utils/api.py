@@ -1361,10 +1361,30 @@ def pipeline_submit_to_credit(
         "lms_application_id": app_id,
         "submitted_to_credit": True,
     }, str(user.get("username", "")))
+    # Debt #2 (v10.589): advance the deal one stage past Credit Assessment in
+    # its configured product-class flow, so the pipeline reflects that the deal
+    # has moved into the credit/offer phase rather than sitting frozen at
+    # Credit Assessment while its loan progresses. Config-driven via stage_flows;
+    # never auto-advances into a terminal Closed stage.
+    try:
+        _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+        _cur = str(deal.get("stage", "") or "")
+        if _cur in _flow:
+            _idx = _flow.index(_cur)
+            if 0 <= _idx < len(_flow) - 1:
+                _next = str(_flow[_idx + 1])
+                if not _next.lower().startswith("closed"):
+                    pm.update_stage(deal_id, _next,
+                                    f"Auto-advanced on submit to credit (app {app_id}).",
+                                    str(user.get("username", "")))
+    except Exception:
+        # Stage sync is best-effort — never fail a successful submission on it.
+        pass
     deal = _get_or_hydrate_deal(pm, deal_id)
     _db_sync_pipeline_deal(deal)
     _audit("API_PIPELINE_SUBMIT_TO_CREDIT_OK", user, f"deal_id={deal_id} app={app_id}")
-    return {"application_id": app_id, "status": "submitted_to_credit", "missing": []}
+    return {"application_id": app_id, "status": "submitted_to_credit",
+            "missing": [], "stage": deal.get("stage")}
 
 
 # ── Pipeline analytics (v10.575 Batch B11) ───────────────────────────
@@ -2623,6 +2643,9 @@ def md_dashboard(user: dict = Depends(get_current_user)):
                     "total_staff":bsc.get("total_staff",0)},
         "pipeline":{"total_deals":pipe.get("totals",{}).get("total_deals",0),
                     "pipeline_value":pipe.get("totals",{}).get("pipeline_value",0),
+                    "validated_value":pipe.get("totals",{}).get("validated_value",0),
+                    "pending_value":pipe.get("totals",{}).get("pending_value",0),
+                    "pending_validation":pipe.get("totals",{}).get("pending_validation",0),
                     "won_value":pipe.get("totals",{}).get("won_value",0)},
         "credit":  {"total_accounts":credit.get("totals",{}).get("total_accounts",0),
                     "outstanding_bn":credit.get("totals",{}).get("outstanding_bn",0),
