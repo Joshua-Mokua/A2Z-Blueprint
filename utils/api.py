@@ -440,7 +440,13 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                f"ON CONFLICT (id) DO UPDATE SET {updates}")
         _db.execute(sql, tuple(row[c] for c in cols))
     except Exception as e:
-        logger.error(f"Pipeline deal DB sync failed for {deal.get('id')}: {e}")
+        # B13: do NOT swallow. A deal that can't persist to Postgres must fail
+        # loudly — silent swallowing is exactly what let JSON and the DB drift
+        # (deals invisible to DB-first reads). DB-unavailable is handled by the
+        # early return above; reaching here means Postgres is up but the write
+        # errored, which is a real fault the caller needs to see.
+        logger.error(f"Pipeline deal DB sync FAILED for {deal.get('id')}: {e}")
+        raise
 
 
 def _normalize_db_deal_row(row):
@@ -1344,12 +1350,13 @@ def pipeline_submit_to_credit(
 # list endpoint uses (Postgres-first, JSON fallback) so the funnel agrees
 # with the list a user sees.
 
-# B12 (2026-06-16): pipeline reads are JSON-first. The JSON store
-# (PipelineManager) is the synchronous source of truth for every
-# create/mutation; Postgres is a best-effort mirror that lagged (15 of 17
-# deals were JSON-only, invisible to DB-first reads). Flip back to True only
-# once the DB sync is guaranteed — see PENDING: unify pipeline reads on Postgres.
-_PIPELINE_READ_DB_FIRST = False
+# B13 (2026-06-16): pipeline reads are Postgres-first, honoring the standing
+# rule that all data lives in PostgreSQL. This is now safe because the write
+# path is reliable: _db_sync_pipeline_deal raises on failure (no silent
+# swallow) and pipeline_deal_create verifies the row landed in Postgres — so a
+# deal cannot exist in JSON without also being in the DB. (B12 had flipped this
+# to JSON-first as an emergency patch when the sync was best-effort.)
+_PIPELINE_READ_DB_FIRST = True
 
 _STAGE_WEIGHTS = {
     "Lead": 0.05, "Contacted": 0.10, "Qualified": 0.25, "Proposal": 0.40,
@@ -1658,7 +1665,27 @@ def pipeline_deal_create(
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
     new_id = pm.add_deal(deal_dict)
-    _db_sync_pipeline_deal(pm.get_deal(new_id))  # H5: mirror to DB-backed reads
+    try:
+        _db_sync_pipeline_deal(pm.get_deal(new_id))  # mirror to Postgres (raises on failure)
+        # B13: verify the row actually landed (guards against a silent no-op).
+        if _db_available():
+            from utils.db import db as _db
+            if not _db.fetch_all(
+                    "SELECT id FROM pipeline_deals WHERE id = %s", (new_id,)):
+                raise RuntimeError(
+                    f"Deal {new_id} not present in Postgres after sync")
+    except Exception as e:
+        # Atomic create: roll back the JSON add so JSON and Postgres never
+        # diverge — the deal is in BOTH stores or NEITHER. Honors the standing
+        # rule that PostgreSQL is the source of truth.
+        try:
+            pm.delete_deal(new_id, str(user.get("username", "")))
+        except Exception:
+            logger.error(f"Rollback delete failed for {new_id}")
+        _audit("API_PIPELINE_CREATE_DB_FAILED", user, f"deal_id={new_id} err={e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not persist the deal to PostgreSQL — no deal was created.")
 
     # Mirror Streamlit's emission convention (DEAL_ADDED, line 965)
     _audit("DEAL_ADDED", user,
