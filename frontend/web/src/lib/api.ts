@@ -814,6 +814,37 @@ export async function authorizeCreditAdminCase(
   );
 }
 
+// ── P4 secured-lending fetchers ──
+import type {
+  ClassifyConditionRequest, ClassifyFacilityRequest, LinkCollateralRequest,
+  LegalAssignRequest, LegalCommentRequest, LegalOutcomeRequest,
+  AddPerfectionRequest, UpdatePerfectionRequest, AddInsuranceRequest,
+  OverrideRequestBody, DisbursementGate,
+} from '@/types/creditAdmin';
+
+const caPost = <B,>(caseId: string, path: string, body: B) =>
+  postJson<CreditAdminMutationResponse, B>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/${path}`, body);
+
+export const classifyCondition = (id: string, b: ClassifyConditionRequest) => caPost(id, 'conditions/classify', b);
+export const classifyFacility  = (id: string, b: ClassifyFacilityRequest)  => caPost(id, 'classify-facility', b);
+export const linkCollateral    = (id: string, b: LinkCollateralRequest)    => caPost(id, 'collateral/link', b);
+export const unlinkCollateral  = (id: string, collateral_id: string)       => caPost(id, 'collateral/unlink', { collateral_id });
+export const legalAssign       = (id: string, b: LegalAssignRequest)       => caPost(id, 'legal/assign', b);
+export const legalComment      = (id: string, b: LegalCommentRequest)      => caPost(id, 'legal/comment', b);
+export const legalOutcome      = (id: string, b: LegalOutcomeRequest)      => caPost(id, 'legal/outcome', b);
+export const addPerfection     = (id: string, b: AddPerfectionRequest)     => caPost(id, 'perfection', b);
+export const updatePerfection  = (id: string, pid: string, b: UpdatePerfectionRequest) => caPost(id, `perfection/${encodeURIComponent(pid)}/update`, b);
+export const addInsurance      = (id: string, b: AddInsuranceRequest)      => caPost(id, 'insurance', b);
+export const updateInsurance   = (id: string, iid: string, b: Record<string, unknown>) => caPost(id, `insurance/${encodeURIComponent(iid)}/update`, b);
+export const requestOverride   = (id: string, b: OverrideRequestBody)      => caPost(id, 'perfection-override/request', b);
+export const approveOverride   = (id: string)                             => caPost(id, 'perfection-override/approve', {});
+
+export async function fetchDisbursementGate(caseId: string): Promise<DisbursementGate> {
+  return getJson<DisbursementGate>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/disbursement-gate`);
+}
+
 
 // ──────────────────────────────────────────────────────────────────────
 // CBS (Core Banking System) lookup fetchers

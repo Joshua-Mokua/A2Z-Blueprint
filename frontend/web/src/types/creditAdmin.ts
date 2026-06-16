@@ -27,10 +27,95 @@ export interface CreditAdminCondition {
   type:        string;
   required?:   boolean;
   fulfilled?:  boolean;
+  // P4-2: CP/CS first-class
+  classification?: 'precedent' | 'subsequent';
+  mandatory?:  boolean;
+  due_date?:   string | null;
   date_set?:   string;
   date_met?:   string | null;
   officer?:    string;
   notes?:      string;
+}
+
+
+// ── P4 secured-lending structures ───────────────────────────────────────
+
+export type SecurityClassification =
+  | 'unsecured' | 'partially_secured' | 'fully_secured' | 'over_secured';
+
+export interface LinkedCollateral {
+  collateral_id:        string;
+  collateral_type:      string;
+  forced_sale_value?:   number;
+  market_value?:        number | null;
+  currency?:            string;
+  allocated_value_kes?: number | null;
+  valuation_date?:      string | null;
+  linked_at?:           string;
+}
+
+export interface LegalReview {
+  status:                 'not_started' | 'in_review' | 'queries_raised' | 'cleared' | 'rejected';
+  assigned_officer_code?: string | null;
+  assigned_officer_name?: string | null;
+  outcome?:               'approved' | 'approved_with_conditions' | 'rejected' | null;
+  comments?:              { author_code: string; text: string; at: string }[];
+  started_at?:            string | null;
+  completed_at?:          string | null;
+  completed_by?:          string;
+}
+
+export interface SecurityPerfection {
+  id:                      string;
+  security_type:           string;
+  registration_status:     'pending' | 'lodged' | 'registered' | 'failed';
+  registration_reference?: string;
+  registration_date?:      string | null;
+  perfection_status:       'unperfected' | 'in_progress' | 'perfected' | 'lapsed';
+  perfecting_officer_code?: string;
+  notes?:                  string;
+}
+
+export interface InsurancePolicy {
+  id:                   string;
+  collateral_id?:       string;
+  insurer:              string;
+  policy_number:        string;
+  sum_insured?:         number | null;
+  currency?:            string;
+  effective_date?:      string | null;
+  expiry_date?:         string | null;
+  bank_interest_noted?: boolean;
+  status:               'active' | 'expired' | 'cancelled' | 'pending';
+  renewal_alert_days?:  number;
+}
+
+export interface PerfectionOverride {
+  status:             'pending' | 'authorized';
+  requested_by?:      string;
+  requested_at?:      string;
+  justification?:     string;
+  failures_bypassed?: GateFailure[];
+  approvals?:         { role: string; approver: string; at: string }[];
+  authorized_at?:     string;
+}
+
+export interface GateFailure {
+  check:           string;
+  reason:          string;
+  needed?:         unknown;
+  coverage_ratio?: number;
+  required_ratio?: number;
+  items?:          string[];
+}
+
+export interface DisbursementGate {
+  passed:      boolean;
+  failures:    GateFailure[];
+  secured:     boolean;
+  overridden:  boolean;
+  high_value?: boolean;
+  override?:   PerfectionOverride | null;
 }
 
 
@@ -187,3 +272,67 @@ export interface RequestAuthorizationRequest {
 export interface AuthorizeRequest {
   note?: string;
 }
+
+
+// ── P4 request bodies ───────────────────────────────────────────────────
+
+export interface ClassifyConditionRequest {
+  condition_type:  string;
+  classification?: 'precedent' | 'subsequent';
+  mandatory?:      boolean;
+  due_date?:       string;
+}
+
+export interface ClassifyFacilityRequest {
+  facility_security_type: 'unsecured' | 'secured';
+  security_subtype?:      string;
+}
+
+export interface LinkCollateralRequest {
+  collateral_id:        string;
+  collateral_type:      string;
+  forced_sale_value:    number;
+  currency?:            string;
+  market_value?:        number;
+  allocated_value_kes?: number;
+  valuation_date?:      string;
+}
+
+export interface LegalAssignRequest { officer_code: string; officer_name?: string }
+export interface LegalCommentRequest { text: string; raises_query?: boolean }
+export interface LegalOutcomeRequest {
+  outcome: 'approved' | 'approved_with_conditions' | 'rejected';
+  note?:   string;
+}
+
+export interface AddPerfectionRequest {
+  security_type:           string;
+  registration_reference?: string;
+  registration_status?:    string;
+  registration_date?:      string;
+  perfection_status?:      string;
+  officer_code?:           string;
+  notes?:                  string;
+}
+export interface UpdatePerfectionRequest {
+  registration_status?:    string;
+  registration_reference?: string;
+  registration_date?:      string;
+  perfection_status?:      string;
+  notes?:                  string;
+}
+
+export interface AddInsuranceRequest {
+  insurer:              string;
+  policy_number:        string;
+  sum_insured?:         number;
+  currency?:            string;
+  effective_date?:      string;
+  expiry_date?:         string;
+  bank_interest_noted?: boolean;
+  collateral_id?:       string;
+  status?:              string;
+  renewal_alert_days?:  number;
+}
+
+export interface OverrideRequestBody { justification: string }

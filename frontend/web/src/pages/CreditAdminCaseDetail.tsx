@@ -27,6 +27,7 @@ import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
+import { DisbursementGatePanel } from '@/components/DisbursementGatePanel';
 import {
   caseStatusTone,
   caseStatusLabel,
@@ -352,6 +353,10 @@ export function CreditAdminCaseDetail() {
             run={(id, note) => mutations.authorize(id, { note })}
             okMsg="Case authorized for disbursement." />
         )}
+
+        {/* P4-6: secured-lending disbursement gate + controlled override.
+            Renders only for secured facilities (component self-hides otherwise). */}
+        <DisbursementGatePanel caseId={caseRecord.id} onChange={refetch} />
 
         {/* Disburse action panel (if can_disburse) */}
         {permissions.can_disburse && (

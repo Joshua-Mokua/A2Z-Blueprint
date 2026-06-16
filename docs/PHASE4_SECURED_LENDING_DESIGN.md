@@ -612,3 +612,22 @@ Corrected model (add_override_approval):
   - 'admin' approval      -> pilot superuser, satisfies any tier (audited)
 This is also the more faithful banking model. Tests unchanged (6 pass); live
 probe now: blocked -> override authorized -> disburse under override.
+
+## React-A — Disbursement gate UI + override + data layer: DELIVERED (frontend — tsc gate)
+
+- types/creditAdmin.ts: CP/CS condition fields; SecurityClassification; LinkedCollateral,
+  LegalReview, SecurityPerfection, InsurancePolicy, PerfectionOverride, GateFailure,
+  DisbursementGate; all P4 request bodies.
+- lib/api.ts: full P4 fetcher set (classifyCondition/Facility, link/unlinkCollateral,
+  legalAssign/Comment/Outcome, add/updatePerfection, add/updateInsurance,
+  requestOverride/approveOverride, fetchDisbursementGate).
+- components/DisbursementGatePanel.tsx (NEW): self-contained — reads /disbursement-gate,
+  renders the green/red control checklist; when blocked, a controlled-override flow that
+  shows the authority TIER (high-value: HoC AND CRO AND MD; standard: any one) with
+  per-role approval badges, justification capture, request + approve. Self-hides for
+  unsecured facilities.
+- pages/CreditAdminCaseDetail.tsx: renders DisbursementGatePanel above the disburse panel.
+- Syntax-checked via esbuild; canonical gate is `pnpm tsc --noEmit`.
+- NEXT (React-A2): per-domain entry panels (facility classify, CP/CS classify, collateral
+  link, legal, perfection, insurance) so credit-admin can SET what the checklist reads.
+  Then React-B: FCY/LCY dashboard consumption.
