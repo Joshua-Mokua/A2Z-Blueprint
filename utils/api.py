@@ -1785,6 +1785,24 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         b["value"] += _deal_value(d)
         b["count"] += 1
 
+    # by_unit (branch / org unit) and by_rm (relationship manager) — the org
+    # dimensions for executive drill-down. Both straight off the deal record.
+    _unit: dict = {}
+    for d in live:
+        u = d.get("unit") or "Unassigned"
+        e = _unit.setdefault(u, {"unit": u, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_unit = sorted(_unit.values(), key=lambda x: x["value"], reverse=True)
+
+    _rm: dict = {}
+    for d in live:
+        nm = d.get("staff_name") or d.get("staff_code") or "Unassigned"
+        e = _rm.setdefault(nm, {"rm": nm, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_rm = sorted(_rm.values(), key=lambda x: x["value"], reverse=True)[:25]
+
     return {
         "totals": {
             "total_value": total_value,
@@ -1804,6 +1822,8 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_currency_book": _by_currency_book,
+        "by_unit": _by_unit,
+        "by_rm": _by_rm,
     }
 
 

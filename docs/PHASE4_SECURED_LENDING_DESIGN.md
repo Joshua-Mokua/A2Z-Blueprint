@@ -771,3 +771,18 @@ fixed, so the distinctiveness is in hierarchy + restraint.
 - This is a DIRECTION exemplar on the highest-visibility surface. Pending Josh's
   reaction before propagating the treatment (gold accents, hero pattern, spacing)
   to Analytics and the rest.
+
+## #5a — Executive drill dimensions (backend foundation): DELIVERED
+
+Feedback (screenshot): the dashboard hero LUMPS the whole pipeline into one
+figure and duplicates the sections below — execs need to DRILL DOWN. Scope
+narrowed to pipeline + credit, improved incrementally.
+
+- _compute_pipeline_analytics += by_unit (branch/org unit) and by_rm
+  (relationship manager) — straight off the deal record (unit, staff_name).
+  product/sector/currency/stage already existed; this completes the org axes.
+- Harness: by_unit + by_rm present.
+- NEXT (#5b, pending Josh's UI-model confirmation): interactive drill on the
+  Analytics page — dimension picker (Product/Sector/Currency/Stage/Branch/RM)
+  re-slices the view; then de-lump the dashboard so it LINKS into drill-downs
+  instead of repeating section totals. Credit drill (class/branch/NPL) parallel.

@@ -483,6 +483,13 @@ def sector_mou_probe(base):
                   and abs(float(an_fcy) - float(dash_fcy)) < max(1.0, float(dash_fcy or 0) * 0.001))
     step("analytics FCY == dashboard FCY (KES-equiv, no drift)", True, bool(consistent),
          note=f"analytics={an_fcy} vs dashboard={dash_fcy}")
+    # #5a: org drill dimensions for executive drill-down.
+    by_unit = an.get("by_unit", []) if isinstance(an, dict) else []
+    by_rm = an.get("by_rm", []) if isinstance(an, dict) else []
+    step("analytics: by_unit (branch) drill dimension present", True, len(by_unit) >= 1,
+         note=f"{len(by_unit)} units; top={by_unit[0].get('unit') if by_unit else '—'}")
+    step("analytics: by_rm drill dimension present", True, len(by_rm) >= 1,
+         note=f"{len(by_rm)} RMs")
 
 
 # ── MD dashboard sanity: assured split present ──────────────────────────
