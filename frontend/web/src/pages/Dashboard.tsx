@@ -10,6 +10,7 @@
 // until then these give a sensible red/amber/green without inventing
 // precise numbers into the data layer.
 
+import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useMdDashboard } from '@/hooks/useMdDashboard';
@@ -49,6 +50,7 @@ function abbrev(n: number): string {
 }
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { branding, loading: brandingLoading } = useBranding();
   const { user } = useRole();
   const { data, loading, error, refetch } = useMdDashboard();
@@ -110,9 +112,12 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Hero figure */}
+          {/* Hero figure — entry points into the drill-downs */}
           <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-end pt-6 pb-6">
-            <div>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="text-left rounded-lg -mx-2 px-2 py-1 transition-colors hover:bg-white/5"
+            >
               <div className="text-[11px] uppercase tracking-[2px] font-semibold"
                    style={{ color: branding.brand.accent }}>
                 Total pipeline · KES-equivalent
@@ -124,19 +129,21 @@ export function Dashboard() {
                 <span>Local (LCY) {show((x) => kes(x.pipeline.lcy_value ?? 0))}</span>
                 <span>Foreign (FCY) {show((x) => kes(x.pipeline.fcy_value ?? 0))}</span>
                 <span>{show((x) => x.pipeline.total_deals.toLocaleString())} live deals</span>
+                <span style={{ color: branding.brand.accent }}>Drill into pipeline →</span>
               </div>
-            </div>
+            </button>
             <div className="grid grid-cols-3 gap-3">
               {([
-                ['BSC avg', show((x) => x.bsc.overall_avg.toFixed(1))],
-                ['NPL ratio', show((x) => `${x.credit.npl_ratio_pct}%`)],
-                ['Assured', show((x) => kes(x.pipeline.validated_value ?? 0))],
-              ] as [string, string][]).map(([lbl, val]) => (
-                <div key={lbl} className="rounded-lg px-3 py-2"
+                ['BSC avg', show((x) => x.bsc.overall_avg.toFixed(1)), '/perform'],
+                ['NPL ratio', show((x) => `${x.credit.npl_ratio_pct}%`), '/credit-analytics'],
+                ['Assured', show((x) => kes(x.pipeline.validated_value ?? 0)), '/analytics'],
+              ] as [string, string, string][]).map(([lbl, val, to]) => (
+                <button key={lbl} onClick={() => navigate(to)}
+                     className="text-left rounded-lg px-3 py-2 transition-colors hover:brightness-125"
                      style={{ background: 'rgba(255,255,255,0.08)' }}>
                   <div className="text-[10px] uppercase tracking-wider opacity-60">{lbl}</div>
                   <div className="text-lg font-semibold mt-0.5 tabular-nums">{val}</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -158,9 +165,15 @@ export function Dashboard() {
         )}
 
         {/* Performance & Risk — RAG tiles */}
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
-          Performance &amp; Risk
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Performance &amp; Risk
+          </h2>
+          <button onClick={() => navigate('/credit-analytics')}
+                  className="text-xs font-medium text-brand-primary hover:underline">
+            Credit drill →
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiTile
             label="BSC Score (bank avg)"
@@ -191,9 +204,15 @@ export function Dashboard() {
         </div>
 
         {/* Pipeline */}
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
-          Pipeline
-        </h2>
+        <div className="flex items-center justify-between mt-8 mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Pipeline
+          </h2>
+          <button onClick={() => navigate('/analytics')}
+                  className="text-xs font-medium text-brand-primary hover:underline">
+            Pipeline drill →
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Stat label="Assured Pipeline Value"
                 value={show((x) => kes(x.pipeline.validated_value ?? 0))}

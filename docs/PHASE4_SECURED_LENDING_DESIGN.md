@@ -933,3 +933,19 @@ Mirrors the pipeline Analytics page, pointed at /api/credit/analytics + drill:
 - Hierarchy-scoped: an individual sees only their subtree's loan book.
 
 REMAINING: dashboard de-lump (hero figures link into pipeline + credit drills).
+
+## #12 — Dashboard de-lump (frontend): DELIVERED (tsc gate)
+
+Answers the original critique ("lumping up the entire pipeline ... need to drill
+down"). The hero figures are now DOORS, not a billboard:
+- Total Pipeline block -> /analytics (pipeline drill), with a "Drill into
+  pipeline →" affordance.
+- Glass read-outs: BSC -> /perform, NPL -> /credit-analytics, Assured ->
+  /analytics.
+- Section headers gained drill links: Performance & Risk -> "Credit drill →"
+  (/credit-analytics); Pipeline -> "Pipeline drill →" (/analytics).
+The lumped numbers now lead somewhere. (Further de-duplication of the repeated
+section tiles can follow if desired.)
+
+=== ARC COMPLETE: pipeline + credit drill-down, hierarchy-scoped, with the
+dashboard as the launchpad. ===
