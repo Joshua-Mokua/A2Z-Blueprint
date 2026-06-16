@@ -556,6 +556,8 @@ export interface PipelineAnalyticsTotals {
 
 export interface ProductBreakdown { product: string; value: number; count: number; won_value: number }
 export interface SectorBreakdown  { sector: string; value: number; count: number }
+export interface UnitBreakdown    { unit: string; value: number; count: number }
+export interface RmBreakdown      { rm: string; value: number; count: number }
 export interface CurrencyBookSplit { value: number; count: number }
 
 export interface PipelineAnalyticsResponse {
@@ -571,4 +573,6 @@ export interface PipelineAnalyticsResponse {
   by_product?:        ProductBreakdown[];
   by_sector?:         SectorBreakdown[];
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
+  by_unit?:           UnitBreakdown[];
+  by_rm?:             RmBreakdown[];
 }

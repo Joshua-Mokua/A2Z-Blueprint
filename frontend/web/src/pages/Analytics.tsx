@@ -2,13 +2,12 @@
 // dashboard-consistent) and showcases the pipeline across products, sectors,
 // currency book, the conversion funnel, and the four product-class pipelines.
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
-import { DonutChart } from '@/components/charts/DonutChart';
 
 function abbrev(n: number): string {
   const a = Math.abs(n);
@@ -37,23 +36,6 @@ export function Analytics() {
   const sym = branding?.currency_symbol ?? 'KES';
   const kes = (n: number) => `${sym} ${abbrev(n)}`;
 
-  const productData = useMemo(
-    () => (data?.by_product ?? []).slice(0, 10),
-    [data],
-  );
-  const sectorData = useMemo(
-    () => (data?.by_sector ?? []).map((s) => ({ name: s.sector, value: s.value })),
-    [data],
-  );
-  const currencyData = useMemo(() => {
-    const cb = data?.by_currency_book;
-    if (!cb) return [];
-    return [
-      { name: 'Local (LCY)',   value: cb.LCY?.value ?? 0 },
-      { name: 'Foreign (FCY)', value: cb.FCY?.value ?? 0 },
-    ];
-  }, [data]);
-
   if (loading) {
     return (
       <div className="p-6 max-w-6xl mx-auto space-y-4">
@@ -79,6 +61,34 @@ export function Analytics() {
     { key: 'other',     b: data.pipelines.other },
   ];
 
+  // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
+  // a normalized [{label, value, count}] list. Branch/RM may be thin until the
+  // pipeline carries populated unit/RM data (see seed-data note).
+  const DIMENSIONS = ['Product', 'Sector', 'Stage', 'Currency', 'Branch', 'RM'] as const;
+  type Dimension = typeof DIMENSIONS[number];
+
+  const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
+    switch (dim) {
+      case 'Product':
+        return (data.by_product ?? []).map((x) => ({ label: x.product, value: x.value, count: x.count }));
+      case 'Sector':
+        return (data.by_sector ?? []).map((x) => ({ label: x.sector, value: x.value, count: x.count }));
+      case 'Stage':
+        return (data.funnel ?? []).map((x) => ({ label: x.stage, value: x.value, count: x.count }));
+      case 'Currency': {
+        const cb = data.by_currency_book;
+        return cb ? [
+          { label: 'Local (LCY)',   value: cb.LCY?.value ?? 0, count: cb.LCY?.count ?? 0 },
+          { label: 'Foreign (FCY)', value: cb.FCY?.value ?? 0, count: cb.FCY?.count ?? 0 },
+        ] : [];
+      }
+      case 'Branch':
+        return (data.by_unit ?? []).map((x) => ({ label: x.unit, value: x.value, count: x.count }));
+      case 'RM':
+        return (data.by_rm ?? []).map((x) => ({ label: x.rm, value: x.value, count: x.count }));
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h1 className="text-xl font-semibold text-gray-900">Pipeline Analytics</h1>
@@ -97,57 +107,8 @@ export function Analytics() {
               sub={`${t.active_count} active`} />
       </div>
 
-      {/* Product mix */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
-        Pipeline by Product
-      </h2>
-      <Card><Card.Body>
-        {productData.length > 0 ? (
-          <CategoryBarChart
-            data={productData as unknown as Array<Record<string, unknown>>}
-            xKey="product"
-            series={[{ key: 'value', label: 'Pipeline value' }]}
-            height={300}
-          />
-        ) : <p className="text-sm text-gray-500">No product data.</p>}
-      </Card.Body></Card>
-
-      {/* Sector + Currency book */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <Card>
-          <Card.Header>By Sector</Card.Header>
-          <Card.Body>
-            {sectorData.length > 0 ? (
-              <DonutChart data={sectorData} height={280} />
-            ) : <p className="text-sm text-gray-500">No sector data.</p>}
-          </Card.Body>
-        </Card>
-        <Card>
-          <Card.Header>Currency Book (KES-equiv.)</Card.Header>
-          <Card.Body>
-            {currencyData.length > 0 ? (
-              <DonutChart data={currencyData} height={280}
-                          centerLabel="Total"
-                          centerValue={abbrev(currencyData.reduce((s, d) => s + d.value, 0))} />
-            ) : <p className="text-sm text-gray-500">No currency data.</p>}
-          </Card.Body>
-        </Card>
-      </div>
-
-      {/* Conversion funnel */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
-        Conversion Funnel (assured)
-      </h2>
-      <Card><Card.Body>
-        {data.funnel.length > 0 ? (
-          <CategoryBarChart
-            data={data.funnel as unknown as Array<Record<string, unknown>>}
-            xKey="stage"
-            series={[{ key: 'value', label: 'Value' }]}
-            height={280}
-          />
-        ) : <p className="text-sm text-gray-500">No funnel data.</p>}
-      </Card.Body></Card>
+      {/* Model A slicer */}
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} />
 
       {/* Product-class pipelines */}
       <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
@@ -167,5 +128,81 @@ export function Analytics() {
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
+function PipelineSlicer({
+  dimensions, sliceFor, kes,
+}: {
+  dimensions: readonly string[];
+  sliceFor: (d: never) => { label: string; value: number; count: number }[];
+  kes: (n: number) => string;
+}) {
+  const [dim, setDim] = useState<string>('Product');
+  const rows = useMemo(
+    () => sliceFor(dim as never).slice().sort((a, b) => b.value - a.value),
+    [dim, sliceFor],
+  );
+  const total = useMemo(() => rows.reduce((s, r) => s + r.value, 0), [rows]);
+  const chartData = rows.slice(0, 12).map((r) => ({ label: r.label, value: r.value }));
+
+  return (
+    <>
+      <div className="flex items-center justify-between mt-8 mb-3 flex-wrap gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Slice pipeline by
+        </h2>
+        <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+          {dimensions.map((d) => (
+            <button
+              key={d}
+              onClick={() => setDim(d)}
+              className={`px-3 py-1.5 text-sm transition-colors ${
+                dim === d ? 'bg-brand-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Card><Card.Body>
+        {rows.length === 0 ? (
+          <p className="text-sm text-gray-500">No data for this dimension yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CategoryBarChart
+              data={chartData as unknown as Array<Record<string, unknown>>}
+              xKey="label"
+              series={[{ key: 'value', label: 'Pipeline value' }]}
+              height={Math.max(220, chartData.length * 26)}
+            />
+            <div className="overflow-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-gray-500 border-b">
+                  <th className="py-1 pr-3">{/* label */}</th>
+                  <th className="py-1 pr-3 text-right">Value</th>
+                  <th className="py-1 pr-3 text-right">Deals</th>
+                  <th className="py-1 text-right">Share</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.label} className="border-b last:border-0">
+                      <td className="py-1 pr-3">{r.label}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{kes(r.value)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{r.count}</td>
+                      <td className="py-1 text-right tabular-nums">
+                        {total > 0 ? `${((r.value / total) * 100).toFixed(1)}%` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Card.Body></Card>
+    </>
   );
 }

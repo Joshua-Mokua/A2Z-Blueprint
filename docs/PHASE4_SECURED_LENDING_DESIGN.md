@@ -786,3 +786,21 @@ narrowed to pipeline + credit, improved incrementally.
   Analytics page — dimension picker (Product/Sector/Currency/Stage/Branch/RM)
   re-slices the view; then de-lump the dashboard so it LINKS into drill-downs
   instead of repeating section totals. Credit drill (class/branch/NPL) parallel.
+
+## #5b — Model A pipeline drill (frontend): DELIVERED (tsc gate)
+
+- Analytics page: replaced the static product-bar + sector/currency donuts with
+  a PipelineSlicer — a dimension picker (Product / Sector / Stage / Currency /
+  Branch / RM). Selecting a dimension re-slices the pipeline into a bar chart +
+  a breakdown table (value, deals, % share). KES-equivalent throughout.
+- types/pipeline.ts: by_unit / by_rm breakdown types.
+- Handles thin dimensions gracefully ("No data for this dimension yet").
+
+### SEED-DATA REALITY (flagged to Josh — NOT a UI defect)
+The drill is only as good as the data. The current DB pipeline (~453 deals) is
+dominated by accumulated SIMULATION/test deals created by 1-2 harness personas
+with no `unit` set — so Branch collapses to "Unassigned" and RM shows ~2 names.
+Product (13) and Stage have real spread. For the pitch, regenerate a realistic
+pipeline seed: deals spread across the 35 branches / 232 RMs / CBK sectors so
+the Branch/RM/Sector drills populate. This is a data-generation task (Josh's
+domain: generators at project root), separate from the drill UI which is correct.
