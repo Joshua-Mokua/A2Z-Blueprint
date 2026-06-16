@@ -743,3 +743,16 @@ by_sector collapsed to Unclassified on DB-first reads).
 
 Harness: new assertion "analytics FCY == dashboard FCY (KES-equiv, no drift)".
 This is the same native-vs-KES class the React-B-fix caught — different read path.
+
+## #3b — Analytics page (frontend): DELIVERED (tsc gate)
+
+- types/pipeline.ts: PipelineAnalyticsResponse += by_product / by_sector /
+  by_currency_book (ProductBreakdown, SectorBreakdown, CurrencyBookSplit).
+- hooks/useAnalytics.ts (NEW): mirrors useMdDashboard.
+- pages/Analytics.tsx (NEW): headline KPIs (assured/weighted/won/win-rate/live),
+  product mix bar chart, sector + currency-book donuts, conversion funnel,
+  product-class pipeline cards. Reuses existing CategoryBarChart/DonutChart
+  (recharts v2). KES-equivalent throughout — consistent with the dashboard.
+- App.tsx: /analytics route. Sidebar: Analytics nav item after Pipeline.
+- "Showcase all products and items" (#3) now has a real surface.
+- REMAINING: #4 UX/design pass over dashboard + analytics together.

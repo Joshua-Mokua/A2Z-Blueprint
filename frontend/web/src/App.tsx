@@ -70,6 +70,7 @@ import { Showcase } from './pages/Showcase';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { Pipeline } from './pages/Pipeline';
+import { Analytics } from './pages/Analytics';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
@@ -134,6 +135,7 @@ function App() {
                     <Route path="/pipeline/new"     element={<PipelineCreate />} />
                     <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
+                    <Route path="/analytics" element={<Analytics />} />
 
                     {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
                     <Route path="/lms"         element={<Lms />} />

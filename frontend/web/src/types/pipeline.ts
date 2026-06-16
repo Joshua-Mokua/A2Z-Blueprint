@@ -554,6 +554,10 @@ export interface PipelineAnalyticsTotals {
   pending_cancel:     number;
 }
 
+export interface ProductBreakdown { product: string; value: number; count: number; won_value: number }
+export interface SectorBreakdown  { sector: string; value: number; count: number }
+export interface CurrencyBookSplit { value: number; count: number }
+
 export interface PipelineAnalyticsResponse {
   totals:       PipelineAnalyticsTotals;
   pipelines: {
@@ -564,4 +568,7 @@ export interface PipelineAnalyticsResponse {
   };
   funnel:       FunnelStage[];
   by_category:  unknown[];
+  by_product?:        ProductBreakdown[];
+  by_sector?:         SectorBreakdown[];
+  by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
 }

@@ -51,6 +51,11 @@ const NAV_ITEMS: NavItem[] = [
       (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')),
   },
   {
+    path:        '/analytics',
+    label:       'Analytics',
+    matchActive: (p) => p.startsWith('/analytics'),
+  },
+  {
     path:        '/pipeline/queues',
     label:       'Manager Queues',
     matchActive: (p) => p.startsWith('/pipeline/queues'),
