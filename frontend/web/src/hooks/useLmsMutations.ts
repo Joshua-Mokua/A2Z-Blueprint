@@ -18,6 +18,14 @@ import {
   assignLmsAnalyst,
   updateLmsApplication,
   recordLmsDecision,
+  requestLmsInfo,
+  provideLmsInfo,
+  signLmsOffer,
+  validateLmsOffer,
+  confirmLmsToCreditAdmin,
+  referLmsCommittee,
+  voteLmsCommittee,
+  resolveLmsCommittee,
   ApiValidationError,
   AuthExpiredError,
 } from '@/lib/api';
@@ -25,6 +33,13 @@ import type {
   AssignAnalystRequest,
   LoanAppUpdateRequest,
   RecordDecisionRequest,
+  RequestInfoRequest,
+  ProvideInfoRequest,
+  SignOfferRequest,
+  ValidateOfferRequest,
+  ConfirmToCreditAdminRequest,
+  CommitteeVoteRequest,
+  ResolveCommitteeRequest,
   LoanAppMutationResponse,
 } from '@/types/lms';
 
@@ -42,6 +57,14 @@ export interface LmsMutationsHookValue {
   update:          (appId: string, body: LoanAppUpdateRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   /** Record decision (manager-tier, status=submitted|assigned). */
   recordDecision:  (appId: string, body: RecordDecisionRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  requestInfo:     (appId: string, body: RequestInfoRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  provideInfo:     (appId: string, body: ProvideInfoRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  signOffer:       (appId: string, body: SignOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  validateOffer:   (appId: string, body: ValidateOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  confirmToCreditAdmin: (appId: string, body: ConfirmToCreditAdminRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  referCommittee:  (appId: string) => Promise<MutationResult<LoanAppMutationResponse>>;
+  voteCommittee:   (appId: string, body: CommitteeVoteRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  resolveCommittee:(appId: string, body: ResolveCommitteeRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   /** True while any mutation from this instance is in flight. */
   loading:         boolean;
 }
@@ -92,5 +115,27 @@ export function useLmsMutations(): LmsMutationsHookValue {
     [runMutation],
   );
 
-  return { assign, update, recordDecision, loading };
+  const requestInfo = useCallback(
+    (appId: string, body: RequestInfoRequest) => runMutation(requestLmsInfo, appId, body), [runMutation]);
+  const provideInfo = useCallback(
+    (appId: string, body: ProvideInfoRequest) => runMutation(provideLmsInfo, appId, body), [runMutation]);
+  const signOffer = useCallback(
+    (appId: string, body: SignOfferRequest) => runMutation(signLmsOffer, appId, body), [runMutation]);
+  const validateOffer = useCallback(
+    (appId: string, body: ValidateOfferRequest) => runMutation(validateLmsOffer, appId, body), [runMutation]);
+  const confirmToCreditAdmin = useCallback(
+    (appId: string, body: ConfirmToCreditAdminRequest) => runMutation(confirmLmsToCreditAdmin, appId, body), [runMutation]);
+  const referCommittee = useCallback(
+    (appId: string) => runMutation((id: string, _b: Record<string, never>) => referLmsCommittee(id), appId, {} as Record<string, never>), [runMutation]);
+  const voteCommittee = useCallback(
+    (appId: string, body: CommitteeVoteRequest) => runMutation(voteLmsCommittee, appId, body), [runMutation]);
+  const resolveCommittee = useCallback(
+    (appId: string, body: ResolveCommitteeRequest) => runMutation(resolveLmsCommittee, appId, body), [runMutation]);
+
+  return {
+    assign, update, recordDecision,
+    requestInfo, provideInfo, signOffer, validateOffer, confirmToCreditAdmin,
+    referCommittee, voteCommittee, resolveCommittee,
+    loading,
+  };
 }

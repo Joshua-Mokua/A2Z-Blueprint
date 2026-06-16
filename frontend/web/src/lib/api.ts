@@ -572,6 +572,13 @@ import type {
   AssignAnalystRequest,
   LoanAppUpdateRequest,
   RecordDecisionRequest,
+  RequestInfoRequest,
+  ProvideInfoRequest,
+  SignOfferRequest,
+  ValidateOfferRequest,
+  ConfirmToCreditAdminRequest,
+  CommitteeVoteRequest,
+  ResolveCommitteeRequest,
 } from '@/types/lms';
 
 
@@ -666,6 +673,35 @@ export async function recordLmsDecision(
     `/lms/applications/${encodeURIComponent(appId)}/decision`,
     body,
   );
+}
+
+// ── Credit workflow fetchers (v10.587) ──
+const lmsAction = (appId: string, action: string) =>
+  `/lms/applications/${encodeURIComponent(appId)}/${action}`;
+
+export async function requestLmsInfo(appId: string, body: RequestInfoRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, RequestInfoRequest>(lmsAction(appId, 'request-info'), body);
+}
+export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, ProvideInfoRequest>(lmsAction(appId, 'provide-info'), body);
+}
+export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
+}
+export async function validateLmsOffer(appId: string, body: ValidateOfferRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, ValidateOfferRequest>(lmsAction(appId, 'validate-offer'), body);
+}
+export async function confirmLmsToCreditAdmin(appId: string, body: ConfirmToCreditAdminRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, ConfirmToCreditAdminRequest>(lmsAction(appId, 'confirm-to-credit-admin'), body);
+}
+export async function referLmsCommittee(appId: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(lmsAction(appId, 'committee/refer'), {});
+}
+export async function voteLmsCommittee(appId: string, body: CommitteeVoteRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, CommitteeVoteRequest>(lmsAction(appId, 'committee/vote'), body);
+}
+export async function resolveLmsCommittee(appId: string, body: ResolveCommitteeRequest): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, ResolveCommitteeRequest>(lmsAction(appId, 'committee/resolve'), body);
 }
 
 

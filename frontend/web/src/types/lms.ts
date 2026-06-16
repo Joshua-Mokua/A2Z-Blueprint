@@ -31,6 +31,15 @@ export interface LoanApplicationPermissions {
   can_assign:             boolean;
   /** Caller can record decision. Manager-tier, status=submitted|assigned. */
   can_record_decision:    boolean;
+  // Credit workflow (v10.587)
+  can_request_info?:           boolean;
+  can_provide_info?:           boolean;
+  can_sign_offer?:             boolean;
+  can_validate_offer?:         boolean;
+  can_confirm_to_credit_admin?: boolean;
+  can_refer_committee?:        boolean;
+  can_vote_committee?:         boolean;
+  can_resolve_committee?:      boolean;
 }
 
 
@@ -48,6 +57,62 @@ export interface LoanApplicationDecisionRecord {
   reason?:                string;
   conditions?:            string[];
   comments?:              string;
+}
+
+
+export interface LoanAppHistoryEvent {
+  event:    string;
+  by?:      string;
+  at?:      string;
+  note?:    string;
+  [key: string]: unknown;
+}
+
+export interface LoanAppOffer {
+  issued_by?:    string;
+  issued_at?:    string;
+  signed?:       boolean;
+  signed_by?:    string;
+  signed_at?:    string;
+  validated?:    boolean | null;
+  validated_by?: string;
+  validated_at?: string;
+  signed_attachment?: {
+    mode?: string; filename?: string; ref?: string;
+    uploaded_by?: string; uploaded_at?: string | null;
+  } | null;
+  note?:         string;
+}
+
+export interface LoanAppInfoRequest {
+  by?:        string;
+  at?:        string;
+  reasons?:   string[];
+  documents?: string[];
+  note?:      string;
+  resolved?:  boolean;
+  resolved_by?: string;
+  resolved_at?: string;
+  provided_documents?: string[];
+}
+
+export interface LoanAppCommitteeVote {
+  member_id: string;
+  vote:      string;
+  rationale?: string;
+  by?:       string;
+  at?:       string;
+}
+
+export interface LoanAppCommittee {
+  votes?:        LoanAppCommitteeVote[];
+  referred_by?:  string;
+  referred_at?:  string;
+  resolved?:     boolean;
+  resolved_by?:  string;
+  resolved_at?:  string;
+  result?:       Record<string, unknown> | null;
+  note?:         string;
 }
 
 
@@ -114,6 +179,13 @@ export interface LoanApplication {
   // Free text
   appraisal_notes?:       string;
 
+  // Credit workflow (v10.584+)
+  history?:               LoanAppHistoryEvent[];
+  offer?:                 LoanAppOffer | null;
+  info_request?:          LoanAppInfoRequest | null;
+  committee?:             LoanAppCommittee | null;
+  credit_admin_case_id?:  string;
+
   // Extra fields tolerated
   [key: string]:          unknown;
 }
@@ -179,6 +251,12 @@ export const APPLICATION_STATUSES = [
   'approved',
   'declined',
   'returned',
+  'info_requested',
+  'referred_to_committee',
+  'offer_issued',
+  'offer_signed',
+  'offer_validated',
+  'analyst_confirmed',
   'credit_admin',
   'disbursed',
 ] as const;
@@ -202,6 +280,12 @@ export function statusTone(status: string | undefined): 'neutral' | 'brand' | 'w
   if (s === 'returned')    return 'warning';
   if (s === 'declined')    return 'danger';
   if (s === 'credit_admin') return 'brand';
+  if (s === 'info_requested') return 'warning';
+  if (s === 'referred_to_committee') return 'brand';
+  if (s === 'offer_issued')   return 'warning';
+  if (s === 'offer_signed')   return 'brand';
+  if (s === 'offer_validated') return 'brand';
+  if (s === 'analyst_confirmed') return 'brand';
   return 'neutral';
 }
 
@@ -228,3 +312,43 @@ export const COMMON_AUTHORITIES = [
   'Director Commercial Banking',
   'Managing Director',
 ] as const;
+
+
+// ── Credit workflow request bodies (v10.587) ────────────────────────────
+
+export interface RequestInfoRequest {
+  reasons?:   string[];
+  documents?: string[];
+  note?:      string;
+}
+
+export interface ProvideInfoRequest {
+  documents?: string[];
+  note?:      string;
+}
+
+export interface SignOfferRequest {
+  note?:                string;
+  attachment_filename?: string;
+  attachment_ref?:      string;
+}
+
+export interface ValidateOfferRequest {
+  approve: boolean;
+  note?:   string;
+}
+
+export interface ConfirmToCreditAdminRequest {
+  note?: string;
+}
+
+export interface CommitteeVoteRequest {
+  member_id: string;
+  vote:      string;   // YES | NO | ABSTAIN | RECUSED
+  rationale?: string;
+}
+
+export interface ResolveCommitteeRequest {
+  attending_member_ids?: string[];
+  note?:                 string;
+}

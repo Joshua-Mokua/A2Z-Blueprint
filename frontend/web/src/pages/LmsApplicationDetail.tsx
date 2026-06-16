@@ -26,6 +26,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
+import { Timeline } from '@/components/Timeline';
 import {
   statusTone,
   DECISION_VERDICTS,
@@ -341,8 +342,57 @@ export function LmsApplicationDetail() {
         )}
 
 
+        {/* ─────────── Credit workflow actions (v10.587) ─────────── */}
+        {permissions.can_request_info && (
+          <WfRequestInfo appId={application.id} mutations={mutations} toast={toast} onDone={refetch} />
+        )}
+        {permissions.can_provide_info && (
+          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="accent" title="Provide requested information"
+            desc={application.info_request?.note || 'The analyst requested additional documentation.'}
+            cta="Mark information provided"
+            run={(id, note) => mutations.provideInfo(id, { note })} okMsg="Information provided." />
+        )}
+        {permissions.can_sign_offer && (
+          <WfSignOffer appId={application.id} mutations={mutations} toast={toast} onDone={refetch} />
+        )}
+        {permissions.can_validate_offer && (
+          <WfValidateOffer appId={application.id} mutations={mutations} toast={toast} onDone={refetch} />
+        )}
+        {permissions.can_confirm_to_credit_admin && (
+          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="primary" title="Confirm to Credit Admin"
+            desc="Confirm the signed, validated offer to Credit Admin to open the disbursement case."
+            cta="Confirm to Credit Admin"
+            run={(id, note) => mutations.confirmToCreditAdmin(id, { note })} okMsg="Confirmed to Credit Admin." />
+        )}
+        {permissions.can_refer_committee && (
+          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="brand" title="Refer to credit committee"
+            desc="This facility is committee-tier under the bank's policy."
+            cta="Refer to committee"
+            run={(id) => mutations.referCommittee(id)} okMsg="Referred to committee." />
+        )}
+        {(permissions.can_vote_committee || permissions.can_resolve_committee) && (
+          <WfCommittee application={application} mutations={mutations} toast={toast} onDone={refetch}
+            canVote={!!permissions.can_vote_committee} canResolve={!!permissions.can_resolve_committee} />
+        )}
+
+        {/* ─────────── Workflow timeline ─────────── */}
+        <Card className="mt-6">
+          <Card.Header>
+            <h3 className="text-sm font-semibold text-gray-900">Workflow timeline</h3>
+          </Card.Header>
+          <Card.Body>
+            <Timeline events={application.history} emptyHint="No workflow activity yet." />
+          </Card.Body>
+        </Card>
+
         {/* If no actions available, show why */}
-        {!permissions.can_assign && !permissions.can_update && !permissions.can_record_decision && (
+        {!permissions.can_assign && !permissions.can_update && !permissions.can_record_decision &&
+         !permissions.can_request_info && !permissions.can_provide_info && !permissions.can_sign_offer &&
+         !permissions.can_validate_offer && !permissions.can_confirm_to_credit_admin &&
+         !permissions.can_refer_committee && !permissions.can_vote_committee && !permissions.can_resolve_committee && (
           <Card>
             <Card.Body>
               <div className="text-xs text-gray-500 italic">
@@ -779,6 +829,221 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
           </Button>
         </div>
       </Card.Footer>
+    </Card>
+  );
+}
+
+
+// ── Credit workflow panels (v10.587) ────────────────────────────────────
+
+import type { MutationResult } from '@/hooks/useLmsMutations';
+import type { LoanAppMutationResponse } from '@/types/lms';
+
+type WfMutations = ReturnType<typeof useLmsMutations>;
+type WfToast = ReturnType<typeof useToast>['toast'];
+type WfRun = (id: string, note: string) => Promise<MutationResult<LoanAppMutationResponse>>;
+
+interface WfSimpleProps {
+  appId: string;
+  mutations: WfMutations;
+  toast: WfToast;
+  onDone: () => Promise<unknown> | unknown;
+  stripe: 'primary' | 'secondary' | 'accent' | 'brand';
+  title: string;
+  desc: string;
+  cta: string;
+  run: WfRun;
+  okMsg: string;
+}
+
+function WfSimple({ appId, toast, onDone, stripe, title, desc, cta, run, okMsg, mutations }: WfSimpleProps) {
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const onClick = async () => {
+    setError(null);
+    const res = await run(appId, note.trim());
+    if (res.ok) {
+      await onDone();
+      toast({ tone: 'success', message: okMsg });
+      setNote('');
+    } else {
+      setError(res.error);
+    }
+  };
+  const cardStripe = stripe === 'brand' ? 'primary' : stripe;
+  return (
+    <Card className="mt-6" stripe={cardStripe}>
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">{title}</h3></Card.Header>
+      <Card.Body>
+        <p className="text-sm text-gray-600 mb-3">{desc}</p>
+        <Input label="Note (optional)" value={note}
+               onChange={(e) => setNote(e.target.value)} disabled={mutations.loading} />
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3">
+          <Button variant="primary" onClick={onClick} disabled={mutations.loading}>
+            {mutations.loading ? 'Working…' : cta}
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function WfRequestInfo({ appId, mutations, toast, onDone }: {
+  appId: string; mutations: WfMutations; toast: WfToast; onDone: () => Promise<unknown> | unknown;
+}) {
+  const [docs, setDocs] = useState('');
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const onClick = async () => {
+    setError(null);
+    const documents = docs.split(',').map((d) => d.trim()).filter(Boolean);
+    const res = await mutations.requestInfo(appId, { documents, note: note.trim() });
+    if (res.ok) { await onDone(); toast({ tone: 'success', message: 'Information requested.' }); setDocs(''); setNote(''); }
+    else setError(res.error);
+  };
+  return (
+    <Card className="mt-6" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Request more information</h3></Card.Header>
+      <Card.Body>
+        <p className="text-sm text-gray-600 mb-3">Park the case and ask the deal owner for additional documents (pre-decision).</p>
+        <Input label="Documents (comma-separated)" value={docs}
+               onChange={(e) => setDocs(e.target.value)} disabled={mutations.loading}
+               placeholder="Audited accounts, CRB report" />
+        <div className="mt-2">
+          <Input label="Note (optional)" value={note}
+                 onChange={(e) => setNote(e.target.value)} disabled={mutations.loading} />
+        </div>
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3">
+          <Button variant="primary" onClick={onClick} disabled={mutations.loading}>
+            {mutations.loading ? 'Working…' : 'Request information'}
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function WfSignOffer({ appId, mutations, toast, onDone }: {
+  appId: string; mutations: WfMutations; toast: WfToast; onDone: () => Promise<unknown> | unknown;
+}) {
+  const [filename, setFilename] = useState('');
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const onClick = async () => {
+    setError(null);
+    const res = await mutations.signOffer(appId, {
+      attachment_filename: filename.trim() || undefined, note: note.trim(),
+    });
+    if (res.ok) { await onDone(); toast({ tone: 'success', message: 'Offer signed.' }); }
+    else setError(res.error);
+  };
+  return (
+    <Card className="mt-6" stripe="primary">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Sign letter of offer</h3></Card.Header>
+      <Card.Body>
+        <p className="text-sm text-gray-600 mb-3">Mark the letter of offer signed by the customer and attach the signed copy.</p>
+        <Input label="Signed copy filename" value={filename}
+               onChange={(e) => setFilename(e.target.value)} disabled={mutations.loading}
+               placeholder="signed_offer_ECO123.pdf" />
+        <div className="mt-2">
+          <Input label="Note (optional)" value={note}
+                 onChange={(e) => setNote(e.target.value)} disabled={mutations.loading} />
+        </div>
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3">
+          <Button variant="primary" onClick={onClick} disabled={mutations.loading}>
+            {mutations.loading ? 'Working…' : 'Mark signed + attach'}
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function WfValidateOffer({ appId, mutations, toast, onDone }: {
+  appId: string; mutations: WfMutations; toast: WfToast; onDone: () => Promise<unknown> | unknown;
+}) {
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const act = async (approve: boolean) => {
+    setError(null);
+    const res = await mutations.validateOffer(appId, { approve, note: note.trim() });
+    if (res.ok) { await onDone(); toast({ tone: approve ? 'success' : 'warning', message: approve ? 'Offer validated.' : 'Sent back for re-handling.' }); }
+    else setError(res.error);
+  };
+  return (
+    <Card className="mt-6" stripe="secondary">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Validate signed offer</h3></Card.Header>
+      <Card.Body>
+        <p className="text-sm text-gray-600 mb-3">Line-manager checks &amp; balances on the signed offer before it proceeds.</p>
+        <Input label="Note (optional)" value={note}
+               onChange={(e) => setNote(e.target.value)} disabled={mutations.loading} />
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3 flex gap-2">
+          <Button variant="primary" onClick={() => act(true)} disabled={mutations.loading}>Validate</Button>
+          <Button variant="ghost" onClick={() => act(false)} disabled={mutations.loading}>Send back</Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function WfCommittee({ application, mutations, toast, onDone, canVote, canResolve }: {
+  application: LoanApplication; mutations: WfMutations; toast: WfToast;
+  onDone: () => Promise<unknown> | unknown; canVote: boolean; canResolve: boolean;
+}) {
+  const [memberId, setMemberId] = useState('');
+  const [vote, setVote] = useState('YES');
+  const [rationale, setRationale] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const votes = application.committee?.votes ?? [];
+
+  const castVote = async () => {
+    setError(null);
+    if (!memberId.trim()) { setError('Member id required.'); return; }
+    const res = await mutations.voteCommittee(application.id, { member_id: memberId.trim(), vote, rationale: rationale.trim() });
+    if (res.ok) { await onDone(); toast({ tone: 'success', message: `Vote recorded: ${memberId} ${vote}` }); setRationale(''); }
+    else setError(res.error);
+  };
+  const resolve = async () => {
+    setError(null);
+    const res = await mutations.resolveCommittee(application.id, {});
+    if (res.ok) { await onDone(); toast({ tone: 'info', message: 'Committee resolved.' }); }
+    else setError(res.error);
+  };
+  return (
+    <Card className="mt-6" stripe="primary">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Credit committee</h3></Card.Header>
+      <Card.Body>
+        {votes.length > 0 && (
+          <div className="mb-3 text-xs text-gray-600">
+            Votes recorded: {votes.map((v) => `${v.member_id}:${v.vote}`).join(', ')}
+          </div>
+        )}
+        {canVote && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+            <Input label="Member id" value={memberId}
+                   onChange={(e) => setMemberId(e.target.value)} disabled={mutations.loading}
+                   placeholder="m1" />
+            <div>
+              <label className="text-sm font-medium text-gray-700">Vote</label>
+              <select value={vote} onChange={(e) => setVote(e.target.value)} disabled={mutations.loading}
+                className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900">
+                {['YES', 'NO', 'ABSTAIN', 'RECUSED'].map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <Input label="Rationale (optional)" value={rationale}
+                   onChange={(e) => setRationale(e.target.value)} disabled={mutations.loading} />
+          </div>
+        )}
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        <div className="mt-3 flex gap-2">
+          {canVote && <Button variant="ghost" onClick={castVote} disabled={mutations.loading}>Record vote</Button>}
+          {canResolve && <Button variant="primary" onClick={resolve} disabled={mutations.loading}>Resolve committee</Button>}
+        </div>
+      </Card.Body>
     </Card>
   );
 }

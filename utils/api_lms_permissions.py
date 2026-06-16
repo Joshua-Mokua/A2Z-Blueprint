@@ -35,6 +35,14 @@ def _all_false() -> Dict[str, bool]:
         "can_update": False,
         "can_assign": False,
         "can_record_decision": False,
+        "can_request_info": False,
+        "can_provide_info": False,
+        "can_sign_offer": False,
+        "can_validate_offer": False,
+        "can_confirm_to_credit_admin": False,
+        "can_refer_committee": False,
+        "can_vote_committee": False,
+        "can_resolve_committee": False,
     }
 
 
@@ -120,11 +128,71 @@ def resolve_application_permissions(
         and (is_admin or (is_mgr and in_scope))
     )
 
+    # ── Credit workflow flags (v10.587) ──
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        cfg = get_credit_workflow_config()
+    except Exception:
+        cfg = {}
+    require_validation = bool(cfg.get("require_line_manager_offer_validation", True))
+    require_confirm = bool(cfg.get("require_analyst_confirmation", True))
+
+    can_request_info = (
+        status == "assigned"
+        and (is_admin or is_assigned_analyst or (is_mgr and in_scope))
+    )
+    can_provide_info = (
+        status == "info_requested" and (is_admin or is_owner or in_scope)
+    )
+    can_sign_offer = (
+        status == "offer_issued" and (is_admin or is_owner or in_scope)
+    )
+    can_validate_offer = (
+        status == "offer_signed" and require_validation
+        and (is_admin or (is_mgr and in_scope))
+    )
+    _confirm_status_ok = (
+        status == "offer_validated"
+        or (status == "offer_signed" and not require_validation)
+    )
+    can_confirm_to_credit_admin = (
+        _confirm_status_ok and require_confirm
+        and (is_admin or is_assigned_analyst or in_scope)
+    )
+
+    try:
+        from utils.api_lms_committee import committee_mode_on, committee_required
+        _amount = float(app.get("amount", 0) or 0)
+        _committee_on = committee_mode_on()
+        _committee_tier = committee_required(_amount)
+    except Exception:
+        _committee_on = False
+        _committee_tier = False
+    can_refer_committee = (
+        _committee_on and _committee_tier
+        and status in ("submitted", "assigned")
+        and (is_admin or (is_mgr and in_scope))
+    )
+    can_vote_committee = (
+        status == "referred_to_committee" and (is_admin or in_scope)
+    )
+    can_resolve_committee = (
+        status == "referred_to_committee" and (is_admin or (is_mgr and in_scope))
+    )
+
     return {
         "can_view": bool(can_view),
         "can_update": bool(can_update),
         "can_assign": bool(can_assign),
         "can_record_decision": bool(can_record_decision),
+        "can_request_info": bool(can_request_info),
+        "can_provide_info": bool(can_provide_info),
+        "can_sign_offer": bool(can_sign_offer),
+        "can_validate_offer": bool(can_validate_offer),
+        "can_confirm_to_credit_admin": bool(can_confirm_to_credit_admin),
+        "can_refer_committee": bool(can_refer_committee),
+        "can_vote_committee": bool(can_vote_committee),
+        "can_resolve_committee": bool(can_resolve_committee),
     }
 
 
