@@ -1021,9 +1021,12 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     visible_codes = get_visible_staff_codes(user)
     deals = filter_deals_by_visible_codes(deals, visible_codes)
 
+    from utils.core import ACTIVE_STAGES as _ACTIVE
     by_stage: dict = {}
     total_val = 0.0
     won_val   = 0.0
+    validated_val = 0.0   # assured: active + manager_validated
+    pending_val   = 0.0   # pending assurance: active + not validated
     for d in deals:
         st  = d.get("stage", "Unknown")
         # Canonical amount field is `deal_value` (Generation B).
@@ -1032,6 +1035,11 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
         total_val += amt
         if st == "Closed Won":
             won_val += amt
+        if st in _ACTIVE:
+            if d.get("manager_validated"):
+                validated_val += amt
+            else:
+                pending_val += amt
         if st not in by_stage:
             by_stage[st] = {"stage": st, "deal_count": 0, "total_value": 0.0}
         by_stage[st]["deal_count"]  += 1
@@ -1041,13 +1049,29 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     # — that was an unflagged bug; fixed in α1).
     lost_count = sum(1 for d in deals if d.get("stage") == "Closed Lost")
 
+    # Scope-aware manager queues for the dashboard tiles. Validation is a
+    # manager-looking-down action: non-managers have nothing to validate, so the
+    # count is 0 for them (matches the manager-only validation queue). For a
+    # manager it is the number of subordinate deals awaiting their sign-off —
+    # the SAME source as Manager Queues -> Validation, so tile and queue agree.
+    from utils.api_pipeline_manager_actions import is_manager as _is_mgr
+    pending_validation = 0
+    pending_cancel = 0
+    if _is_mgr(user):
+        pending_validation = len(pm.get_pending_validations(manager_codes=visible_codes))
+        pending_cancel = len(pm.get_cancel_requests(manager_codes=visible_codes))
+
     result = {
         "by_stage": list(by_stage.values()),
         "totals": {
-            "total_deals":    len(deals),
-            "pipeline_value": total_val,
-            "won_value":      won_val,
-            "lost_count":     lost_count,
+            "total_deals":        len(deals),
+            "pipeline_value":     total_val,
+            "validated_value":    validated_val,   # assured headline
+            "pending_value":      pending_val,     # pending assurance
+            "won_value":          won_val,
+            "lost_count":         lost_count,
+            "pending_validation": pending_validation,
+            "pending_cancel":     pending_cancel,
         },
         "source": "pipeline_manager",
     }
@@ -1464,20 +1488,26 @@ def _compute_pipeline_analytics(deals: list) -> dict:
     )
     live = [d for d in deals if not d.get("draft")]
     active = [d for d in live if d.get("stage") in ACTIVE_STAGES]
+    # Validation split: management anchors on VALIDATED (manager-assured) deals.
+    # Unvalidated active deals are surfaced separately as "pending assurance".
+    validated_active = [d for d in active if d.get("manager_validated")]
+    pending_active = [d for d in active if not d.get("manager_validated")]
     won = [d for d in live if d.get("stage") == "Closed Won"]
     lost = [d for d in live if d.get("stage") == "Closed Lost"]
 
-    total_value = sum(_deal_value(d) for d in active)
+    total_value = sum(_deal_value(d) for d in validated_active)        # assured
+    pending_value = sum(_deal_value(d) for d in pending_active)        # pending assurance
     weighted_value = sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
-                         for d in live)
+                         for d in validated_active)
     won_value = sum(_deal_value(d) for d in won)
     win_rate = (round(len(won) / (len(won) + len(lost)) * 100, 1)
                 if (won or lost) else 0.0)
 
-    # Overall funnel — active stages in canonical union order, non-empty only.
+    # Overall funnel — VALIDATED active deals only (matches the headline),
+    # active stages in canonical union order, non-empty only.
     o_cnt = {s: 0 for s in ALL_ACTIVE_STAGES}
     o_val = {s: 0.0 for s in ALL_ACTIVE_STAGES}
-    for d in active:
+    for d in validated_active:
         s = d.get("stage")
         if s in o_cnt:
             o_cnt[s] += 1
@@ -1519,10 +1549,13 @@ def _compute_pipeline_analytics(deals: list) -> dict:
     # insurance / other. Replaces the meaningless loan+deposit combined total.
     def _bucket_stats(dl: list) -> dict:
         act = [d for d in dl if d.get("stage") in ACTIVE_STAGES]
+        val_act = [d for d in act if d.get("manager_validated")]
+        pend_act = [d for d in act if not d.get("manager_validated")]
         won_ = [d for d in dl if d.get("stage") == "Closed Won"]
+        # funnel from VALIDATED active only (matches the headline)
         b_cnt = {s: 0 for s in ALL_ACTIVE_STAGES}
         b_val = {s: 0.0 for s in ALL_ACTIVE_STAGES}
-        for d in act:
+        for d in val_act:
             s = d.get("stage")
             if s in b_cnt:
                 b_cnt[s] += 1
@@ -1530,10 +1563,12 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         b_funnel = [{"stage": s, "count": b_cnt[s], "value": b_val[s]}
                     for s in ALL_ACTIVE_STAGES if b_cnt[s] > 0]
         return {
-            "value": sum(_deal_value(d) for d in act),
+            "value": sum(_deal_value(d) for d in val_act),        # assured headline
+            "pending_value": sum(_deal_value(d) for d in pend_act),  # pending assurance
             "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
-                            for d in dl),
-            "active_count": len(act),
+                            for d in val_act),
+            "active_count": len(val_act),
+            "pending_count": len(pend_act),
             "won_value": sum(_deal_value(d) for d in won_),
             "funnel": b_funnel,
         }
@@ -1583,9 +1618,11 @@ def _compute_pipeline_analytics(deals: list) -> dict:
     return {
         "totals": {
             "total_value": total_value,
+            "pending_value": pending_value,
             "weighted_value": weighted_value,
             "won_value": won_value,
-            "active_count": len(active),
+            "active_count": len(validated_active),
+            "pending_count": len(pending_active),
             "won_count": len(won),
             "lost_count": len(lost),
             "live_count": len(live),
