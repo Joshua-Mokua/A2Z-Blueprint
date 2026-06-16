@@ -156,6 +156,23 @@ export interface CreditAdminCase {
   authorized_by?:               string;
   authorized_at?:               string;
 
+  // P4 secured-lending (optional — present once classified/populated)
+  facility_security_type?:   'unsecured' | 'secured';
+  security_subtype?:         string | null;
+  security_classification?:  SecurityClassification;
+  coverage_ratio?:           number;
+  required_ratio?:           number;
+  security_total_kes?:       number;
+  currency?:                 string;
+  currency_book?:            'LCY' | 'FCY';
+  amount_kes?:               number | null;
+  linked_collateral?:        LinkedCollateral[];
+  legal_review?:             LegalReview;
+  security_perfections?:     SecurityPerfection[];
+  insurance_policies?:       InsurancePolicy[];
+  perfection_override?:      PerfectionOverride | null;
+  disbursed_under_override?: boolean;
+
   // Extra tolerated
   [key: string]:         unknown;
 }

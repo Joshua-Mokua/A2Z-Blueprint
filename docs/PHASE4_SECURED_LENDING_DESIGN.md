@@ -631,3 +631,26 @@ probe now: blocked -> override authorized -> disburse under override.
 - NEXT (React-A2): per-domain entry panels (facility classify, CP/CS classify, collateral
   link, legal, perfection, insurance) so credit-admin can SET what the checklist reads.
   Then React-B: FCY/LCY dashboard consumption.
+
+## React-A2 — secured-lending entry panels: DELIVERED (frontend — tsc gate)
+
+- types/creditAdmin.ts: P4 fields promoted to first-class optionals on
+  CreditAdminCase (facility_security_type, security_subtype,
+  security_classification, coverage_ratio, required_ratio, currency,
+  currency_book, amount_kes, linked_collateral, legal_review,
+  security_perfections, insurance_policies, perfection_override,
+  disbursed_under_override).
+- components/SecuredLendingPanels.tsx (NEW): six self-contained panels —
+  FacilityClassificationPanel (secured/unsecured + subtype, shows coverage +
+  classification badge), CollateralPanel (link/unlink, live coverage table),
+  ConditionsCpCsPanel (precedent/subsequent classify), LegalReviewPanel
+  (assign/comment/approve/reject), PerfectionPanel (add instrument + mark
+  perfected), InsurancePanel (add policy + bank-interest-noted). Shared useAction
+  hook (busy + toast + onChange). Legal/perfection/insurance self-hide for
+  unsecured facilities.
+- pages/CreditAdminCaseDetail.tsx: renders the six panels above the gate panel,
+  each wired to refetch on change so the gate checklist updates live.
+- Syntax-checked via esbuild; canonical gate is `pnpm tsc --noEmit`.
+- Credit-admin can now drive the full secured workflow from the UI and watch the
+  disbursement gate clear control-by-control.
+- NEXT: React-B (FCY/LCY dashboard consumption), then Phase 7 certification.

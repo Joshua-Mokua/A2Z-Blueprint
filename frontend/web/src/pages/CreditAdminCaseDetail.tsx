@@ -29,6 +29,10 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { DisbursementGatePanel } from '@/components/DisbursementGatePanel';
 import {
+  FacilityClassificationPanel, CollateralPanel, ConditionsCpCsPanel,
+  LegalReviewPanel, PerfectionPanel, InsurancePanel,
+} from '@/components/SecuredLendingPanels';
+import {
   caseStatusTone,
   caseStatusLabel,
   COMMON_DISBURSE_AUTHORITIES,
@@ -353,6 +357,14 @@ export function CreditAdminCaseDetail() {
             run={(id, note) => mutations.authorize(id, { note })}
             okMsg="Case authorized for disbursement." />
         )}
+
+        {/* P4 secured-lending entry panels (credit-admin drives the workflow). */}
+        <FacilityClassificationPanel caseRecord={caseRecord} onChange={refetch} />
+        <ConditionsCpCsPanel caseRecord={caseRecord} onChange={refetch} />
+        <CollateralPanel caseRecord={caseRecord} onChange={refetch} />
+        <LegalReviewPanel caseRecord={caseRecord} onChange={refetch} />
+        <PerfectionPanel caseRecord={caseRecord} onChange={refetch} />
+        <InsurancePanel caseRecord={caseRecord} onChange={refetch} />
 
         {/* P4-6: secured-lending disbursement gate + controlled override.
             Renders only for secured facilities (component self-hides otherwise). */}
