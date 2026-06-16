@@ -888,3 +888,21 @@ SEED FCY REALISM FIX:
 
 NEXT: credit Analytics PAGE (mirror the pipeline slicer + drill); dashboard
 de-lump.
+
+## #9-fix + #10 — Credit read fix (probe-caught) + currency expansion (combined)
+
+CREDIT READ FIX (probe-caught: MD saw branches=0/accounts=0):
+- Root cause: _load_json routes through the dual-mode DB/JSON loader, which
+  returns [] for credit_monitoring.json under PostgreSQL (the loan book was
+  migrated to the watchlist table, leaving the JSON key empty).
+- Fix: _acquire_scoped_credit reads credit_monitoring.json DIRECTLY (file read,
+  bypassing the dual-mode loader) — reliably carries rm_code/region/branch_name.
+  MD now sees all 5001; non-MD sees a strict subset (scope confirmed).
+
+CURRENCY EXPANSION (EcoBank footprint + CNY):
+- seed_fx_rates.py: idempotently adds USD, CNY, EUR, GBP + EcoBank's African
+  currencies (NGN, GHS, XOF[WAEMU x8], XAF[CEMAC x6], ZAR, TZS, UGX, RWF, ZMW,
+  MZN, ETB, AOA, CDF, MWK, GNF, LRD, SLE, GMD, CVE, STN). Synthetic mid rates;
+  never overwrites admin edits.
+- PipelineCreate currency picker now orders KES (local), USD, CNY first, then
+  the rest alphabetically.

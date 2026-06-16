@@ -250,7 +250,15 @@ export function PipelineCreate() {
   const currencyOptions = useMemo(() => {
     const set = new Set<string>(['KES']);
     for (const r of fxRates) if (r.currency) set.add(r.currency.toUpperCase());
-    return Array.from(set).sort((a, b) => (a === 'KES' ? -1 : b === 'KES' ? 1 : a.localeCompare(b)));
+    // KES (local), then the priority trade currencies USD + CNY, then the rest
+    // (EcoBank's African footprint) alphabetically.
+    const PRIORITY = ['KES', 'USD', 'CNY'];
+    return Array.from(set).sort((a, b) => {
+      const ia = PRIORITY.indexOf(a);
+      const ib = PRIORITY.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      return a.localeCompare(b);
+    });
   }, [fxRates]);
   const selectedRate = useMemo(
     () => (currency === 'KES' ? 1 : fxRates.find((r) => r.currency?.toUpperCase() === currency)?.rate_to_kes),

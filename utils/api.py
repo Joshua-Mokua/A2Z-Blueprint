@@ -2745,13 +2745,22 @@ def credit_watchlist(
 def _acquire_scoped_credit(user: dict) -> list:
     """Loan-book accounts within the caller's reporting subtree.
 
-    Mirrors _acquire_scoped_deals: the SAME get_visible_staff_codes the
-    pipeline uses, applied to the account's rm_code. So an individual sees
-    credit exactly the way they see pipeline — their own subtree only; MD /
-    full-view roles see everything (their visible set is the full roster).
+    Reads credit_monitoring.json DIRECTLY (not via _load_json, whose dual-mode
+    loader returns [] under PostgreSQL because the loan book was migrated to the
+    watchlist table — leaving the JSON key empty). The file reliably carries
+    rm_code/region/branch_name. Scope: the SAME get_visible_staff_codes the
+    pipeline uses, matched on rm_code — so an individual sees credit exactly as
+    they see pipeline; MD / full-view roles see all.
     """
-    raw = _load_json("credit_monitoring.json")
-    accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+    import json as _json
+    accts: list = []
+    p = DATA_DIR / "credit_monitoring.json"
+    if p.exists():
+        try:
+            raw = _json.loads(p.read_text(encoding="utf-8"))
+            accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+        except Exception as e:
+            logger.error(f"Credit monitoring file read error: {e}")
     from utils.api_pipeline_scope import get_visible_staff_codes
     visible = get_visible_staff_codes(user)
     return [a for a in accts if str(a.get("rm_code") or "") in visible]
