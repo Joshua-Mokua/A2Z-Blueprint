@@ -357,5 +357,46 @@
     "Documentation": 97,
     "Disbursed": 100,
     "Closed Won": 100
+  },
+  "stage_flows": {
+    "asset": [
+      "Lead",
+      "Contacted",
+      "Qualified",
+      "Application",
+      "Credit Assessment",
+      "Offer / Proposal",
+      "Negotiation",
+      "Compliance",
+      "Closed Won",
+      "Closed Lost"
+    ],
+    "liability": [
+      "Lead",
+      "Contacted",
+      "Proposal",
+      "Negotiation",
+      "Documentation",
+      "Closed Won",
+      "Closed Lost"
+    ],
+    "insurance": [
+      "Lead",
+      "Contacted",
+      "Proposal",
+      "Negotiation",
+      "Documentation",
+      "Closed Won",
+      "Closed Lost"
+    ],
+    "other": [
+      "Lead",
+      "Contacted",
+      "Qualified",
+      "Proposal",
+      "Negotiation",
+      "Closed Won",
+      "Closed Lost"
+    ]
   }
 }

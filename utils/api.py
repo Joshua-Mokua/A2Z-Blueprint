@@ -1095,6 +1095,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "probability_map":   cfg.get("probability_map", {}),
         "deal_types":        cfg.get("deal_types", []),
         "product_catalogue": cfg.get("product_catalogue", {}),
+        "stage_flows":       cfg.get("stage_flows", {}),
         "currency":          cfg.get("currency", "KES"),
     }
 
@@ -1229,6 +1230,7 @@ def pipeline_deal_detail(
     return {
         "deal":         deal,
         "permissions":  permissions,
+        "stage_flow":   _stage_flow_for(deal.get("product_type") or deal.get("product", "")),
     }
 
 
@@ -1449,6 +1451,26 @@ def _classify_product(product_type: str) -> str:
                               "current", "call", "notice")):
         return "liability"
     return "other"
+
+
+def _stage_flow_for(product_type: str) -> list:
+    """Ordered stage flow for a product's class, from pipeline_settings
+    stage_flows (admin config, the single source of truth). Classes:
+    asset / liability / insurance / other. Falls back to the core per-category
+    flow if stage_flows isn't configured, so nothing breaks pre-config."""
+    cls = _classify_product(product_type)
+    cfg = _load_json("pipeline_settings.json") or {}
+    flows = cfg.get("stage_flows", {}) if isinstance(cfg, dict) else {}
+    flow = flows.get(cls)
+    if isinstance(flow, list) and flow:
+        return [str(s) for s in flow]
+    # Fallback: core per-category flow (pre-stage_flows behaviour).
+    try:
+        from utils.core import get_pipeline_category, get_stages_for_category
+        cat = get_pipeline_category(product_type or "")
+        return [s["stage"] for s in get_stages_for_category(cat)]
+    except Exception:
+        return []
 
 
 def _acquire_scoped_deals(user: dict) -> list:
@@ -1993,6 +2015,20 @@ def pipeline_deal_advance(
             status_code=403,
             detail="Deal is outside your cascade scope",
         )
+
+    # B17: enforce the deal's product-class stage flow (admin config). The
+    # target must belong to THIS deal's flow — e.g. a deposit (liability) deal
+    # can't advance to a loan-only stage. Skips gracefully if no flow is
+    # configured for the class (fallback to the prior global allowlist).
+    _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+    if _flow and payload.new_stage not in _flow:
+        _cls = _classify_product(deal.get("product_type") or deal.get("product", ""))
+        _audit("API_PIPELINE_ADVANCE_OFF_FLOW", user,
+               f"deal_id={deal_id} stage={payload.new_stage} class={_cls}")
+        raise HTTPException(
+            status_code=400,
+            detail=(f"'{payload.new_stage}' is not a valid stage for this "
+                    f"{_cls} deal. Allowed stages: {', '.join(_flow)}"))
 
     old_stage = deal.get("stage", "?")
     pm.update_stage(

@@ -1854,6 +1854,14 @@ def get_all_pipeline_stage_names() -> set:
                 n = str(st).strip()
                 if n:
                     names.add(n)
+        # B17: per-product-class flows (asset/liability/insurance/other) so the
+        # advance gate accepts any stage the bank configures in stage_flows.
+        for flow in cfg.get("stage_flows", {}).values():
+            if isinstance(flow, list):
+                for st in flow:
+                    n = str(st).strip()
+                    if n:
+                        names.add(n)
     except Exception:
         pass
     return names
