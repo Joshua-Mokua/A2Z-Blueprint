@@ -285,6 +285,108 @@ def happy_path(base, committee=False):
     step("credit-admin: disburse", (200, 201), st, body, note=f"status: {body.get('status')}")
 
 
+# ── Negative + override probe: gate BLOCKS, override UNBLOCKS (live) ─────
+
+def negative_override_probe(base):
+    """Proves enforcement: a secured facility missing perfection is BLOCKED at
+    disburse with the right failure, then a controlled override unblocks it and
+    the disbursement is flagged disbursed_under_override. Independent of
+    happy_path so the proven flow is untouched."""
+    print("\n=== NEGATIVE + OVERRIDE PROBE (gate enforcement) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER") or admin
+    manager = login(base, "MANAGER") or admin
+    if not admin:
+        step("probe: admin login", 200, 0, note="cannot proceed")
+        return
+
+    # Build a deal through to credit-admin (authority route, standard value).
+    deal_body = {"client_name": f"SIM Override Co {datetime.now():%H%M%S}",
+                 "client_type": "Business", "product_type": "Term Loan",
+                 "deal_value": 5000000, "stage": "Lead", "segment": "SME",
+                 "sector": "Manufacturing"}
+    st, body = _req(base, "POST", "/api/pipeline/deals", owner, deal_body)
+    deal_id = body.get("id") or body.get("deal", {}).get("id")
+    if not deal_id:
+        step("probe: deal created", True, False, body); return
+    for tgt in ["Contacted", "Qualified", "Application", "Credit Assessment"]:
+        _req(base, "POST", f"/api/pipeline/deals/{deal_id}/advance", owner, {"target_stage": tgt})
+    st, chk = _req(base, "GET", f"/api/pipeline/deals/{deal_id}/credit-checklist", owner)
+    required = chk.get("required", []) if isinstance(chk, dict) else []
+    st, body = _req(base, "POST", f"/api/pipeline/deals/{deal_id}/submit-to-credit",
+                    owner, {"documents_provided": required})
+    app_id = body.get("application_id")
+    if not app_id:
+        step("probe: app created", True, False, body); return
+    _req(base, "POST", f"/api/lms/applications/{app_id}/assign", manager,
+         {"analyst_code": PERSONAS['MANAGER']['username'], "analyst_name": "Sim Analyst"})
+    _req(base, "POST", f"/api/lms/applications/{app_id}/decision", manager,
+         {"verdict": "approved", "authority": "Branch Credit Manager", "reason": "Sim"})
+    _req(base, "POST", f"/api/lms/applications/{app_id}/sign-offer", owner,
+         {"attachment_filename": "signed.pdf"})
+    _req(base, "POST", f"/api/lms/applications/{app_id}/validate-offer", manager, {"approve": True})
+    _req(base, "POST", f"/api/lms/applications/{app_id}/confirm-to-credit-admin", manager, {})
+
+    st, cases = _req(base, "GET", "/api/credit-admin/cases", admin)
+    case_id = next((c.get("id") for c in (cases.get("cases", []) if isinstance(cases, dict) else [])
+                    if c.get("application_id") == app_id), None)
+    if not case_id:
+        step("probe: case found", True, False, cases); return
+
+    # Secured + collateral + legal + insurance, but DELIBERATELY skip perfection.
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/classify-facility",
+         admin, {"facility_security_type": "secured", "security_subtype": "debenture"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/collateral/link",
+         admin, {"collateral_id": "OVCOL1", "collateral_type": "Debenture",
+                 "forced_sale_value": 999_000_000_000, "currency": "KES"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/legal/assign",
+         admin, {"officer_code": "LO001", "officer_name": "SIM Legal"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/legal/outcome",
+         admin, {"outcome": "approved"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/insurance",
+         admin, {"insurer": "SIM", "policy_number": "P1", "expiry_date": "2027-12-31",
+                 "bank_interest_noted": True})
+    # (no perfection added)
+
+    # Fulfill any conditions, authorize.
+    st, detail = _req(base, "GET", f"/api/credit-admin/cases/{case_id}", admin)
+    conds = (detail.get("case", {}) or {}).get("conditions", []) if isinstance(detail, dict) else []
+    for c in conds:
+        if c.get("type") and not c.get("fulfilled"):
+            _req(base, "POST", f"/api/credit-admin/cases/{case_id}/conditions/fulfill",
+                 admin, {"condition_type": c["type"], "officer_name": "Sim"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/request-authorization", admin, {"note": "L1"})
+    _req(base, "POST", f"/api/credit-admin/cases/{case_id}/authorize", admin, {"note": "L2"})
+
+    # ASSERTION 1: disburse is BLOCKED on missing perfection.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
+                    admin, {"authority": "CA Manager"})
+    detail = body.get("detail", {}) if isinstance(body, dict) else {}
+    checks = [f.get("check") for f in detail.get("failures", [])] if isinstance(detail, dict) else []
+    step("probe: disburse BLOCKED on missing perfection", True,
+         st == 400 and "security_perfection" in checks, {"checks": checks})
+
+    # ASSERTION 2: open + approve a controlled override.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/perfection-override/request",
+                    admin, {"justification": "Charge lodged at registry; perfection pending stamp"})
+    step("probe: override requested", (200, 201), st, body)
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/perfection-override/approve",
+                    admin, {})
+    step("probe: override approved (authorized)", True,
+         isinstance(body, dict) and body.get("status") == "override_authorized",
+         {"status": body.get("status") if isinstance(body, dict) else None})
+
+    # ASSERTION 3: disburse now SUCCEEDS, flagged disbursed_under_override.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
+                    admin, {"authority": "CA Manager", "comments": "under override"})
+    step("probe: disburse SUCCEEDS under override", (200, 201), st, body)
+    st, detail = _req(base, "GET", f"/api/credit-admin/cases/{case_id}", admin)
+    _c = detail.get("case", {}) if isinstance(detail, dict) else {}
+    step("probe: disbursement flagged disbursed_under_override", True,
+         _c.get("disbursed_under_override") is True,
+         {"flag": _c.get("disbursed_under_override")})
+
+
 # ── Scope guard: out-of-scope access blocked ────────────────────────────
 
 def scope_guard(base):
@@ -365,6 +467,7 @@ def main():
     happy_path(args.base, committee=False)
     if not args.skip_committee:
         happy_path(args.base, committee=True)
+    negative_override_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     if args.volume:

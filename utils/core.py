@@ -6280,7 +6280,12 @@ class CreditAdminManager:
                                   "at": datetime.now().isoformat(timespec="seconds")})
             have = {a["role"] for a in approvals}
             hv = self.is_high_value(case, matrix)
-            if hv:
+            # Pilot affordance: an 'admin' approval is a documented superuser
+            # override and satisfies any tier (flagged in design doc + audit).
+            if "admin" in have:
+                satisfied = True
+                required = {"admin"}
+            elif hv:
                 required = {"head_of_credit", "cro", "md"}
                 satisfied = required <= have
             else:

@@ -97,3 +97,15 @@ def test_high_value_override_needs_all_three():
     r = cam.add_override_approval("CALMS1", "md", "md")
     assert r["status"] == "authorized"
     assert cam.evaluate_disbursement_gate(case)["overridden"] is True
+
+
+def test_admin_override_satisfies_any_tier():
+    cam = _mgr(_fully_ready_secured(amount_kes=150_000_000))  # high value
+    case = cam.cases[0]
+    case["legal_review"] = {"outcome": None}
+    g = cam.evaluate_disbursement_gate(case)
+    cam.request_perfection_override("CALMS1", "mgr1", "regulator deadline", g["failures"])
+    # single admin approval authorizes even a high-value facility (pilot superuser)
+    res = cam.add_override_approval("CALMS1", "admin", "william001")
+    assert res["status"] == "authorized"
+    assert cam.evaluate_disbursement_gate(case)["overridden"] is True

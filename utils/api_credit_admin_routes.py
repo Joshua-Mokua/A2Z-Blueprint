@@ -658,8 +658,9 @@ def credit_admin_override_approve(case_id: str,
         raise HTTPException(
             status_code=403,
             detail="Override approval requires Head of Credit, CRO, or MD authority")
-    # admin (testing/superuser) acts as MD-equivalent for the approval record
-    eff_role = role or "md"
+    # A real role wins; otherwise an admin records as the 'admin' superuser role
+    # (documented pilot affordance — satisfies any tier, fully audited).
+    eff_role = role or "admin"
     result = cam.add_override_approval(case_id, eff_role,
                                        str(user.get('username', '') or ''))
     if not result.get("ok"):

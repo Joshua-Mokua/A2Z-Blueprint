@@ -583,3 +583,19 @@ objects (backend + React).
 - Combined React pass (FX consumed on dashboards + CP/CS panel + collateral/legal/
   perfection/insurance panels + gate checklist + override modal).
 - Full live simulation as the integration gate (Josh runs at the end).
+
+## P4-6b — Live enforcement probe + admin superuser override: DELIVERED
+
+- core.py add_override_approval: an 'admin' approval is a documented pilot
+  SUPERUSER override that satisfies any tier (standard or high-value). Real
+  Head-of-Credit/CRO/MD roles still follow the tiered rules. Fully audited.
+- api_credit_admin_routes override-approve: admin records as role 'admin'.
+- scripts/simulate_credit_chain.py: negative_override_probe — builds a secured
+  facility, sets up everything EXCEPT perfection, then asserts:
+    1. disburse is BLOCKED (400) with 'security_perfection' in failures
+    2. override request + approve -> authorized
+    3. disburse SUCCEEDS and case flagged disbursed_under_override
+- Tests: test_p4_6_gate_override.py +1 (admin override any tier) = 6.
+- PILOT AFFORDANCE (flagged): admin superuser override is for pilot testing;
+  production needs real HoC/CRO/MD seats so the 3-signature high-value control
+  is genuinely three people.
