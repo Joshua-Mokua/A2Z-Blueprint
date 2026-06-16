@@ -5484,6 +5484,76 @@ class LoanApplicationManager:
         self._log_event(app_id, "analyst_confirmed", by, note)
         return True
 
+    def refer_to_committee(self, app_id: str, by: str, note: str = "") -> bool:
+        """Route an application to the credit committee (committee_voting mode)."""
+        if not self.get(app_id):
+            return False
+        self.update(app_id, {
+            "status": "referred_to_committee",
+            "committee": {"votes": [], "referred_by": by,
+                          "referred_at": datetime.now().isoformat(),
+                          "note": note, "resolved": False},
+        })
+        self._log_event(app_id, "referred_to_committee", by, note)
+        return True
+
+    def record_committee_vote(self, app_id: str, member_id: str, vote: str,
+                              rationale: str = "", by: str = "") -> bool:
+        """Record/replace one member's vote on the application's committee."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        committee = dict(app.get("committee") or {"votes": []})
+        votes = [v for v in (committee.get("votes") or [])
+                 if v.get("member_id") != member_id]
+        votes.append({"member_id": member_id, "vote": vote,
+                      "rationale": rationale, "by": by,
+                      "at": datetime.now().isoformat()})
+        committee["votes"] = votes
+        self.update(app_id, {"committee": committee})
+        self._log_event(app_id, "committee_vote", by or member_id,
+                        rationale, {"member_id": member_id, "vote": vote})
+        return True
+
+    def resolve_committee(self, app_id: str, result: dict, by: str,
+                          authority: str = "Credit Committee",
+                          note: str = "") -> bool:
+        """Store the committee engine result + set the resulting status.
+        approved -> 'approved' (the route then issues the offer);
+        rejected -> 'declined'; otherwise stays referred_to_committee."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        committee = dict(app.get("committee") or {})
+        committee.update({"result": result, "resolved": bool(
+            result.get("approved") or result.get("rejected")),
+            "resolved_by": by, "resolved_at": datetime.now().isoformat()})
+        upd: dict = {"committee": committee}
+        if result.get("approved"):
+            upd["status"] = "approved"
+            upd["decision"] = {
+                "verdict": "approved",
+                "date": datetime.now().date().isoformat(),
+                "authority": authority,
+                "reason": result.get("rationale", ""),
+                "conditions": result.get("conditions", []),
+                "comments": note, "via": "committee",
+            }
+        elif result.get("rejected"):
+            upd["status"] = "declined"
+            upd["decision"] = {
+                "verdict": "declined",
+                "date": datetime.now().date().isoformat(),
+                "authority": authority,
+                "reason": result.get("rationale", ""),
+                "conditions": [], "comments": note, "via": "committee",
+            }
+        self.update(app_id, upd)
+        self._log_event(app_id,
+                        f"committee_{str(result.get('outcome', 'resolved')).lower()}",
+                        by, note)
+        return True
+
     def bsc_actuals(self) -> dict:
         """Compute BSC actuals from LMS data for credit KPIs."""
         from collections import defaultdict as _dd

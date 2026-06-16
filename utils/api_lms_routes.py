@@ -60,6 +60,8 @@ from utils.api_lms_models import (
     SignOfferRequest,
     ValidateOfferRequest,
     ConfirmToCreditAdminRequest,
+    CommitteeVoteRequest,
+    ResolveCommitteeRequest,
 )
 from utils.api_lms_scope import filter_apps_by_visibility, is_app_in_scope
 from utils.api_lms_mutations import (
@@ -405,6 +407,21 @@ def lms_application_decision(
             ),
         )
 
+    # Committee guard (v10.586): when committee voting is on and the facility
+    # is committee-tier, the decision must go through the committee flow, not a
+    # direct approve/decline. No-op in authority_tier mode (back-compatible).
+    try:
+        from utils.api_lms_committee import committee_required, committee_mode_on
+        if committee_mode_on() and committee_required(float(app.get("amount", 0) or 0)):
+            raise HTTPException(status_code=400, detail=(
+                "This facility is committee-tier under the bank's policy. Refer "
+                "it to the credit committee (POST .../committee/refer), record "
+                "votes, then resolve — rather than a direct decision."))
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
     # Payload validation
     payload_dict = payload.model_dump()
     ok, reason = validate_decision_payload(payload_dict)
@@ -656,3 +673,105 @@ def lms_confirm_to_credit_admin(
     return {"application": lam.get(app_id),
             "status": str(lam.get(app_id).get("status", "")),
             "credit_admin_case_id": case_id}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Committee voting endpoints (v10.586) — committee_mode == committee_voting
+# ─────────────────────────────────────────────────────────────────────
+# Reuses the existing CreditCommitteeEngine via utils/api_lms_committee.py.
+
+@router.post("/applications/{app_id}/committee/refer",
+             response_model=LoanAppMutationResponse)
+def lms_committee_refer(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Refer an application to the credit committee. Manager-tier."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403,
+                            detail="Manager authority required to refer to committee")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if not is_valid_lms_transition(str(app.get("status", "")), "referred_to_committee"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot refer to committee from status '{app.get('status')}'")
+    lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""))
+    audit_log("LMS_REFERRED_TO_COMMITTEE", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
+@router.post("/applications/{app_id}/committee/vote",
+             response_model=LoanAppMutationResponse)
+def lms_committee_vote(
+    app_id: str,
+    payload: CommitteeVoteRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Record one committee member's vote (YES/NO/ABSTAIN/RECUSED)."""
+    from utils.api_lms_committee import committee_member_ids
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "referred_to_committee":
+        raise HTTPException(status_code=400,
+                            detail="Application is not before the committee")
+    if payload.vote.upper() not in ("YES", "NO", "ABSTAIN", "RECUSED"):
+        raise HTTPException(status_code=400,
+                            detail="vote must be YES, NO, ABSTAIN, or RECUSED")
+    if payload.member_id not in committee_member_ids():
+        raise HTTPException(status_code=400,
+                            detail=f"'{payload.member_id}' is not a charter member")
+    lam.record_committee_vote(app_id, member_id=payload.member_id,
+                              vote=payload.vote.upper(),
+                              rationale=payload.rationale,
+                              by=str(user.get("username", "") or ""))
+    audit_log("LMS_COMMITTEE_VOTE", str(user.get("username", "") or ""),
+              f"{app_id}|{payload.member_id}:{payload.vote}")
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
+@router.post("/applications/{app_id}/committee/resolve",
+             response_model=LoanAppMutationResponse)
+def lms_committee_resolve(
+    app_id: str,
+    payload: ResolveCommitteeRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Run the committee engine over recorded votes and apply the outcome.
+    Manager-tier. On approval, issues the Letter of Offer (offer loop)."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403,
+                            detail="Manager authority required to resolve the committee")
+    from utils.api_lms_committee import evaluate_committee
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not is_app_in_scope(app, user):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "referred_to_committee":
+        raise HTTPException(status_code=400,
+                            detail="Application is not before the committee")
+    result = evaluate_committee(app, attending_member_ids=tuple(payload.attending_member_ids))
+    lam.resolve_committee(app_id, result=result,
+                          by=str(user.get("username", "") or ""),
+                          note=payload.note)
+    audit_log("LMS_COMMITTEE_RESOLVED",
+              str(user.get("username", "") or ""), f"{app_id}|{result.get('outcome')}")
+    # On approval, continue into the offer loop (mirrors the decision route).
+    if result.get("approved"):
+        try:
+            lam.issue_offer(app_id, by=str(user.get("username", "") or ""),
+                            note="Auto-issued on committee approval")
+        except Exception:
+            pass
+    return {"application": lam.get(app_id),
+            "status": str(lam.get(app_id).get("status", "")),
+            "committee_result": result}

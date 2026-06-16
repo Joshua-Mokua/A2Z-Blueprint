@@ -229,6 +229,50 @@
       "template_label": "Letter of Offer",
       "validity_days": 14,
       "sla_days": 5
+    },
+    "committee": {
+      "refer_above_kes": 100000000,
+      "voting_rule": "SIMPLE_MAJORITY",
+      "min_quorum_count": 3,
+      "authority_limit_kes": 500000000,
+      "independent_member_min": 1,
+      "required_roles": [
+        "CRO"
+      ],
+      "committee_id": "MCC",
+      "name": "Management Credit Committee",
+      "members": [
+        {
+          "member_id": "m1",
+          "name": "Committee Chair",
+          "role": "CHAIR",
+          "is_independent": false
+        },
+        {
+          "member_id": "m2",
+          "name": "Chief Risk Officer",
+          "role": "CRO",
+          "is_independent": false
+        },
+        {
+          "member_id": "m3",
+          "name": "Chief Credit Officer",
+          "role": "CCO",
+          "is_independent": false
+        },
+        {
+          "member_id": "m4",
+          "name": "Independent Member 1",
+          "role": "INDEPENDENT_MEMBER",
+          "is_independent": true
+        },
+        {
+          "member_id": "m5",
+          "name": "Independent Member 2",
+          "role": "INDEPENDENT_MEMBER",
+          "is_independent": true
+        }
+      ]
     }
   }
 }

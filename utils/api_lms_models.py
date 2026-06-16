@@ -414,3 +414,23 @@ class ConfirmToCreditAdminRequest(BaseModel):
     """POST /api/lms/applications/{id}/confirm-to-credit-admin — analyst
     confirms to credit admin to proceed; creates the CALMS case."""
     note: str = Field(default="")
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Committee voting request bodies (v10.586)
+# ─────────────────────────────────────────────────────────────────────
+
+class CommitteeVoteRequest(BaseModel):
+    """POST /api/lms/applications/{id}/committee/vote — one member's vote."""
+    member_id: str = Field(min_length=1, description="Charter member id (e.g. 'm1').")
+    vote: str = Field(description="YES | NO | ABSTAIN | RECUSED")
+    rationale: str = Field(default="")
+
+
+class ResolveCommitteeRequest(BaseModel):
+    """POST /api/lms/applications/{id}/committee/resolve — run the engine over
+    the recorded votes and apply the outcome."""
+    attending_member_ids: List[str] = Field(
+        default_factory=list,
+        description="Members present; defaults to everyone who voted.")
+    note: str = Field(default="")
