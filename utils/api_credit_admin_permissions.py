@@ -27,6 +27,8 @@ def _all_false() -> Dict[str, bool]:
         "can_view": False,
         "can_fulfill_condition": False,
         "can_disburse": False,
+        "can_request_authorization": False,
+        "can_authorize": False,
     }
 
 
@@ -64,6 +66,18 @@ def resolve_case_permissions(
 
     disbursed = bool(case.get('disbursed', False))
     all_conditions_met = bool(case.get('all_conditions_met', False))
+    ready = bool(case.get('ready_for_disbursement', False))
+    authz_requested = bool(case.get('authorization_requested', False))
+    authorized = bool(case.get('authorized', False))
+
+    # Two-layer policy (admin config). When on, disbursement requires an
+    # explicit officer request + manager authorization before it's ready.
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        two_layer = bool(get_credit_workflow_config().get(
+            "credit_admin_two_layer_authorization", True))
+    except Exception:
+        two_layer = True
 
     # ── can_view ──
     # Admin sees all. In-scope sees their cascade's cases.
@@ -74,12 +88,34 @@ def resolve_case_permissions(
     # the case is disbursed (no edits to closed cases).
     can_fulfill_condition = (is_admin or in_scope) and not disbursed
 
+    # ── can_request_authorization (Layer 1) ──
+    # In scope, all conditions met, not already requested, two-layer on,
+    # not disbursed. An operations action (officer-level).
+    can_request_authorization = (
+        two_layer
+        and (is_admin or in_scope)
+        and all_conditions_met
+        and not authz_requested
+        and not disbursed
+    )
+
+    # ── can_authorize (Layer 2) ──
+    # CA manager-tier + in scope, a pending request exists, not yet
+    # authorized, not disbursed.
+    can_authorize = (
+        two_layer
+        and (is_admin or (is_mgr and in_scope))
+        and authz_requested
+        and not authorized
+        and not disbursed
+    )
+
     # ── can_disburse ──
-    # Manager-tier + in scope, AND all conditions must already be met,
-    # AND case not already disbursed.
+    # Manager-tier + in scope, the case must be READY (which, under
+    # two-layer, only happens after authorize), and not already disbursed.
     can_disburse = (
         (is_admin or (is_mgr and in_scope))
-        and all_conditions_met
+        and ready
         and not disbursed
     )
 
@@ -87,4 +123,6 @@ def resolve_case_permissions(
         "can_view": bool(can_view),
         "can_fulfill_condition": bool(can_fulfill_condition),
         "can_disburse": bool(can_disburse),
+        "can_request_authorization": bool(can_request_authorization),
+        "can_authorize": bool(can_authorize),
     }

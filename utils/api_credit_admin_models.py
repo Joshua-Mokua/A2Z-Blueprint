@@ -122,6 +122,18 @@ class CreditAdminCase(BaseModel):
                     "requires all_conditions_met=True first"
     )
 
+    # ── Two-layer authorization (v10.585) ──
+    authorization_requested: bool = Field(
+        default=False,
+        description="Layer 1: a credit-admin officer has requested authorization")
+    authorization_requested_by: Optional[str] = None
+    authorization_requested_at: Optional[str] = None
+    authorized: bool = Field(
+        default=False,
+        description="Layer 2: a credit-admin manager has authorized disbursement")
+    authorized_by: Optional[str] = None
+    authorized_at: Optional[str] = None
+
     # ── Disbursement ──
     disbursed: bool = Field(default=False)
     disbursement_date: Optional[str] = None
@@ -157,6 +169,16 @@ class CreditAdminPermissions(BaseModel):
     can_disburse: bool = Field(
         description="Caller can POST to /disburse "
                     "(manager-tier, all_conditions_met=True, not disbursed)"
+    )
+    can_request_authorization: bool = Field(
+        default=False,
+        description="Caller can POST to /request-authorization "
+                    "(in scope, all_conditions_met, not yet requested, two-layer on)"
+    )
+    can_authorize: bool = Field(
+        default=False,
+        description="Caller can POST to /authorize "
+                    "(CA manager-tier, authorization_requested, not yet authorized)"
     )
 
 
@@ -241,3 +263,23 @@ class CreditAdminMutationResponse(BaseModel):
     status: str = Field(
         description="'condition_fulfilled' | 'cleared_for_disbursement'"
     )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Two-layer authorization request bodies (v10.585)
+# ─────────────────────────────────────────────────────────────────────
+
+class RequestAuthorizationRequest(BaseModel):
+    """POST /api/credit-admin/cases/{id}/request-authorization — Layer 1.
+    A credit-admin officer confirms the case is ready and requests manager
+    authorization. Requires all_conditions_met."""
+    model_config = ConfigDict(extra="allow")
+    note: str = Field(default="", description="Officer's confirmation note.")
+
+
+class AuthorizeRequest(BaseModel):
+    """POST /api/credit-admin/cases/{id}/authorize — Layer 2.
+    A credit-admin MANAGER authorizes disbursement. Requires a pending
+    authorization request."""
+    model_config = ConfigDict(extra="allow")
+    note: str = Field(default="", description="Manager's authorization note.")

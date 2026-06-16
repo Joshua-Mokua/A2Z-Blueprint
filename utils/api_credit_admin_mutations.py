@@ -79,6 +79,23 @@ def case_can_be_disbursed(case: Dict[str, Any]) -> Tuple[bool, str]:
             f"Unmet: {', '.join(unmet) if unmet else '(unknown)'}"
         )
 
+    # Two-layer (config): when on, the case must be authorized (which sets
+    # ready_for_disbursement) before it can be cleared. Gives a clean 400
+    # instead of a downstream 500 from clear_for_disbursement.
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        two_layer = bool(get_credit_workflow_config().get(
+            "credit_admin_two_layer_authorization", True))
+    except Exception:
+        two_layer = True
+    if two_layer and not case.get('ready_for_disbursement', False):
+        if not case.get('authorization_requested', False):
+            return False, ("Cannot disburse — authorization not yet requested. "
+                           "A credit-admin officer must request authorization first.")
+        if not case.get('authorized', False):
+            return False, ("Cannot disburse — awaiting credit-admin manager "
+                           "authorization.")
+
     return True, ""
 
 

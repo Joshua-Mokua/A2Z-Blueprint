@@ -5678,7 +5678,61 @@ class CreditAdminManager:
                     break
             all_met = all(c["fulfilled"] for c in case.get("conditions", []))
             case["all_conditions_met"]      = all_met
-            case["ready_for_disbursement"]  = all_met
+            # Two-layer (config): when on, conditions being met does NOT make
+            # the case ready — a CA manager must authorize first. When off,
+            # preserve the legacy behaviour (all-met -> ready).
+            if not self._two_layer_enabled():
+                case["ready_for_disbursement"]  = all_met
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def _two_layer_enabled(self) -> bool:
+        """Whether the Credit-Admin two-layer authorization policy is on
+        (admin config). Defaults to on. Best-effort; no hard dependency."""
+        try:
+            from utils.api_lms_mutations import get_credit_workflow_config
+            return bool(get_credit_workflow_config().get(
+                "credit_admin_two_layer_authorization", True))
+        except Exception:
+            return True
+
+    def request_authorization(self, case_id: str, by: str,
+                              note: str = "") -> bool:
+        """Layer 1 — a credit-admin officer confirms the case is ready and
+        requests manager authorization. Requires all conditions met."""
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            if not case.get("all_conditions_met"):
+                return False
+            if case.get("disbursed"):
+                return False
+            case["authorization_requested"]    = True
+            case["authorization_requested_by"] = by
+            case["authorization_requested_at"] = datetime.now().isoformat()
+            case["authorization_note"]         = note
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def authorize(self, case_id: str, by: str, note: str = "") -> bool:
+        """Layer 2 — a credit-admin MANAGER authorizes disbursement. Requires
+        a pending authorization request. Sets ready_for_disbursement."""
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            if not case.get("authorization_requested"):
+                return False
+            if case.get("disbursed"):
+                return False
+            case["authorized"]              = True
+            case["authorized_by"]           = by
+            case["authorized_at"]           = datetime.now().isoformat()
+            case["authorization_decision_note"] = note
+            case["ready_for_disbursement"]  = True
             case["last_updated"] = datetime.now().date().isoformat()
             self.save()
             return True
@@ -5739,7 +5793,13 @@ class CreditAdminManager:
             "approval_date":          today,
             "conditions":             case_conditions,
             "all_conditions_met":     all_met,
-            "ready_for_disbursement": False,  # manager clears explicitly
+            "ready_for_disbursement": False,  # set on authorize (two-layer) or all-met
+            "authorization_requested": False,
+            "authorization_requested_by": None,
+            "authorization_requested_at": None,
+            "authorized":             False,
+            "authorized_by":          None,
+            "authorized_at":          None,
             "disbursed":              False,
             "disbursement_date":      None,
             "last_updated":           today,

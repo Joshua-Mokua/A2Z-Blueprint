@@ -46,6 +46,8 @@ from utils.api_credit_admin_models import (
     FulfillConditionRequest,
     DisburseCaseRequest,
     CreditAdminMutationResponse,
+    RequestAuthorizationRequest,
+    AuthorizeRequest,
 )
 from utils.api_credit_admin_scope import (
     filter_cases_by_visible_codes,
@@ -323,3 +325,94 @@ def credit_admin_disburse(
 
     updated = cam.get(case_id)
     return {"case": updated, "status": "cleared_for_disbursement"}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Two-layer authorization (v10.585)
+# ─────────────────────────────────────────────────────────────────────
+
+@router.post(
+    "/cases/{case_id}/request-authorization",
+    response_model=CreditAdminMutationResponse,
+)
+def credit_admin_request_authorization(
+    case_id: str,
+    payload: RequestAuthorizationRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Layer 1 — a credit-admin officer confirms the case is ready and
+    requests manager authorization. Anyone in scope (operations action);
+    requires all conditions met.
+
+    Returns:
+      403 out of scope
+      404 case not found
+      400 conditions not met / already disbursed / already requested
+    """
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    if case.get('disbursed'):
+        raise HTTPException(status_code=400, detail="Case already disbursed")
+    if not case.get('all_conditions_met'):
+        raise HTTPException(status_code=400,
+                            detail="Cannot request authorization — conditions not all met")
+    if case.get('authorization_requested'):
+        raise HTTPException(status_code=400, detail="Authorization already requested")
+
+    by = str(user.get('full_name') or user.get('username', '') or '')
+    success = cam.request_authorization(case_id, by=by, note=payload.note)
+    if not success:
+        raise HTTPException(status_code=500, detail="request-authorization failed")
+    audit_log("CREDIT_ADMIN_AUTHORIZATION_REQUESTED",
+              str(user.get('username', '') or ''), case_id)
+    return {"case": cam.get(case_id), "status": "authorization_requested"}
+
+
+@router.post(
+    "/cases/{case_id}/authorize",
+    response_model=CreditAdminMutationResponse,
+)
+def credit_admin_authorize(
+    case_id: str,
+    payload: AuthorizeRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Layer 2 — a credit-admin MANAGER authorizes disbursement. Requires a
+    pending authorization request. Sets ready_for_disbursement so the case
+    can then be disbursed.
+
+    Returns:
+      403 not manager-tier OR out of scope
+      404 case not found
+      400 no pending request / already authorized / already disbursed
+    """
+    if not is_manager(user):
+        raise HTTPException(status_code=403,
+                            detail="Manager authority required to authorize disbursement")
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    if case.get('disbursed'):
+        raise HTTPException(status_code=400, detail="Case already disbursed")
+    if not case.get('authorization_requested'):
+        raise HTTPException(status_code=400,
+                            detail="No pending authorization request to authorize")
+    if case.get('authorized'):
+        raise HTTPException(status_code=400, detail="Case already authorized")
+
+    by = str(user.get('full_name') or user.get('username', '') or '')
+    success = cam.authorize(case_id, by=by, note=payload.note)
+    if not success:
+        raise HTTPException(status_code=500, detail="authorize failed")
+    audit_log("CREDIT_ADMIN_AUTHORIZED",
+              str(user.get('username', '') or ''), case_id)
+    return {"case": cam.get(case_id), "status": "authorized"}
