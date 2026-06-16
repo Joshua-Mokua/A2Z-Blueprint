@@ -674,3 +674,17 @@ probe now: blocked -> override authorized -> disburse under override.
   FCY/LCY on the deposit side) remains a separate pending item.
 - Phase 4 + React pass COMPLETE. Next: Phase 7 certification (fresh full
   simulation + written verdict).
+
+## React-B-fix — pipeline_value to KES-equivalent (probe-caught)
+
+The FX currency probe (first live FCY deal: USD 1M -> 129.5M KES) surfaced that
+pipeline_value summed NATIVE amounts (USD 1M counted as 1M) while lcy/fcy summed
+KES-equivalent, so LCY+FCY != pipeline_value once any FCY deal existed. With
+all-KES data this was invisible.
+
+Fix (both pipeline_summary paths): ALL money sums are now KES-equivalent
+(COALESCE(amount_kes, amount)) — pipeline_value, won_value, by_stage total_value,
+validated/pending, lcy/fcy. This is also more correct: the MD reports in KES, and
+summing mixed native currencies is meaningless. For all-KES data the numbers are
+unchanged (amount_kes == amount at rate 1). Harness reconciliation assertion now
+passes with an FCY deal present.

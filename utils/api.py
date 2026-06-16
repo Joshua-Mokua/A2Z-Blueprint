@@ -956,7 +956,7 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
             rows = _db.fetch_all("""
                 SELECT stage, deal_category,
                        COUNT(*)          as deal_count,
-                       SUM(amount)       as total_value,
+                       SUM(COALESCE((metadata->>'amount_kes')::numeric, amount, 0)) as total_value,
                        AVG(probability)  as avg_probability
                 FROM pipeline_deals
                 GROUP BY stage, deal_category
@@ -964,8 +964,10 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
             """)
             totals = _db.fetch_one("""
                 SELECT COUNT(*)    as total_deals,
-                       SUM(amount) as pipeline_value,
-                       SUM(CASE WHEN stage = 'Closed Won' THEN amount ELSE 0 END) as won_value,
+                       SUM(COALESCE((metadata->>'amount_kes')::numeric, amount, 0)) as pipeline_value,
+                       SUM(CASE WHEN stage = 'Closed Won'
+                                THEN COALESCE((metadata->>'amount_kes')::numeric, amount, 0)
+                                ELSE 0 END) as won_value,
                        SUM(CASE WHEN stage = 'Closed Lost' THEN 1 ELSE 0 END)    as lost_count,
                        SUM(CASE WHEN COALESCE(TRIM(currency),'KES') = 'KES'
                                 THEN COALESCE((metadata->>'amount_kes')::numeric, amount, 0)
@@ -1044,17 +1046,18 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
         st  = d.get("stage", "Unknown")
         # Canonical amount field is `deal_value` (Generation B).
         # Fall back to `amount` for any transitional record.
-        amt = _safe_float(d.get("deal_value") or d.get("amount", 0))
+        amt_native = _safe_float(d.get("deal_value") or d.get("amount", 0))
+        # Report in KES-equivalent (the bank's reporting currency) so totals are
+        # comparable across currency books — amount_kes when stamped, native
+        # otherwise (LCY deals coincide; rate 1). Summing native across mixed
+        # currencies would be meaningless and would break LCY+FCY reconciliation.
+        amt = _safe_float(d.get("amount_kes")) if d.get("amount_kes") is not None else amt_native
         total_val += amt
-        # FCY/LCY split on the KES-equivalent (amount_kes when stamped; native
-        # otherwise — LCY deals have fx_rate 1 so the two coincide). The book is
-        # LCY unless explicitly FCY / a non-KES currency.
-        amt_kes = _safe_float(d.get("amount_kes")) if d.get("amount_kes") is not None else amt
         book = d.get("currency_book") or ("FCY" if str(d.get("currency", "KES")).strip() not in ("", "KES") else "LCY")
         if book == "FCY":
-            fcy_val += amt_kes
+            fcy_val += amt
         else:
-            lcy_val += amt_kes
+            lcy_val += amt
         if st == "Closed Won":
             won_val += amt
         if st in _ACTIVE:
