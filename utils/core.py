@@ -5981,6 +5981,154 @@ class CreditAdminManager:
         lr = case.get("legal_review") or {}
         return lr.get("outcome") not in ("approved", "approved_with_conditions")
 
+    # ── P4-5: Security Perfection + Insurance ────────────────────────
+    def add_security_perfection(self, case_id: str, security_type: str,
+                                registration_reference: str = "",
+                                registration_status: str = "pending",
+                                registration_date: str = None,
+                                perfection_status: str = "unperfected",
+                                officer_code: str = "", notes: str = "") -> str:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            perfs = case.setdefault("security_perfections", [])
+            pid = f"{case_id}-P{len(perfs) + 1}"
+            now = datetime.now().isoformat(timespec="seconds")
+            perfs.append({
+                "id":                     pid,
+                "security_type":          security_type,
+                "registration_status":    registration_status,
+                "registration_reference": registration_reference,
+                "registration_date":      registration_date,
+                "perfection_status":      perfection_status,
+                "perfecting_officer_code": officer_code,
+                "notes":                  notes,
+                "created_at":             now,
+                "updated_at":             now,
+            })
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return pid
+        return ""
+
+    def update_security_perfection(self, case_id: str, perfection_id: str,
+                                   **fields) -> bool:
+        allowed = {"registration_status", "registration_reference",
+                   "registration_date", "perfection_status",
+                   "perfecting_officer_code", "notes"}
+        rs_ok = ("pending", "lodged", "registered", "failed")
+        ps_ok = ("unperfected", "in_progress", "perfected", "lapsed")
+        if "registration_status" in fields and fields["registration_status"] not in rs_ok:
+            return False
+        if "perfection_status" in fields and fields["perfection_status"] not in ps_ok:
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            for p in case.get("security_perfections", []):
+                if p.get("id") == perfection_id:
+                    for k, v in fields.items():
+                        if k in allowed and v is not None:
+                            p[k] = v
+                    p["updated_at"] = datetime.now().isoformat(timespec="seconds")
+                    case["last_updated"] = datetime.now().date().isoformat()
+                    self.save()
+                    return True
+            return False
+        return False
+
+    def add_insurance_policy(self, case_id: str, insurer: str,
+                             policy_number: str, sum_insured=None,
+                             currency: str = "KES", effective_date: str = None,
+                             expiry_date: str = None,
+                             bank_interest_noted: bool = False,
+                             collateral_id: str = "", status: str = "active",
+                             renewal_alert_days: int = 30) -> str:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            pols = case.setdefault("insurance_policies", [])
+            iid = f"{case_id}-I{len(pols) + 1}"
+            now = datetime.now().isoformat(timespec="seconds")
+            pols.append({
+                "id":                  iid,
+                "collateral_id":       collateral_id,
+                "insurer":             insurer,
+                "policy_number":       policy_number,
+                "sum_insured":         sum_insured,
+                "currency":            currency or "KES",
+                "effective_date":      effective_date,
+                "expiry_date":         expiry_date,
+                "bank_interest_noted": bool(bank_interest_noted),
+                "status":              status,
+                "renewal_alert_days":  renewal_alert_days,
+                "created_at":          now,
+                "updated_at":          now,
+            })
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return iid
+        return ""
+
+    def update_insurance_policy(self, case_id: str, policy_id: str,
+                                **fields) -> bool:
+        allowed = {"insurer", "policy_number", "sum_insured", "currency",
+                   "effective_date", "expiry_date", "bank_interest_noted",
+                   "status", "renewal_alert_days", "collateral_id"}
+        st_ok = ("active", "expired", "cancelled", "pending")
+        if "status" in fields and fields["status"] not in st_ok:
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            for pol in case.get("insurance_policies", []):
+                if pol.get("id") == policy_id:
+                    for k, v in fields.items():
+                        if k in allowed and v is not None:
+                            pol[k] = v
+                    pol["updated_at"] = datetime.now().isoformat(timespec="seconds")
+                    case["last_updated"] = datetime.now().date().isoformat()
+                    self.save()
+                    return True
+            return False
+        return False
+
+    @staticmethod
+    def perfection_blocks_disbursement(case: dict) -> bool:
+        """Secured facilities require every security instrument perfected. A
+        secured facility with NO perfection records also blocks (nothing
+        perfected yet). Unsecured never blocked."""
+        if str(case.get("facility_security_type", "unsecured")) != "secured":
+            return False
+        perfs = case.get("security_perfections", []) or []
+        if not perfs:
+            return True
+        return any(p.get("perfection_status") != "perfected" for p in perfs)
+
+    @staticmethod
+    def has_valid_insurance(case: dict, as_of: str = None) -> bool:
+        """True if the case has at least one active, unexpired policy with the
+        bank's interest noted."""
+        import datetime as _dt
+        today = as_of or _dt.date.today().isoformat()
+        for pol in (case.get("insurance_policies", []) or []):
+            if (pol.get("status") == "active"
+                    and bool(pol.get("bank_interest_noted"))
+                    and str(pol.get("expiry_date") or "9999-12-31") >= today):
+                return True
+        return False
+
+    @staticmethod
+    def insurance_blocks_disbursement(case: dict, as_of: str = None,
+                                      required: bool = True) -> bool:
+        """Blocks when insurance is required (caller/P4-6 decides per policy)
+        and there is no valid policy. Unsecured or not-required never blocks."""
+        if str(case.get("facility_security_type", "unsecured")) != "secured":
+            return False
+        if not required:
+            return False
+        return not CreditAdminManager.has_valid_insurance(case, as_of)
+
     def _two_layer_enabled(self) -> bool:
         """Whether the Credit-Admin two-layer authorization policy is on
         (admin config). Defaults to on. Best-effort; no hard dependency."""

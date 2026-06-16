@@ -233,6 +233,24 @@ def happy_path(base, committee=False):
     step("credit-admin: legal cleared", True, _lr.get("outcome") == "approved",
          {"legal_status": _lr.get("status"), "outcome": _lr.get("outcome")})
 
+    # 8e. (P4-5) Security perfection: add -> mark perfected.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/perfection",
+                    admin, {"security_type": "Debenture", "registration_reference": "CR/SIM/1"})
+    step("credit-admin: add security perfection", (200, 201), st, body)
+    _perfs = (body.get("case", {}) if isinstance(body, dict) else {}).get("security_perfections", [])
+    _pid = _perfs[-1]["id"] if _perfs else None
+    if _pid:
+        st, body = _req(base, "POST",
+                        f"/api/credit-admin/cases/{case_id}/perfection/{_pid}/update",
+                        admin, {"registration_status": "registered", "perfection_status": "perfected"})
+        step("credit-admin: mark perfection perfected", (200, 201), st, body)
+
+    # 8f. (P4-5) Insurance: add an active, bank-interest-noted policy.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/insurance",
+                    admin, {"insurer": "SIM Assurance", "policy_number": "POL-SIM-1",
+                            "expiry_date": "2027-12-31", "bank_interest_noted": True})
+    step("credit-admin: add insurance policy", (200, 201), st, body)
+
     # 9. GUARD: disburse before authorize -> blocked.
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager"})

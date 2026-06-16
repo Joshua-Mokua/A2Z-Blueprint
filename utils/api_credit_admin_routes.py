@@ -495,6 +495,108 @@ def credit_admin_legal_outcome(case_id: str, payload: _LegalOutcomeRequest,
 
 
 # ─────────────────────────────────────────────────────────────────────
+# P4-5: Security Perfection + Insurance
+# ─────────────────────────────────────────────────────────────────────
+class _AddPerfectionRequest(BaseModel):
+    security_type: str
+    registration_reference: Optional[str] = ""
+    registration_status: Optional[str] = "pending"
+    registration_date: Optional[str] = None
+    perfection_status: Optional[str] = "unperfected"
+    officer_code: Optional[str] = ""
+    notes: Optional[str] = ""
+    model_config = ConfigDict(extra="allow")
+
+
+class _UpdatePerfectionRequest(BaseModel):
+    registration_status: Optional[str] = None
+    registration_reference: Optional[str] = None
+    registration_date: Optional[str] = None
+    perfection_status: Optional[str] = None
+    perfecting_officer_code: Optional[str] = None
+    notes: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
+
+
+class _AddInsuranceRequest(BaseModel):
+    insurer: str
+    policy_number: str
+    sum_insured: Optional[float] = None
+    currency: Optional[str] = "KES"
+    effective_date: Optional[str] = None
+    expiry_date: Optional[str] = None
+    bank_interest_noted: Optional[bool] = False
+    collateral_id: Optional[str] = ""
+    status: Optional[str] = "active"
+    renewal_alert_days: Optional[int] = 30
+    model_config = ConfigDict(extra="allow")
+
+
+@router.post("/cases/{case_id}/perfection",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_add_perfection(case_id: str, payload: _AddPerfectionRequest,
+                                user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    pid = cam.add_security_perfection(
+        case_id, security_type=payload.security_type,
+        registration_reference=payload.registration_reference or "",
+        registration_status=payload.registration_status or "pending",
+        registration_date=payload.registration_date,
+        perfection_status=payload.perfection_status or "unperfected",
+        officer_code=payload.officer_code or "", notes=payload.notes or "")
+    audit_log("CREDIT_ADMIN_PERFECTION_ADDED", str(user.get('username', '') or ''),
+              f"{case_id}|{pid}|{payload.security_type}")
+    return {"case": cam.get(case_id), "status": "perfection_added"}
+
+
+@router.post("/cases/{case_id}/perfection/{perfection_id}/update",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_update_perfection(case_id: str, perfection_id: str,
+                                   payload: _UpdatePerfectionRequest,
+                                   user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    fields = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not cam.update_security_perfection(case_id, perfection_id, **fields):
+        raise HTTPException(status_code=400,
+                            detail="Perfection not found or invalid status value")
+    audit_log("CREDIT_ADMIN_PERFECTION_UPDATED", str(user.get('username', '') or ''),
+              f"{case_id}|{perfection_id}|{fields}")
+    return {"case": cam.get(case_id), "status": "perfection_updated"}
+
+
+@router.post("/cases/{case_id}/insurance",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_add_insurance(case_id: str, payload: _AddInsuranceRequest,
+                               user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    iid = cam.add_insurance_policy(
+        case_id, insurer=payload.insurer, policy_number=payload.policy_number,
+        sum_insured=payload.sum_insured, currency=payload.currency or "KES",
+        effective_date=payload.effective_date, expiry_date=payload.expiry_date,
+        bank_interest_noted=bool(payload.bank_interest_noted),
+        collateral_id=payload.collateral_id or "", status=payload.status or "active",
+        renewal_alert_days=payload.renewal_alert_days or 30)
+    audit_log("CREDIT_ADMIN_INSURANCE_ADDED", str(user.get('username', '') or ''),
+              f"{case_id}|{iid}|{payload.insurer}|{payload.policy_number}")
+    return {"case": cam.get(case_id), "status": "insurance_added"}
+
+
+@router.post("/cases/{case_id}/insurance/{policy_id}/update",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_update_insurance(case_id: str, policy_id: str,
+                                  payload: Dict[str, Any],
+                                  user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    fields = {k: v for k, v in (payload or {}).items() if v is not None}
+    if not cam.update_insurance_policy(case_id, policy_id, **fields):
+        raise HTTPException(status_code=400,
+                            detail="Policy not found or invalid status value")
+    audit_log("CREDIT_ADMIN_INSURANCE_UPDATED", str(user.get('username', '') or ''),
+              f"{case_id}|{policy_id}")
+    return {"case": cam.get(case_id), "status": "insurance_updated"}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # POST /api/credit-admin/cases/{id}/disburse — clear for disbursement
 # ─────────────────────────────────────────────────────────────────────
 

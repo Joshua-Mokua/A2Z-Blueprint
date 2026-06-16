@@ -523,3 +523,29 @@ objects (backend + React).
   pass. Tests: test_p4_4_legal_review.py (3).
 - Harness: legal assign -> clear check.
 - NON-GATING still (gate is P4-6). Next: P4-5 Security Perfection + Insurance.
+
+## P4-5 — Security Perfection + Insurance workflows: DELIVERED (backend)
+
+- core.py CreditAdminManager:
+  - Perfection: add_security_perfection, update_security_perfection. Object:
+    { id, security_type, registration_status (pending/lodged/registered/failed),
+    registration_reference, registration_date, perfection_status
+    (unperfected/in_progress/perfected/lapsed), perfecting_officer_code, notes }.
+  - Insurance: add_insurance_policy, update_insurance_policy. Object: { id,
+    collateral_id, insurer, policy_number, sum_insured, currency, effective_date,
+    expiry_date, bank_interest_noted, status (active/expired/cancelled/pending),
+    renewal_alert_days }.
+  - Gate helpers (pure): perfection_blocks_disbursement (secured: every
+    instrument must be perfected; none-yet blocks), has_valid_insurance (active +
+    bank-interest-noted + unexpired), insurance_blocks_disbursement (blocks when
+    required and no valid policy; the `required` decision is the P4-6 gate's,
+    per config).
+- API: POST /perfection, /perfection/{id}/update, /insurance, /insurance/{id}/update
+  (Legal/manager-gated, in-scope, audited CREDIT_ADMIN_PERFECTION/INSURANCE_*).
+- Tests: test_p4_5_perfection_insurance.py (4). Harness: add perfection -> mark
+  perfected; add insurance policy.
+- OPEN (Q4): which subtypes make insurance MANDATORY (proposed mortgage/chattel/
+  asset; not cash-cover). P4-6 reads this from config; default proposal applied.
+- This is the LAST non-gating batch. Next: P4-6 wires the disburse HARD-GATE +
+  tiered override consuming outstanding_mandatory_cp + legal + perfection +
+  insurance + coverage. Then combined React + full simulation.
