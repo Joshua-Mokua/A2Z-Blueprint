@@ -538,7 +538,8 @@ def lms_request_info(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if not is_valid_lms_transition(str(app.get("status", "")), "info_requested"):
         raise HTTPException(status_code=400,
@@ -564,7 +565,8 @@ def lms_provide_info(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if str(app.get("status", "")) != "info_requested":
         raise HTTPException(status_code=400,
@@ -589,7 +591,8 @@ def lms_sign_offer(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if str(app.get("status", "")) != "offer_issued":
         raise HTTPException(status_code=400,
@@ -630,7 +633,8 @@ def lms_validate_offer(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if str(app.get("status", "")) != "offer_signed":
         raise HTTPException(status_code=400,
@@ -659,7 +663,8 @@ def lms_confirm_to_credit_admin(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if not is_valid_lms_transition(str(app.get("status", "")), "analyst_confirmed"):
         raise HTTPException(status_code=400,
@@ -694,7 +699,8 @@ def lms_committee_refer(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if not is_valid_lms_transition(str(app.get("status", "")), "referred_to_committee"):
         raise HTTPException(status_code=400,
@@ -717,7 +723,8 @@ def lms_committee_vote(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if str(app.get("status", "")) != "referred_to_committee":
         raise HTTPException(status_code=400,
@@ -754,7 +761,8 @@ def lms_committee_resolve(
     app = lam.get(app_id)
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not is_app_in_scope(app, user):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     if str(app.get("status", "")) != "referred_to_committee":
         raise HTTPException(status_code=400,
