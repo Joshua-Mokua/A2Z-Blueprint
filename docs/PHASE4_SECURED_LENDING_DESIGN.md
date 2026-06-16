@@ -826,3 +826,15 @@ NEXT (recommended sequence):
      category share, bars for ranked branch/RM/product, funnel for stage).
   #8 click-to-drill depth — Branch -> its RMs -> individual RM -> deals.
   (optional) seed a validated-deal portion so the "assured" funnel isn't empty.
+
+## #7 — Richer per-dimension visuals (frontend): DELIVERED (tsc gate)
+
+PipelineSlicer now picks the chart that fits each dimension:
+  - Sector / Currency -> DonutChart (share; top 8 + "Others", center total).
+  - Stage -> funnel (flow-ordered descending bars, share labels, depth fade).
+  - Product / Branch / RM -> ranked value bars (top 12).
+Breakdown table retained alongside every chart (value / deals / % share).
+Now meaningful thanks to #6 seed (35 branches, 212 RMs, 14 sectors).
+
+NEXT: #8 click-to-drill depth (Branch -> RMs -> individual deals); then credit
+drill + dashboard de-lump (figures link into drills).

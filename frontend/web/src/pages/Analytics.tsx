@@ -8,6 +8,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
+import { DonutChart } from '@/components/charts/DonutChart';
 
 function abbrev(n: number): string {
   const a = Math.abs(n);
@@ -140,12 +141,24 @@ function PipelineSlicer({
   kes: (n: number) => string;
 }) {
   const [dim, setDim] = useState<string>('Product');
-  const rows = useMemo(
-    () => sliceFor(dim as never).slice().sort((a, b) => b.value - a.value),
-    [dim, sliceFor],
-  );
+  // Stage renders as a funnel (server/flow order preserved); Sector & Currency
+  // as donuts (share); everything else as ranked bars (value-sorted).
+  const isFunnel = dim === 'Stage';
+  const isDonut = dim === 'Sector' || dim === 'Currency';
+  const rows = useMemo(() => {
+    const raw = sliceFor(dim as never);
+    return isFunnel ? raw : raw.slice().sort((a, b) => b.value - a.value);
+  }, [dim, sliceFor, isFunnel]);
   const total = useMemo(() => rows.reduce((s, r) => s + r.value, 0), [rows]);
-  const chartData = rows.slice(0, 12).map((r) => ({ label: r.label, value: r.value }));
+
+  // Donut: top 8 slices + "Others" so 14 sectors don't clutter.
+  const donutData = useMemo(() => {
+    const top = rows.slice(0, 8).map((r) => ({ name: r.label, value: r.value }));
+    const rest = rows.slice(8).reduce((s, r) => s + r.value, 0);
+    return rest > 0 ? [...top, { name: 'Others', value: rest }] : top;
+  }, [rows]);
+  const barData = rows.slice(0, 12).map((r) => ({ label: r.label, value: r.value }));
+  const funnelMax = rows.length ? Math.max(...rows.map((r) => r.value)) : 0;
 
   return (
     <>
@@ -172,12 +185,45 @@ function PipelineSlicer({
           <p className="text-sm text-gray-500">No data for this dimension yet.</p>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CategoryBarChart
-              data={chartData as unknown as Array<Record<string, unknown>>}
-              xKey="label"
-              series={[{ key: 'value', label: 'Pipeline value' }]}
-              height={Math.max(220, chartData.length * 26)}
-            />
+            <div>
+              {isDonut && (
+                <DonutChart data={donutData} height={300}
+                            centerLabel="Total" centerValue={abbrev(total)} />
+              )}
+              {isFunnel && (
+                <div className="space-y-1.5 py-2">
+                  {rows.map((r, i) => {
+                    const pct = funnelMax > 0 ? (r.value / funnelMax) * 100 : 0;
+                    const share = total > 0 ? (r.value / total) * 100 : 0;
+                    return (
+                      <div key={r.label} className="flex items-center gap-3">
+                        <div className="w-36 shrink-0 text-xs text-gray-600 text-right">{r.label}</div>
+                        <div className="flex-1 bg-gray-100 rounded">
+                          <div
+                            className="h-7 rounded flex items-center justify-end px-2 text-[11px] text-white tabular-nums"
+                            style={{
+                              width: `${Math.max(pct, 6)}%`,
+                              background: 'var(--brand-primary, #1797ce)',
+                              opacity: 1 - i * 0.07,
+                            }}
+                          >
+                            {share.toFixed(0)}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {!isDonut && !isFunnel && (
+                <CategoryBarChart
+                  data={barData as unknown as Array<Record<string, unknown>>}
+                  xKey="label"
+                  series={[{ key: 'value', label: 'Pipeline value' }]}
+                  height={Math.max(220, barData.length * 26)}
+                />
+              )}
+            </div>
             <div className="overflow-auto">
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-gray-500 border-b">
