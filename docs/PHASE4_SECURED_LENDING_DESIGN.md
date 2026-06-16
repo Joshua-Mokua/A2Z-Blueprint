@@ -804,3 +804,25 @@ Product (13) and Stage have real spread. For the pitch, regenerate a realistic
 pipeline seed: deals spread across the 35 branches / 232 RMs / CBK sectors so
 the Branch/RM/Sector drills populate. This is a data-generation task (Josh's
 domain: generators at project root), separate from the drill UI which is correct.
+
+## #6 — Realistic demo pipeline seed (data foundation): DELIVERED (dry-run proven)
+
+scripts/seed_pipeline_demo.py — lays down a realistic pipeline so executive
+drill-downs populate (the prerequisite for Josh's branch/individual drill ask).
+
+- Distributes deals across real branches (flexcube_mock_branches), RMs
+  (flexcube_mock_staff, round-robin per branch so Branch->RM is a coherent
+  hierarchy), CBK sectors / segments by client type, product catalogue ->
+  pipeline_category, stage_flows per category (incl. Closed Won/Lost), and
+  currency (~86% KES, FCY stamped to KES-equiv).
+- SAFE: --dry-run (build + summarise, touches nothing); --reset (timestamped
+  JSON backup to data/_backups/ BEFORE delete); deterministic ids (SEEDxxxxx,
+  idempotent). Writes via the canonical _db_sync_pipeline_deal.
+- DRY-RUN PROOF (600 deals): 35 branches, 212 RMs, 14 sectors, LCY 523/FCY 77,
+  asset 327/liability 164/insurance 55/other 54, stages spread, regions spread.
+
+NEXT (recommended sequence):
+  #7 richer visuals — per-dimension chart type (donut for sector/currency/
+     category share, bars for ranked branch/RM/product, funnel for stage).
+  #8 click-to-drill depth — Branch -> its RMs -> individual RM -> deals.
+  (optional) seed a validated-deal portion so the "assured" funnel isn't empty.
