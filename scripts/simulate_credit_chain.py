@@ -572,6 +572,69 @@ def stress(base, n):
          note=f"{dt:.1f}s total, {ok/dt:.1f} deals/s, p50={p50:.0f}ms p95={p95:.0f}ms")
 
 
+def credit_probe(base):
+    print("\n=== CREDIT ANALYTICS + DRILL (loan book) ===")
+    admin = login(base, "ADMIN")
+    if not admin:
+        return
+    st, an = _req(base, "GET", "/api/credit/analytics", admin)
+    ok = isinstance(an, dict) and all(
+        k in an for k in ("by_class", "by_region", "by_branch", "by_rm", "totals"))
+    step("credit: analytics has class/region/branch/rm + totals", True, bool(ok),
+         note=f"branches={len(an.get('by_branch', [])) if isinstance(an, dict) else 0}, "
+              f"npl={an.get('totals', {}).get('npl_ratio_pct') if isinstance(an, dict) else '?'}%")
+    if isinstance(an, dict):
+        tb = sum(b.get("accounts", 0) for b in an.get("by_branch", []))
+        step("credit: by_branch accounts reconcile to total", True,
+             tb == an.get("totals", {}).get("accounts"),
+             note=f"{tb} vs {an.get('totals', {}).get('accounts')}")
+    st, dr = _req(base, "GET", "/api/credit/drill", admin)
+    step("credit drill: by_branch + by_rm + accounts + totals", True,
+         isinstance(dr, dict) and all(k in dr for k in ("by_branch", "by_rm", "accounts", "totals")))
+    regions = an.get("by_region", []) if isinstance(an, dict) else []
+    top_region = regions[0].get("region") if regions else None
+    if top_region:
+        import urllib.parse as _up
+        st, drg = _req(base, "GET", f"/api/credit/drill?region={_up.quote(str(top_region))}", admin)
+        rbr = drg.get("by_branch", []) if isinstance(drg, dict) else []
+        step("credit drill: region narrows to its branches", True, len(rbr) >= 1,
+             note=f"region={top_region} -> {len(rbr)} branches")
+        top_branch = rbr[0].get("branch") if rbr else None
+        if top_branch:
+            q = f"region={_up.quote(str(top_region))}&branch={_up.quote(str(top_branch))}"
+            st, drb = _req(base, "GET", f"/api/credit/drill?{q}", admin)
+            brm = drb.get("by_rm", []) if isinstance(drb, dict) else []
+            step("credit drill: branch narrows to its RMs", True, len(brm) >= 1,
+                 note=f"branch={top_branch} -> {len(brm)} RMs")
+            top_rm = brm[0].get("rm") if brm else None
+            if top_rm:
+                st, drm = _req(base, "GET", f"/api/credit/drill?{q}&rm={_up.quote(str(top_rm))}", admin)
+                accs = drm.get("accounts", []) if isinstance(drm, dict) else []
+                step("credit drill: RM yields individual accounts", True, len(accs) >= 1,
+                     note=f"{len(accs)} accounts for {top_rm}")
+
+
+def hierarchy_scope_probe(base):
+    print("\n=== HIERARCHY SCOPE (individual view — like pipeline) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not admin or not owner:
+        step("scope: personas available", True, False, note="missing login")
+        return
+    _, mp = _req(base, "GET", "/api/pipeline/drill", admin)
+    _, op = _req(base, "GET", "/api/pipeline/drill", owner)
+    md_pipe = mp.get("totals", {}).get("count", 0) if isinstance(mp, dict) else 0
+    own_pipe = op.get("totals", {}).get("count", 0) if isinstance(op, dict) else 0
+    step("scope: non-MD sees a strict subset of pipeline (hierarchy-scoped)", True,
+         own_pipe < md_pipe, note=f"owner={own_pipe} < MD={md_pipe}")
+    _, mc = _req(base, "GET", "/api/credit/analytics", admin)
+    _, oc = _req(base, "GET", "/api/credit/analytics", owner)
+    md_credit = mc.get("totals", {}).get("accounts", 0) if isinstance(mc, dict) else 0
+    own_credit = oc.get("totals", {}).get("accounts", 0) if isinstance(oc, dict) else 0
+    step("scope: non-MD sees credit scoped to subtree (strict subset)", True,
+         own_credit < md_credit, note=f"owner={own_credit} < MD={md_credit}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -594,6 +657,8 @@ def main():
     sector_mou_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
+    credit_probe(args.base)
+    hierarchy_scope_probe(args.base)
     if args.volume:
         stress(args.base, args.volume)
 

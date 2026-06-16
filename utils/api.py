@@ -2740,6 +2740,109 @@ def credit_watchlist(
     if npl_only:       accts = [a for a in accts if _safe_int(a.get("npl_days",0))>=90]
     return {"accounts":accts[offset:offset+limit],"count":len(accts),"source":"json"}
 
+
+# ── Credit analytics + drill (hierarchy-scoped, mirrors pipeline) ──────────
+def _acquire_scoped_credit(user: dict) -> list:
+    """Loan-book accounts within the caller's reporting subtree.
+
+    Mirrors _acquire_scoped_deals: the SAME get_visible_staff_codes the
+    pipeline uses, applied to the account's rm_code. So an individual sees
+    credit exactly the way they see pipeline — their own subtree only; MD /
+    full-view roles see everything (their visible set is the full roster).
+    """
+    raw = _load_json("credit_monitoring.json")
+    accts = raw if isinstance(raw, list) else raw.get("watchlist", [])
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    visible = get_visible_staff_codes(user)
+    return [a for a in accts if str(a.get("rm_code") or "") in visible]
+
+
+def _compute_credit_analytics(accts: list) -> dict:
+    def out(a): return _safe_float(a.get("outstanding", 0))
+    def npl(a): return _safe_int(a.get("npl_days", 0)) >= 90
+
+    def group(field: str, key: str) -> list:
+        m: dict = {}
+        for a in accts:
+            k = a.get(field) or "Unassigned"
+            e = m.setdefault(k, {key: k, "outstanding": 0.0, "accounts": 0,
+                                 "npl_outstanding": 0.0})
+            e["outstanding"] += out(a)
+            e["accounts"] += 1
+            if npl(a):
+                e["npl_outstanding"] += out(a)
+        rows = sorted(m.values(), key=lambda x: x["outstanding"], reverse=True)
+        for r in rows:
+            r["npl_ratio_pct"] = (round(r["npl_outstanding"] / r["outstanding"] * 100, 2)
+                                  if r["outstanding"] else 0.0)
+        return rows
+
+    total_out = sum(out(a) for a in accts)
+    npl_out = sum(out(a) for a in accts if npl(a))
+    return {
+        "totals": {
+            "outstanding": total_out,
+            "accounts": len(accts),
+            "npl_outstanding": npl_out,
+            "npl_count": sum(1 for a in accts if npl(a)),
+            "npl_ratio_pct": round(npl_out / total_out * 100, 2) if total_out else 0.0,
+        },
+        "by_class": group("classification", "classification"),
+        "by_region": group("region", "region"),
+        "by_branch": group("branch_name", "branch"),
+        "by_rm": group("rm_name", "rm"),
+    }
+
+
+@app.get("/api/credit/analytics")
+def credit_analytics(user: dict = Depends(get_current_user)):
+    """Loan-book analytics over the caller's scoped accounts (KES outstanding):
+    by classification / region / branch / RM, with NPL per slice."""
+    _audit("API_CREDIT_ANALYTICS", user)
+    return _compute_credit_analytics(_acquire_scoped_credit(user))
+
+
+@app.get("/api/credit/drill")
+def credit_drill(
+    region: Optional[str] = None,
+    branch: Optional[str] = None,
+    rm: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """Drill the loan book Region -> Branch -> RM -> individual accounts.
+    Scope-safe (reuses _acquire_scoped_credit). Pure filter, so it can't drift
+    from the credit analytics totals."""
+    _audit("API_CREDIT_DRILL", user, f"region={region} branch={branch} rm={rm}")
+    accts = _acquire_scoped_credit(user)
+    if region: accts = [a for a in accts if (a.get("region") or "Unassigned") == region]
+    if branch: accts = [a for a in accts if (a.get("branch_name") or "Unassigned") == branch]
+    if rm:     accts = [a for a in accts
+                        if (a.get("rm_name") or a.get("rm_code") or "Unassigned") == rm]
+
+    sub = _compute_credit_analytics(accts)
+
+    def _slim(a: dict) -> dict:
+        return {
+            "account_number": a.get("account_number"),
+            "cif": a.get("cif"),
+            "classification": a.get("classification"),
+            "outstanding": _safe_float(a.get("outstanding", 0)),
+            "npl_days": _safe_int(a.get("npl_days", 0)),
+            "branch_name": a.get("branch_name"),
+            "rm_name": a.get("rm_name"),
+            "collateral_type": a.get("collateral_type"),
+            "stage": a.get("stage"),
+        }
+    accounts = [_slim(a) for a in
+                sorted(accts, key=lambda a: _safe_float(a.get("outstanding", 0)),
+                       reverse=True)[:200]]
+    return {
+        "region": region, "branch": branch, "rm": rm,
+        "by_branch": sub["by_branch"], "by_rm": sub["by_rm"],
+        "accounts": accounts, "totals": sub["totals"],
+    }
+
+
 # ── AML Endpoints ─────────────────────────────────────────────────
 @app.get("/api/aml/summary")
 def aml_summary(user: dict = Depends(get_current_user)):

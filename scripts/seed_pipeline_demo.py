@@ -155,11 +155,14 @@ def build_deals(count, n_branches, n_rms, seed):
         client_type = "Business" if random.random() < 0.6 else "Individual"
 
         lo, hi = VALUE_RANGES[cat]
-        # log-uniform for a realistic long tail
+        # The range is the KES-EQUIVALENT band (so FCY deals don't balloon when
+        # a native FX amount is multiplied by the rate). Pick a KES-equivalent
+        # value log-uniformly, then back out the native amount via the rate.
         import math
-        native = round(math.exp(random.uniform(math.log(lo), math.log(hi))), -3)
+        kes_target = math.exp(random.uniform(math.log(lo), math.log(hi)))
         currency = _weighted(CURRENCY_WEIGHTS)
         rate = fx.get(currency, 1.0)
+        native = round(kes_target / rate, -3 if currency == "KES" else 0)
         amount_kes = round(native * rate, 2)
         currency_book = "FCY" if currency != "KES" else "LCY"
 

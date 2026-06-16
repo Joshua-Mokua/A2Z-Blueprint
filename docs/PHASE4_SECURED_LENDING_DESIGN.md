@@ -859,3 +859,32 @@ Frontend (Analytics page):
 
 REMAINING: credit-side drill (class/branch/NPL) + dashboard de-lump (hero
 figures link into these drills instead of repeating section totals).
+
+## #9 — Credit analytics + drill (hierarchy-scoped) + scope confirmation + seed FCY fix
+
+CREDIT (backend, loan book over credit_monitoring's 5001 accounts):
+- _acquire_scoped_credit(user): SAME get_visible_staff_codes the pipeline uses,
+  applied to account rm_code -> an individual sees credit exactly as they see
+  pipeline (own subtree; MD/full-view see all). All 232 watchlist rm_codes are
+  real staff codes, so scoping narrows correctly (not to zero).
+- /api/credit/analytics: outstanding + NPL by classification / region / branch /
+  RM (NPL ratio per slice).
+- /api/credit/drill?region=&branch=&rm=: Region -> Branch -> RM -> individual
+  accounts; pure filter over the scoped set (can't drift from totals).
+
+SCOPE CONFIRMATION (answers "individuals see by hierarchy like pipeline"):
+- hierarchy_scope_probe: a non-MD (OWNER) sees a STRICT subset of both pipeline
+  (drill count) and credit (account count) vs MD. Mechanism is identical for
+  both surfaces, so the reporting tree governs the loan book the same way it
+  governs the pipeline.
+- NOTE: the credit endpoints were previously UN-scoped (full book to any
+  caller). This batch closes that gap.
+
+SEED FCY REALISM FIX:
+- seed_pipeline_demo.py VALUE_RANGES are now KES-equivalent bands; native amount
+  is derived from the rate (native = kes_target / rate), so FCY deals no longer
+  balloon. Dry-run total dropped from 387B (FCY 369B) to ~21B with FCY a
+  proportional minority. RE-RUN --reset to apply.
+
+NEXT: credit Analytics PAGE (mirror the pipeline slicer + drill); dashboard
+de-lump.
