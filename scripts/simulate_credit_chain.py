@@ -223,6 +223,16 @@ def happy_path(base, committee=False):
          {"classification": _case.get("security_classification"),
           "coverage": _case.get("coverage_ratio")})
 
+    # 8d. (P4-4) Legal review: assign -> clear.
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/legal/assign",
+                    admin, {"officer_code": "LO001", "officer_name": "SIM Legal Officer"})
+    step("credit-admin: legal assign", (200, 201), st, body)
+    st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/legal/outcome",
+                    admin, {"outcome": "approved", "note": "sim clearance"})
+    _lr = (body.get("case", {}) if isinstance(body, dict) else {}).get("legal_review", {})
+    step("credit-admin: legal cleared", True, _lr.get("outcome") == "approved",
+         {"legal_status": _lr.get("status"), "outcome": _lr.get("outcome")})
+
     # 9. GUARD: disburse before authorize -> blocked.
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager"})

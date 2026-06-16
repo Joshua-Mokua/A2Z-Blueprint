@@ -412,6 +412,89 @@ def credit_admin_policy_matrix(user: Dict[str, Any] = Depends(get_current_user))
 
 
 # ─────────────────────────────────────────────────────────────────────
+# P4-4: Legal Review workflow (Legal Officer)
+# ─────────────────────────────────────────────────────────────────────
+def _can_perform_legal(user: Dict[str, Any]) -> bool:
+    """Legal actions: admin, a Legal-Officer role, or manager-tier (pilot —
+    until the canonical Legal Officer role is added in the hierarchy rework)."""
+    if user.get("is_admin"):
+        return True
+    if "legal" in str(user.get("role", "") or "").lower():
+        return True
+    return is_manager(user)
+
+
+class _AssignLegalRequest(BaseModel):
+    officer_code: str
+    officer_name: Optional[str] = ""
+    model_config = ConfigDict(extra="allow")
+
+
+class _LegalCommentRequest(BaseModel):
+    text: str
+    raises_query: Optional[bool] = False
+    model_config = ConfigDict(extra="allow")
+
+
+class _LegalOutcomeRequest(BaseModel):
+    outcome: str   # approved | approved_with_conditions | rejected
+    note: Optional[str] = ""
+    model_config = ConfigDict(extra="allow")
+
+
+def _legal_case_or_403(case_id: str, user):
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _can_perform_legal(user):
+        raise HTTPException(status_code=403,
+                            detail="Legal review requires Legal Officer or manager authority")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    return cam, case
+
+
+@router.post("/cases/{case_id}/legal/assign",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_legal_assign(case_id: str, payload: _AssignLegalRequest,
+                              user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    cam.assign_legal_officer(case_id, payload.officer_code, payload.officer_name or "")
+    audit_log("CREDIT_ADMIN_LEGAL_ASSIGNED", str(user.get('username', '') or ''),
+              f"{case_id}|{payload.officer_code}")
+    return {"case": cam.get(case_id), "status": "legal_assigned"}
+
+
+@router.post("/cases/{case_id}/legal/comment",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_legal_comment(case_id: str, payload: _LegalCommentRequest,
+                               user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    if not cam.add_legal_comment(case_id, str(user.get('username', '') or ''),
+                                 payload.text, bool(payload.raises_query)):
+        raise HTTPException(status_code=400, detail="Comment text is required")
+    audit_log("CREDIT_ADMIN_LEGAL_COMMENT", str(user.get('username', '') or ''),
+              f"{case_id}|query={payload.raises_query}")
+    return {"case": cam.get(case_id), "status": "legal_comment_added"}
+
+
+@router.post("/cases/{case_id}/legal/outcome",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_legal_outcome(case_id: str, payload: _LegalOutcomeRequest,
+                               user: Dict[str, Any] = Depends(get_current_user)):
+    cam, _ = _legal_case_or_403(case_id, user)
+    if not cam.set_legal_outcome(case_id, payload.outcome,
+                                 by=str(user.get('username', '') or '')):
+        raise HTTPException(
+            status_code=400,
+            detail="outcome must be approved, approved_with_conditions, or rejected")
+    audit_log("CREDIT_ADMIN_LEGAL_OUTCOME", str(user.get('username', '') or ''),
+              f"{case_id}|{payload.outcome}")
+    return {"case": cam.get(case_id), "status": "legal_outcome_set"}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # POST /api/credit-admin/cases/{id}/disburse — clear for disbursement
 # ─────────────────────────────────────────────────────────────────────
 

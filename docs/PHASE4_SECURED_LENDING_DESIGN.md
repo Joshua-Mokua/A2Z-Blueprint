@@ -505,3 +505,21 @@ objects (backend + React).
 - NON-GATING still: coverage/classification computed + surfaced; the disburse
   HARD-GATE that consumes them is P4-6. Next: P4-4 Legal Review + P4-5
   Perfection/Insurance, then P4-6 gate, then combined React (P4-2b/3b/4b/5b).
+
+## P4-4 — Legal Review workflow: DELIVERED (backend)
+
+- core.py CreditAdminManager: _ensure_legal_review (lazy init on existing cases),
+  assign_legal_officer (-> in_review), add_legal_comment (raises_query ->
+  queries_raised), set_legal_outcome (approved/approved_with_conditions/rejected
+  -> cleared/rejected). legal_review { status, assigned_officer_code/name,
+  outcome, comments[], started_at, completed_at, completed_by }.
+- Pure gate-input legal_blocks_disbursement(case): secured facilities require a
+  cleared legal outcome; unsecured never blocked.
+- API: POST /cases/{id}/legal/assign, /legal/comment, /legal/outcome —
+  authorized by _can_perform_legal (admin | role~legal | manager-tier), in-scope,
+  audited (CREDIT_ADMIN_LEGAL_*).
+- Legal Officer role: pilot uses the capability check above; the canonical
+  Legal Officer role + React workspace land with the hierarchy rework / React
+  pass. Tests: test_p4_4_legal_review.py (3).
+- Harness: legal assign -> clear check.
+- NON-GATING still (gate is P4-6). Next: P4-5 Security Perfection + Insurance.

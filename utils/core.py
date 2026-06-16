@@ -5900,6 +5900,87 @@ class CreditAdminManager:
             return True
         return False
 
+    # ── P4-4: Legal Review workflow ──────────────────────────────────
+    @staticmethod
+    def _ensure_legal_review(case: dict) -> dict:
+        """Lazily initialize the legal_review object so existing cases work."""
+        lr = case.get("legal_review")
+        if not isinstance(lr, dict):
+            lr = {
+                "status":                "not_started",
+                "assigned_officer_code": None,
+                "assigned_officer_name": None,
+                "outcome":               None,
+                "comments":              [],
+                "started_at":            None,
+                "completed_at":          None,
+            }
+            case["legal_review"] = lr
+        return lr
+
+    def assign_legal_officer(self, case_id: str, officer_code: str,
+                             officer_name: str = "") -> bool:
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            lr = self._ensure_legal_review(case)
+            lr["assigned_officer_code"] = officer_code
+            lr["assigned_officer_name"] = officer_name
+            if lr["status"] in ("not_started",):
+                lr["status"] = "in_review"
+                lr["started_at"] = datetime.now().date().isoformat()
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def add_legal_comment(self, case_id: str, author_code: str, text: str,
+                          raises_query: bool = False) -> bool:
+        if not str(text or "").strip():
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            lr = self._ensure_legal_review(case)
+            lr["comments"].append({
+                "author_code": author_code,
+                "text":        text,
+                "at":          datetime.now().isoformat(timespec="seconds"),
+            })
+            if raises_query:
+                lr["status"] = "queries_raised"
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def set_legal_outcome(self, case_id: str, outcome: str,
+                          by: str = "") -> bool:
+        if outcome not in ("approved", "approved_with_conditions", "rejected"):
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            lr = self._ensure_legal_review(case)
+            lr["outcome"] = outcome
+            lr["status"] = "rejected" if outcome == "rejected" else "cleared"
+            lr["completed_at"] = datetime.now().date().isoformat()
+            lr["completed_by"] = by
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    @staticmethod
+    def legal_blocks_disbursement(case: dict) -> bool:
+        """Pure gate-input (P4-6): secured facilities require a cleared legal
+        review (outcome approved or approved_with_conditions). Unsecured never
+        blocked on legal."""
+        if str(case.get("facility_security_type", "unsecured")) != "secured":
+            return False
+        lr = case.get("legal_review") or {}
+        return lr.get("outcome") not in ("approved", "approved_with_conditions")
+
     def _two_layer_enabled(self) -> bool:
         """Whether the Credit-Admin two-layer authorization policy is on
         (admin config). Defaults to on. Best-effort; no hard dependency."""
