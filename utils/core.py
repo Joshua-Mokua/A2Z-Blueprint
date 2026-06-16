@@ -6129,6 +6129,172 @@ class CreditAdminManager:
             return False
         return not CreditAdminManager.has_valid_insurance(case, as_of)
 
+    # ── P4-6: disbursement HARD-GATE + tiered override ───────────────
+    @staticmethod
+    def _insurance_required_for(case: dict, matrix) -> bool:
+        """Insurance mandatory if any linked collateral type — or the facility
+        subtype — is in the matrix's insurance_required_subtypes."""
+        req = set(getattr(matrix, "insurance_required_subtypes", []) or [])
+        if not req:
+            return False
+        subtype = case.get("security_subtype")
+        if subtype and subtype in req:
+            return True
+        for link in (case.get("linked_collateral", []) or []):
+            if link.get("collateral_type") in req:
+                return True
+        return False
+
+    @staticmethod
+    def _stale_valuations(case: dict, matrix) -> list:
+        """Collateral links whose valuation_date is older than the configured
+        max age. Lenient: links WITHOUT a valuation_date are not flagged."""
+        import datetime as _dt
+        max_age = int(getattr(matrix, "valuation_max_age_days", 365) or 365)
+        cutoff = (_dt.date.today() - _dt.timedelta(days=max_age)).isoformat()
+        stale = []
+        for link in (case.get("linked_collateral", []) or []):
+            vd = link.get("valuation_date")
+            if vd and str(vd) < cutoff:
+                stale.append(link.get("collateral_id"))
+        return stale
+
+    @staticmethod
+    def evaluate_disbursement_gate(case: dict, matrix=None, as_of: str = None) -> dict:
+        """The disbursement readiness gate. Returns {passed, failures[], secured}.
+        Unsecured facilities check only mandatory Conditions Precedent (the
+        affordability path is unchanged). Secured facilities additionally require
+        cleared legal review, perfected security, valid insurance (where
+        required), coverage at/above the policy threshold, and fresh valuations.
+        """
+        failures = []
+        secured = str(case.get("facility_security_type", "unsecured")) == "secured"
+
+        cp = CreditAdminManager.outstanding_mandatory_cp(case)
+        if cp:
+            failures.append({"check": "conditions_precedent",
+                             "reason": f"{len(cp)} mandatory condition(s) precedent outstanding",
+                             "needed": cp})
+        if secured:
+            from utils.collateral_coverage import CreditPolicyMatrix
+            m = matrix or CreditPolicyMatrix()
+            if CreditAdminManager.legal_blocks_disbursement(case):
+                failures.append({"check": "legal_review",
+                                 "reason": "legal review not cleared",
+                                 "needed": "outcome approved or approved_with_conditions"})
+            if CreditAdminManager.perfection_blocks_disbursement(case):
+                failures.append({"check": "security_perfection",
+                                 "reason": "security not fully perfected",
+                                 "needed": "every instrument perfection_status=perfected"})
+            ins_req = CreditAdminManager._insurance_required_for(case, m)
+            if CreditAdminManager.insurance_blocks_disbursement(case, as_of, ins_req):
+                failures.append({"check": "insurance",
+                                 "reason": "no valid insurance (active, bank interest noted, unexpired)",
+                                 "needed": "valid insurance policy"})
+            cls = str(case.get("security_classification", "unsecured"))
+            if cls in ("unsecured", "partially_secured"):
+                failures.append({"check": "coverage",
+                                 "reason": f"coverage classification is {cls}",
+                                 "needed": "fully_secured or over_secured",
+                                 "coverage_ratio": case.get("coverage_ratio"),
+                                 "required_ratio": case.get("required_ratio")})
+            stale = CreditAdminManager._stale_valuations(case, m)
+            if stale:
+                failures.append({"check": "valuation",
+                                 "reason": "collateral valuation stale",
+                                 "needed": f"revalue within {m.valuation_max_age_days} days",
+                                 "items": stale})
+
+        # An authorized override that covers the current failures clears the gate.
+        ov = case.get("perfection_override") or {}
+        overridden = False
+        if failures and ov.get("status") == "authorized":
+            bypassed = {f.get("check") for f in (ov.get("failures_bypassed") or [])}
+            current = {f["check"] for f in failures}
+            if current <= bypassed:
+                overridden = True
+
+        return {"passed": (len(failures) == 0) or overridden,
+                "failures": failures, "secured": secured,
+                "overridden": overridden}
+
+    # Override authority tiers
+    @staticmethod
+    def _override_role(user: dict):
+        role = str(user.get("role", "") or "").lower()
+        if "head of credit" in role or "head_of_credit" in role:
+            return "head_of_credit"
+        if "chief risk" in role or role == "cro" or "risk officer" in role:
+            return "cro"
+        if "managing director" in role or "chief executive" in role:
+            return "md"
+        return None
+
+    def is_high_value(self, case: dict, matrix=None) -> bool:
+        from utils.collateral_coverage import CreditPolicyMatrix
+        m = matrix or CreditPolicyMatrix()
+        amt = case.get("amount_kes")
+        if amt is None:
+            amt = case.get("amount", 0)
+        try:
+            return float(amt or 0) >= float(m.high_value_threshold_kes)
+        except Exception:
+            return False
+
+    def request_perfection_override(self, case_id: str, by: str,
+                                    justification: str, failures: list) -> bool:
+        if not str(justification or "").strip():
+            return False
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            case["perfection_override"] = {
+                "status":            "pending",
+                "requested_by":      by,
+                "requested_at":      datetime.now().isoformat(timespec="seconds"),
+                "justification":     justification,
+                "failures_bypassed": failures or [],
+                "approvals":         [],
+            }
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return True
+        return False
+
+    def add_override_approval(self, case_id: str, role: str, approver: str,
+                              matrix=None) -> dict:
+        """Add an approval. Returns {ok, status, required_roles, have_roles}.
+        Authorizes when the tier's required role set is satisfied:
+          standard   -> head_of_credit OR cro
+          high_value -> head_of_credit AND cro AND md
+        """
+        for case in self.cases:
+            if case["id"] != case_id:
+                continue
+            ov = case.get("perfection_override")
+            if not ov or ov.get("status") not in ("pending", "authorized"):
+                return {"ok": False, "reason": "no pending override request"}
+            approvals = ov.setdefault("approvals", [])
+            if not any(a.get("role") == role for a in approvals):
+                approvals.append({"role": role, "approver": approver,
+                                  "at": datetime.now().isoformat(timespec="seconds")})
+            have = {a["role"] for a in approvals}
+            hv = self.is_high_value(case, matrix)
+            if hv:
+                required = {"head_of_credit", "cro", "md"}
+                satisfied = required <= have
+            else:
+                required = {"head_of_credit", "cro"}
+                satisfied = bool(have & required)   # any one
+            if satisfied:
+                ov["status"] = "authorized"
+                ov["authorized_at"] = datetime.now().isoformat(timespec="seconds")
+            case["last_updated"] = datetime.now().date().isoformat()
+            self.save()
+            return {"ok": True, "status": ov["status"], "high_value": hv,
+                    "required_roles": sorted(required), "have_roles": sorted(have)}
+        return {"ok": False, "reason": "case not found"}
+
     def _two_layer_enabled(self) -> bool:
         """Whether the Credit-Admin two-layer authorization policy is on
         (admin config). Defaults to on. Best-effort; no hard dependency."""
@@ -6236,6 +6402,10 @@ class CreditAdminManager:
             "client_name":            app.get("client_name", ""),
             "product":                app.get("product", ""),
             "amount":                 app.get("amount", 0),
+            "currency":               str(app.get("currency", "") or "KES"),
+            "amount_kes":             app.get("amount_kes"),
+            "currency_book":          app.get("currency_book"),
+            "fx_rate":                app.get("fx_rate"),
             "rm_code":                app.get("rm_code", ""),
             "rm_name":                app.get("rm_name", ""),
             "approval_date":          today,

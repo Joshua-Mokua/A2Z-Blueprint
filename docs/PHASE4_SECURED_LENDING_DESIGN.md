@@ -549,3 +549,37 @@ objects (backend + React).
 - This is the LAST non-gating batch. Next: P4-6 wires the disburse HARD-GATE +
   tiered override consuming outstanding_mandatory_cp + legal + perfection +
   insurance + coverage. Then combined React + full simulation.
+
+## P4-6 — Disbursement HARD-GATE + tiered override: DELIVERED (backend) — GATING
+
+- core.py CreditAdminManager.evaluate_disbursement_gate(case): returns
+  {passed, failures[], secured, overridden}. Unsecured -> only mandatory CP.
+  Secured -> CP + legal cleared + all security perfected + valid insurance
+  (where required per matrix) + coverage fully/over-secured + fresh valuations.
+  An authorized override covering the current failures clears the gate.
+- Wired into credit_admin_disburse: secured facility failing the gate -> 400 with
+  structured failures[] + override hint. Disbursing under override sets
+  disbursed_under_override=True and emits CREDIT_ADMIN_DISBURSED_UNDER_OVERRIDE.
+- Tiered controlled override: request_perfection_override (snapshots current
+  failures + justification), add_override_approval. Standard facility -> any one
+  of {Head of Credit, CRO}; high-value (>= high_value_threshold_kes, config 100M)
+  -> all of {Head of Credit, CRO, MD}. Authority from caller role
+  (_override_role); admin acts as MD-equivalent for testing. Fully audited.
+- API: GET /disbursement-gate (read), POST /perfection-override/request,
+  /perfection-override/approve.
+- Config: credit_policy_matrix.json += insurance_required_subtypes,
+  high_value_threshold_kes.
+- Case now inherits currency/amount_kes/currency_book/fx_rate from the app
+  (coverage + high-value math + FCY/LCY dashboards).
+- Tests: test_p4_6_gate_override.py (5) — unsecured CP-only, secured ready
+  passes, per-requirement blocking, standard single-authority override, high-
+  value three-signature override. Full P4 suite: 43 tests green together.
+- Harness: GET disbursement-gate asserts passed before disburse (secured deal
+  set up to satisfy all controls).
+- BACKWARD COMPATIBLE: gate only bites facilities explicitly classified secured;
+  facility_security_type defaults unsecured, so legacy cases disburse as before.
+
+### Phase 4 backend COMPLETE (P4-1..P4-6). Remaining:
+- Combined React pass (FX consumed on dashboards + CP/CS panel + collateral/legal/
+  perfection/insurance panels + gate checklist + override modal).
+- Full live simulation as the integration gate (Josh runs at the end).

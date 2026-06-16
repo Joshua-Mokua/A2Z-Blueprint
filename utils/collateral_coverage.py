@@ -58,6 +58,8 @@ class CreditPolicyMatrix:
         self._pct = dict(data.get("required_coverage_pct", {}))
         self._over_multiple = Decimal(str(data.get("over_secured_multiple", "1.25")))
         self._valuation_max_age_days = int(data.get("valuation_max_age_days", 365))
+        self._insurance_required_subtypes = list(data.get("insurance_required_subtypes", []))
+        self._high_value_threshold_kes = float(data.get("high_value_threshold_kes", 100000000))
 
     @property
     def over_secured_multiple(self) -> Decimal:
@@ -66,6 +68,14 @@ class CreditPolicyMatrix:
     @property
     def valuation_max_age_days(self) -> int:
         return self._valuation_max_age_days
+
+    @property
+    def insurance_required_subtypes(self) -> list:
+        return self._insurance_required_subtypes
+
+    @property
+    def high_value_threshold_kes(self) -> float:
+        return self._high_value_threshold_kes
 
     def required_ratio(self, collateral_type: str) -> Optional[Decimal]:
         """Required coverage ratio (as a decimal, e.g. 1.25) for a collateral

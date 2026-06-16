@@ -597,6 +597,81 @@ def credit_admin_update_insurance(case_id: str, policy_id: str,
 
 
 # ─────────────────────────────────────────────────────────────────────
+# P4-6: disbursement gate status + controlled override
+# ─────────────────────────────────────────────────────────────────────
+class _OverrideRequestBody(BaseModel):
+    justification: str
+    model_config = ConfigDict(extra="allow")
+
+
+@router.get("/cases/{case_id}/disbursement-gate")
+def credit_admin_gate_status(case_id: str,
+                             user: Dict[str, Any] = Depends(get_current_user)):
+    """Read the disbursement gate result for a case (drives the React gate
+    checklist). Does not mutate."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+    gate = cam.evaluate_disbursement_gate(case)
+    gate["high_value"] = cam.is_high_value(case)
+    gate["override"] = case.get("perfection_override")
+    return gate
+
+
+@router.post("/cases/{case_id}/perfection-override/request",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_override_request(case_id: str, payload: _OverrideRequestBody,
+                                  user: Dict[str, Any] = Depends(get_current_user)):
+    """Open an override request, snapshotting the CURRENT gate failures. Manager
+    or legal authority may open; approval requires override authority."""
+    cam, case = _legal_case_or_403(case_id, user)
+    gate = cam.evaluate_disbursement_gate(case)
+    if gate["passed"]:
+        raise HTTPException(status_code=400,
+                            detail="Gate already passes — no override needed")
+    if not cam.request_perfection_override(
+            case_id, by=str(user.get('username', '') or ''),
+            justification=payload.justification, failures=gate["failures"]):
+        raise HTTPException(status_code=400, detail="Justification is required")
+    audit_log("CREDIT_ADMIN_OVERRIDE_REQUESTED", str(user.get('username', '') or ''),
+              f"{case_id}|{[f['check'] for f in gate['failures']]}")
+    return {"case": cam.get(case_id), "status": "override_requested"}
+
+
+@router.post("/cases/{case_id}/perfection-override/approve",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_override_approve(case_id: str,
+                                  user: Dict[str, Any] = Depends(get_current_user)):
+    """Add an override approval. Authority comes from the caller's role:
+    Head of Credit, Chief Risk Officer, or Managing Director. Standard
+    facilities need any one of {Head of Credit, CRO}; high-value need all of
+    {Head of Credit, CRO, MD}."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    role = cam._override_role(user)
+    if role is None and not user.get("is_admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Override approval requires Head of Credit, CRO, or MD authority")
+    # admin (testing/superuser) acts as MD-equivalent for the approval record
+    eff_role = role or "md"
+    result = cam.add_override_approval(case_id, eff_role,
+                                       str(user.get('username', '') or ''))
+    if not result.get("ok"):
+        raise HTTPException(status_code=400,
+                            detail=result.get("reason", "override approval failed"))
+    audit_log("CREDIT_ADMIN_OVERRIDE_APPROVED", str(user.get('username', '') or ''),
+              f"{case_id}|role={eff_role}|status={result['status']}|"
+              f"have={result['have_roles']}|need={result['required_roles']}")
+    return {"case": cam.get(case_id), "status": f"override_{result['status']}"}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # POST /api/credit-admin/cases/{id}/disburse — clear for disbursement
 # ─────────────────────────────────────────────────────────────────────
 
@@ -655,6 +730,21 @@ def credit_admin_disburse(
     if not ok:
         raise HTTPException(status_code=400, detail=reason)
 
+    # P4-6: secured-lending disbursement HARD-GATE. Unsecured facilities check
+    # only mandatory Conditions Precedent (unchanged); secured facilities must
+    # additionally clear legal review, perfection, insurance (where required),
+    # coverage threshold, and valuation freshness. An authorized override that
+    # covers the current failures clears the gate (and flags the disbursement).
+    gate = cam.evaluate_disbursement_gate(case)
+    if not gate["passed"]:
+        raise HTTPException(status_code=400, detail={
+            "message": "Disbursement blocked by secured-lending controls",
+            "failures": gate["failures"],
+            "override": "POST /perfection-override/request then /approve with the "
+                        "required authority (Head of Credit/CRO" +
+                        (" + MD for high-value" if cam.is_high_value(case) else "") + ")",
+        })
+
     # Payload validation
     payload_dict = payload.model_dump()
     ok, reason = validate_disburse_payload(payload_dict)
@@ -668,6 +758,16 @@ def credit_admin_disburse(
             status_code=500,
             detail="Disbursement clearance failed (manager method returned False)",
         )
+
+    # P4-6: flag disbursements that proceeded under an authorized override —
+    # surfaced on the MD dashboard as a governance indicator (never a quiet bypass).
+    if gate.get("overridden"):
+        _c = cam.get(case_id)
+        if _c is not None:
+            _c["disbursed_under_override"] = True
+            cam.save()
+        audit_log("CREDIT_ADMIN_DISBURSED_UNDER_OVERRIDE",
+                  str(user.get('username', '') or ''), f"{case_id}|{payload.authority}")
 
     # Audit
     audit_log(

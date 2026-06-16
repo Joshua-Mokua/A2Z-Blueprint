@@ -271,6 +271,15 @@ def happy_path(base, committee=False):
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/authorize",
                     admin, {"note": "Sim layer-2"})
     step("credit-admin: authorize (L2)", (200, 201, 400), st, body)
+
+    # 11b. (P4-6) The secured-lending hard-gate must PASS (we cleared legal,
+    # perfected security, added insurance, linked collateral above).
+    st, gate = _req(base, "GET", f"/api/credit-admin/cases/{case_id}/disbursement-gate", admin)
+    step("credit-admin: disbursement gate passes (secured controls met)", True,
+         isinstance(gate, dict) and gate.get("passed") is True,
+         {"passed": gate.get("passed") if isinstance(gate, dict) else None,
+          "failures": [f.get("check") for f in gate.get("failures", [])] if isinstance(gate, dict) else None})
+
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager", "comments": "Sim disburse"})
     step("credit-admin: disburse", (200, 201), st, body, note=f"status: {body.get('status')}")
