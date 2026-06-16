@@ -24,6 +24,10 @@ export interface MdDashboardResponse {
     pending_validation?: number;
     /** Closed-won value. */
     won_value: number;
+    /** KES-equivalent pipeline value in the local-currency (KES) book. */
+    lcy_value?: number;
+    /** KES-equivalent pipeline value in the foreign-currency book. */
+    fcy_value?: number;
   };
   credit: {
     total_accounts: number;

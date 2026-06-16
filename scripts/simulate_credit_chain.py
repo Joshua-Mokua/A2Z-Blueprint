@@ -414,6 +414,15 @@ def dashboard_check(base):
     pipe = body.get("pipeline", {}) if isinstance(body, dict) else {}
     step("dashboard: exposes validated_value (assured)", True, "validated_value" in pipe,
          note=f"validated={pipe.get('validated_value')}, sum={pipe.get('pipeline_value')}")
+    # React-B: FCY/LCY split present, and LCY+FCY reconciles to the headline
+    # (all-KES synthetic data -> LCY carries the total, FCY ~0).
+    lcy = pipe.get("lcy_value"); fcy = pipe.get("fcy_value"); tot = pipe.get("pipeline_value")
+    has_split = lcy is not None and fcy is not None
+    reconciles = has_split and abs((float(lcy) + float(fcy)) - float(tot or 0)) < max(1.0, float(tot or 0) * 0.001)
+    step("dashboard: exposes FCY/LCY split", True, has_split,
+         note=f"LCY={lcy}, FCY={fcy}")
+    step("dashboard: LCY+FCY reconciles to pipeline_value", True, bool(reconciles),
+         note=f"{lcy}+{fcy} vs {tot}")
 
 
 # ── Stress / volume ─────────────────────────────────────────────────────

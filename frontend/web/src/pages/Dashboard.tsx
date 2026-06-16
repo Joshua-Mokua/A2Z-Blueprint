@@ -170,6 +170,26 @@ export function Dashboard() {
                 loading={loading} />
         </div>
 
+        {/* Currency book split (FCY/LCY) — KES-equivalent. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <Stat label="Local Currency (LCY) — KES equiv."
+                value={show((x) => kes(x.pipeline.lcy_value ?? 0))}
+                sub={show((x) => {
+                  const l = x.pipeline.lcy_value ?? 0, f = x.pipeline.fcy_value ?? 0;
+                  const t = l + f;
+                  return t > 0 ? `${((l / t) * 100).toFixed(1)}% of pipeline` : '—';
+                })}
+                loading={loading} />
+          <Stat label="Foreign Currency (FCY) — KES equiv."
+                value={show((x) => kes(x.pipeline.fcy_value ?? 0))}
+                sub={show((x) => {
+                  const l = x.pipeline.lcy_value ?? 0, f = x.pipeline.fcy_value ?? 0;
+                  const t = l + f;
+                  return t > 0 ? `${((f / t) * 100).toFixed(1)}% of pipeline` : '—';
+                })}
+                loading={loading} />
+        </div>
+
         {/* Compliance & Org */}
         <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-8 mb-3">
           Compliance &amp; Organisation

@@ -966,7 +966,13 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
                 SELECT COUNT(*)    as total_deals,
                        SUM(amount) as pipeline_value,
                        SUM(CASE WHEN stage = 'Closed Won' THEN amount ELSE 0 END) as won_value,
-                       SUM(CASE WHEN stage = 'Closed Lost' THEN 1 ELSE 0 END)    as lost_count
+                       SUM(CASE WHEN stage = 'Closed Lost' THEN 1 ELSE 0 END)    as lost_count,
+                       SUM(CASE WHEN COALESCE(TRIM(currency),'KES') = 'KES'
+                                THEN COALESCE((metadata->>'amount_kes')::numeric, amount, 0)
+                                ELSE 0 END) as lcy_value,
+                       SUM(CASE WHEN COALESCE(TRIM(currency),'KES') <> 'KES'
+                                THEN COALESCE((metadata->>'amount_kes')::numeric, amount, 0)
+                                ELSE 0 END) as fcy_value
                 FROM pipeline_deals
             """)
             result = {
@@ -1032,12 +1038,23 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     won_val   = 0.0
     validated_val = 0.0   # assured: active + manager_validated
     pending_val   = 0.0   # pending assurance: active + not validated
+    lcy_val   = 0.0       # P4 (React-B): KES-equivalent, local-currency book
+    fcy_val   = 0.0       # P4 (React-B): KES-equivalent, foreign-currency book
     for d in deals:
         st  = d.get("stage", "Unknown")
         # Canonical amount field is `deal_value` (Generation B).
         # Fall back to `amount` for any transitional record.
         amt = _safe_float(d.get("deal_value") or d.get("amount", 0))
         total_val += amt
+        # FCY/LCY split on the KES-equivalent (amount_kes when stamped; native
+        # otherwise — LCY deals have fx_rate 1 so the two coincide). The book is
+        # LCY unless explicitly FCY / a non-KES currency.
+        amt_kes = _safe_float(d.get("amount_kes")) if d.get("amount_kes") is not None else amt
+        book = d.get("currency_book") or ("FCY" if str(d.get("currency", "KES")).strip() not in ("", "KES") else "LCY")
+        if book == "FCY":
+            fcy_val += amt_kes
+        else:
+            lcy_val += amt_kes
         if st == "Closed Won":
             won_val += amt
         if st in _ACTIVE:
@@ -1074,6 +1091,8 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
             "validated_value":    validated_val,   # assured headline
             "pending_value":      pending_val,     # pending assurance
             "won_value":          won_val,
+            "lcy_value":          lcy_val,         # KES-equiv, local-currency book
+            "fcy_value":          fcy_val,         # KES-equiv, foreign-currency book
             "lost_count":         lost_count,
             "pending_validation": pending_validation,
             "pending_cancel":     pending_cancel,
@@ -2666,7 +2685,9 @@ def md_dashboard(user: dict = Depends(get_current_user)):
                     "validated_value":pipe.get("totals",{}).get("validated_value",0),
                     "pending_value":pipe.get("totals",{}).get("pending_value",0),
                     "pending_validation":pipe.get("totals",{}).get("pending_validation",0),
-                    "won_value":pipe.get("totals",{}).get("won_value",0)},
+                    "won_value":pipe.get("totals",{}).get("won_value",0),
+                    "lcy_value":pipe.get("totals",{}).get("lcy_value",0),
+                    "fcy_value":pipe.get("totals",{}).get("fcy_value",0)},
         "credit":  {"total_accounts":credit.get("totals",{}).get("total_accounts",0),
                     "outstanding_bn":credit.get("totals",{}).get("outstanding_bn",0),
                     "npl_ratio_pct":credit.get("totals",{}).get("npl_ratio_pct",0)},

@@ -654,3 +654,23 @@ probe now: blocked -> override authorized -> disburse under override.
 - Credit-admin can now drive the full secured workflow from the UI and watch the
   disbursement gate clear control-by-control.
 - NEXT: React-B (FCY/LCY dashboard consumption), then Phase 7 certification.
+
+## React-B — FCY/LCY dashboard split: DELIVERED (backend + frontend)
+
+- utils/api.py pipeline_summary: BOTH code paths now emit lcy_value/fcy_value.
+  - DB-first path: SQL split on currency column, summing KES-equivalent
+    COALESCE((metadata->>'amount_kes')::numeric, amount, 0). metadata is JSONB
+    DEFAULT '{}' so extraction is safe.
+  - Canonical-manager path: accumulators using amount_kes (native fallback),
+    book = currency_book or derived from currency (non-KES -> FCY).
+  - md_dashboard passes lcy_value/fcy_value through the pipeline block.
+- frontend types/dashboard.ts: pipeline.lcy_value/fcy_value optionals.
+- frontend pages/Dashboard.tsx: two tiles below the pipeline row — LCY (KES
+  equiv) and FCY (KES equiv), each with % of pipeline.
+- Harness: asserts the split is present AND LCY+FCY reconciles to pipeline_value.
+- HONEST CAVEAT: split basis is KES-equivalent via amount_kes; the synthetic
+  portfolio is all-KES, so FCY ~ 0 today — the value is structural readiness for
+  when FCY deals appear, not a current numeric story. CBS Deposit Snapshot (for
+  FCY/LCY on the deposit side) remains a separate pending item.
+- Phase 4 + React pass COMPLETE. Next: Phase 7 certification (fresh full
+  simulation + written verdict).
