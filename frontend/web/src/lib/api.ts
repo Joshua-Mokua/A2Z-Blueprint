@@ -995,3 +995,43 @@ import type { CreditOpenWork } from '@/types/cockpit';
 export async function fetchCreditOpenWork(): Promise<CreditOpenWork> {
   return getJson<CreditOpenWork>('/cockpit/credit/open-work');
 }
+
+
+// ──────────────────────────────────────────────────────────────────────
+// FX rates (P4-1c) — operational FX rate table. List/resolve for any authed
+// user (dashboards need the LCY/FCY rate); upsert is admin-only server-side.
+// ──────────────────────────────────────────────────────────────────────
+
+import type {
+  FxRatesResponse,
+  FxResolveResponse,
+  FxRateUpsertRequest,
+  FxRateUpsertResponse,
+} from '@/types/fx';
+
+export async function fetchFxRates(
+  currency?: string,
+  activeOnly = false,
+): Promise<FxRatesResponse> {
+  const qs = new URLSearchParams();
+  if (currency) qs.set('currency', currency);
+  if (activeOnly) qs.set('active_only', 'true');
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return getJson<FxRatesResponse>(`/fx/rates${suffix}`);
+}
+
+export async function resolveFxRate(
+  currency: string,
+  asOf?: string,
+  rateType: 'mid' | 'buy' | 'sell' = 'mid',
+): Promise<FxResolveResponse> {
+  const qs = new URLSearchParams({ currency, rate_type: rateType });
+  if (asOf) qs.set('as_of', asOf);
+  return getJson<FxResolveResponse>(`/fx/resolve?${qs.toString()}`);
+}
+
+export async function upsertFxRate(
+  body: FxRateUpsertRequest,
+): Promise<FxRateUpsertResponse> {
+  return postJson<FxRateUpsertResponse, FxRateUpsertRequest>('/fx/rates', body);
+}

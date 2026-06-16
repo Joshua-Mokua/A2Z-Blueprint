@@ -444,3 +444,21 @@ in P4-3 once coverage is live.)
   live chain proving FX end-to-end.
 - Still non-gating: disbursement is unaffected. Next: P4-1c React FX admin
   surface + LCY/FCY toggle (needs tsc gate in Josh's env).
+
+## P4-1c — React FX admin surface: DELIVERED (frontend — needs tsc gate)
+
+- types/fx.ts — FxRate, FxRatesResponse, FxResolveResponse, FxRateUpsert*,
+  NormalizedMoney, CurrencyBook ('LCY'|'FCY'), FxRateType ('mid'|'buy'|'sell').
+- lib/api.ts — fetchFxRates, resolveFxRate, upsertFxRate.
+- hooks/useFxRates.ts (list), hooks/useFxMutations.ts (upsert, MutationResult).
+- pages/FxRates.tsx — rate table grouped by currency + LCY/FCY badge; admin-only
+  add/update editor (server also enforces admin on POST). KES shown as base.
+- App.tsx route /fx-rates; Sidebar nav item 'FX Rates' gated visibleFor isAdmin.
+- Syntax-checked via esbuild; **canonical gate is `pnpm tsc --noEmit` in Josh's
+  env** — a frontend round-trip may surface minor type fixes (expected for FE
+  batches).
+
+**FX foundation (P4-1 / 1b / 1c) is now complete:** admin rate table, resolver,
+money stamping at booking, API, and admin UI. Next: P4-2 — facility
+classification (unsecured/partially/fully/over-secured) + CP/CS as first-class
+objects (backend + React).

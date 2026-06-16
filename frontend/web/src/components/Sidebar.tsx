@@ -82,6 +82,12 @@ const NAV_ITEMS: NavItem[] = [
     matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/'),
   },
   {
+    path:        '/fx-rates',
+    label:       'FX Rates',
+    matchActive: (p) => p === '/fx-rates' || p.startsWith('/fx-rates'),
+    visibleFor:  (_isMgr, isAdmin) => isAdmin,
+  },
+  {
     path:        '/perform',
     label:       'BSC Performance',
     matchActive: (p) => p === '/perform',
