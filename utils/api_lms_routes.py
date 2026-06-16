@@ -461,8 +461,11 @@ def lms_application_decision(
     # An approved/declined loan moves Disbursements / Loan Book Growth /
     # Number of Business Borrowers on the decider's scorecard. Mirrors the
     # Pipeline routes' emit_bsc_trigger wiring. See utils/api_bsc_bridge.py.
-    from utils.api_bsc_bridge import emit_bsc_trigger
-    emit_bsc_trigger(str(user.get('username', '') or ''))
+    # Phase 3 (hardening): credit the RM who OWNS the facility, not only the
+    # caller. On approval the caller is usually the manager/analyst, but the
+    # loan-book growth belongs on the originating RM's scorecard.
+    from utils.api_bsc_bridge import emit_bsc_for
+    emit_bsc_for([app.get('created_by'), str(user.get('username', '') or '')])
 
     # P2 (2026-06-12): live LMS-approval -> credit-admin handoff. On an
     # v10.584: on approval, route back to the deal owner to issue the
@@ -780,6 +783,13 @@ def lms_committee_resolve(
                             note="Auto-issued on committee approval")
         except Exception:
             pass
+    # Phase 3 (hardening): committee resolution is an approval outcome; credit
+    # the originating RM (app owner) plus the resolving manager. Best-effort.
+    try:
+        from utils.api_bsc_bridge import emit_bsc_for
+        emit_bsc_for([app.get("created_by"), str(user.get("username", "") or "")])
+    except Exception:
+        pass
     return {"application": lam.get(app_id),
             "status": str(lam.get(app_id).get("status", "")),
             "committee_result": result}

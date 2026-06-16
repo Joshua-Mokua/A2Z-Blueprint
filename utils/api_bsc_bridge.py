@@ -60,3 +60,29 @@ def emit_bsc_trigger(username: str) -> bool:
         # successful mutation. Mirrors the Streamlit pages' pattern
         # (`except Exception: pass`) and the pipeline route pattern.
         return False
+
+
+def emit_bsc_for(usernames) -> bool:
+    """Recompute BSC actuals for a set of staff (deal owner + actor).
+
+    Phase 3 (credit-factory hardening): value-bearing credit events must credit
+    the RM who OWNS the facility, not just the caller who actioned it. Pass the
+    owner's username (application['created_by']) alongside the actor. Dedupes,
+    skips blanks, best-effort (never breaks a successful mutation).
+    """
+    seen = set()
+    ok_any = False
+    if isinstance(usernames, str):
+        usernames = [usernames]
+    for u in (usernames or []):
+        u = str(u or "").strip()
+        if not u or u in seen:
+            continue
+        seen.add(u)
+        try:
+            from utils.core import update_bsc_from_modules
+            update_bsc_from_modules(u)
+            ok_any = True
+        except Exception:
+            pass
+    return ok_any

@@ -320,8 +320,18 @@ def credit_admin_disburse(
     # disbursement clearance. Clearing a case moves Disbursements /
     # Collection Throughput / downstream PAR on the clearer's scorecard.
     # Mirrors the Pipeline routes' wiring. See utils/api_bsc_bridge.py.
-    from utils.api_bsc_bridge import emit_bsc_trigger
-    emit_bsc_trigger(str(user.get('username', '') or ''))
+    # Phase 3 (hardening): credit the originating RM, not only the clearer.
+    # The owner username is carried on the linked LMS application (created_by).
+    from utils.api_bsc_bridge import emit_bsc_for
+    _owner = ""
+    try:
+        from utils.core import LoanApplicationManager as _LAM
+        _case = cam.get(case_id) or {}
+        _app = _LAM().get(str(_case.get("application_id", "") or "")) or {}
+        _owner = str(_app.get("created_by", "") or "")
+    except Exception:
+        _owner = ""
+    emit_bsc_for([_owner, str(user.get('username', '') or '')])
 
     updated = cam.get(case_id)
     return {"case": updated, "status": "cleared_for_disbursement"}

@@ -1383,6 +1383,13 @@ def pipeline_submit_to_credit(
     deal = _get_or_hydrate_deal(pm, deal_id)
     _db_sync_pipeline_deal(deal)
     _audit("API_PIPELINE_SUBMIT_TO_CREDIT_OK", user, f"deal_id={deal_id} app={app_id}")
+    # Phase 3 (hardening): submit-to-credit advances the facility; refresh the
+    # owner's BSC (the caller is the owner here). Best-effort.
+    try:
+        from utils.api_bsc_bridge import emit_bsc_for
+        emit_bsc_for([str(user.get("username", "") or "")])
+    except Exception:
+        pass
     return {"application_id": app_id, "status": "submitted_to_credit",
             "missing": [], "stage": deal.get("stage")}
 
