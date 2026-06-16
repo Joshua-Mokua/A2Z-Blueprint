@@ -314,6 +314,18 @@ class PipelineDealCreate(BaseModel):
     client_type: Optional[str] = Field(
         default=None, description="'Individual' or 'Business'"
     )
+    segment: Optional[str] = Field(
+        default=None,
+        description="Customer segment within the client type — e.g. "
+                    "Affluent / Core Middle / Mass-Retail (Individual) or "
+                    "Large Corporate / Corporate / SME / Micro (Business). "
+                    "Options come from core.CUSTOMER_SEGMENTS (admin config).",
+    )
+    sector: Optional[str] = Field(
+        default=None,
+        description="Economic sector (Manufacturing, Agriculture, …) from "
+                    "pipeline_settings.sectors.",
+    )
     is_ntb: Optional[bool] = Field(
         default=None, description="True if New To Bank"
     )

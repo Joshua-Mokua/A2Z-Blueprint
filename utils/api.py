@@ -1096,6 +1096,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "deal_types":        cfg.get("deal_types", []),
         "product_catalogue": cfg.get("product_catalogue", {}),
         "stage_flows":       cfg.get("stage_flows", {}),
+        "customer_segments": _customer_segments(),
         "currency":          cfg.get("currency", "KES"),
     }
 
@@ -1471,6 +1472,17 @@ def _stage_flow_for(product_type: str) -> list:
         return [s["stage"] for s in get_stages_for_category(cat)]
     except Exception:
         return []
+
+
+def _customer_segments() -> dict:
+    """Segment options per client type (Individual / Business), from
+    core.CUSTOMER_SEGMENTS — the single source of truth for the create form's
+    segment cascade. Best-effort; empty dict if unavailable."""
+    try:
+        from utils.core import CUSTOMER_SEGMENTS
+        return dict(CUSTOMER_SEGMENTS)
+    except Exception:
+        return {}
 
 
 def _acquire_scoped_deals(user: dict) -> list:

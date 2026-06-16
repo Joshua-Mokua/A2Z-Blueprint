@@ -268,7 +268,7 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
             "(LMS handoff stage — deferred to Arc α4). "
             "Create at 'Lead' and advance through the workflow."
         )
-    if stage not in ALLOWED_ADVANCE_STAGES:
+    if stage not in ALLOWED_ADVANCE_STAGES and stage not in _configured_stage_names():
         return False, f"Unknown stage: '{stage}'"
 
     # Override semantics check (v10.507 α5). If the RM is claiming

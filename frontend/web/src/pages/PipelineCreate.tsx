@@ -47,12 +47,13 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
-import { fetchCbsCustomer, ApiValidationError } from '@/lib/api';
+import { fetchCbsCustomer, fetchPipelineConfig, ApiValidationError } from '@/lib/api';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
   MIN_OVERRIDE_NOTE_LEN,
   type PipelineCategory, type CreateDealRequest, type ReferDealRequest,
+  type PipelineConfig,
 } from '@/types/pipeline';
 import { segmentToCustomerType, type CbsCustomer } from '@/types/cbs';
 
@@ -64,6 +65,39 @@ type ConflictPath = 'refer' | 'seek_permission' | 'override';
 
 // ── Page component ──────────────────────────────────────────────────────
 
+// Map a product to its class (asset/liability/insurance/other) using the
+// admin product_catalogue, mirroring the backend _classify_product: exact
+// match first, then containment. Drives which stage_flow the create form's
+// Initial-stage dropdown follows. Returns null when no catalogue is loaded so
+// the caller can fall back to the legacy category map.
+type ProductClass = 'asset' | 'liability' | 'insurance' | 'other';
+const PRODUCT_CLASS_MAP: Record<string, ProductClass> = {
+  Assets: 'asset',
+  Liabilities: 'liability',
+  Insurance: 'insurance',
+  Transactional: 'other',
+  Investments: 'other',
+};
+function classifyProduct(
+  productType: string,
+  catalogue?: Record<string, string[]>,
+): ProductClass | null {
+  if (!catalogue) return null;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const n = norm(productType);
+  if (!n) return null;
+  for (const [cls, prods] of Object.entries(catalogue)) {
+    if (prods.some((p) => norm(p) === n)) return PRODUCT_CLASS_MAP[cls] ?? 'other';
+  }
+  for (const [cls, prods] of Object.entries(catalogue)) {
+    if (prods.some((p) => {
+      const pn = norm(p);
+      return pn !== '' && (pn.includes(n) || n.includes(pn));
+    })) return PRODUCT_CLASS_MAP[cls] ?? 'other';
+  }
+  return 'other';
+}
+
 export function PipelineCreate() {
   const navigate = useNavigate();
   const { branding } = useBranding();
@@ -74,7 +108,10 @@ export function PipelineCreate() {
   // ── Core form state ──────────────────────────────────────────────────
 
   const [clientName,  setClientName]  = useState('');
+  const [config,      setConfig]      = useState<PipelineConfig | null>(null);
   const [clientType,  setClientType]  = useState<'Individual' | 'Business'>('Individual');
+  const [segment,     setSegment]     = useState<string>('');
+  const [sector,      setSector]      = useState<string>('');
   const [isNtb,       setIsNtb]       = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
 
@@ -132,7 +169,40 @@ export function PipelineCreate() {
 
   // ── Derived values ───────────────────────────────────────────────────
 
-  const stageOptions       = useMemo(() => INITIAL_STAGES_BY_CATEGORY[category], [category]);
+  // Admin config drives the segment cascade, sectors, and per-class stage
+  // flows. Best-effort — the form falls back to legacy defaults if it can't
+  // load.
+  useEffect(() => {
+    let active = true;
+    fetchPipelineConfig()
+      .then((c) => { if (active) setConfig(c); })
+      .catch(() => { /* fall back to category-based stages, empty segments */ });
+    return () => { active = false; };
+  }, []);
+
+  // Product class drives the stage flow (admin config) — loan vs deposit etc.
+  const productClass = useMemo(
+    () => classifyProduct(productType, config?.product_catalogue),
+    [productType, config],
+  );
+  const stageOptions = useMemo(() => {
+    const flows = config?.stage_flows;
+    if (flows && productClass && flows[productClass]?.length) {
+      // "Initial stage" excludes terminal stages.
+      return flows[productClass].filter(
+        (s) => s !== 'Closed Won' && s !== 'Closed Lost',
+      );
+    }
+    return [...INITIAL_STAGES_BY_CATEGORY[category]];   // fallback pre-config
+  }, [config, productClass, category]);
+
+  // Segment cascade off client type; sectors from config.
+  const segmentOptions = useMemo(
+    () => config?.customer_segments?.[clientType] ?? [],
+    [config, clientType],
+  );
+  const sectorOptions = useMemo(() => config?.sectors ?? [], [config]);
+
   const productSuggestions = useMemo(() => COMMON_PRODUCTS_BY_CATEGORY[category], [category]);
   const dealValueNum       = useMemo(() => {
     const n = Number(String(dealValue).replace(/[,\s]/g, ''));
@@ -155,10 +225,16 @@ export function PipelineCreate() {
 
   useEffect(() => {
     if (!stageOptions.includes(stage)) {
-      setStage(stageOptions[0]);
+      setStage(stageOptions[0] ?? 'Lead');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, stageOptions]);
+  }, [category, productClass, stageOptions]);
+
+  // Clear segment when it no longer fits the selected client type.
+  useEffect(() => {
+    if (segment && !segmentOptions.includes(segment)) setSegment('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientType, segmentOptions]);
 
   // ── Live field error clearing (β5.1) ─────────────────────────────────
   //
@@ -406,6 +482,8 @@ export function PipelineCreate() {
 
       // Optional
       client_type:        clientType,
+      segment:            segment || undefined,
+      sector:             sector || undefined,
       client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
       is_ntb:             isNtb,
       pipeline_category:  category,
@@ -634,6 +712,43 @@ export function PipelineCreate() {
                     disabled={mutations.loading}
                   >Business</SegBtn>
                 </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Segment
+                </label>
+                <select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                  disabled={mutations.loading || segmentOptions.length === 0}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="">
+                    {segmentOptions.length === 0 ? '—' : `Select ${clientType.toLowerCase()} segment`}
+                  </option>
+                  {segmentOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {clientType} segments from admin config.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Sector
+                </label>
+                <select
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  disabled={mutations.loading || sectorOptions.length === 0}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="">Select sector (optional)</option>
+                  {sectorOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">

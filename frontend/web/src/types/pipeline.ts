@@ -161,6 +161,10 @@ export interface PipelineConfig {
   probability_map:   Record<string, number>;
   deal_types:        string[];
   product_catalogue: Record<string, string[]>;
+  /** B17: per-product-class stage flows (asset/liability/insurance/other). */
+  stage_flows?:      Record<string, string[]>;
+  /** Segment options per client type (Individual / Business). */
+  customer_segments?: Record<string, string[]>;
   currency:          string;
 }
 
@@ -351,6 +355,8 @@ export interface CreateDealRequest {
 
   // Optional but commonly supplied
   client_type?:          string;     // 'Individual' or 'Business'
+  segment?:              string;     // segment within client type (cascade)
+  sector?:               string;     // economic sector
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
   pipeline_category?:    PipelineCategory;
