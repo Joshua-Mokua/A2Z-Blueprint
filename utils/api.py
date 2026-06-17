@@ -441,6 +441,13 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "manager_validated":    deal.get("manager_validated"),
                 "validated_by":         deal.get("validated_by"),
                 "validated_at":         deal.get("validated_at"),
+                "referral_status":      deal.get("referral_status"),
+                "referred_to_code":     deal.get("referred_to_code"),
+                "referred_to":          deal.get("referred_to"),
+                "referred_by_code":     deal.get("referred_by_code"),
+                "referred_by_name":     deal.get("referred_by_name"),
+                "referral_note":        deal.get("referral_note"),
+                "decline_reason":       deal.get("decline_reason"),
             }),
         }
         if not row["id"]:
@@ -492,7 +499,10 @@ def _normalize_db_deal_row(row):
     if isinstance(md, dict):
         for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
                    "fx_rate_source", "client_type", "mou_id", "mou_title",
-                   "sector", "segment", "validated_by", "validated_at"):
+                   "sector", "segment", "validated_by", "validated_at",
+                   "referral_status", "referred_to_code", "referred_to",
+                   "referred_by_code", "referred_by_name", "referral_note",
+                   "decline_reason"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
@@ -1066,6 +1076,8 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     lcy_val   = 0.0       # P4 (React-B): KES-equivalent, local-currency book
     fcy_val   = 0.0       # P4 (React-B): KES-equivalent, foreign-currency book
     for d in deals:
+        if _referral_blocked(d):
+            continue  # pending/declined referrals don't count until accepted
         st  = d.get("stage", "Unknown")
         # Canonical amount field is `deal_value` (Generation B).
         # Fall back to `amount` for any transitional record.
@@ -1644,6 +1656,15 @@ def _segment_labels() -> dict:
     return dict(m) if isinstance(m, dict) and m else dict(_DEFAULT_SEGMENT_LABELS)
 
 
+def _referral_blocked(d: dict) -> bool:
+    """A deal that should NOT count toward pipeline value, analytics, or the
+    manager validation queue: a referral still awaiting the recipient's
+    acceptance ('pending'), or one the recipient declined ('declined') and that
+    now sits in the returned-for-reassignment pool. Accepted referrals behave
+    like any normal owned deal and DO count (assured only once validated)."""
+    return str(d.get("referral_status") or "") in ("pending", "declined")
+
+
 def _derive_segment(d: dict) -> str:
     """Canonical segment bucket from the deal's explicit segment field, else
     derived from client_type. Returns the INTERNAL key (before label mapping)."""
@@ -1830,7 +1851,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         ACTIVE_STAGES, ALL_ACTIVE_STAGES,
         get_pipeline_category, get_stages_for_category,
     )
-    live = [d for d in deals if not d.get("draft")]
+    live = [d for d in deals if not d.get("draft") and not _referral_blocked(d)]
     active = [d for d in live if d.get("stage") in ACTIVE_STAGES]
     # Validation split: management anchors on VALIDATED (manager-assured) deals.
     # Unvalidated active deals are surfaced separately as "pending assurance".
@@ -2466,6 +2487,173 @@ def pipeline_deal_refer(
     ).model_dump()
 
 
+# ── Referral lifecycle: refer existing deal → accept / decline ──────────────
+# Generalises the zero-value /refer marker into a real assignment-with-
+# acceptance flow. A deal is referred to another staff member, who must ACCEPT
+# before owning its progression; a declined referral (reason required) drops
+# into the returned-for-reassignment pool. Pending + declined referrals do NOT
+# count toward pipeline value, analytics, or the manager validation queue
+# (see _referral_blocked). An accepted deal counts as ASSURED only once the
+# recipient's line manager validates it — exactly like any other deal.
+
+def _resolve_actor(user: dict):
+    """(staff_code, full_name, is_privileged) for the caller. Privileged =
+    exec/admin (lenient role substring), permitted to act on the recipient's
+    behalf."""
+    from utils.core import UserManager as _UM
+    rec = _UM().users.get(str(user.get("username", "") or "")) or {}
+    role = str(rec.get("role", "") or user.get("role", "") or "").lower()
+    priv = bool(user.get("is_admin")) or any(
+        k in role for k in ("chief", "managing", "director", "admin"))
+    return (str(rec.get("staff_code", "") or ""),
+            str(rec.get("full_name", "") or user.get("username", "") or ""),
+            priv)
+
+
+@app.post("/api/pipeline/deals/{deal_id}/refer", status_code=200)
+def pipeline_deal_refer_existing(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """Refer/assign an EXISTING deal to another staff member for pursuit.
+    Sets referral_status='pending'; the recipient must accept before they own
+    the deal's progression. Any staff with the deal in scope (or an admin) may
+    refer. Referring to the current owner is a no-op and rejected."""
+    _audit("API_PIPELINE_REFER_EXISTING_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+
+    rcode = str(payload.get("referred_to_code") or "").strip()
+    rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
+    note  = str(payload.get("referral_note") or "").strip()
+    if not rcode or not rname:
+        raise HTTPException(status_code=400,
+                            detail="referred_to_code and referred_to_name are required")
+
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    visible = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if not priv and sc not in visible and (not po or po not in visible):
+        raise HTTPException(status_code=403, detail="Deal is outside your scope")
+    if rcode in (sc, po):
+        raise HTTPException(status_code=400,
+                            detail="That person already owns this deal — nothing to refer.")
+    if str(deal.get("referral_status") or "") == "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal already has a pending referral awaiting acceptance.")
+
+    pm.update_deal(deal_id, {
+        "referral_status":  "pending",
+        "referred_to_code": rcode,
+        "referred_to":      rname,
+        "referred_by_code": actor_code,
+        "referred_by_name": actor_name,
+        "referral_note":    note,
+        "referred_at":      datetime.now().isoformat(),
+        "decline_reason":   "",
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRED_EXISTING", user, f"{deal_id}->{rcode}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "pending",
+            "referred_to": rname, "referred_to_code": rcode}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/referral/accept", status_code=200)
+def pipeline_referral_accept(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Recipient accepts a pending referral and becomes its owner. Progression
+    unlocks; the deal enters the recipient's pipeline + their line manager's
+    validation queue (assured only once validated). Only the named recipient
+    (or an admin) may accept."""
+    _audit("API_PIPELINE_REFERRAL_ACCEPT_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to accept.")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    rcode = str(deal.get("referred_to_code") or "")
+    if not priv and actor_code != rcode:
+        raise HTTPException(status_code=403,
+                            detail="Only the person this deal was referred to can accept it.")
+
+    pm.update_deal(deal_id, {
+        "referral_status":      "accepted",
+        "accepted_at":          datetime.now().isoformat(),
+        "accepted_by":          actor_code or rcode,
+        "staff_code":           rcode or actor_code,
+        "staff_name":           str(deal.get("referred_to") or actor_name),
+        "portfolio_owner_code": rcode or actor_code,
+        "portfolio_owner_name": str(deal.get("referred_to") or actor_name),
+        "manager_validated":    False,
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRAL_ACCEPTED", user, f"{deal_id} by {actor_code or rcode}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "accepted"}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/referral/decline", status_code=200)
+def pipeline_referral_decline(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """Recipient declines a pending referral WITH A REASON. The deal drops into
+    the returned-for-reassignment pool (referral_status='declined') — NOT
+    closed. Only the named recipient (or an admin) may decline."""
+    _audit("API_PIPELINE_REFERRAL_DECLINE_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+
+    reason = str(payload.get("reason") or payload.get("decline_reason") or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(status_code=400, detail="A decline reason is required.")
+
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to decline.")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    rcode = str(deal.get("referred_to_code") or "")
+    if not priv and actor_code != rcode:
+        raise HTTPException(status_code=403,
+                            detail="Only the person this deal was referred to can decline it.")
+
+    pm.update_deal(deal_id, {
+        "referral_status": "declined",
+        "decline_reason":  reason,
+        "declined_at":     datetime.now().isoformat(),
+        "declined_by":     actor_code or rcode,
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRAL_DECLINED", user, f"{deal_id}: {reason[:60]}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "declined", "decline_reason": reason}
+
+
 @app.post("/api/pipeline/deals", status_code=201)
 def pipeline_deal_create(
     payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy
@@ -2703,7 +2891,20 @@ def pipeline_deal_advance(
             detail="Deal is outside your cascade scope",
         )
 
-    # B17: enforce the deal's product-class stage flow (admin config). The
+    # Referral gate: a deal awaiting acceptance can't progress. The recipient
+    # must accept it first (then they own its progression); a declined deal
+    # must be reassigned and re-accepted before it can move.
+    _rstatus = str(deal.get("referral_status") or "")
+    if _rstatus in ("pending", "declined"):
+        _audit("API_PIPELINE_ADVANCE_REFERRAL_BLOCKED", user,
+               f"deal_id={deal_id} referral_status={_rstatus}")
+        raise HTTPException(
+            status_code=400,
+            detail=("This deal is a referral awaiting acceptance. The person it "
+                    "was referred to must accept it before it can advance."
+                    if _rstatus == "pending" else
+                    "This referral was declined and is awaiting reassignment."),
+        )
     # target must belong to THIS deal's flow — e.g. a deposit (liability) deal
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).

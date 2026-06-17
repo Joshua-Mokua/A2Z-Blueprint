@@ -4095,7 +4095,8 @@ class PipelineManager:
                   if d['stage'] in STAGE_NAMES[idx:]
                   and d['stage'] in ACTIVE_STAGES
                   and not d.get('manager_validated')
-                  and not d.get('cancel_requested')]
+                  and not d.get('cancel_requested')
+                  and d.get('referral_status') not in ('pending', 'declined')]
         if manager_codes:
             result = [d for d in result if d.get('staff_code','') in manager_codes]
         return result

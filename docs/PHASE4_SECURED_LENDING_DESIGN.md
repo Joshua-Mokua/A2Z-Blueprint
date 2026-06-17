@@ -1774,3 +1774,45 @@ TopBar resolves visible titles for all four via startsWith() route matching
 (/pipeline/:id→Pipeline, /pipeline/queues→Manager Queues, /cbs→Customer Lookup,
 /initiatives/:id→Strategic Initiatives), so no title regression. Frontend-only,
 esbuild-clean; tsc is the gate.
+
+## #47 — Batch A1: referral lifecycle (refer existing -> accept / decline) [BACKEND]
+
+Generalises the narrow zero-value /refer marker into an assignment-with-
+acceptance flow, per the requirement: anyone can refer a deal; the recipient
+must ACCEPT before they own its progression; the referrer follows along. Decline
+needs a reason and returns the deal for reassignment (NOT closed) — distinct
+from a process/credit decline, which closes via the existing LMS path.
+
+State (referral_status on a deal): pending -> accepted | declined.
+
+Counting rule (per the "validated to count" requirement): a referred loan counts
+as ASSURED only after BOTH the recipient accepts AND their line manager validates
+it. We reuse the existing manager_validated chain — acceptance is just the
+precondition. So:
+- _referral_blocked(d): referral_status in (pending, declined) -> excluded from
+  pipeline value, analytics live set, AND the manager validation queue
+  (get_pending_validations). An accepted deal counts normally; assured only once
+  validated, like any deal.
+
+Endpoints (utils/api.py):
+- POST /api/pipeline/deals/{id}/refer        — refer an EXISTING deal -> pending;
+  scope-gated (deal in caller scope or admin); rejects referring to the current
+  owner; records referred_by/referred_to + note.
+- POST /api/pipeline/deals/{id}/referral/accept  — recipient (or admin) only;
+  flips to accepted, makes recipient the owner (staff_code/portfolio_owner),
+  manager_validated reset to False so it must still be validated.
+- POST /api/pipeline/deals/{id}/referral/decline — recipient (or admin) only;
+  REQUIRES reason; flips to declined (returned pool).
+- advance guard: a pending/declined deal cannot advance (400).
+- _db_sync_pipeline_deal + _normalize_db_deal_row carry the referral fields
+  through the Postgres round-trip (same pattern as the manager_validated lift).
+
+Harness: new referral_probe — refer existing -> pending (excluded from analytics
+count + advance blocked), non-recipient accept denied (403), recipient accepts
+(re-counts + advance unlocked), decline-without-reason rejected (400),
+decline-with-reason -> declined (returned) + still advance-blocked.
+
+NEXT (A2): reassign a returned deal (referrer/admin only) + read queries
+(incoming inbox / returned pool / referred-by-me). Then frontend (Batch B):
+restore the Refer/Assign action, an Incoming Referrals inbox with
+accept/decline-with-reason, and a Returned Deals view.

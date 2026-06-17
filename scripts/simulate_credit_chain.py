@@ -721,6 +721,81 @@ def exceptions_probe(base):
              note=f"owner {len(oitems)} item(s)")
 
 
+def referral_probe(base):
+    print("\n=== REFERRAL LIFECYCLE (refer existing -> accept / decline) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")      # frank0731, staff 300731
+    manager = login(base, "MANAGER")  # immaculate0716, staff 300716
+    if not admin or not owner or not manager:
+        return
+    FRANK = "300731"
+    IMMA  = "300716"
+
+    def _mk(who):
+        body = {"client_name": f"REF {datetime.now():%H%M%S%f}",
+                "client_type": "Commercial", "product_type": "Term Loan",
+                "deal_value": 3000000, "stage": "Lead", "segment": "SME"}
+        st, resp = _req(base, "POST", "/api/pipeline/deals", who, body)
+        d = resp if isinstance(resp, dict) else {}
+        return d.get("deal", {}).get("id") or d.get("id"), st
+
+    def _seg_count(tok):
+        st, an = _req(base, "GET", "/api/pipeline/analytics", tok)
+        rows = an.get("by_segment", []) if isinstance(an, dict) else []
+        return sum(r.get("count", 0) for r in rows)
+
+    # Owner (Frank) creates a deal he owns, then refers it to Immaculate.
+    did, cst = _mk(owner)
+    step("referral: deal created for refer test", (200, 201), cst, note=f"deal_id={did}")
+    n1 = _seg_count(admin)
+
+    st, rr = _req(base, "POST", f"/api/pipeline/deals/{did}/refer", owner,
+                  {"referred_to_code": IMMA, "referred_to_name": "Immaculate",
+                   "referral_note": "Please pursue — your relationship."})
+    step("referral: refer existing deal -> pending", (200, 201), st, payload=rr,
+         note=f"status={rr.get('referral_status') if isinstance(rr, dict) else '?'}")
+
+    n2 = _seg_count(admin)
+    step("referral: pending referral EXCLUDED from analytics count", True, n2 == n1 - 1,
+         note=f"before={n1} after={n2}")
+
+    # Advance blocked while pending (admin has scope, so 400 is the referral gate).
+    st, ar = _req(base, "POST", f"/api/pipeline/deals/{did}/advance", admin,
+                  {"new_stage": "Contacted"})
+    step("referral: advance BLOCKED while pending", 400, st, payload=ar)
+
+    # Non-recipient (the referrer Frank, a plain RM) cannot accept.
+    st, _na = _req(base, "POST", f"/api/pipeline/deals/{did}/referral/accept", owner, {})
+    step("referral: non-recipient accept denied", 403, st)
+
+    # Recipient (Immaculate) accepts -> owns the deal.
+    st, acc = _req(base, "POST", f"/api/pipeline/deals/{did}/referral/accept", manager, {})
+    step("referral: recipient accepts -> accepted", (200, 201), st, payload=acc,
+         note=f"status={acc.get('referral_status') if isinstance(acc, dict) else '?'}")
+
+    n3 = _seg_count(admin)
+    step("referral: accepted deal counts again", True, n3 == n1, note=f"after_accept={n3} vs {n1}")
+
+    # Progression now unlocked for the new owner.
+    st, ar2 = _req(base, "POST", f"/api/pipeline/deals/{did}/advance", manager,
+                   {"new_stage": "Contacted"})
+    step("referral: advance ALLOWED after accept", (200, 201), st, payload=ar2)
+
+    # Decline path on a second deal.
+    did2, _ = _mk(owner)
+    _req(base, "POST", f"/api/pipeline/deals/{did2}/refer", owner,
+         {"referred_to_code": IMMA, "referred_to_name": "Immaculate"})
+    st, _nd = _req(base, "POST", f"/api/pipeline/deals/{did2}/referral/decline", manager, {})
+    step("referral: decline without reason rejected", 400, st)
+    st, dec = _req(base, "POST", f"/api/pipeline/deals/{did2}/referral/decline", manager,
+                   {"reason": "Client outside my coverage area."})
+    step("referral: decline with reason -> declined (returned)", (200, 201), st, payload=dec,
+         note=f"status={dec.get('referral_status') if isinstance(dec, dict) else '?'}")
+    st, _ad = _req(base, "POST", f"/api/pipeline/deals/{did2}/advance", admin,
+                   {"new_stage": "Contacted"})
+    step("referral: declined deal blocked from advancing", 400, st)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -741,6 +816,7 @@ def main():
     negative_override_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
+    referral_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     credit_probe(args.base)
