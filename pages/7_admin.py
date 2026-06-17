@@ -186,6 +186,11 @@ with sections[0]:
 
             _branches = list(_org.get("branches", []))
             _regions  = list(_org.get("regions", []))
+            # Branches seeded via generate_staff use "branch_code"; branches added
+            # through this form use "code". Tolerate both so the table renders and
+            # add/edit matching works regardless of origin.
+            def _bcode(b):
+                return str(b.get("code") or b.get("branch_code") or "")
 
             # Summary strip
             _bm1,_bm2,_bm3,_bm4 = st.columns(4)
@@ -199,7 +204,7 @@ with sections[0]:
             # Live table
             if _branches:
                 _bdf_show = pd.DataFrame([{
-                    "Code":b["code"],"Branch Name":b["name"],"Region":b.get("region",""),
+                    "Code":_bcode(b),"Branch Name":b.get("name",""),"Region":b.get("region",""),
                     "County":b.get("county",""),"Type":b.get("type",""),"Tier":b.get("tier",3)
                 } for b in _branches])
                 st.dataframe(_bdf_show, use_container_width=True, hide_index=True, height=280)
@@ -224,7 +229,7 @@ with sections[0]:
                     if st.form_submit_button("➕ Add branch", type="primary"):
                         if _new_bcode.strip() and _new_bname.strip():
                             _reg_to_use = _new_bnewreg.strip() if _new_breg=="+ New region" and _new_bnewreg.strip() else _new_breg
-                            if _new_bcode.strip().upper() in [b["code"] for b in _branches]:
+                            if _new_bcode.strip().upper() in [_bcode(b) for b in _branches]:
                                 st.error(f"Code {_new_bcode} already exists.")
                             else:
                                 _branches.append({
@@ -265,7 +270,7 @@ with sections[0]:
                             index=max(0,min(3,_sel_b.get("tier",3)-1)))
                         if st.form_submit_button("💾 Save", type="primary"):
                             for _b in _branches:
-                                if _b["code"]==_sel_b["code"]:
+                                if _bcode(_b)==_bcode(_sel_b):
                                     _b["region"]=_eb_region; _b["county"]=_eb_county.strip()
                                     _b["type"]=_eb_type; _b["tier"]=int(_eb_tier); break
                             _org["branches"]=_branches; save_org_config(_org)

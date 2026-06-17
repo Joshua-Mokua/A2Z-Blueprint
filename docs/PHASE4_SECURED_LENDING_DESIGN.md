@@ -1467,3 +1467,21 @@ the Pipeline PageHeader. Harness: + "export: xlsx reachable + binary" (now 103).
 NEXT: PDF + PowerPoint exports need new deps (reportlab/fpdf + python-pptx) — NOT
 installed. Deliberate dep addition — awaiting Josh's go. Also queued: Total-Pipeline
 asset/liability split, credit_watchlist recreate, admin editor for segment_labels.
+
+## #36 — Streamlit admin fix: branch table KeyError 'code'
+
+pages/7_admin.py branch manager crashed (KeyError 'code') on render: seeded
+branches carry "branch_code" (generate_staff), but the admin code hard-accessed
+b["code"] (the key only the Add-branch form writes). Added a tolerant _bcode(b)
+accessor (code or branch_code) and used it at all 3 sites: the live table (line
+202), the add dup-check (227), and the edit-match (268). No data mutation; works
+for both seeded and form-added branches. Streamlit-only; does not touch auth.
+
+NOTE: other admin sections may have similar hard-subscript mismatches — fix each
+as surfaced (send the traceback).
+
+Still open from React side: drill panel + Export Excel button not visible despite
+backend passing (harness 103: funnel drill count=300, xlsx 88KB) — pending Josh's
+findstr check on Pipeline.tsx to confirm apply vs stale dev-server/cache.
+Segment rename for the Create Deal form lives in customer_segments (CUSTOMER_SEGMENTS),
+a different source than the analytics segment_labels.
