@@ -37,9 +37,10 @@ interface BrandColors {
   accent?: string;
 }
 
-/** Full categorical palette: brand colors first, then semantic fills. */
+/** Full categorical palette: a vivid, semantically-neutral sweep so every
+ *  category reads clearly. The brand primary leads (identity anchor); the
+ *  vivid categorical series from tokens follow. No hard-coded brand hex here. */
 export function buildPalette(brand?: BrandColors | null): string[] {
-  const brandColors = [brand?.primary, brand?.secondary, brand?.accent]
-    .filter(Boolean) as string[];
-  return [...brandColors, ...semanticSeries];
+  const lead = brand?.primary ? [brand.primary] : [];
+  return [...lead, ...semantic.categorical.filter((c) => c !== brand?.primary)];
 }

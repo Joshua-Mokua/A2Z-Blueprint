@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { useChartPalette } from '@/hooks/useChartPalette';
+import { ChartTooltip } from '@/components/charts/ChartTooltip';
 
 export interface BarSeries {
   key: string;
@@ -36,7 +37,7 @@ export function CategoryBarChart({
         <CartesianGrid strokeDasharray="3 3" stroke={chrome.grid} vertical={false} />
         <XAxis dataKey={xKey} stroke={chrome.axis} tick={axisTick} />
         <YAxis stroke={chrome.axis} tick={axisTick} />
-        <Tooltip />
+        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} content={<ChartTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         {series.map((s, i) => (
           <Bar key={s.key} dataKey={s.key} name={s.label ?? s.key}

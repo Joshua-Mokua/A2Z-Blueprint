@@ -6,6 +6,7 @@
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useChartPalette } from '@/hooks/useChartPalette';
+import { ChartTooltip } from '@/components/charts/ChartTooltip';
 
 export interface DonutDatum {
   name: string;
@@ -33,12 +34,12 @@ export function DonutChart({
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name"
                cx="50%" cy="50%" innerRadius="58%" outerRadius="80%"
-               paddingAngle={2}>
+               paddingAngle={2} cornerRadius={4} stroke="#fff" strokeWidth={2}>
             {data.map((d, i) => (
               <Cell key={d.name} fill={d.color ?? colors[i % colors.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
         </PieChart>
       </ResponsiveContainer>

@@ -1367,3 +1367,24 @@ real hierarchy + segment data land, this lights up with zero further code.
 Pending Josh's pick next: funnel product-drill (stage-click), graphics pass across
 other charts, exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
 credit_watchlist table recreate.
+
+## #31 — Graphics pass: vivid palette + polished tooltip across ALL charts
+
+Per Josh ("this level of world-class needs to be duplicated across"). One
+single-source change lifts every donut/bar app-wide (Analytics, CreditAnalytics,
+Dashboard, Showcase):
+  • tokens.ts: new semantic.categorical — a vivid, semantically-neutral cool→warm
+    sweep (cyan/blue/indigo/violet/pink/amber/emerald/teal/rose/purple). Lives in
+    tokens (the permitted home for non-brand hex), carries NO status meaning (vs
+    info/success/warning/danger which mislead as category colours).
+  • chartTheme.buildPalette: now brand primary (identity anchor) + the vivid
+    categorical series; dropped the status colours from categorical use. No
+    hard-coded brand hex (G381/G382 respected).
+  • NEW components/charts/ChartTooltip: white rounded card, colour dot per series,
+    locale-formatted values, brand-navy label. Wired into DonutChart +
+    CategoryBarChart. Donut softened (cornerRadius + white slice stroke).
+The segment/sector/product/currency slices + dashboard charts all inherit this.
+
+Remaining queue: funnel product/segment stage-drill (needs backend per-stage
+breakdown), exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
+credit_watchlist table recreate.

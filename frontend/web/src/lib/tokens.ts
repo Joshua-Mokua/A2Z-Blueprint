@@ -71,6 +71,22 @@ export const semantic = {
     600: '#2563eb',
     700: '#1d4ed8',
   },
+  // Vivid categorical palette for data-viz series (donuts, bars, slicers).
+  // Distinct from the RAG/status colors above — these carry NO semantic
+  // meaning, they exist purely to separate categories clearly and vividly.
+  // Cool→warm sweep so adjacent slices stay legible.
+  categorical: [
+    '#06b6d4', // cyan
+    '#3b82f6', // blue
+    '#6366f1', // indigo
+    '#a855f7', // violet
+    '#ec4899', // pink
+    '#f59e0b', // amber
+    '#10b981', // emerald
+    '#14b8a6', // teal
+    '#f43f5e', // rose
+    '#8b5cf6', // purple
+  ] as string[],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────
