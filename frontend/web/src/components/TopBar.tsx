@@ -1,32 +1,32 @@
-// Fixed application top bar. Part of the persistent shell (never scrolls).
-// Shows the current module title, a quick module search (type + Enter or
-// click to jump), a notifications affordance, and a compact user chip.
-// Presentation only — no business logic.
+// Fixed application top bar — the consistent, title-forward header across every
+// page (Streamlit-style: a domain eyebrow + the page title as the hero). Search
+// is a compact utility on the right, not the main item. Also: notifications and
+// a single canonical user chip. Presentation only.
 
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRole } from '@/hooks/useRole';
 
-interface RouteEntry { label: string; path: string; match: (p: string) => boolean }
+interface RouteEntry { label: string; domain: string; path: string; match: (p: string) => boolean }
 
 const ROUTES: RouteEntry[] = [
-  { label: 'Dashboard',           path: '/',                 match: (p) => p === '/' },
-  { label: 'Pipeline',            path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
-  { label: 'Pipeline Analytics',  path: '/analytics',        match: (p) => p.startsWith('/analytics') },
-  { label: 'Credit Analytics',    path: '/credit-analytics', match: (p) => p.startsWith('/credit-analytics') },
-  { label: 'Manager Queues',      path: '/pipeline/queues',  match: (p) => p.startsWith('/pipeline/queues') },
-  { label: 'Loan Applications',   path: '/lms',              match: (p) => p.startsWith('/lms') },
-  { label: 'Credit Admin',        path: '/credit-admin',     match: (p) => p.startsWith('/credit-admin') },
-  { label: 'Customer Lookup',     path: '/cbs',              match: (p) => p.startsWith('/cbs') },
-  { label: 'Target Cascade',      path: '/cascade',          match: (p) => p.startsWith('/cascade') },
-  { label: 'Initiatives',         path: '/initiatives',      match: (p) => p.startsWith('/initiatives') },
-  { label: 'FX Rates',            path: '/fx-rates',         match: (p) => p.startsWith('/fx-rates') },
-  { label: 'BSC Performance',     path: '/perform',          match: (p) => p === '/perform' },
-  { label: 'Profitability',       path: '/profitability',    match: (p) => p === '/profitability' },
+  { label: 'Dashboard',           domain: 'Executive Intelligence', path: '/',                 match: (p) => p === '/' },
+  { label: 'BSC Performance',     domain: 'Executive Intelligence', path: '/perform',          match: (p) => p === '/perform' },
+  { label: 'Target Cascade',      domain: 'Executive Intelligence', path: '/cascade',          match: (p) => p.startsWith('/cascade') },
+  { label: 'Strategic Initiatives', domain: 'Executive Intelligence', path: '/initiatives',    match: (p) => p.startsWith('/initiatives') },
+  { label: 'Profitability',       domain: 'Executive Intelligence', path: '/profitability',    match: (p) => p === '/profitability' },
+  { label: 'Pipeline',            domain: 'Business Development',    path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
+  { label: 'Pipeline Analytics',  domain: 'Business Development',    path: '/analytics',        match: (p) => p.startsWith('/analytics') },
+  { label: 'Manager Queues',      domain: 'Business Development',    path: '/pipeline/queues',  match: (p) => p.startsWith('/pipeline/queues') },
+  { label: 'Loan Applications',   domain: 'Credit Factory',         path: '/lms',              match: (p) => p.startsWith('/lms') },
+  { label: 'Credit Admin',        domain: 'Credit Factory',         path: '/credit-admin',     match: (p) => p.startsWith('/credit-admin') },
+  { label: 'Credit Analytics',    domain: 'Credit Factory',         path: '/credit-analytics', match: (p) => p.startsWith('/credit-analytics') },
+  { label: 'Customer Lookup',     domain: 'Reference & Admin',      path: '/cbs',              match: (p) => p.startsWith('/cbs') },
+  { label: 'FX Rates',            domain: 'Reference & Admin',      path: '/fx-rates',         match: (p) => p.startsWith('/fx-rates') },
 ];
 
-function titleFor(pathname: string): string {
-  return ROUTES.find((r) => r.match(pathname))?.label ?? 'A2Z MIS 360';
+function routeFor(pathname: string): RouteEntry | undefined {
+  return ROUTES.find((r) => r.match(pathname));
 }
 
 function initials(name?: string): string {
@@ -41,12 +41,16 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const [q, setQ] = useState('');
   const [notifyOpen, setNotifyOpen] = useState(false);
 
+  const current = routeFor(pathname);
+  const title = current?.label ?? 'A2Z MIS 360';
+  const domain = current?.domain ?? '';
+
   const query = q.trim().toLowerCase();
   const matches = query ? ROUTES.filter((r) => r.label.toLowerCase().includes(query)) : [];
   const go = (path: string) => { setQ(''); navigate(path); };
 
   return (
-    <header className="flex-shrink-0 h-14 bg-white border-b border-gray-200 flex items-center gap-3 px-4">
+    <header className="flex-shrink-0 h-16 bg-white border-b border-gray-200 flex items-center gap-3 px-5">
       <button
         type="button"
         onClick={onMenuClick}
@@ -58,14 +62,22 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         </svg>
       </button>
 
-      <h1 className="font-semibold text-gray-900 text-sm md:text-base whitespace-nowrap">
-        {titleFor(pathname)}
-      </h1>
+      {/* Title is the hero of the bar */}
+      <div className="min-w-0">
+        {domain && (
+          <div className="text-[10px] uppercase tracking-[1.6px] font-bold text-brand-primary leading-none">
+            {domain}
+          </div>
+        )}
+        <h1 className="text-lg font-bold text-gray-900 leading-tight mt-1 truncate">{title}</h1>
+      </div>
 
-      {/* Module search */}
-      <div className="relative flex-1 max-w-md ml-2">
+      <div className="flex-1" />
+
+      {/* Compact utility search (right cluster) */}
+      <div className="relative w-56 hidden md:block">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </span>
@@ -76,7 +88,8 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
             if (e.key === 'Enter' && matches[0]) go(matches[0].path);
             if (e.key === 'Escape') setQ('');
           }}
-          placeholder="Search modules…"
+          placeholder="Search…"
+          aria-label="Search modules"
           className="w-full h-9 rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-brand-primary outline-none transition-colors"
         />
         {matches.length > 0 && (
@@ -87,14 +100,13 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
                 onClick={() => go(m.path)}
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 block leading-none">{m.domain}</span>
                 {m.label}
               </button>
             ))}
           </div>
         )}
       </div>
-
-      <div className="flex-1" />
 
       {/* Notifications */}
       <div className="relative">
@@ -116,18 +128,18 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         )}
       </div>
 
-      {/* User chip */}
+      {/* Canonical user chip */}
       {user && (
         <div className="flex items-center gap-2 pl-3 ml-1 border-l border-gray-200">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
             style={{ background: 'var(--brand-primary, #1797ce)' }}
           >
             {initials(user.full_name)}
           </div>
           <div className="hidden lg:block leading-tight">
-            <div className="text-xs font-semibold text-gray-900 truncate max-w-[150px]">{user.full_name}</div>
-            <div className="text-[10px] text-gray-500 truncate max-w-[150px]">{user.role}</div>
+            <div className="text-xs font-semibold text-gray-900 truncate max-w-[160px]">{user.full_name}</div>
+            <div className="text-[10px] text-gray-500 truncate max-w-[160px]">{user.role}</div>
           </div>
         </div>
       )}

@@ -12,7 +12,6 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
-import { useRole } from '@/hooks/useRole';
 import { useMdDashboard } from '@/hooks/useMdDashboard';
 import { useCreditOpenWork } from '@/hooks/useCreditOpenWork';
 import { Card } from '@/components/Card';
@@ -53,7 +52,6 @@ function abbrev(n: number): string {
 export function Dashboard() {
   const navigate = useNavigate();
   const { branding, loading: brandingLoading } = useBranding();
-  const { user } = useRole();
   const { data, loading, error, refetch } = useMdDashboard();
   const { data: credit, loading: creditLoading } = useCreditOpenWork();
 
@@ -101,11 +99,6 @@ export function Dashboard() {
               <h1 className="text-xl font-bold mt-1">
                 {branding.app_name} MIS 360 — Executive Command Centre
               </h1>
-              {user && (
-                <div className="text-xs opacity-70 mt-1">
-                  {user.full_name} · {user.role}
-                </div>
-              )}
             </div>
           </div>
 

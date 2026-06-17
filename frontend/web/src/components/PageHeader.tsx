@@ -1,44 +1,40 @@
-// PageHeader — the one page-title framework. Sits directly under the global
-// TopBar and gives every interior page the same chrome: optional breadcrumbs,
-// an optional domain eyebrow, the page title, an optional subtitle, and a
-// right-aligned action slot. White to match the TopBar (no navy-on-navy).
+// PageHeader — the per-page context + action strip beneath the global TopBar.
 //
-//   <PageHeader
-//     breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Credit Analytics' }]}
-//     title="Credit Analytics"
-//     subtitle="Loan book within your scope."
-//     actions={<Button>New</Button>}
-//   />
+// The TopBar now owns the visible page title (domain eyebrow + title), so this
+// header deliberately does NOT repeat it. It provides: breadcrumbs (you-are-here
+// navigation), an optional subtitle (one line of context), and a right-aligned
+// action slot (page-level buttons / filters). The title prop is kept for an
+// accessible (screen-reader) heading only, so we never show it twice.
 
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export interface Crumb {
   label: string;
-  /** If set, the crumb is a link to this route. */
   to?: string;
 }
 
 interface PageHeaderProps {
+  /** Used as an accessible (sr-only) heading; the TopBar shows the visible title. */
   title:        string;
   subtitle?:    string;
-  /** Small uppercase domain label above the title (used when no breadcrumbs). */
+  /** Reserved for compatibility; not rendered (TopBar shows the domain). */
   eyebrow?:     string;
   breadcrumbs?: Crumb[];
-  /** Right-aligned actions (buttons, filters). */
   actions?:     ReactNode;
 }
 
-export function PageHeader({
-  title, subtitle, eyebrow, breadcrumbs, actions,
-}: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeaderProps) {
   const navigate = useNavigate();
+  const hasRow = Boolean(subtitle) || Boolean(actions);
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
+      <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-3.5">
+        <h1 className="sr-only">{title}</h1>
+
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-gray-400">
             {breadcrumbs.map((c, i) => (
               <span key={`${c.label}-${i}`} className="flex items-center gap-1.5">
                 {i > 0 && <span className="text-gray-300">/</span>}
@@ -58,20 +54,16 @@ export function PageHeader({
           </nav>
         )}
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            {eyebrow && (
-              <div className="text-[11px] uppercase tracking-wider font-semibold text-brand-primary mb-1">
-                {eyebrow}
-              </div>
+        {hasRow && (
+          <div className="flex items-center justify-between gap-4 mt-1.5">
+            {subtitle
+              ? <p className="text-sm text-gray-500 min-w-0 truncate">{subtitle}</p>
+              : <span />}
+            {actions && (
+              <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
             )}
-            <h1 className="text-xl font-semibold text-gray-900 truncate">{title}</h1>
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
           </div>
-          {actions && (
-            <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
-          )}
-        </div>
+        )}
       </div>
     </header>
   );

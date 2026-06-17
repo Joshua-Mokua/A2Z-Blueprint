@@ -1134,3 +1134,24 @@ NOTE (observed in screenshot, flagged): the MD dashboard hero figures + Performa
 & Risk tiles appeared blank/skeleton while the exceptions strip was populated —
 likely a mid-load snapshot (md endpoint slower); if it persists, investigate
 /api/dashboard/md. NEXT: xlsx+PDF export; then auth/DOA hardening LAST.
+
+## #22 — TopBar refinement + identity de-duplication: DELIVERED (tsc gate)
+
+Josh: search was the dominant item (misplaced); wanted Streamlit-style titles
+across; logged-in user repeated everywhere.
+- TopBar rewritten title-forward: domain eyebrow (brand-cyan) + page TITLE as the
+  hero (Streamlit-style), consistent across all routes (route->domain+title map).
+  Search demoted to a compact right-aligned utility (w-56, "Search…"), no longer
+  the centre of gravity. Bell + single canonical user chip on the right. h-16.
+- Dashboard hero: removed the redundant user name·role line (was a 3rd copy of
+  identity alongside the TopBar chip + sidebar). user/useRole import cleaned up.
+- PageHeader SLIMMED: TopBar now owns the visible title, so PageHeader no longer
+  renders it (kept as sr-only heading for a11y). It now carries breadcrumb +
+  subtitle + action slot only — prevents title showing twice on interior pages.
+  No page edits needed (props unchanged).
+
+Result: ONE prominent title (TopBar, across all pages), ONE identity chip
+(TopBar) + sidebar sign-out, breadcrumb+subtitle+actions per page. Much less
+repetition.
+
+NEXT: xlsx+PDF export; further page polish; then auth/DOA hardening LAST.
