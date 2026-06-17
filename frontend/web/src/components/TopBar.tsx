@@ -1,7 +1,7 @@
-// Fixed application top bar — the consistent, title-forward header across every
-// page (Streamlit-style: a domain eyebrow + the page title as the hero). Search
-// is a compact utility on the right, not the main item. Also: notifications and
-// a single canonical user chip. Presentation only.
+// Fixed application top bar — Ecobank navy, matching the sidebar so the two form
+// one brand frame around the light content. Title-forward (domain eyebrow + page
+// title, Streamlit-style); search is a compact utility on the right. A soft
+// shadow lets content visibly scroll underneath. Presentation only.
 
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -50,12 +50,15 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const go = (path: string) => { setQ(''); navigate(path); };
 
   return (
-    <header className="flex-shrink-0 h-16 bg-white border-b border-gray-200 flex items-center gap-3 px-5">
+    <header
+      className="flex-shrink-0 h-16 flex items-center gap-3 px-5 text-white shadow-md border-b border-white/10 relative z-20"
+      style={{ background: 'var(--brand-secondary, #0e2440)' }}
+    >
       <button
         type="button"
         onClick={onMenuClick}
         aria-label="Open navigation"
-        className="md:hidden w-9 h-9 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-600"
+        className="md:hidden w-9 h-9 rounded-md hover:bg-white/10 flex items-center justify-center text-white/80"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -65,18 +68,18 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
       {/* Title is the hero of the bar */}
       <div className="min-w-0">
         {domain && (
-          <div className="text-[10px] uppercase tracking-[1.6px] font-bold text-brand-primary leading-none">
+          <div className="text-[10px] uppercase tracking-[1.6px] font-bold text-sky-300 leading-none">
             {domain}
           </div>
         )}
-        <h1 className="text-lg font-bold text-gray-900 leading-tight mt-1 truncate">{title}</h1>
+        <h1 className="text-lg font-bold text-white leading-tight mt-1 truncate">{title}</h1>
       </div>
 
       <div className="flex-1" />
 
-      {/* Compact utility search (right cluster) */}
+      {/* Compact utility search */}
       <div className="relative w-56 hidden md:block">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -90,7 +93,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           }}
           placeholder="Search…"
           aria-label="Search modules"
-          className="w-full h-9 rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-brand-primary outline-none transition-colors"
+          className="w-full h-9 rounded-md bg-white/10 border border-white/20 pl-9 pr-3 text-sm text-white placeholder:text-white/50 focus:bg-white/15 focus:border-white/40 outline-none transition-colors"
         />
         {matches.length > 0 && (
           <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
@@ -114,14 +117,14 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           type="button"
           onClick={() => setNotifyOpen((o) => !o)}
           aria-label="Notifications"
-          className="w-9 h-9 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500"
+          className="w-9 h-9 rounded-md hover:bg-white/10 flex items-center justify-center text-white/70"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </button>
         {notifyOpen && (
-          <div className="absolute right-0 z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-4">
+          <div className="absolute right-0 z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-4 text-left">
             <div className="text-sm font-semibold text-gray-900">Notifications</div>
             <div className="text-xs text-gray-500 mt-1">You're all caught up.</div>
           </div>
@@ -130,16 +133,16 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 
       {/* Canonical user chip */}
       {user && (
-        <div className="flex items-center gap-2 pl-3 ml-1 border-l border-gray-200">
+        <div className="flex items-center gap-2 pl-3 ml-1 border-l border-white/15">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/20"
             style={{ background: 'var(--brand-primary, #1797ce)' }}
           >
             {initials(user.full_name)}
           </div>
           <div className="hidden lg:block leading-tight">
-            <div className="text-xs font-semibold text-gray-900 truncate max-w-[160px]">{user.full_name}</div>
-            <div className="text-[10px] text-gray-500 truncate max-w-[160px]">{user.role}</div>
+            <div className="text-xs font-semibold text-white truncate max-w-[160px]">{user.full_name}</div>
+            <div className="text-[10px] text-white/60 truncate max-w-[160px]">{user.role}</div>
           </div>
         </div>
       )}

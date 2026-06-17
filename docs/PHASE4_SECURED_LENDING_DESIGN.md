@@ -1155,3 +1155,20 @@ Result: ONE prominent title (TopBar, across all pages), ONE identity chip
 repetition.
 
 NEXT: xlsx+PDF export; further page polish; then auth/DOA hardening LAST.
+
+## #23 — TopBar in Ecobank navy (scroll differentiation): DELIVERED (tsc gate)
+
+Josh: don't leave the TopBar white — apply Ecobank colours so the fixed bar is
+differentiated as content scrolls under it.
+- TopBar background -> var(--brand-secondary) navy, matching the sidebar: the two
+  now form one continuous brand frame around the light content.
+- Internals restyled light-on-dark: domain eyebrow in sky/cyan, title white,
+  compact search as translucent white/10 field, bell + user chip white, avatar
+  ring. Search/notification popovers stay white (readable).
+- shadow-md + z-20 so page content visibly scrolls UNDER the fixed bar.
+On the Dashboard the navy TopBar meets the navy hero (a cohesive executive header
+zone); on all other pages it sits over light content / white PageHeader for clear
+separation.
+
+NEXT: xlsx+PDF export; sticky filters/tabs; detail-page header sweep; KPI
+sparklines; then auth/DOA hardening LAST.
