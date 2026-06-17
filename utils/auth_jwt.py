@@ -293,6 +293,24 @@ def get_current_user_allow_rotation(
     return _extract_token_payload(authorization)
 
 
+def _require_config_admin_impl(user: dict) -> dict:
+    """Internal — config-editor gate. Broader than _require_admin_impl: the
+    canonical roles carry full titles ("Chief Executive & Managing Director",
+    "Director Retail Banking", …) that never equal the literal "admin"/"director",
+    so an exact match would lock the CEO/MD out of their own configuration. This
+    gate matches the executive tier by substring (chief / managing / director /
+    admin) so the CEO, MD, and Directors can view + edit reference config, while
+    RMs / officers / branch staff are denied. It does NOT touch require_admin
+    (which still guards destructive endpoints) or the admin-superuser override."""
+    role = (user.get("role") or "").lower()
+    if any(tok in role for tok in ("admin", "director", "chief", "managing")):
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Configuration-admin role (CEO / MD / Director) required",
+    )
+
+
 def require_admin(user: dict = None) -> dict:
     """FastAPI Depends — require role=Admin or equivalent.
 
@@ -344,6 +362,18 @@ def _make_require_admin():
 
 
 require_admin = _make_require_admin()
+
+
+def _make_require_config_admin():
+    from fastapi import Depends
+
+    def require_config_admin_dep(user: dict = Depends(get_current_user)) -> dict:
+        return _require_config_admin_impl(user)
+
+    return require_config_admin_dep
+
+
+require_config_admin = _make_require_config_admin()
 
 # ── require_role factory (v10.499 Stage C Batch 2b) ───────────────────────
 # Generalises require_admin to arbitrary role lists. Used by routes that

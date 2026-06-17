@@ -66,6 +66,7 @@ from utils.auth_jwt import (
     get_current_user,
     get_current_user_allow_rotation,
     require_admin,
+    require_config_admin,
     warn_if_default_secret,
     TOKEN_SCOPE_FULL,
     TOKEN_SCOPE_MUST_ROTATE,
@@ -1175,6 +1176,66 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "stage_flows":       cfg.get("stage_flows", {}),
         "customer_segments": _customer_segments(),
         "currency":          cfg.get("currency", "KES"),
+        "required_fields":   _required_fields(),
+    }
+
+
+# Keys an executive (CEO / MD / Director) may edit through the React admin
+# console. Each maps straight into pipeline_settings.json; anything outside this
+# set is ignored so the write surface can't be used to mutate unrelated state.
+_EDITABLE_CONFIG_KEYS = {
+    "segment_labels", "customer_segments", "product_catalogue",
+    "individual_mous", "business_sectors", "sectors", "deal_categories",
+    "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
+    "probability_map", "deal_types",
+}
+
+
+@app.post("/api/admin/pipeline-config", tags=["admin"])
+def admin_update_pipeline_config(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Merge a partial reference-config patch into pipeline_settings.json. Only
+    whitelisted keys (_EDITABLE_CONFIG_KEYS) are applied; an empty patch is a
+    no-op (no write). Backs the React admin Configuration panels (segments /
+    products / MOUs / sectors / required-fields). Currency/FX has its own
+    endpoint (/api/fx/rates). Gated to the executive tier via require_config_admin."""
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+
+    patch = {k: v for k, v in (payload or {}).items() if k in _EDITABLE_CONFIG_KEYS}
+    if not patch:
+        # Nothing editable supplied — report current effective config, no write.
+        return {"status": "noop", "applied": [], "config": _editable_config_view()}
+
+    settings = get_pipeline_settings() or {}
+    if not isinstance(settings, dict):
+        settings = {}
+    settings.update(patch)
+    save_pipeline_settings(settings)
+    _audit("API_PIPELINE_CONFIG_UPDATE", user, ", ".join(sorted(patch.keys())))
+    return {"status": "saved", "applied": sorted(patch.keys()),
+            "config": _editable_config_view()}
+
+
+def _editable_config_view() -> dict:
+    """Current effective values for every editable config key — what the admin
+    console reads back after a save (and on load)."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    return {
+        "segment_labels":     _segment_labels(),
+        "customer_segments":  _customer_segments(),
+        "product_catalogue":  cfg.get("product_catalogue", {}),
+        "individual_mous":    cfg.get("individual_mous", []),
+        "business_sectors":   cfg.get("business_sectors", []),
+        "sectors":            cfg.get("sectors", []),
+        "deal_categories":    cfg.get("deal_categories", []),
+        "stage_flows":        cfg.get("stage_flows", {}),
+        "required_fields":    _required_fields(),
+        "allow_other_sector": cfg.get("allow_other_sector", True),
+        "allow_other_mou":    cfg.get("allow_other_mou", True),
+        "probability_map":    cfg.get("probability_map", {}),
+        "deal_types":         cfg.get("deal_types", []),
     }
 
 
@@ -1660,6 +1721,22 @@ def _customer_segments() -> dict:
     if isinstance(m, dict) and m:
         return dict(m)
     return dict(_DEFAULT_CUSTOMER_SEGMENTS)
+
+
+# Deal-creation fields the bank requires before a deal can be created. Admin-
+# configurable (pipeline_settings.json → required_fields); defaults to the
+# historical hard-coded set. The React create form reads this to decide which
+# inputs to mark mandatory + validate, so requiredness is a config decision,
+# not code.
+_DEFAULT_REQUIRED_FIELDS = ["client_name", "product_type", "deal_value", "stage"]
+
+
+def _required_fields() -> list:
+    cfg = _load_json("pipeline_settings.json") or {}
+    m = cfg.get("required_fields") if isinstance(cfg, dict) else None
+    if isinstance(m, list) and m:
+        return [str(x) for x in m]
+    return list(_DEFAULT_REQUIRED_FIELDS)
 
 
 def _acquire_scoped_deals(user: dict) -> list:

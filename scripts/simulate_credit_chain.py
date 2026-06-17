@@ -480,6 +480,21 @@ def sector_mou_probe(base):
                       for s in by_seg_funnel))
     step("analytics: by_segment_funnel present + well-formed", True, bsf_ok,
          note=f"{len(by_seg_funnel)} segment funnels; top={by_seg_funnel[0].get('segment') if by_seg_funnel else '—'}")
+
+    # ── Admin config console (Batch 1a): read exposes required_fields; the
+    # write endpoint is reachable for the executive tier and denied below it.
+    st_cfg2, cfg2 = _req(base, "GET", "/api/pipeline/stages", admin)
+    rf = cfg2.get("required_fields") if isinstance(cfg2, dict) else None
+    step("admin config: read exposes required_fields", True,
+         isinstance(rf, list) and len(rf) >= 1, note=f"required={rf}")
+    st_noop, noop = _req(base, "POST", "/api/admin/pipeline-config", admin, {})
+    noop_ok = (st_noop == 200 and isinstance(noop, dict)
+               and noop.get("status") in ("noop", "saved") and "config" in noop)
+    step("admin config: write endpoint reachable for exec (noop, no write)", True, noop_ok,
+         note=f"status={noop.get('status') if isinstance(noop, dict) else st_noop}")
+    st_deny, _dn = _req(base, "POST", "/api/admin/pipeline-config", owner,
+                        {"required_fields": ["client_name"]})
+    step("admin config: non-exec (RM) denied", 403, st_deny)
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
              and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))

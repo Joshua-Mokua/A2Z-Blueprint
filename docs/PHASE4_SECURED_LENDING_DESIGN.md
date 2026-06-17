@@ -1549,3 +1549,42 @@ KNOWN PERF (noted, not in this batch): /pipeline refetches deals + analytics on
 every remount (manual useEffect, no cache) — that's the lag on "Back to pipeline".
 A TanStack Query migration (queryKey + staleTime) would make back-nav instant;
 proposed for the sweep/perf batch.
+
+## #39 — Admin config console, Batch 1a (backend: gate + write endpoint)
+
+Foundation for moving pipeline/credit reference config into React with CEO/MD
+view+edit. Backend only; React panels follow in 1b.
+
+auth_jwt.py:
+- New require_config_admin dependency (+ _require_config_admin_impl). Lenient
+  SUBSTRING gate (chief / managing / director / admin) because the canonical
+  roles carry full titles ("Chief Executive & Managing Director", "Director
+  Retail Banking") that never equal the literal "admin"/"director" that
+  require_admin checks — an exact match would lock the CEO/MD out of their own
+  config. Leaves require_admin (destructive-endpoint gate) and the admin-
+  superuser override UNTOUCHED, per standing directive.
+
+api.py:
+- /api/pipeline/stages now also returns required_fields (via _required_fields()):
+  the deal-create fields the bank mandates. Admin-configurable
+  (pipeline_settings.json → required_fields); _DEFAULT_REQUIRED_FIELDS =
+  [client_name, product_type, deal_value, stage]. The React form will read this
+  to drive mandatory-field validation (requiredness = config, not code).
+- NEW POST /api/admin/pipeline-config (Depends(require_config_admin)): merges a
+  partial patch into pipeline_settings.json via save_pipeline_settings. Only
+  _EDITABLE_CONFIG_KEYS applied (segment_labels, customer_segments,
+  product_catalogue, individual_mous, business_sectors, sectors,
+  deal_categories, stage_flows, required_fields, allow_other_*, probability_map,
+  deal_types); anything else ignored so the surface can't mutate unrelated
+  state. Empty patch = no-op (no write). Audited (API_PIPELINE_CONFIG_UPDATE).
+  Returns _editable_config_view() — the current effective values the console
+  reads back. Currency/FX keeps its own endpoint (/api/fx/rates).
+
+Harness +3 (103 → 106): read exposes required_fields; write endpoint reachable
+for the exec tier (noop, no write — protects live pipeline_settings.json); RM
+persona denied 403. ADMIN persona = william001 (MD, role contains chief/managing
+→ passes); OWNER = frank0731 (RM → denied).
+
+NEXT (1b, frontend): gated Admin → Configuration route with panels for segments /
+products / MOUs / sectors / required-fields + currency (reuse FX API), reading
+_editable_config_view and PATCHing via /api/admin/pipeline-config.
