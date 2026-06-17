@@ -1196,3 +1196,23 @@ STILL OPEN (Josh's other 2 points, teed up):
 
 Deep per-class drill (Asset card -> analytics filtered to asset) needs an
 analytics URL-filter param — pairs with the compare feature.
+
+## #25 — Seed manager-validation (lights up funnel + Assured): DELIVERED
+
+Root cause of "Assured KES 0" everywhere + empty funnel: no seed deals had
+`manager_validated=true`. Assured/funnel read ACTIVE deals where manager_validated
+is true -> all zero.
+
+Fix: NEW scripts/seed_validate_deals.py — validates a slice of active deals via the
+app's own PipelineManager.validate_deal (not a raw DB write), so the path matches
+production exactly. SAFE + IDEMPOTENT: targets the first N% of active deals by id
+(deterministic); re-running converges to the target and skips already-validated;
+--dry-run writes nothing. Default --pct 60.
+
+After running + API restart, these all populate at once: MD dashboard "Assured"
+tile, Pipeline Analytics "Assured value", Pipeline "Total Assured" card, and the
+Validated-pipeline funnel. pending_validation drops to the remaining ~40% (a
+realistic queue). No API/logic change — harness stays 100/100.
+
+STILL OPEN: (2) slicer "compare two items" feature; deep per-class card drill
+(needs analytics URL-filter param). Then auth/DOA hardening LAST.
