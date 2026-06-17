@@ -29,7 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
-import { fetchPipelineConfig, fetchPipelineAnalytics, fetchFunnelDrill } from '@/lib/api';
+import { fetchPipelineConfig, fetchPipelineAnalytics, fetchFunnelDrill, downloadFile } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Stat } from '@/components/Stat';
@@ -86,6 +86,7 @@ export function Pipeline() {
   // broken down by product and segment.
   const [drill, setDrill] = useState<FunnelDrillResponse | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const drillRef = useRef<HTMLDivElement | null>(null);
   const onStageDrill = (cls: string, stage: string): void => {
     setDrillLoading(true);
@@ -247,6 +248,20 @@ export function Pipeline() {
         breadcrumbs={[{ label: 'Business Development' }, { label: 'Pipeline' }]}
         title="Pipeline"
         subtitle="Deals across your scope — assured value, stage, and ownership."
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setExporting(true);
+              downloadFile('/pipeline/export/xlsx', 'A2Z_Pipeline.xlsx')
+                .catch(() => { /* surfaced via button state only */ })
+                .finally(() => setExporting(false));
+            }}
+            disabled={exporting}
+          >
+            {exporting ? 'Exporting…' : 'Export Excel'}
+          </Button>
+        }
       />
 
       {/* Main content */}

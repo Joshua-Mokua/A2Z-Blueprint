@@ -479,6 +479,20 @@ def sector_mou_probe(base):
              and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))
     step("funnel drill: reachable + well-formed", True, fd_ok,
          note=f"count={fd.get('totals',{}).get('count') if isinstance(fd, dict) else '—'}")
+    # xlsx export is binary — _req decodes text, so check it raw.
+    try:
+        import urllib.request as _ur
+        _xreq = _ur.Request(base.rstrip("/") + "/api/pipeline/export/xlsx", method="GET")
+        _xreq.add_header("Authorization", f"Bearer {admin}")
+        with _ur.urlopen(_xreq, timeout=30) as _xr:
+            _ct = _xr.headers.get("Content-Type", "")
+            _blob = _xr.read()
+            _xok = _xr.status == 200 and "spreadsheet" in _ct and len(_blob) > 500
+            _xnote = f"{len(_blob)} bytes; {_ct[:42]}"
+    except Exception as _xe:  # noqa: BLE001
+        _xok = False
+        _xnote = str(_xe)[:60]
+    step("export: xlsx reachable + binary", True, _xok, note=_xnote)
     step("analytics: by_currency_book has LCY+FCY", True,
          "LCY" in by_ccy and "FCY" in by_ccy,
          note=f"LCY={by_ccy.get('LCY',{}).get('value')}, FCY={by_ccy.get('FCY',{}).get('value')}")

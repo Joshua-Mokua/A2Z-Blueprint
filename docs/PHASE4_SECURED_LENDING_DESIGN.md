@@ -1446,3 +1446,24 @@ today the seed has Mass (→Direct) and Affluent (→Premier) only.
 Frontend type: PipelineConfig.segment_labels added. Harness unaffected (102).
 Remaining: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
 credit_watchlist recreate, admin editor for segment_labels (optional).
+
+## #35 — Excel export (openpyxl, no new dep) + Streamlit↔React reflection note
+
+Streamlit↔React: confirmed both share ONE backend store. Config (pipeline_settings
+incl. products/stages/segment_labels) is read FRESH per request (get_pipeline_settings
++ _load_json — no cache), so admin edits reflect on the next React refetch/refresh.
+Deals live in Postgres — shared. Caveat: some heavy/managed layers cache in-process,
+so after large admin changes a FastAPI restart guarantees React sees everything.
+
+Excel export: NEW GET /api/pipeline/export/xlsx (openpyxl — already a dep). Builds a
+banking-grade workbook from the SAME scoped data + analytics as the screen, so it
+reconciles: Summary (headline + per-class), Deals (full field set incl. class /
+segment / sector / native + KES amounts / owner / validated), and breakdown sheets
+By Segment / Sector / Product / Stage. Navy branded headers, money number-formats,
+frozen header rows. StreamingResponse with Content-Disposition.
+Frontend: downloadFile() auth-aware blob helper in api.ts; "Export Excel" button in
+the Pipeline PageHeader. Harness: + "export: xlsx reachable + binary" (now 103).
+
+NEXT: PDF + PowerPoint exports need new deps (reportlab/fpdf + python-pptx) — NOT
+installed. Deliberate dep addition — awaiting Josh's go. Also queued: Total-Pipeline
+asset/liability split, credit_watchlist recreate, admin editor for segment_labels.

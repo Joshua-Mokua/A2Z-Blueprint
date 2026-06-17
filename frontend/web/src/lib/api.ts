@@ -118,6 +118,37 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 
+// ── Authenticated binary download (xlsx / pdf / pptx exports) ───────────
+// Mirrors getJson's auth-header + 401 handling, but streams the response as
+// a Blob and triggers a browser download with the server-provided filename.
+export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (_currentToken) headers['Authorization'] = `Bearer ${_currentToken}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (res.status === 401) {
+    if (_on401Callback) _on401Callback();
+    throw new AuthExpiredError(path);
+  }
+  if (!res.ok) throw new Error(`Export ${path} failed: ${res.status} ${res.statusText}`);
+
+  // Prefer the filename from Content-Disposition when present.
+  let filename = fallbackName;
+  const cd = res.headers.get('Content-Disposition') || '';
+  const m = /filename="?([^"]+)"?/.exec(cd);
+  if (m && m[1]) filename = m[1];
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+
 // ── Central JSON POST/PUT wrapper (v10.511 Phase 4 Batch β2) ────────────
 // Mirrors getJson semantics — same auth header injection, same 401
 // callback dispatch — but for write operations. Body is JSON-serialized

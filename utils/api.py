@@ -2047,6 +2047,127 @@ def pipeline_funnel_drill(
     }
 
 
+@app.get("/api/pipeline/export/xlsx")
+def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
+    """Banking-grade Excel workbook of the caller's scoped pipeline: a Summary
+    sheet (headline + per-class), a Deals sheet (full field set), and breakdown
+    sheets by segment / sector / product / stage. Reuses the same scoped data +
+    analytics as the screen, so the export reconciles with what's on display."""
+    _audit("API_PIPELINE_EXPORT_XLSX", user, "")
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from fastapi.responses import StreamingResponse
+
+    deals = _acquire_scoped_deals(user)
+    an = _compute_pipeline_analytics(deals)
+
+    NAVY = "0E2440"
+    hdr_font = Font(bold=True, color="FFFFFF", size=11)
+    hdr_fill = PatternFill("solid", fgColor=NAVY)
+    title_font = Font(bold=True, color=NAVY, size=16)
+    sub_font = Font(color="6B7280", size=9)
+    money_fmt = '#,##0'
+
+    def _style_header(ws, row, ncols):
+        for c in range(1, ncols + 1):
+            cell = ws.cell(row=row, column=c)
+            cell.font = hdr_font
+            cell.fill = hdr_fill
+            cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    def _autofit(ws, widths):
+        for i, w in enumerate(widths, start=1):
+            ws.column_dimensions[chr(64 + i)].width = w
+
+    wb = Workbook()
+
+    # ── Summary ──
+    ws = wb.active
+    ws.title = "Summary"
+    ws["A1"] = "A2Z Blueprint — Pipeline Export"
+    ws["A1"].font = title_font
+    ws["A2"] = f"Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} · scope: {user.get('full_name') or user.get('username','')}"
+    ws["A2"].font = sub_font
+    t = an.get("totals", {})
+    rows = [
+        ("Metric", "Value (KES)", "Count"),
+        ("Total pipeline (active)", t.get("total_value", 0) + t.get("pending_value", 0), t.get("active_count", 0) + t.get("pending_count", 0)),
+        ("Assured (validated)", t.get("total_value", 0), t.get("active_count", 0)),
+        ("Pending assurance", t.get("pending_value", 0), t.get("pending_count", 0)),
+        ("Won", t.get("won_value", 0), t.get("won_count", 0)),
+    ]
+    for k, v in (an.get("pipelines") or {}).items():
+        rows.append((f"{v.get('label', k)} — assured", v.get("value", 0), v.get("active_count", 0)))
+    start = 4
+    for r, row in enumerate(rows, start=start):
+        for c, val in enumerate(row, start=1):
+            cell = ws.cell(row=r, column=c, value=val)
+            if r > start and c >= 2 and isinstance(val, (int, float)):
+                cell.number_format = money_fmt
+    _style_header(ws, start, 3)
+    _autofit(ws, [34, 20, 12])
+    ws.freeze_panes = "A5"
+
+    # ── Deals ──
+    wd = wb.create_sheet("Deals")
+    headers = ["Deal ID", "Client", "Product", "Class", "Segment", "Sector",
+               "Stage", "Currency", "Amount (native)", "Amount (KES)", "Owner",
+               "Branch/Unit", "Expected Close", "Probability %", "Assured"]
+    wd.append(headers)
+    _style_header(wd, 1, len(headers))
+    for d in sorted(deals, key=_deal_value, reverse=True):
+        wd.append([
+            d.get("id", ""),
+            d.get("client_name", ""),
+            d.get("product_type") or d.get("product", ""),
+            _classify_product(d.get("product_type") or d.get("product", "")),
+            _segment_of(d),
+            _sector_of(d),
+            d.get("stage", ""),
+            d.get("currency", "KES"),
+            float(d.get("deal_value") or d.get("amount") or 0),
+            _deal_value(d),
+            d.get("staff_name") or d.get("staff_code", ""),
+            d.get("unit", ""),
+            str(d.get("expected_close") or ""),
+            float(d.get("probability") or 0),
+            "Yes" if d.get("manager_validated") else "No",
+        ])
+    for r in range(2, wd.max_row + 1):
+        wd.cell(row=r, column=9).number_format = money_fmt
+        wd.cell(row=r, column=10).number_format = money_fmt
+    _autofit(wd, [10, 28, 22, 11, 16, 22, 16, 9, 16, 16, 22, 18, 14, 12, 9])
+    wd.freeze_panes = "A2"
+
+    # ── Breakdown sheets ──
+    def _breakdown_sheet(name, key_field, rows_data):
+        w = wb.create_sheet(name)
+        w.append([key_field, "Value (KES)", "Count"])
+        _style_header(w, 1, 3)
+        for row in rows_data:
+            w.append([row.get(key_field.lower(), row.get("label", "")), row.get("value", 0), row.get("count", 0)])
+        for r in range(2, w.max_row + 1):
+            w.cell(row=r, column=2).number_format = money_fmt
+        _autofit(w, [30, 20, 12])
+        w.freeze_panes = "A2"
+
+    _breakdown_sheet("By Segment", "Segment", an.get("by_segment", []))
+    _breakdown_sheet("By Sector", "Sector", an.get("by_sector", []))
+    _breakdown_sheet("By Product", "Product", an.get("by_product", []))
+    _breakdown_sheet("By Stage", "Stage", [{"stage": s.get("stage"), "value": s.get("value"), "count": s.get("count")} for s in an.get("funnel", [])])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"A2Z_Pipeline_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
 # ── Pipeline Mutation Endpoints (v10.505 Phase 3 Arc α Batch α3) ──
 #
 # POST/PUT/advance for pipeline deals. Adds API-side equivalents of
