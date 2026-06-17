@@ -6,6 +6,7 @@ import { useInitiativeDetail } from '@/hooks/useInitiativeDetail';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/Skeleton';
 import {
   ragTone,
@@ -29,21 +30,15 @@ export function InitiativeDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Initiative Detail</h1>
-              <p className="text-xs text-white/70 mt-0.5 font-mono">
-                {initiativeId ?? '—'}
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/initiatives')}>
-              ← Back to Initiatives
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Initiative Detail"
+        breadcrumbs={[{ label: 'Initiatives', to: '/initiatives' }, { label: initiativeId ?? '—' }]}
+        actions={
+          <Button variant="ghost" size="sm" onClick={() => navigate('/initiatives')}>
+            ← Back to Initiatives
+          </Button>
+        }
+      />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6 space-y-5">
 

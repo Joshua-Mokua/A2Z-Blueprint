@@ -33,13 +33,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
-import { useRole } from '@/hooks/useRole';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
 import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, ApiValidationError, AuthExpiredError } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { PermissionBadges } from '@/components/PermissionBadges';
@@ -77,7 +77,6 @@ export function PipelineDealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const { branding } = useBranding();
-  const { user } = useRole();
   const { toast } = useToast();
   const mutations = usePipelineDealMutations();
 
@@ -124,7 +123,7 @@ export function PipelineDealDetail() {
 
   if (!dealId) {
     return (
-      <DetailFrame title="Pipeline Deal" branding={branding} user={user}>
+      <DetailFrame title="Pipeline Deal">
         <Card className="mt-8">
           <Card.Body>
             <Badge tone="danger">Missing deal ID</Badge>
@@ -139,7 +138,7 @@ export function PipelineDealDetail() {
 
   if (loading && !deal) {
     return (
-      <DetailFrame title={`Deal ${dealId}`} branding={branding} user={user}>
+      <DetailFrame title={`Deal ${dealId}`}>
         <Card className="mt-8">
           <Card.Body>
             <Skeleton shape="line" className="w-1/2" />
@@ -157,7 +156,7 @@ export function PipelineDealDetail() {
 
   if (loadError || !deal) {
     return (
-      <DetailFrame title={`Deal ${dealId}`} branding={branding} user={user}>
+      <DetailFrame title={`Deal ${dealId}`}>
         <Card className="mt-8">
           <Card.Header>
             <div className="flex items-center gap-3">
@@ -188,7 +187,7 @@ export function PipelineDealDetail() {
   const currency = branding?.currency_symbol ?? '';
 
   return (
-    <DetailFrame title={`Deal ${deal.id}`} branding={branding} user={user}>
+    <DetailFrame title={`Deal ${deal.id}`}>
       {/* Top action bar */}
       <div className="flex items-center justify-between mt-8 mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
@@ -351,36 +350,23 @@ export function PipelineDealDetail() {
 
 interface DetailFrameProps {
   title:    string;
-  branding: ReturnType<typeof useBranding>['branding'];
-  user:     ReturnType<typeof useRole>['user'];
   children: React.ReactNode;
 }
 
-function DetailFrame({ title, branding, user, children }: DetailFrameProps) {
+function DetailFrame({ title, children }: DetailFrameProps) {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gray-50">
-      <header
-        className="px-6 py-5 text-white shadow-sm"
-        style={{ background: 'var(--brand-secondary)' }}
-      >
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
-              {branding?.bank_name ?? 'A2Z MIS 360'}
-            </div>
-            <h1 className="text-xl font-bold mt-1">
-              {branding?.app_name ?? 'A2Z'} MIS 360 — {title}
-            </h1>
-          </div>
-          <div className="text-right text-xs opacity-70 leading-relaxed">
-            {user?.full_name && (
-              <div className="font-medium opacity-90">{user.full_name}</div>
-            )}
-            {user?.role && <div>{user.role}</div>}
-          </div>
-        </div>
-      </header>
-      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
+      <PageHeader
+        title={title}
+        breadcrumbs={[{ label: 'Pipeline', to: '/pipeline' }, { label: title }]}
+        actions={
+          <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
+            ← Back to pipeline
+          </Button>
+        }
+      />
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         {children}
       </main>
     </div>

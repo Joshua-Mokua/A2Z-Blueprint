@@ -37,6 +37,7 @@ import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
+import { PageHeader } from '@/components/PageHeader';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
@@ -111,9 +112,13 @@ export function PipelineManagerQueues() {
 
   if (!userIsManager) {
     return (
-      <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
-        <PageHeader title="Manager Queues" branding={branding} />
-        <Card className="mt-8">
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader
+          title="Manager Queues"
+          breadcrumbs={[{ label: 'Business Development' }, { label: 'Manager Queues' }]}
+        />
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+        <Card>
           <Card.Header>
             <div className="flex items-center gap-3">
               <Badge tone="warning">Not authorized</Badge>
@@ -144,6 +149,7 @@ export function PipelineManagerQueues() {
             </div>
           </Card.Body>
         </Card>
+        </div>
       </div>
     );
   }
@@ -158,11 +164,15 @@ export function PipelineManagerQueues() {
   // ── Main render ──────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
-      <PageHeader title="Manager Queues" branding={branding} />
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader
+        title="Manager Queues"
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'Manager Queues' }]}
+      />
+      <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 
       {/* Tab strip */}
-      <div className="mt-6 flex items-center gap-2 border-b border-gray-200">
+      <div className="flex items-center gap-2 border-b border-gray-200">
         <TabBtn
           active={activeTab === 'validation'}
           onClick={() => setActiveTab('validation')}
@@ -259,36 +269,8 @@ export function PipelineManagerQueues() {
       <footer className="mt-12 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
         {branding?.ip_notice}
       </footer>
-    </div>
-  );
-}
-
-
-// ── Page header ─────────────────────────────────────────────────────────
-
-function PageHeader({ title, branding }: {
-  title: string;
-  branding: ReturnType<typeof useBranding>['branding'];
-}) {
-  return (
-    <header className="rounded-lg shadow-sm overflow-hidden">
-      <div
-        className="px-6 py-5 text-white"
-        style={{ background: 'var(--brand-secondary)' }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
-              {branding?.bank_name ?? 'A2Z MIS 360'}
-            </div>
-            <h1 className="text-xl font-bold mt-1">
-              {branding?.app_name ?? 'A2Z'} MIS 360 — {title}
-            </h1>
-          </div>
-          <Badge tone="brand" size="sm">β4</Badge>
-        </div>
       </div>
-    </header>
+    </div>
   );
 }
 

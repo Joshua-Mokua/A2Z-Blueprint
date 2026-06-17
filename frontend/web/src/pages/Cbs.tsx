@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
 import { Card } from '@/components/Card';
-import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { PageHeader } from '@/components/PageHeader';
 
 
 export function Cbs() {
@@ -27,19 +27,11 @@ export function Cbs() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Customer Lookup</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                CBS customer search · 700K customer base · 35 branches
-              </p>
-            </div>
-            <Badge tone="brand" size="sm">γ2</Badge>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Customer Lookup"
+        breadcrumbs={[{ label: 'Reference & Admin' }, { label: 'Customer Lookup' }]}
+        subtitle="Search the core banking system by name or CIF."
+      />
 
       <main className="max-w-5xl mx-auto px-6 py-6 space-y-4">
 

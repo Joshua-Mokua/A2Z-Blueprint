@@ -1746,3 +1746,31 @@ PipelineCreate.tsx:
 Frontend-only, esbuild-clean. tsc is the gate.
 PENDING: cross-page professional cleanup sweep (7 detail pages w/ bespoke navy
 headers + general density) — next batch.
+
+## #46 — Batch 5: cross-page header sweep (consistency)
+
+Inspected all 7 pages carrying a bespoke navy `brand-secondary` header. They split
+into two kinds, and only one kind is redundant chrome:
+
+REDUNDANT / GENERIC → converted to the shared <PageHeader> (white bar, breadcrumbs,
+TopBar owns the visible title), matching the canonical pattern in Pipeline.tsx:
+- PipelineDealDetail.tsx — DetailFrame rendered bank_name + the signed-in user
+  (the real 3rd-place user duplication). Rewrote DetailFrame to use PageHeader
+  (breadcrumbs [Pipeline → title] + Back action); dropped branding/user from its
+  props + all 4 callers; removed the now-unused useRole import + user destructure.
+- PipelineManagerQueues.tsx — deleted the in-file local PageHeader (navy band w/
+  bank_name + "β4" dev badge); imported the shared PageHeader; restructured BOTH
+  return branches (guard + main) to min-h-screen → PageHeader → content div.
+- Cbs.tsx — navy band + "γ2" dev badge → shared PageHeader; removed Badge import.
+- InitiativeDetail.tsx — generic navy band → shared PageHeader (breadcrumbs
+  [Initiatives → id] + Back action).
+
+LEGITIMATE ENTITY CONTEXT → LEFT AS-IS (stripping would lose useful info): the
+navy header on CreditAdminCaseDetail / LmsApplicationDetail / CbsCustomerDetail
+shows the record's id, client, product, amount, status badge, and condition count.
+That is a contextual record header, not duplicated app chrome.
+
+TopBar resolves visible titles for all four via startsWith() route matching
+(/pipeline/:id→Pipeline, /pipeline/queues→Manager Queues, /cbs→Customer Lookup,
+/initiatives/:id→Strategic Initiatives), so no title regression. Frontend-only,
+esbuild-clean; tsc is the gate.
