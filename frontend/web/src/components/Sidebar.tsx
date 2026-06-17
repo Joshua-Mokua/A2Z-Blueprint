@@ -34,7 +34,7 @@ interface NavItem {
   /** Returns true if this item should be highlighted given the current pathname. */
   matchActive:   (pathname: string) => boolean;
   /** Returns true if this item should be rendered for the current user. */
-  visibleFor?:   (isManagerUser: boolean, isAdmin: boolean) => boolean;
+  visibleFor?:   (isManagerUser: boolean, isAdmin: boolean, isConfigAdmin: boolean) => boolean;
 }
 
 interface NavGroup {
@@ -85,6 +85,11 @@ const NAV_GROUPS: NavGroup[] = [
         path: '/fx-rates', label: 'FX Rates',
         matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_isMgr, isAdmin) => isAdmin,
       },
+      {
+        path: '/admin/config', label: 'Configuration',
+        matchActive: (p) => p.startsWith('/admin/config'),
+        visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,
+      },
     ],
   },
 ];
@@ -105,6 +110,12 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
   const isMgr   = isManager(user);
   const isAdmin = user?.is_admin ?? false;
+  // Config-admin = executive tier (CEO / MD / Director) or system admin. Mirrors
+  // the backend require_config_admin substring gate so the CEO/MD see the
+  // Configuration link even if they don't carry the is_admin flag.
+  const isConfigAdmin = isAdmin
+    || ['admin', 'director', 'chief', 'managing']
+        .some((t) => (user?.role ?? '').toLowerCase().includes(t));
 
   return (
     <aside
@@ -125,7 +136,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin),
+            (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin, isConfigAdmin),
           );
           if (items.length === 0) return null;
           return (

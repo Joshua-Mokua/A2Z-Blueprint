@@ -323,6 +323,29 @@ export async function fetchPipelineConfig(): Promise<PipelineConfig> {
   return getJson<PipelineConfig>('/pipeline/stages');
 }
 
+/** Editable reference-config slice returned by the admin write endpoint. */
+export interface AdminConfigPatch {
+  segment_labels?:     Record<string, string>;
+  customer_segments?:  Record<string, string[]>;
+  product_catalogue?:  Record<string, string[]>;
+  individual_mous?:    { id: string; title: string; partner_name?: string; active?: boolean }[];
+  business_sectors?:   string[];
+  sectors?:            string[];
+  required_fields?:    string[];
+  allow_other_sector?: boolean;
+  allow_other_mou?:    boolean;
+}
+export interface AdminConfigResponse {
+  status: 'saved' | 'noop';
+  applied: string[];
+  config: AdminConfigPatch;
+}
+
+/** PATCH reference config (CEO/MD only — gated server-side by require_config_admin). */
+export async function updatePipelineConfig(patch: AdminConfigPatch): Promise<AdminConfigResponse> {
+  return postJson<AdminConfigResponse, AdminConfigPatch>('/admin/pipeline-config', patch);
+}
+
 
 /**
  * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending

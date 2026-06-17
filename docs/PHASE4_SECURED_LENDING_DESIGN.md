@@ -1588,3 +1588,41 @@ persona denied 403. ADMIN persona = william001 (MD, role contains chief/managing
 NEXT (1b, frontend): gated Admin → Configuration route with panels for segments /
 products / MOUs / sectors / required-fields + currency (reuse FX API), reading
 _editable_config_view and PATCHing via /api/admin/pipeline-config.
+
+## #40 — Admin config console, Batch 1b (React Configuration page)
+
+The CEO/MD/Director-facing editor for the reference config 1a exposed. New
+gated route /admin/config + nav item under Reference & Admin.
+
+pages/AdminConfig.tsx (new, default export):
+- UX-gated by isConfigAdminRole (is_admin OR role contains chief/managing/
+  director/admin) — mirrors the backend require_config_admin; server is the real
+  authority (non-exec PATCH → 403, shown via toast). Non-exec sees a "Restricted"
+  card.
+- Loads via fetchPipelineConfig; panels each PATCH their slice via
+  updatePipelineConfig and re-hydrate from the authoritative response.config:
+  • Required fields — checkbox set over REQUIRABLE_FIELDS (drives the deal-form
+    mandatory logic in the upcoming Batch 2 redesign).
+  • CBK sectors — StringListEditor over business_sectors.
+  • Segment display names — per segment_labels entry (Affluent→Premier …).
+  • Customer segment options — per client type (Individual/Business) lists.
+  • Product catalogue — per class key → product list.
+  • MOU register — editable id/title/partner/active rows.
+  • Currency — pointer card to the existing /fx-rates page (its own API).
+- Reusable inline editors: StringListEditor (chips + add/remove), PanelShell
+  (card + per-panel Save). 2-col responsive grid, shared PageHeader.
+
+lib/api.ts: AdminConfigPatch + AdminConfigResponse types; updatePipelineConfig()
+(POST /api/admin/pipeline-config via postJson). types/pipeline.ts: required_fields?
+on PipelineConfig.
+
+App.tsx: /admin/config route (default import). Sidebar.tsx: visibleFor signature
+extended with a 3rd isConfigAdmin arg (non-breaking — existing predicates ignore
+it); isConfigAdmin computed from is_admin OR exec role substring; new
+"Configuration" item in Reference & Admin gated to it.
+
+tsc-strict guard: used named ReactNode (not React.ReactNode) since the automatic
+JSX transform doesn't put React in scope. esbuild-clean across all 5 files.
+
+NEXT (Batch 2): deal-creation redesign consuming required_fields — relationship-
+first ordering, CIF fetch on Existing, buttons→dropdowns, density.

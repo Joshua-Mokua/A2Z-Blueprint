@@ -174,6 +174,8 @@ export interface PipelineConfig {
   /** Allow an "Other…" free-text fallback on the sector / MOU field. */
   allow_other_sector?: boolean;
   allow_other_mou?:    boolean;
+  /** Deal-create fields the bank requires (admin-configured). */
+  required_fields?:    string[];
   currency:          string;
 }
 

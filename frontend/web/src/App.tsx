@@ -84,6 +84,7 @@ import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
 import { Cascade } from './pages/Cascade';
 import { Initiatives } from './pages/Initiatives';
 import { FxRates } from './pages/FxRates';
+import AdminConfig from './pages/AdminConfig';
 import { InitiativeDetail } from './pages/InitiativeDetail';
 
 const queryClient = new QueryClient();
@@ -156,6 +157,9 @@ function App() {
 
                     {/* FX rates admin — P4-1c. Table visible to all; editor admin-gated (server enforces). */}
                     <Route path="/fx-rates"    element={<FxRates />} />
+
+                    {/* Admin → Configuration — P4 Batch 1b. CEO/MD/Director; server enforces. */}
+                    <Route path="/admin/config" element={<AdminConfig />} />
 
                     {/* Strategic Initiatives — γ4 (read-only). */}
                     <Route path="/initiatives"                  element={<Initiatives />} />
