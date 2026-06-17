@@ -1516,3 +1516,36 @@ exportFilename) from the pipeline deals Table; the page-level "Export Excel"
 (full multi-sheet workbook) is its replacement.
 
 Harness +1 ("analytics: by_segment_funnel present + well-formed") → 104.
+
+## #38 — Create-deal density + New-Deal-to-top + header de-duplication
+
+Josh feedback on /pipeline/new: page too long / poor space use, logged-in user
+shown 3× (TopBar + Sidebar + a bespoke navy page header), "+ New Deal" buried
+below the fold on the pipeline list.
+
+PipelineCreate.tsx:
+- Removed the bespoke navy <header> (it re-rendered the bank name + the logged-in
+  user — the 3rd copy) and replaced it with the shared PageHeader (breadcrumbs
+  Pipeline → New deal, one-line subtitle, "← Back to pipeline" in the action slot).
+  Kills the duplicate user AND reclaims the tall band.
+- Dropped the dev-only "β3 + β5.0 polish" badge (+ removed now-unused Badge import).
+- Widened the container max-w-5xl → max-w-6xl, py-8 → py-6.
+- Wrapped the four sections (Customer / Deal details / Workflow / Conflict) in a
+  responsive `grid lg:grid-cols-2 gap-5 items-start` so they sit 2-up on wide
+  screens — roughly halves the page length. No fields removed; all inputs,
+  conditionals (refer / seek-permission / override paths), and validation intact.
+
+Pipeline.tsx:
+- "+ New Deal" promoted to the PageHeader action slot (primary, top-right, beside
+  Export Excel) since it's a most-used action; removed the duplicate from the
+  deals-table header (Refresh stays there).
+
+SWEEP CANDIDATES (same bespoke navy header → same 3rd-user dup + density): 7 pages
+— CreditAdminCaseDetail, LmsApplicationDetail, PipelineManagerQueues,
+PipelineDealDetail, CbsCustomerDetail, Cbs, InitiativeDetail. Deferred so Josh can
+confirm the pattern on PipelineCreate first, then roll it across consistently.
+
+KNOWN PERF (noted, not in this batch): /pipeline refetches deals + analytics on
+every remount (manual useEffect, no cache) — that's the lag on "Back to pipeline".
+A TanStack Query migration (queryKey + staleTime) would make back-nav instant;
+proposed for the sweep/perf batch.

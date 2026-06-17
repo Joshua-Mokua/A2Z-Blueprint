@@ -44,7 +44,7 @@ import { useToast } from '@/components/Toast';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useFxRates } from '@/hooks/useFxRates';
 import { Card } from '@/components/Card';
-import { Badge } from '@/components/Badge';
+import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
@@ -602,38 +602,21 @@ export function PipelineCreate() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header
-        className="px-6 py-5 text-white shadow-sm"
-        style={{ background: 'var(--brand-secondary)' }}
-      >
-        <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
-              {branding?.bank_name ?? 'A2Z MIS 360'}
-            </div>
-            <h1 className="text-xl font-bold mt-1">
-              {branding?.app_name ?? 'A2Z'} MIS 360 — New Pipeline Deal
-            </h1>
-          </div>
-          <div className="text-right text-xs opacity-70 leading-relaxed">
-            {user?.full_name && (
-              <div className="font-medium opacity-90">{user.full_name}</div>
-            )}
-            {user?.role && <div>{user.role}</div>}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Top action bar */}
-        <div className="flex items-center justify-between mb-4">
+      <PageHeader
+        title="New Pipeline Deal"
+        breadcrumbs={[
+          { label: 'Pipeline', to: '/pipeline' },
+          { label: 'New deal' },
+        ]}
+        subtitle="Capture a lead — customer, classification, value, and ownership."
+        actions={
           <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
             ← Back to pipeline
           </Button>
-          <Badge tone="brand" size="sm">β3 + β5.0 polish</Badge>
-        </div>
+        }
+      />
 
+      <main className="max-w-6xl mx-auto px-6 py-6">
         {/* ─────────── Error summary banner (β5.0 polish) ───────────
             Renders at the top so users see it without scrolling.
             Shows either:
@@ -684,6 +667,8 @@ export function PipelineCreate() {
           )}
         </div>
 
+        {/* ─────────── Form sections (2-up on wide screens) ─────────── */}
+        <div className="grid lg:grid-cols-2 gap-5 items-start">
         {/* ─────────── Customer section ─────────── */}
         <Card stripe="primary">
           <Card.Header>
@@ -903,7 +888,7 @@ export function PipelineCreate() {
         </Card>
 
         {/* ─────────── Deal classification + value ─────────── */}
-        <Card className="mt-6" stripe="primary">
+        <Card stripe="primary">
           <Card.Header>
             <h2 className="text-base font-semibold text-gray-900">Deal details</h2>
             <span className="text-xs text-gray-400">Classification + value</span>
@@ -1029,7 +1014,7 @@ export function PipelineCreate() {
         </Card>
 
         {/* ─────────── Workflow ─────────── */}
-        <Card className="mt-6">
+        <Card>
           <Card.Header>
             <h2 className="text-base font-semibold text-gray-900">Workflow</h2>
             <span className="text-xs text-gray-400">Next steps + source</span>
@@ -1088,7 +1073,7 @@ export function PipelineCreate() {
         </Card>
 
         {/* ─────────── Portfolio conflict resolution ─────────── */}
-        <Card className="mt-6" stripe={hasConflict ? 'accent' : undefined}>
+        <Card stripe={hasConflict ? 'accent' : undefined}>
           <Card.Header>
             <h2 className="text-base font-semibold text-gray-900">
               Portfolio assignment
@@ -1229,6 +1214,7 @@ export function PipelineCreate() {
             )}
           </Card.Body>
         </Card>
+        </div>
 
         {/* (β5.0 polish: bottom error banner removed.
              Errors now shown at the TOP of the form for visibility

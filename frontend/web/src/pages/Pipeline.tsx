@@ -249,18 +249,23 @@ export function Pipeline() {
         title="Pipeline"
         subtitle="Deals across your scope — assured value, stage, and ownership."
         actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setExporting(true);
-              downloadFile('/pipeline/export/xlsx', 'A2Z_Pipeline.xlsx')
-                .catch(() => { /* surfaced via button state only */ })
-                .finally(() => setExporting(false));
-            }}
-            disabled={exporting}
-          >
-            {exporting ? 'Exporting…' : 'Export Excel'}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setExporting(true);
+                downloadFile('/pipeline/export/xlsx', 'A2Z_Pipeline.xlsx')
+                  .catch(() => { /* surfaced via button state only */ })
+                  .finally(() => setExporting(false));
+              }}
+              disabled={exporting}
+            >
+              {exporting ? 'Exporting…' : 'Export Excel'}
+            </Button>
+            <Button variant="primary" onClick={() => navigate('/pipeline/new')}>
+              + New Deal
+            </Button>
+          </>
         }
       />
 
@@ -504,13 +509,6 @@ export function Pipeline() {
                 loading={loading}
               >
                 Refresh
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate('/pipeline/new')}
-              >
-                + New Deal
               </Button>
             </div>
           </Card.Header>
