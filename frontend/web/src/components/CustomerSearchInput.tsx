@@ -16,6 +16,7 @@
 // picking from the dropdown (free-text fallback).
 
 import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useCustomerSearch } from '@/hooks/useCustomerSearch';
 import { Badge } from '@/components/Badge';
 import { Skeleton } from '@/components/Skeleton';
@@ -33,7 +34,7 @@ export interface CustomerSearchInputProps {
   onCustomerCleared?:  () => void;
 
   /** Display props */
-  label?:              string;
+  label?:              ReactNode;
   placeholder?:        string;
   disabled?:           boolean;
   error?:              string;

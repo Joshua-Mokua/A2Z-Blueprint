@@ -1690,3 +1690,32 @@ Harness +1 (→108): config exposes client_types well-formed. Existing Individua
 Business create + sector/MOU checks stay green via the aliases.
 NEXT (3b frontend): form dropdown from client_types + field-driven third selector;
 admin panel to edit client types.
+
+## #44 — Batch 3b (frontend): client types in form + admin panel
+
+PipelineCreate.tsx: clientType is now a string (was 'Individual'|'Business').
+- Customer-type dropdown renders config.client_types (label/key); falls back to
+  the Consumer/Commercial/CIB default if config absent. Defaults the selection to
+  the first configured line on load.
+- Replaced every clientType==='Business'/'Individual' check with a field-driven
+  `usesSector` (from the selected type's field): drives the third selector
+  (CBK sector vs Partnership/MOU), its label/asterisk, the "Other…" allowance,
+  thirdField payload, and the config-required validation.
+- CBS autofill maps the legacy segmentToCustomerType result → a configured key
+  via legacyToTypeKey (mou-line for Individual, sector-line for Business).
+
+AdminConfig.tsx: new "Client business lines" panel (first) — editable key/label/
+field(mou|sector) rows + add/remove, saved via client_types. The customer-segment
+options panel now keys off these lines automatically.
+
+types/pipeline.ts + lib/api.ts: client_types on PipelineConfig + AdminConfigPatch.
+esbuild-clean across all four files. tsc is the gate.
+
+## #44a — tsc fix: CustomerSearchInput label accepts ReactNode
+
+The red-star batch (#42) set the Client-name label to <>Client name <RedStar/></>,
+but CustomerSearchInput.label was typed `string` (unlike the Input primitive,
+which is ReactNode) — esbuild passed, tsc did not. Widened the prop to ReactNode
+(import type { ReactNode }); the component already renders {label} inside a
+<label>, so no runtime change. Verified RagChip is the only other string-typed
+label and it never receives JSX.

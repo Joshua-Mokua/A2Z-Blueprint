@@ -327,6 +327,7 @@ export async function fetchPipelineConfig(): Promise<PipelineConfig> {
 export interface AdminConfigPatch {
   segment_labels?:     Record<string, string>;
   customer_segments?:  Record<string, string[]>;
+  client_types?:       { key: string; label: string; field: 'mou' | 'sector' }[];
   product_catalogue?:  Record<string, string[]>;
   individual_mous?:    { id: string; title: string; partner_name?: string; active?: boolean }[];
   business_sectors?:   string[];

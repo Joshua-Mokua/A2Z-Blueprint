@@ -27,6 +27,7 @@ import {
 import type { PipelineConfig } from '@/types/pipeline';
 
 type Mou = { id: string; title: string; partner_name?: string; active?: boolean };
+type ClientType = { key: string; label: string; field: 'mou' | 'sector' };
 
 // Deal-create fields that can be toggled mandatory. Keys must match what the
 // create form + backend _required_fields understand.
@@ -152,6 +153,7 @@ export default function AdminConfig() {
   const [products, setProducts] = useState<Record<string, string[]>>({});
   const [mous, setMous] = useState<Mou[]>([]);
   const [sectors, setSectors] = useState<string[]>([]);
+  const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
 
   const hydrate = (c: PipelineConfig) => {
     setCfg(c);
@@ -161,6 +163,7 @@ export default function AdminConfig() {
     setProducts({ ...(c.product_catalogue ?? {}) });
     setMous((c.individual_mous ?? []).map((m) => ({ active: true, ...m })));
     setSectors([...(c.business_sectors ?? [])]);
+    setClientTypes((c.client_types ?? []).map((t) => ({ ...t })));
   };
 
   useEffect(() => {
@@ -185,6 +188,7 @@ export default function AdminConfig() {
       if (res.config.product_catalogue) setProducts({ ...res.config.product_catalogue });
       if (res.config.individual_mous) setMous(res.config.individual_mous.map((m) => ({ active: true, ...m })));
       if (res.config.business_sectors) setSectors([...res.config.business_sectors]);
+      if (res.config.client_types) setClientTypes(res.config.client_types.map((t) => ({ ...t })));
       toast({ tone: 'success', message: `${label} saved.` });
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : `Could not save ${label.toLowerCase()}.` });
@@ -233,6 +237,58 @@ export default function AdminConfig() {
           <div className="py-16 text-center text-sm text-gray-500">Configuration unavailable.</div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-5 items-start">
+            {/* Client business lines */}
+            <PanelShell
+              title="Client business lines"
+              hint="Consumer / Commercial / CIB. 'Field' picks the third selector: MOU (consumer) or CBK sector (business)."
+              onSave={() =>
+                save('clientTypes',
+                  { client_types: clientTypes.filter((t) => t.key.trim() && t.label.trim()) },
+                  'Client business lines')
+              }
+              saving={savingKey === 'clientTypes'}
+            >
+              <div className="space-y-2">
+                {clientTypes.map((t, i) => (
+                  <div key={`${t.key}-${i}`} className="grid grid-cols-[1.2fr_1.6fr_1fr_auto] items-center gap-2">
+                    <Input
+                      value={t.key}
+                      placeholder="Key (stored)"
+                      onChange={(e) => setClientTypes((p) => p.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)))}
+                    />
+                    <Input
+                      value={t.label}
+                      placeholder="Display label"
+                      onChange={(e) => setClientTypes((p) => p.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                    />
+                    <select
+                      value={t.field}
+                      onChange={(e) => setClientTypes((p) => p.map((x, j) => (j === i ? { ...x, field: e.target.value as 'mou' | 'sector' } : x)))}
+                      className="h-10 px-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                    >
+                      <option value="mou">MOU</option>
+                      <option value="sector">Sector</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setClientTypes((p) => p.filter((_, j) => j !== i))}
+                      className="text-gray-400 hover:text-red-600 px-1"
+                      aria-label="Remove client type"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setClientTypes((p) => [...p, { key: '', label: '', field: 'sector' }])}
+                >
+                  + Add business line
+                </Button>
+              </div>
+            </PanelShell>
+
             {/* Required fields */}
             <PanelShell
               title="Required fields"

@@ -167,6 +167,8 @@ export interface PipelineConfig {
   segment_labels?:   Record<string, string>;
   /** Segment options per client type (Individual / Business). */
   customer_segments?: Record<string, string[]>;
+  /** Client business lines (Consumer / Commercial / CIB), admin-configurable. */
+  client_types?: { key: string; label: string; field: 'mou' | 'sector' }[];
   /** CBK economic-sector classification for BUSINESS clients (admin config). */
   business_sectors?: string[];
   /** Active partnership/MOU register for INDIVIDUAL clients. */

@@ -110,7 +110,7 @@ export function PipelineCreate() {
 
   const [clientName,  setClientName]  = useState('');
   const [config,      setConfig]      = useState<PipelineConfig | null>(null);
-  const [clientType,  setClientType]  = useState<'Individual' | 'Business'>('Individual');
+  const [clientType,  setClientType]  = useState<string>('');
   const [segment,     setSegment]     = useState<string>('');
   const [sector,      setSector]      = useState<string>('');
   const [currency,    setCurrency]    = useState<string>('KES');
@@ -201,12 +201,28 @@ export function PipelineCreate() {
     return [...INITIAL_STAGES_BY_CATEGORY[category]];   // fallback pre-config
   }, [config, productClass, category]);
 
+  // Client business lines (Consumer / Commercial / CIB) — admin-configurable.
+  // The selected type's `field` (mou|sector) drives the third selector.
+  const clientTypes = useMemo(
+    () => config?.client_types ?? [
+      { key: 'Consumer',   label: 'Consumer',                       field: 'mou' as const },
+      { key: 'Commercial', label: 'Commercial',                     field: 'sector' as const },
+      { key: 'CIB',        label: 'Corporate & Investment Banking', field: 'sector' as const },
+    ],
+    [config],
+  );
+  const clientField = useMemo(
+    () => clientTypes.find((t) => t.key === clientType)?.field ?? 'sector',
+    [clientTypes, clientType],
+  );
+  const usesSector = clientField === 'sector';
+
   // Segment cascade off client type; sectors from config.
   const segmentOptions = useMemo(
     () => config?.customer_segments?.[clientType] ?? [],
     [config, clientType],
   );
-  // Client-type-aware third field: Business -> CBK sectors; Individual -> MOUs.
+  // Client-type-aware third field: sector-line -> CBK sectors; mou-line -> MOUs.
   // Both admin-config-driven with an optional "Other…" free-text fallback.
   const businessSectors = useMemo(
     () => config?.business_sectors ?? config?.sectors ?? [],
@@ -214,32 +230,35 @@ export function PipelineCreate() {
   );
   const individualMous = useMemo(() => config?.individual_mous ?? [], [config]);
 
-  // Admin-configured mandatory fields (Admin → Configuration). Drives the
-  // asterisks, the "Required for this path" hint, and the extra validation
-  // for the optional selection fields (segment / sector / MOU). The four core
-  // fields the backend always demands (name / product / value / stage) stay
-  // required client-side regardless, so the form can't submit a deal the API
-  // would reject.
+  // Admin-configured mandatory fields (Admin → Configuration). Drives the red
+  // asterisks + the extra validation for the optional selection fields (segment
+  // / sector / MOU). The four core fields the backend always demands (name /
+  // product / value / stage) stay required client-side regardless, so the form
+  // can't submit a deal the API would reject.
   const requiredFields = useMemo(
     () => config?.required_fields ?? ['client_name', 'product_type', 'deal_value', 'stage'],
     [config],
   );
   const isReq = (key: string): boolean => requiredFields.includes(key);
-  const reqMark = (key: string): string => (isReq(key) ? ' *' : '');
-  const FIELD_LABELS: Record<string, string> = {
-    client_name: 'Client name', client_type: 'Customer type',
-    product_type: 'Product type', deal_value: 'Deal value', stage: 'Stage',
-    segment: 'Segment', currency: 'Currency',
-    relationship_status: 'Relationship status', mou_id: 'Partnership / MOU',
-    sector: 'CBK sector',
-  };
-  const baseRequiredLabel = requiredFields.map((k) => FIELD_LABELS[k] ?? k).join(' · ');
-  const allowOther = clientType === 'Business'
+  const reqStar = (key: string) => (isReq(key) ? <RedStar /> : null);
+  const allowOther = usesSector
     ? (config?.allow_other_sector ?? true)
     : (config?.allow_other_mou ?? true);
 
+  // Once config loads, default the client type to the first configured line.
+  useEffect(() => {
+    if (!clientType && clientTypes.length) setClientType(clientTypes[0].key);
+  }, [clientTypes, clientType]);
+
+  // Map the CBS-derived legacy customer type to a configured client-type key.
+  const legacyToTypeKey = (legacy: 'Individual' | 'Business'): string => {
+    const wantField = legacy === 'Individual' ? 'mou' : 'sector';
+    return clientTypes.find((t) => t.field === wantField)?.key
+      ?? clientTypes[0]?.key ?? '';
+  };
+
   // Reset the third-field selections when the client type flips, so a stale
-  // sector doesn't ride along on an Individual deal (or a stale MOU on Business).
+  // sector doesn't ride along on a consumer deal (or a stale MOU on a business one).
   useEffect(() => {
     setSector('');
     setMouId('');
@@ -248,7 +267,7 @@ export function PipelineCreate() {
 
   // Resolve what the client-type-aware third field contributes to the payload.
   const thirdField = useMemo(() => {
-    if (clientType === 'Business') {
+    if (usesSector) {
       const s = sector === SENTINEL_OTHER ? otherText.trim() : sector;
       return { sector: s || undefined, mou_id: undefined as string | undefined,
                mou_title: undefined as string | undefined };
@@ -261,7 +280,7 @@ export function PipelineCreate() {
         ? (otherText.trim() || undefined)
         : individualMous.find((m) => m.id === mouId)?.title,
     };
-  }, [clientType, sector, mouId, otherText, individualMous]);
+  }, [usesSector, sector, mouId, otherText, individualMous]);
 
   // Currency options come from the admin-maintained FX table (active rates),
   // not a hardcoded list — so extending to other Ecobank affiliates or
@@ -353,7 +372,7 @@ export function PipelineCreate() {
       // Mirror the onCustomerPicked branch from the name-search dropdown
       setPickedCustomer(customer);
       setClientName(customer.full_name);
-      setClientType(segmentToCustomerType(customer.segment));
+      setClientType(legacyToTypeKey(segmentToCustomerType(customer.segment)));
       setIsNtb(false);
       setClientCif(customer.cif);
       clearFieldError('clientName');
@@ -416,10 +435,10 @@ export function PipelineCreate() {
     if (isReq('segment') && segmentOptions.length > 0 && !segment.trim()) {
       errors.segment = 'Segment is required.';
     }
-    if (clientType === 'Business' && isReq('sector') && !sector.trim()) {
+    if (usesSector && isReq('sector') && !sector.trim()) {
       errors.sectorMou = 'CBK sector is required.';
     }
-    if (clientType === 'Individual' && isReq('mou_id') && !mouId.trim()) {
+    if (!usesSector && isReq('mou_id') && !mouId.trim()) {
       errors.sectorMou = 'Partnership / MOU is required.';
     }
 
@@ -682,24 +701,6 @@ export function PipelineCreate() {
           </div>
         )}
 
-        {/* ─────────── Required fields hint (β5.1) ───────────
-            Single-line caption telling user what's required for the
-            current submission path. Updates dynamically when the user
-            toggles "has conflict" or picks "Refer" path.
-        */}
-        <div className="mb-3 px-4 py-2 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-900">
-          <span className="font-semibold">Required for this path:</span>{' '}
-          {isReferPath ? (
-            <>Client name · Portfolio owner staff code · Portfolio owner name · Referred-to name</>
-          ) : hasConflict && conflictPath === 'override' ? (
-            <>{baseRequiredLabel} · Portfolio owner code/name · Override note (≥{MIN_OVERRIDE_NOTE_LEN} chars)</>
-          ) : hasConflict ? (
-            <>{baseRequiredLabel} · Portfolio owner code/name</>
-          ) : (
-            <>{baseRequiredLabel}</>
-          )}
-        </div>
-
         {/* ─────────── Form sections (2-up on wide screens) ─────────── */}
         <div className="grid lg:grid-cols-2 gap-5 items-start">
         {/* ─────────── Customer section ─────────── */}
@@ -713,7 +714,7 @@ export function PipelineCreate() {
                 offered (existing customer) or the form is filled fresh (NTB). */}
             <div className="mb-4">
               <label className="text-sm font-medium text-gray-700">
-                Relationship status{reqMark('relationship_status')}
+                Relationship status{reqStar('relationship_status')}
               </label>
               <select
                 value={isNtb ? 'ntb' : 'existing'}
@@ -779,7 +780,7 @@ export function PipelineCreate() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-field="clientName">
                 <CustomerSearchInput
-                  label="Client name *"
+                  label={<>Client name <RedStar /></>}
                   placeholder="Type a name (min 3 chars) to search CBS, or enter free text"
                   value={clientName}
                   onChange={(v) => { setClientName(v); clearFieldError('clientName'); }}
@@ -787,7 +788,7 @@ export function PipelineCreate() {
                     // γ2 autofill — when user picks from CBS dropdown,
                     // populate related fields automatically.
                     setPickedCustomer(c);
-                    setClientType(segmentToCustomerType(c.segment));
+                    setClientType(legacyToTypeKey(segmentToCustomerType(c.segment)));
                     // Customer is in CBS, so by definition not New-To-Bank.
                     setIsNtb(false);
                     // δ2: also capture the CIF so it persists on the deal.
@@ -803,21 +804,22 @@ export function PipelineCreate() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Customer type{reqMark('client_type')}
+                  Customer type{reqStar('client_type')}
                 </label>
                 <select
                   value={clientType}
-                  onChange={(e) => setClientType(e.target.value as 'Individual' | 'Business')}
+                  onChange={(e) => setClientType(e.target.value)}
                   disabled={mutations.loading}
                   className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                 >
-                  <option value="Individual">Individual</option>
-                  <option value="Business">Business</option>
+                  {clientTypes.map((t) => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
                 </select>
               </div>
               <div data-field="segment">
                 <label className="text-sm font-medium text-gray-700">
-                  Segment{reqMark('segment')}
+                  Segment{reqStar('segment')}
                 </label>
                 <select
                   value={segment}
@@ -841,7 +843,7 @@ export function PipelineCreate() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Currency{reqMark('currency')}
+                  Currency{reqStar('currency')}
                 </label>
                 <select
                   value={currency}
@@ -863,11 +865,11 @@ export function PipelineCreate() {
               </div>
               <div data-field="sectorMou">
                 <label className="text-sm font-medium text-gray-700">
-                  {clientType === 'Business'
-                    ? `Sector (CBK)${reqMark('sector')}`
-                    : `Partnership / MOU${reqMark('mou_id')}`}
+                  {usesSector
+                    ? <>Sector (CBK){reqStar('sector')}</>
+                    : <>Partnership / MOU{reqStar('mou_id')}</>}
                 </label>
-                {clientType === 'Business' ? (
+                {usesSector ? (
                   <select
                     value={sector}
                     onChange={(e) => setSector(e.target.value)}
@@ -900,12 +902,12 @@ export function PipelineCreate() {
                     value={otherText}
                     onChange={(e) => setOtherText(e.target.value)}
                     disabled={mutations.loading}
-                    placeholder={clientType === 'Business' ? 'Specify sector' : 'Specify partner / MOU'}
+                    placeholder={usesSector ? 'Specify sector' : 'Specify partner / MOU'}
                     className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                   />
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  {clientType === 'Business'
+                  {usesSector
                     ? 'CBK economic-sector classification (admin config).'
                     : 'Active partnerships from the MOU register (admin config).'}
                 </p>
@@ -935,7 +937,7 @@ export function PipelineCreate() {
           </Card.Header>
           <Card.Body>
             <div>
-              <label className="text-sm font-medium text-gray-700">Pipeline category *</label>
+              <label className="text-sm font-medium text-gray-700">Pipeline category <RedStar /></label>
               <select
                 value={category}
                 onChange={(e) => {
@@ -962,7 +964,7 @@ export function PipelineCreate() {
 
             <div className="mt-4" data-field="productType">
               <Input
-                label="Product type *"
+                label={<>Product type <RedStar /></>}
                 placeholder="e.g. Business Loan"
                 value={productType}
                 onChange={(e) => { setProductType(e.target.value); clearFieldError('productType'); }}
@@ -992,7 +994,9 @@ export function PipelineCreate() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div data-field="dealValue">
                 <Input
-                  label={category === 'Account' ? 'Number of accounts *' : 'Deal value (KES) *'}
+                  label={category === 'Account'
+                    ? <>Number of accounts <RedStar /></>
+                    : <>Deal value (KES) <RedStar /></>}
                   placeholder={category === 'Account' ? 'e.g. 1' : 'e.g. 5000000'}
                   type="number"
                   value={dealValue}
@@ -1006,7 +1010,7 @@ export function PipelineCreate() {
               </div>
               <div data-field="stage">
                 <label className="text-sm font-medium text-gray-700">
-                  Initial stage *
+                  Initial stage <RedStar />
                 </label>
                 <select
                   value={stage}
@@ -1144,7 +1148,7 @@ export function PipelineCreate() {
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div data-field="portfolioOwnerCode">
                   <Input
-                    label="Portfolio owner staff code *"
+                    label={<>Portfolio owner staff code <RedStar /></>}
                     placeholder="e.g. 0123"
                     value={portfolioOwnerCode}
                     onChange={(e) => { setPortfolioOwnerCode(e.target.value); clearFieldError('portfolioOwnerCode'); }}
@@ -1154,7 +1158,7 @@ export function PipelineCreate() {
                 </div>
                 <div data-field="portfolioOwnerName">
                   <Input
-                    label="Portfolio owner name *"
+                    label={<>Portfolio owner name <RedStar /></>}
                     placeholder="e.g. Jane Mwangi"
                     value={portfolioOwnerName}
                     onChange={(e) => { setPortfolioOwnerName(e.target.value); clearFieldError('portfolioOwnerName'); }}
@@ -1200,7 +1204,7 @@ export function PipelineCreate() {
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div data-field="referredTo">
                   <Input
-                    label="Referred to (named recipient) *"
+                    label={<>Referred to (named recipient) <RedStar /></>}
                     placeholder="Usually the portfolio owner"
                     value={referredTo}
                     onChange={(e) => { setReferredTo(e.target.value); clearFieldError('referredTo'); }}
@@ -1227,7 +1231,7 @@ export function PipelineCreate() {
             {hasConflict && conflictPath === 'override' && (
               <div className="mt-4" data-field="overrideNote">
                 <label className="text-sm font-medium text-gray-700">
-                  Manager override note * (min {MIN_OVERRIDE_NOTE_LEN} chars)
+                  Manager override note <RedStar /> (min {MIN_OVERRIDE_NOTE_LEN} chars)
                 </label>
                 <textarea
                   value={overrideNote}
@@ -1290,6 +1294,11 @@ export function PipelineCreate() {
 
 
 // ── Helper components ───────────────────────────────────────────────────
+
+/** Red required-field marker. */
+function RedStar() {
+  return <span className="text-red-600"> *</span>;
+}
 
 interface PathRadioProps {
   active:    boolean;
