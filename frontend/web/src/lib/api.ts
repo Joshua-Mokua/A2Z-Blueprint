@@ -40,6 +40,7 @@ import type {
   CreditChecklistResponse, SubmitToCreditResponse,
   PipelineAnalyticsResponse,
   PipelineDrillResponse,
+  FunnelDrillResponse,
 } from '@/types/pipeline';
 import type {
   CreditAnalyticsResponse,
@@ -309,6 +310,15 @@ export async function fetchPipelineDrill(
   if (rm) p.set('rm', rm);
   const qs = p.toString();
   return getJson<PipelineDrillResponse>(`/pipeline/drill${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchFunnelDrill(
+  cls: string, stage: string,
+): Promise<FunnelDrillResponse> {
+  const p = new URLSearchParams();
+  p.set('cls', cls || 'all');
+  if (stage) p.set('stage', stage);
+  return getJson<FunnelDrillResponse>(`/pipeline/funnel/drill?${p.toString()}`);
 }
 
 export async function fetchCreditAnalytics(): Promise<CreditAnalyticsResponse> {

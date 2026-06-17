@@ -29,7 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
-import { fetchPipelineConfig, fetchPipelineAnalytics } from '@/lib/api';
+import { fetchPipelineConfig, fetchPipelineAnalytics, fetchFunnelDrill } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Stat } from '@/components/Stat';
@@ -43,6 +43,7 @@ import {
   type PipelineDeal,
   type PipelineConfig,
   type PipelineAnalyticsResponse,
+  type FunnelDrillResponse,
 } from '@/types/pipeline';
 
 
@@ -80,6 +81,19 @@ export function Pipeline() {
   const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [catFilter, setCatFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
+
+  // Funnel stage-drill: click a band → fetch deals at that class+stage,
+  // broken down by product and segment.
+  const [drill, setDrill] = useState<FunnelDrillResponse | null>(null);
+  const [drillLoading, setDrillLoading] = useState(false);
+  const onStageDrill = (cls: string, stage: string): void => {
+    setDrillLoading(true);
+    setDrill(null);
+    fetchFunnelDrill(cls, stage)
+      .then((d) => setDrill(d))
+      .catch(() => setDrill(null))
+      .finally(() => setDrillLoading(false));
+  };
 
   useEffect(() => {
     let active = true;
@@ -332,10 +346,75 @@ export function Pipeline() {
               ] : []}
               currencySymbol={sym}
               stageFlows={config?.stage_flows}
+              onStageClick={onStageDrill}
               emptyHint="No validated deals yet — validate deals to populate the funnel."
             />
           </Card.Body>
         </Card>
+
+        {/* Funnel stage-drill panel */}
+        {(drillLoading || drill) && (
+          <Card className="mt-4">
+            <Card.Header>
+              <h2 className="text-base font-semibold text-gray-900">
+                {drill ? `${drill.cls === 'all' ? 'All' : drill.cls[0].toUpperCase() + drill.cls.slice(1)} · ${drill.stage}` : 'Loading…'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setDrill(null)}
+                className="text-xs text-gray-400 hover:text-gray-700"
+              >
+                Close ✕
+              </button>
+            </Card.Header>
+            <Card.Body>
+              {drillLoading && <div className="h-24 animate-pulse rounded bg-gray-100" />}
+              {drill && (
+                <div>
+                  <div className="mb-4 text-sm text-gray-500">
+                    <span className="font-semibold text-gray-800">{drill.totals.count}</span> assured deals ·{' '}
+                    <span className="font-semibold text-gray-800">{formatValue(drill.totals.value, sym)}</span>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <DrillBreakdown title="By segment" rows={drill.by_segment.map((s) => ({ label: s.segment, value: s.value, count: s.count }))} sym={sym} />
+                    <DrillBreakdown title="By product" rows={drill.by_product.map((p) => ({ label: p.product, value: p.value, count: p.count }))} sym={sym} />
+                  </div>
+                  {drill.deals.length > 0 && (
+                    <div className="mt-6 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                            <th className="py-2 pr-3">Deal</th>
+                            <th className="py-2 pr-3">Client</th>
+                            <th className="py-2 pr-3">Product</th>
+                            <th className="py-2 pr-3">Segment</th>
+                            <th className="py-2 pr-3 text-right">Value</th>
+                            <th className="py-2 pr-3">Owner</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {drill.deals.slice(0, 50).map((d) => (
+                            <tr key={d.id} className="border-b border-gray-100">
+                              <td className="py-1.5 pr-3 font-mono text-xs text-gray-500">{d.id}</td>
+                              <td className="py-1.5 pr-3 text-gray-800">{d.client_name}</td>
+                              <td className="py-1.5 pr-3 text-gray-600">{d.product_type}</td>
+                              <td className="py-1.5 pr-3 text-gray-600">{d.segment}</td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums text-gray-800">{formatValue(d.amount_kes, sym)}</td>
+                              <td className="py-1.5 pr-3 text-gray-600">{d.staff_name}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {drill.deals.length > 50 && (
+                        <div className="mt-2 text-xs text-gray-400">Showing top 50 of {drill.deals.length} deals.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        )}
 
         {/* Error panel — only renders on error */}
         {error && (
@@ -445,6 +524,43 @@ export function Pipeline() {
           {branding?.ip_notice}
         </footer>
       </main>
+    </div>
+  );
+}
+
+// ── Drill breakdown: a compact value-ranked bar list (segment / product) ──
+function DrillBreakdown({
+  title, rows, sym,
+}: {
+  title: string;
+  rows: { label: string; value: number; count: number }[];
+  sym: string;
+}) {
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  const PALETTE = ['#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981', '#14b8a6'];
+  return (
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</div>
+      {rows.length === 0 ? (
+        <div className="text-sm text-gray-400">No data.</div>
+      ) : (
+        <div className="space-y-2">
+          {rows.slice(0, 8).map((r, i) => (
+            <div key={r.label} className="flex items-center gap-3">
+              <div className="w-28 shrink-0 truncate text-xs text-gray-600" title={r.label}>{r.label}</div>
+              <div className="h-4 flex-1 rounded bg-gray-100">
+                <div
+                  className="h-4 rounded"
+                  style={{ width: `${Math.max(4, Math.round((r.value / max) * 100))}%`, background: PALETTE[i % PALETTE.length] }}
+                />
+              </div>
+              <div className="w-32 shrink-0 text-right text-xs text-gray-500">
+                {formatValue(r.value, sym)} <span className="text-gray-400">· {r.count}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

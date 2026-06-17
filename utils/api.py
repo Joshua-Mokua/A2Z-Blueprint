@@ -1563,6 +1563,29 @@ def _classify_product(product_type: str) -> str:
     return "other"
 
 
+def _segment_of(d: dict) -> str:
+    """Customer segment for a deal: explicit `segment` field first (real Ecobank
+    data populates it), else a clean bucket derived from client_type. Shared by
+    the analytics by_segment dimension and the funnel stage-drill so they can't
+    drift. NOT a hardcoded hierarchy — purely a presentation bucket."""
+    seg = str(d.get("segment", "") or "").strip()
+    if seg:
+        return seg
+    ct = str(d.get("client_type", "") or "").strip()
+    ctl = ct.lower()
+    if not ct:
+        return "Unclassified"
+    if "affluent" in ctl:
+        return "Affluent"
+    if ctl.startswith("individual"):
+        return "Mass / Retail"
+    if "sme" in ctl:
+        return "SME"
+    if "corporate" in ctl or "business" in ctl:
+        return "Corporate / Business"
+    return ct
+
+
 def _stage_flow_for(product_type: str) -> list:
     """Ordered stage flow for a product's class, from pipeline_settings
     stage_flows (admin config, the single source of truth). Classes:
@@ -1784,26 +1807,8 @@ def _compute_pipeline_analytics(deals: list) -> dict:
 
     # by_segment: customer segment (Mass / Affluent / SME / Corporate). Uses the
     # deal's explicit `segment` when set (real Ecobank data will populate it),
-    # else derives a clean bucket from client_type. Informs MD ↔ segment-head
-    # conversations: what pipeline is flowing per segment.
-    def _segment_of(d: dict) -> str:
-        seg = str(d.get("segment", "") or "").strip()
-        if seg:
-            return seg
-        ct = str(d.get("client_type", "") or "").strip()
-        ctl = ct.lower()
-        if not ct:
-            return "Unclassified"
-        if "affluent" in ctl:
-            return "Affluent"
-        if ctl.startswith("individual"):
-            return "Mass / Retail"
-        if "sme" in ctl:
-            return "SME"
-        if "corporate" in ctl or "business" in ctl:
-            return "Corporate / Business"
-        return ct
-
+    # else derives a clean bucket from client_type (see module-level _segment_of).
+    # Informs MD ↔ segment-head conversations: what pipeline flows per segment.
     _seg: dict = {}
     for d in live:
         key = _segment_of(d)
@@ -1939,6 +1944,69 @@ def pipeline_drill(
         "by_rm": by_rm,
         "deals": deal_list,
         "totals": {"value": sum(_deal_value(d) for d in deals), "count": len(deals)},
+    }
+
+
+@app.get("/api/pipeline/funnel/drill")
+def pipeline_funnel_drill(
+    cls: str = "all",
+    stage: str = "",
+    user: dict = Depends(get_current_user),
+):
+    """Drill into one funnel cell: validated (assured) deals in a product class
+    (asset/liability/insurance/other/all) at a given stage, broken down by
+    product and by segment, plus the deal list. Matches the funnel's basis
+    (validated active) so the numbers reconcile. Cascade-scoped via
+    _acquire_scoped_deals. Reuses _classify_product / _segment_of so it can't
+    drift from the analytics dimensions."""
+    _audit("API_PIPELINE_FUNNEL_DRILL", user, f"cls={cls} stage={stage}")
+    from utils.core import ACTIVE_STAGES as _ACTIVE
+    deals = _acquire_scoped_deals(user)
+
+    def _match(d: dict) -> bool:
+        if d.get("stage") not in _ACTIVE:
+            return False
+        if not d.get("manager_validated"):
+            return False
+        if stage and d.get("stage") != stage:
+            return False
+        if cls and cls != "all":
+            if _classify_product(d.get("product_type") or d.get("product", "")) != cls:
+                return False
+        return True
+
+    sel = [d for d in deals if _match(d)]
+
+    prod: dict = {}
+    seg: dict = {}
+    for d in sel:
+        p = d.get("product_type") or d.get("product", "") or "—"
+        ep = prod.setdefault(p, {"product": p, "value": 0.0, "count": 0})
+        ep["value"] += _deal_value(d)
+        ep["count"] += 1
+        k = _segment_of(d)
+        es = seg.setdefault(k, {"segment": k, "value": 0.0, "count": 0})
+        es["value"] += _deal_value(d)
+        es["count"] += 1
+
+    deals_out = [{
+        "id":           d.get("id"),
+        "client_name":  d.get("client_name"),
+        "product_type": d.get("product_type") or d.get("product", ""),
+        "segment":      _segment_of(d),
+        "stage":        d.get("stage"),
+        "amount_kes":   _deal_value(d),
+        "staff_name":   d.get("staff_name") or d.get("staff_code", ""),
+        "unit":         d.get("unit"),
+    } for d in sorted(sel, key=_deal_value, reverse=True)[:100]]
+
+    return {
+        "cls":     cls,
+        "stage":   stage,
+        "totals":  {"value": sum(_deal_value(d) for d in sel), "count": len(sel)},
+        "by_product": sorted(prod.values(), key=lambda x: x["value"], reverse=True),
+        "by_segment": sorted(seg.values(), key=lambda x: x["value"], reverse=True),
+        "deals":   deals_out,
     }
 
 

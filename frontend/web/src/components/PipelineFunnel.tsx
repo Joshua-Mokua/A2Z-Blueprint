@@ -51,6 +51,8 @@ export interface PipelineFunnelProps {
   categories?: FunnelCategory[];
   /** Admin-configured defined stage flow per class (asset/liability/…). */
   stageFlows?: Record<string, string[]>;
+  /** Drill: fired when a non-empty stage band is clicked (class key, stage). */
+  onStageClick?: (cls: string, stage: string) => void;
   currencySymbol?: string;
   emptyHint?: string;
 }
@@ -61,6 +63,7 @@ export function PipelineFunnel({
   overall,
   categories = [],
   stageFlows,
+  onStageClick,
   currencySymbol = '',
   emptyHint,
 }: PipelineFunnelProps) {
@@ -176,13 +179,18 @@ export function PipelineFunnel({
               const conv = prev && prev.count ? Math.round((s.count / prev.count) * 100) : null;
               const inside = metric === 'count' ? String(s.count) : fmtValue(s.value, currencySymbol);
 
+              const clickable = !empty && !!onStageClick;
               return (
                 <div
                   key={s.stage}
-                  className="absolute inset-x-0 grid grid-cols-[160px_1fr_150px] items-center gap-3"
+                  className={[
+                    'absolute inset-x-0 grid grid-cols-[160px_1fr_150px] items-center gap-3',
+                    clickable ? 'cursor-pointer' : '',
+                  ].join(' ')}
                   style={{ top: i * BAND_H, height: BAND_H }}
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover((h) => (h === i ? null : h))}
+                  onClick={() => { if (clickable) onStageClick!(catKey, s.stage); }}
                 >
                   <div className={['truncate text-right text-sm', empty ? 'text-gray-400' : 'text-gray-700'].join(' ')}>
                     {s.stage}
@@ -225,6 +233,7 @@ export function PipelineFunnel({
                       <div className="text-gray-400">
                         {shareTop}% of top{conv !== null ? ` · ${conv}% from prior` : ''}
                       </div>
+                      {onStageClick && <div className="mt-0.5 text-[var(--brand-primary)]">Click to drill →</div>}
                     </div>
                   )}
                 </div>

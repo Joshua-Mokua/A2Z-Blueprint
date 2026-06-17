@@ -580,6 +580,25 @@ export interface PipelineDrillResponse {
 }
 export interface CurrencyBookSplit { value: number; count: number }
 
+export interface FunnelDrillDeal {
+  id: string;
+  client_name: string;
+  product_type: string;
+  segment: string;
+  stage: string;
+  amount_kes: number;
+  staff_name: string;
+  unit: string | null;
+}
+export interface FunnelDrillResponse {
+  cls: string;
+  stage: string;
+  totals: { value: number; count: number };
+  by_product: ProductBreakdown[];
+  by_segment: SegmentBreakdown[];
+  deals: FunnelDrillDeal[];
+}
+
 export interface PipelineAnalyticsResponse {
   totals:       PipelineAnalyticsTotals;
   pipelines: {

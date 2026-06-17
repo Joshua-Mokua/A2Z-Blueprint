@@ -1388,3 +1388,24 @@ The segment/sector/product/currency slices + dashboard charts all inherit this.
 Remaining queue: funnel product/segment stage-drill (needs backend per-stage
 breakdown), exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
 credit_watchlist table recreate.
+
+## #32 — Funnel stage-drill: click a stage → products + segments + deals
+
+Completes the funnel as an analytical surface. Click any non-empty funnel band
+and a panel opens showing, for that product-class + stage (assured basis, scoped):
+by-segment breakdown, by-product breakdown, and the deal list (client / product /
+segment / value / owner).
+
+Backend: extracted _segment_of to MODULE level (shared by analytics by_segment +
+the drill — no duplicate logic). NEW GET /api/pipeline/funnel/drill?cls&stage —
+filters _acquire_scoped_deals to validated active in the class+stage, returns
+totals + by_product + by_segment + capped deal list. Reuses _classify_product /
+_segment_of / _deal_value so it reconciles with the funnel + analytics.
+Harness: + "funnel drill: reachable + well-formed" (now 102).
+Frontend: FunnelDrillResponse type; fetchFunnelDrill; PipelineFunnel gains
+onStageClick (clickable non-empty bands + "Click to drill →" hint); Pipeline.tsx
+renders the drill panel (DrillBreakdown value-ranked bars for segment + product,
+deal table). Vivid palette consistent with the graphics pass.
+
+Remaining queue: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
+credit_watchlist table recreate, broader graphics polish on remaining surfaces.
