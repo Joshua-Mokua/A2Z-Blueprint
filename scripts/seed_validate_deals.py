@@ -69,22 +69,33 @@ def main() -> None:
             print(f"  … and {len(todo) - 10} more")
         return
 
-    if not todo:
-        print("\nNothing to do — target already satisfied.")
-        return
+    # Validate in the JSON store (pending-count source) AND sync to the DB
+    # (the analytics assured/funnel read deals DB-first). Existing file-validated
+    # deals still need the DB sync, so we sync every target deal, not just new
+    # validations.
+    try:
+        from utils.api import _db_sync_pipeline_deal
+    except Exception as e:  # noqa: BLE001
+        raise SystemExit(f"Could not import _db_sync_pipeline_deal: {e}")
 
-    n = 0
-    for d in todo:
-        pm.validate_deal(str(d["id"]), args.by, True, "seed assurance (demo)")
-        n += 1
+    validated_n = 0
+    synced_n = 0
+    for d in target:
+        did = str(d["id"])
+        if not d.get("manager_validated"):
+            pm.validate_deal(did, args.by, True, "seed assurance (demo)")
+            validated_n += 1
+        vd = pm.get_deal(did) or d
+        try:
+            _db_sync_pipeline_deal(vd)
+            synced_n += 1
+        except Exception as e:  # noqa: BLE001
+            print(f"  warn: DB sync failed for {did}: {e}")
 
-    # Re-read to confirm.
-    pm2 = PipelineManager()
-    validated_now = sum(1 for d in pm2.get_deals()
-                        if d.get("stage") in ACTIVE_STAGES and d.get("manager_validated"))
-    print(f"\nValidated {n} deal(s).")
-    print(f"Active deals validated now: {validated_now} / {total_active}")
-    print("Funnel + Assured (dashboard / analytics / pipeline) will now populate.")
+    print(f"\nNewly validated: {validated_n}")
+    print(f"Synced to DB:    {synced_n} / {len(target)}")
+    print("Funnel + Assured (dashboard / analytics / pipeline) will now populate "
+          "once the API is restarted.")
 
 
 if __name__ == "__main__":

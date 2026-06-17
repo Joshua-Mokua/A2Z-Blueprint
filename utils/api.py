@@ -437,6 +437,9 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "fx_rate_date":         deal.get("fx_rate_date"),
                 "fx_rate_source":       deal.get("fx_rate_source"),
                 "currency_book":        deal.get("currency_book"),
+                "manager_validated":    deal.get("manager_validated"),
+                "validated_by":         deal.get("validated_by"),
+                "validated_at":         deal.get("validated_at"),
             }),
         }
         if not row["id"]:
@@ -488,9 +491,13 @@ def _normalize_db_deal_row(row):
     if isinstance(md, dict):
         for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
                    "fx_rate_source", "client_type", "mou_id", "mou_title",
-                   "sector", "segment"):
+                   "sector", "segment", "validated_by", "validated_at"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
+        # manager_validated is a bool — lift whenever absent on the row so the
+        # DB read path (analytics assured value + funnel) reflects validation.
+        if "manager_validated" not in r or r.get("manager_validated") is None:
+            r["manager_validated"] = bool(md.get("manager_validated"))
     return r
 
 
@@ -2481,6 +2488,17 @@ def pipeline_deal_validate(
         payload.approved,
         payload.note or "",
     )
+
+    # Persist the validation to the DB read path. The analytics assured value
+    # and funnel read deals via _acquire_scoped_deals (DB-first); without this
+    # sync, manager_validated would live only in the JSON store and the DB
+    # readers would never see it.
+    try:
+        _vd = pm.get_deal(deal_id)
+        if _vd:
+            _db_sync_pipeline_deal(_vd)
+    except Exception:
+        pass
 
     # Emit audit event matching Streamlit (line 1331 / 1335)
     if payload.approved:

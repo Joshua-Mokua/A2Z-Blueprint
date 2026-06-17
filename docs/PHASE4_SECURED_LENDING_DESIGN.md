@@ -1216,3 +1216,37 @@ realistic queue). No API/logic change — harness stays 100/100.
 
 STILL OPEN: (2) slicer "compare two items" feature; deep per-class card drill
 (needs analytics URL-filter param). Then auth/DOA hardening LAST.
+
+## #26 — Fix: manager_validated round-trips through the DB (assured/funnel bug)
+
+ROOT CAUSE (diagnosed, not guessed): /api/pipeline/analytics mixes sources —
+assured value + funnel come from _compute_pipeline_analytics(_acquire_scoped_deals)
+= DB, but pending_validation is overridden from pm.get_pending_validations() = JSON
+file. manager_validated was written only to the JSON file (_save_deals) and never
+(a) persisted to DB metadata by _db_sync_pipeline_deal nor (b) lifted by
+_normalize_db_deal_row. So under PostgreSQL the DB read path NEVER saw
+manager_validated -> assured = 0 and funnel empty FOREVER, regardless of
+validation. (That is why HB46's file-based seed dropped pending to 198 but left
+assured at 0.)
+
+FIX (3 coordinated, additive, low-risk):
+1. _db_sync_pipeline_deal metadata now includes manager_validated/validated_by/
+   validated_at.
+2. _normalize_db_deal_row lifts validated_by/validated_at and always sets
+   manager_validated = bool(md.manager_validated) on DB reads.
+3. validate route now _db_sync's the deal after pm.validate_deal so real UI
+   validations persist to the DB read path.
+seed_validate_deals.py updated: validates in the file AND _db_sync's every target
+deal to the DB (existing file-validated deals still needed the DB sync).
+
+ACTION: re-run seed_validate_deals.py --pct 60 (now syncs to DB), restart API ->
+assured + funnel populate on dashboard/analytics/pipeline. Harness stays 100/100
+(additive change).
+
+SEPARATE ISSUE FLAGGED: terminal shows `relation "credit_watchlist" does not exist`
+-> that DB table is missing in Josh's environment; _acquire_scoped_credit falls
+back, dashboard NPL still works via flat watchlist, but credit analytics/worst-NPL
+need the table recreated (migrate_credit_watchlist / create_tables SQL).
+
+OPEN QUESTION (Josh): "Total Pipeline" headline lumps asset + liability (+insurance
++other) into one KES figure — flagged for a product decision (rollup vs split).
