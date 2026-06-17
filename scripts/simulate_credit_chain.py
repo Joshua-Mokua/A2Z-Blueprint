@@ -806,15 +806,15 @@ def referral_probe(base):
     step("referral: declined deal not in recipient inbox", True, did2 not in inc_ids)
 
     st, _rr = _req(base, "POST", f"/api/pipeline/deals/{did2}/referral/reassign", manager,
-                   {"referred_to_code": "300001", "referred_to_name": "William Mwanake"})
+                   {"referred_to_code": "300716", "referred_to_name": "Immaculate"})
     step("referral: non-referrer reassign denied", 403, st)
 
     st, rs = _req(base, "POST", f"/api/pipeline/deals/{did2}/referral/reassign", owner,
-                  {"referred_to_code": "300001", "referred_to_name": "William Mwanake"})
+                  {"referred_to_code": "300716", "referred_to_name": "Immaculate"})
     step("referral: reassign returned deal -> pending", (200, 201), st, payload=rs,
          note=f"status={rs.get('referral_status') if isinstance(rs, dict) else '?'}")
 
-    st, inc2 = _req(base, "GET", "/api/pipeline/referrals/incoming", admin)
+    st, inc2 = _req(base, "GET", "/api/pipeline/referrals/incoming", manager)
     inc2_ids = [d.get("id") for d in (inc2.get("deals") or [])] if isinstance(inc2, dict) else []
     step("referral: reassigned deal in new recipient inbox", True, did2 in inc2_ids,
          note=f"{len(inc2_ids)} incoming")

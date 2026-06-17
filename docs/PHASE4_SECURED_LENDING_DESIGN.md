@@ -1838,3 +1838,13 @@ outgoing lists the referrer's live referrals.
 Backend referral arc (A1+A2) complete. NEXT: Batch B (frontend) — Refer/Assign
 action on a deal, Incoming Referrals inbox (accept / decline-with-reason),
 Returned Deals view (reassign), and a "following" indicator for referrers.
+
+## #48a — harness fix: reassign test used a non-resolving persona
+
+The A2 "reassigned deal in new recipient inbox" step reassigned to staff code
+300001 and queried the ADMIN (william001) inbox, assuming william resolves to
+300001 — he doesn't (the MD/override account doesn't carry that staff code via
+_resolve_actor the way Frank/Immaculate do). The incoming endpoint was correct
+(it returned 0 because william's resolved code != 300001). Fixed the TEST:
+reassign to Immaculate (300716, proven to resolve by the accept step) and check
+her inbox. Backend unchanged.
