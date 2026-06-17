@@ -2654,6 +2654,129 @@ def pipeline_referral_decline(
     return {"deal_id": deal_id, "referral_status": "declined", "decline_reason": reason}
 
 
+def _all_pipeline_deals() -> list:
+    """All pipeline deals, UNSCOPED (DB-first). The referral inbox / returned /
+    following queries filter by participation (referred_to / referred_by), which
+    can cross cascade boundaries, so they must NOT be pre-filtered by visible
+    scope the way the main deal list is."""
+    if _PIPELINE_READ_DB_FIRST and _db_available():
+        try:
+            from utils.db import db as _db
+            rows = _db.fetch_all("SELECT * FROM pipeline_deals", tuple())
+            return [_normalize_db_deal_row(d) for d in _serialize(rows)]
+        except Exception as e:
+            logger.error(f"Referral list DB error: {e}")
+    from utils.core import PipelineManager as _PM
+    return _PM().get_deals()
+
+
+def _referral_view(d: dict) -> dict:
+    """Compact projection for referral list endpoints."""
+    return {
+        "id":               d.get("id"),
+        "client_name":      d.get("client_name"),
+        "deal_value":       _deal_value(d),
+        "product_type":     d.get("product_type") or d.get("product"),
+        "stage":            d.get("stage"),
+        "segment":          _segment_of(d),
+        "referral_status":  d.get("referral_status"),
+        "referred_to":      d.get("referred_to"),
+        "referred_to_code": d.get("referred_to_code"),
+        "referred_by_name": d.get("referred_by_name"),
+        "referred_by_code": d.get("referred_by_code"),
+        "referral_note":    d.get("referral_note"),
+        "decline_reason":   d.get("decline_reason"),
+        "referred_at":      d.get("referred_at"),
+        "accepted_at":      d.get("accepted_at"),
+        "declined_at":      d.get("declined_at"),
+    }
+
+
+@app.post("/api/pipeline/deals/{deal_id}/referral/reassign", status_code=200)
+def pipeline_referral_reassign(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """Reassign a RETURNED (declined) referral to a new recipient -> pending.
+    Only the original referrer (or an admin) may reassign."""
+    _audit("API_PIPELINE_REFERRAL_REASSIGN_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+
+    rcode = str(payload.get("referred_to_code") or "").strip()
+    rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
+    note  = str(payload.get("referral_note") or "").strip()
+    if not rcode or not rname:
+        raise HTTPException(status_code=400,
+                            detail="referred_to_code and referred_to_name are required")
+
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if str(deal.get("referral_status") or "") != "declined":
+        raise HTTPException(status_code=400,
+                            detail="Only a returned (declined) referral can be reassigned.")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    if not priv and actor_code != str(deal.get("referred_by_code") or ""):
+        raise HTTPException(status_code=403,
+                            detail="Only the original referrer can reassign this returned deal.")
+    if rcode in (str(deal.get("staff_code", "") or ""),
+                 str(deal.get("portfolio_owner_code", "") or "")):
+        raise HTTPException(status_code=400,
+                            detail="That person already owns this deal — nothing to reassign.")
+
+    pm.update_deal(deal_id, {
+        "referral_status":  "pending",
+        "referred_to_code": rcode,
+        "referred_to":      rname,
+        "referred_by_code": actor_code,
+        "referred_by_name": actor_name,
+        "referral_note":    note,
+        "referred_at":      datetime.now().isoformat(),
+        "decline_reason":   "",
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRAL_REASSIGNED", user, f"{deal_id}->{rcode}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "pending",
+            "referred_to": rname, "referred_to_code": rcode}
+
+
+@app.get("/api/pipeline/referrals/incoming")
+def pipeline_referrals_incoming(user: dict = Depends(get_current_user)):
+    """Pending referrals addressed to the caller — their acceptance inbox."""
+    code, _, _ = _resolve_actor(user)
+    deals = [d for d in _all_pipeline_deals()
+             if code and str(d.get("referral_status") or "") == "pending"
+             and str(d.get("referred_to_code") or "") == code]
+    return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
+
+
+@app.get("/api/pipeline/referrals/returned")
+def pipeline_referrals_returned(user: dict = Depends(get_current_user)):
+    """Declined referrals awaiting reassignment. The original referrer sees
+    theirs; an admin sees all."""
+    code, _, priv = _resolve_actor(user)
+    deals = [d for d in _all_pipeline_deals()
+             if str(d.get("referral_status") or "") == "declined"
+             and (priv or str(d.get("referred_by_code") or "") == code)]
+    return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
+
+
+@app.get("/api/pipeline/referrals/outgoing")
+def pipeline_referrals_outgoing(user: dict = Depends(get_current_user)):
+    """Referrals the caller has made that are still live (pending or accepted)
+    — so they can follow progress."""
+    code, _, _ = _resolve_actor(user)
+    deals = [d for d in _all_pipeline_deals()
+             if code and str(d.get("referred_by_code") or "") == code
+             and str(d.get("referral_status") or "") in ("pending", "accepted")]
+    return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
+
+
 @app.post("/api/pipeline/deals", status_code=201)
 def pipeline_deal_create(
     payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy

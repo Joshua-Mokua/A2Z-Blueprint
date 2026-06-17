@@ -1816,3 +1816,25 @@ NEXT (A2): reassign a returned deal (referrer/admin only) + read queries
 (incoming inbox / returned pool / referred-by-me). Then frontend (Batch B):
 restore the Refer/Assign action, an Incoming Referrals inbox with
 accept/decline-with-reason, and a Returned Deals view.
+
+## #48 — Batch A2: referral reassign + read queries [BACKEND]
+
+Completes the referral backend. New unscoped loader _all_pipeline_deals() (the
+inbox/returned/following filters cross cascade boundaries, so they must not be
+pre-scoped like the main list). Compact _referral_view projection.
+
+- POST /api/pipeline/deals/{id}/referral/reassign — a RETURNED (declined) deal
+  back to pending for a new recipient. Original referrer (or admin) only;
+  rejects reassigning to the current owner.
+- GET /api/pipeline/referrals/incoming  — pending referrals addressed to me (inbox).
+- GET /api/pipeline/referrals/returned  — declined deals (mine as referrer; admin: all).
+- GET /api/pipeline/referrals/outgoing  — my live referrals (pending+accepted) to follow.
+
+Harness extends referral_probe: returned pool lists the declined deal; the
+declined deal is NOT in the recipient inbox; non-referrer reassign denied (403);
+reassign -> pending; reassigned deal appears in the new recipient's inbox;
+outgoing lists the referrer's live referrals.
+
+Backend referral arc (A1+A2) complete. NEXT: Batch B (frontend) — Refer/Assign
+action on a deal, Incoming Referrals inbox (accept / decline-with-reason),
+Returned Deals view (reassign), and a "following" indicator for referrers.
