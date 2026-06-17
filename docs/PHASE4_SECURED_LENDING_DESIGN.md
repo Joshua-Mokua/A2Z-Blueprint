@@ -1654,3 +1654,39 @@ PipelineCreate.tsx:
 
 Frontend-only; esbuild-clean. tsc is the gate (Josh's env).
 NEXT: Batch 3 (Branches editor) / Batch 4 (user mapping) per the plan.
+
+## #42 — Batch 2b: red required asterisks + remove hint strip
+
+PipelineCreate.tsx: removed the "Required for this path" blue strip (and the now-
+unused FIELD_LABELS/baseRequiredLabel). All required markers are a shared RedStar
+(<span text-red-600>) component — converted reqMark(string) → reqStar(JSX), the
+sector/MOU template → JSX, and every hardcoded " *" (client name, product type,
+deal value, pipeline category, initial stage, portfolio owner/referred, override
+note) to RedStar. Reclaims top space; requiredness reads off the red stars.
+Frontend-only, esbuild-clean.
+
+PENDING (next): client-type rename Consumer/Commercial + new Corporate &
+Investment Banking, admin-configurable — backend classification seam refactor.
+
+## #43 — Batch 3a (backend): config-driven client types (Consumer/Commercial/CIB)
+
+Replaces the hardwired binary Individual/Business with an admin-configurable list
+of Ecobank business lines. api.py:
+- _DEFAULT_CLIENT_TYPES = Consumer (field=mou), Commercial (sector), CIB (sector);
+  _client_types() (config-driven via pipeline_settings.json → client_types,
+  normalised to {key,label,field}). _CLIENT_TYPE_ALIASES maps legacy
+  individual→Consumer, business→Commercial (no data migration).
+- _client_type_field(ct) → 'mou'|'sector' (configured key, legacy alias, or
+  keyword fallback). _sector_of now uses it instead of ct=="Individual", so the
+  partnership-vs-sector bucket is driven by the type's field. Verified: Individual
+  & Consumer → mou; Business/Commercial/CIB → sector; back-compat intact.
+- _DEFAULT_CUSTOMER_SEGMENTS re-keyed to Consumer/Commercial/CIB; _customer_segments()
+  now MERGES default under config (every configured type resolves to a list even
+  if the admin only set some).
+- client_types exposed in /api/pipeline/stages, added to _EDITABLE_CONFIG_KEYS +
+  _editable_config_view (so the admin console can edit it).
+
+Harness +1 (→108): config exposes client_types well-formed. Existing Individual/
+Business create + sector/MOU checks stay green via the aliases.
+NEXT (3b frontend): form dropdown from client_types + field-driven third selector;
+admin panel to edit client types.

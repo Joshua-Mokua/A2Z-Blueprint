@@ -487,6 +487,13 @@ def sector_mou_probe(base):
     rf = cfg2.get("required_fields") if isinstance(cfg2, dict) else None
     step("admin config: read exposes required_fields", True,
          isinstance(rf, list) and len(rf) >= 1, note=f"required={rf}")
+    cts = cfg2.get("client_types") if isinstance(cfg2, dict) else None
+    cts_ok = (isinstance(cts, list) and len(cts) >= 1
+              and all(isinstance(t, dict) and t.get("key") and t.get("field") in ("mou", "sector")
+                      for t in cts))
+    step("admin config: exposes client_types (business lines)", True, cts_ok,
+         note=f"{len(cts) if isinstance(cts, list) else 0} types; "
+              f"keys={[t.get('key') for t in cts] if isinstance(cts, list) else None}")
     st_noop, noop = _req(base, "POST", "/api/admin/pipeline-config", admin, {})
     noop_ok = (st_noop == 200 and isinstance(noop, dict)
                and noop.get("status") in ("noop", "saved") and "config" in noop)

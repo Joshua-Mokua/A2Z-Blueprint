@@ -1175,6 +1175,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "product_catalogue": cfg.get("product_catalogue", {}),
         "stage_flows":       cfg.get("stage_flows", {}),
         "customer_segments": _customer_segments(),
+        "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
         "required_fields":   _required_fields(),
     }
@@ -1184,7 +1185,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # console. Each maps straight into pipeline_settings.json; anything outside this
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
-    "segment_labels", "customer_segments", "product_catalogue",
+    "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "individual_mous", "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
     "probability_map", "deal_types",
@@ -1225,6 +1226,7 @@ def _editable_config_view() -> dict:
     return {
         "segment_labels":     _segment_labels(),
         "customer_segments":  _customer_segments(),
+        "client_types":       _client_types(),
         "product_catalogue":  cfg.get("product_catalogue", {}),
         "individual_mous":    cfg.get("individual_mous", []),
         "business_sectors":   cfg.get("business_sectors", []),
@@ -1676,7 +1678,7 @@ def _sector_of(d: dict) -> str:
     """CBK economic sector for a deal. Individual / MOU-partnership deals group
     under 'Individual / Partnership'; Business deals use their CBK sector. Shared
     by the analytics by_sector dimension and the funnel stage-drill."""
-    if str(d.get("client_type", "")).strip() == "Individual" or d.get("mou_id"):
+    if _client_type_field(d.get("client_type", "")) == "mou" or d.get("mou_id"):
         return "Individual / Partnership"
     return d.get("sector") or "Unclassified"
 
@@ -1701,26 +1703,80 @@ def _stage_flow_for(product_type: str) -> list:
         return []
 
 
+# Client business lines (Ecobank: Consumer / Commercial / Corporate & Investment
+# Banking). Admin-configurable (pipeline_settings.json → client_types). Each entry
+# is {key, label, field} where field ∈ {"mou","sector"} drives whether the deal
+# form shows the Partnership/MOU selector (consumer) or the CBK sector selector
+# (commercial / CIB). "key" is what's stored on the deal as client_type.
+_DEFAULT_CLIENT_TYPES = [
+    {"key": "Consumer",   "label": "Consumer",                        "field": "mou"},
+    {"key": "Commercial", "label": "Commercial",                      "field": "sector"},
+    {"key": "CIB",        "label": "Corporate & Investment Banking",  "field": "sector"},
+]
+# Deals created before the rename carry the old binary values; map them so
+# classification stays correct without a data migration.
+_CLIENT_TYPE_ALIASES = {"individual": "Consumer", "business": "Commercial"}
+
+
+def _client_types() -> list:
+    """Configured client business lines (admin-editable), each normalised to
+    {key, label, field}. Defaults to the Ecobank three-line structure."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    m = cfg.get("client_types") if isinstance(cfg, dict) else None
+    if isinstance(m, list) and m:
+        out = []
+        for e in m:
+            if isinstance(e, dict) and e.get("key"):
+                out.append({
+                    "key":   str(e["key"]),
+                    "label": str(e.get("label") or e["key"]),
+                    "field": "mou" if str(e.get("field", "")).lower() == "mou" else "sector",
+                })
+        if out:
+            return out
+    return [dict(x) for x in _DEFAULT_CLIENT_TYPES]
+
+
+def _client_type_field(client_type: str) -> str:
+    """'mou' or 'sector' for a deal's client_type — handles configured keys,
+    legacy Individual/Business aliases, and keyword fallback. Drives _sector_of
+    and the form's third-field choice so they can't drift."""
+    low = str(client_type or "").strip().lower()
+    if not low:
+        return "sector"
+    types = _client_types()
+    for t in types:
+        if t["key"].lower() == low:
+            return t["field"]
+    alias = _CLIENT_TYPE_ALIASES.get(low)
+    if alias:
+        for t in types:
+            if t["key"] == alias:
+                return t["field"]
+    if "individual" in low or "consumer" in low:
+        return "mou"
+    return "sector"
+
+
 _DEFAULT_CUSTOMER_SEGMENTS = {
-    # Ecobank Kenya retail tiers (Premier ← Affluent, Advantage ← Core Middle,
-    # Direct ← Mass/Retail) + business segments. Used when the admin hasn't set
-    # a customer_segments map in pipeline_settings.json.
-    "Individual": ["Premier", "Advantage", "Direct"],
-    "Business":   ["Large Corporate", "Corporate", "SME", "Micro Enterprise"],
+    # Keyed by client-type key (Ecobank business lines). Consumer tiers map to the
+    # display names (Premier ← Affluent, Advantage ← Core Middle, Direct ← Mass).
+    "Consumer":   ["Premier", "Advantage", "Direct"],
+    "Commercial": ["Large Corporate", "Corporate", "SME", "Micro Enterprise"],
+    "CIB":        ["Multinational", "Large Local Corporate", "Financial Institution", "Public Sector"],
 }
 
 
 def _customer_segments() -> dict:
-    """Segment options per client type for the Create-Deal form. Admin-configurable
-    via pipeline_settings.json → customer_segments; defaults to the Ecobank
-    vocabulary so the form, the stored deal.segment, and the reports all speak the
-    same language without a code change. Falls back to core.CUSTOMER_SEGMENTS only
-    if neither config nor default is usable."""
+    """Segment options per client-type key for the Create-Deal form. The default
+    (keyed by the Ecobank business lines) is always present so every configured
+    client type resolves to a list; an admin customer_segments map overlays it."""
     cfg = _load_json("pipeline_settings.json") or {}
     m = cfg.get("customer_segments") if isinstance(cfg, dict) else None
+    out = dict(_DEFAULT_CUSTOMER_SEGMENTS)
     if isinstance(m, dict) and m:
-        return dict(m)
-    return dict(_DEFAULT_CUSTOMER_SEGMENTS)
+        out.update(m)
+    return out
 
 
 # Deal-creation fields the bank requires before a deal can be created. Admin-
