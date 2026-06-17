@@ -37,75 +37,55 @@ interface NavItem {
   visibleFor?:   (isManagerUser: boolean, isAdmin: boolean) => boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+// Grouped into business domains so the platform reads as coherent areas
+// rather than a flat list. Item order and match logic unchanged.
+const NAV_GROUPS: NavGroup[] = [
   {
-    path:        '/',
-    label:       'Dashboard',
-    matchActive: (p) => p === '/',
+    label: 'Executive Intelligence',
+    items: [
+      { path: '/', label: 'Dashboard', matchActive: (p) => p === '/' },
+      { path: '/perform', label: 'BSC Performance', matchActive: (p) => p === '/perform' },
+      { path: '/cascade', label: 'Target Cascade', matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/') },
+      { path: '/initiatives', label: 'Initiatives', matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
+      { path: '/profitability', label: 'Profitability', matchActive: (p) => p === '/profitability' },
+    ],
   },
   {
-    path:        '/pipeline',
-    label:       'Pipeline',
-    matchActive: (p) =>
-      p === '/pipeline' ||
-      (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')),
+    label: 'Business Development',
+    items: [
+      {
+        path: '/pipeline', label: 'Pipeline',
+        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')),
+      },
+      { path: '/analytics', label: 'Pipeline Analytics', matchActive: (p) => p.startsWith('/analytics') },
+      {
+        path: '/pipeline/queues', label: 'Manager Queues',
+        matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (isMgr) => isMgr,
+      },
+    ],
   },
   {
-    path:        '/analytics',
-    label:       'Analytics',
-    matchActive: (p) => p.startsWith('/analytics'),
+    label: 'Credit Factory',
+    items: [
+      { path: '/lms', label: 'Loan Applications', matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
+      { path: '/credit-admin', label: 'Credit Admin', matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
+      { path: '/credit-analytics', label: 'Credit Analytics', matchActive: (p) => p.startsWith('/credit-analytics') },
+    ],
   },
   {
-    path:        '/credit-analytics',
-    label:       'Credit Analytics',
-    matchActive: (p) => p.startsWith('/credit-analytics'),
-  },
-  {
-    path:        '/pipeline/queues',
-    label:       'Manager Queues',
-    matchActive: (p) => p.startsWith('/pipeline/queues'),
-    visibleFor:  (isMgr) => isMgr,
-  },
-  {
-    path:        '/lms',
-    label:       'Loan Applications',
-    matchActive: (p) => p === '/lms' || p.startsWith('/lms/'),
-  },
-  {
-    path:        '/credit-admin',
-    label:       'Credit Admin',
-    matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'),
-  },
-  {
-    path:        '/cbs',
-    label:       'Customer Lookup',
-    matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'),
-  },
-  {
-    path:        '/cascade',
-    label:       'Target Cascade',
-    matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'),
-  },
-  {
-    path:        '/initiatives',
-    label:       'Initiatives',
-    matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/'),
-  },
-  {
-    path:        '/fx-rates',
-    label:       'FX Rates',
-    matchActive: (p) => p === '/fx-rates' || p.startsWith('/fx-rates'),
-    visibleFor:  (_isMgr, isAdmin) => isAdmin,
-  },
-  {
-    path:        '/perform',
-    label:       'BSC Performance',
-    matchActive: (p) => p === '/perform',
-  },
-  {
-    path:        '/profitability',
-    label:       'Profitability',
-    matchActive: (p) => p === '/profitability',
+    label: 'Reference & Admin',
+    items: [
+      { path: '/cbs', label: 'Customer Lookup', matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/') },
+      {
+        path: '/fx-rates', label: 'FX Rates',
+        matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_isMgr, isAdmin) => isAdmin,
+      },
+    ],
   },
 ];
 
@@ -126,17 +106,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const isMgr   = isManager(user);
   const isAdmin = user?.is_admin ?? false;
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin),
-  );
-
   return (
     <aside
-      className="flex flex-col w-60 min-h-screen text-white shadow-xl"
+      className="flex flex-col w-60 h-full text-white shadow-xl"
       style={{ background: 'var(--brand-secondary)' }}
     >
       {/* Top: bank + app branding */}
-      <div className="px-5 py-5 border-b border-white/10">
+      <div className="px-5 py-5 border-b border-white/10 flex-shrink-0">
         <div className="text-[10px] uppercase tracking-[2.5px] font-bold opacity-70">
           {branding?.bank_name ?? 'A2Z'}
         </div>
@@ -145,32 +121,47 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </div>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const active = item.matchActive(pathname);
+      {/* Grouped nav */}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
+        {NAV_GROUPS.map((group) => {
+          const items = group.items.filter(
+            (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin),
+          );
+          if (items.length === 0) return null;
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onNavigate}
-              className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/75 hover:bg-white/8 hover:text-white'
-              }`}
-              style={active
-                ? { borderLeft: '3px solid var(--brand-primary)', paddingLeft: '13px' }
-                : undefined}
-            >
-              {item.label}
-            </Link>
+            <div key={group.label}>
+              <div className="px-3 mb-1.5 text-[10px] uppercase tracking-[1.5px] font-bold text-white/40">
+                {group.label}
+              </div>
+              <div className="space-y-0.5">
+                {items.map((item) => {
+                  const active = item.matchActive(pathname);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onNavigate}
+                      className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        active
+                          ? 'bg-white/15 text-white'
+                          : 'text-white/75 hover:bg-white/8 hover:text-white'
+                      }`}
+                      style={active
+                        ? { borderLeft: '3px solid var(--brand-primary)', paddingLeft: '13px' }
+                        : undefined}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
 
       {/* Bottom: user info + logout */}
-      <div className="px-4 py-4 border-t border-white/10 text-sm">
+      <div className="px-4 py-4 border-t border-white/10 text-sm flex-shrink-0">
         {user && (
           <div className="mb-3">
             <div className="font-semibold text-white truncate">

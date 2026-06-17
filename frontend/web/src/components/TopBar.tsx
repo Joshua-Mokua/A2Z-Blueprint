@@ -1,0 +1,136 @@
+// Fixed application top bar. Part of the persistent shell (never scrolls).
+// Shows the current module title, a quick module search (type + Enter or
+// click to jump), a notifications affordance, and a compact user chip.
+// Presentation only — no business logic.
+
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useRole } from '@/hooks/useRole';
+
+interface RouteEntry { label: string; path: string; match: (p: string) => boolean }
+
+const ROUTES: RouteEntry[] = [
+  { label: 'Dashboard',           path: '/',                 match: (p) => p === '/' },
+  { label: 'Pipeline',            path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
+  { label: 'Pipeline Analytics',  path: '/analytics',        match: (p) => p.startsWith('/analytics') },
+  { label: 'Credit Analytics',    path: '/credit-analytics', match: (p) => p.startsWith('/credit-analytics') },
+  { label: 'Manager Queues',      path: '/pipeline/queues',  match: (p) => p.startsWith('/pipeline/queues') },
+  { label: 'Loan Applications',   path: '/lms',              match: (p) => p.startsWith('/lms') },
+  { label: 'Credit Admin',        path: '/credit-admin',     match: (p) => p.startsWith('/credit-admin') },
+  { label: 'Customer Lookup',     path: '/cbs',              match: (p) => p.startsWith('/cbs') },
+  { label: 'Target Cascade',      path: '/cascade',          match: (p) => p.startsWith('/cascade') },
+  { label: 'Initiatives',         path: '/initiatives',      match: (p) => p.startsWith('/initiatives') },
+  { label: 'FX Rates',            path: '/fx-rates',         match: (p) => p.startsWith('/fx-rates') },
+  { label: 'BSC Performance',     path: '/perform',          match: (p) => p === '/perform' },
+  { label: 'Profitability',       path: '/profitability',    match: (p) => p === '/profitability' },
+];
+
+function titleFor(pathname: string): string {
+  return ROUTES.find((r) => r.match(pathname))?.label ?? 'A2Z MIS 360';
+}
+
+function initials(name?: string): string {
+  if (!name) return '—';
+  return name.trim().split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() ?? '').join('');
+}
+
+export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user } = useRole();
+  const [q, setQ] = useState('');
+  const [notifyOpen, setNotifyOpen] = useState(false);
+
+  const query = q.trim().toLowerCase();
+  const matches = query ? ROUTES.filter((r) => r.label.toLowerCase().includes(query)) : [];
+  const go = (path: string) => { setQ(''); navigate(path); };
+
+  return (
+    <header className="flex-shrink-0 h-14 bg-white border-b border-gray-200 flex items-center gap-3 px-4">
+      <button
+        type="button"
+        onClick={onMenuClick}
+        aria-label="Open navigation"
+        className="md:hidden w-9 h-9 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-600"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+
+      <h1 className="font-semibold text-gray-900 text-sm md:text-base whitespace-nowrap">
+        {titleFor(pathname)}
+      </h1>
+
+      {/* Module search */}
+      <div className="relative flex-1 max-w-md ml-2">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && matches[0]) go(matches[0].path);
+            if (e.key === 'Escape') setQ('');
+          }}
+          placeholder="Search modules…"
+          className="w-full h-9 rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-brand-primary outline-none transition-colors"
+        />
+        {matches.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+            {matches.slice(0, 6).map((m) => (
+              <button
+                key={m.path}
+                onClick={() => go(m.path)}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Notifications */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setNotifyOpen((o) => !o)}
+          aria-label="Notifications"
+          className="w-9 h-9 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </button>
+        {notifyOpen && (
+          <div className="absolute right-0 z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-4">
+            <div className="text-sm font-semibold text-gray-900">Notifications</div>
+            <div className="text-xs text-gray-500 mt-1">You're all caught up.</div>
+          </div>
+        )}
+      </div>
+
+      {/* User chip */}
+      {user && (
+        <div className="flex items-center gap-2 pl-3 ml-1 border-l border-gray-200">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+            style={{ background: 'var(--brand-primary, #1797ce)' }}
+          >
+            {initials(user.full_name)}
+          </div>
+          <div className="hidden lg:block leading-tight">
+            <div className="text-xs font-semibold text-gray-900 truncate max-w-[150px]">{user.full_name}</div>
+            <div className="text-[10px] text-gray-500 truncate max-w-[150px]">{user.role}</div>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}

@@ -949,3 +949,21 @@ section tiles can follow if desired.)
 
 === ARC COMPLETE: pipeline + credit drill-down, hierarchy-scoped, with the
 dashboard as the launchpad. ===
+
+## #13 — Application shell rework (UX transformation, batch 1): DELIVERED (tsc gate)
+
+The new frame (Phase 1 + Phase 2 of the UX audit):
+- AppShell: h-screen + overflow-hidden -> browser page never scrolls. Full-height
+  navy sidebar (fixed) + a white TopBar (fixed) + a single content scroll area
+  (<main overflow-y-auto>). Only content scrolls; nav + header stay put.
+- TopBar (NEW): current-module title, a working module search (type + Enter or
+  click to jump), notifications affordance ("You're all caught up"), compact
+  user chip (initials + name + role). Presentation only.
+- Sidebar: min-h-screen -> h-full; flat NAV_ITEMS -> domain groups
+  (Executive Intelligence / Business Development / Credit Factory /
+  Reference & Admin) with group eyebrows. Active-state + visibleFor unchanged.
+- Safe for live users: no routes, business logic, or page content changed.
+
+NEXT (UX roadmap): table power-ups (filter/search/pagination on the Table
+primitive), exec exceptions strip + sparklines, drill rows -> detail pages,
+wide-screen density.
