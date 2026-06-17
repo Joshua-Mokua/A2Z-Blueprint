@@ -596,6 +596,7 @@ export interface FunnelDrillResponse {
   totals: { value: number; count: number };
   by_product: ProductBreakdown[];
   by_segment: SegmentBreakdown[];
+  by_sector: SectorBreakdown[];
   deals: FunnelDrillDeal[];
 }
 

@@ -476,7 +476,7 @@ def sector_mou_probe(base):
          note=f"{len(by_seg)} segments; top={by_seg[0].get('segment') if by_seg else '—'}")
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
-             and all(k in fd for k in ("totals", "by_product", "by_segment", "deals")))
+             and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))
     step("funnel drill: reachable + well-formed", True, fd_ok,
          note=f"count={fd.get('totals',{}).get('count') if isinstance(fd, dict) else '—'}")
     step("analytics: by_currency_book has LCY+FCY", True,

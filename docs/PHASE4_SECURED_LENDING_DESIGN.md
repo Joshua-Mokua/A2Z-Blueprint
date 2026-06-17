@@ -1409,3 +1409,20 @@ deal table). Vivid palette consistent with the graphics pass.
 
 Remaining queue: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
 credit_watchlist table recreate, broader graphics polish on remaining surfaces.
+
+## #33 — Funnel drill: add SECTOR alongside segment + product
+
+Per Josh ("on the funnel there is no sector segment drill"). The stage-drill had
+by_segment + by_product but no sector. Added:
+  • Extracted _sector_of to module level (Individual/MOU -> "Individual /
+    Partnership"; Business -> CBK sector). Now shared by analytics by_sector AND
+    the funnel drill (no duplicate logic).
+  • Funnel drill endpoint returns by_sector too.
+  • Frontend: FunnelDrillResponse.by_sector; drill panel now 3 columns —
+    By segment / By sector / By product (value-ranked bars).
+  • Harness assertion now requires by_sector key (still 102 checks).
+
+Reminder: click a non-empty funnel band ("Click to drill →") to open the panel.
+
+Remaining queue: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
+credit_watchlist table recreate.

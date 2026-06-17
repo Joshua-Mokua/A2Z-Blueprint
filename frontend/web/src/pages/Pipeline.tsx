@@ -375,8 +375,9 @@ export function Pipeline() {
                     <span className="font-semibold text-gray-800">{drill.totals.count}</span> assured deals ·{' '}
                     <span className="font-semibold text-gray-800">{formatValue(drill.totals.value, sym)}</span>
                   </div>
-                  <div className="grid gap-6 md:grid-cols-2">
+                  <div className="grid gap-6 md:grid-cols-3">
                     <DrillBreakdown title="By segment" rows={drill.by_segment.map((s) => ({ label: s.segment, value: s.value, count: s.count }))} sym={sym} />
+                    <DrillBreakdown title="By sector" rows={drill.by_sector.map((s) => ({ label: s.sector, value: s.value, count: s.count }))} sym={sym} />
                     <DrillBreakdown title="By product" rows={drill.by_product.map((p) => ({ label: p.product, value: p.value, count: p.count }))} sym={sym} />
                   </div>
                   {drill.deals.length > 0 && (

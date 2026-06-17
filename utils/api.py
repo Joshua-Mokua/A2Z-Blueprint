@@ -1586,6 +1586,15 @@ def _segment_of(d: dict) -> str:
     return ct
 
 
+def _sector_of(d: dict) -> str:
+    """CBK economic sector for a deal. Individual / MOU-partnership deals group
+    under 'Individual / Partnership'; Business deals use their CBK sector. Shared
+    by the analytics by_sector dimension and the funnel stage-drill."""
+    if str(d.get("client_type", "")).strip() == "Individual" or d.get("mou_id"):
+        return "Individual / Partnership"
+    return d.get("sector") or "Unclassified"
+
+
 def _stage_flow_for(product_type: str) -> list:
     """Ordered stage flow for a product's class, from pipeline_settings
     stage_flows (admin config, the single source of truth). Classes:
@@ -1796,10 +1805,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
     # by_sector: CBK sector (Business deals). Individual/MOU deals grouped.
     _sec: dict = {}
     for d in live:
-        if str(d.get("client_type", "")).strip() == "Individual" or d.get("mou_id"):
-            key = "Individual / Partnership"
-        else:
-            key = d.get("sector") or "Unclassified"
+        key = _sector_of(d)
         e = _sec.setdefault(key, {"sector": key, "value": 0.0, "count": 0})
         e["value"] += _deal_value(d)
         e["count"] += 1
@@ -1979,6 +1985,7 @@ def pipeline_funnel_drill(
 
     prod: dict = {}
     seg: dict = {}
+    sec: dict = {}
     for d in sel:
         p = d.get("product_type") or d.get("product", "") or "—"
         ep = prod.setdefault(p, {"product": p, "value": 0.0, "count": 0})
@@ -1988,6 +1995,10 @@ def pipeline_funnel_drill(
         es = seg.setdefault(k, {"segment": k, "value": 0.0, "count": 0})
         es["value"] += _deal_value(d)
         es["count"] += 1
+        sk = _sector_of(d)
+        ec = sec.setdefault(sk, {"sector": sk, "value": 0.0, "count": 0})
+        ec["value"] += _deal_value(d)
+        ec["count"] += 1
 
     deals_out = [{
         "id":           d.get("id"),
@@ -2006,6 +2017,7 @@ def pipeline_funnel_drill(
         "totals":  {"value": sum(_deal_value(d) for d in sel), "count": len(sel)},
         "by_product": sorted(prod.values(), key=lambda x: x["value"], reverse=True),
         "by_segment": sorted(seg.values(), key=lambda x: x["value"], reverse=True),
+        "by_sector": sorted(sec.values(), key=lambda x: x["value"], reverse=True),
         "deals":   deals_out,
     }
 
