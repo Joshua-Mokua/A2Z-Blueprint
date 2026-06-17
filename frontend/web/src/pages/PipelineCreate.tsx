@@ -213,6 +213,27 @@ export function PipelineCreate() {
     [config],
   );
   const individualMous = useMemo(() => config?.individual_mous ?? [], [config]);
+
+  // Admin-configured mandatory fields (Admin → Configuration). Drives the
+  // asterisks, the "Required for this path" hint, and the extra validation
+  // for the optional selection fields (segment / sector / MOU). The four core
+  // fields the backend always demands (name / product / value / stage) stay
+  // required client-side regardless, so the form can't submit a deal the API
+  // would reject.
+  const requiredFields = useMemo(
+    () => config?.required_fields ?? ['client_name', 'product_type', 'deal_value', 'stage'],
+    [config],
+  );
+  const isReq = (key: string): boolean => requiredFields.includes(key);
+  const reqMark = (key: string): string => (isReq(key) ? ' *' : '');
+  const FIELD_LABELS: Record<string, string> = {
+    client_name: 'Client name', client_type: 'Customer type',
+    product_type: 'Product type', deal_value: 'Deal value', stage: 'Stage',
+    segment: 'Segment', currency: 'Currency',
+    relationship_status: 'Relationship status', mou_id: 'Partnership / MOU',
+    sector: 'CBK sector',
+  };
+  const baseRequiredLabel = requiredFields.map((k) => FIELD_LABELS[k] ?? k).join(' · ');
   const allowOther = clientType === 'Business'
     ? (config?.allow_other_sector ?? true)
     : (config?.allow_other_mou ?? true);
@@ -388,6 +409,18 @@ export function PipelineCreate() {
     }
     if (!Number.isFinite(dealValueNum) || dealValueNum < 0) {
       errors.dealValue = 'Deal value must be a non-negative number.';
+    }
+
+    // Admin-configured mandatory selection fields (layered on the always-on
+    // core fields above). Segment / sector / MOU are otherwise optional.
+    if (isReq('segment') && segmentOptions.length > 0 && !segment.trim()) {
+      errors.segment = 'Segment is required.';
+    }
+    if (clientType === 'Business' && isReq('sector') && !sector.trim()) {
+      errors.sectorMou = 'CBK sector is required.';
+    }
+    if (clientType === 'Individual' && isReq('mou_id') && !mouId.trim()) {
+      errors.sectorMou = 'Partnership / MOU is required.';
     }
 
     if (hasConflict) {
@@ -616,7 +649,7 @@ export function PipelineCreate() {
         }
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-6">
+      <main className="max-w-6xl mx-auto px-6 pt-4 pb-8">
         {/* ─────────── Error summary banner (β5.0 polish) ───────────
             Renders at the top so users see it without scrolling.
             Shows either:
@@ -654,16 +687,16 @@ export function PipelineCreate() {
             current submission path. Updates dynamically when the user
             toggles "has conflict" or picks "Refer" path.
         */}
-        <div className="mb-4 px-4 py-2 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-900">
+        <div className="mb-3 px-4 py-2 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-900">
           <span className="font-semibold">Required for this path:</span>{' '}
           {isReferPath ? (
             <>Client name · Portfolio owner staff code · Portfolio owner name · Referred-to name</>
           ) : hasConflict && conflictPath === 'override' ? (
-            <>Client name · Product type · Deal value · Stage · Portfolio owner code/name · Override note (≥{MIN_OVERRIDE_NOTE_LEN} chars)</>
+            <>{baseRequiredLabel} · Portfolio owner code/name · Override note (≥{MIN_OVERRIDE_NOTE_LEN} chars)</>
           ) : hasConflict ? (
-            <>Client name · Product type · Deal value · Stage · Portfolio owner code/name</>
+            <>{baseRequiredLabel} · Portfolio owner code/name</>
           ) : (
-            <>Client name · Product type · Deal value · Stage</>
+            <>{baseRequiredLabel}</>
           )}
         </div>
 
@@ -676,12 +709,33 @@ export function PipelineCreate() {
             <span className="text-xs text-gray-400">Who is this deal for?</span>
           </Card.Header>
           <Card.Body>
-            {/* δ2 (2026-06-12): CIF direct-entry row. Users who know the CIF
-                can type it and click "Fetch" to autofill the form from CBS,
-                independent of the name-search dropdown above. */}
+            {/* Relationship status FIRST — drives whether a CBS CIF lookup is
+                offered (existing customer) or the form is filled fresh (NTB). */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700">
+                Relationship status{reqMark('relationship_status')}
+              </label>
+              <select
+                value={isNtb ? 'ntb' : 'existing'}
+                onChange={(e) => setIsNtb(e.target.value === 'ntb')}
+                disabled={mutations.loading}
+                className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                <option value="existing">Existing customer (has CBS relationship)</option>
+                <option value="ntb">New to Bank (NTB) — first-time customer</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {isNtb
+                  ? 'New customer — no CBS record yet; fill the details below.'
+                  : 'Existing customer — look them up by CIF to autofill from CBS.'}
+              </p>
+            </div>
+
+            {/* CIF lookup — only meaningful for an existing (in-CBS) customer. */}
+            {!isNtb && (
             <div className="mb-4" data-field="clientCif">
               <label className="text-sm font-medium text-gray-700">
-                Client CIF (optional — to fetch from CBS)
+                Client CIF (to fetch from CBS)
               </label>
               <div className="flex gap-2 mt-1">
                 <input
@@ -720,6 +774,7 @@ export function PipelineCreate() {
                 </div>
               )}
             </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-field="clientName">
@@ -748,28 +803,25 @@ export function PipelineCreate() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Customer type
+                  Customer type{reqMark('client_type')}
                 </label>
-                <div className="flex gap-2 mt-1">
-                  <SegBtn
-                    active={clientType === 'Individual'}
-                    onClick={() => setClientType('Individual')}
-                    disabled={mutations.loading}
-                  >Individual</SegBtn>
-                  <SegBtn
-                    active={clientType === 'Business'}
-                    onClick={() => setClientType('Business')}
-                    disabled={mutations.loading}
-                  >Business</SegBtn>
-                </div>
+                <select
+                  value={clientType}
+                  onChange={(e) => setClientType(e.target.value as 'Individual' | 'Business')}
+                  disabled={mutations.loading}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="Individual">Individual</option>
+                  <option value="Business">Business</option>
+                </select>
               </div>
-              <div>
+              <div data-field="segment">
                 <label className="text-sm font-medium text-gray-700">
-                  Segment
+                  Segment{reqMark('segment')}
                 </label>
                 <select
                   value={segment}
-                  onChange={(e) => setSegment(e.target.value)}
+                  onChange={(e) => { setSegment(e.target.value); clearFieldError('segment'); }}
                   disabled={mutations.loading || segmentOptions.length === 0}
                   className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                 >
@@ -783,10 +835,13 @@ export function PipelineCreate() {
                 <p className="text-xs text-gray-500 mt-1">
                   {clientType} segments from admin config.
                 </p>
+                {fieldErrors.segment && (
+                  <p className="text-xs text-red-700 mt-1">{fieldErrors.segment}</p>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Currency
+                  Currency{reqMark('currency')}
                 </label>
                 <select
                   value={currency}
@@ -806,9 +861,11 @@ export function PipelineCreate() {
                       : `Foreign currency book (FCY) · no admin FX rate set for ${currency} yet`}
                 </p>
               </div>
-              <div>
+              <div data-field="sectorMou">
                 <label className="text-sm font-medium text-gray-700">
-                  {clientType === 'Business' ? 'Sector (CBK)' : 'Partnership / MOU'}
+                  {clientType === 'Business'
+                    ? `Sector (CBK)${reqMark('sector')}`
+                    : `Partnership / MOU${reqMark('mou_id')}`}
                 </label>
                 {clientType === 'Business' ? (
                   <select
@@ -852,26 +909,9 @@ export function PipelineCreate() {
                     ? 'CBK economic-sector classification (admin config).'
                     : 'Active partnerships from the MOU register (admin config).'}
                 </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Relationship status
-                </label>
-                <div className="flex gap-2 mt-1">
-                  <SegBtn
-                    active={!isNtb}
-                    onClick={() => setIsNtb(false)}
-                    disabled={mutations.loading}
-                  >Existing</SegBtn>
-                  <SegBtn
-                    active={isNtb}
-                    onClick={() => setIsNtb(true)}
-                    disabled={mutations.loading}
-                  >New to Bank (NTB)</SegBtn>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Existing = has CBS relationship · NTB = first-time customer
-                </p>
+                {fieldErrors.sectorMou && (
+                  <p className="text-xs text-red-700 mt-1">{fieldErrors.sectorMou}</p>
+                )}
               </div>
               {!isNtb && (
                 <Input
@@ -896,24 +936,23 @@ export function PipelineCreate() {
           <Card.Body>
             <div>
               <label className="text-sm font-medium text-gray-700">Pipeline category *</label>
-              <div className="flex gap-2 mt-1 flex-wrap">
+              <select
+                value={category}
+                onChange={(e) => {
+                  const c = e.target.value as PipelineCategory;
+                  setCategory(c);
+                  if (!INITIAL_STAGES_BY_CATEGORY[c].includes(stage)) {
+                    setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
+                  }
+                  setProductType('');
+                }}
+                disabled={mutations.loading}
+                className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+              >
                 {PIPELINE_CATEGORIES.map((c) => (
-                  <SegBtn
-                    key={c}
-                    active={category === c}
-                    onClick={() => {
-                      setCategory(c);
-                      // Auto-reset stage to a valid one for this category
-                      if (!INITIAL_STAGES_BY_CATEGORY[c].includes(stage)) {
-                        setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
-                      }
-                      // Clear product (suggestions changed)
-                      setProductType('');
-                    }}
-                    disabled={mutations.loading}
-                  >{c}</SegBtn>
+                  <option key={c} value={c}>{c}</option>
                 ))}
-              </div>
+              </select>
               <p className="text-xs text-gray-500 mt-1">
                 {category === 'Loan'    && 'Loans, overdrafts, trade finance, mortgages'}
                 {category === 'Deposit' && 'CASA, fixed deposit, call deposit, notice'}
@@ -1251,30 +1290,6 @@ export function PipelineCreate() {
 
 
 // ── Helper components ───────────────────────────────────────────────────
-
-interface SegBtnProps {
-  active:   boolean;
-  onClick:  () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-}
-
-function SegBtn({ active, onClick, disabled, children }: SegBtnProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`px-4 h-10 rounded-md text-sm font-medium border transition-colors ${
-        active
-          ? 'bg-brand-primary text-white border-brand-primary'
-          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      {children}
-    </button>
-  );
-}
 
 interface PathRadioProps {
   active:    boolean;

@@ -1626,3 +1626,31 @@ JSX transform doesn't put React in scope. esbuild-clean across all 5 files.
 
 NEXT (Batch 2): deal-creation redesign consuming required_fields — relationship-
 first ordering, CIF fetch on Existing, buttons→dropdowns, density.
+
+## #41 — Batch 2: deal-creation redesign (relationship-first + dropdowns + config-required)
+
+Reworks /pipeline/new per Josh's spec; consumes the required_fields config from 1a.
+
+PipelineCreate.tsx:
+- RELATIONSHIP-FIRST. "Relationship status" moved to the TOP of the Customer card
+  as a dropdown (Existing / New to Bank). The CIF "Fetch from CBS" block now
+  renders ONLY for an existing customer (!isNtb) — an NTB has no CBS record — so
+  the flow reads: pick relationship → (if existing) look up CIF to autofill →
+  fill the rest. Removed the old relationship buttons from the grid.
+- BUTTONS → DROPDOWNS. Customer type, Relationship status, and Pipeline category
+  are now <select> dropdowns (no free typing). Removed the now-unused SegBtn
+  helper component (PathRadio retained for the conflict paths).
+- ADMIN-CONFIGURED MANDATORY FIELDS. requiredFields = config.required_fields
+  (falls back to the core four). reqMark() drives asterisks on segment / currency
+  / sector / MOU / customer-type; the "Required for this path" hint is built from
+  the configured list (FIELD_LABELS map); validate() now enforces config-required
+  segment / sector / MOU (inline errors + data-field scroll targets). The four
+  backend-mandatory fields (name/product/value/stage) stay required client-side
+  regardless of config, so the form can't submit a deal the API would reject —
+  required_fields is additive on top of those, not a way to relax them.
+- DENSITY. Top whitespace trimmed (main py-6 → pt-4 pb-8; hint mb-4 → mb-3); new
+  dropdowns use text-sm. (Further font reduction left as a tunable to avoid an
+  overcrowded look.)
+
+Frontend-only; esbuild-clean. tsc is the gate (Josh's env).
+NEXT: Batch 3 (Branches editor) / Batch 4 (user mapping) per the plan.
