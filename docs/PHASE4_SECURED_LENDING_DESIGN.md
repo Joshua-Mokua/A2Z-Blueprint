@@ -1094,3 +1094,26 @@ detail pages can migrate next for full consistency.
 
 NEXT (excellence sprint): xlsx + PDF export with full banking field set (SheetJS
 in stack); then sticky filters/tabs; then auth/DOA hardening LAST.
+
+## #20 — Page-header sweep + redundant navy band removal (excellence sprint, batch 2): DELIVERED
+
+Resolves the "two stacked headers" Josh saw: the fixed white TopBar stayed while
+each page's OWN navy band (app name + role, already shown in shell) scrolled.
+Migrated 5 more pages onto the shared PageHeader, removing the navy strips:
+- Pipeline ("Business Development / Pipeline")
+- Loan Applications ("Credit Factory / Loan Applications")
+- Credit Admin ("Credit Factory / Credit Admin")
+- Strategic Initiatives ("Executive Intelligence / Strategic Initiatives")
+- Target Cascade ("Executive Intelligence / Target Cascade") — period input moved
+  into the PageHeader action slot.
+Also removed internal DEV-STAGE BADGES (β5/β6/γ4/γ3) from production headers.
+PageHeader.tsx included so the batch is self-contained.
+
+Now consistent: ONE fixed global TopBar (module title + search + user) + ONE white
+PageHeader per page (breadcrumbs + title + subtitle + actions) that scrolls as the
+top of content (standard pattern; global chrome fixed, page header scrolls).
+
+REMAINING header sweep (follow-up): detail pages (PipelineDealDetail,
+LmsApplicationDetail, CreditAdminCaseDetail, CbsCustomerDetail, InitiativeDetail)
++ PipelineManagerQueues + PipelineCreate still carry navy strips; Dashboard keeps
+its hero deliberately. NEXT: xlsx+PDF export; then auth/DOA hardening LAST.

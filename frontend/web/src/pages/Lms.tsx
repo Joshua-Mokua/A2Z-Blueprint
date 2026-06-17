@@ -12,6 +12,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useLmsApplications } from '@/hooks/useLmsApplications';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -86,22 +87,11 @@ export function Lms() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header strip — same brand-navy as Pipeline pages */}
-      <header
-        className="text-white shadow"
-        style={{ background: 'var(--brand-secondary)' }}
-      >
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Loan Applications</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                Submitted, assigned, and decided applications in your cascade
-              </p>
-            </div>
-            <Badge tone="brand" size="sm">β5</Badge>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Loan Applications' }]}
+        title="Loan Applications"
+        subtitle="Submitted, assigned, and decided applications in your cascade."
+      />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 

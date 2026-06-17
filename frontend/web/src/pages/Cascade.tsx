@@ -16,6 +16,7 @@ import { useMyCascade } from '@/hooks/useMyCascade';
 import { setBankTarget, setCascadeAllocations, ApiValidationError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -70,27 +71,20 @@ export function Cascade() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Target Cascade</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                Bank-level targets · incoming allocations · my cascade · period {period}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="h-8 px-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-mono w-20 text-center focus:outline-none focus:bg-white/20"
-              />
-              <Badge tone="brand" size="sm">γ3</Badge>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs={[{ label: 'Executive Intelligence' }, { label: 'Target Cascade' }]}
+        title="Target Cascade"
+        subtitle={`Bank-level targets · incoming allocations · my cascade · period ${period}`}
+        actions={
+          <input
+            type="text"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            aria-label="Cascade period"
+            className="h-9 px-2 rounded-md border border-gray-200 bg-white text-sm font-mono w-20 text-center focus:outline-none focus:border-brand-primary"
+          />
+        }
+      />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6 space-y-5">
 

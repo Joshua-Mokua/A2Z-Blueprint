@@ -31,6 +31,7 @@ import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
 import { fetchPipelineConfig, fetchPipelineAnalytics } from '@/lib/api';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Stat } from '@/components/Stat';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -220,28 +221,11 @@ export function Pipeline() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header — matches Dashboard pattern */}
-      <header
-        className="px-6 py-5 text-white shadow-sm"
-        style={{ background: 'var(--brand-secondary)' }}
-      >
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
-              {branding?.bank_name ?? 'A2Z MIS 360'}
-            </div>
-            <h1 className="text-xl font-bold mt-1">
-              {branding?.app_name ?? 'A2Z'} MIS 360 — Pipeline
-            </h1>
-          </div>
-          <div className="text-right text-xs opacity-70 leading-relaxed">
-            {user?.full_name && (
-              <div className="font-medium opacity-90">{user.full_name}</div>
-            )}
-            {user?.role && <div>{user.role}</div>}
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'Pipeline' }]}
+        title="Pipeline"
+        subtitle="Deals across your scope — assured value, stage, and ownership."
+      />
 
       {/* Main content */}
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">

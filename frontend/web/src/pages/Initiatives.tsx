@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePortfolioSummary } from '@/hooks/usePortfolioSummary';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -29,19 +30,11 @@ export function Initiatives() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Strategic Initiatives</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                Portfolio rollup · RAG distribution · initiatives at risk
-              </p>
-            </div>
-            <Badge tone="brand" size="sm">γ4</Badge>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs={[{ label: 'Executive Intelligence' }, { label: 'Strategic Initiatives' }]}
+        title="Strategic Initiatives"
+        subtitle="Portfolio rollup · RAG distribution · initiatives at risk."
+      />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6 space-y-5">
 

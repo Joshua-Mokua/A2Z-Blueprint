@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useCreditAdminCases } from '@/hooks/useCreditAdminCases';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -101,19 +102,11 @@ export function CreditAdmin() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold">Credit Admin</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                Approved loans in the disbursement pipeline · condition tracking
-              </p>
-            </div>
-            <Badge tone="brand" size="sm">β6</Badge>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Credit Admin' }]}
+        title="Credit Admin"
+        subtitle="Approved loans in the disbursement pipeline · condition tracking."
+      />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 
