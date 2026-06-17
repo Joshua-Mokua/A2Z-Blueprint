@@ -49,6 +49,9 @@ export interface FunnelCategory {
 export interface PipelineFunnelProps {
   overall: FunnelStage[];
   categories?: FunnelCategory[];
+  /** Per-segment funnels (Premier / Advantage / Direct / SME / …). When provided,
+   *  a "By class / By segment" toggle appears and the tab row can show segments. */
+  segmentCategories?: FunnelCategory[];
   /** Admin-configured defined stage flow per class (asset/liability/…). */
   stageFlows?: Record<string, string[]>;
   /** Drill: fired when a non-empty stage band is clicked (class key, stage). */
@@ -62,21 +65,26 @@ const BAND_H = 58;
 export function PipelineFunnel({
   overall,
   categories = [],
+  segmentCategories = [],
   stageFlows,
   onStageClick,
   currencySymbol = '',
   emptyHint,
 }: PipelineFunnelProps) {
+  const [dimension, setDimension] = useState<'class' | 'segment'>('class');
   const [catKey, setCatKey] = useState<string>('all');
   const [metric, setMetric] = useState<'count' | 'value'>('count');
   const [hover, setHover] = useState<number | null>(null);
 
+  const hasSegments = segmentCategories.length > 0;
+  const isSegment = dimension === 'segment';
+
   const tabs = useMemo(
     () => [
       { key: 'all', label: 'All', stages: overall, activeCount: undefined as number | undefined },
-      ...categories,
+      ...(isSegment ? segmentCategories : categories),
     ],
-    [overall, categories],
+    [overall, categories, segmentCategories, isSegment],
   );
 
   const active = tabs.find((t) => t.key === catKey) ?? tabs[0];
@@ -85,13 +93,13 @@ export function PipelineFunnel({
   // so configured-but-empty stages still appear. For "All", use what's present.
   const stages = useMemo<FunnelStage[]>(() => {
     const data = active?.stages ?? [];
-    const flow = catKey !== 'all' ? stageFlows?.[catKey] : undefined;
+    const flow = !isSegment && catKey !== 'all' ? stageFlows?.[catKey] : undefined;
     if (!flow) return data;
     const byStage = new Map(data.map((s) => [s.stage, s]));
     return flow
       .filter((s) => !CLOSED.has(s))
       .map((s) => byStage.get(s) ?? { stage: s, count: 0, value: 0 });
-  }, [active, catKey, stageFlows]);
+  }, [active, catKey, stageFlows, isSegment]);
 
   const totalCount = stages.reduce((a, s) => a + s.count, 0);
   const totalValue = stages.reduce((a, s) => a + s.value, 0);
@@ -111,7 +119,28 @@ export function PipelineFunnel({
     <div>
       {/* Controls */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+        <div className="flex flex-wrap items-center gap-3">
+          {hasSegments && (
+            <div className="inline-flex rounded-md border border-gray-200">
+              {(['class', 'segment'] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => { setDimension(d); setCatKey('all'); setHover(null); }}
+                  className={[
+                    'px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                    dimension === d
+                      ? 'bg-[var(--brand-secondary)] text-white'
+                      : 'text-gray-500 hover:bg-gray-50',
+                    d === 'class' ? 'rounded-l-md' : 'rounded-r-md',
+                  ].join(' ')}
+                >
+                  {d === 'class' ? 'By class' : 'By segment'}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
           {tabs.map((t) => {
             const on = t.key === catKey;
             return (
@@ -132,6 +161,7 @@ export function PipelineFunnel({
               </button>
             );
           })}
+        </div>
         </div>
 
         <div className="inline-flex items-center gap-2 text-xs text-gray-500">
@@ -159,9 +189,11 @@ export function PipelineFunnel({
         <div className="py-10 text-center text-sm text-gray-500">
           {catKey === 'all'
             ? (emptyHint ?? 'No validated deals to chart yet.')
-            : `No assured deals in ${active?.label ?? 'this class'} yet — its defined stages are ${
-                (stageFlows?.[catKey] ?? []).filter((s) => !CLOSED.has(s)).join(' → ') || 'not configured'
-              }.`}
+            : isSegment
+              ? `No assured deals in the ${active?.label ?? 'this'} segment yet.`
+              : `No assured deals in ${active?.label ?? 'this class'} yet — its defined stages are ${
+                  (stageFlows?.[catKey] ?? []).filter((s) => !CLOSED.has(s)).join(' → ') || 'not configured'
+                }.`}
         </div>
       ) : (
         <>
@@ -179,7 +211,7 @@ export function PipelineFunnel({
               const conv = prev && prev.count ? Math.round((s.count / prev.count) * 100) : null;
               const inside = metric === 'count' ? String(s.count) : fmtValue(s.value, currencySymbol);
 
-              const clickable = !empty && !!onStageClick;
+              const clickable = !empty && !!onStageClick && !isSegment;
               return (
                 <div
                   key={s.stage}
@@ -233,7 +265,7 @@ export function PipelineFunnel({
                       <div className="text-gray-400">
                         {shareTop}% of top{conv !== null ? ` · ${conv}% from prior` : ''}
                       </div>
-                      {onStageClick && <div className="mt-0.5 text-[var(--brand-primary)]">Click to drill →</div>}
+                      {onStageClick && !isSegment && <div className="mt-0.5 text-[var(--brand-primary)]">Click to drill →</div>}
                     </div>
                   )}
                 </div>

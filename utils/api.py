@@ -1640,15 +1640,26 @@ def _stage_flow_for(product_type: str) -> list:
         return []
 
 
+_DEFAULT_CUSTOMER_SEGMENTS = {
+    # Ecobank Kenya retail tiers (Premier ← Affluent, Advantage ← Core Middle,
+    # Direct ← Mass/Retail) + business segments. Used when the admin hasn't set
+    # a customer_segments map in pipeline_settings.json.
+    "Individual": ["Premier", "Advantage", "Direct"],
+    "Business":   ["Large Corporate", "Corporate", "SME", "Micro Enterprise"],
+}
+
+
 def _customer_segments() -> dict:
-    """Segment options per client type (Individual / Business), from
-    core.CUSTOMER_SEGMENTS — the single source of truth for the create form's
-    segment cascade. Best-effort; empty dict if unavailable."""
-    try:
-        from utils.core import CUSTOMER_SEGMENTS
-        return dict(CUSTOMER_SEGMENTS)
-    except Exception:
-        return {}
+    """Segment options per client type for the Create-Deal form. Admin-configurable
+    via pipeline_settings.json → customer_segments; defaults to the Ecobank
+    vocabulary so the form, the stored deal.segment, and the reports all speak the
+    same language without a code change. Falls back to core.CUSTOMER_SEGMENTS only
+    if neither config nor default is usable."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    m = cfg.get("customer_segments") if isinstance(cfg, dict) else None
+    if isinstance(m, dict) and m:
+        return dict(m)
+    return dict(_DEFAULT_CUSTOMER_SEGMENTS)
 
 
 def _acquire_scoped_deals(user: dict) -> list:
@@ -1848,6 +1859,36 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_segment_funnel: per-segment ASSURED (validated + active) funnel by stage,
+    # so the pipeline funnel can be sliced by Ecobank segment (Premier / Advantage /
+    # Direct / SME / Corporate / …) the same way it slices by product class. Uses
+    # the identical val_act semantics as the headline + per-class funnels so the
+    # numbers reconcile across views.
+    _seg_funnels: dict = {}
+    for d in live:
+        if d.get("stage") not in ACTIVE_STAGES or not d.get("manager_validated"):
+            continue
+        seg = _segment_of(d)
+        sf = _seg_funnels.setdefault(
+            seg, {s: {"count": 0, "value": 0.0} for s in ALL_ACTIVE_STAGES})
+        s = d.get("stage")
+        if s in sf:
+            sf[s]["count"] += 1
+            sf[s]["value"] += _deal_value(d)
+    by_segment_funnel = []
+    for seg, sf in _seg_funnels.items():
+        funnel = [{"stage": s, "count": sf[s]["count"], "value": sf[s]["value"]}
+                  for s in ALL_ACTIVE_STAGES if sf[s]["count"] > 0]
+        if not funnel:
+            continue
+        by_segment_funnel.append({
+            "segment": seg,
+            "active_count": sum(f["count"] for f in funnel),
+            "value": sum(f["value"] for f in funnel),
+            "funnel": funnel,
+        })
+    by_segment_funnel.sort(key=lambda x: x["value"], reverse=True)
+
     # by_currency_book: KES-equivalent split (mirrors the dashboard).
     _by_currency_book = {"LCY": {"value": 0.0, "count": 0},
                          "FCY": {"value": 0.0, "count": 0}}
@@ -1895,6 +1936,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_segment_funnel": by_segment_funnel,
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
         "by_rm": _by_rm,

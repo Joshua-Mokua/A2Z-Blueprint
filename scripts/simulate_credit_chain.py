@@ -474,6 +474,12 @@ def sector_mou_probe(base):
          note=f"{len(by_sec)} sectors")
     step("analytics: by_segment breakdown present", True, len(by_seg) >= 1,
          note=f"{len(by_seg)} segments; top={by_seg[0].get('segment') if by_seg else '—'}")
+    by_seg_funnel = an.get("by_segment_funnel", []) if isinstance(an, dict) else []
+    bsf_ok = (isinstance(by_seg_funnel, list) and len(by_seg_funnel) >= 1
+              and all(isinstance(s, dict) and "segment" in s and isinstance(s.get("funnel"), list)
+                      for s in by_seg_funnel))
+    step("analytics: by_segment_funnel present + well-formed", True, bsf_ok,
+         note=f"{len(by_seg_funnel)} segment funnels; top={by_seg_funnel[0].get('segment') if by_seg_funnel else '—'}")
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
              and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))

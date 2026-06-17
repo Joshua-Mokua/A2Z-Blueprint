@@ -559,6 +559,7 @@ export interface PipelineAnalyticsTotals {
 export interface ProductBreakdown { product: string; value: number; count: number; won_value: number }
 export interface SectorBreakdown  { sector: string; value: number; count: number }
 export interface SegmentBreakdown { segment: string; value: number; count: number }
+export interface SegmentFunnel { segment: string; active_count: number; value: number; funnel: FunnelStage[] }
 export interface UnitBreakdown    { unit: string; value: number; count: number }
 export interface RmBreakdown      { rm: string; value: number; count: number }
 export interface DrillDeal {
@@ -615,6 +616,7 @@ export interface PipelineAnalyticsResponse {
   by_product?:        ProductBreakdown[];
   by_sector?:         SectorBreakdown[];
   by_segment?:        SegmentBreakdown[];
+  by_segment_funnel?: SegmentFunnel[];
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
   by_unit?:           UnitBreakdown[];
   by_rm?:             RmBreakdown[];

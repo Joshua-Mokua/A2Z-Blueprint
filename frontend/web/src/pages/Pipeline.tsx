@@ -367,6 +367,14 @@ export function Pipeline() {
                 { key: 'insurance', label: 'Insurance', stages: analytics.pipelines.insurance.funnel, activeCount: analytics.pipelines.insurance.active_count },
                 { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
               ] : []}
+              segmentCategories={analytics?.by_segment_funnel
+                ? analytics.by_segment_funnel.map((s) => ({
+                    key: s.segment,
+                    label: s.segment,
+                    stages: s.funnel,
+                    activeCount: s.active_count,
+                  }))
+                : []}
               currencySymbol={sym}
               stageFlows={config?.stage_flows}
               onStageClick={onStageDrill}
@@ -516,8 +524,6 @@ export function Pipeline() {
               searchPlaceholder="Search deals by client, stage, owner…"
               paginated
               pageSize={25}
-              exportable
-              exportFilename="pipeline-deals.csv"
               onRowClick={(row) => navigate(`/pipeline/${encodeURIComponent(row.id)}`)}
               empty={
                 <div className="py-8">

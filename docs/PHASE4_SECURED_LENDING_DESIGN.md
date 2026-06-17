@@ -1485,3 +1485,34 @@ backend passing (harness 103: funnel drill count=300, xlsx 88KB) — pending Jos
 findstr check on Pipeline.tsx to confirm apply vs stale dev-server/cache.
 Segment rename for the Create Deal form lives in customer_segments (CUSTOMER_SEGMENTS),
 a different source than the analytics segment_labels.
+
+## #37 — Funnel segment filter + Ecobank create-form segments + CSV→Excel
+
+Three coordinated changes addressing Josh's screenshot feedback:
+
+(1) FUNNEL SEGMENT FILTER. Backend: _compute_pipeline_analytics now emits
+by_segment_funnel — per-segment ASSURED (validated+active) funnel by stage, same
+val_act semantics as the headline + per-class funnels (reconciles). Registered in
+the analytics return dict beside by_segment. Frontend: PipelineFunnel gains a
+"By class / By segment" toggle (shown only when segmentCategories provided); the
+highlighted tab row now swaps between product classes and Ecobank segments. The
+class-flow overlay + stage-drill are gated to class mode (the drill endpoint is
+class-based; segment×stage drill is a future add). Pipeline.tsx feeds
+segmentCategories from analytics.by_segment_funnel. types: SegmentFunnel +
+by_segment_funnel? on the analytics response.
+
+(2) ECOBANK CREATE-FORM SEGMENTS. The Create-Deal segment dropdown read
+core.CUSTOMER_SEGMENTS (hardcoded Affluent/Core Middle/Mass-Retail) — NOT in any
+admin tab, which is why the form still showed the old names. _customer_segments()
+is now config-driven (pipeline_settings.json → customer_segments) with an Ecobank
+default (_DEFAULT_CUSTOMER_SEGMENTS: Individual = Premier/Advantage/Direct,
+Business = Large Corporate/Corporate/SME/Micro Enterprise). Verified the passthrough:
+a deal saved as segment="Premier" returns "Premier" through _segment_of (label map
+keys are the base buckets, so an already-Ecobank value is unchanged) and old deals
+derive to the same names — form, stored deal.segment, and reports now unify.
+
+(3) CSV → EXCEL. Removed the redundant per-table CSV export (exportable/
+exportFilename) from the pipeline deals Table; the page-level "Export Excel"
+(full multi-sheet workbook) is its replacement.
+
+Harness +1 ("analytics: by_segment_funnel present + well-formed") → 104.
