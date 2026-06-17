@@ -1117,3 +1117,20 @@ REMAINING header sweep (follow-up): detail pages (PipelineDealDetail,
 LmsApplicationDetail, CreditAdminCaseDetail, CbsCustomerDetail, InitiativeDetail)
 + PipelineManagerQueues + PipelineCreate still carry navy strips; Dashboard keeps
 its hero deliberately. NEXT: xlsx+PDF export; then auth/DOA hardening LAST.
+
+## #21 — Remove Central Bank of Kenya + FLEXCUBE wording: DELIVERED
+
+Josh: this wording appeared on the Dashboard hero (top-right) and across pages.
+Removed at every level:
+- Render sites: Dashboard hero block (regulator_full + core_banking_system),
+  ChangePassword line. (Login already done in #18.)
+- Frontend defaults: BrandingProvider regulator_full/core_banking_system -> ''.
+- Backend: api_branding payload returns '' for both fields (so it can't leak into
+  future xlsx/PDF exports or reports either). Underlying config functions left
+  intact. py_compile OK. Requires API restart to take effect.
+Grep confirms zero remaining render sites in pages/components.
+
+NOTE (observed in screenshot, flagged): the MD dashboard hero figures + Performance
+& Risk tiles appeared blank/skeleton while the exceptions strip was populated —
+likely a mid-load snapshot (md endpoint slower); if it persists, investigate
+/api/dashboard/md. NEXT: xlsx+PDF export; then auth/DOA hardening LAST.

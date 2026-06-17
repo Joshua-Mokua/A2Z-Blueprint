@@ -107,10 +107,6 @@ export function Dashboard() {
                 </div>
               )}
             </div>
-            <div className="text-right text-xs opacity-70 leading-relaxed">
-              <div>{branding.regulator_full}</div>
-              <div>{branding.core_banking_system}</div>
-            </div>
           </div>
 
           {/* Hero figure — entry points into the drill-downs */}

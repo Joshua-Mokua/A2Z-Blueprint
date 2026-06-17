@@ -40,8 +40,8 @@ const FALLBACK_BRANDING: Branding = {
   currency_symbol: 'KES',
   country: 'Kenya',
   regulator: 'CBK',
-  regulator_full: 'Central Bank of Kenya',
-  core_banking_system: 'Oracle FLEXCUBE v12',
+  regulator_full: '',
+  core_banking_system: '',
   tax_authority: 'KRA',
   brand: {
     primary: '#1797ce',

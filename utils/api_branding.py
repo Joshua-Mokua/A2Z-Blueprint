@@ -63,8 +63,8 @@ def get_branding() -> dict:
         "currency_symbol": currency_symbol(),
         "country": country(),
         "regulator": regulator(),
-        "regulator_full": regulator_full(),
-        "core_banking_system": core_banking_system(),
+        "regulator_full": "",          # removed from UI/branding (per Josh)
+        "core_banking_system": "",     # removed from UI/branding (per Josh)
         "tax_authority": tax_authority(),
         "brand": {
             "primary": brand_primary_hex(),
