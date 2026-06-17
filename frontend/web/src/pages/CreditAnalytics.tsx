@@ -49,11 +49,11 @@ export function CreditAnalytics() {
   const kes = (n: number) => `${sym} ${abbrev(n)}`;
 
   if (loading) {
-    return <div className="p-6 max-w-6xl mx-auto space-y-4"><Skeleton /><Skeleton /><Skeleton /></div>;
+    return <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto space-y-4"><Skeleton /><Skeleton /><Skeleton /></div>;
   }
   if (error || !data) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
         <Card><Card.Body>
           <p className="text-sm text-red-600">{error ?? 'No credit analytics available.'}</p>
         </Card.Body></Card>
@@ -64,7 +64,7 @@ export function CreditAnalytics() {
   const t = data.totals;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
       <h1 className="text-xl font-semibold text-gray-900">Credit Analytics</h1>
       <p className="text-sm text-gray-500 mb-6">
         Loan book within your scope — outstanding and NPL by classification, region, branch, and RM.

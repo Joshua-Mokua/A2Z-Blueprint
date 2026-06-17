@@ -102,7 +102,7 @@ export function CreditAdmin() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold">Credit Admin</h1>
@@ -115,7 +115,7 @@ export function CreditAdmin() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 
         {/* Filter bar */}
         <Card className="mb-4">

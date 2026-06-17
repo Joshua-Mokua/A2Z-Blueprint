@@ -111,7 +111,7 @@ export function PipelineManagerQueues() {
 
   if (!userIsManager) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
         <PageHeader title="Manager Queues" branding={branding} />
         <Card className="mt-8">
           <Card.Header>
@@ -158,7 +158,7 @@ export function PipelineManagerQueues() {
   // ── Main render ──────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
       <PageHeader title="Manager Queues" branding={branding} />
 
       {/* Tab strip */}

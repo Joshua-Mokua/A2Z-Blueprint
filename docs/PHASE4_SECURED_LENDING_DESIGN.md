@@ -1037,3 +1037,20 @@ Presentation only — no backend, no business logic.
 NEXT (UX roadmap): wide-screen density (xl/2xl), then design-system spec; then
 the deferred auth/production-hardening LAST (admin override + test logins stay
 intact until the very end, per Josh).
+
+## #17 — Wide-screen density (UX transformation, batch 5): DELIVERED (tsc gate)
+
+Reclaims the empty margins on 1920/2560 monitors (Phase 8 of the UX brief).
+- Data-dense pages (dashboards, lists, analytics, detail-with-tables) gained a
+  `2xl:max-w-[1680px]` cap on their `mx-auto` containers; the old base
+  (max-w-7xl / bumped from max-w-6xl) still governs below 1536px.
+- The `2xl:` prefix means ZERO change under 1536px (1366/1440 laptops untouched);
+  on a 1920 screen the content fills the usable area (~1680 after the sidebar),
+  on 2560 it caps at 1680 (comfortable, not sprawling).
+- Forms / detail / auth (max-w-5xl: PipelineCreate, Cbs, Login, ChangePassword,
+  Lms/CreditAdmin/Cbs detail) left narrow on purpose — readability over width.
+12 pages widened (26 containers); hero band + body widen together so they align.
+
+NEXT (UX roadmap): design-system spec doc (lock consistency). Then the deferred
+auth/production-hardening LAST (admin override + test logins stay intact until
+the very end, per Josh).

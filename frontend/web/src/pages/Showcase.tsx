@@ -103,7 +103,7 @@ export function Showcase() {
     <div className="min-h-screen bg-gray-50">
       {/* Header — mirrors Dashboard.tsx for consistency */}
       <header className="bg-brand-secondary text-white px-6 py-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto">
           <div className="text-xs uppercase tracking-widest opacity-70 font-bold">
             {branding?.bank_name ?? 'Loading…'} · Design System
           </div>
@@ -113,7 +113,7 @@ export function Showcase() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
 
         {/* ── Buttons ────────────────────────────────────── */}
         <Section title="Buttons — variants">

@@ -363,7 +363,7 @@ function DetailFrame({ title, branding, user, children }: DetailFrameProps) {
         className="px-6 py-5 text-white shadow-sm"
         style={{ background: 'var(--brand-secondary)' }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
               {branding?.bank_name ?? 'A2Z MIS 360'}
@@ -380,7 +380,7 @@ function DetailFrame({ title, branding, user, children }: DetailFrameProps) {
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
         {children}
       </main>
     </div>

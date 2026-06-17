@@ -225,7 +225,7 @@ export function Pipeline() {
         className="px-6 py-5 text-white shadow-sm"
         style={{ background: 'var(--brand-secondary)' }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
               {branding?.bank_name ?? 'A2Z MIS 360'}
@@ -244,7 +244,7 @@ export function Pipeline() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
         {/* Assured pipeline by product class — validated value headline,
             pending-assurance beneath. Sourced from /api/pipeline/analytics. */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

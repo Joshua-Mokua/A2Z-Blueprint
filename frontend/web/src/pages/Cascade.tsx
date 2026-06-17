@@ -71,7 +71,7 @@ export function Cascade() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold">Target Cascade</h1>
@@ -92,7 +92,7 @@ export function Cascade() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-5">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6 space-y-5">
 
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">

@@ -92,7 +92,7 @@ export function Dashboard() {
         style={{ background: branding.brand.secondary,
                  borderBottom: `3px solid ${branding.brand.accent}` }}
       >
-        <div className="max-w-7xl mx-auto px-6 pt-5">
+        <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 pt-5">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="text-[11px] uppercase tracking-[2.5px] font-bold opacity-70">
@@ -151,7 +151,7 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
         {error && (
           <Card className="mb-6 border-red-200">
             <div className="flex items-center justify-between gap-4">
