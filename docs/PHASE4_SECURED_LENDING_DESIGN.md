@@ -1250,3 +1250,57 @@ need the table recreated (migrate_credit_watchlist / create_tables SQL).
 
 OPEN QUESTION (Josh): "Total Pipeline" headline lumps asset + liability (+insurance
 +other) into one KES figure — flagged for a product decision (rollup vs split).
+
+## #27 — Validation scope: diagnose before flipping (CONFIRMED Josh's finding)
+
+Josh is right: the MD's "Pending Validation 204" is the whole-downline scope.
+/api/pipeline/analytics sets pending_validation =
+len(pm.get_pending_validations(manager_codes=get_visible_staff_codes(user))) and
+get_visible_staff_codes returns the user's ENTIRE subtree -> the MD sees every
+unvalidated active deal in the bank. Intended model: a deal is validated ONCE by
+the owner's immediate line manager, then counts as assured up the tree (the
+assured rollup ALREADY works — validated_active counts any manager_validated deal
+in scope, no re-validation).
+
+Fix = scope pending_validation to IMMEDIATE direct reports. BUT the register
+hierarchy disambiguates the specific manager differently per level (branch staff
+by Unit; Branch Managers report to 'Area Manager' disambiguated by Region/Area).
+That per-level logic lives in the canonical reporting tree (build_reporting_tree /
+org_hierarchy_config). The canonical direct-report resolver
+(manager_rollup._direct_report_codes) keys off users.json, which is {} in the
+audit clone — so before flipping a governance-critical gate, we verify it against
+LIVE data.
+
+NEW scripts/diag_validation_scope.py (READ-ONLY) prints, per persona (MD / Area
+Manager / Branch Manager / RM): #direct reports, #subtree, pend(direct) vs
+pend(subtree). Expect MD pend(direct) ~0, BM pend(direct) = own team. If #direct
+is 0 for a real manager, the resolver needs the register path before we wire it in.
+
+NEXT (after Josh runs the diag): add get_direct_report_codes to api_pipeline_scope
+and point pending_validation at it. No auth/password/admin-override change — scope
+only. Assured display still needs the HB47 seed re-run + API restart (separate).
+
+## #27a — DECISION: validation routing is config-driven, deferred to hierarchy alignment
+
+Diagnostic verdict (live data, 2026-06-17): the canonical direct-report resolver
+(manager_rollup._direct_report_codes -> users.json) returns ~0 for every manager
+(MD=1, Area Manager=0, Senior Branch Manager=0 despite a 17-person subtree),
+because users.json is curated/empty; the live tree is register-driven. Wiring this
+into the validation gate would zero out every pending queue -> nothing validatable.
+
+Owner directive: the reporting hierarchy is defined in the ADMIN user-mapping
+configuration and will be re-aligned to Ecobank's real structure in a dedicated
+next exercise. Validation routing must therefore READ from that admin config, NOT
+hardcode role+unit tree shape (e.g. Area Manager -> Branch Manager by Region).
+
+Sequence:
+  1. (next exercise) Align hierarchy in admin user-mapping -> populates the
+     code-based reporting relationships (the "Reports To Code" / override map that
+     core.get_direct_reports already consumes via apply_to_registry).
+  2. (after) Point /api/pipeline/analytics pending_validation at the
+     admin-configured direct-report resolver instead of get_visible_staff_codes.
+     Scope-only; no auth/password/admin-override change; auto-follows config.
+
+Interim: whole-subtree pending stays (over-broad on MD view, harmless — no
+mis-routing). Assured/funnel display is INDEPENDENT and only needs the HB47 seed
+re-run + API restart.
