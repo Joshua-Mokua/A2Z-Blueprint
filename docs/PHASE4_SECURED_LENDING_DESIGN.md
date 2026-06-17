@@ -1848,3 +1848,34 @@ _resolve_actor the way Frank/Immaculate do). The incoming endpoint was correct
 (it returned 0 because william's resolved code != 300001). Fixed the TEST:
 reassign to Immaculate (300716, proven to resolve by the accept step) and check
 her inbox. Backend unchanged.
+
+## #49 — Batch C1: referral -> BSC shadow credit [BACKEND]
+
+Referrer recognition without double-counting P&L. CGR1 finding first: the legacy
+BSC bridge (pipeline_to_bsc) reads data/pipeline.json — a STALE 302-record file
+with no referral fields, disconnected from the live pipeline (pipeline_deals.json
++ DB, ~1014). So referral credit was built as a SELF-CONTAINED path off live
+data instead of hooking the brittle bridge.
+
+- Two KPIs (scripts/add_referral_kpis.py injector, backup-first/idempotent):
+  K238 "Asset Referral", K239 "Liabilities/Deposit Referral" — Financial pillar,
+  weight 0.0, shadow:true. They credit the REFERRER's own scorecard but do NOT
+  feed consolidated P&L (distinct non-P&L KPIs; the owner's P&L credit untouched
+  => no double count). Weight 0 so they don't disturb role weight sums; admin can
+  weight/wire to roles later.
+- POST /api/pipeline/referrals/sync-bsc?dry_run=… (config-admin). Reads LIVE deals
+  (_all_pipeline_deals); for each materialized referred deal (referred_by_code +
+  stage in configured set) credits the referrer by product class (asset->K238,
+  liability->K239) at the deal's KES value; aggregates per (referrer, period, kpi);
+  dry_run default (report only) so it can be verified before any actuals write.
+- _referral_credit_config() reads pipeline_settings.json → referral_credit
+  (materialized_stages default [Disbursed, Closed Won] — Disbursed = true landing,
+  Closed Won = reward closing/hygiene; asset_kpi_id/liability_kpi_id). Admin-tunable.
+
+Harness: materialize the accepted referral (PUT stage Closed Won) then
+sync-bsc dry-run shows the referrer (Frank/300731) credited under Asset Referral
+(K238). Owner's P&L path unchanged.
+
+BACKLOG: legacy pipeline.json that the bridge reads is disconnected from live —
+worth reconciling separately. Admin UI panel to edit referral_credit + weight
+the two KPIs onto non-sales roles = follow-up.

@@ -824,6 +824,17 @@ def referral_probe(base):
     step("referral: outgoing lists referrer's live referrals", True,
          did in out_ids and did2 in out_ids, note=f"{len(out_ids)} outgoing")
 
+    # BSC shadow credit: materialize the accepted deal -> the REFERRER (Frank,
+    # 300731) earns Asset Referral (K238) shadow credit. Term Loan -> asset.
+    _req(base, "PUT", f"/api/pipeline/deals/{did}", manager, {"stage": "Closed Won"})
+    st, sync = _req(base, "POST", "/api/pipeline/referrals/sync-bsc?dry_run=true", admin, {})
+    contribs = sync.get("contributions", 0) if isinstance(sync, dict) else 0
+    sample = sync.get("sample", []) if isinstance(sync, dict) else []
+    has_frank_asset = any(s.get("referrer_code") == "300731" and s.get("kpi_id") == "K238"
+                          for s in sample)
+    step("referral: BSC shadow credit computed for referrer (dry-run)", True,
+         contribs >= 1 and has_frank_asset, note=f"{contribs} contributions")
+
 
 def main():
     ap = argparse.ArgumentParser()

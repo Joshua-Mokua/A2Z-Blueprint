@@ -2777,6 +2777,93 @@ def pipeline_referrals_outgoing(user: dict = Depends(get_current_user)):
     return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
 
 
+def _referral_credit_config() -> dict:
+    """Admin-tunable config for referral SHADOW credit (pipeline_settings.json →
+    referral_credit). Defaults: credit on Disbursed (true materialization) AND
+    Closed Won (to reward closing / pipeline hygiene); asset->K238, liability->K239."""
+    from utils.core import get_pipeline_settings
+    cfg = get_pipeline_settings() or {}
+    rc = cfg.get("referral_credit") if isinstance(cfg, dict) else None
+    rc = rc if isinstance(rc, dict) else {}
+    return {
+        "materialized_stages": rc.get("materialized_stages") or ["Disbursed", "Closed Won"],
+        "asset_kpi_id":        rc.get("asset_kpi_id") or "K238",
+        "liability_kpi_id":    rc.get("liability_kpi_id") or "K239",
+    }
+
+
+@app.post("/api/pipeline/referrals/sync-bsc")
+def pipeline_referral_sync_bsc(
+    dry_run: bool = Query(default=True),
+    user: dict = Depends(require_config_admin),
+):
+    """Compute (and optionally submit) SHADOW referral credit to referrers' BSC.
+
+    For each MATERIALIZED referred deal (referred_by_code set + stage in the
+    configured materialized set), credit the REFERRER with 'Asset Referral'
+    (K238) or 'Liabilities/Deposit Referral' (K239) by the deal's product class,
+    valued at the deal's KES amount. Shadow / recognition only: distinct non-P&L
+    KPIs, the owner's P&L credit is never touched, so there is no double count.
+
+    Defaults to dry_run=True (computes the report, submits nothing) so it can be
+    verified against live data before any actuals are written. Config-admin only.
+    """
+    _audit("API_REFERRAL_BSC_SYNC", user, f"dry_run={dry_run}")
+    from utils.pipeline_to_bsc import period_from_date
+    rc = _referral_credit_config()
+    mat = set(rc["materialized_stages"])
+    agg: dict = {}
+    skipped = 0
+    for d in _all_pipeline_deals():
+        rb = str(d.get("referred_by_code") or "").strip()
+        if not rb or str(d.get("stage") or "") not in mat:
+            continue
+        cls = _classify_product(d.get("product_type") or d.get("product", ""))
+        if cls == "asset":
+            kpi = rc["asset_kpi_id"]
+        elif cls == "liability":
+            kpi = rc["liability_kpi_id"]
+        else:
+            skipped += 1
+            continue
+        period = period_from_date(str(d.get("updated_at") or d.get("last_updated")
+                                      or d.get("expected_close") or ""))
+        if not period:
+            skipped += 1
+            continue
+        key = (rb, period, kpi)
+        e = agg.setdefault(key, {"value": 0.0, "count": 0, "deal_ids": []})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+        if len(e["deal_ids"]) < 10:
+            e["deal_ids"].append(d.get("id"))
+
+    contributions = [
+        {"referrer_code": k[0], "period": k[1], "kpi_id": k[2],
+         "value": v["value"], "deal_count": v["count"], "deal_ids": v["deal_ids"]}
+        for k, v in agg.items()
+    ]
+    submitted = 0
+    if not dry_run:
+        from utils.bsc_engine import submit as _bsc_submit
+        for c in contributions:
+            try:
+                ok, _op = _bsc_submit(
+                    staff_code=c["referrer_code"], kpi_id=c["kpi_id"],
+                    value=c["value"], period=c["period"],
+                    source_module="referral_shadow",
+                    metadata={"deal_count": c["deal_count"],
+                              "deal_ids": c["deal_ids"][:5], "shadow": True},
+                )
+                if ok:
+                    submitted += 1
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Referral BSC submit failed for {c['referrer_code']}: {e}")
+    return {"dry_run": dry_run, "contributions": len(contributions),
+            "submitted": submitted, "skipped": skipped,
+            "sample": contributions[:25], "config": rc}
+
+
 @app.post("/api/pipeline/deals", status_code=201)
 def pipeline_deal_create(
     payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy
