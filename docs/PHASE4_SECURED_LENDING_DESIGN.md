@@ -1710,3 +1710,39 @@ options panel now keys off these lines automatically.
 
 types/pipeline.ts + lib/api.ts: client_types on PipelineConfig + AdminConfigPatch.
 esbuild-clean across all four files. tsc is the gate.
+
+## #44a — tsc fix: CustomerSearchInput label accepts ReactNode
+
+The red-star batch (#42) set the Client-name label to <>Client name <RedStar/></>,
+but CustomerSearchInput.label was typed `string` (unlike the Input primitive,
+which is ReactNode) — esbuild passed, tsc did not. Widened the prop to ReactNode
+(import type { ReactNode }); the component already renders {label} inside a
+<label>, so no runtime change. Verified RagChip is the only other string-typed
+label and it never receives JSX.
+
+## #45 — Batch 4: deal-create polish + segment-panel cleanup
+
+AdminConfig.tsx — "Customer segment options" panel is now driven by the client
+business lines (clientTypes), not by whatever keys happen to be in the saved map.
+It shows/saves segment lists ONLY for the configured lines (Consumer/Commercial/
+CIB), so saving it once OVERWRITES customer_segments and drops orphaned legacy
+keys (Individual/Business) — fixes the "old segments still showing" footprint.
+
+PipelineCreate.tsx:
+- Product type is now a DROPDOWN sourced from the admin product_catalogue,
+  filtered to the classes that belong to the selected category (Loan→asset,
+  Deposit→liability, Account→liability/other), with an "Other…" → free-text
+  fallback. Falls back to the built-in per-category list if the catalogue is
+  empty. (Interpreted "mapped products per selection" as per-category/class via
+  the catalogue; per-customer-segment product mapping would be a new data model.)
+- Removed the explanatory footnotes (segment/sector/MOU/account/product/stage/
+  probability/category/relationship captions) per "a training pack can handle
+  that"; kept only functional dynamic feedback (deal-value KES format, FCY/FX
+  equivalent shown only for non-KES).
+- Notes textarea 3→2 rows to give the action row more room.
+- Standardised the form selects/inputs to text-sm (was text-base) for a tighter,
+  consistent density.
+
+Frontend-only, esbuild-clean. tsc is the gate.
+PENDING: cross-page professional cleanup sweep (7 detail pages w/ bespoke navy
+headers + general density) — next batch.

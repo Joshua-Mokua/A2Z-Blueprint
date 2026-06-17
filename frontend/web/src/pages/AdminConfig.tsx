@@ -353,23 +353,29 @@ export default function AdminConfig() {
               )}
             </PanelShell>
 
-            {/* Customer segments per client type */}
+            {/* Customer segments per client business line */}
             <PanelShell
               title="Customer segment options"
-              hint="The segment choices offered on the deal form, per client type."
-              onSave={() => save('custseg', { customer_segments: custSeg }, 'Customer segments')}
+              hint="The segment choices offered on the deal form, per business line."
+              onSave={() => {
+                // Save ONLY the segment lists for the configured business lines —
+                // this drops any orphaned keys (e.g. legacy Individual/Business).
+                const cleaned: Record<string, string[]> = {};
+                clientTypes.forEach((t) => { cleaned[t.key] = custSeg[t.key] ?? []; });
+                save('custseg', { customer_segments: cleaned }, 'Customer segments');
+              }}
               saving={savingKey === 'custseg'}
             >
-              {Object.keys(custSeg).length === 0 ? (
-                <p className="text-sm text-gray-400">No customer segments configured.</p>
+              {clientTypes.length === 0 ? (
+                <p className="text-sm text-gray-400">Define client business lines first.</p>
               ) : (
-                Object.entries(custSeg).map(([type, list]) => (
-                  <div key={type}>
-                    <div className="mb-1.5 text-sm font-medium text-gray-700">{type}</div>
+                clientTypes.map((t) => (
+                  <div key={t.key}>
+                    <div className="mb-1.5 text-sm font-medium text-gray-700">{t.label}</div>
                     <StringListEditor
-                      items={list}
-                      onChange={(next) => setCustSeg((p) => ({ ...p, [type]: next }))}
-                      placeholder={`Add ${type} segment…`}
+                      items={custSeg[t.key] ?? []}
+                      onChange={(next) => setCustSeg((p) => ({ ...p, [t.key]: next }))}
+                      placeholder={`Add ${t.label} segment…`}
                     />
                   </div>
                 ))

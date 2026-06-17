@@ -137,6 +137,7 @@ export function PipelineCreate() {
 
   const [category,    setCategory]    = useState<PipelineCategory>('Loan');
   const [productType, setProductType] = useState('');
+  const [productOther, setProductOther] = useState(false);
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
   const [stage,       setStage]       = useState<string>('Lead');
   const [probability, setProbability] = useState<number>(10);     // percent 0..100
@@ -306,6 +307,25 @@ export function PipelineCreate() {
   );
 
   const productSuggestions = useMemo(() => COMMON_PRODUCTS_BY_CATEGORY[category], [category]);
+  // Products offered in the dropdown — sourced from the admin product_catalogue,
+  // filtered to the classes that belong to the selected category; falls back to
+  // the built-in per-category list if the catalogue is empty.
+  const PRODUCT_OTHER = '__other__';
+  const productOptions = useMemo(() => {
+    const cat = config?.product_catalogue;
+    const want: Record<string, ProductClass[]> = {
+      Loan: ['asset'], Deposit: ['liability'], Account: ['liability', 'other'],
+    };
+    const buckets = want[category] ?? ['asset', 'liability', 'insurance', 'other'];
+    if (cat) {
+      const out: string[] = [];
+      for (const [cls, prods] of Object.entries(cat)) {
+        if (buckets.includes(PRODUCT_CLASS_MAP[cls] ?? 'other')) out.push(...prods);
+      }
+      if (out.length) return Array.from(new Set(out));
+    }
+    return productSuggestions;
+  }, [config, category, productSuggestions]);
   const dealValueNum       = useMemo(() => {
     const n = Number(String(dealValue).replace(/[,\s]/g, ''));
     return Number.isFinite(n) ? n : NaN;
@@ -725,11 +745,6 @@ export function PipelineCreate() {
                 <option value="existing">Existing customer (has CBS relationship)</option>
                 <option value="ntb">New to Bank (NTB) — first-time customer</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {isNtb
-                  ? 'New customer — no CBS record yet; fill the details below.'
-                  : 'Existing customer — look them up by CIF to autofill from CBS.'}
-              </p>
             </div>
 
             {/* CIF lookup — only meaningful for an existing (in-CBS) customer. */}
@@ -825,7 +840,7 @@ export function PipelineCreate() {
                   value={segment}
                   onChange={(e) => { setSegment(e.target.value); clearFieldError('segment'); }}
                   disabled={mutations.loading || segmentOptions.length === 0}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                 >
                   <option value="">
                     {segmentOptions.length === 0 ? '—' : `Select ${clientType.toLowerCase()} segment`}
@@ -834,9 +849,6 @@ export function PipelineCreate() {
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {clientType} segments from admin config.
-                </p>
                 {fieldErrors.segment && (
                   <p className="text-xs text-red-700 mt-1">{fieldErrors.segment}</p>
                 )}
@@ -849,19 +861,19 @@ export function PipelineCreate() {
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                   disabled={mutations.loading}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                 >
                   {currencyOptions.map((c) => (
                     <option key={c} value={c}>{c}{c === 'KES' ? ' (local)' : ''}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {currency === 'KES'
-                    ? 'Local currency book (LCY).'
-                    : selectedRate
-                      ? `Foreign currency book (FCY) · ≈ KES ${(dealValueNum * selectedRate).toLocaleString(undefined, { maximumFractionDigits: 0 })} at ${selectedRate}/${currency}`
-                      : `Foreign currency book (FCY) · no admin FX rate set for ${currency} yet`}
-                </p>
+                {currency !== 'KES' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedRate
+                      ? `FCY · ≈ KES ${(dealValueNum * selectedRate).toLocaleString(undefined, { maximumFractionDigits: 0 })} at ${selectedRate}/${currency}`
+                      : `FCY · no admin FX rate set for ${currency} yet`}
+                  </p>
+                )}
               </div>
               <div data-field="sectorMou">
                 <label className="text-sm font-medium text-gray-700">
@@ -874,7 +886,7 @@ export function PipelineCreate() {
                     value={sector}
                     onChange={(e) => setSector(e.target.value)}
                     disabled={mutations.loading}
-                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                   >
                     <option value="">Select CBK sector (optional)</option>
                     {businessSectors.map((s) => (
@@ -887,7 +899,7 @@ export function PipelineCreate() {
                     value={mouId}
                     onChange={(e) => setMouId(e.target.value)}
                     disabled={mutations.loading}
-                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                   >
                     <option value="">Select partnership / MOU (optional)</option>
                     {individualMous.map((m) => (
@@ -903,14 +915,9 @@ export function PipelineCreate() {
                     onChange={(e) => setOtherText(e.target.value)}
                     disabled={mutations.loading}
                     placeholder={usesSector ? 'Specify sector' : 'Specify partner / MOU'}
-                    className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                    className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                   />
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {usesSector
-                    ? 'CBK economic-sector classification (admin config).'
-                    : 'Active partnerships from the MOU register (admin config).'}
-                </p>
                 {fieldErrors.sectorMou && (
                   <p className="text-xs text-red-700 mt-1">{fieldErrors.sectorMou}</p>
                 )}
@@ -922,7 +929,6 @@ export function PipelineCreate() {
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   disabled={mutations.loading}
-                  helper="Helps tie the deal to the CBS record. Auto-lookup deferred to a future batch."
                 />
               )}
             </div>
@@ -947,6 +953,7 @@ export function PipelineCreate() {
                     setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
                   }
                   setProductType('');
+                  setProductOther(false);
                 }}
                 disabled={mutations.loading}
                 className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
@@ -955,40 +962,45 @@ export function PipelineCreate() {
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {category === 'Loan'    && 'Loans, overdrafts, trade finance, mortgages'}
-                {category === 'Deposit' && 'CASA, fixed deposit, call deposit, notice'}
-                {category === 'Account' && 'Account opening — counts as new accounts'}
-              </p>
             </div>
 
             <div className="mt-4" data-field="productType">
-              <Input
-                label={<>Product type <RedStar /></>}
-                placeholder="e.g. Business Loan"
-                value={productType}
-                onChange={(e) => { setProductType(e.target.value); clearFieldError('productType'); }}
+              <label className="text-sm font-medium text-gray-700">Product type <RedStar /></label>
+              <select
+                value={productOther ? PRODUCT_OTHER : (productOptions.includes(productType) ? productType : '')}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === PRODUCT_OTHER) { setProductOther(true); setProductType(''); }
+                  else { setProductOther(false); setProductType(v); }
+                  clearFieldError('productType');
+                }}
                 disabled={mutations.loading}
-                helper="Quick pick from common products below, or type your own."
-                error={fieldErrors.productType}
-              />
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {productSuggestions.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setProductType(p)}
-                    disabled={mutations.loading}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                      productType === p
-                        ? 'bg-brand-primary text-white border-brand-primary'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
-                    }`}
-                  >
-                    {p}
-                  </button>
+                aria-invalid={!!fieldErrors.productType}
+                className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 ${
+                  fieldErrors.productType
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-300 focus:border-brand-primary focus:ring-brand-primary/20'
+                }`}
+              >
+                <option value="">Select a product…</option>
+                {productOptions.map((p) => (
+                  <option key={p} value={p}>{p}</option>
                 ))}
-              </div>
+                <option value={PRODUCT_OTHER}>Other…</option>
+              </select>
+              {productOther && (
+                <input
+                  type="text"
+                  value={productType}
+                  onChange={(e) => { setProductType(e.target.value); clearFieldError('productType'); }}
+                  disabled={mutations.loading}
+                  placeholder="Specify product"
+                  className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                />
+              )}
+              {fieldErrors.productType && (
+                <p className="mt-1 text-xs text-red-700">{fieldErrors.productType}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -1017,7 +1029,7 @@ export function PipelineCreate() {
                   onChange={(e) => { setStage(e.target.value); clearFieldError('stage'); }}
                   disabled={mutations.loading}
                   aria-invalid={!!fieldErrors.stage}
-                  className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-base text-gray-900 focus:outline-none focus:ring-2 ${
+                  className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 ${
                     fieldErrors.stage
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-brand-primary focus:ring-brand-primary/20'
@@ -1030,9 +1042,6 @@ export function PipelineCreate() {
                 {fieldErrors.stage && (
                   <p className="mt-1 text-xs text-red-700">{fieldErrors.stage}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Most deals start at Lead.
-                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
@@ -1048,9 +1057,6 @@ export function PipelineCreate() {
                   disabled={mutations.loading}
                   className="mt-3 w-full"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  How likely is this deal to close?
-                </p>
               </div>
             </div>
           </Card.Body>
@@ -1091,7 +1097,7 @@ export function PipelineCreate() {
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                   disabled={mutations.loading}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
                 >
                   {SOURCE_OPTIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -1108,8 +1114,8 @@ export function PipelineCreate() {
                 onChange={(e) => setNotes(e.target.value)}
                 disabled={mutations.loading}
                 placeholder="Relationship history, key triggers, urgency..."
-                rows={3}
-                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+                rows={2}
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
               />
             </div>
           </Card.Body>
@@ -1222,7 +1228,7 @@ export function PipelineCreate() {
                     disabled={mutations.loading}
                     placeholder="Context for the recipient — what does this customer need?"
                     rows={2}
-                    className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+                    className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
                   />
                 </div>
               </div>
@@ -1240,7 +1246,7 @@ export function PipelineCreate() {
                   placeholder="Why is the override appropriate? This is reviewed by management."
                   rows={3}
                   aria-invalid={!!fieldErrors.overrideNote}
-                  className={`mt-1 w-full px-3 py-2 rounded-md border bg-white text-base text-gray-900 focus:outline-none focus:ring-2 resize-y ${
+                  className={`mt-1 w-full px-3 py-2 rounded-md border bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 resize-y ${
                     fieldErrors.overrideNote
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-brand-primary focus:ring-brand-primary/20'
