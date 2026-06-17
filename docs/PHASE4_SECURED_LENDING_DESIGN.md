@@ -1172,3 +1172,27 @@ separation.
 
 NEXT: xlsx+PDF export; sticky filters/tabs; detail-page header sweep; KPI
 sparklines; then auth/DOA hardening LAST.
+
+## #24 — Pipeline card polish + sidebar scrollbar (excellence sprint): DELIVERED (tsc gate)
+
+Addresses 3 of Josh's 5 points from the Pipeline/Analytics screenshots:
+1. Sidebar "little extension" = the nav scrollbar nub -> styled thin/subtle
+   (w-1.5, white/15 thumb, transparent track) so it no longer protrudes on navy.
+4. Card colours "not shouting": Stat gains a `tone` prop (subtle tinted bg —
+   sky-50/slate-50/amber-50) used INSTEAD of the bold top stripe on the Pipeline
+   pillar + summary cards. Other Stat usages unchanged (default stripe restored).
+5. Cards clickable: Stat gains `onClick` (cursor + hover:shadow + corner →).
+   Asset/Liability/Insurance/Other/Deals Visible/Total Assured -> /analytics;
+   Pending Validation -> /pipeline/queues.
+
+STILL OPEN (Josh's other 2 points, teed up):
+- (2) Slicer "compare two items": add a compare mode to the analytics slicer
+  (pick two products/sectors/etc. side-by-side). Feature batch.
+- (3) Funnel empty / Assured = KES 0 everywhere (dashboard, analytics, pipeline):
+  DATA reality — no deals are validated in the seed, so validated_value=0 and the
+  funnel has nothing to show. Fix = validate a slice of seed deals (need to
+  inspect how a deal's validated/assured state is stored first). High value: one
+  fix lights up the funnel + Assured on dashboard + analytics + pipeline at once.
+
+Deep per-class drill (Asset card -> analytics filtered to asset) needs an
+analytics URL-filter param — pairs with the compare feature.

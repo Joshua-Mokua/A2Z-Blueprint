@@ -239,7 +239,9 @@ export function Pipeline() {
               ? `${formatValue(analytics.pipelines.asset.pending_value, sym)} pending assurance`
               : 'Assured'}
             loading={loading}
-            stripe="primary"
+            stripe={false}
+            tone="primary"
+            onClick={() => navigate('/analytics')}
           />
           <Stat
             label="Liability Pipeline"
@@ -248,7 +250,9 @@ export function Pipeline() {
               ? `${formatValue(analytics.pipelines.liability.pending_value, sym)} pending assurance`
               : 'Assured'}
             loading={loading}
-            stripe="secondary"
+            stripe={false}
+            tone="secondary"
+            onClick={() => navigate('/analytics')}
           />
           <Stat
             label="Insurance"
@@ -257,7 +261,9 @@ export function Pipeline() {
               ? `${formatValue(analytics.pipelines.insurance.pending_value, sym)} pending assurance`
               : 'Assured'}
             loading={loading}
-            stripe="accent"
+            stripe={false}
+            tone="accent"
+            onClick={() => navigate('/analytics')}
           />
           <Stat
             label="Other"
@@ -266,6 +272,9 @@ export function Pipeline() {
               ? `${formatValue(analytics.pipelines.other.pending_value, sym)} pending assurance`
               : 'Assured'}
             loading={loading}
+            stripe={false}
+            tone="neutral"
+            onClick={() => navigate('/analytics')}
           />
         </div>
 
@@ -276,6 +285,9 @@ export function Pipeline() {
             value={loading ? '—' : count}
             sub="In your cascade scope"
             loading={loading}
+            stripe={false}
+            tone="primary"
+            onClick={() => navigate('/analytics')}
           />
           <Stat
             label="Pending Validation"
@@ -284,7 +296,9 @@ export function Pipeline() {
               ? 'Awaiting your sign-off'
               : 'Nothing to validate'}
             loading={loading}
-            stripe={analytics && analytics.totals.pending_validation > 0 ? 'accent' : 'secondary'}
+            stripe={false}
+            tone={analytics && analytics.totals.pending_validation > 0 ? 'accent' : 'neutral'}
+            onClick={() => navigate('/pipeline/queues')}
           />
           <Stat
             label="Total Assured"
@@ -293,6 +307,9 @@ export function Pipeline() {
               ? `${formatValue(analytics.totals.pending_value, sym)} pending assurance`
               : 'All validated'}
             loading={loading}
+            stripe={false}
+            tone="neutral"
+            onClick={() => navigate('/analytics')}
           />
         </div>
 

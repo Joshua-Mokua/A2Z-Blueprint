@@ -122,7 +122,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       {/* Grouped nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
             (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin),

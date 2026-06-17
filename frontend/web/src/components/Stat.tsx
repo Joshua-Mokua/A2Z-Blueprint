@@ -28,8 +28,19 @@ export interface StatProps {
   invertDelta?: boolean;
   loading?: boolean;
   stripe?: boolean | 'primary' | 'secondary' | 'accent';
+  /** Subtle tinted background (gentler than a stripe) — "not shouting". */
+  tone?: 'primary' | 'secondary' | 'accent' | 'neutral';
+  /** When set, the tile becomes a clickable drill-through. */
+  onClick?: () => void;
   className?: string;
 }
+
+const TONE_BG: Record<string, string> = {
+  primary:   'bg-sky-50/70',
+  secondary: 'bg-slate-50',
+  accent:    'bg-amber-50/60',
+  neutral:   '',
+};
 
 function formatDelta(delta: number): string {
   const sign = delta > 0 ? '+' : '';
@@ -38,7 +49,7 @@ function formatDelta(delta: number): string {
 
 export function Stat({
   label, value, sub, delta, invertDelta = false,
-  loading = false, stripe = 'primary', className,
+  loading = false, stripe = 'primary', tone, onClick, className,
 }: StatProps) {
   // When invertDelta is true (e.g. NPL ratio), down is good.
   const isGood = delta === undefined
@@ -49,8 +60,20 @@ export function Stat({
     ? null
     : invertDelta ? delta > 0 : delta < 0;
 
+  const clickable = typeof onClick === 'function';
+
   return (
-    <Card stripe={stripe} padding="md" className={className}>
+    <Card
+      stripe={stripe}
+      padding="md"
+      onClick={onClick}
+      className={cn(
+        'relative',
+        tone && TONE_BG[tone],
+        clickable && 'cursor-pointer hover:shadow-md hover:border-gray-300 transition-all',
+        className,
+      )}
+    >
       <div className="text-xs font-semibold uppercase tracking-wider
                        text-gray-500">
         {label}
@@ -79,6 +102,9 @@ export function Stat({
       </div>
       {sub && (
         <div className="mt-2 text-xs text-gray-400">{sub}</div>
+      )}
+      {clickable && (
+        <span className="absolute top-3 right-3 text-gray-300 text-sm" aria-hidden="true">→</span>
       )}
     </Card>
   );
