@@ -1074,3 +1074,23 @@ the very end, per Josh).
 RECOMMENDED NEXT (no decision needed, high value): page-header/breadcrumb/action-bar
 framework, then xlsx+PDF exports. THEN auth/DOA hardening LAST (admin override +
 test logins intact until then).
+
+## #19 — Page-header framework (excellence sprint, batch 1): DELIVERED (tsc gate)
+
+Phase 1's real ask — one page-title framework so pages stop reading as separate
+screens. NEW components/PageHeader.tsx: white header (matches the TopBar, no
+navy-on-navy) with optional breadcrumbs, optional domain eyebrow, title,
+subtitle, and a right-aligned action slot. Breadcrumb crumbs can be links.
+
+Migrated as proof-of-pattern: Analytics ("Business Development / Pipeline
+Analytics") and CreditAnalytics ("Credit Factory / Credit Analytics") — replaced
+their bare inline <h1>+<p> with <PageHeader>. Bodies unchanged.
+
+ROLLOUT PATTERN (mechanical, one page each): wrap the page return in a fragment,
+add <PageHeader breadcrumbs/title/subtitle/actions .../>, keep the body container.
+For list pages, pass primary actions (e.g. "+ New Deal") into `actions`. The navy
+hero pages (Dashboard) stay as the deliberate executive landing; the navy-strip
+detail pages can migrate next for full consistency.
+
+NEXT (excellence sprint): xlsx + PDF export with full banking field set (SheetJS
+in stack); then sticky filters/tabs; then auth/DOA hardening LAST.

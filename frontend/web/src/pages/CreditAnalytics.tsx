@@ -12,6 +12,7 @@ import type {
   CreditRegionBreakdown, CreditDrillResponse,
 } from '@/types/creditAnalytics';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { Badge } from '@/components/Badge';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
@@ -64,11 +65,13 @@ export function CreditAnalytics() {
   const t = data.totals;
 
   return (
-    <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900">Credit Analytics</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Loan book within your scope — outstanding and NPL by classification, region, branch, and RM.
-      </p>
+    <>
+      <PageHeader
+        breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Credit Analytics' }]}
+        title="Credit Analytics"
+        subtitle="Loan book within your scope — outstanding and NPL by classification, region, branch, and RM."
+      />
+      <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <Stat label="Outstanding" value={kes(t.outstanding)} sub={`${t.accounts.toLocaleString()} accounts`} />
@@ -82,6 +85,7 @@ export function CreditAnalytics() {
 
       <CreditDrill regions={data.by_region} kes={kes} />
     </div>
+    </>
   );
 }
 

@@ -9,6 +9,7 @@ import { fetchPipelineDrill } from '@/lib/api';
 import type { UnitBreakdown, PipelineDrillResponse } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
+import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
@@ -94,11 +95,13 @@ export function Analytics() {
   };
 
   return (
-    <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900">Pipeline Analytics</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Assured pipeline in KES-equivalent — consistent with the MD dashboard.
-      </p>
+    <>
+      <PageHeader
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'Pipeline Analytics' }]}
+        title="Pipeline Analytics"
+        subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."
+      />
+      <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
 
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -135,6 +138,7 @@ export function Analytics() {
         ))}
       </div>
     </div>
+    </>
   );
 }
 
