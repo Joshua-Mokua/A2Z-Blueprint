@@ -635,6 +635,42 @@ def hierarchy_scope_probe(base):
          own_credit < md_credit, note=f"owner={own_credit} < MD={md_credit}")
 
 
+def exceptions_probe(base):
+    print("\n=== EXECUTIVE EXCEPTIONS STRIP ===")
+    admin = login(base, "ADMIN")
+    if not admin:
+        step("exceptions: admin login", True, False, note="missing login")
+        return
+    st, body = _req(base, "GET", "/api/dashboard/exceptions", admin)
+    step("exceptions: reachable", 200, st, body)
+    items = body.get("exceptions", []) if isinstance(body, dict) else []
+    step("exceptions: returns a list", True, isinstance(items, list),
+         note=f"{len(items)} item(s)")
+    well_formed = all(
+        isinstance(i, dict) and {"id", "severity", "title", "link"} <= set(i.keys())
+        for i in items
+    )
+    step("exceptions: items well-formed (id/severity/title/link)", True, well_formed)
+    valid_sev = all(i.get("severity") in ("danger", "warning", "info") for i in items)
+    step("exceptions: severities valid", True, valid_sev)
+    known = {"/credit-analytics", "/pipeline/queues", "/analytics", "/perform"}
+    valid_links = all(i.get("link") in known for i in items)
+    step("exceptions: links are known drill routes", True, valid_links,
+         note=f"links={[i.get('link') for i in items]}")
+    has_npl = any(i.get("id") == "npl_ratio" for i in items)
+    step("exceptions: NPL breach surfaced for MD", True, has_npl,
+         note=f"ids={[i.get('id') for i in items]}")
+    # Scoped persona returns its own (subset) without error.
+    owner = login(base, "OWNER")
+    if owner:
+        st2, body2 = _req(base, "GET", "/api/dashboard/exceptions", owner)
+        step("exceptions: scoped persona reachable", 200, st2, body2)
+        oitems = body2.get("exceptions", []) if isinstance(body2, dict) else []
+        step("exceptions: scoped persona well-formed", True,
+             all(isinstance(i, dict) and "link" in i for i in oitems),
+             note=f"owner {len(oitems)} item(s)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -659,6 +695,7 @@ def main():
     dashboard_check(args.base)
     credit_probe(args.base)
     hierarchy_scope_probe(args.base)
+    exceptions_probe(args.base)
     if args.volume:
         stress(args.base, args.volume)
 

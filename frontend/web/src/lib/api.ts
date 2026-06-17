@@ -45,6 +45,7 @@ import type {
   CreditAnalyticsResponse,
   CreditDrillResponse,
 } from '@/types/creditAnalytics';
+import type { ExceptionsResponse } from '@/types/exceptions';
 
 const API_BASE = '/api';
 
@@ -312,6 +313,10 @@ export async function fetchPipelineDrill(
 
 export async function fetchCreditAnalytics(): Promise<CreditAnalyticsResponse> {
   return getJson<CreditAnalyticsResponse>('/credit/analytics');
+}
+
+export async function fetchDashboardExceptions(): Promise<ExceptionsResponse> {
+  return getJson<ExceptionsResponse>('/dashboard/exceptions');
 }
 
 export async function fetchCreditDrill(

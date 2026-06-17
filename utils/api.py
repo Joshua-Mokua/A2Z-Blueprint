@@ -3019,6 +3019,121 @@ def md_dashboard(user: dict = Depends(get_current_user)):
     _set_cache("md_dashboard",result)
     return result
 
+
+# ── Executive exceptions strip ────────────────────────────────────
+# Read-only derivation: surfaces the top items needing an executive
+# decision, each with a drill link. No business logic or workflow
+# change — figures reuse the same scoped summaries the dashboard shows,
+# so the strip and the dashboard tiles always agree.
+
+def _count_stalled_deals(deals: list, days: int = 14) -> int:
+    """Active deals created more than `days` ago (no stage movement proxy).
+    Defensive: any deal without a usable timestamp is skipped, never counted."""
+    from datetime import datetime as _dt
+    closed_markers = ("won", "lost", "closed", "declined", "disbursed", "rejected")
+    now = _dt.now()
+    n = 0
+    for d in deals:
+        try:
+            stage = str(d.get("stage", "")).lower()
+            if any(m in stage for m in closed_markers):
+                continue
+            ts = d.get("created_at") or d.get("open_date") or d.get("created")
+            if not ts:
+                continue
+            parsed = _dt.fromisoformat(str(ts).replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.replace(tzinfo=None)
+            if (now - parsed).days > days:
+                n += 1
+        except Exception:
+            continue
+    return n
+
+
+@app.get("/api/dashboard/exceptions")
+def dashboard_exceptions(user: dict = Depends(get_current_user)):
+    """Top exceptions needing a decision — scoped, read-only, drill-linked."""
+    _audit("API_DASHBOARD_EXCEPTIONS", user)
+    items: list = []
+
+    # Credit — NPL ratio breach (same source as the dashboard NPL tile).
+    try:
+        ct = (credit_summary(user=user) or {}).get("totals", {})
+        npl = float(ct.get("npl_ratio_pct", 0) or 0)
+        if npl >= 5.0:
+            danger = npl >= 10.0
+            items.append({
+                "id": "npl_ratio",
+                "severity": "danger" if danger else "warning",
+                "title": f"NPL ratio at {npl:.1f}%",
+                "detail": f"Above the {10 if danger else 5}% threshold "
+                          f"across {int(ct.get('total_accounts', 0)):,} accounts",
+                "value": f"{npl:.1f}%",
+                "link": "/credit-analytics",
+            })
+    except Exception:
+        pass
+
+    # Credit — worst-NPL branch in scope (from scoped credit analytics).
+    try:
+        accts = _acquire_scoped_credit(user)
+        if accts:
+            branches = _compute_credit_analytics(accts).get("by_branch", [])
+            worst = max(branches, key=lambda b: b.get("npl_ratio_pct", 0), default=None)
+            if worst and float(worst.get("npl_ratio_pct", 0) or 0) >= 10.0:
+                items.append({
+                    "id": "npl_branch",
+                    "severity": "warning",
+                    "title": f"{worst.get('branch', '—')}: NPL {float(worst['npl_ratio_pct']):.1f}%",
+                    "detail": "Highest-NPL branch in your scope",
+                    "value": f"{float(worst['npl_ratio_pct']):.1f}%",
+                    "link": "/credit-analytics",
+                })
+    except Exception:
+        pass
+
+    # Pipeline — deals awaiting validation (same source as dashboard tile).
+    try:
+        pending = int((pipeline_summary(user=user) or {})
+                      .get("totals", {}).get("pending_validation", 0) or 0)
+        if pending > 0:
+            items.append({
+                "id": "pending_validation",
+                "severity": "warning",
+                "title": f"{pending:,} deal{'s' if pending != 1 else ''} awaiting validation",
+                "detail": "Sitting in the manager validation queue",
+                "value": f"{pending:,}",
+                "link": "/pipeline/queues",
+            })
+    except Exception:
+        pass
+
+    # Pipeline — stalled active deals (>14 days, defensive on timestamp).
+    try:
+        stalled = _count_stalled_deals(_acquire_scoped_deals(user), days=14)
+        if stalled > 0:
+            items.append({
+                "id": "stalled_deals",
+                "severity": "warning",
+                "title": f"{stalled:,} deal{'s' if stalled != 1 else ''} stalled over 14 days",
+                "detail": "Active deals with no recent movement",
+                "value": f"{stalled:,}",
+                "link": "/analytics",
+            })
+    except Exception:
+        pass
+
+    # Danger first, then warnings.
+    order = {"danger": 0, "warning": 1, "info": 2}
+    items.sort(key=lambda x: order.get(x.get("severity"), 3))
+    return {
+        "exceptions": items[:6],
+        "count": len(items),
+        "generated_at": datetime.now().isoformat(),
+    }
+
+
 # ── Cache management ──────────────────────────────────────────────
 # ── Cache management ──────────────────────────────────────────────
 @app.post("/api/cache/clear")

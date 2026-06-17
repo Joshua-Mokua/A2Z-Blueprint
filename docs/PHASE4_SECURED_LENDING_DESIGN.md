@@ -987,3 +987,36 @@ Wired ON for the pipeline deals table (Pipeline.tsx): searchable + paginated
 NEXT (UX roadmap): exec exceptions strip + sparklines; drill rows -> detail
 pages; wide-screen density; then the deferred production-hardening (real
 HoC/CRO/MD authorizer seats, password/rate-limit) per Josh's production directive.
+
+## #15 — Executive exceptions strip (UX transformation, batch 3): DELIVERED
+
+The dashboard "needs a decision" surface — Phase 3/6 of the UX brief, no
+dead-end widgets. Read-only derivation; no business logic / workflow change.
+
+Backend (utils/api.py): NEW GET /api/dashboard/exceptions — scoped, drill-linked.
+Computes top exceptions from the SAME scoped summaries the dashboard shows, so the
+strip and the tiles always agree:
+- NPL ratio breach (>=5% warning / >=10% danger) -> /credit-analytics
+- Worst-NPL branch in scope (>=10%) -> /credit-analytics
+- Deals awaiting validation (pending_validation) -> /pipeline/queues
+- Stalled active deals (>14 days, defensive on timestamp) -> /analytics
+Each item: {id, severity, title, detail, value, link}. Danger sorted first.
+Helper _count_stalled_deals is defensive — any deal without a usable timestamp
+is skipped, never falsely counted.
+
+Harness (simulate_credit_chain.py): NEW exceptions_probe — reachable, list shape,
+items well-formed (id/severity/title/link), valid severities, links restricted to
+known drill routes, NPL breach surfaces for MD, scoped persona returns its subset
+without error.
+
+Frontend: types/exceptions.ts, lib/api.ts (fetchDashboardExceptions),
+hooks/useExceptions.ts, components/ExceptionsStrip.tsx (severity-striped cards,
+click -> drill; "all within thresholds" when empty; skeletons while loading),
+wired at the top of Dashboard.tsx content.
+
+NOTE (pre-production): NPL bands 5%/10% are Claude's defaults pending Ecobank
+confirmation. Stalled-deal window is 14 days (confirm). Per Josh's directive the
+admin-superuser override + test/EcoStaff logins remain INTACT until the very end.
+
+NEXT (UX roadmap): drill rows -> detail pages; wide-screen density; design-system
+spec. Then the deferred auth/production-hardening LAST.

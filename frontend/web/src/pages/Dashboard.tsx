@@ -19,6 +19,7 @@ import { Card } from '@/components/Card';
 import { Stat } from '@/components/Stat';
 import { KpiTile } from '@/components/KpiTile';
 import { Button } from '@/components/Button';
+import { ExceptionsStrip } from '@/components/ExceptionsStrip';
 import { ChartCard } from '@/components/charts/ChartCard';
 import { DonutChart } from '@/components/charts/DonutChart';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
@@ -163,6 +164,8 @@ export function Dashboard() {
             </div>
           </Card>
         )}
+
+        <ExceptionsStrip />
 
         {/* Performance & Risk — RAG tiles */}
         <div className="flex items-center justify-between mb-3">
