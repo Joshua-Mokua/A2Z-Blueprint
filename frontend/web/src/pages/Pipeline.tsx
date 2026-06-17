@@ -24,7 +24,7 @@
 //
 // Composition: 100% bespoke v10.496 primitives. No new visual atoms.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
@@ -86,6 +86,7 @@ export function Pipeline() {
   // broken down by product and segment.
   const [drill, setDrill] = useState<FunnelDrillResponse | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
+  const drillRef = useRef<HTMLDivElement | null>(null);
   const onStageDrill = (cls: string, stage: string): void => {
     setDrillLoading(true);
     setDrill(null);
@@ -94,6 +95,13 @@ export function Pipeline() {
       .catch(() => setDrill(null))
       .finally(() => setDrillLoading(false));
   };
+  // When the drill opens, bring the panel into view (the funnel can be tall,
+  // so the panel would otherwise open below the fold).
+  useEffect(() => {
+    if (drill && drillRef.current) {
+      drillRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [drill]);
 
   useEffect(() => {
     let active = true;
@@ -354,7 +362,8 @@ export function Pipeline() {
 
         {/* Funnel stage-drill panel */}
         {(drillLoading || drill) && (
-          <Card className="mt-4">
+          <div ref={drillRef} className="scroll-mt-24">
+          <Card className="mt-4 ring-2 ring-[var(--brand-primary)]/30">
             <Card.Header>
               <h2 className="text-base font-semibold text-gray-900">
                 {drill ? `${drill.cls === 'all' ? 'All' : drill.cls[0].toUpperCase() + drill.cls.slice(1)} · ${drill.stage}` : 'Loading…'}
@@ -415,6 +424,7 @@ export function Pipeline() {
               )}
             </Card.Body>
           </Card>
+          </div>
         )}
 
         {/* Error panel — only renders on error */}

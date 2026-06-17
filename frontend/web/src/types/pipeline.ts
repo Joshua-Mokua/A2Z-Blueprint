@@ -163,6 +163,8 @@ export interface PipelineConfig {
   product_catalogue: Record<string, string[]>;
   /** B17: per-product-class stage flows (asset/liability/insurance/other). */
   stage_flows?:      Record<string, string[]>;
+  /** Admin display-name map for segments (e.g. Ecobank: Mass/Retail→Direct). */
+  segment_labels?:   Record<string, string>;
   /** Segment options per client type (Individual / Business). */
   customer_segments?: Record<string, string[]>;
   /** CBK economic-sector classification for BUSINESS clients (admin config). */

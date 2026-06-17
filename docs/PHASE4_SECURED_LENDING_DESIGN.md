@@ -1426,3 +1426,23 @@ Reminder: click a non-empty funnel band ("Click to drill →") to open the panel
 
 Remaining queue: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
 credit_watchlist table recreate.
+
+## #34 — Drill visibility fix + Ecobank segment names (config-driven)
+
+(1) "Still no segment drill": the panel WAS rendering but below the tall funnel,
+off-screen. Pipeline.tsx now scrollIntoView's the drill panel when it opens
+(useRef + effect) and gives it a brand ring so it's obvious. Click any non-empty
+band → page scrolls to the segment/sector/product breakdown.
+
+(2) Ecobank segment vocabulary, config-driven: _segment_of now passes the derived
+bucket through _segment_labels(). Default map (code-level, no data-file change so
+nothing clobbers live settings): Mass/Retail→Direct, Core Middle→Advantage,
+Affluent→Premier. Admin overrides by adding `segment_labels` to
+pipeline_settings.json; the config endpoint returns the effective map
+(segment_labels) for a future admin editor. SME / Corporate-Business unchanged.
+Note: Advantage (Core Middle) only appears once the data distinguishes that tier —
+today the seed has Mass (→Direct) and Affluent (→Premier) only.
+
+Frontend type: PipelineConfig.segment_labels added. Harness unaffected (102).
+Remaining: exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
+credit_watchlist recreate, admin editor for segment_labels (optional).

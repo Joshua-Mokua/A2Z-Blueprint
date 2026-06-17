@@ -1162,6 +1162,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
     return {
         "stages":            cfg.get("stages") or get_pipeline_stages() or [],
         "deal_categories":   cfg.get("deal_categories", []),
+        "segment_labels":    _segment_labels(),
         "sectors":           cfg.get("sectors", []),
         "business_sectors":  business_sectors,
         "individual_mous":   individual_mous,
@@ -1563,11 +1564,26 @@ def _classify_product(product_type: str) -> str:
     return "other"
 
 
-def _segment_of(d: dict) -> str:
-    """Customer segment for a deal: explicit `segment` field first (real Ecobank
-    data populates it), else a clean bucket derived from client_type. Shared by
-    the analytics by_segment dimension and the funnel stage-drill so they can't
-    drift. NOT a hardcoded hierarchy — purely a presentation bucket."""
+_DEFAULT_SEGMENT_LABELS = {
+    "Mass / Retail": "Direct",
+    "Core Middle":   "Advantage",
+    "Affluent":      "Premier",
+}
+
+
+def _segment_labels() -> dict:
+    """Admin-configurable display names for segments (pipeline_settings.json →
+    segment_labels). Defaults to the Ecobank vocabulary (Direct / Advantage /
+    Premier) when the admin hasn't set a map, so the bank's own names show
+    without any data-file change; an explicit map in settings overrides it."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    m = cfg.get("segment_labels") if isinstance(cfg, dict) else None
+    return dict(m) if isinstance(m, dict) and m else dict(_DEFAULT_SEGMENT_LABELS)
+
+
+def _derive_segment(d: dict) -> str:
+    """Canonical segment bucket from the deal's explicit segment field, else
+    derived from client_type. Returns the INTERNAL key (before label mapping)."""
     seg = str(d.get("segment", "") or "").strip()
     if seg:
         return seg
@@ -1584,6 +1600,15 @@ def _segment_of(d: dict) -> str:
     if "corporate" in ctl or "business" in ctl:
         return "Corporate / Business"
     return ct
+
+
+def _segment_of(d: dict) -> str:
+    """Customer segment for a deal, with the admin display-name map applied.
+    Shared by the analytics by_segment dimension and the funnel stage-drill so
+    they can't drift. NOT a hardcoded hierarchy — purely a presentation bucket,
+    and the labels are admin-configurable (see _segment_labels)."""
+    base = _derive_segment(d)
+    return _segment_labels().get(base, base)
 
 
 def _sector_of(d: dict) -> str:
