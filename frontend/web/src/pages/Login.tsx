@@ -151,10 +151,6 @@ export function Login() {
               {submitting ? 'Signing in…' : 'Sign in'}
             </Button>
           </div>
-
-          <p className="mt-6 text-xs text-gray-400 text-center">
-            {branding?.regulator_full || ''}
-          </p>
         </div>
       </main>
 

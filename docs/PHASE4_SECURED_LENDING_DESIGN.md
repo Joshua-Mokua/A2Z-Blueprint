@@ -1054,3 +1054,23 @@ Reclaims the empty margins on 1920/2560 monitors (Phase 8 of the UX brief).
 NEXT (UX roadmap): design-system spec doc (lock consistency). Then the deferred
 auth/production-hardening LAST (admin override + test logins stay intact until
 the very end, per Josh).
+
+## #18 — Login wording removal + Enterprise Excellence audit: DELIVERED
+
+- Login.tsx: removed the "Central Bank of Kenya" (regulator_full) line at login
+  per Josh. branding still used elsewhere (no unused-var). Dashboard/ChangePassword
+  left as-is (only login was requested).
+- A2Z_ENTERPRISE_EXCELLENCE_AUDIT.md delivered. Verdict: STRONG BUT NEEDS
+  ENHANCEMENT. CRITICAL grounded finding (Phase 2): deal validation is gated by a
+  flat is_manager() boolean whose keywords include "managing"/"chief"/"director"
+  -> the MD's role (Chief Executive & Managing Director) matches, so the CEO/MD
+  CAN validate deals (plus the is_admin short-circuit). Correct model = validate
+  by the owner's reporting line; executives only at policy gates. Gated on the
+  Ecobank DOA matrix + ties into the deferred auth-hardening -> do in the final
+  pass, not invented now. Other gaps: xlsx/PDF export (CSV-only today),
+  page-header/breadcrumb/action-bar framework, sticky filters/tabs, design-system
+  spec.
+
+RECOMMENDED NEXT (no decision needed, high value): page-header/breadcrumb/action-bar
+framework, then xlsx+PDF exports. THEN auth/DOA hardening LAST (admin override +
+test logins intact until then).
