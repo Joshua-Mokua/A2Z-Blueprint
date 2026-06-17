@@ -459,9 +459,13 @@ def invalidate_pipeline_caches() -> None:
     """
     try:
         from utils import api as _api_module
-        # Pop both maps for the pipeline_summary key. Add more keys
-        # here as future pipeline-domain endpoints get caching.
-        for key in ("pipeline_summary",):
+        # Pop both maps for the pipeline-domain cache keys. The MD dashboard
+        # (key 'md_dashboard') derives pipeline_value + the FCY/LCY split from
+        # the same deals, so a deal mutation must refresh it too — otherwise it
+        # serves a stale total for up to its TTL (caused an analytics-vs-dashboard
+        # FCY drift on warm re-runs). Add more keys here as future
+        # pipeline-domain endpoints get caching.
+        for key in ("pipeline_summary", "md_dashboard"):
             _api_module._cache.pop(key, None)
             _api_module._cache_ts.pop(key, None)
     except Exception:

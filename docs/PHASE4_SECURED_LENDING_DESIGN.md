@@ -1879,3 +1879,13 @@ sync-bsc dry-run shows the referrer (Frank/300731) credited under Asset Referral
 BACKLOG: legacy pipeline.json that the bridge reads is disconnected from live —
 worth reconciling separately. Admin UI panel to edit referral_credit + weight
 the two KPIs onto non-sales roles = follow-up.
+
+## #50 — fix: MD dashboard cache staleness (analytics-vs-dashboard FCY drift)
+
+Pre-existing (not C1). invalidate_pipeline_caches() only popped 'pipeline_summary',
+but /api/dashboard/md caches under 'md_dashboard' (TTL 120s) and derives
+pipeline_value + FCY/LCY from the same deals. So after a new deal the MD
+dashboard served a stale total for up to 120s — surfaced as an analytics-vs-
+dashboard FCY mismatch on a warm second harness run (~95s apart, inside the TTL).
+A fresh API start always passed. Fix: invalidate_pipeline_caches() now also pops
+'md_dashboard'. One line; backend-only.
