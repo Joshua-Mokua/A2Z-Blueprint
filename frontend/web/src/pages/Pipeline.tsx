@@ -331,6 +331,7 @@ export function Pipeline() {
                 { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
               ] : []}
               currencySymbol={sym}
+              stageFlows={config?.stage_flows}
               emptyHint="No validated deals yet — validate deals to populate the funnel."
             />
           </Card.Body>

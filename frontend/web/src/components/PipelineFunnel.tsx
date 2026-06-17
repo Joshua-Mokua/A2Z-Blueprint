@@ -1,15 +1,13 @@
-// PipelineFunnel — a real funnel-shaped, colored, interactive stage chart.
+// PipelineFunnel — a real funnel-shaped, vivid, interactive stage chart.
 //
-// Renders validated ("assured") deals by stage as continuous trapezoidal bands
-// (a true funnel silhouette, not horizontal bars), with:
-//   • a category filter (All / Asset / Liability / Insurance / Other) — the
-//     analytics endpoint already returns a per-bucket funnel, so this is a
-//     pure client-side switch, no extra round-trip.
-//   • a sizing toggle (by deal count or by value).
-//   • hover highlighting + a detail tooltip (count, value, share of the top
-//     stage, conversion from the prior stage).
+// • Category filter (All / Asset / Liability / Insurance / Other). When a class
+//   is selected the funnel renders that class's DEFINED stage flow from admin
+//   config (stage_flows) — so it follows the stages the bank actually configured
+//   per product class, showing even the stages that hold no assured deals yet.
+// • Size-by toggle (deal count or value) rescales the bands.
+// • Hover highlights a band and reveals a detail tooltip.
 //
-// Dependency-free: brand-coloured CSS clip-path bands, no chart library.
+// Dependency-free: vivid multi-hue gradient via CSS clip-path bands.
 
 import { useMemo, useState } from 'react';
 import type { FunnelStage } from '@/types/pipeline';
@@ -22,16 +20,24 @@ function fmtValue(v: number, symbol: string): string {
   return `${symbol} ${Math.round(v).toLocaleString()}`;
 }
 
-// Brand gradient across stages: cyan (#1797ce) → navy (#0e2440).
-const CYAN = [23, 151, 206] as const;
-const NAVY = [14, 36, 64] as const;
-function stageColor(i: number, n: number): string {
-  const t = n <= 1 ? 0 : i / (n - 1);
-  const r = Math.round(CYAN[0] + (NAVY[0] - CYAN[0]) * t);
-  const g = Math.round(CYAN[1] + (NAVY[1] - CYAN[1]) * t);
-  const b = Math.round(CYAN[2] + (NAVY[2] - CYAN[2]) * t);
-  return `rgb(${r}, ${g}, ${b})`;
+// Vivid cool→warm sweep — distinct per stage but cohesive across the funnel.
+const PALETTE = ['#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981'];
+function hexToRgb(h: string): [number, number, number] {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
+function lerp(a: number, b: number, t: number): number { return Math.round(a + (b - a) * t); }
+function stageColor(i: number, n: number): string {
+  if (n <= 1) return PALETTE[0];
+  const seg = (i / (n - 1)) * (PALETTE.length - 1);
+  const idx = Math.min(Math.floor(seg), PALETTE.length - 2);
+  const t = seg - idx;
+  const [r1, g1, b1] = hexToRgb(PALETTE[idx]);
+  const [r2, g2, b2] = hexToRgb(PALETTE[idx + 1]);
+  return `rgb(${lerp(r1, r2, t)}, ${lerp(g1, g2, t)}, ${lerp(b1, b2, t)})`;
+}
+
+const CLOSED = new Set(['Closed Won', 'Closed Lost', 'Closed-Won', 'Closed-Lost']);
 
 export interface FunnelCategory {
   key: string;
@@ -43,15 +49,18 @@ export interface FunnelCategory {
 export interface PipelineFunnelProps {
   overall: FunnelStage[];
   categories?: FunnelCategory[];
+  /** Admin-configured defined stage flow per class (asset/liability/…). */
+  stageFlows?: Record<string, string[]>;
   currencySymbol?: string;
   emptyHint?: string;
 }
 
-const BAND_H = 56; // px per stage band
+const BAND_H = 58;
 
 export function PipelineFunnel({
   overall,
   categories = [],
+  stageFlows,
   currencySymbol = '',
   emptyHint,
 }: PipelineFunnelProps) {
@@ -68,26 +77,37 @@ export function PipelineFunnel({
   );
 
   const active = tabs.find((t) => t.key === catKey) ?? tabs[0];
-  const stages = active?.stages ?? [];
+
+  // For a specific class, lay the data over the class's DEFINED flow (config),
+  // so configured-but-empty stages still appear. For "All", use what's present.
+  const stages = useMemo<FunnelStage[]>(() => {
+    const data = active?.stages ?? [];
+    const flow = catKey !== 'all' ? stageFlows?.[catKey] : undefined;
+    if (!flow) return data;
+    const byStage = new Map(data.map((s) => [s.stage, s]));
+    return flow
+      .filter((s) => !CLOSED.has(s))
+      .map((s) => byStage.get(s) ?? { stage: s, count: 0, value: 0 });
+  }, [active, catKey, stageFlows]);
 
   const totalCount = stages.reduce((a, s) => a + s.count, 0);
   const totalValue = stages.reduce((a, s) => a + s.value, 0);
-  const topMetric = stages.length
+  const maxMetric = stages.length
     ? Math.max(...stages.map((s) => (metric === 'count' ? s.count : s.value)), 1)
     : 1;
-  const maxMetric = topMetric;
 
-  // Width (%) per band — floor so the smallest stage stays legible/hoverable.
-  const FLOOR = 16;
+  const FLOOR = 14;
   const widthPct = (s: FunnelStage): number => {
     const m = metric === 'count' ? s.count : s.value;
     return FLOOR + (100 - FLOOR) * (m / maxMetric);
   };
 
+  const anyData = stages.some((s) => s.count > 0);
+
   return (
     <div>
       {/* Controls */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
           {tabs.map((t) => {
             const on = t.key === catKey;
@@ -104,9 +124,7 @@ export function PipelineFunnel({
               >
                 {t.label}
                 {typeof t.activeCount === 'number' && (
-                  <span className={on ? 'ml-1.5 text-gray-400' : 'ml-1.5 text-gray-400'}>
-                    {t.activeCount}
-                  </span>
+                  <span className="ml-1.5 text-gray-400">{t.activeCount}</span>
                 )}
               </button>
             );
@@ -134,76 +152,78 @@ export function PipelineFunnel({
         </div>
       </div>
 
-      {stages.length === 0 ? (
+      {stages.length === 0 || !anyData ? (
         <div className="py-10 text-center text-sm text-gray-500">
           {catKey === 'all'
             ? (emptyHint ?? 'No validated deals to chart yet.')
-            : `No validated deals in ${active?.label ?? 'this category'} yet.`}
+            : `No assured deals in ${active?.label ?? 'this class'} yet — its defined stages are ${
+                (stageFlows?.[catKey] ?? []).filter((s) => !CLOSED.has(s)).join(' → ') || 'not configured'
+              }.`}
         </div>
       ) : (
         <>
-          {/* Funnel */}
           <div className="relative" style={{ height: stages.length * BAND_H }}>
             {stages.map((s, i) => {
               const wTop = widthPct(s);
               const next = stages[i + 1];
-              const wBot = next ? widthPct(next) : wTop * 0.5; // taper to a tip
+              const wBot = next ? widthPct(next) : wTop * 0.5;
               const color = stageColor(i, stages.length);
               const isHover = hover === i;
-              const shareTop = stages[0]
-                ? Math.round((s.count / Math.max(stages[0].count, 1)) * 100)
-                : 0;
+              const empty = s.count === 0;
+              const shareTop = stages[0] && stages[0].count
+                ? Math.round((s.count / stages[0].count) * 100) : 0;
               const prev = stages[i - 1];
-              const conv = prev ? Math.round((s.count / Math.max(prev.count, 1)) * 100) : null;
+              const conv = prev && prev.count ? Math.round((s.count / prev.count) * 100) : null;
               const inside = metric === 'count' ? String(s.count) : fmtValue(s.value, currencySymbol);
 
               return (
                 <div
                   key={s.stage}
-                  className="absolute inset-x-0 grid grid-cols-[150px_1fr_150px] items-center gap-3"
+                  className="absolute inset-x-0 grid grid-cols-[160px_1fr_150px] items-center gap-3"
                   style={{ top: i * BAND_H, height: BAND_H }}
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover((h) => (h === i ? null : h))}
                 >
-                  {/* Stage label */}
-                  <div className="truncate text-right text-sm text-gray-600">{s.stage}</div>
+                  <div className={['truncate text-right text-sm', empty ? 'text-gray-400' : 'text-gray-700'].join(' ')}>
+                    {s.stage}
+                  </div>
 
-                  {/* Funnel band */}
                   <div className="relative h-full">
                     <div
                       className="absolute inset-0 transition-[filter,transform] duration-150"
                       style={{
-                        background: color,
-                        clipPath: `polygon(${50 - wTop / 2}% 0, ${50 + wTop / 2}% 0, ${50 + wBot / 2}% 100%, ${50 - wBot / 2}% 100%)`,
-                        filter: isHover ? 'brightness(1.12)' : 'none',
-                        transform: isHover ? 'scaleY(1.04)' : 'none',
+                        background: `linear-gradient(180deg, ${color} 0%, ${color} 60%, rgba(0,0,0,0.14) 320%)`,
+                        clipPath: `polygon(${50 - wTop / 2}% 6%, ${50 + wTop / 2}% 6%, ${50 + wBot / 2}% 94%, ${50 - wBot / 2}% 94%)`,
+                        opacity: empty ? 0.28 : 1,
+                        filter: isHover ? 'brightness(1.12) drop-shadow(0 4px 10px rgba(0,0,0,0.18))' : 'none',
+                        transform: isHover ? 'scaleY(1.05)' : 'none',
                       }}
                     />
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white drop-shadow">{inside}</span>
+                      <span className={['text-sm font-bold drop-shadow', empty ? 'text-gray-500' : 'text-white'].join(' ')}>
+                        {inside}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Right gutter: the other metric + conversion */}
                   <div className="text-xs text-gray-500">
                     <div className="font-medium text-gray-700">
                       {metric === 'count' ? fmtValue(s.value, currencySymbol) : `${s.count} deals`}
                     </div>
                     <div className="text-[11px] text-gray-400">
-                      {conv === null ? `${shareTop}% of top` : `${conv}% of prior`}
+                      {i === 0 ? `${shareTop}% of top` : conv === null ? '—' : `${conv}% of prior`}
                     </div>
                   </div>
 
-                  {/* Hover tooltip */}
-                  {isHover && (
+                  {isHover && !empty && (
                     <div
                       className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg"
-                      style={{ top: -6 }}
+                      style={{ top: -4 }}
                     >
                       <div className="mb-0.5 font-semibold text-[var(--brand-secondary)]">{s.stage}</div>
                       <div className="text-gray-600">{s.count} deals · {fmtValue(s.value, currencySymbol)}</div>
                       <div className="text-gray-400">
-                        {shareTop}% of top stage{conv !== null ? ` · ${conv}% from prior` : ''}
+                        {shareTop}% of top{conv !== null ? ` · ${conv}% from prior` : ''}
                       </div>
                     </div>
                   )}
@@ -212,7 +232,6 @@ export function PipelineFunnel({
             })}
           </div>
 
-          {/* Caption */}
           <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
             <span>{active?.label ?? 'All'} · assured deals by stage</span>
             <span className="font-medium text-gray-700">

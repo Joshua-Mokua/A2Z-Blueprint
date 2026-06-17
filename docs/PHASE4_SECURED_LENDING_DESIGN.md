@@ -1325,3 +1325,22 @@ per-stage breakdown — needs a small analytics addition (per-product stage funn
 before the UI can filter by product. Teed up as next.
 
 Remaining roadmap (Josh): Excel import, PDF export, PowerPoint export.
+
+## #29 — Funnel v2: vivid palette + category-DEFINED stages + polish
+
+Per Josh: more colour; stages should follow the product class's DEFINED flow, not
+the generic stages. Changes to components/PipelineFunnel.tsx:
+  • Vivid cool->warm multi-hue gradient (cyan/blue/indigo/violet/pink/amber/emerald
+    interpolated per stage) — intentionally beyond the brand pair for the chart.
+  • When a class is selected, the funnel renders config.stage_flows[class] (admin
+    source of truth) minus terminal stages, laying the assured data over the full
+    defined flow so configured-but-empty stages appear (faint, opacity .28). Asset
+    => Lead/Contacted/Qualified/Application/Credit Assessment/Offer/Negotiation/
+    Compliance; liability+insurance => Proposal->Documentation; all admin-driven.
+  • Depth gradient per band, hover lift + drop-shadow, guarded conversion (no
+    divide-by-zero on empty prior stages). Pipeline.tsx passes stageFlows.
+
+NEXT (Josh asked): add PRODUCT dimension + drill — click a stage to see the
+products/deals there. Needs a backend per-stage-product breakdown (analytics today
+has by_product as totals only, no stage split). That + a stage-click drill is the
+follow-up. Broader "world-class graphics" upgrade tracked as ongoing.
