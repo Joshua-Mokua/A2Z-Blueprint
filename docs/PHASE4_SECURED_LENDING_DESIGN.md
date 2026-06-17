@@ -1710,12 +1710,3 @@ options panel now keys off these lines automatically.
 
 types/pipeline.ts + lib/api.ts: client_types on PipelineConfig + AdminConfigPatch.
 esbuild-clean across all four files. tsc is the gate.
-
-## #44a — tsc fix: CustomerSearchInput label accepts ReactNode
-
-The red-star batch (#42) set the Client-name label to <>Client name <RedStar/></>,
-but CustomerSearchInput.label was typed `string` (unlike the Input primitive,
-which is ReactNode) — esbuild passed, tsc did not. Widened the prop to ReactNode
-(import type { ReactNode }); the component already renders {label} inside a
-<label>, so no runtime change. Verified RagChip is the only other string-typed
-label and it never receives JSX.
