@@ -1020,3 +1020,20 @@ admin-superuser override + test/EcoStaff logins remain INTACT until the very end
 
 NEXT (UX roadmap): drill rows -> detail pages; wide-screen density; design-system
 spec. Then the deferred auth/production-hardening LAST.
+
+## #16 — Drill rows -> detail pages (UX transformation, batch 4): DELIVERED (tsc gate)
+
+Closes the analytics arc — drills now end on a real record, not a list.
+- Pipeline drill (Analytics.tsx / BranchDrill): each individual deal row clicks
+  through to /pipeline/:dealId (the existing PipelineDealDetail). Client name
+  shown in brand-primary, row hover + cursor.
+- Credit drill (CreditAnalytics.tsx / CreditDrill): each account row clicks
+  through to /cbs/:cif (the existing customer detail, which shows the customer
+  and their accounts — the natural existing surface, since there is no
+  standalone single-account page). Guarded: only clickable when the account
+  carries a CIF; account number shown in brand-primary when drillable.
+Presentation only — no backend, no business logic.
+
+NEXT (UX roadmap): wide-screen density (xl/2xl), then design-system spec; then
+the deferred auth/production-hardening LAST (admin override + test logins stay
+intact until the very end, per Josh).

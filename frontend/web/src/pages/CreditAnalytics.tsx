@@ -4,6 +4,7 @@
 // pipeline Analytics page.
 
 import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCreditAnalytics } from '@/hooks/useCreditAnalytics';
 import { useBranding } from '@/hooks/useBranding';
 import { fetchCreditDrill } from '@/lib/api';
@@ -172,6 +173,7 @@ function CreditSlicer({
 
 // ── drill: Region -> Branch -> RM -> individual accounts ──────────────────
 function CreditDrill({ regions, kes }: { regions: CreditRegionBreakdown[]; kes: (n: number) => string }) {
+  const navigate = useNavigate();
   const [region, setRegion] = useState<string | null>(null);
   const [branch, setBranch] = useState<string | null>(null);
   const [rm, setRm] = useState<string | null>(null);
@@ -249,15 +251,20 @@ function CreditDrill({ regions, kes }: { regions: CreditRegionBreakdown[]; kes: 
                       <th className="py-1">Collateral</th>
                     </tr></thead>
                     <tbody>
-                      {(data?.accounts ?? []).map((a) => (
-                        <tr key={a.account_number} className="border-b last:border-0">
-                          <td className="py-1 pr-3 tabular-nums">{a.account_number}</td>
+                      {(data?.accounts ?? []).map((a) => {
+                        const canDrill = Boolean(a.cif);
+                        return (
+                        <tr key={a.account_number}
+                            onClick={canDrill ? () => navigate(`/cbs/${encodeURIComponent(a.cif)}`) : undefined}
+                            className={`border-b last:border-0 ${canDrill ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
+                          <td className={`py-1 pr-3 tabular-nums ${canDrill ? 'text-brand-primary font-medium' : ''}`}>{a.account_number}</td>
                           <td className="py-1 pr-3">{a.classification}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{kes(a.outstanding)}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{a.npl_days}</td>
                           <td className="py-1">{a.collateral_type}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

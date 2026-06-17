@@ -3,6 +3,7 @@
 // currency book, the conversion funnel, and the four product-class pipelines.
 
 import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchPipelineDrill } from '@/lib/api';
 import type { UnitBreakdown, PipelineDrillResponse } from '@/types/pipeline';
@@ -260,6 +261,7 @@ function PipelineSlicer({
 
 // ── #8: click-to-drill — branch → RM → individual deals ──────────────────
 function BranchDrill({ branches, kes }: { branches: UnitBreakdown[]; kes: (n: number) => string }) {
+  const navigate = useNavigate();
   const [unit, setUnit] = useState<string | null>(null);
   const [rm, setRm] = useState<string | null>(null);
   const [data, setData] = useState<PipelineDrillResponse | null>(null);
@@ -331,8 +333,10 @@ function BranchDrill({ branches, kes }: { branches: UnitBreakdown[]; kes: (n: nu
                     </tr></thead>
                     <tbody>
                       {(data?.deals ?? []).map((d) => (
-                        <tr key={d.id} className="border-b last:border-0">
-                          <td className="py-1 pr-3">{d.client_name}</td>
+                        <tr key={d.id}
+                            onClick={() => navigate(`/pipeline/${encodeURIComponent(d.id)}`)}
+                            className="border-b last:border-0 cursor-pointer hover:bg-gray-50">
+                          <td className="py-1 pr-3 text-brand-primary font-medium">{d.client_name}</td>
                           <td className="py-1 pr-3">{d.product_type}</td>
                           <td className="py-1 pr-3">{d.stage}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{kes(d.amount_kes)}</td>
