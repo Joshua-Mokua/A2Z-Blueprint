@@ -967,3 +967,23 @@ The new frame (Phase 1 + Phase 2 of the UX audit):
 NEXT (UX roadmap): table power-ups (filter/search/pagination on the Table
 primitive), exec exceptions strip + sparklines, drill rows -> detail pages,
 wide-screen density.
+
+## #14 — Table power-ups (UX transformation, batch 2): DELIVERED (tsc gate)
+
+Production-grade upgrade to the shared Table primitive — every table inherits,
+all power-ups OPT-IN so no existing caller breaks:
+- Sticky header (default on; sticks under the fixed TopBar when content scrolls).
+- Click-to-sort columns (opt-in per column via `sortable`; numeric-aware via
+  `sortAccessor`; aria-sort set).
+- Global search (`searchable`) with live match count.
+- Client-side pagination (`paginated`, `pageSize`) with range + page controls.
+- CSV export (`exportable`, `exportFilename`) — real Blob download, RFC-4180
+  escaping, exports the filtered+sorted set (not just the page).
+- Column `exportValue`/`exportHeader` for clean CSV of rendered columns.
+
+Wired ON for the pipeline deals table (Pipeline.tsx): searchable + paginated
+(25) + exportable + sortable on Deal ID / Client / Stage / Value / Age / Owner.
+
+NEXT (UX roadmap): exec exceptions strip + sparklines; drill rows -> detail
+pages; wide-screen density; then the deferred production-hardening (real
+HoC/CRO/MD authorizer seats, password/rate-limit) per Josh's production directive.

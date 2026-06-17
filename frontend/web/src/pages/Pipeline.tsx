@@ -131,6 +131,8 @@ export function Pipeline() {
       key: 'id',
       header: 'Deal ID',
       width: 110,
+      sortable: true,
+      exportValue: (row) => row.id,
       render: (row) => (
         <span className="font-mono text-xs text-gray-600">{row.id}</span>
       ),
@@ -138,6 +140,8 @@ export function Pipeline() {
     {
       key: 'client_name',
       header: 'Client',
+      sortable: true,
+      exportValue: (row) => row.client_name || '',
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900">{row.client_name || '—'}</div>
@@ -150,6 +154,8 @@ export function Pipeline() {
     {
       key: 'stage',
       header: 'Stage',
+      sortable: true,
+      exportValue: (row) => row.stage,
       render: (row) => (
         <Badge tone={stageTone(row.stage)} size="sm">{row.stage}</Badge>
       ),
@@ -158,6 +164,9 @@ export function Pipeline() {
       key: 'deal_value',
       header: 'Value',
       align: 'right',
+      sortable: true,
+      sortAccessor: (row) => Number(row.deal_value) || 0,
+      exportValue: (row) => String(row.deal_value ?? ''),
       render: (row) => (
         <span className="font-medium text-gray-900">
           {formatValue(Number(row.deal_value), branding?.currency_symbol ?? '')}
@@ -168,6 +177,9 @@ export function Pipeline() {
       key: 'aging',
       header: 'Age',
       align: 'right',
+      sortable: true,
+      sortAccessor: (row) => daysOpen(row) ?? -1,
+      exportValue: (row) => { const d = daysOpen(row); return d == null ? '' : String(d); },
       render: (row) => {
         const d = daysOpen(row);
         if (d == null) return <span className="text-xs text-gray-400">—</span>;
@@ -182,6 +194,8 @@ export function Pipeline() {
     {
       key: 'staff_name',
       header: 'Owner',
+      sortable: true,
+      exportValue: (row) => row.staff_name || '',
       render: (row) => (
         <div>
           <div className="text-sm text-gray-800">{row.staff_name || '—'}</div>
@@ -379,12 +393,18 @@ export function Pipeline() {
               </Button>
             </div>
           </Card.Header>
-          <Card.Body className="p-0">
+          <Card.Body className="p-4">
             <Table<PipelineDeal>
               columns={columns}
               rows={deals}
               rowKey="id"
               loading={loading}
+              searchable
+              searchPlaceholder="Search deals by client, stage, owner…"
+              paginated
+              pageSize={25}
+              exportable
+              exportFilename="pipeline-deals.csv"
               onRowClick={(row) => navigate(`/pipeline/${encodeURIComponent(row.id)}`)}
               empty={
                 <div className="py-8">
