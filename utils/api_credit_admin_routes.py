@@ -800,6 +800,188 @@ def credit_admin_disburse(
 
 
 # ─────────────────────────────────────────────────────────────────────
+# TROOPS — Treasury Back Office disbursement completion (Batch C2)
+#
+# Credit-admin "disburse" RELEASES a case to Treasury (sets
+# cleared_for_disbursement=True via clear_for_disbursement) — it no longer
+# flips disbursed=True. The actual fund movement — booking the facility to
+# core banking, setting the value date, posting to the GL and flipping
+# disbursed=True — is owned by the central Treasury Back Office unit
+# ("Troops") under Head Office Operations. Bank-wide function, so these routes
+# are NOT cascade-scoped (Troops actions any released case).
+#
+# Ordered ops workflow:  book  ->  value-date  ->  disburse (disbursed=True)
+#
+# Authority is config-driven (pipeline_settings.json -> disbursement_roles,
+# default ["Treasury Back Office"]) so the role can be listed/edited from the
+# admin Configuration console rather than hardcoded.
+# ─────────────────────────────────────────────────────────────────────
+
+_DEFAULT_DISBURSEMENT_ROLES = ["Treasury Back Office"]
+
+
+def _now_iso() -> str:
+    import datetime as _dt
+    return _dt.datetime.now(_dt.timezone.utc).isoformat()
+
+
+def _disbursement_roles() -> list:
+    """Roles permitted to complete disbursement (Troops). Admin-tunable via
+    pipeline_settings.json -> disbursement_roles."""
+    try:
+        from utils.core import get_pipeline_settings
+        cfg = get_pipeline_settings() or {}
+        roles = cfg.get("disbursement_roles")
+        if isinstance(roles, list) and roles:
+            return [str(r) for r in roles]
+    except Exception:
+        pass
+    return list(_DEFAULT_DISBURSEMENT_ROLES)
+
+
+def _is_troops(user: Dict[str, Any]) -> bool:
+    """True if the caller may perform Treasury Back Office disbursement ops.
+    Admins and the executive tier always may; otherwise the caller's role must
+    match a configured disbursement role (lenient substring, case-insensitive)."""
+    if user.get("is_admin"):
+        return True
+    role = str(user.get("role") or "").lower()
+    if any(k in role for k in ("chief", "managing", "director")):
+        return True
+    return any(str(r).lower() in role for r in _disbursement_roles() if str(r).strip())
+
+
+def _troops_view(c: Dict[str, Any]) -> Dict[str, Any]:
+    """Compact projection of a case for the Troops queue."""
+    return {
+        "case_id": c.get("case_id") or c.get("id"),
+        "application_id": c.get("application_id"),
+        "client_name": c.get("client_name") or c.get("borrower_name"),
+        "amount": c.get("amount") or c.get("facility_amount") or c.get("loan_amount"),
+        "rm_code": c.get("rm_code"),
+        "troops_status": c.get("troops_status") or "queued",
+        "cbs_account_no": c.get("cbs_account_no"),
+        "value_date": c.get("value_date"),
+        "disbursed": bool(c.get("disbursed")),
+        "disbursement_date": c.get("disbursement_date"),
+        "disbursed_under_override": bool(c.get("disbursed_under_override")),
+    }
+
+
+class TroopsBookRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    cbs_account_no: Optional[str] = None
+    note: Optional[str] = ""
+
+
+class TroopsValueDateRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    value_date: str = ""   # ISO date funds take value; validated in the endpoint
+    note: Optional[str] = ""
+
+
+class TroopsDisburseRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    gl_reference: Optional[str] = None
+    note: Optional[str] = ""
+
+
+@router.get("/troops/queue")
+def troops_queue(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Cases cleared for disbursement but not yet disbursed — the Treasury
+    Back Office work queue. Bank-wide (not cascade-scoped)."""
+    if not _is_troops(user):
+        raise HTTPException(status_code=403,
+                            detail="Treasury Back Office (disbursement) authority required")
+    cam = _cam()
+    out = [_troops_view(c) for c in cam.cases
+           if c.get("cleared_for_disbursement") and not c.get("disbursed")]
+    return {"cases": out, "count": len(out), "source": "troops_queue"}
+
+
+@router.post("/cases/{case_id}/troops/book")
+def troops_book(case_id: str, payload: TroopsBookRequest,
+                user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Step 1 — book the facility to core banking (open the loan account)."""
+    if not _is_troops(user):
+        raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not case.get("cleared_for_disbursement"):
+        raise HTTPException(status_code=400,
+                            detail="Case has not been released to Treasury for disbursement yet")
+    if case.get("disbursed"):
+        raise HTTPException(status_code=400, detail="Case already disbursed")
+    acct = (payload.cbs_account_no or "").strip() or f"ECO{str(case_id)[-10:].zfill(10)}"
+    case["cbs_account_no"] = acct
+    case["troops_status"] = "booked"
+    case["troops_booked_by"] = str(user.get("username", "") or "")
+    case["troops_booked_at"] = _now_iso()
+    cam.save()
+    audit_log("TROOPS_BOOKED", str(user.get("username", "") or ""), f"{case_id}|{acct}")
+    return {"case": cam.get(case_id), "troops_status": "booked"}
+
+
+@router.post("/cases/{case_id}/troops/value-date")
+def troops_value_date(case_id: str, payload: TroopsValueDateRequest,
+                      user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Step 2 — set the value date for the disbursement (requires booked)."""
+    if not _is_troops(user):
+        raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if case.get("disbursed"):
+        raise HTTPException(status_code=400, detail="Case already disbursed")
+    if case.get("troops_status") not in ("booked", "value_dated"):
+        raise HTTPException(status_code=400, detail="Book the facility to core banking first")
+    vd = (payload.value_date or "").strip()
+    if not vd:
+        raise HTTPException(status_code=400, detail="value_date is required")
+    case["value_date"] = vd
+    case["troops_status"] = "value_dated"
+    cam.save()
+    audit_log("TROOPS_VALUE_DATED", str(user.get("username", "") or ""), f"{case_id}|{vd}")
+    return {"case": cam.get(case_id), "troops_status": "value_dated"}
+
+
+@router.post("/cases/{case_id}/troops/disburse")
+def troops_disburse(case_id: str, payload: TroopsDisburseRequest,
+                    user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Step 3 (final) — post to GL and complete the disbursement: disbursed=True
+    + disbursement_date. Requires the facility booked and value-dated first."""
+    if not _is_troops(user):
+        raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if case.get("disbursed"):
+        raise HTTPException(status_code=400, detail="Case already disbursed")
+    if not case.get("cleared_for_disbursement"):
+        raise HTTPException(status_code=400, detail="Case has not been released to Treasury")
+    if case.get("troops_status") != "value_dated" or not case.get("value_date"):
+        raise HTTPException(status_code=400, detail="Set the value date before disbursing")
+    if not case.get("cbs_account_no"):
+        raise HTTPException(status_code=400,
+                            detail="Book the facility to core banking before disbursing")
+    gl = (payload.gl_reference or "").strip() or f"GL{_now_iso()[:19].replace('-', '').replace(':', '').replace('T', '')}"
+    now = _now_iso()
+    case["disbursed"] = True
+    case["disbursement_date"] = case.get("value_date") or now[:10]
+    case["gl_reference"] = gl
+    case["troops_status"] = "disbursed"
+    case["troops_disbursed_by"] = str(user.get("username", "") or "")
+    case["troops_disbursed_at"] = now
+    cam.save()
+    audit_log("TROOPS_DISBURSED", str(user.get("username", "") or ""), f"{case_id}|{gl}")
+    return {"case": cam.get(case_id), "troops_status": "disbursed", "disbursed": True}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # Two-layer authorization (v10.585)
 # ─────────────────────────────────────────────────────────────────────
 

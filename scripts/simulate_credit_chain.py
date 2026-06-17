@@ -283,6 +283,7 @@ def happy_path(base, committee=False):
     st, body = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/disburse",
                     admin, {"authority": "CA Manager", "comments": "Sim disburse"})
     step("credit-admin: disburse", (200, 201), st, body, note=f"status: {body.get('status')}")
+    return case_id
 
 
 # ── Negative + override probe: gate BLOCKS, override UNBLOCKS (live) ─────
@@ -836,6 +837,50 @@ def referral_probe(base):
          contribs >= 1 and has_frank_asset, note=f"{contribs} contributions")
 
 
+def troops_probe(base, case_id):
+    print("\n=== TROOPS — Treasury Back Office disbursement completion ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")   # frank, RM — NOT treasury back office
+    if not admin or not case_id:
+        step("troops: prerequisite (cleared case id)", True, bool(case_id),
+             note="no cleared case from happy_path -> skipping")
+        return
+
+    st, q = _req(base, "GET", "/api/credit-admin/troops/queue", admin)
+    ids = [c.get("case_id") for c in (q.get("cases") or [])] if isinstance(q, dict) else []
+    step("troops: cleared case appears in disbursement queue", True,
+         case_id in ids, note=f"{len(ids)} in queue")
+
+    st, _ = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/book", owner, {})
+    step("troops: non-treasury RM denied booking", 403, st)
+
+    st, b = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/book", admin, {})
+    acct = b.get("case", {}).get("cbs_account_no") if isinstance(b, dict) else None
+    step("troops: book to core banking", (200, 201), st, b, note=f"acct={acct}")
+
+    # value date is required before disburse
+    st, _ = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/disburse",
+                 admin, {"gl_reference": "GL-EARLY"})
+    step("troops: disburse blocked before value date", 400, st)
+
+    st, v = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/value-date",
+                 admin, {"value_date": "2026-06-18"})
+    step("troops: set value date", (200, 201), st, v)
+
+    st, d = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/disburse",
+                 admin, {"gl_reference": "GL-SIM-1"})
+    disbursed = d.get("case", {}).get("disbursed") if isinstance(d, dict) else None
+    step("troops: disburse -> disbursed=True", (200, 201), st, d, note=f"disbursed={disbursed}")
+
+    st, q2 = _req(base, "GET", "/api/credit-admin/troops/queue", admin)
+    ids2 = [c.get("case_id") for c in (q2.get("cases") or [])] if isinstance(q2, dict) else []
+    step("troops: disbursed case leaves the queue", True, case_id not in ids2,
+         note=f"{len(ids2)} remain")
+
+    st, _ = _req(base, "POST", f"/api/credit-admin/cases/{case_id}/troops/disburse", admin, {})
+    step("troops: re-disburse blocked", 400, st)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -850,10 +895,11 @@ def main():
         print("  API not reachable — start it with `python -m utils.api` first.")
         sys.exit(2)
 
-    happy_path(args.base, committee=False)
+    cleared_case_id = happy_path(args.base, committee=False)
     if not args.skip_committee:
         happy_path(args.base, committee=True)
     negative_override_probe(args.base)
+    troops_probe(args.base, cleared_case_id)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)

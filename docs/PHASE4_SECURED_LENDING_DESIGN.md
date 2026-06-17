@@ -1889,3 +1889,53 @@ dashboard served a stale total for up to 120s — surfaced as an analytics-vs-
 dashboard FCY mismatch on a warm second harness run (~95s apart, inside the TTL).
 A fresh API start always passed. Fix: invalidate_pipeline_caches() now also pops
 'md_dashboard'. One line; backend-only.
+
+## #51 — Batch C2a: TROOPS (Treasury Back Office disbursement completion) [BACKEND]
+
+Closes the long-standing seam: credit-admin "disburse" only CLEARS a case
+(ready_for_disbursement=True); the actual fund movement was flagged out-of-scope.
+Troops = the central Treasury Back Office unit (under Head Office Operations) that
+completes it through an ordered ops workflow. Bank-wide function, so these routes
+are NOT cascade-scoped (Troops actions any cleared case).
+
+Workflow on the credit-admin case:  book -> value-date -> disburse
+- POST /api/credit-admin/cases/{id}/troops/book        (open loan acct in core banking; sets cbs_account_no, troops_status=booked)
+- POST /api/credit-admin/cases/{id}/troops/value-date  (requires booked; sets value_date, troops_status=value_dated)
+- POST /api/credit-admin/cases/{id}/troops/disburse    (requires value_dated + booked; sets disbursed=True + disbursement_date + gl_reference, troops_status=disbursed)
+- GET  /api/credit-admin/troops/queue                  (cleared-but-not-disbursed cases — the Treasury work inbox)
+
+Authority: _is_troops() — admins + exec tier always; otherwise role must match a
+configured disbursement role. Config-driven: pipeline_settings.json ->
+disbursement_roles (default ["Treasury Back Office"]) so the role is listable/
+editable from the admin console rather than hardcoded.
+
+Harness (troops_probe, 8 steps, on the happy-path cleared case): queue lists the
+cleared case; a non-treasury RM is denied booking (403); book; disburse blocked
+before value-date (400); set value-date; disburse -> disbursed=True; case leaves
+the queue; re-disburse blocked (400).
+
+SCOPE BOUNDARY (next): Batch C2b = admin role listing/editing UI (expose +
+edit disbursement_roles, and a fuller role registry) + a dedicated Treasury Back
+Office login persona. C2a exercises the gate via the privileged admin (passes)
+and an RM (denied); the disbursement_roles config is already read so C2b only adds
+the editing surface.
+
+## #51b — C2a correction: the disbursed-flip seam actually lived in clear_for_disbursement
+
+CGR1: the model + route docstrings claimed clear_for_disbursement set only
+ready_for_disbursement (NOT disbursed). The IMPLEMENTATION set disbursed=True +
+disbursement_date outright — so credit-admin already fully disbursed and Troops
+saw "already disbursed". Harness caught it (troops queue empty of the cleared
+case; book/value-date/disburse all 400 "already disbursed").
+
+Fix — aligned implementation to the stated intent + Josh's model:
+- core.py clear_for_disbursement now sets cleared_for_disbursement=True (RELEASE
+  to Treasury), NOT disbursed=True. The disbursed flip moved to Troops.
+- Troops queue + book + disburse now gate on cleared_for_disbursement (the
+  post-gate release) instead of ready_for_disbursement.
+- disbursed=True is set ONLY by troops/disburse now. Downstream 'disbursed'
+  reads are all block-if-disbursed guards, so they simply trigger after Troops
+  completes — the correct new semantics (a case isn't disbursed until Treasury
+  books + value-dates + posts to GL). BSC emit stays at credit-admin clearance
+  (unchanged) to avoid double-count; moving disbursement credit to the Troops
+  step is a possible later refinement.

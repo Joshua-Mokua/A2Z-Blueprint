@@ -6357,8 +6357,13 @@ class CreditAdminManager:
     def clear_for_disbursement(self, case_id: str) -> bool:
         for case in self.cases:
             if case["id"] == case_id and case.get("ready_for_disbursement"):
-                case["disbursed"]          = True
-                case["disbursement_date"]  = datetime.now().date().isoformat()
+                # RELEASE to Treasury Back Office (Troops) for actual
+                # disbursement. The disbursed=True flip now happens in the
+                # Troops workflow (book -> value-date -> disburse), not here —
+                # matching this module's stated intent that the fund transfer is
+                # a separate finance-system step. (Previously this set
+                # disbursed=True + disbursement_date directly.)
+                case["cleared_for_disbursement"] = True
                 case["last_updated"]       = datetime.now().date().isoformat()
                 self.save()
                 return True
