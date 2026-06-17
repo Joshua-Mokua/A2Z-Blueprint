@@ -323,7 +323,13 @@ export function Pipeline() {
           </Card.Header>
           <Card.Body>
             <PipelineFunnel
-              stages={analytics?.funnel ?? []}
+              overall={analytics?.funnel ?? []}
+              categories={analytics ? [
+                { key: 'asset', label: 'Asset', stages: analytics.pipelines.asset.funnel, activeCount: analytics.pipelines.asset.active_count },
+                { key: 'liability', label: 'Liability', stages: analytics.pipelines.liability.funnel, activeCount: analytics.pipelines.liability.active_count },
+                { key: 'insurance', label: 'Insurance', stages: analytics.pipelines.insurance.funnel, activeCount: analytics.pipelines.insurance.active_count },
+                { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
+              ] : []}
               currencySymbol={sym}
               emptyHint="No validated deals yet — validate deals to populate the funnel."
             />

@@ -1304,3 +1304,24 @@ Sequence:
 Interim: whole-subtree pending stays (over-broad on MD view, harmless — no
 mis-routing). Assured/funnel display is INDEPENDENT and only needs the HB47 seed
 re-run + API restart.
+
+## #28 — World-class funnel: real shape + category filter + count/value toggle
+
+Rewrote components/PipelineFunnel.tsx from horizontal bars into a true funnel
+silhouette: continuous trapezoidal bands (each band tapers into the next via
+clip-path), brand gradient cyan(#1797ce)->navy(#0e2440) across stages, last band
+tapers to a tip. Interactive: hover brightens the band + shows a tooltip
+(count, value, % of top stage, conversion from prior). Controls:
+  • Category filter All / Asset / Liability / Insurance / Other — PURE client-side
+    using the per-bucket funnels analytics already returns
+    (pipelines.{asset,liability,insurance,other}.funnel); no backend round-trip.
+  • Size-by toggle Count / Value — re-scales band widths + swaps the emphasised
+    number. Caption shows selected category totals. Dependency-free.
+Pipeline.tsx feeds overall + the four bucket funnels.
+
+NOT in this batch (honest scope): PRODUCT-level funnel filtering ("which products
+flow through which stages"). by_product today is product->value/count only, no
+per-stage breakdown — needs a small analytics addition (per-product stage funnel)
+before the UI can filter by product. Teed up as next.
+
+Remaining roadmap (Josh): Excel import, PDF export, PowerPoint export.
