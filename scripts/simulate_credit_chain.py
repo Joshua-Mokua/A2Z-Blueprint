@@ -466,11 +466,14 @@ def sector_mou_probe(base):
     st, an = _req(base, "GET", "/api/pipeline/analytics", admin)
     by_prod = an.get("by_product", []) if isinstance(an, dict) else []
     by_sec = an.get("by_sector", []) if isinstance(an, dict) else []
+    by_seg = an.get("by_segment", []) if isinstance(an, dict) else []
     by_ccy = an.get("by_currency_book", {}) if isinstance(an, dict) else {}
     step("analytics: by_product breakdown present", True, len(by_prod) >= 1,
          note=f"{len(by_prod)} products; top={by_prod[0].get('product') if by_prod else '—'}")
     step("analytics: by_sector breakdown present", True, len(by_sec) >= 1,
          note=f"{len(by_sec)} sectors")
+    step("analytics: by_segment breakdown present", True, len(by_seg) >= 1,
+         note=f"{len(by_seg)} segments; top={by_seg[0].get('segment') if by_seg else '—'}")
     step("analytics: by_currency_book has LCY+FCY", True,
          "LCY" in by_ccy and "FCY" in by_ccy,
          note=f"LCY={by_ccy.get('LCY',{}).get('value')}, FCY={by_ccy.get('FCY',{}).get('value')}")

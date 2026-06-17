@@ -69,7 +69,7 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Sector', 'Stage', 'Currency', 'Branch', 'RM'] as const;
+  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Currency', 'Branch', 'RM'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -78,6 +78,8 @@ export function Analytics() {
         return (data.by_product ?? []).map((x) => ({ label: x.product, value: x.value, count: x.count }));
       case 'Sector':
         return (data.by_sector ?? []).map((x) => ({ label: x.sector, value: x.value, count: x.count }));
+      case 'Segment':
+        return (data.by_segment ?? []).map((x) => ({ label: x.segment, value: x.value, count: x.count }));
       case 'Stage':
         return (data.funnel ?? []).map((x) => ({ label: x.stage, value: x.value, count: x.count }));
       case 'Currency': {
@@ -154,7 +156,7 @@ function PipelineSlicer({
   // Stage renders as a funnel (server/flow order preserved); Sector & Currency
   // as donuts (share); everything else as ranked bars (value-sorted).
   const isFunnel = dim === 'Stage';
-  const isDonut = dim === 'Sector' || dim === 'Currency';
+  const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
     const raw = sliceFor(dim as never);
     return isFunnel ? raw : raw.slice().sort((a, b) => b.value - a.value);

@@ -1344,3 +1344,26 @@ NEXT (Josh asked): add PRODUCT dimension + drill — click a stage to see the
 products/deals there. Needs a backend per-stage-product breakdown (analytics today
 has by_product as totals only, no stage split). That + a stage-click drill is the
 follow-up. Broader "world-class graphics" upgrade tracked as ongoing.
+
+## #30 — Segment dimension (Mass / Affluent / SME / Corporate) in analytics
+
+Per Josh: surface what's flowing per customer SEGMENT so the MD can have informed
+conversations with segment heads. The seed `segment` field is empty, but the
+segment signal lives in client_type (Individual / Individual — Affluent / SME — *
+/ Business — Large Corporate).
+
+Backend (_compute_pipeline_analytics): new by_segment dimension over `live` deals
+(mirrors by_sector). _segment_of(d) uses the explicit `segment` field first (real
+Ecobank data will populate it — so this is NOT hardcoded to client_type), else
+derives a clean bucket: Affluent / Mass · Retail / SME / Corporate · Business /
+Unclassified. Returns {segment, value, count} sorted by value. Registered as
+result["by_segment"].
+
+Harness: + "analytics: by_segment breakdown present" (now 101 checks).
+Frontend: SegmentBreakdown type + by_segment on the analytics response; Analytics
+slicer gains a "Segment" dimension (donut render, same world-class chart). When
+real hierarchy + segment data land, this lights up with zero further code.
+
+Pending Josh's pick next: funnel product-drill (stage-click), graphics pass across
+other charts, exports (Excel/PDF/PPT), Total-Pipeline asset/liability split,
+credit_watchlist table recreate.

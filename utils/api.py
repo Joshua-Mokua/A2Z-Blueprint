@@ -1782,6 +1782,36 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_sector = sorted(_sec.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_segment: customer segment (Mass / Affluent / SME / Corporate). Uses the
+    # deal's explicit `segment` when set (real Ecobank data will populate it),
+    # else derives a clean bucket from client_type. Informs MD ↔ segment-head
+    # conversations: what pipeline is flowing per segment.
+    def _segment_of(d: dict) -> str:
+        seg = str(d.get("segment", "") or "").strip()
+        if seg:
+            return seg
+        ct = str(d.get("client_type", "") or "").strip()
+        ctl = ct.lower()
+        if not ct:
+            return "Unclassified"
+        if "affluent" in ctl:
+            return "Affluent"
+        if ctl.startswith("individual"):
+            return "Mass / Retail"
+        if "sme" in ctl:
+            return "SME"
+        if "corporate" in ctl or "business" in ctl:
+            return "Corporate / Business"
+        return ct
+
+    _seg: dict = {}
+    for d in live:
+        key = _segment_of(d)
+        e = _seg.setdefault(key, {"segment": key, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
+
     # by_currency_book: KES-equivalent split (mirrors the dashboard).
     _by_currency_book = {"LCY": {"value": 0.0, "count": 0},
                          "FCY": {"value": 0.0, "count": 0}}
@@ -1828,6 +1858,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_category": by_category,
         "by_product": _by_product,
         "by_sector": _by_sector,
+        "by_segment": _by_segment,
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
         "by_rm": _by_rm,
