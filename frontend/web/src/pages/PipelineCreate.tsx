@@ -44,11 +44,12 @@ import { useToast } from '@/components/Toast';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useFxRates } from '@/hooks/useFxRates';
 import { Card } from '@/components/Card';
+import { StaffPicker } from '@/components/StaffPicker';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
-import { fetchCbsCustomer, fetchPipelineConfig, fetchCustomerPortfolioOwner, ApiValidationError, type CustomerPortfolioOwner } from '@/lib/api';
+import { fetchCbsCustomer, fetchPipelineConfig, fetchCustomerPortfolioOwner, ApiValidationError, type CustomerPortfolioOwner, type StaffMember } from '@/lib/api';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
@@ -161,6 +162,12 @@ export function PipelineCreate() {
   const [ownerDetecting, setOwnerDetecting] = useState(false);
   const [referredTo,         setReferredTo]         = useState('');     // refer path only
   const [referralNote,       setReferralNote]       = useState('');     // refer path only
+
+  // First-class "refer to a colleague" mode on the create page. When on, the
+  // form collapses to client + recipient + note; deal-detail fields are hidden
+  // and not required (the recipient completes the deal once they accept).
+  const [referMode,      setReferMode]      = useState(false);
+  const [referRecipient, setReferRecipient] = useState<StaffMember | null>(null);
   const [overrideNote,       setOverrideNote]       = useState('');     // override path only
 
   // ── Submit state ─────────────────────────────────────────────────────
@@ -465,6 +472,13 @@ export function PipelineCreate() {
 
     if (!clientName.trim()) errors.clientName = 'Client name is required.';
 
+    // Refer mode: only the client and the recipient are required; everything
+    // else is optional (the recipient completes the deal after accepting).
+    if (referMode) {
+      if (!referRecipient) errors.referRecipient = 'Choose a colleague to refer this to.';
+      return errors;
+    }
+
     if (isReferPath) {
       // Refer path has different required fields
       if (!portfolioOwnerCode.trim()) errors.portfolioOwnerCode = 'Portfolio owner staff code is required for referral.';
@@ -615,6 +629,38 @@ export function PipelineCreate() {
       return;
     }
 
+    // ── Refer mode: first-class "refer to a colleague" from create ──────
+    if (referMode && referRecipient) {
+      const body: ReferDealRequest = {
+        client_name:           clientName.trim(),
+        staff_code:            user.staff_code,
+        staff_name:            user.full_name,
+        portfolio_owner_code:  referRecipient.staff_code,
+        portfolio_owner_name:  referRecipient.name,
+        referred_to:           referRecipient.name,
+        referral_note:         referralNote.trim() || undefined,
+      };
+      const result = await mutations.refer(body);
+      if (result.ok) {
+        toast({
+          tone: 'success',
+          message: `Deal referred to ${referRecipient.name} for their acceptance — it stays pending until they accept the nod.`,
+        });
+        navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
+      } else {
+        const parsed = parseServerError(result.error);
+        if (parsed.fieldKey) {
+          setFieldErrors({ [parsed.fieldKey]: parsed.message });
+          scrollToFirstError({ [parsed.fieldKey]: parsed.message });
+        } else {
+          setFormError(parsed.message);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        toast({ tone: 'danger', message: parsed.message });
+      }
+      return;
+    }
+
     // ── Refer path: separate endpoint ──────────────────────────────────
     if (isReferPath) {
       const body: ReferDealRequest = {
@@ -737,6 +783,24 @@ export function PipelineCreate() {
       />
 
       <main className="max-w-6xl mx-auto px-6 pt-4 pb-8">
+        {/* Mode toggle: build a full deal, or refer a lead to a colleague. */}
+        <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-1 text-sm">
+          <button
+            type="button"
+            onClick={() => setReferMode(false)}
+            className={`px-4 py-1.5 rounded-md transition ${!referMode ? 'bg-brand-primary text-white' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Create a deal
+          </button>
+          <button
+            type="button"
+            onClick={() => setReferMode(true)}
+            className={`px-4 py-1.5 rounded-md transition ${referMode ? 'bg-brand-primary text-white' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Refer to a colleague
+          </button>
+        </div>
+
         {/* ─────────── Error summary banner (β5.0 polish) ───────────
             Renders at the top so users see it without scrolling.
             Shows either:
@@ -983,6 +1047,36 @@ export function PipelineCreate() {
           </Card.Body>
         </Card>
 
+        {referMode && (
+          <Card stripe="accent">
+            <Card.Header>
+              <h2 className="text-base font-semibold text-gray-900">Refer to a colleague</h2>
+              <span className="text-xs text-gray-400">Recipient + note</span>
+            </Card.Header>
+            <Card.Body>
+              <p className="text-sm text-gray-600 mb-3">
+                Hand this lead to a colleague — pick their segment, then the person.
+                Only the client name and recipient are required; they complete the
+                deal once they accept it.
+              </p>
+              <StaffPicker value={referRecipient} onChange={setReferRecipient} />
+              {fieldErrors.referRecipient && (
+                <p className="text-xs text-red-600 mt-2">{fieldErrors.referRecipient}</p>
+              )}
+              <div className="mt-3">
+                <Input
+                  label="Note (optional)"
+                  placeholder="Why you're referring this"
+                  value={referralNote}
+                  onChange={(e) => setReferralNote(e.target.value)}
+                  disabled={mutations.loading}
+                />
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
+        {!referMode && (<>
         {/* ─────────── Deal classification + value ─────────── */}
         <Card stripe="primary">
           <Card.Header>
@@ -1345,6 +1439,7 @@ export function PipelineCreate() {
             )}
           </Card.Body>
         </Card>
+        </>)}
         </div>
 
         {/* (β5.0 polish: bottom error banner removed.
@@ -1367,7 +1462,7 @@ export function PipelineCreate() {
             onClick={() => void onSubmit()}
             loading={mutations.loading}
           >
-            {isReferPath ? 'Send referral' : 'Create deal'}
+            {(referMode || isReferPath) ? 'Send referral' : 'Create deal'}
           </Button>
         </div>
 

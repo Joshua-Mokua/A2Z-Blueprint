@@ -2245,3 +2245,25 @@ Design choices:
 Harness: portfolio_harden_probe — finds an existing customer owned by another RM,
 asserts create WITHOUT resolution is blocked (400), WITH portfolio_owner_code is
 allowed (201), and an unknown CIF is not blocked (fail-open). +4 checks (162 -> 166).
+
+## #65 — Refer-on-create: first-class "Refer to a colleague" mode [FRONTEND]
+
+The refer action existed only buried under the portfolio-conflict checkbox, so it
+was invisible unless an existing customer was owned by another RM. This adds a
+first-class mode toggle at the top of the create page: "Create a deal" |
+"Refer to a colleague".
+
+Refer mode:
+- Collapses the form to client name (kept) + a StaffPicker recipient + optional
+  note; the deal-detail cards (classification/value/portfolio) are hidden via a
+  {!referMode && (...)} wrapper.
+- Relaxes validation — only client_name + recipient are required (Josh: "if I
+  select refer, all the fields are not mandatory").
+- Submits to the existing /api/pipeline/deals/refer (mutations.refer), mapping the
+  picked colleague as portfolio_owner_code/name + referred_to, so it enters the
+  P3 referral lifecycle: pending -> recipient's inbox -> they accept (the nod) ->
+  they own it. No backend change — reuses the refer endpoint + lifecycle.
+- Submit button reads "Send referral"; success toast says it stays pending until
+  accepted.
+
+esbuild alias-resolved clean; tsc gate in-env.
