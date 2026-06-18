@@ -1200,6 +1200,62 @@ def portfolio_harden_probe(base):
     step("harden: unknown CIF not blocked by portfolio guard", (200, 201), st, r)
 
 
+def sla_config_probe(base):
+    print("\n=== SLA CONFIG (S1 — admin-configurable, deal-process-wide) ===")
+    import copy as _copy
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not admin:
+        return
+
+    st, r = _req(base, "GET", "/api/admin/sla-config", admin)
+    cfg = r.get("sla_config", {}) if isinstance(r, dict) else {}
+    steps = cfg.get("steps", []) if isinstance(cfg, dict) else []
+    ladder = cfg.get("escalation_ladder", []) if isinstance(cfg, dict) else []
+    step("sla: config readable + well-formed (steps + ladder)", True,
+         st == 200 and len(steps) >= 1 and len(ladder) >= 1,
+         note=f"{len(steps)} steps, {len(ladder)} tiers")
+    step("sla: default taxonomy seeded (role-based steps)", True,
+         any(s.get("key") == "disbursement" for s in steps)
+         and any(s.get("key") == "line_manager_validation" for s in steps))
+
+    # Round-trip: amend a target, save, read it back -> "once applied it applies".
+    amended = _copy.deepcopy(cfg)
+    for s in amended.get("steps", []):
+        if s.get("key") == "credit_assessment":
+            s["target_days"] = 6
+    st_w, _ = _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": amended})
+    step("sla: admin save accepted", (200, 201), st_w)
+    _str, r2 = _req(base, "GET", "/api/admin/sla-config", admin)
+    saved_steps = r2.get("sla_config", {}).get("steps", []) if isinstance(r2, dict) else []
+    ca = next((s for s in saved_steps if s.get("key") == "credit_assessment"), {})
+    step("sla: saved change is live on next read (applies)", True,
+         int(ca.get("target_days", -1)) == 6,
+         note=f"credit_assessment target_days={ca.get('target_days')}")
+
+    # Mandatory-before-save validation.
+    st_e1, _ = _req(base, "POST", "/api/admin/sla-config", admin,
+                    {"sla_config": {"steps": [], "escalation_ladder": ladder}})
+    step("sla: empty step set rejected (mandatory)", 400, st_e1)
+    st_e2, _ = _req(base, "POST", "/api/admin/sla-config", admin,
+                    {"sla_config": {"steps": steps, "escalation_ladder": [
+                        {"after_days": 5, "escalate_to": "step_owner"},
+                        {"after_days": 2, "escalate_to": "line_manager"}]}})
+    step("sla: non-monotonic ladder rejected", 400, st_e2)
+    bad_target = _copy.deepcopy(cfg)
+    if bad_target.get("steps"):
+        bad_target["steps"][0]["target_days"] = 0
+    st_e3, _ = _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": bad_target})
+    step("sla: non-positive target rejected", 400, st_e3)
+
+    # Non-admin cannot write.
+    st_d, _ = _req(base, "POST", "/api/admin/sla-config", owner, {"sla_config": cfg})
+    step("sla: non-admin write denied", 403, st_d)
+
+    # Restore the original config (net-zero for warm re-runs).
+    _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": cfg})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1220,6 +1276,7 @@ def main():
     negative_override_probe(args.base)
     troops_probe(args.base, cleared_case_id)
     roles_probe(args.base)
+    sla_config_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)

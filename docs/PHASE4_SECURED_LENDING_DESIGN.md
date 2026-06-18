@@ -2372,3 +2372,29 @@ lib/api.ts: TeamReferralsResponse + fetchTeamReferrals. esbuild clean; tsc in-en
 
 Referral arc now complete end-to-end: refer-on-create -> nod lifecycle -> individual
 funnel + alerts -> department analytics -> hierarchy team view (to CEO). Next: SLA S1.
+
+## #71 — SLA S1: admin-configurable deal-process-wide SLA config [BACKEND]
+
+First slice of the locked SLA spec — config only (the per-deal clock + violation
+detection is S2). Lives in pipeline_settings.sla_config, so admin owns it and it
+persists; get_pipeline_settings reads fresh from disk (no cache) -> "once applied it
+applies".
+- _DEFAULT_SLA_CONFIG seeds the agreed 7-step role-based taxonomy (lead qualification,
+  line-manager validation, credit assessment, offer & acceptance, security perfection
+  & authorization, disbursement, closure), each with owner_role + target_days (business
+  days), plus a per-process escalation ladder (after_days tiers: step_owner -> line_
+  manager -> regional_head -> managing_director) and an optional per-product promise
+  map. Josh finalises the actual numbers/steps with the client IN THE ADMIN CONSOLE —
+  these are seeded defaults, fully amendable.
+- GET /api/admin/sla-config — effective config (saved or default), readable by any
+  authed user (future SLA badges).
+- POST /api/admin/sla-config (require_config_admin) — _validate_sla_config enforces
+  MANDATORY-BEFORE-SAVE: every step unique-keyed + positive target_days; ladder
+  strictly increasing by after_days with non-empty escalate_to; product_promise values
+  positive ints. Invalid -> 400, nothing written. Valid -> saved + live on next read.
+
+Harness: +8 (176 -> 184) — readable/well-formed, default taxonomy seeded, admin save
+accepted, SAVED CHANGE LIVE ON NEXT READ (the round-trip) (the "applies" proof), empty-step
+rejected, non-monotonic ladder rejected, non-positive target rejected, non-admin write
+denied. Probe restores the original config (net-zero). NEXT: rename Referral ->
+"A2Z Sales Referral" (frontend display), then SLA S2 (per-deal business-day clock).

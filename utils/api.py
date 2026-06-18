@@ -1262,7 +1262,134 @@ def _editable_config_view() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# ROLE REGISTRY (Batch C2b-1) — full listing + capability editing.
+# SLA CONFIG (Phase 4 — S1) — admin-configurable, deal-process-wide SLA.
+#
+# Step/role granular targets (business days) + a per-process escalation
+# ladder (elapsed-day tiers, breach -> step owner ... ceiling -> MD) + an
+# optional per-product create->closed promise. Seeded with a default
+# taxonomy the admin amends in the console; lives in pipeline_settings
+# (the shared, disk-persisted config), so "once applied it applies" —
+# get_pipeline_settings reads fresh from disk, no cache. S1 is config
+# only; the per-deal business-day clock + violation detection is S2.
+# ─────────────────────────────────────────────────────────────────────
+_DEFAULT_SLA_CONFIG = {
+    "steps": [
+        {"key": "lead_qualification",      "label": "Lead qualification",                  "owner_role": "Relationship Manager", "target_days": 3},
+        {"key": "line_manager_validation", "label": "Line-manager validation",             "owner_role": "Branch Manager",       "target_days": 2},
+        {"key": "credit_assessment",       "label": "Credit assessment",                   "owner_role": "Credit Analyst",       "target_days": 5},
+        {"key": "offer_acceptance",        "label": "Offer & acceptance",                  "owner_role": "Relationship Manager", "target_days": 3},
+        {"key": "security_perfection",     "label": "Security perfection & authorization", "owner_role": "Credit Admin",         "target_days": 7},
+        {"key": "disbursement",            "label": "Disbursement",                        "owner_role": "Treasury Back Office", "target_days": 2},
+        {"key": "closure",                 "label": "Closure",                             "owner_role": "Relationship Manager", "target_days": 2},
+    ],
+    "escalation_ladder": [
+        {"after_days": 0, "escalate_to": "step_owner"},
+        {"after_days": 2, "escalate_to": "line_manager"},
+        {"after_days": 5, "escalate_to": "regional_head"},
+        {"after_days": 8, "escalate_to": "managing_director"},
+    ],
+    "product_promise": {},
+}
+
+
+def _sla_config() -> dict:
+    """Effective SLA config — the admin's saved sla_config from pipeline_settings,
+    or the seeded default if none has been set. Read fresh (no cache)."""
+    try:
+        from utils.core import get_pipeline_settings
+        cfg = (get_pipeline_settings() or {}).get("sla_config")
+        if isinstance(cfg, dict) and cfg.get("steps"):
+            return cfg
+    except Exception:
+        logging.getLogger("a2z.sla").warning("sla_config read fell back to default", exc_info=True)
+    return _DEFAULT_SLA_CONFIG
+
+
+def _validate_sla_config(cfg) -> tuple:
+    """Mandatory-before-save validation. Returns (ok, message). Every step needs a
+    unique key and a positive target_days; the escalation ladder must be strictly
+    increasing by after_days with a non-empty escalate_to; product_promise (optional)
+    values must be positive integers."""
+    if not isinstance(cfg, dict):
+        return False, "sla_config must be an object"
+    steps = cfg.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return False, "at least one SLA step is required"
+    seen = set()
+    for s in steps:
+        if not isinstance(s, dict):
+            return False, "each step must be an object"
+        k = str(s.get("key") or "").strip()
+        if not k:
+            return False, "each step needs a key"
+        if k in seen:
+            return False, f"duplicate step key: {k}"
+        seen.add(k)
+        try:
+            t = int(s.get("target_days"))
+        except (TypeError, ValueError):
+            return False, f"step '{k}': target_days must be an integer"
+        if t <= 0:
+            return False, f"step '{k}': target_days must be positive"
+    ladder = cfg.get("escalation_ladder")
+    if not isinstance(ladder, list) or not ladder:
+        return False, "escalation_ladder is required"
+    last = -1
+    for tier in ladder:
+        if not isinstance(tier, dict):
+            return False, "each escalation tier must be an object"
+        try:
+            a = int(tier.get("after_days"))
+        except (TypeError, ValueError):
+            return False, "tier after_days must be an integer"
+        if a < 0:
+            return False, "tier after_days must be >= 0"
+        if a <= last:
+            return False, "escalation_ladder must be strictly increasing by after_days"
+        last = a
+        if not str(tier.get("escalate_to") or "").strip():
+            return False, "each escalation tier needs an escalate_to"
+    pp = cfg.get("product_promise") or {}
+    if not isinstance(pp, dict):
+        return False, "product_promise must be an object"
+    for prod, days in pp.items():
+        try:
+            d = int(days)
+        except (TypeError, ValueError):
+            return False, f"product_promise['{prod}'] must be an integer"
+        if d <= 0:
+            return False, f"product_promise['{prod}'] must be positive"
+    return True, ""
+
+
+@app.get("/api/admin/sla-config", tags=["admin"])
+def get_sla_config(user: dict = Depends(get_current_user)):
+    """Effective SLA config (admin-saved or seeded default). Readable by any
+    authenticated user so downstream surfaces can show targets; only admin writes."""
+    cfg = _sla_config()
+    return {"sla_config": cfg, "is_default": cfg is _DEFAULT_SLA_CONFIG}
+
+
+@app.post("/api/admin/sla-config", tags=["admin"])
+def set_sla_config(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Validate then persist the SLA config to pipeline_settings. Accepts either
+    {"sla_config": {...}} or the raw config object. Mandatory-before-save: an invalid
+    or incomplete config is rejected (400) and nothing is written. On success the new
+    config is live immediately (settings are read fresh from disk, no cache)."""
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+    cfg = payload.get("sla_config") if isinstance(payload, dict) and "sla_config" in payload else payload
+    ok, msg = _validate_sla_config(cfg)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    settings = get_pipeline_settings() or {}
+    settings["sla_config"] = cfg
+    save_pipeline_settings(settings)
+    return {"status": "saved", "sla_config": cfg}
+
+
 #
 # Roles live in kpi_library.json -> role_kpis (the authoritative registry).
 # This surface LISTS every role with its KPI set, resolved pillar mix, and
