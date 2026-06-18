@@ -1201,6 +1201,7 @@ _EDITABLE_CONFIG_KEYS = {
     "individual_mous", "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
     "probability_map", "deal_types", "disbursement_roles",
+    "referral_pending_alert_days",
 }
 
 # Roles permitted to complete disbursement (Troops / Treasury Back Office).
@@ -1256,6 +1257,7 @@ def _editable_config_view() -> dict:
         "probability_map":    cfg.get("probability_map", {}),
         "deal_types":         cfg.get("deal_types", []),
         "disbursement_roles": cfg.get("disbursement_roles", list(_DISBURSEMENT_ROLES_DEFAULT)),
+        "referral_pending_alert_days": int(cfg.get("referral_pending_alert_days", _REFERRAL_PENDING_ALERT_DAYS)),
     }
 
 
@@ -2917,7 +2919,18 @@ def pipeline_referrals_outgoing(user: dict = Depends(get_current_user)):
     return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
 
 
-_REFERRAL_PENDING_ALERT_DAYS = 3  # business days awaiting acceptance before flagging
+_REFERRAL_PENDING_ALERT_DAYS = 3  # default business days awaiting acceptance before flagging
+
+
+def _referral_pending_alert_days() -> int:
+    """Admin-configurable alert window (pipeline_settings.referral_pending_alert_days);
+    falls back to the default. Keeps the threshold config-driven, not hardcoded."""
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("referral_pending_alert_days")
+        return int(v) if v not in (None, "") else _REFERRAL_PENDING_ALERT_DAYS
+    except Exception:
+        return _REFERRAL_PENDING_ALERT_DAYS
 
 
 def _business_days_since(iso_ts) -> int:
@@ -2954,6 +2967,7 @@ def pipeline_referrals_outgoing_analytics(user: dict = Depends(get_current_user)
     by_stage: dict = {}
     won = lost = 0
     alerts = []
+    alert_days = _referral_pending_alert_days()
     for d in mine:
         st = str(d.get("referral_status") or "")
         if st in by_status:
@@ -2966,7 +2980,7 @@ def pipeline_referrals_outgoing_analytics(user: dict = Depends(get_current_user)
             lost += 1
         if st == "pending":
             aged = _business_days_since(d.get("referred_at"))
-            if aged >= _REFERRAL_PENDING_ALERT_DAYS:
+            if aged >= alert_days:
                 alerts.append({
                     "id": d.get("id"), "client_name": d.get("client_name"),
                     "referred_to": d.get("referred_to"), "kind": "pending_too_long",
@@ -3040,6 +3054,38 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
         "departments": departments,
         "total": sum(a["total"] for a in departments),
         "department_count": len(departments),
+    }
+
+
+@app.get("/api/pipeline/referrals/team")
+def pipeline_referrals_team(user: dict = Depends(get_current_user)):
+    """Hierarchy-scoped referral view — the twin of the pipeline's scoping, for
+    referrals. A line manager / head / chief sees referrals made by their reporting
+    subtree (their team); the MD/CEO sees all (get_visible_staff_codes returns the
+    full roster for them). Returns the team's referrals plus a funnel summary so
+    progress is visible at every level. Reuses the canonical REPORTING_TREE walk —
+    no duplicate scoping logic."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    visible = set(get_visible_staff_codes(user) or [])
+    deals = [d for d in _all_pipeline_deals()
+             if str(d.get("referral_status") or "")
+             and str(d.get("referred_by_code") or "") in visible]
+    by_status = {"pending": 0, "accepted": 0, "declined": 0}
+    won = lost = 0
+    for d in deals:
+        st = str(d.get("referral_status") or "")
+        if st in by_status:
+            by_status[st] += 1
+        stage = str(d.get("stage") or "")
+        if stage == "Closed Won":
+            won += 1
+        elif stage == "Closed Lost":
+            lost += 1
+    return {
+        "deals": [_referral_view(d) for d in deals],
+        "count": len(deals),
+        "summary": {"total": len(deals), "by_status": by_status,
+                    "closed": {"won": won, "lost": lost}},
     }
 
 

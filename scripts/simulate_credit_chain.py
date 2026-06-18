@@ -861,6 +861,29 @@ def referral_probe(base):
     st2, _ = _req(base, "GET", "/api/pipeline/referrals/analytics/by-department", ref)
     step("referral analytics: by-department denied to non-management", 403, st2)
 
+    # Twin hierarchy view: team referrals scoped like the pipeline (MD sees all).
+    st, t_md = _req(base, "GET", "/api/pipeline/referrals/team", adm)
+    _stt, t_rm = _req(base, "GET", "/api/pipeline/referrals/team", ref)
+    t_md = t_md if isinstance(t_md, dict) else {}
+    t_rm = t_rm if isinstance(t_rm, dict) else {}
+    md_n = t_md.get("count", -1)
+    rm_n = t_rm.get("count", -2)
+    step("referral team: MD view reachable + summary well-formed", True,
+         st == 200 and isinstance(t_md.get("summary"), dict) and md_n >= 1,
+         note=f"MD sees {md_n}")
+    step("referral team: RM is hierarchy-scoped (subset of MD)", True,
+         0 <= rm_n <= md_n, note=f"RM={rm_n} <= MD={md_n}")
+    step("referral team: RM sees only own-subtree referrals", True,
+         all(str(d.get("referred_by_code")) == "300731" for d in t_rm.get("deals", [])),
+         note=f"{len(t_rm.get('deals', []))} team referrals for RM")
+
+    # Config-vs-hardcode: the pending-alert window is admin-configurable.
+    _stc, ccfg = _req(base, "POST", "/api/admin/pipeline-config", adm, {})
+    cview = ccfg.get("config", {}) if isinstance(ccfg, dict) else {}
+    step("referral: pending-alert window is admin-configurable (not hardcoded)", True,
+         "referral_pending_alert_days" in cview,
+         note=f"days={cview.get('referral_pending_alert_days')}")
+
 
 def troops_probe(base, case_id):
     print("\n=== TROOPS — Treasury Back Office disbursement completion ===")

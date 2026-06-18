@@ -2335,3 +2335,25 @@ Surfaces the analytics endpoints in the Referrals page Following tab:
 lib/api.ts: OutgoingReferralAnalytics / ReferralAlert / ReferralDepartmentRow /
 ReferralsByDepartment + fetchOutgoingReferralAnalytics / fetchReferralsByDepartment.
 esbuild alias-resolved clean; tsc gate in-env.
+
+## #69 — Hierarchy-scoped team referral view + config-ize alert threshold [BACKEND]
+
+TWIN VIEW (Josh): just like the pipeline, line managers/heads/chiefs should see
+their TEAM's referrals + progress, and the MD/CEO an overall view.
+- New GET /api/pipeline/referrals/team — scopes referrals by referred_by_code IN
+  get_visible_staff_codes(user), the SAME canonical REPORTING_TREE walk the pipeline
+  list uses (no duplicate scoping logic). MD/CEO/all-view roles -> full roster ->
+  all referrals; a manager -> their subtree; an RM -> their own. Returns the team's
+  referrals + a funnel summary (by_status, closed) so progress shows at every level.
+
+CONFIG-VS-HARDCODE (Josh's check — and a real gap I'd introduced): the referral
+pending-alert window was hardcoded (= 3). Now admin-configurable:
+- pipeline_settings.referral_pending_alert_days, read via _referral_pending_alert_days()
+  (default 3), used by the outgoing analytics alerts.
+- Added to _EDITABLE_CONFIG_KEYS + _editable_config_view, so admin edits it through
+  POST /api/admin/pipeline-config like every other process knob.
+
+Harness: +4 (172 -> 176) — team MD view well-formed, RM hierarchy-scoped (subset of
+MD), RM sees only own-subtree referrals, and the alert window is exposed as editable
+config. FRONTEND (next): a hierarchy-scoped "Team referrals" pipeline view to CEO
+level (the visible twin).
