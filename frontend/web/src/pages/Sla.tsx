@@ -15,8 +15,8 @@ import { Badge, type BadgeTone } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
-  fetchSlaConfig, saveSlaConfig, fetchSlaViolations,
-  type SlaConfig, type SlaStep, type SlaTier, type SlaViolations,
+  fetchSlaConfig, saveSlaConfig, fetchSlaViolations, recordSlaCommitment,
+  type SlaConfig, type SlaStep, type SlaTier, type SlaViolations, type SlaViolation,
 } from '@/lib/api';
 
 function isConfigAdminRole(role: string | undefined, isAdmin: boolean): boolean {
@@ -54,6 +54,50 @@ export default function Sla() {
   const [saving, setSaving] = useState(false);
   const [newProduct, setNewProduct] = useState('');
   const [newPromise, setNewPromise] = useState('');
+
+  // Commitment capture (S3) — which breach row's form is open + its draft.
+  const [commitFor, setCommitFor] = useState<string | null>(null);
+  const [cReason, setCReason] = useState('');
+  const [cDate, setCDate] = useState('');
+  const [cSubmitting, setCSubmitting] = useState(false);
+
+  function refetchVio() {
+    setVLoading(true);
+    fetchSlaViolations().then(setVio).catch(() => setVio(null)).finally(() => setVLoading(false));
+  }
+
+  function openCommit(v: SlaViolation) {
+    setCommitFor(v.deal_id);
+    setCReason(v.commitment?.reason || '');
+    setCDate(v.commitment?.committed_date || '');
+  }
+  function closeCommit() {
+    setCommitFor(null);
+    setCReason('');
+    setCDate('');
+  }
+  async function submitCommit(dealId: string) {
+    const reason = cReason.trim();
+    if (reason.length < 5) {
+      toast({ tone: 'warning', message: 'Enter a reason of at least 5 characters.' });
+      return;
+    }
+    if (!cDate) {
+      toast({ tone: 'warning', message: 'Pick a committed close date.' });
+      return;
+    }
+    setCSubmitting(true);
+    try {
+      await recordSlaCommitment(dealId, reason, cDate);
+      toast({ tone: 'success', message: 'Commitment recorded against the current step.' });
+      closeCommit();
+      refetchVio();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not record the commitment.' });
+    } finally {
+      setCSubmitting(false);
+    }
+  }
 
   useEffect(() => {
     fetchSlaViolations().then(setVio).catch(() => setVio(null)).finally(() => setVLoading(false));
@@ -107,7 +151,7 @@ export default function Sla() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'violations', label: 'Violations' },
-    { key: 'config', label: 'Configuration' },
+    ...(canEdit ? [{ key: 'config' as Tab, label: 'Configuration' }] : []),
   ];
 
   return (
@@ -167,27 +211,70 @@ export default function Sla() {
                     <div className="text-sm font-semibold text-gray-900 mb-2">Breaching deals</div>
                     <div className="divide-y divide-gray-100">
                       {vio.violations.map((v) => (
-                        <div key={v.deal_id} className="flex items-start justify-between gap-3 py-2.5">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">{v.client_name || v.deal_id}</span>
-                              <Badge tone={v.clock === 'step' ? 'info' : 'neutral'} size="sm">
-                                {v.clock === 'step' ? (v.step || 'step').replace(/_/g, ' ') : 'age clock'}
-                              </Badge>
+                        <div key={v.deal_id} className="py-2.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-gray-900 truncate">{v.client_name || v.deal_id}</span>
+                                <Badge tone={v.clock === 'step' ? 'info' : 'neutral'} size="sm">
+                                  {v.clock === 'step' ? (v.step || 'step').replace(/_/g, ' ') : 'age clock'}
+                                </Badge>
+                                {v.commitment_status === 'active' && (
+                                  <Badge tone="info" size="sm">committed {v.commitment?.committed_date}</Badge>
+                                )}
+                                {v.commitment_status === 'unfulfilled' && (
+                                  <Badge tone="danger" size="sm">commitment overdue</Badge>
+                                )}
+                              </div>
+                              <div className="mt-0.5 text-xs text-gray-500">
+                                {[v.product_type, v.stage].filter(Boolean).join(' · ') || '—'}
+                              </div>
                             </div>
-                            <div className="mt-0.5 text-xs text-gray-500">
-                              {[v.product_type, v.stage].filter(Boolean).join(' · ') || '—'}
+                            <div className="flex shrink-0 items-start gap-3">
+                              <div className="text-right">
+                                <div className="text-sm text-gray-700 tabular-nums">
+                                  {v.elapsed_business_days} / {v.target_days} bd
+                                  <span className="ml-1 text-red-700 font-semibold">+{v.overdue_business_days}</span>
+                                </div>
+                                <div className="mt-0.5">
+                                  <Badge tone={escTone(v.escalate_to)} size="sm">{prettyRole(v.escalate_to)}</Badge>
+                                </div>
+                              </div>
+                              {v.clock === 'step' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => (commitFor === v.deal_id ? closeCommit() : openCommit(v))}
+                                >
+                                  {v.commitment ? 'Update' : 'Commit'}
+                                </Button>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-sm text-gray-700 tabular-nums">
-                              {v.elapsed_business_days} / {v.target_days} bd
-                              <span className="ml-1 text-red-700 font-semibold">+{v.overdue_business_days}</span>
+                          {commitFor === v.deal_id && (
+                            <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                <Input
+                                  type="text"
+                                  placeholder="Reason (≥ 5 chars) — what's blocking closure?"
+                                  value={cReason}
+                                  onChange={(e) => setCReason(e.target.value)}
+                                />
+                                <Input
+                                  type="date"
+                                  value={cDate}
+                                  onChange={(e) => setCDate(e.target.value)}
+                                />
+                              </div>
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <Button variant="primary" size="sm" loading={cSubmitting} onClick={() => submitCommit(v.deal_id)}>
+                                  Save commitment
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={closeCommit}>Cancel</Button>
+                                <span className="text-xs text-gray-400">A missed committed date escalates to the top tier.</span>
+                              </div>
                             </div>
-                            <div className="mt-0.5">
-                              <Badge tone={escTone(v.escalate_to)} size="sm">{prettyRole(v.escalate_to)}</Badge>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -198,7 +285,7 @@ export default function Sla() {
           </div>
         )}
 
-        {tab === 'config' && (
+        {tab === 'config' && canEdit && (
           <div className="space-y-3">
             {cLoading ? (
               <div className="py-16 text-center text-sm text-gray-500">Loading configuration…</div>

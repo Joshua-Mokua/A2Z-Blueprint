@@ -2585,3 +2585,25 @@ escalate_to == the configured ceiling, a <5-char reason is rejected (400), and a
 out-of-scope deal is not writable (404). SLA spec S1-S3 now COMPLETE end-to-end on the
 backend. NEXT (frontend): surface commitments on the SLA Monitor (record button on a
 breach row + active/unfulfilled badges).
+
+## #80 — SLA S3 on screen: commitment capture + status badges [FRONTEND]
+
+Surfaces the S3 backend on the SLA Monitor so step owners can actually use it.
+- Each step-clock breach row gains a "Commit" / "Update" action (ghost button) that opens
+  an inline form: reason (>= 5 chars, mirrored from the backend rule) + committed close
+  date. Submits to POST /pipeline/deals/{id}/sla/commitment; backend 400 detail (short
+  reason / age-clock deal / out-of-scope 404) surfaces in a danger toast; success refetches
+  the violations list. Age-clock rows show no button (no step to commit against).
+- Commitment state badges on the row: "committed {date}" (info) while active, "commitment
+  overdue" (danger) once unfulfilled — matching the engine's commitment_status, so a broken
+  promise is visible at a glance alongside its ceiling escalation.
+- Configuration tab is now hidden entirely unless the user is a config-admin (was rendering
+  read-only, so a branch manager like a Senior Branch Manager saw it). Violations tab stays
+  available to managers, scoped to their own subtree (verified: Senior Branch Manager
+  resolves to a 17-code subtree, zero leak).
+- lib/api.ts: SlaViolation gains commitment + commitment_status; SlaViolations gains
+  by_step; recordSlaCommitment(dealId, reason, committedDate) added.
+
+NEXT (queued, per Josh): surface each deal's SLA inside Sales Pro (pipeline list/detail,
+right after age) so an RM sees a deal heading for breach on the deal itself; then "due soon"
+/ breaching filters in analytics.

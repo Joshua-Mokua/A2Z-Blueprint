@@ -526,6 +526,13 @@ export async function saveSlaConfig(cfg: SlaConfig): Promise<{ status: string; s
     '/admin/sla-config', { sla_config: cfg });
 }
 
+export interface SlaCommitment {
+  reason: string;
+  committed_date: string;
+  recorded_by?: string;
+  recorded_by_name?: string;
+  recorded_at?: string;
+}
 export interface SlaViolation {
   deal_id: string;
   client_name?: string;
@@ -539,6 +546,8 @@ export interface SlaViolation {
   overdue_business_days: number;
   breached: boolean;
   escalate_to?: string | null;
+  commitment?: SlaCommitment | null;
+  commitment_status?: 'active' | 'unfulfilled' | null;
 }
 export interface SlaViolations {
   violations: SlaViolation[];
@@ -546,9 +555,18 @@ export interface SlaViolations {
   open_deals: number;
   by_escalation: Record<string, number>;
   by_clock: { step: number; age: number };
+  by_step?: Record<string, number>;
 }
 export async function fetchSlaViolations(): Promise<SlaViolations> {
   return getJson<SlaViolations>('/pipeline/sla/violations');
+}
+export async function recordSlaCommitment(
+  dealId: string, reason: string, committedDate: string,
+): Promise<{ deal_id: string; step: string; commitment: SlaCommitment }> {
+  return postJson<
+    { deal_id: string; step: string; commitment: SlaCommitment },
+    { reason: string; committed_date: string }
+  >(`/pipeline/deals/${dealId}/sla/commitment`, { reason, committed_date: committedDate });
 }
 
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
