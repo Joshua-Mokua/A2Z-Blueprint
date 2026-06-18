@@ -2195,3 +2195,31 @@ deal is then owned by the portfolio owner. +4 checks (158 -> 162).
 P3-frontend (next, small): create-page refer success message -> "referred to <owner>
 for acceptance" so the RM knows it's awaiting the nod, not live. Then P4: mandatory
 portfolio assignment for existing customers + final placement.
+
+## #63 — P4 + P3-frontend: mandatory-for-existing + nod messaging [FRONTEND]
+
+Closes the portfolio/referral arc (P1-P4) on the create page.
+
+P3-frontend: the refer success toast now reads "referred to <owner> for their
+acceptance — it stays pending until they accept the nod", so the RM knows the deal
+is awaiting the owner's nod (pending), not live.
+
+P4 (mandatory for existing): validate() now blocks submission when an EXISTING
+customer (not NTB) has a CBS-detected owner != the creating RM AND the user has
+cleared the auto-flagged conflict. They must address it via refer / seek-permission
+/ override instead of silently booking against another RM's portfolio. The error
+renders in the portfolio panel; checking the box clears it. The refer path keeps
+its own owner-field validation (unaffected — it early-returns before this guard).
+Owner-is-me and unmapped customers are exempt (no friction).
+
+PLACEMENT: the refer/owner UI lives in the create-page portfolio panel (Josh's
+"place it here"), now driven by P2 auto-detection + this guard.
+
+KNOWN LIMITATION (offered as a follow-up): the mandatory guard is client-side. A
+direct API call could still create an existing-customer deal without resolving the
+portfolio. Backend enforcement would mean the create endpoint looking up the CBS
+owner for a supplied client_cif and rejecting an unresolved conflict — a larger
+change, deferred unless wanted.
+
+ARC COMPLETE: P1 (verify) -> P2 (CBS auto-detect, #59/#61) -> P3 (owner nod, #62)
+-> P4 (mandatory + placement, #63).

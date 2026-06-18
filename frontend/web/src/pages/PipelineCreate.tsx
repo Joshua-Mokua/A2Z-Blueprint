@@ -477,6 +477,18 @@ export function PipelineCreate() {
     }
 
     // Standard create path
+    // P4: portfolio assignment is mandatory for an EXISTING customer whose CBS
+    // portfolio owner is someone else. P2 auto-flags the conflict; if the user
+    // has cleared it, they must address it (refer / seek permission / override)
+    // rather than silently book a deal against another RM's portfolio.
+    const me = (user?.staff_code || '').trim();
+    const detectedConflict = !isNtb && !!detectedOwner?.is_mapped
+      && !!detectedOwner.portfolio_owner_code
+      && detectedOwner.portfolio_owner_code !== me;
+    if (detectedConflict && !hasConflict) {
+      errors.hasConflict = `This customer is in ${detectedOwner?.portfolio_owner_name || 'another RM'}\u2019s portfolio — choose how to proceed (refer, seek permission, or override).`;
+    }
+
     if (!productType.trim())        errors.productType = 'Product type is required.';
     if (!stage.trim())              errors.stage       = 'Stage is required.';
     if (stage.trim() && !stageIsValidForCategory) {
@@ -623,7 +635,7 @@ export function PipelineCreate() {
       if (result.ok) {
         toast({
           tone: 'success',
-          message: `Deal referred to ${referredTo.trim()}. Owner will see it in their pipeline.`,
+          message: `Deal referred to ${referredTo.trim()} for their acceptance — it stays pending until they accept the nod.`,
         });
         navigate(`/pipeline/${encodeURIComponent(result.data.deal.id)}`);
       } else {
@@ -1168,11 +1180,11 @@ export function PipelineCreate() {
             </span>
           </Card.Header>
           <Card.Body>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer" data-field="hasConflict">
               <input
                 type="checkbox"
                 checked={hasConflict}
-                onChange={(e) => setHasConflict(e.target.checked)}
+                onChange={(e) => { setHasConflict(e.target.checked); if (e.target.checked) clearFieldError('hasConflict'); }}
                 disabled={mutations.loading}
                 className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
               />
@@ -1215,6 +1227,9 @@ export function PipelineCreate() {
                 Check this if CBS already assigns the customer to a different RM.
                 For an existing customer, ownership is detected automatically.
               </p>
+            )}
+            {fieldErrors.hasConflict && (
+              <p className="text-xs text-red-600 mt-2">{fieldErrors.hasConflict}</p>
             )}
 
             {hasConflict && (
