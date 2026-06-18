@@ -2223,3 +2223,25 @@ change, deferred unless wanted.
 
 ARC COMPLETE: P1 (verify) -> P2 (CBS auto-detect, #59/#61) -> P3 (owner nod, #62)
 -> P4 (mandatory + placement, #63).
+
+## #64 — P4.5: server-side enforcement of mandatory portfolio resolution [BACKEND]
+
+Closes the client-side-only gap from #63. POST /api/pipeline/deals now mirrors the
+create-form guard: if the payload carries a client_cif that CBS maps to a DIFFERENT
+relationship owner than the creating RM, and portfolio_owner_code is unset, the
+create is rejected (400) — a direct API call can no longer silently book a deal
+against another RM's portfolio.
+
+Design choices:
+- Runs AFTER validate_create_payload, BEFORE add_deal.
+- Self-owned (CBS owner == creator) and unknown/unmapped CIFs pass through.
+- Fails OPEN on a CBS lookup error (logged via logger.warning, not silent — CGR1)
+  so deal creation never hard-depends on CBS availability.
+- Enforcement level is ACKNOWLEDGEMENT (portfolio_owner_code present), not exact
+  match to the CBS owner — the form auto-fills the correct owner; a stricter
+  "declared owner must equal CBS owner" check is deliberately NOT imposed (CBS can
+  lag a real portfolio move). Noted as a future tightening if wanted.
+
+Harness: portfolio_harden_probe — finds an existing customer owned by another RM,
+asserts create WITHOUT resolution is blocked (400), WITH portfolio_owner_code is
+allowed (201), and an unknown CIF is not blocked (fail-open). +4 checks (162 -> 166).

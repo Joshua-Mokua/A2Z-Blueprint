@@ -3130,6 +3130,33 @@ def pipeline_deal_create(
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
         raise HTTPException(status_code=400, detail=reason)
 
+    # P4.5: mandatory portfolio resolution for EXISTING customers. If the deal
+    # carries a client_cif that CBS maps to a DIFFERENT relationship owner than
+    # the creating RM, the payload MUST acknowledge it (portfolio_owner_code set)
+    # — the server-side mirror of the create-form guard, so a direct API call
+    # can't silently book a deal against another RM's portfolio. Self-owned and
+    # unknown/unmapped CIFs pass through. Fails OPEN on a CBS outage (logged) so
+    # deal creation never hard-depends on CBS availability.
+    _cif = str(deal_dict.get("client_cif") or "").strip()
+    if _cif:
+        try:
+            from utils.cbs_manager import get_customer_by_cif as _gcbc
+            _cust = _gcbc(_cif)
+        except Exception as _exc:  # surfaced, not silent (CGR1)
+            logger.warning("portfolio guard: CBS lookup failed for cif=%s: %s", _cif, _exc)
+            _cust = None
+        if _cust:
+            _po = str(_cust.get("relationship_manager_code") or "").strip()
+            _creator = str(deal_dict.get("staff_code") or "").strip()
+            _po_mapped = bool(_po) and _po.upper() != "UNASSIGNED"
+            _resolved = bool(str(deal_dict.get("portfolio_owner_code") or "").strip())
+            if _po_mapped and _po != _creator and not _resolved:
+                msg = (f"Customer {_cif} is in another RM's portfolio (owner {_po}). "
+                       f"Set portfolio_owner_code and choose a resolution path "
+                       f"(refer, seek permission, or override).")
+                _audit("API_PIPELINE_CREATE_REJECTED", user, msg)
+                raise HTTPException(status_code=400, detail=msg)
+
     # Route through canonical manager (G394 alignment)
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()

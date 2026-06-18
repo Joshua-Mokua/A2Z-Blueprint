@@ -1102,6 +1102,56 @@ def cbs_portfolio_owner_probe(base):
     step("cbs: unknown CIF -> 404", 404, st)
 
 
+def portfolio_harden_probe(base):
+    """P4.5 — the server enforces mandatory portfolio resolution for existing
+    customers. A deal carrying a client_cif whose CBS owner != the creator must
+    set portfolio_owner_code, else it's rejected (the create-form guard mirrored
+    server-side). Self-owned and unknown CIFs pass through."""
+    print("\n=== PORTFOLIO HARDEN (P4.5 — server enforces existing-customer resolution) ===")
+    owner = login(base, "OWNER")   # Frank Wanyama 300731 (creating RM)
+    if not owner:
+        step("harden: owner login", 200, 0, note="cannot proceed")
+        return
+    ME = "300731"
+
+    # Find an existing customer whose CBS owner is someone OTHER than the creator.
+    tcif = town = tname = None
+    for i in range(1, 50):
+        cif = str(100000000 + i)
+        _, po = _req(base, "GET", f"/api/cbs/customers/{cif}/portfolio-owner", owner)
+        if isinstance(po, dict) and po.get("is_mapped"):
+            code = str(po.get("portfolio_owner_code") or "")
+            if code and code != ME:
+                tcif, town, tname = cif, code, (po.get("portfolio_owner_name") or "")
+                break
+    step("harden: found an existing customer owned by another RM", True, tcif is not None,
+         note=f"cif={tcif} owner={town}")
+    if not tcif:
+        return
+
+    ts = f"{datetime.now():%H%M%S}"
+    def _body():
+        return {"client_name": f"SIM Harden {ts}", "product_type": "Term Loan",
+                "deal_value": 3_000_000, "stage": "Lead", "client_cif": tcif}
+
+    # (1) existing customer, NO resolution -> blocked
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, _body())
+    step("harden: existing-customer deal WITHOUT resolution blocked", 400, st, r)
+
+    # (2) same, WITH portfolio_owner_code (+ defer credit = seek-permission) -> allowed
+    b = _body()
+    b["portfolio_owner_code"] = town
+    b["portfolio_owner_name"] = tname or f"RM {town}"
+    b["bsc_credit_to"] = tname or f"RM {town}"
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, b)
+    step("harden: existing-customer deal WITH resolution allowed", (200, 201), st, r)
+
+    # (3) unknown CIF can't be resolved -> guard fails open (not blocked)
+    b = _body(); b["client_cif"] = "999999999"
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, b)
+    step("harden: unknown CIF not blocked by portfolio guard", (200, 201), st, r)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1128,6 +1178,7 @@ def main():
     staff_search_probe(args.base)
     portfolio_conflict_probe(args.base)
     cbs_portfolio_owner_probe(args.base)
+    portfolio_harden_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     credit_probe(args.base)
