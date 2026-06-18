@@ -954,6 +954,85 @@ def staff_search_probe(base):
          len(staff) > 0 and all_match, note=f"{len(staff)} in {target}")
 
 
+def portfolio_conflict_probe(base):
+    """P1 — verify the α5 portfolio-conflict create paths actually work.
+
+    When a deal's portfolio owner is someone other than the creating RM,
+    three resolution paths exist (audit Sec 15.4):
+      1. SEEK-PERMISSION — defer BSC credit to the owner (no manager note)
+      2. OVERRIDE        — claim BSC credit anyway (manager note required)
+      3. REFER           — hand the lead to the owner via /deals/refer
+    This is the baseline before CBS owner auto-detection + the owner "nod"
+    (P2-P4). Creator = Frank (300731); portfolio owner = Immaculate (300716).
+    """
+    print("\n=== PORTFOLIO CONFLICT (P1 — verify α5 create paths) ===")
+    owner = login(base, "OWNER")           # Frank Wanyama, creating RM (300731)
+    if not owner:
+        step("portfolio: owner login", 200, 0, note="cannot proceed")
+        return
+    PO_CODE, PO_NAME = "300716", "Immaculate"   # a DIFFERENT RM = portfolio owner
+    ts = f"{datetime.now():%H%M%S}"
+
+    def _base(tag):
+        return {
+            "client_name": f"SIM Portfolio {tag} {ts}",
+            "product_type": "Term Loan", "deal_value": 4_000_000, "stage": "Lead",
+            "portfolio_owner_code": PO_CODE, "portfolio_owner_name": PO_NAME,
+        }
+
+    def _did(b):
+        if not isinstance(b, dict):
+            return None
+        return b.get("id") or b.get("deal", {}).get("id")
+
+    def _deal(did):
+        if not did:
+            return {}
+        _, d = _req(base, "GET", f"/api/pipeline/deals/{did}", owner)
+        return (d.get("deal") or d) if isinstance(d, dict) else {}
+
+    # 1. SEEK-PERMISSION: bsc_credit_to == owner -> passes without a note.
+    body = _base("seek"); body["bsc_credit_to"] = PO_NAME
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, body)
+    step("portfolio: seek-permission create accepted", (200, 201), st, r)
+    deal = _deal(_did(r))
+    step("portfolio: seek-permission stamps owner + defers credit to owner", True,
+         str(deal.get("portfolio_owner_code")) == PO_CODE
+         and str(deal.get("bsc_credit_to")) == PO_NAME,
+         note=f"owner={deal.get('portfolio_owner_code')} credit_to={deal.get('bsc_credit_to')}")
+
+    # 2. OVERRIDE without a note -> blocked (RM claims credit, no justification).
+    body = _base("ovr0"); body["bsc_credit_to"] = "Frank Wanyama"
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, body)
+    step("portfolio: override WITHOUT note blocked", 400, st, r)
+
+    # 3. OVERRIDE with a note -> accepted, note stamped for audit trail.
+    body = _base("ovr1"); body["bsc_credit_to"] = "Frank Wanyama"
+    body["manager_override_note"] = "Pursuing with regional head approval; owner unreachable."
+    st, r = _req(base, "POST", "/api/pipeline/deals", owner, body)
+    step("portfolio: override WITH note accepted", (200, 201), st, r)
+    deal = _deal(_did(r))
+    step("portfolio: override stamps owner + manager note", True,
+         str(deal.get("portfolio_owner_code")) == PO_CODE
+         and bool(str(deal.get("manager_override_note") or "").strip()),
+         note=f"note={'set' if deal.get('manager_override_note') else 'missing'}")
+
+    # 4. REFER endpoint -> referral-only deal flagged is_referral.
+    refer = {
+        "client_name": f"SIM Refer {ts}",
+        "staff_code": "300731", "staff_name": "Frank Wanyama",
+        "portfolio_owner_code": PO_CODE, "portfolio_owner_name": PO_NAME,
+        "referred_to": PO_NAME, "referral_note": "Owner's portfolio — referring the lead.",
+    }
+    st, r = _req(base, "POST", "/api/pipeline/deals/refer", owner, refer)
+    step("portfolio: refer-to-owner creates referral deal", (200, 201), st, r)
+    rd = (r.get("deal") or r) if isinstance(r, dict) else {}
+    if not rd.get("is_referral"):
+        rd = _deal(_did(r)) or rd
+    step("portfolio: referred deal flagged is_referral", True, bool(rd.get("is_referral")),
+         note=f"is_referral={rd.get('is_referral')}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -978,6 +1057,7 @@ def main():
     sector_mou_probe(args.base)
     referral_probe(args.base)
     staff_search_probe(args.base)
+    portfolio_conflict_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     credit_probe(args.base)

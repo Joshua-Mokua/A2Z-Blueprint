@@ -2065,3 +2065,30 @@ that only has the α5 conflict-refer path).
 esbuild alias-resolved bundle check clean on all 4 files; tsc gate in-env. This
 closes Batch B (referral lifecycle, inbox, and refer-from-detail). Open: C3 (SLAs),
 C2b-2 (re-parenting + weights, parked with auth/DOA).
+
+## #58 — P1: verify the α5 portfolio-conflict create paths [HARNESS]
+
+Baseline verification before the portfolio-owner enhancement work (P2-P4).
+Adds portfolio_conflict_probe(base) — creator Frank (300731), portfolio owner
+Immaculate (300716) — exercising all three conflict-resolution paths through the
+LIVE create endpoint:
+
+  1. SEEK-PERMISSION (bsc_credit_to == owner)  -> 201, stamps owner + defers credit
+  2. OVERRIDE without note                      -> 400 (note required)
+  3. OVERRIDE with note (>= 10 chars)           -> 201, stamps owner + note
+  4. REFER endpoint (/deals/refer)              -> 201, is_referral=True
+
+6 new checks (146 -> 152). Status assertions verify the validation logic
+(is_override_semantics + the override-note gate); field assertions confirm the
+payload round-trips (model_dump(exclude_unset=False) -> add_deal stores the full
+dict -> _serialize passes it through).
+
+FINDINGS confirmed during grounding (drive P2-P4):
+- CBS already maps every customer to an RM (cbs_manager.relationship_manager_code)
+  — owner auto-detection is possible; the create form just never looks it up
+  ("Auto-detection via CBS lookup is deferred… mark manually").
+- The create-conflict REFER path is fire-and-forget: it stamps portfolio_owner_code
+  + bsc_credit_to but does NOT create a pending referral or notify the owner. The
+  owner "nod" (accept loop) lives only in the new referral lifecycle and is not yet
+  wired to this path — that's P3.
+- Portfolio assignment is not mandatory for existing customers — that's P4.
