@@ -2487,3 +2487,32 @@ breach carries target+overdue+escalation (escalate_to in the configured ladder),
 overdue==age-target math holds, and RM is a hierarchy-scoped subset of MD; then restores
 the config (net-zero). NEXT: S2b (stamp step-entry timestamps -> true per-step clock),
 or the S1/S2 admin + dashboard UI.
+
+## #76 — SLA S2b: per-step business-day clock via step-entry stamping [BACKEND]
+
+Unlocks the spec's primary granularity — the per-STEP clock — by recording when a deal
+enters each SLA step.
+- Config: sla_config.stage_step_map (admin-editable; seeded default maps the pipeline
+  stages Lead/Contacted/Qualified -> lead_qualification, Application ->
+  line_manager_validation, Credit Assessment -> credit_assessment, Offer/Proposal ->
+  offer_acceptance, Closed * -> closure). Validation rejects a map value that isn't a
+  known step key.
+- _stamp_sla_step(pm, deal_id, deal, by): on FIRST entry into a step, writes
+  sla_step_log[step] = now to the deal (idempotent per step), then DB-syncs. Hooked at
+  the pipeline advance endpoint (after the stage update) and seeded at create.
+- Persistence: sla_step_log rides the existing metadata JSONB column (added to
+  _db_sync_pipeline_deal + lifted in _normalize_db_deal_row), so DB-first reads see it.
+- _deal_sla_status: unified engine — prefers the per-STEP clock (business days since the
+  current step's entry stamp vs that step's target) when a stamp exists; falls back to
+  the product/age clock otherwise. Reports clock=step|age.
+- GET /api/pipeline/deals/{id}/sla — per-deal SLA status (step, clock, elapsed/target,
+  breach, escalation), scope-checked. Violations endpoint now reports by_clock {step,age}.
+- SCOPE BOUNDARY: stage-driven steps are stamped now; the credit-admin / Troops steps
+  (security_perfection, disbursement) are stamped by those modules in S2c. Existing deals
+  with no stamp keep the age clock until they next advance.
+
+Harness: +5 (193 -> 198) — probe creates + advances a deal through to Credit Assessment,
+asserts the per-deal SLA endpoint is well-formed AND reports clock=step / step=
+credit_assessment with a config-resolved target, and the violations endpoint's by_clock
+shows the step clock active. (S2a violations math check updated to elapsed field.)
+NEXT: S2c (credit-admin/Troops step stamping) or the SLA admin + dashboard UI.

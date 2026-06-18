@@ -1307,8 +1307,8 @@ def sla_violations_probe(base):
          and sample.get("overdue_business_days", 0) >= 1 and sample.get("breached") is True
          and sample.get("escalate_to") in ladder_roles,
          note=f"escalate_to={sample.get('escalate_to') if sample else None}")
-    step("sla violations: overdue == age - target (math)", True,
-         bool(sample) and sample["overdue_business_days"] == max(0, sample["age_business_days"] - sample["target_days"]))
+    step("sla violations: overdue == elapsed - target (math)", True,
+         bool(sample) and sample["overdue_business_days"] == max(0, sample["elapsed_business_days"] - sample["target_days"]))
 
     st_rm, vrm = _req(base, "GET", "/api/pipeline/sla/violations", owner)
     vrm = vrm if isinstance(vrm, dict) else {}
@@ -1319,6 +1319,43 @@ def sla_violations_probe(base):
 
     # Restore the original config (net-zero).
     _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": base_cfg})
+
+
+def sla_step_clock_probe(base):
+    print("\n=== SLA STEP CLOCK (S2b — per-step stamping) ===")
+    from datetime import datetime as _dt
+    owner = login(base, "OWNER")
+    admin = login(base, "ADMIN")
+    if not owner:
+        return
+    st, body = _req(base, "POST", "/api/pipeline/deals", owner, {
+        "client_name": f"SLA Step Probe {_dt.now():%H%M%S}",
+        "product_type": "Term Loan", "deal_value": 5000000,
+        "stage": "Lead", "segment": "SME"})
+    did = (body.get("deal") or {}).get("id") if isinstance(body, dict) else None
+    step("sla step: probe deal created", (200, 201), st, note=f"deal_id={did}")
+    if did:
+        for tgt in ("Contacted", "Qualified", "Application", "Credit Assessment"):
+            _req(base, "POST", f"/api/pipeline/deals/{did}/advance", owner, {"target_stage": tgt})
+
+    st_s, s = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+    sla = s.get("sla") if isinstance(s, dict) else None
+    step("sla step: per-deal SLA endpoint well-formed", True,
+         st_s == 200 and isinstance(sla, dict)
+         and sla.get("target_days", 0) >= 1 and isinstance(sla.get("elapsed_business_days"), int),
+         note=f"clock={sla.get('clock') if isinstance(sla, dict) else None} step={sla.get('step') if isinstance(sla, dict) else None}")
+    step("sla step: advanced deal is on the per-STEP clock", True,
+         isinstance(sla, dict) and sla.get("clock") == "step" and sla.get("step") == "credit_assessment",
+         note=f"step={sla.get('step') if isinstance(sla, dict) else None}")
+    step("sla step: step target resolves from config (credit_assessment)", True,
+         isinstance(sla, dict) and sla.get("target_days", 0) >= 1,
+         note=f"target_days={sla.get('target_days') if isinstance(sla, dict) else None}")
+
+    st_v, v = _req(base, "GET", "/api/pipeline/sla/violations", admin)
+    bc = v.get("by_clock", {}) if isinstance(v, dict) else {}
+    step("sla step: violations endpoint reports clock split (step active)", True,
+         isinstance(bc, dict) and bc.get("step", 0) >= 1,
+         note=f"by_clock={bc}")
 
 
 def main():
@@ -1343,6 +1380,7 @@ def main():
     roles_probe(args.base)
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
+    sla_step_clock_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)

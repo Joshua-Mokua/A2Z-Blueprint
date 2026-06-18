@@ -448,6 +448,7 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "referred_by_name":     deal.get("referred_by_name"),
                 "referral_note":        deal.get("referral_note"),
                 "decline_reason":       deal.get("decline_reason"),
+                "sla_step_log":         deal.get("sla_step_log"),
             }),
         }
         if not row["id"]:
@@ -502,7 +503,7 @@ def _normalize_db_deal_row(row):
                    "sector", "segment", "validated_by", "validated_at",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
-                   "decline_reason"):
+                   "decline_reason", "sla_step_log"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
@@ -1290,6 +1291,16 @@ _DEFAULT_SLA_CONFIG = {
         {"after_days": 8, "escalate_to": "managing_director"},
     ],
     "product_promise": {},
+    "stage_step_map": {
+        "Lead": "lead_qualification",
+        "Contacted": "lead_qualification",
+        "Qualified": "lead_qualification",
+        "Application": "line_manager_validation",
+        "Credit Assessment": "credit_assessment",
+        "Offer / Proposal": "offer_acceptance",
+        "Closed Won": "closure",
+        "Closed Lost": "closure",
+    },
 }
 
 
@@ -1360,6 +1371,13 @@ def _validate_sla_config(cfg) -> tuple:
             return False, f"product_promise['{prod}'] must be an integer"
         if d <= 0:
             return False, f"product_promise['{prod}'] must be positive"
+    ssm = cfg.get("stage_step_map") or {}
+    if not isinstance(ssm, dict):
+        return False, "stage_step_map must be an object"
+    step_keys = {str(s.get("key")) for s in steps}
+    for stage, sk in ssm.items():
+        if str(sk) not in step_keys:
+            return False, f"stage_step_map['{stage}'] -> unknown step '{sk}'"
     return True, ""
 
 
@@ -1398,6 +1416,26 @@ def set_sla_config(
 # promise (or the step-target sum) so breaches are already evident for action.
 # ─────────────────────────────────────────────────────────────────────
 _SLA_CLOSED_MARKERS = ("won", "lost", "closed", "declined", "disbursed", "rejected")
+_DEFAULT_STAGE_STEP_MAP = {
+    "Lead": "lead_qualification",
+    "Contacted": "lead_qualification",
+    "Qualified": "lead_qualification",
+    "Application": "line_manager_validation",
+    "Credit Assessment": "credit_assessment",
+    "Offer / Proposal": "offer_acceptance",
+    "Closed Won": "closure",
+    "Closed Lost": "closure",
+}
+
+
+def _sla_stage_step_map(cfg: dict = None) -> dict:
+    """Pipeline stage -> SLA step key. Admin-configurable via sla_config.stage_step_map;
+    seeded default covers the pipeline-stage-driven steps. (Credit-admin / Troops steps —
+    security_perfection, disbursement — are stamped by those modules in S2c.)"""
+    if cfg is None:
+        cfg = _sla_config()
+    m = cfg.get("stage_step_map")
+    return dict(m) if isinstance(m, dict) and m else dict(_DEFAULT_STAGE_STEP_MAP)
 
 
 def _sla_step_target_sum(cfg: dict) -> int:
@@ -1414,6 +1452,16 @@ def _sla_step_target_sum(cfg: dict) -> int:
     return total
 
 
+def _sla_step_target(cfg: dict, step_key: str) -> int:
+    for s in (cfg.get("steps") or []):
+        if s.get("key") == step_key:
+            try:
+                return int(s.get("target_days", 0))
+            except (TypeError, ValueError):
+                return 0
+    return 0
+
+
 def _sla_escalation_for(overdue_bd: int, cfg: dict) -> str:
     """Highest ladder tier whose after_days threshold the overdue days have reached."""
     role = "step_owner"
@@ -1426,33 +1474,65 @@ def _sla_escalation_for(overdue_bd: int, cfg: dict) -> str:
     return role
 
 
-def _deal_age_sla(d: dict, cfg: dict, promise: dict) -> dict:
-    """Product/age SLA for one OPEN deal — business days since created_at vs the
-    per-product promise (or the step-target sum). {} for a closed deal or one with no
-    usable creation timestamp."""
-    stage = str(d.get("stage") or "").lower()
-    if any(m in stage for m in _SLA_CLOSED_MARKERS):
-        return {}
-    ts = d.get("created_at") or d.get("open_date") or d.get("created")
-    if not ts:
-        return {}
-    product = str(d.get("product_type") or d.get("product") or "")
+def _stamp_sla_step(pm, deal_id: str, deal: dict, by: str) -> None:
+    """Record first entry into the deal's current SLA step on sla_step_log, enabling the
+    per-step business-day clock. No-op if the stage maps to no step or it's already
+    stamped. Best-effort: a stamp failure never blocks the underlying transition."""
     try:
-        per_prod = int(promise.get(product)) if promise.get(product) else 0
-    except (TypeError, ValueError):
-        per_prod = 0
-    target = per_prod or _sla_step_target_sum(cfg)
+        smap = _sla_stage_step_map()
+        step_key = smap.get(str(deal.get("stage") or ""))
+        if not step_key:
+            return
+        log = dict(deal.get("sla_step_log") or {})
+        if step_key in log:
+            return
+        log[step_key] = datetime.now().isoformat()
+        pm.update_deal(deal_id, {"sla_step_log": log}, by)
+        _db_sync_pipeline_deal(pm.get_deal(deal_id))  # mirror to DB-first reads
+    except Exception:
+        logging.getLogger("a2z.sla").warning("sla step stamp failed for %s", deal_id, exc_info=True)
+
+
+def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict) -> dict:
+    """Unified per-deal SLA. {} for a closed deal or one with no usable creation
+    timestamp. Prefers the per-STEP clock (business days since the current step's entry
+    stamp vs that step's target) when the deal carries an sla_step_log entry for its
+    current step; otherwise falls back to the product/age clock (create->now vs the
+    product promise or step-target sum). Reports which clock was used."""
+    stage = str(deal.get("stage") or "")
+    if any(m in stage.lower() for m in _SLA_CLOSED_MARKERS):
+        return {}
+    base_ts = deal.get("created_at") or deal.get("open_date") or deal.get("created")
+    if not base_ts:
+        return {}
+    step_key = smap.get(stage)
+    log = deal.get("sla_step_log") or {}
+    step_entered = log.get(step_key) if step_key else None
+    if step_key and step_entered:
+        target = _sla_step_target(cfg, step_key)
+        elapsed = _business_days_since(step_entered)
+        clock, clock_step = "step", step_key
+    else:
+        product = str(deal.get("product_type") or deal.get("product") or "")
+        try:
+            per_prod = int(promise.get(product)) if promise.get(product) else 0
+        except (TypeError, ValueError):
+            per_prod = 0
+        target = per_prod or _sla_step_target_sum(cfg)
+        elapsed = _business_days_since(base_ts)
+        clock, clock_step = "age", None
     if target <= 0:
         return {}
-    age = _business_days_since(ts)
-    overdue = max(0, age - target)
+    overdue = max(0, elapsed - target)
     return {
-        "deal_id": d.get("id"),
-        "client_name": d.get("client_name"),
-        "product_type": product or None,
-        "stage": d.get("stage"),
-        "owner_code": str(d.get("staff_code") or ""),
-        "age_business_days": age,
+        "deal_id": deal.get("id"),
+        "client_name": deal.get("client_name"),
+        "product_type": str(deal.get("product_type") or deal.get("product") or "") or None,
+        "stage": deal.get("stage"),
+        "owner_code": str(deal.get("staff_code") or ""),
+        "clock": clock,
+        "step": clock_step,
+        "elapsed_business_days": elapsed,
         "target_days": target,
         "overdue_business_days": overdue,
         "breached": overdue > 0,
@@ -1460,26 +1540,49 @@ def _deal_age_sla(d: dict, cfg: dict, promise: dict) -> dict:
     }
 
 
+@app.get("/api/pipeline/deals/{deal_id}/sla", tags=["pipeline"])
+def pipeline_deal_sla(deal_id: str, user: dict = Depends(get_current_user)):
+    """Per-deal SLA status — current step, clock (step|age), elapsed/target business days,
+    breach + escalation tier. Scope-checked like the rest of the deal surface."""
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = set(get_visible_staff_codes(user) or [])
+    sc = str(deal.get("staff_code") or "")
+    po = str(deal.get("portfolio_owner_code") or "")
+    if visible and sc not in visible and (not po or po not in visible):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    cfg = _sla_config()
+    status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {}, _sla_stage_step_map(cfg))
+    return {"deal_id": deal_id, "sla": status or None}
+
+
 @app.get("/api/pipeline/sla/violations", tags=["pipeline"])
 def pipeline_sla_violations(user: dict = Depends(get_current_user)):
-    """Hierarchy-scoped SLA breach view (S2a). For each OPEN deal the caller can see,
-    measure business days since creation against the product promise (or the step-target
-    sum) and surface those over target, with the escalation tier the overdue days reach.
-    Scoped by the same visible-staff-code basis as the pipeline (MD/CEO -> all; managers
-    -> subtree; RM -> own). Clock is create->now; the per-step clock arrives in S2b."""
+    """Hierarchy-scoped SLA breach view. For each OPEN deal the caller can see, measure
+    the per-step clock (where a step-entry stamp exists) or the create->now clock against
+    the configured target, and surface those over target with the escalation tier the
+    overdue days reach. Scoped like the pipeline (MD/CEO -> all; manager -> subtree; RM ->
+    own)."""
     from utils.api_pipeline_scope import get_visible_staff_codes, filter_deals_by_visible_codes
     cfg = _sla_config()
     promise = cfg.get("product_promise") or {}
+    smap = _sla_stage_step_map(cfg)
     visible = set(get_visible_staff_codes(user) or [])
     deals = filter_deals_by_visible_codes(_all_pipeline_deals(), visible)
     open_count = 0
     violations = []
     by_escalation: dict = {}
+    by_clock = {"step": 0, "age": 0}
     for d in deals:
-        s = _deal_age_sla(d, cfg, promise)
+        s = _deal_sla_status(d, cfg, promise, smap)
         if not s:
             continue
         open_count += 1
+        by_clock[s["clock"]] = by_clock.get(s["clock"], 0) + 1
         if s["breached"]:
             violations.append(s)
             esc = s["escalate_to"] or "step_owner"
@@ -1490,7 +1593,7 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
         "count": len(violations),
         "open_deals": open_count,
         "by_escalation": by_escalation,
-        "clock": "create_to_now",
+        "by_clock": by_clock,
     }
 
 
@@ -3679,6 +3782,9 @@ def pipeline_deal_create(
     # id; we re-fetch to return the full record including
     # auto-populated fields like created_at)
     created = pm.get_deal(new_id) or deal_dict
+    # SLA S2b: seed the initial step stamp from the create stage.
+    _stamp_sla_step(pm, new_id, created, user.get("username", ""))
+    created = pm.get_deal(new_id) or created
     return PipelineDealMutationResponse(
         deal=PipelineDeal.model_validate(created),
         status="created",
@@ -3879,6 +3985,10 @@ def pipeline_deal_advance(
                        user.get("username", ""))
         updated_deal = pm.get_deal(deal_id) or updated_deal
         _db_sync_pipeline_deal(updated_deal)
+
+    # SLA S2b: stamp entry into the new stage's SLA step (per-step business-day clock).
+    _stamp_sla_step(pm, deal_id, updated_deal, user.get("username", ""))
+    updated_deal = pm.get_deal(deal_id) or updated_deal
 
     bsc_ok = emit_bsc_trigger(user.get("username", ""))
     invalidate_pipeline_caches()
