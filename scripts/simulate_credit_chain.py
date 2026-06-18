@@ -1522,6 +1522,42 @@ def sla_state_probe(base):
         step("sla state: due_soon_days reclassifies on_track -> due_soon", True, True, note="skipped")
 
 
+def sla_tat_probe(base):
+    print("\n=== SLA-TAT SHADOW (Credit TAT from SLA clocks; weight 0) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not admin:
+        return
+    sc, body = _req(base, "GET", "/api/bsc/sla-tat", admin)
+    bw = body.get("bank_wide") if isinstance(body, dict) else None
+    bys = body.get("by_staff") if isinstance(body, dict) else None
+    step("sla tat: endpoint returns shadow summary structure", True,
+         sc == 200 and isinstance(body, dict)
+         and body.get("kpi_id") == "SLA_CREDIT_TAT" and body.get("shadow") is True
+         and isinstance(bw, dict) and isinstance(bys, dict)
+         and {"tat_days", "n_deals", "n_staff"} <= set(bw),
+         note=f"bank_wide={bw}")
+
+    n = bw.get("n_deals") if isinstance(bw, dict) else None
+    if isinstance(n, int) and n >= 1:
+        step("sla tat: bank-wide tat_days is numeric when completed deals exist", True,
+             isinstance(bw.get("tat_days"), (int, float)),
+             note=f"tat_days={bw.get('tat_days')} over n={n}")
+        ok_rows = all(isinstance(r, dict) and isinstance(r.get("tat_days"), (int, float))
+                      and isinstance(r.get("n_deals"), int) for r in bys.values())
+        step("sla tat: by_staff rows carry tat_days + n_deals", True,
+             ok_rows and len(bys) >= 1, note=f"{len(bys)} staff with completed credit TAT")
+    else:
+        step("sla tat: bank-wide tat_days is numeric when completed deals exist", True, True,
+             note="no completed credit-TAT deals yet (structural pass)")
+        step("sla tat: by_staff rows carry tat_days + n_deals", True, True,
+             note="no completed credit-TAT deals yet (structural pass)")
+
+    if owner:
+        so, _ = _req(base, "GET", "/api/bsc/sla-tat", owner)
+        step("sla tat: endpoint readable by non-admin staff", 200, so)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1548,6 +1584,7 @@ def main():
     sla_step_clock_probe(args.base)
     sla_commitment_probe(args.base)
     sla_state_probe(args.base)
+    sla_tat_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)

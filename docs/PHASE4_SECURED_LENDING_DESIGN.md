@@ -2685,3 +2685,30 @@ button + keyboard Enter) and navigates to /pipeline/{deal_id}, so a manager can 
 straight from a breach to the deal. The Commit/Update button calls stopPropagation so it
 toggles the commitment form without navigating; the inline form sits outside the clickable
 region. Single-file change (Sla.tsx).
+
+## #86 — S4a: SLA-clock Credit TAT as a SHADOW KPI [BACKEND]
+
+S4 grounding overturned the "one Credit Approval TAT" assumption: the credit TATs
+are a config-driven, role-weighted FAMILY — CREDIT_TAT_STANDARD/COMPLEX/EXPRESS and
+LOAN_DISBURSEMENT_TAT (src=credit_engine, on credit analysts/officers) plus K011
+"TAT — Loan Processing" (src=loan_applications, w=0.06, on operational managers:
+COO, Central Processing, Corporate Analysis, Clearing, Core Banking Support). The
+live operational tributaries (loan_applications JSON, registry) produce 0 actuals
+for the period; real scores come from the CBS Dec-25 batch. So repointing any of
+these at a new source would move real appraisal scores with nothing to validate
+against first.
+
+S4a therefore lands shadow-first (mirrors the referral K238/K239 precedent):
+  * utils/sla_tat_engine.py — derives per-staff Credit TAT (business days) from the
+    pipeline SLA clocks (deal.sla_step_log: credit_assessment -> disbursement /
+    security_perfection). Pure read over PipelineManager().deals; in-progress deals
+    reported separately, not folded into the completed-TAT mean.
+  * GET /api/bsc/sla-tat — read-only validation surface (bank_wide + by_staff).
+  * scripts/add_sla_tat_kpi.py — idempotent, backup-first injector adding
+    SLA_CREDIT_TAT (Operational Excellence, weight 0.0, shadow:true, direction
+    lower, source sla_clock) to kpi_library.json. Runtime data change — NOT
+    committed (live library stays local), same as the referral injector.
+  * Harness: sla_tat_probe (structure + value sanity + non-admin readability).
+
+Promotion (S4b): once the SLA-derived numbers are validated against K011 / the
+lanes, repoint a weighted TAT KPI at this source as a deliberate, rebalanced step.

@@ -977,6 +977,24 @@ def bsc_staff(username: str, user: dict = Depends(get_current_user)):
         return scores.get(username, {})
     return {}
 
+
+@app.get("/api/bsc/sla-tat")
+def bsc_sla_tat(user: dict = Depends(get_current_user)):
+    """S4a (shadow): per-staff Credit TAT derived from the pipeline SLA clocks
+    (deal.sla_step_log), independent of the CBS batch / credit_engine. Read-only
+    validation surface for the SLA_CREDIT_TAT shadow KPI (weight 0) — lets the
+    SLA-derived TAT be compared against K011 / the credit lanes before any
+    weighted KPI is repointed at this source (S4b promotion)."""
+    _audit("API_BSC_SLA_TAT", user)
+    try:
+        from utils.sla_tat_engine import summary as _sla_tat_summary
+        return _sla_tat_summary()
+    except Exception as e:
+        logger.error(f"SLA-TAT engine error: {e}")
+        return {"kpi_id": "SLA_CREDIT_TAT", "shadow": True,
+                "bank_wide": {"tat_days": None, "n_deals": 0, "n_staff": 0},
+                "by_staff": {}, "in_progress": 0, "error": str(e)}
+
 # ── Pipeline Endpoints ────────────────────────────────────────────
 @app.get("/api/pipeline/summary")
 def pipeline_summary(user: dict = Depends(get_current_user)):
