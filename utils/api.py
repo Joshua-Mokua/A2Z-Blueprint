@@ -1391,6 +1391,109 @@ def set_sla_config(
     return {"status": "saved", "sla_config": cfg}
 
 
+# ─────────────────────────────────────────────────────────────────────
+# SLA S2a — product/age violation engine (read-only over created_at + S1 config).
+# The per-STEP business-day clock (S2b) needs step-entry timestamps deals don't
+# yet carry; this slice measures the create->now clock against the per-product
+# promise (or the step-target sum) so breaches are already evident for action.
+# ─────────────────────────────────────────────────────────────────────
+_SLA_CLOSED_MARKERS = ("won", "lost", "closed", "declined", "disbursed", "rejected")
+
+
+def _sla_step_target_sum(cfg: dict) -> int:
+    """End-to-end target (business days) implied by the step config — the fallback
+    create->closed promise when no per-product promise is configured."""
+    total = 0
+    for s in (cfg.get("steps") or []):
+        try:
+            t = int(s.get("target_days", 0))
+        except (TypeError, ValueError):
+            t = 0
+        if t > 0:
+            total += t
+    return total
+
+
+def _sla_escalation_for(overdue_bd: int, cfg: dict) -> str:
+    """Highest ladder tier whose after_days threshold the overdue days have reached."""
+    role = "step_owner"
+    for tier in (cfg.get("escalation_ladder") or []):
+        try:
+            if int(tier.get("after_days")) <= overdue_bd:
+                role = str(tier.get("escalate_to") or role)
+        except (TypeError, ValueError):
+            continue
+    return role
+
+
+def _deal_age_sla(d: dict, cfg: dict, promise: dict) -> dict:
+    """Product/age SLA for one OPEN deal — business days since created_at vs the
+    per-product promise (or the step-target sum). {} for a closed deal or one with no
+    usable creation timestamp."""
+    stage = str(d.get("stage") or "").lower()
+    if any(m in stage for m in _SLA_CLOSED_MARKERS):
+        return {}
+    ts = d.get("created_at") or d.get("open_date") or d.get("created")
+    if not ts:
+        return {}
+    product = str(d.get("product_type") or d.get("product") or "")
+    try:
+        per_prod = int(promise.get(product)) if promise.get(product) else 0
+    except (TypeError, ValueError):
+        per_prod = 0
+    target = per_prod or _sla_step_target_sum(cfg)
+    if target <= 0:
+        return {}
+    age = _business_days_since(ts)
+    overdue = max(0, age - target)
+    return {
+        "deal_id": d.get("id"),
+        "client_name": d.get("client_name"),
+        "product_type": product or None,
+        "stage": d.get("stage"),
+        "owner_code": str(d.get("staff_code") or ""),
+        "age_business_days": age,
+        "target_days": target,
+        "overdue_business_days": overdue,
+        "breached": overdue > 0,
+        "escalate_to": _sla_escalation_for(overdue, cfg) if overdue > 0 else None,
+    }
+
+
+@app.get("/api/pipeline/sla/violations", tags=["pipeline"])
+def pipeline_sla_violations(user: dict = Depends(get_current_user)):
+    """Hierarchy-scoped SLA breach view (S2a). For each OPEN deal the caller can see,
+    measure business days since creation against the product promise (or the step-target
+    sum) and surface those over target, with the escalation tier the overdue days reach.
+    Scoped by the same visible-staff-code basis as the pipeline (MD/CEO -> all; managers
+    -> subtree; RM -> own). Clock is create->now; the per-step clock arrives in S2b."""
+    from utils.api_pipeline_scope import get_visible_staff_codes, filter_deals_by_visible_codes
+    cfg = _sla_config()
+    promise = cfg.get("product_promise") or {}
+    visible = set(get_visible_staff_codes(user) or [])
+    deals = filter_deals_by_visible_codes(_all_pipeline_deals(), visible)
+    open_count = 0
+    violations = []
+    by_escalation: dict = {}
+    for d in deals:
+        s = _deal_age_sla(d, cfg, promise)
+        if not s:
+            continue
+        open_count += 1
+        if s["breached"]:
+            violations.append(s)
+            esc = s["escalate_to"] or "step_owner"
+            by_escalation[esc] = by_escalation.get(esc, 0) + 1
+    violations.sort(key=lambda x: x["overdue_business_days"], reverse=True)
+    return {
+        "violations": violations,
+        "count": len(violations),
+        "open_deals": open_count,
+        "by_escalation": by_escalation,
+        "clock": "create_to_now",
+    }
+
+
 #
 # Roles live in kpi_library.json -> role_kpis (the authoritative registry).
 # This surface LISTS every role with its KPI set, resolved pillar mix, and

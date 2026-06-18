@@ -1275,6 +1275,52 @@ def sla_config_probe(base):
     _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": cfg})
 
 
+def sla_violations_probe(base):
+    print("\n=== SLA VIOLATIONS (S2a — product/age clock) ===")
+    import copy as _copy
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not admin:
+        return
+
+    _st, r0 = _req(base, "GET", "/api/admin/sla-config", admin)
+    base_cfg = r0.get("sla_config", {}) if isinstance(r0, dict) else {}
+    ladder_roles = {str(t.get("escalate_to")) for t in (base_cfg.get("escalation_ladder") or [])} | {"step_owner"}
+
+    # Force breaches deterministically: a 1-day Term Loan promise -> aged open deals breach.
+    tight = _copy.deepcopy(base_cfg)
+    tight["product_promise"] = {"Term Loan": 1}
+    _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": tight})
+
+    st, v = _req(base, "GET", "/api/pipeline/sla/violations", admin)
+    v = v if isinstance(v, dict) else {}
+    vios = v.get("violations", []) if isinstance(v.get("violations"), list) else []
+    step("sla violations: endpoint reachable + well-formed", True,
+         st == 200 and isinstance(v.get("violations"), list) and isinstance(v.get("open_deals"), int),
+         note=f"{v.get('count')} breaches / {v.get('open_deals')} open")
+    step("sla violations: tight product promise surfaces Term Loan breaches", True,
+         any(x.get("product_type") == "Term Loan" and x.get("overdue_business_days", 0) >= 1 for x in vios),
+         note=f"{sum(1 for x in vios if x.get('product_type') == 'Term Loan')} term-loan breaches")
+    sample = vios[0] if vios else None
+    step("sla violations: each breach carries target + overdue + escalation", True,
+         bool(sample) and sample.get("target_days", 0) >= 1
+         and sample.get("overdue_business_days", 0) >= 1 and sample.get("breached") is True
+         and sample.get("escalate_to") in ladder_roles,
+         note=f"escalate_to={sample.get('escalate_to') if sample else None}")
+    step("sla violations: overdue == age - target (math)", True,
+         bool(sample) and sample["overdue_business_days"] == max(0, sample["age_business_days"] - sample["target_days"]))
+
+    st_rm, vrm = _req(base, "GET", "/api/pipeline/sla/violations", owner)
+    vrm = vrm if isinstance(vrm, dict) else {}
+    step("sla violations: RM is hierarchy-scoped (subset of MD)", True,
+         vrm.get("open_deals", 0) <= v.get("open_deals", 1)
+         and vrm.get("count", 0) <= v.get("count", 1),
+         note=f"RM open={vrm.get('open_deals')} <= MD open={v.get('open_deals')}")
+
+    # Restore the original config (net-zero).
+    _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": base_cfg})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1296,6 +1342,7 @@ def main():
     troops_probe(args.base, cleared_case_id)
     roles_probe(args.base)
     sla_config_probe(args.base)
+    sla_violations_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)

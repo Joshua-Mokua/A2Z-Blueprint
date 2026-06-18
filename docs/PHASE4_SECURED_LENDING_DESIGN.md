@@ -2461,3 +2461,29 @@ Makes #73's classification visible on the Referrals page.
   recipient_department; TeamReferralsResponse.summary gains by_tier.
 esbuild clean; tsc in-env. Referral tier work complete end-to-end (derived + config-
 driven backend -> visible badges + funnel). Two-sided B2B KPI still deferred to S4.
+
+## #75 — SLA S2a: product/age violation engine [BACKEND]
+
+GROUNDED FIRST (CGR1): pipeline deals carry created_at but NO per-stage timestamps
+(the stage_history in the codebase is HR/partnership cases; the stalled-deal detector
+itself falls back to created_at as a "no stage-movement proxy"). So the per-STEP clock
+can't be computed yet — that needs step-entry timestamps (S2b, touches mutation paths).
+S2a therefore measures the create->now clock, which is fully computable today.
+
+- _deal_age_sla(deal, cfg, promise): for an OPEN deal (skips won/lost/closed/declined/
+  disbursed/rejected and any deal lacking created_at), business days since creation vs
+  the per-product promise (pipeline_settings sla_config.product_promise) or, when none is
+  set, _sla_step_target_sum (the end-to-end target implied by the step config).
+  overdue = max(0, age - target); escalate_to from _sla_escalation_for (highest ladder
+  tier the overdue days reach).
+- GET /api/pipeline/sla/violations — hierarchy-scoped (filter_deals_by_visible_codes on
+  the visible-staff set; MD/CEO -> all, manager -> subtree, RM -> own). Returns breached
+  deals sorted by overdue desc, + open_deals, count, by_escalation, clock=create_to_now.
+- Reuses _business_days_since (Mon-Fri) — the locked business-day basis.
+
+Harness: +5 (188 -> 193) — probe sets a tight 1-day Term Loan promise to force
+deterministic breaches, asserts endpoint well-formed, Term Loan breaches surface, each
+breach carries target+overdue+escalation (escalate_to in the configured ladder), the
+overdue==age-target math holds, and RM is a hierarchy-scoped subset of MD; then restores
+the config (net-zero). NEXT: S2b (stamp step-entry timestamps -> true per-step clock),
+or the S1/S2 admin + dashboard UI.
