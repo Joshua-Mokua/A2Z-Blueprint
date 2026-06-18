@@ -1764,6 +1764,7 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
     by_escalation: dict = {}
     by_clock = {"step": 0, "age": 0}
     by_step: dict = {}
+    by_state = {"on_track": 0, "due_soon": 0, "breached": 0}
     for d in deals:
         s = _deal_sla_status(d, cfg, promise, smap, credit_idx)
         if not s:
@@ -1772,6 +1773,8 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
         by_clock[s["clock"]] = by_clock.get(s["clock"], 0) + 1
         sk = s.get("step") or "age"
         by_step[sk] = by_step.get(sk, 0) + 1
+        st = s.get("state") or "on_track"
+        by_state[st] = by_state.get(st, 0) + 1
         if s["breached"] or s.get("commitment_status") == "unfulfilled":
             violations.append(s)
             esc = s["escalate_to"] or "step_owner"
@@ -1784,6 +1787,7 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
         "by_escalation": by_escalation,
         "by_clock": by_clock,
         "by_step": by_step,
+        "by_state": by_state,
     }
 
 

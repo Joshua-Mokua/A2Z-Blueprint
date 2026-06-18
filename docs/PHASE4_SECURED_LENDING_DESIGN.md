@@ -2650,3 +2650,15 @@ visiting the Monitor.
 
 This closes the "SLA visible everywhere" step Josh asked for (deals carry their own SLA).
 NEXT (queued): "due soon" / breaching filters in Analytics.
+
+## #83 — SLA by_state summary on the violations endpoint [BACKEND]
+
+Feeds the Analytics SLA summary card. The violations endpoint already walks every open,
+scoped deal computing _deal_sla_status (which carries `state`); now it also tallies
+by_state {on_track, due_soon, breached} alongside by_clock/by_step. The three counts sum to
+open_deals, so the card reconciles to the open population at a glance and each tile can
+deep-link to the Sales Pro list filtered to that state.
+
+Harness: +1 (211 -> 212) — violations expose by_state with all three keys, summing exactly
+to open_deals. NEXT (frontend): Analytics SLA summary card (3 clickable state tiles) ->
+Sales Pro list filtered by ?sla=<state>.

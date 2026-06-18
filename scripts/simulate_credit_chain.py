@@ -1478,6 +1478,13 @@ def sla_state_probe(base):
          isinstance(cfg0, dict) and isinstance(ddays0, int) and ddays0 >= 0,
          note=f"due_soon_days={ddays0}")
 
+    _svs, vv = _req(base, "GET", "/api/pipeline/sla/violations", admin)
+    bs = vv.get("by_state", {}) if isinstance(vv, dict) else {}
+    step("sla state: violations expose by_state summing to open deals", True,
+         isinstance(bs, dict) and {"on_track", "due_soon", "breached"} <= set(bs)
+         and sum(bs.values()) == vv.get("open_deals"),
+         note=f"by_state={bs} open={vv.get('open_deals') if isinstance(vv, dict) else None}")
+
     st_c, body = _req(base, "POST", "/api/pipeline/deals", owner, {
         "client_name": f"SLA State Probe {_dt.now():%H%M%S}",
         "product_type": "Term Loan", "deal_value": 5000000,
