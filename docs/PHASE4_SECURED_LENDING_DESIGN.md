@@ -1972,3 +1972,23 @@ detail resolves KPIs.
 DEFERRED to C2b-2 (guarded): per-staff re-parenting (ReportingLineManager surface,
 with auth/DOA) and per-KPI weight editing (after identifier reconciliation). React
 roles panel consumes /api/admin/roles next.
+
+## #53 — Batch C2b-1 (frontend): Role Registry panel [FRONTEND]
+
+React page consuming the C2b-1 backend. New page pages/RolesAdmin.tsx (default
+export), route /admin/roles (config-admin gated via isConfigAdminRole), nav item
+under Reference & Admin (visibleFor isConfigAdmin), TopBar ROUTES title.
+
+- Full registry Table (search / sort / paginate / CSV export) over /api/admin/roles:
+  Role (click -> KPI detail), KPI count, pillar mix, Disbursement (Granted badge +
+  Grant/Revoke toggle wired to POST /api/admin/roles/capabilities with optimistic
+  row update + toast).
+- Side panel: per-role resolved KPI breakdown (/api/admin/role-detail) — name/
+  pillar/id/weight, unmapped refs flagged amber.
+- Read-only on weights + reporting line (those are C2b-2). Restricted-access card
+  for non-config-admins.
+
+lib/api.ts: AdminRoleRow/AdminRolesResponse/AdminRoleKpi/AdminRoleDetailResponse/
+RoleCapabilityResponse types + fetchAdminRoles/fetchAdminRoleDetail/setRoleCapability
+(named distinctly from the RBAC RoleRegistry in types/role.ts). esbuild alias-
+resolved bundle check clean on all 5 touched files; tsc gate to run in-env.

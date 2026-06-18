@@ -348,6 +348,66 @@ export async function updatePipelineConfig(patch: AdminConfigPatch): Promise<Adm
 }
 
 
+// ── Role registry (admin) ────────────────────────────────────────────────
+// The full role-definition registry (kpi_library.json -> role_kpis): every
+// role with its KPI count, resolved pillar mix, and capabilities. Distinct
+// from `RoleRegistry` in types/role.ts, which is the RBAC tier registry.
+
+export interface AdminRoleRow {
+  role: string;
+  kpi_count: number;
+  pillars: Record<string, number>;
+  can_disburse: boolean;
+}
+
+export interface AdminRolesResponse {
+  roles: AdminRoleRow[];
+  count: number;
+  disbursement_roles: string[];
+}
+
+export interface AdminRoleKpi {
+  ref: string | number;
+  id?: string;
+  name?: string;
+  pillar?: string;
+  weight?: number;
+  mapped: boolean;
+}
+
+export interface AdminRoleDetailResponse {
+  role: string;
+  kpis: AdminRoleKpi[];
+  kpi_count: number;
+  unmapped: number;
+  can_disburse: boolean;
+}
+
+export interface RoleCapabilityResponse {
+  role: string;
+  can_disburse: boolean;
+  disbursement_roles: string[];
+}
+
+/** Full role registry — config-admin only (server-gated). */
+export async function fetchAdminRoles(): Promise<AdminRolesResponse> {
+  return getJson<AdminRolesResponse>('/admin/roles');
+}
+
+/** One role's resolved KPI breakdown + capabilities. */
+export async function fetchAdminRoleDetail(role: string): Promise<AdminRoleDetailResponse> {
+  return getJson<AdminRoleDetailResponse>(`/admin/role-detail?role=${encodeURIComponent(role)}`);
+}
+
+/** Grant/revoke a role's disbursement capability. */
+export async function setRoleCapability(
+  role: string, canDisburse: boolean,
+): Promise<RoleCapabilityResponse> {
+  return postJson<RoleCapabilityResponse, { role: string; can_disburse: boolean }>(
+    '/admin/roles/capabilities', { role, can_disburse: canDisburse });
+}
+
+
 /**
  * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending
  * value split, per-class buckets (asset/liability/insurance/other), the

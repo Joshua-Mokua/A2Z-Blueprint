@@ -23,6 +23,7 @@ const ROUTES: RouteEntry[] = [
   { label: 'Credit Analytics',    domain: 'Credit Factory',         path: '/credit-analytics', match: (p) => p.startsWith('/credit-analytics') },
   { label: 'Customer Lookup',     domain: 'Reference & Admin',      path: '/cbs',              match: (p) => p.startsWith('/cbs') },
   { label: 'FX Rates',            domain: 'Reference & Admin',      path: '/fx-rates',         match: (p) => p.startsWith('/fx-rates') },
+  { label: 'Role Registry',       domain: 'Reference & Admin',      path: '/admin/roles',      match: (p) => p.startsWith('/admin/roles') },
 ];
 
 function routeFor(pathname: string): RouteEntry | undefined {

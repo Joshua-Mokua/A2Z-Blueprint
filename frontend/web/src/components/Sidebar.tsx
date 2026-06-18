@@ -90,6 +90,11 @@ const NAV_GROUPS: NavGroup[] = [
         matchActive: (p) => p.startsWith('/admin/config'),
         visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,
       },
+      {
+        path: '/admin/roles', label: 'Role Registry',
+        matchActive: (p) => p.startsWith('/admin/roles'),
+        visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,
+      },
     ],
   },
 ];
