@@ -2017,3 +2017,14 @@ esbuild alias-resolved bundle check clean on all 5 touched files; tsc gate in-en
 NOTE: recipient entry is staff code + name inputs (no staff-search endpoint exists
 yet). The Refer/Assign action ON the deal-detail page is a separate follow-up
 (Batch B2), as is a staff picker.
+
+## #55 — Batch B2a: staff-search endpoint (referral recipient picker) [BACKEND]
+
+GET /api/staff/search?q=&limit= over get_staff_roster() (Staff Code / Staff Name /
+Role / Unit / Region). Name OR code substring; bank-wide (NOT scope-filtered, since
+referrals cross cascade boundaries); excludes the caller's own record (no self-
+referral). Empty q returns first `limit`. Foundation for the B2b refer-from-detail
+staff picker.
+
+Harness staff_search_probe (3): by-name finds Frank Wanyama (300731), by-code finds
+Frank, caller excluded from own results.

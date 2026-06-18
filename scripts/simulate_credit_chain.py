@@ -920,6 +920,27 @@ def roles_probe(base):
          note=f"{d.get('kpi_count') if isinstance(d, dict) else '?'} kpis")
 
 
+def staff_search_probe(base):
+    print("\n=== STAFF SEARCH (referral recipient picker) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")   # Frank Wanyama, 300731
+    if not admin:
+        return
+    st, r = _req(base, "GET", "/api/staff/search?q=Wanyama", admin)
+    codes = [s.get("staff_code") for s in (r.get("staff") or [])] if isinstance(r, dict) else []
+    step("staff search: by name finds Frank Wanyama", True, "300731" in codes,
+         note=f"{len(codes)} matches")
+
+    st, r2 = _req(base, "GET", "/api/staff/search?q=300731", admin)
+    codes2 = [s.get("staff_code") for s in (r2.get("staff") or [])] if isinstance(r2, dict) else []
+    step("staff search: by code finds Frank", True, "300731" in codes2)
+
+    if owner:
+        st, r3 = _req(base, "GET", "/api/staff/search?q=Wanyama", owner)
+        codes3 = [s.get("staff_code") for s in (r3.get("staff") or [])] if isinstance(r3, dict) else []
+        step("staff search: caller excluded from own results", True, "300731" not in codes3)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -943,6 +964,7 @@ def main():
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)
+    staff_search_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     credit_probe(args.base)
