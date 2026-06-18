@@ -1992,3 +1992,28 @@ lib/api.ts: AdminRoleRow/AdminRolesResponse/AdminRoleKpi/AdminRoleDetailResponse
 RoleCapabilityResponse types + fetchAdminRoles/fetchAdminRoleDetail/setRoleCapability
 (named distinctly from the RBAC RoleRegistry in types/role.ts). esbuild alias-
 resolved bundle check clean on all 5 touched files; tsc gate to run in-env.
+
+## #54 — Batch B: referral inbox frontend (Incoming / Returned / Following) [FRONTEND]
+
+React page for the refer-existing-deal lifecycle. New pages/Referrals.tsx (default
+export), route /referrals, nav item + TopBar title under Business Development.
+
+Three tabs (counts on each):
+- Incoming — pending referrals addressed to me; Accept, or Decline with an inline
+  required reason (>=3 chars) -> returns the deal to the referrer's pool.
+- Returned — referrals I made that were declined (shows decline reason); inline
+  Reassign form (new recipient code + name + optional note) -> back to pending.
+- Following — referrals I made that are live (pending/accepted); read-only with
+  status badge + recipient.
+
+Each referral renders as a Card: client + status badge, product/stage/segment,
+KES value, referrer/recipient, note. Actions toast + refetch all three lists.
+
+lib/api.ts: ReferralView/ReferralListResponse types + fetchIncomingReferrals/
+fetchReturnedReferrals/fetchOutgoingReferrals + acceptReferral/declineReferral/
+reassignReferral (distinct from the legacy referPipelineDeal create-referral path).
+esbuild alias-resolved bundle check clean on all 5 touched files; tsc gate in-env.
+
+NOTE: recipient entry is staff code + name inputs (no staff-search endpoint exists
+yet). The Refer/Assign action ON the deal-detail page is a separate follow-up
+(Batch B2), as is a staff picker.

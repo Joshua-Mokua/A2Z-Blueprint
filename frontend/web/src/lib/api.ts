@@ -408,6 +408,69 @@ export async function setRoleCapability(
 }
 
 
+// ── Referral inbox / lifecycle (refer-existing-deal flow) ────────────────
+// Distinct from referPipelineDeal above (the legacy create-referral-deal
+// endpoint). These drive the Incoming / Returned / Following inbox.
+
+export interface ReferralView {
+  id: string;
+  client_name?: string;
+  deal_value?: number;
+  product_type?: string;
+  stage?: string;
+  segment?: string;
+  referral_status?: string;
+  referred_to?: string;
+  referred_to_code?: string;
+  referred_by_name?: string;
+  referred_by_code?: string;
+  referral_note?: string;
+  decline_reason?: string;
+  referred_at?: string;
+  accepted_at?: string;
+  declined_at?: string;
+}
+
+export interface ReferralListResponse {
+  deals: ReferralView[];
+  count: number;
+}
+
+/** Pending referrals addressed to the caller (accept / decline). */
+export async function fetchIncomingReferrals(): Promise<ReferralListResponse> {
+  return getJson<ReferralListResponse>('/pipeline/referrals/incoming');
+}
+
+/** Declined referrals the caller made (reassign pool). */
+export async function fetchReturnedReferrals(): Promise<ReferralListResponse> {
+  return getJson<ReferralListResponse>('/pipeline/referrals/returned');
+}
+
+/** Live referrals the caller made — pending + accepted (follow progress). */
+export async function fetchOutgoingReferrals(): Promise<ReferralListResponse> {
+  return getJson<ReferralListResponse>('/pipeline/referrals/outgoing');
+}
+
+export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
+  return postJson<{ status?: string }, Record<string, never>>(
+    `/pipeline/deals/${dealId}/referral/accept`, {});
+}
+
+export async function declineReferral(dealId: string, reason: string): Promise<{ status?: string }> {
+  return postJson<{ status?: string }, { reason: string }>(
+    `/pipeline/deals/${dealId}/referral/decline`, { reason });
+}
+
+export async function reassignReferral(
+  dealId: string, code: string, name: string, note: string,
+): Promise<{ status?: string }> {
+  return postJson<{ status?: string },
+    { referred_to_code: string; referred_to_name: string; referral_note: string }>(
+    `/pipeline/deals/${dealId}/referral/reassign`,
+    { referred_to_code: code, referred_to_name: name, referral_note: note });
+}
+
+
 /**
  * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending
  * value split, per-class buckets (asset/liability/insurance/other), the

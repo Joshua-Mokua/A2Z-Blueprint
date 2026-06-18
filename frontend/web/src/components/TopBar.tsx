@@ -18,6 +18,7 @@ const ROUTES: RouteEntry[] = [
   { label: 'Pipeline',            domain: 'Business Development',    path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
   { label: 'Pipeline Analytics',  domain: 'Business Development',    path: '/analytics',        match: (p) => p.startsWith('/analytics') },
   { label: 'Manager Queues',      domain: 'Business Development',    path: '/pipeline/queues',  match: (p) => p.startsWith('/pipeline/queues') },
+  { label: 'Referrals',           domain: 'Business Development',    path: '/referrals',        match: (p) => p.startsWith('/referrals') },
   { label: 'Loan Applications',   domain: 'Credit Factory',         path: '/lms',              match: (p) => p.startsWith('/lms') },
   { label: 'Credit Admin',        domain: 'Credit Factory',         path: '/credit-admin',     match: (p) => p.startsWith('/credit-admin') },
   { label: 'Credit Analytics',    domain: 'Credit Factory',         path: '/credit-analytics', match: (p) => p.startsWith('/credit-analytics') },
