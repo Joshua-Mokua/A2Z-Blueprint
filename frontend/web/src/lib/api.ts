@@ -490,6 +490,20 @@ export async function fetchReferralsByDepartment(): Promise<ReferralsByDepartmen
   return getJson<ReferralsByDepartment>('/pipeline/referrals/analytics/by-department');
 }
 
+export interface TeamReferralsResponse {
+  deals: ReferralView[];
+  count: number;
+  summary: {
+    total: number;
+    by_status: { pending: number; accepted: number; declined: number };
+    closed: { won: number; lost: number };
+  };
+}
+
+export async function fetchTeamReferrals(): Promise<TeamReferralsResponse> {
+  return getJson<TeamReferralsResponse>('/pipeline/referrals/team');
+}
+
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, Record<string, never>>(
     `/pipeline/deals/${dealId}/referral/accept`, {});

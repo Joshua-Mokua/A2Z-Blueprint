@@ -12,12 +12,13 @@ import { Badge, type BadgeTone } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import {
   fetchIncomingReferrals, fetchReturnedReferrals, fetchOutgoingReferrals,
-  fetchOutgoingReferralAnalytics, fetchReferralsByDepartment,
+  fetchOutgoingReferralAnalytics, fetchReferralsByDepartment, fetchTeamReferrals,
   acceptReferral, declineReferral, reassignReferral,
   type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment,
+  type TeamReferralsResponse,
 } from '@/lib/api';
 
-type Tab = 'incoming' | 'returned' | 'following';
+type Tab = 'incoming' | 'returned' | 'following' | 'team';
 
 const inputCls =
   'w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none ' +
@@ -47,6 +48,8 @@ export default function Referrals() {
   const [outgoing, setOutgoing] = useState<ReferralView[]>([]);
   const [analytics, setAnalytics] = useState<OutgoingReferralAnalytics | null>(null);
   const [dept, setDept] = useState<ReferralsByDepartment | null>(null);
+  const [team, setTeam] = useState<ReferralView[]>([]);
+  const [teamSummary, setTeamSummary] = useState<TeamReferralsResponse['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -66,6 +69,7 @@ export default function Referrals() {
     // Funnel + alerts (own referrals); department view is management-only (403 -> hidden).
     fetchOutgoingReferralAnalytics().then(setAnalytics).catch(() => setAnalytics(null));
     fetchReferralsByDepartment().then(setDept).catch(() => setDept(null));
+    fetchTeamReferrals().then((t) => { setTeam(t.deals); setTeamSummary(t.summary); }).catch(() => {});
   }
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
 
@@ -114,8 +118,12 @@ export default function Referrals() {
     { key: 'incoming', label: 'Incoming', count: incoming.length },
     { key: 'returned', label: 'Returned', count: returned.length },
     { key: 'following', label: 'Following', count: outgoing.length },
+    { key: 'team', label: 'Team', count: team.length },
   ];
-  const active = tab === 'incoming' ? incoming : tab === 'returned' ? returned : outgoing;
+  const active = tab === 'incoming' ? incoming
+    : tab === 'returned' ? returned
+    : tab === 'team' ? team
+    : outgoing;
 
   function DealMeta({ d }: { d: ReferralView }) {
     return (
@@ -160,6 +168,21 @@ export default function Referrals() {
             </button>
           ))}
         </div>
+
+        {tab === 'team' && teamSummary && (
+          <div className="mb-3">
+            <Card><Card.Body>
+              <div className="text-sm font-semibold text-gray-900 mb-1">Team referral funnel</div>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <span className="text-gray-500">Total <b className="text-gray-900">{teamSummary.total}</b></span>
+                <span className="text-gray-500">Pending <b className="text-amber-700">{teamSummary.by_status.pending}</b></span>
+                <span className="text-gray-500">Accepted <b className="text-emerald-700">{teamSummary.by_status.accepted}</b></span>
+                <span className="text-gray-500">Closed won <b className="text-emerald-700">{teamSummary.closed.won}</b></span>
+                <span className="text-gray-500">Closed lost <b className="text-gray-700">{teamSummary.closed.lost}</b></span>
+              </div>
+            </Card.Body></Card>
+          </div>
+        )}
 
         {tab === 'following' && analytics && (
           <div className="space-y-3 mb-3">
@@ -213,6 +236,7 @@ export default function Referrals() {
               {tab === 'incoming' && 'No referrals waiting for you.'}
               {tab === 'returned' && 'No returned referrals to reassign.'}
               {tab === 'following' && "You aren't following any referrals yet."}
+              {tab === 'team' && 'No referrals across your team yet.'}
             </p>
           </Card.Body></Card>
         ) : (
@@ -228,6 +252,12 @@ export default function Referrals() {
                       )}
                       {tab === 'following' && d.referred_to && (
                         <div>to <span className="text-gray-600">{d.referred_to}</span></div>
+                      )}
+                      {tab === 'team' && (
+                        <div>
+                          {d.referred_by_name && <div><span className="text-gray-600">{d.referred_by_name}</span></div>}
+                          {d.referred_to && <div className="mt-0.5">→ <span className="text-gray-600">{d.referred_to}</span></div>}
+                        </div>
                       )}
                       {formatDate(d.referred_at) && <div className="mt-0.5">{formatDate(d.referred_at)}</div>}
                     </div>

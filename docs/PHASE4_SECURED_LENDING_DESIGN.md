@@ -2357,3 +2357,18 @@ Harness: +4 (172 -> 176) — team MD view well-formed, RM hierarchy-scoped (subs
 MD), RM sees only own-subtree referrals, and the alert window is exposed as editable
 config. FRONTEND (next): a hierarchy-scoped "Team referrals" pipeline view to CEO
 level (the visible twin).
+
+## #70 — Referrals "Team" tab: the hierarchy-scoped twin view [FRONTEND]
+
+Surfaces GET /pipeline/referrals/team as a 4th tab on the Referrals page. The
+visible twin of the pipeline's hierarchy view: a line manager/head/chief sees their
+team's referrals, the MD/CEO sees all, an RM sees their own — the same
+REPORTING_TREE scoping, rendered.
+- "Team referral funnel" summary (total / pending / accepted / closed won/lost)
+  from the endpoint's summary.
+- List shows each referral's referred_by_name -> referred_to so managers see who
+  referred what and its progress (stage + status badges, as the other tabs).
+lib/api.ts: TeamReferralsResponse + fetchTeamReferrals. esbuild clean; tsc in-env.
+
+Referral arc now complete end-to-end: refer-on-create -> nod lifecycle -> individual
+funnel + alerts -> department analytics -> hierarchy team view (to CEO). Next: SLA S1.
