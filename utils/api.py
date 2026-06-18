@@ -1201,7 +1201,7 @@ _EDITABLE_CONFIG_KEYS = {
     "individual_mous", "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
     "probability_map", "deal_types", "disbursement_roles",
-    "referral_pending_alert_days",
+    "referral_pending_alert_days", "referral_business_departments",
 }
 
 # Roles permitted to complete disbursement (Troops / Treasury Back Office).
@@ -1258,6 +1258,7 @@ def _editable_config_view() -> dict:
         "deal_types":         cfg.get("deal_types", []),
         "disbursement_roles": cfg.get("disbursement_roles", list(_DISBURSEMENT_ROLES_DEFAULT)),
         "referral_pending_alert_days": int(cfg.get("referral_pending_alert_days", _REFERRAL_PENDING_ALERT_DAYS)),
+        "referral_business_departments": cfg.get("referral_business_departments", list(_DEFAULT_REFERRAL_BUSINESS_DEPARTMENTS)),
     }
 
 
@@ -2939,6 +2940,72 @@ def _all_pipeline_deals() -> list:
     return _PM().get_deals()
 
 
+_DEFAULT_REFERRAL_BUSINESS_DEPARTMENTS = [
+    "Sales", "Commercial", "Corporate", "SME", "Retail",
+    "Business Banking", "Consumer Banking", "Personal Banking", "CIB",
+]
+_DEPT_MAP_CACHE = {"ts": 0.0, "map": {}}
+
+
+def _referral_business_departments() -> set:
+    """Admin-configurable set of departments treated as revenue/business units. A
+    referral FROM a business dept is B2B (business->business); FROM anything else is
+    S2B (support->business). pipeline_settings.referral_business_departments overrides
+    the seeded default; the bank finalises the map in admin config."""
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("referral_business_departments")
+        if isinstance(v, list) and v:
+            return {str(x).strip().lower() for x in v if str(x).strip()}
+    except Exception:
+        logging.getLogger("a2z.referral").warning("business-dept config fell back", exc_info=True)
+    return {x.lower() for x in _DEFAULT_REFERRAL_BUSINESS_DEPARTMENTS}
+
+
+def _dept_of_map() -> dict:
+    """staff_code -> normalized Department, from the roster (5-min memo). Same basis
+    the by-department analytics uses, so tier and department views stay consistent."""
+    import time
+    now = time.time()
+    if _DEPT_MAP_CACHE["map"] and now - _DEPT_MAP_CACHE["ts"] < 300:
+        return _DEPT_MAP_CACHE["map"]
+    out: dict = {}
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is not None and "Department" in getattr(roster, "columns", []):
+            for _, row in roster.iterrows():
+                sc = str(row.get("Staff Code") or "").strip()
+                if sc:
+                    out[sc] = _norm_segment(row.get("Department"))
+    except Exception:
+        logging.getLogger("a2z.referral").warning("tier dept map: roster load failed", exc_info=True)
+    _DEPT_MAP_CACHE["ts"] = now
+    _DEPT_MAP_CACHE["map"] = out
+    return out
+
+
+def _classify_referral_tier(by_code, to_code, dept_of=None) -> dict:
+    """Derive a referral's tier from the REFERRER's department. business->business = B2B;
+    support->business = S2B. cross_unit = referrer and recipient sit in different
+    departments (e.g. one branch referring a customer owned in another, or Consumer ->
+    Commercial). Derived at read (not stored) so it covers historical referrals too; an
+    unknown/unclassified department defaults to B2B (the audited tier), so only an
+    explicitly-support department earns the cleaner S2B treatment."""
+    if dept_of is None:
+        dept_of = _dept_of_map()
+    biz = _referral_business_departments()
+    by_dept = dept_of.get(str(by_code or "").strip())
+    to_dept = dept_of.get(str(to_code or "").strip())
+    referrer_is_business = (not by_dept) or (by_dept.strip().lower() in biz)
+    return {
+        "referral_tier": "B2B" if referrer_is_business else "S2B",
+        "cross_unit": bool(by_dept and to_dept and by_dept != to_dept),
+        "referrer_department": by_dept or None,
+        "recipient_department": to_dept or None,
+    }
+
+
 def _referral_view(d: dict) -> dict:
     """Compact projection for referral list endpoints."""
     return {
@@ -2958,6 +3025,7 @@ def _referral_view(d: dict) -> dict:
         "referred_at":      d.get("referred_at"),
         "accepted_at":      d.get("accepted_at"),
         "declined_at":      d.get("declined_at"),
+        **_classify_referral_tier(d.get("referred_by_code"), d.get("referred_to_code")),
     }
 
 
@@ -3198,11 +3266,15 @@ def pipeline_referrals_team(user: dict = Depends(get_current_user)):
              if str(d.get("referral_status") or "")
              and str(d.get("referred_by_code") or "") in visible]
     by_status = {"pending": 0, "accepted": 0, "declined": 0}
+    by_tier = {"B2B": 0, "S2B": 0}
     won = lost = 0
+    dept_of = _dept_of_map()
     for d in deals:
         st = str(d.get("referral_status") or "")
         if st in by_status:
             by_status[st] += 1
+        t = _classify_referral_tier(d.get("referred_by_code"), d.get("referred_to_code"), dept_of)["referral_tier"]
+        by_tier[t] = by_tier.get(t, 0) + 1
         stage = str(d.get("stage") or "")
         if stage == "Closed Won":
             won += 1
@@ -3211,7 +3283,7 @@ def pipeline_referrals_team(user: dict = Depends(get_current_user)):
     return {
         "deals": [_referral_view(d) for d in deals],
         "count": len(deals),
-        "summary": {"total": len(deals), "by_status": by_status,
+        "summary": {"total": len(deals), "by_status": by_status, "by_tier": by_tier,
                     "closed": {"won": won, "lost": lost}},
     }
 

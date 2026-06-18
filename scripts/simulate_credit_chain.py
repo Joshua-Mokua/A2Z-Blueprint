@@ -884,6 +884,25 @@ def referral_probe(base):
          "referral_pending_alert_days" in cview,
          note=f"days={cview.get('referral_pending_alert_days')}")
 
+    # Referral tier (B2B / S2B) — cross-unit classification, derived + config-driven.
+    tdeals = t_md.get("deals", []) if isinstance(t_md, dict) else []
+    tsum = t_md.get("summary", {}) if isinstance(t_md, dict) else {}
+    by_tier = tsum.get("by_tier", {}) if isinstance(tsum, dict) else {}
+    step("referral tier: team deals carry referral_tier + cross_unit", True,
+         bool(tdeals) and all(
+             d.get("referral_tier") in ("B2B", "S2B") and isinstance(d.get("cross_unit"), bool)
+             for d in tdeals),
+         note=f"{len(tdeals)} classified")
+    step("referral tier: team summary exposes by_tier (sums to total)", True,
+         isinstance(by_tier, dict)
+         and (by_tier.get("B2B", 0) + by_tier.get("S2B", 0)) == tsum.get("total", -1),
+         note=f"B2B={by_tier.get('B2B')} S2B={by_tier.get('S2B')}")
+    step("referral tier: Sales referrer classified B2B (business unit)", True,
+         by_tier.get("B2B", 0) >= 1, note=f"B2B={by_tier.get('B2B')}")
+    step("referral tier: business-dept map is admin-configurable", True,
+         "referral_business_departments" in cview,
+         note=f"{len(cview.get('referral_business_departments', []))} business depts")
+
 
 def troops_probe(base, case_id):
     print("\n=== TROOPS — Treasury Back Office disbursement completion ===")

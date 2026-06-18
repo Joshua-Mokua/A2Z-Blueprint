@@ -2416,3 +2416,35 @@ Three asks from Josh, one frontend batch:
    department-wise breakdown in one place. Still on Following too.
 
 esbuild clean on all four files; tsc in-env. Referral arc UX complete.
+
+## #73 — Referral tier (B2B / S2B) + cross-unit classification [BACKEND]
+
+Josh's inter-business-unit question. CONFIRMED FIRST (grounded): cross-unit referral
+already works — the staff picker is bank-wide ("referrals cross cascade boundaries,
+NOT scope-filtered"), so Consumer->Commercial / branch->branch already routes + transfers
+ownership on accept. What was missing was the attribution/governance LABEL. Credit today
+is one-sided (shadow credit keyed on referred_by_code only); the receiver-side KPI +
+collusion controls are deferred to S4 (BSC phase) by design.
+
+Near-term tier-stamp shipped (NO scoring change — label only):
+- _classify_referral_tier(by_code, to_code) derives, from the REFERRER's roster
+  Department (same basis as by-department analytics), referral_tier = B2B
+  (business->business) | S2B (support->business), plus cross_unit (referrer and
+  recipient in different departments). DERIVED at read, so it classifies historical
+  referrals too; unknown dept defaults to B2B (the audited tier) so only an explicitly-
+  support dept earns the cleaner S2B treatment.
+- CONFIG-DRIVEN: _referral_business_departments() reads pipeline_settings.
+  referral_business_departments (seeded default: Sales/Commercial/Corporate/SME/Retail/
+  Business Banking/Consumer Banking/Personal Banking/CIB), added to _EDITABLE_CONFIG_KEYS
+  + config view so the bank finalises the support-vs-business map in admin.
+- Surfaced: _referral_view now carries referral_tier + cross_unit + referrer/recipient
+  department (list + detail + every analytics list). Team summary gains by_tier
+  {B2B,S2B}. Dept map memoised 5 min so _referral_view stays cheap.
+
+DEFERRED to S4/BSC (Josh's "layer 2"): receiver-side B2B referral KPI, per-tier credit
+weights/caps, reciprocal-referral (collusion) flags — designed together so the same P&L
+isn't double-claimed (receiver books revenue; referrer recognition-only).
+
+Harness: +4 (184 -> 188) — team deals carry tier + cross_unit, by_tier sums to total,
+Sales referrer classified B2B, business-dept map exposed as editable config. NEXT
+(frontend): tier badge on referral cards + by-tier in the Team funnel.
