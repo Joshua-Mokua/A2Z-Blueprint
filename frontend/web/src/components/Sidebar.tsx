@@ -53,6 +53,11 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/cascade', label: 'Target Cascade', matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/') },
       { path: '/initiatives', label: 'Initiatives', matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
       { path: '/profitability', label: 'Profitability', matchActive: (p) => p === '/profitability' },
+      {
+        path: '/sla', label: 'SLA Monitor',
+        matchActive: (p) => p.startsWith('/sla'),
+        visibleFor: (isMgr, isAdmin) => isMgr || isAdmin,
+      },
     ],
   },
   {

@@ -2516,3 +2516,22 @@ asserts the per-deal SLA endpoint is well-formed AND reports clock=step / step=
 credit_assessment with a config-resolved target, and the violations endpoint's by_clock
 shows the step clock active. (S2a violations math check updated to elapsed field.)
 NEXT: S2c (credit-admin/Troops step stamping) or the SLA admin + dashboard UI.
+
+## #77 — SLA Monitor + Configuration UI [FRONTEND]
+
+New page /sla (nav: Executive Intelligence -> "SLA Monitor", managers + admin), two tabs:
+- VIOLATIONS (read, hierarchy-scoped via /api/pipeline/sla/violations): summary strip
+  (open deals, breaching, step-clock vs age-clock counts, escalation-tier chips) + a
+  breaching-deals list — each row shows the clock (step name or "age clock"),
+  elapsed/target business days, +overdue, and an escalation-tier badge
+  (managing_director=danger, regional_head=warning, line_manager=info).
+- CONFIGURATION (view for all; edit for config-admins via isConfigAdminRole): edit
+  per-step target_days + owner_role, the escalation ladder (after_days + escalate_to),
+  and per-product promises (add/remove/edit). Save -> /api/admin/sla-config; the backend's
+  mandatory-before-save validation message (e.g. "escalation_ladder must be strictly
+  increasing") surfaces via ApiValidationError into a danger toast. Non-admins see the
+  values read-only.
+lib/api.ts: SlaConfig/SlaStep/SlaTier/SlaViolation(s) + fetchSlaConfig/saveSlaConfig/
+fetchSlaViolations. App.tsx /sla route; Sidebar entry. esbuild clean on all four; tsc
+in-env. The SLA engine (S1 config + S2a/S2b clocks) is now visible + editable on screen.
+NEXT: S2c (credit-admin/Troops step stamping) or S3 (violation reason + commitment capture).

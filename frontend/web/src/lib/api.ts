@@ -509,6 +509,48 @@ export async function fetchTeamReferrals(): Promise<TeamReferralsResponse> {
   return getJson<TeamReferralsResponse>('/pipeline/referrals/team');
 }
 
+// ── SLA (Phase 4 S1/S2) ──────────────────────────────────────────────
+export interface SlaStep { key: string; label: string; owner_role: string; target_days: number; }
+export interface SlaTier { after_days: number; escalate_to: string; }
+export interface SlaConfig {
+  steps: SlaStep[];
+  escalation_ladder: SlaTier[];
+  product_promise: Record<string, number>;
+  stage_step_map?: Record<string, string>;
+}
+export async function fetchSlaConfig(): Promise<{ sla_config: SlaConfig; is_default: boolean }> {
+  return getJson<{ sla_config: SlaConfig; is_default: boolean }>('/admin/sla-config');
+}
+export async function saveSlaConfig(cfg: SlaConfig): Promise<{ status: string; sla_config: SlaConfig }> {
+  return postJson<{ status: string; sla_config: SlaConfig }, { sla_config: SlaConfig }>(
+    '/admin/sla-config', { sla_config: cfg });
+}
+
+export interface SlaViolation {
+  deal_id: string;
+  client_name?: string;
+  product_type?: string | null;
+  stage?: string;
+  owner_code?: string;
+  clock: 'step' | 'age';
+  step?: string | null;
+  elapsed_business_days: number;
+  target_days: number;
+  overdue_business_days: number;
+  breached: boolean;
+  escalate_to?: string | null;
+}
+export interface SlaViolations {
+  violations: SlaViolation[];
+  count: number;
+  open_deals: number;
+  by_escalation: Record<string, number>;
+  by_clock: { step: number; age: number };
+}
+export async function fetchSlaViolations(): Promise<SlaViolations> {
+  return getJson<SlaViolations>('/pipeline/sla/violations');
+}
+
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, Record<string, never>>(
     `/pipeline/deals/${dealId}/referral/accept`, {});
