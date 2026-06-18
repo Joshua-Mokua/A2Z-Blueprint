@@ -2028,3 +2028,18 @@ staff picker.
 
 Harness staff_search_probe (3): by-name finds Frank Wanyama (300731), by-code finds
 Frank, caller excluded from own results.
+
+## #56 — Batch B2b-backend: staff segments (Department) for the referral picker
+
+Roster carries a Department column (Retail/Commercial/Credit/Treasury/Operations/
+Sales/Legal/Risk/...). Surfaced as staff "segments" so the referral picker filters
+people within a function instead of scrolling the whole roster.
+
+- GET /api/staff/segments -> distinct segments + counts (normalized: ict->ICT,
+  CustomerService->Customer Service).
+- GET /api/staff/search?segment=&q=&limit= -> adds a segment (Department) filter +
+  a `segment` field on each result. Still bank-wide, self-excluded.
+
+Harness (+2): segments listing non-empty; segment filter returns only that segment.
+Next: B2b-frontend StaffPicker (segment dropdown -> people) + Refer action on the
+deal-detail page.

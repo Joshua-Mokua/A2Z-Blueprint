@@ -940,6 +940,19 @@ def staff_search_probe(base):
         codes3 = [s.get("staff_code") for s in (r3.get("staff") or [])] if isinstance(r3, dict) else []
         step("staff search: caller excluded from own results", True, "300731" not in codes3)
 
+    # segment (Department) dimension for the picker
+    st, segs = _req(base, "GET", "/api/staff/segments", admin)
+    seg_names = [s.get("segment") for s in (segs.get("segments") or [])] if isinstance(segs, dict) else []
+    step("staff segments: listing non-empty", True, len(seg_names) >= 3,
+         note=f"{len(seg_names)} segments")
+
+    target = "Credit" if "Credit" in seg_names else (seg_names[0] if seg_names else "")
+    st, r4 = _req(base, "GET", f"/api/staff/search?segment={target}&limit=50", admin)
+    staff = r4.get("staff") or [] if isinstance(r4, dict) else []
+    all_match = all(str(s.get("segment", "")).lower() == target.lower() for s in staff)
+    step("staff search: segment filter narrows to that segment", True,
+         len(staff) > 0 and all_match, note=f"{len(staff)} in {target}")
+
 
 def main():
     ap = argparse.ArgumentParser()

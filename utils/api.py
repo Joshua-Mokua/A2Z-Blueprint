@@ -2908,27 +2908,62 @@ def pipeline_referrals_outgoing(user: dict = Depends(get_current_user)):
     return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
 
 
+_SEGMENT_FIX = {"ict": "ICT", "customerservice": "Customer Service"}
+
+
+def _norm_segment(d) -> str:
+    """Normalize a staff Department value into a display segment, merging the
+    known case/format variants in the roster (ict->ICT, CustomerService->...)."""
+    s = str(d or "").strip()
+    return _SEGMENT_FIX.get(s.lower(), s)
+
+
+@app.get("/api/staff/segments", tags=["pipeline"])
+def staff_segments(user: dict = Depends(get_current_user)):
+    """Distinct staff segments (Department) with counts — drives the referral
+    recipient picker's first step (pick a segment, then a person within it)."""
+    from utils.api_pipeline_scope import get_staff_roster
+    roster = get_staff_roster()
+    if roster is None or len(roster) == 0 or "Department" not in roster.columns:
+        return {"segments": [], "count": 0}
+    counts: dict = {}
+    for _, row in roster.iterrows():
+        seg = _norm_segment(row.get("Department"))
+        if not seg:
+            continue
+        counts[seg] = counts.get(seg, 0) + 1
+    segments = [{"segment": k, "count": v} for k, v in sorted(counts.items())]
+    return {"segments": segments, "count": len(segments)}
+
+
 @app.get("/api/staff/search", tags=["pipeline"])
 def staff_search(
     q: str = Query(default=""),
+    segment: str = Query(default=""),
     limit: int = Query(default=20, le=50),
     user: dict = Depends(get_current_user),
 ):
     """Search the staff roster by name or code — for referral recipient pickers.
-    Bank-wide (referrals cross cascade boundaries), so this is NOT scope-filtered;
-    it excludes the caller's own record (you can't refer a deal to yourself).
-    Returns up to `limit` matches. An empty query returns the first `limit`."""
+    Optional `segment` (Department) narrows to one function (e.g. Credit, Treasury,
+    Commercial) so the referrer filters people within a segment instead of the
+    whole roster. Bank-wide (referrals cross cascade boundaries), NOT scope-
+    filtered; excludes the caller's own record. Empty q returns the first `limit`."""
     from utils.api_pipeline_scope import get_staff_roster
     roster = get_staff_roster()
     if roster is None or len(roster) == 0:
         return {"staff": [], "count": 0}
+    has_dept = "Department" in roster.columns
     me = str(user.get("staff_code") or "").strip()
     ql = q.strip().lower()
+    segl = segment.strip().lower()
     out = []
     for _, row in roster.iterrows():
         code = str(row.get("Staff Code") or "").strip()
         name = str(row.get("Staff Name") or "").strip()
         if not code or code == me:
+            continue
+        seg = _norm_segment(row.get("Department")) if has_dept else ""
+        if segl and seg.lower() != segl:
             continue
         if ql and ql not in name.lower() and ql not in code.lower():
             continue
@@ -2937,6 +2972,7 @@ def staff_search(
             "role": str(row.get("Role") or ""),
             "unit": str(row.get("Unit") or ""),
             "region": str(row.get("Region") or ""),
+            "segment": seg,
         })
         if len(out) >= limit:
             break
