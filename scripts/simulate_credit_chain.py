@@ -985,10 +985,10 @@ def portfolio_conflict_probe(base):
             return None
         return b.get("id") or b.get("deal", {}).get("id")
 
-    def _deal(did):
+    def _deal(did, tok=owner):
         if not did:
             return {}
-        _, d = _req(base, "GET", f"/api/pipeline/deals/{did}", owner)
+        _, d = _req(base, "GET", f"/api/pipeline/deals/{did}", tok)
         return (d.get("deal") or d) if isinstance(d, dict) else {}
 
     # 1. SEEK-PERMISSION: bsc_credit_to == owner -> passes without a note.
@@ -1027,10 +1027,32 @@ def portfolio_conflict_probe(base):
     st, r = _req(base, "POST", "/api/pipeline/deals/refer", owner, refer)
     step("portfolio: refer-to-owner creates referral deal", (200, 201), st, r)
     rd = (r.get("deal") or r) if isinstance(r, dict) else {}
+    rid = _did(r)
     if not rd.get("is_referral"):
-        rd = _deal(_did(r)) or rd
+        rd = _deal(rid) or rd
     step("portfolio: referred deal flagged is_referral", True, bool(rd.get("is_referral")),
          note=f"is_referral={rd.get('is_referral')}")
+
+    # P3: the refer must now be a PENDING referral the owner has to ACCEPT (nod).
+    rdet = _deal(rid)
+    step("portfolio: refer creates a PENDING referral (P3 nod gate)", True,
+         str(rdet.get("referral_status")) == "pending"
+         and str(rdet.get("referred_to_code")) == PO_CODE,
+         note=f"status={rdet.get('referral_status')} to={rdet.get('referred_to_code')}")
+
+    mgr = login(base, "MANAGER")   # Immaculate 300716 = the portfolio owner
+    if mgr and rid:
+        _, inc = _req(base, "GET", "/api/pipeline/referrals/incoming", mgr)
+        inc_ids = [d.get("id") for d in (inc.get("deals") or [])] if isinstance(inc, dict) else []
+        step("portfolio: referred deal lands in owner's incoming inbox", True, rid in inc_ids,
+             note=f"{len(inc_ids)} incoming")
+        st, _ = _req(base, "POST", f"/api/pipeline/deals/{rid}/referral/accept", mgr, {})
+        step("portfolio: owner accepts the nod", (200, 201), st)
+        acc = _deal(rid, mgr)
+        step("portfolio: accepted referral now owned by the portfolio owner", True,
+             str(acc.get("referral_status")) == "accepted"
+             and str(acc.get("staff_code")) == PO_CODE,
+             note=f"status={acc.get('referral_status')} owner={acc.get('staff_code')}")
 
 
 def cbs_portfolio_owner_probe(base):

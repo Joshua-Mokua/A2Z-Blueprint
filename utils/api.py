@@ -2591,6 +2591,15 @@ def pipeline_deal_refer(
         "referred_to":          payload.referred_to,
         "referral_note":        payload.referral_note or "",
         "is_ntb":               False,
+        # P3: enter the referral lifecycle so the portfolio owner must ACCEPT
+        # (the "nod") before the deal progresses. referred_to_code routes it to
+        # the owner's incoming inbox; referred_by_* let the referrer track it
+        # (outgoing) and receive it back if the owner declines (returned).
+        "referral_status":      "pending",
+        "referred_to_code":     str(payload.portfolio_owner_code or "").strip(),
+        "referred_by_code":     str(deal_dict.get("staff_code") or "").strip(),
+        "referred_by_name":     str(deal_dict.get("staff_name") or "").strip(),
+        "referred_at":          datetime.now().isoformat(),
         # BSC credit goes to whoever closes the referred deal — typically
         # the portfolio owner. Default to portfolio_owner_name; the
         # picking-up RM can override later.

@@ -2167,3 +2167,31 @@ P2 COMPLETE (backend #59 + frontend #61). The refer path here still uses the
 existing fire-and-forget refer (P1 finding) — P3 wires it into the referral
 lifecycle so the owner must ACCEPT (the nod). P4 makes assignment mandatory for
 existing customers + finalises placement.
+
+## #62 — P3: create-conflict refer enters the referral lifecycle (the "nod") [BACKEND]
+
+P1 found the create-conflict refer path was fire-and-forget: POST /api/pipeline/
+deals/refer stamped is_referral + referred_to (a name) but no lifecycle fields, so
+the owner was never asked to accept. P3 fixes that by stamping, on the referral
+record:
+
+  referral_status = "pending"
+  referred_to_code = portfolio_owner_code   (routes to the owner's incoming inbox)
+  referred_by_code / referred_by_name        (referrer tracks it; gets it back on decline)
+  referred_at = now
+
+Now the created referral flows through the EXISTING inbox/accept/decline/reassign
+machinery — no new mechanism. The owner sees it in /referrals/incoming and must
+ACCEPT (the nod); on accept the existing handler transfers ownership (staff_code +
+portfolio_owner_code -> owner, manager_validated reset). _referral_blocked already
+prevents the deal advancing while pending, so the nod gate is enforced for free.
+Pending referrals are also excluded from analytics until accepted (consistent with
+the lifecycle).
+
+Harness: portfolio_conflict_probe extended — refer -> assert referral_status=pending
++ referred_to_code, owner (Immaculate 300716) sees it in incoming, accepts, and the
+deal is then owned by the portfolio owner. +4 checks (158 -> 162).
+
+P3-frontend (next, small): create-page refer success message -> "referred to <owner>
+for acceptance" so the RM knows it's awaiting the nod, not live. Then P4: mandatory
+portfolio assignment for existing customers + final placement.
