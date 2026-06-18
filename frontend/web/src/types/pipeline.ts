@@ -98,6 +98,15 @@ export interface PipelineDeal {
   bsc_credit_to?:              string;
   manager_override_note?:      string;
 
+  // Referral lifecycle (A1 — refer an existing deal to another person)
+  referral_status?:            string;   // 'pending' | 'accepted' | 'declined'
+  referred_to?:                string;
+  referred_to_code?:           string;
+  referred_by_name?:           string;
+  referred_by_code?:           string;
+  referral_note?:              string;
+  decline_reason?:             string;
+
   // LMS handoff (α4)
   lms_application_id?:         string;
   loss_reason?:                string;

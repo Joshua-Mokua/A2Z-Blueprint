@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, ApiValidationError, AuthExpiredError } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, ApiValidationError, AuthExpiredError, type StaffMember } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -43,6 +43,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { PermissionBadges } from '@/components/PermissionBadges';
+import { StaffPicker } from '@/components/StaffPicker';
 import {
   stageTone,
   ADVANCE_TARGET_STAGES,
@@ -218,6 +219,15 @@ export function PipelineDealDetail() {
             {deal.manager_validated && (
               <Badge tone="success" size="sm">Validated</Badge>
             )}
+            {deal.referral_status && (
+              <Badge
+                tone={deal.referral_status === 'accepted' ? 'success'
+                  : deal.referral_status === 'declined' ? 'warning' : 'info'}
+                size="sm"
+              >
+                Referral: {deal.referral_status}
+              </Badge>
+            )}
             {/* δ1 (2026-06-12): LMS cross-link when backend has created
                 a loan application from this deal (typically after advancing
                 to Compliance). Mirrors the Credit Admin → LMS cross-link
@@ -321,6 +331,12 @@ export function PipelineDealDetail() {
           The panel fetches its own checklist and renders only when the
           caller may submit, or when the deal is already submitted. */}
       <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
+
+      {/* Action: refer this deal to another person (A1). Hidden for drafts and
+          while a referral is already pending acceptance. */}
+      {!deal.draft && deal.referral_status !== 'pending' && (
+        <ReferPanel deal={deal} onSuccess={() => void reloadDeal()} />
+      )}
 
       {/* Action: request cancellation — gated by α7 can_request_cancel */}
       {permissions?.can_request_cancel && (
@@ -730,6 +746,88 @@ function RequestCancelPanel({ deal, mutations, onSuccess }: ActionPanelProps) {
           Submit cancellation request
         </Button>
       </Card.Footer>
+    </Card>
+  );
+}
+
+
+/**
+ * ReferPanel — refer this existing deal to a chosen recipient (A1).
+ * Self-contained: uses the StaffPicker (segment → person) + a note, posts to
+ * /api/pipeline/deals/{id}/refer, then asks the parent to reload the deal so the
+ * new "Referral: pending" badge appears.
+ */
+function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => void }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<StaffMember | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function onSubmit() {
+    if (!picked) {
+      toast({ tone: 'warning', message: 'Select a recipient first.' });
+      return;
+    }
+    setBusy(true);
+    try {
+      await referExistingDeal(deal.id, {
+        referred_to_code: picked.staff_code,
+        referred_to_name: picked.name,
+        referral_note: note.trim(),
+      });
+      toast({ tone: 'success', message: `Referred to ${picked.name}. They'll need to accept it.` });
+      setOpen(false); setPicked(null); setNote('');
+      onSuccess();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Referral failed.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-6" stripe="primary">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Refer deal</h3>
+        {deal.referral_status === 'declined' && (
+          <Badge tone="warning" size="sm">previously returned</Badge>
+        )}
+      </Card.Header>
+      <Card.Body>
+        {!open ? (
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-gray-600">
+              Hand this deal to a colleague — pick their segment, then the person. They
+              progress it once they accept; you keep following it.
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+              Refer to someone…
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <StaffPicker value={picked} onChange={setPicked} />
+            <Input
+              label="Note (optional)"
+              placeholder="Why you're referring this deal"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={busy}
+            />
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" onClick={() => void onSubmit()}
+                loading={busy} disabled={!picked}>
+                Refer deal
+              </Button>
+              <Button variant="ghost" size="sm" disabled={busy}
+                onClick={() => { setOpen(false); setPicked(null); setNote(''); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card.Body>
     </Card>
   );
 }

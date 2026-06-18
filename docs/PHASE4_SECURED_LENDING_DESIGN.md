@@ -2043,3 +2043,25 @@ people within a function instead of scrolling the whole roster.
 Harness (+2): segments listing non-empty; segment filter returns only that segment.
 Next: B2b-frontend StaffPicker (segment dropdown -> people) + Refer action on the
 deal-detail page.
+
+## #57 — Batch B2b-frontend: refer-from-detail + StaffPicker [FRONTEND]
+
+The refer-an-existing-deal action, on the deal-detail page (not the create page —
+that only has the α5 conflict-refer path).
+
+- components/StaffPicker.tsx — reusable two-step picker: segment dropdown
+  (/staff/segments) then people within it (/staff/search?segment=&q=, 200ms
+  debounce), with a selected-chip + Change. Solves "pick a segment, then filter
+  people instead of the whole roster".
+- PipelineDealDetail.tsx — ReferPanel (self-contained: StaffPicker + note ->
+  POST /pipeline/deals/{id}/refer), gated to non-draft deals not already pending;
+  reloads the deal after success. Plus a "Referral: pending|accepted|declined"
+  badge in the identity card.
+- types/pipeline.ts — PipelineDeal gains referral_status/referred_to/
+  referred_to_code/referred_by_name/referred_by_code/referral_note/decline_reason.
+- lib/api.ts — StaffMember/StaffSegment types + fetchStaffSegments/searchStaff +
+  referExistingDeal (distinct from the legacy referPipelineDeal create-referral).
+
+esbuild alias-resolved bundle check clean on all 4 files; tsc gate in-env. This
+closes Batch B (referral lifecycle, inbox, and refer-from-detail). Open: C3 (SLAs),
+C2b-2 (re-parenting + weights, parked with auth/DOA).

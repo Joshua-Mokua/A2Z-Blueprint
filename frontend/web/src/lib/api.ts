@@ -471,6 +471,63 @@ export async function reassignReferral(
 }
 
 
+// ── Staff picker (referral recipient) ────────────────────────────────────
+
+export interface StaffMember {
+  staff_code: string;
+  name: string;
+  role?: string;
+  unit?: string;
+  region?: string;
+  segment?: string;
+}
+
+export interface StaffSearchResponse {
+  staff: StaffMember[];
+  count: number;
+}
+
+export interface StaffSegment {
+  segment: string;
+  count: number;
+}
+
+export interface StaffSegmentsResponse {
+  segments: StaffSegment[];
+  count: number;
+}
+
+/** Distinct staff segments (Department) for the picker's first step. */
+export async function fetchStaffSegments(): Promise<StaffSegmentsResponse> {
+  return getJson<StaffSegmentsResponse>('/staff/segments');
+}
+
+/** Search the roster, optionally within one segment. */
+export async function searchStaff(q: string, segment: string): Promise<StaffSearchResponse> {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (segment) params.set('segment', segment);
+  const qs = params.toString();
+  return getJson<StaffSearchResponse>(`/staff/search${qs ? `?${qs}` : ''}`);
+}
+
+export interface ReferExistingResponse {
+  status?: string;
+  referred_to?: string;
+  referred_to_code?: string;
+}
+
+/** Refer an EXISTING deal to a chosen recipient (-> pending). */
+export async function referExistingDeal(
+  dealId: string,
+  body: { referred_to_code: string; referred_to_name: string; referral_note: string },
+): Promise<ReferExistingResponse> {
+  return postJson<ReferExistingResponse,
+    { referred_to_code: string; referred_to_name: string; referral_note: string }>(
+    `/pipeline/deals/${dealId}/refer`, body);
+}
+
+
 /**
  * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending
  * value split, per-class buckets (asset/liability/insurance/other), the
