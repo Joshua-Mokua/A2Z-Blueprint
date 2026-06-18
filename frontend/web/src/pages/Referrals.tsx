@@ -133,6 +133,12 @@ export default function Referrals() {
         <div className="flex items-center gap-2">
           <span className="font-semibold text-gray-900 truncate">{d.client_name ?? d.id}</span>
           <Badge tone={statusTone(d.referral_status)} size="sm">{d.referral_status ?? '—'}</Badge>
+          {d.referral_tier && (
+            <Badge tone={d.referral_tier === 'S2B' ? 'success' : 'info'} size="sm">{d.referral_tier}</Badge>
+          )}
+          {d.cross_unit && (
+            <Badge tone="neutral" size="sm">cross-unit</Badge>
+          )}
         </div>
         <div className="mt-0.5 text-xs text-gray-500">
           {[d.product_type, d.stage, d.segment].filter(Boolean).join(' · ') || '—'}
@@ -187,6 +193,12 @@ export default function Referrals() {
                 <span className="text-gray-500">Closed won <b className="text-emerald-700">{teamSummary.closed.won}</b></span>
                 <span className="text-gray-500">Closed lost <b className="text-gray-700">{teamSummary.closed.lost}</b></span>
               </div>
+              {teamSummary.by_tier && (
+                <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm border-t border-gray-100 pt-2">
+                  <span className="text-gray-500">B2B (business→business) <b className="text-gray-900">{teamSummary.by_tier.B2B}</b></span>
+                  <span className="text-gray-500">S2B (support→business) <b className="text-gray-900">{teamSummary.by_tier.S2B}</b></span>
+                </div>
+              )}
             </Card.Body></Card>
             {dept && dept.departments.length > 0 && (
               <Card><Card.Body>

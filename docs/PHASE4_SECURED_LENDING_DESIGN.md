@@ -2448,3 +2448,16 @@ isn't double-claimed (receiver books revenue; referrer recognition-only).
 Harness: +4 (184 -> 188) — team deals carry tier + cross_unit, by_tier sums to total,
 Sales referrer classified B2B, business-dept map exposed as editable config. NEXT
 (frontend): tier badge on referral cards + by-tier in the Team funnel.
+
+## #74 — Referral tier badges + by-tier funnel [FRONTEND]
+
+Makes #73's classification visible on the Referrals page.
+- DealMeta (every referral card, all tabs): a B2B (info/blue) or S2B (success/green)
+  badge next to the status badge, plus a neutral "cross-unit" badge when referrer and
+  recipient sit in different departments.
+- Team funnel: a by-tier line under the status totals — "B2B (business->business) N /
+  S2B (support->business) N".
+- lib/api.ts: ReferralView gains referral_tier / cross_unit / referrer_department /
+  recipient_department; TeamReferralsResponse.summary gains by_tier.
+esbuild clean; tsc in-env. Referral tier work complete end-to-end (derived + config-
+driven backend -> visible badges + funnel). Two-sided B2B KPI still deferred to S4.

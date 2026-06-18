@@ -429,6 +429,10 @@ export interface ReferralView {
   referred_at?: string;
   accepted_at?: string;
   declined_at?: string;
+  referral_tier?: 'B2B' | 'S2B';
+  cross_unit?: boolean;
+  referrer_department?: string | null;
+  recipient_department?: string | null;
 }
 
 export interface ReferralListResponse {
@@ -496,6 +500,7 @@ export interface TeamReferralsResponse {
   summary: {
     total: number;
     by_status: { pending: number; accepted: number; declined: number };
+    by_tier: { B2B: number; S2B: number };
     closed: { won: number; lost: number };
   };
 }
