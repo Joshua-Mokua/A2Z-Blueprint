@@ -2303,3 +2303,20 @@ tiers, mandatory-before-save, amendable) -> S2 per-deal business-day clock +
 violation detection + tiered flagging -> S3 violation reason/commitment capture
 (+ unfulfilled-reason escalation) -> S4 per-role BSC SLA-violation KPI + per-product
 promise. React added incrementally per module.
+
+## #67 — Referral analytics by DEPARTMENT (Head/Chief perspective) [BACKEND]
+
+New GET /api/pipeline/referrals/analytics/by-department (management-only). Groups
+ALL referrals by the REFERRER's department (resolved staff_code -> roster
+Department via _norm_segment), returning per-department { total, by_status, closed }
+sorted by volume. This is the departmental lens Josh asked for: a referral made by
+Finance is analysed at the Finance level, and the aggregate is the basis for a
+DEPARTMENT-level referral BSC KPI that flows to Head / Chief scorecards, mirroring
+the individual-level KPI.
+
+- Privileged (manager/exec/admin) only; non-management -> 403.
+- Roster load failure is logged (not silent) and degrades to "Unassigned".
+Harness: referral_probe extended — by-department reachable for ADMIN + well-formed
+(departments + total + by_status), denied (403) to a non-management RM. +3 (169 ->
+172). FRONTEND (#68): Following tab shows the individual funnel + alerts AND, for
+managers, the department breakdown.

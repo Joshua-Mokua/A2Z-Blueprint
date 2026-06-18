@@ -2989,6 +2989,60 @@ def pipeline_referrals_outgoing_analytics(user: dict = Depends(get_current_user)
     }
 
 
+@app.get("/api/pipeline/referrals/analytics/by-department")
+def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
+    """Department-level referral analytics — referrals grouped by the REFERRER's
+    department, so Heads/Chiefs can see their department's referral performance.
+    This is the basis for a department-level referral BSC KPI that flows to Head /
+    Chief scorecards, mirroring the individual-level KPI. Management roles only."""
+    _c, _n, priv = _resolve_actor(user)
+    if not priv:
+        raise HTTPException(
+            status_code=403,
+            detail="Department referral analytics require a management role.")
+
+    # referrer staff_code -> normalized department, from the roster
+    dept_of: dict = {}
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is not None and "Department" in getattr(roster, "columns", []):
+            for _, row in roster.iterrows():
+                sc = str(row.get("Staff Code") or "").strip()
+                if sc:
+                    dept_of[sc] = _norm_segment(row.get("Department"))
+    except Exception as exc:  # surfaced, not silent (CGR1)
+        logger.warning("by-department referral analytics: roster load failed: %s", exc)
+
+    agg: dict = {}
+    for d in _all_pipeline_deals():
+        rbc = str(d.get("referred_by_code") or "")
+        st = str(d.get("referral_status") or "")
+        if not rbc or not st:
+            continue
+        dept = dept_of.get(rbc) or "Unassigned"
+        a = agg.setdefault(dept, {
+            "department": dept, "total": 0,
+            "by_status": {"pending": 0, "accepted": 0, "declined": 0},
+            "closed": {"won": 0, "lost": 0},
+        })
+        a["total"] += 1
+        if st in a["by_status"]:
+            a["by_status"][st] += 1
+        stage = str(d.get("stage") or "")
+        if stage == "Closed Won":
+            a["closed"]["won"] += 1
+        elif stage == "Closed Lost":
+            a["closed"]["lost"] += 1
+
+    departments = sorted(agg.values(), key=lambda x: x["total"], reverse=True)
+    return {
+        "departments": departments,
+        "total": sum(a["total"] for a in departments),
+        "department_count": len(departments),
+    }
+
+
 _SEGMENT_FIX = {"ict": "ICT", "customerservice": "Customer Service"}
 
 

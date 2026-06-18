@@ -849,6 +849,18 @@ def referral_probe(base):
          isinstance(an.get("alerts"), list) and "alert_count" in an,
          note=f"{an.get('alert_count')} alert(s)")
 
+    # Department-level analytics (Head/Chief perspective -> department BSC KPI).
+    adm = login(base, "ADMIN")
+    st, dep = _req(base, "GET", "/api/pipeline/referrals/analytics/by-department", adm)
+    dep = dep if isinstance(dep, dict) else {}
+    step("referral analytics: by-department reachable for management", 200, st)
+    step("referral analytics: by-department well-formed (departments + total)", True,
+         isinstance(dep.get("departments"), list) and dep.get("total", 0) >= 1
+         and all("by_status" in x for x in dep.get("departments", [])),
+         note=f"{dep.get('department_count')} dept(s), total={dep.get('total')}")
+    st2, _ = _req(base, "GET", "/api/pipeline/referrals/analytics/by-department", ref)
+    step("referral analytics: by-department denied to non-management", 403, st2)
+
 
 def troops_probe(base, case_id):
     print("\n=== TROOPS — Treasury Back Office disbursement completion ===")
