@@ -1200,8 +1200,13 @@ _EDITABLE_CONFIG_KEYS = {
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "individual_mous", "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
-    "probability_map", "deal_types",
+    "probability_map", "deal_types", "disbursement_roles",
 }
+
+# Roles permitted to complete disbursement (Troops / Treasury Back Office).
+# Mirrors api_credit_admin_routes._DEFAULT_DISBURSEMENT_ROLES; pipeline_settings
+# is the shared source of truth once an admin edits it.
+_DISBURSEMENT_ROLES_DEFAULT = ["Treasury Back Office"]
 
 
 @app.post("/api/admin/pipeline-config", tags=["admin"])
@@ -1250,7 +1255,133 @@ def _editable_config_view() -> dict:
         "allow_other_mou":    cfg.get("allow_other_mou", True),
         "probability_map":    cfg.get("probability_map", {}),
         "deal_types":         cfg.get("deal_types", []),
+        "disbursement_roles": cfg.get("disbursement_roles", list(_DISBURSEMENT_ROLES_DEFAULT)),
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ROLE REGISTRY (Batch C2b-1) — full listing + capability editing.
+#
+# Roles live in kpi_library.json -> role_kpis (the authoritative registry).
+# This surface LISTS every role with its KPI set, resolved pillar mix, and
+# capabilities (currently: can_disburse, wired to pipeline_settings ->
+# disbursement_roles). It does NOT touch the reporting hierarchy — that is a
+# STAFF-level concern (staff_code -> manager_code via the staff roster +
+# ReportingLineManager), handled separately under the auth/DOA finale.
+# Per-KPI weight editing is also deferred (role_kpis reference KPIs by a mix of
+# ids/codes/names that must be reconciled first).
+# ─────────────────────────────────────────────────────────────────────
+
+def _kpi_pillar_index() -> dict:
+    """Best-effort id/name -> pillar map over the KPI library, for resolving the
+    mixed-identifier refs inside role_kpis."""
+    from utils.core import get_kpi_library
+    lib = get_kpi_library() or {}
+    idx = {}
+    for k in (lib.get("kpis") or []):
+        if not isinstance(k, dict):
+            continue
+        pil = k.get("pillar") or "Unmapped"
+        if k.get("id"):
+            idx[str(k["id"])] = pil
+        if k.get("name"):
+            idx[str(k["name"])] = pil
+    return idx
+
+
+def _role_can_disburse(role: str, disb_lower: list) -> bool:
+    rl = str(role or "").lower()
+    return any(d in rl or rl in d for d in disb_lower if d)
+
+
+@app.get("/api/admin/roles", tags=["admin"])
+def admin_roles_list(user: dict = Depends(require_config_admin)):
+    """Full role registry: every role in kpi_library.json -> role_kpis with its
+    KPI count, resolved pillar mix, and capabilities. Config-admin only."""
+    from utils.core import get_kpi_library, get_pipeline_settings
+    lib = get_kpi_library() or {}
+    role_kpis = lib.get("role_kpis") or {}
+    idx = _kpi_pillar_index()
+    cfg = get_pipeline_settings() or {}
+    disb = cfg.get("disbursement_roles") or list(_DISBURSEMENT_ROLES_DEFAULT)
+    disb_lower = [str(r).strip().lower() for r in disb if str(r).strip()]
+
+    rows = []
+    for role, kpis in role_kpis.items():
+        kl = kpis if isinstance(kpis, list) else []
+        mix: dict = {}
+        for ref in kl:
+            pil = idx.get(str(ref), "Unmapped")
+            mix[pil] = mix.get(pil, 0) + 1
+        rows.append({
+            "role": role,
+            "kpi_count": len(kl),
+            "pillars": mix,
+            "can_disburse": _role_can_disburse(role, disb_lower),
+        })
+    rows.sort(key=lambda r: str(r["role"]).lower())
+    return {"roles": rows, "count": len(rows), "disbursement_roles": disb}
+
+
+@app.get("/api/admin/role-detail", tags=["admin"])
+def admin_role_detail(role: str, user: dict = Depends(require_config_admin)):
+    """One role's full KPI resolution (ref -> id/name/pillar/weight, flagging any
+    unmapped refs) plus its capabilities."""
+    from utils.core import get_kpi_library, get_pipeline_settings
+    lib = get_kpi_library() or {}
+    role_kpis = lib.get("role_kpis") or {}
+    if role not in role_kpis:
+        raise HTTPException(status_code=404, detail=f"Role '{role}' not in registry")
+    kpis = lib.get("kpis") or []
+    by_id = {str(k.get("id")): k for k in kpis if isinstance(k, dict)}
+    by_name = {str(k.get("name")): k for k in kpis if isinstance(k, dict)}
+    resolved = []
+    for ref in (role_kpis[role] or []):
+        k = by_id.get(str(ref)) or by_name.get(str(ref))
+        if k:
+            resolved.append({"ref": ref, "id": k.get("id"), "name": k.get("name"),
+                             "pillar": k.get("pillar"), "weight": k.get("weight"),
+                             "mapped": True})
+        else:
+            resolved.append({"ref": ref, "mapped": False})
+    cfg = get_pipeline_settings() or {}
+    disb = cfg.get("disbursement_roles") or list(_DISBURSEMENT_ROLES_DEFAULT)
+    disb_lower = [str(r).strip().lower() for r in disb if str(r).strip()]
+    return {"role": role, "kpis": resolved, "kpi_count": len(resolved),
+            "unmapped": sum(1 for r in resolved if not r["mapped"]),
+            "can_disburse": _role_can_disburse(role, disb_lower)}
+
+
+class RoleCapabilityRequest(BaseModel):
+    role: str
+    can_disburse: bool
+
+
+@app.post("/api/admin/roles/capabilities", tags=["admin"])
+def admin_role_capability(payload: RoleCapabilityRequest,
+                          user: dict = Depends(require_config_admin)):
+    """Grant or revoke the disbursement capability for a role — toggles its
+    membership in pipeline_settings.json -> disbursement_roles (the list
+    _is_troops reads). Config-admin only."""
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+    role = (payload.role or "").strip()
+    if not role:
+        raise HTTPException(status_code=400, detail="role is required")
+    settings = get_pipeline_settings() or {}
+    if not isinstance(settings, dict):
+        settings = {}
+    roles = settings.get("disbursement_roles")
+    if not isinstance(roles, list):
+        roles = list(_DISBURSEMENT_ROLES_DEFAULT)
+    present = any(str(r).strip().lower() == role.lower() for r in roles)
+    if payload.can_disburse and not present:
+        roles.append(role)
+    elif not payload.can_disburse and present:
+        roles = [r for r in roles if str(r).strip().lower() != role.lower()]
+    settings["disbursement_roles"] = roles
+    save_pipeline_settings(settings)
+    _audit("API_ROLE_CAPABILITY", user, f"{role}|can_disburse={payload.can_disburse}")
+    return {"role": role, "can_disburse": payload.can_disburse, "disbursement_roles": roles}
 
 
 @app.get("/api/pipeline/deals")

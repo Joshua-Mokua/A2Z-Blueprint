@@ -1939,3 +1939,36 @@ Fix — aligned implementation to the stated intent + Josh's model:
   books + value-dates + posts to GL). BSC emit stays at credit-admin clearance
   (unchanged) to avoid double-count; moving disbursement credit to the Troops
   step is a possible later refinement.
+
+## #52 — Batch C2b-1: role registry (full listing + capability editing) [BACKEND]
+
+Grounding pass first (CGR1) reframed the whole thing — two assumptions were wrong:
+- The reporting hierarchy is STAFF-level, not role-level: get_visible_staff_codes ->
+  core_audit.get_visible_staff walks REPORTING_TREE from the staff roster
+  (staff_code -> Reports To Code) + ReportingLineManager overrides. You re-parent a
+  PERSON, not a role; the role is a label column. So role-registry editing does NOT
+  touch scope.
+- The registry is already 227 roles in kpi_library.json -> role_kpis (not 15;
+  DEFAULT_ROLE_KPIS is just the legacy fallback). role_kpis reference KPIs by a MIX
+  of short codes / human names / K### ids — so per-KPI weight editing is deferred
+  until those are reconciled.
+
+Shipped (safe, no scope/auth touch):
+- GET /api/admin/roles — full registry: every role + kpi_count + resolved pillar mix
+  + can_disburse. Config-admin.
+- GET /api/admin/role-detail?role=… — one role's KPI resolution (ref -> id/name/
+  pillar/weight, flags unmapped) + capability.
+- POST /api/admin/roles/capabilities {role, can_disburse} — toggles the role's
+  membership in pipeline_settings -> disbursement_roles (the list _is_troops reads).
+  disbursement_roles also added to _EDITABLE_CONFIG_KEYS + the config view.
+- scripts/add_treasury_role.py — backup-first/idempotent injector: registers
+  "Treasury Back Office" in role_kpis (starter ops KPIs) + adds it to
+  disbursement_roles. So Troops authority resolves to a real registry role.
+
+Harness roles_probe (8): registry lists >=15 roles; Treasury Back Office present +
+can_disburse; non-admin denied (403); capability grant/revoke round-trips; role
+detail resolves KPIs.
+
+DEFERRED to C2b-2 (guarded): per-staff re-parenting (ReportingLineManager surface,
+with auth/DOA) and per-KPI weight editing (after identifier reconciliation). React
+roles panel consumes /api/admin/roles next.

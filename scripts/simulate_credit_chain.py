@@ -881,6 +881,45 @@ def troops_probe(base, case_id):
     step("troops: re-disburse blocked", 400, st)
 
 
+def roles_probe(base):
+    print("\n=== ROLE REGISTRY (admin config) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not admin:
+        return
+
+    st, r = _req(base, "GET", "/api/admin/roles", admin)
+    roles = r.get("roles", []) if isinstance(r, dict) else []
+    names = [str(x.get("role", "")) for x in roles]
+    step("roles: registry lists all roles", True, len(roles) >= 15, note=f"{len(roles)} roles")
+
+    step("roles: Treasury Back Office present in registry", True,
+         any("treasury back office" in n.lower() for n in names))
+    tre = next((x for x in roles if "treasury back office" in str(x.get("role", "")).lower()), None)
+    step("roles: Treasury Back Office has can_disburse=True", True,
+         bool(tre and tre.get("can_disburse")))
+
+    st, _ = _req(base, "GET", "/api/admin/roles", owner)
+    step("roles: non-admin denied registry", 403, st)
+
+    # capability grant + revoke on a probe role (net-zero)
+    _req(base, "POST", "/api/admin/roles/capabilities", admin,
+         {"role": "Customer Service Officer", "can_disburse": True})
+    st, r2 = _req(base, "GET", "/api/admin/roles", admin)
+    cso = next((x for x in (r2.get("roles") or []) if x.get("role") == "Customer Service Officer"), None)
+    step("roles: capability grant reflected", True, bool(cso and cso.get("can_disburse")))
+    _req(base, "POST", "/api/admin/roles/capabilities", admin,
+         {"role": "Customer Service Officer", "can_disburse": False})
+    st, r3 = _req(base, "GET", "/api/admin/roles", admin)
+    cso3 = next((x for x in (r3.get("roles") or []) if x.get("role") == "Customer Service Officer"), None)
+    step("roles: capability revoke reflected", True, bool(cso3 and not cso3.get("can_disburse")))
+
+    st, d = _req(base, "GET", "/api/admin/role-detail?role=Branch%20Manager", admin)
+    step("roles: role detail resolves KPIs", True,
+         isinstance(d, dict) and d.get("kpi_count", 0) > 0,
+         note=f"{d.get('kpi_count') if isinstance(d, dict) else '?'} kpis")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -900,6 +939,7 @@ def main():
         happy_path(args.base, committee=True)
     negative_override_probe(args.base)
     troops_probe(args.base, cleared_case_id)
+    roles_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)
