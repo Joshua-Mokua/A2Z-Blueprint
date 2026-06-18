@@ -528,6 +528,25 @@ export async function referExistingDeal(
 }
 
 
+// ── CBS portfolio owner (mapped relationship manager) ────────────────────
+
+export interface CustomerPortfolioOwner {
+  cif: string;
+  customer_name: string;
+  is_mapped: boolean;
+  portfolio_owner_code: string | null;
+  portfolio_owner_name: string | null;
+  owner_in_roster: boolean;
+  relationship_manager_code: string;
+}
+
+/** Resolve the portfolio owner (relationship manager) mapped to a CIF. */
+export async function fetchCustomerPortfolioOwner(cif: string): Promise<CustomerPortfolioOwner> {
+  return getJson<CustomerPortfolioOwner>(
+    `/cbs/customers/${encodeURIComponent(cif)}/portfolio-owner`);
+}
+
+
 /**
  * Fetch pipeline analytics from /api/pipeline/analytics — validated/pending
  * value split, per-class buckets (asset/liability/insurance/other), the

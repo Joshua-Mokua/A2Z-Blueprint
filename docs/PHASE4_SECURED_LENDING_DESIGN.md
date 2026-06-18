@@ -2144,3 +2144,26 @@ P2 CONTEXT: owner-in-roster diagnostic ran 30/30 — every CBS-mapped owner reso
 to a real pipeline user, so P3 (owner "nod") can route referrals directly with no
 CBS<->roster reconciliation needed. Next: P2-frontend (wire the portfolio-owner
 auto-detection into the create panel), then P3.
+
+## #61 — P2-frontend: CBS portfolio-owner auto-detection on create [FRONTEND]
+
+Wires the P2 endpoint into PipelineCreate's portfolio panel. When an existing
+customer is picked (CIF lookup or name-search dropdown), an effect keyed on
+pickedCustomer.cif calls fetchCustomerPortfolioOwner(cif) and:
+
+- owner mapped AND != creating RM -> auto-sets hasConflict=true, pre-fills
+  portfolio_owner_code/name, defaults conflictPath='refer' (refer to owner).
+- creating RM IS the owner, or unmapped -> clears the conflict (no friction).
+
+The static "Auto-detection… is deferred" placeholder is replaced by a live
+banner: detecting / "in <owner>'s portfolio — will be referred for a nod"
+(amber; with an owner-not-in-roster caveat) / "You are the portfolio owner"
+(emerald) / "no owner on record". Manual checkbox still overrides.
+
+lib/api.ts: CustomerPortfolioOwner type + fetchCustomerPortfolioOwner. esbuild
+alias-resolved clean; tsc gate in-env.
+
+P2 COMPLETE (backend #59 + frontend #61). The refer path here still uses the
+existing fire-and-forget refer (P1 finding) — P3 wires it into the referral
+lifecycle so the owner must ACCEPT (the nod). P4 makes assignment mandatory for
+existing customers + finalises placement.

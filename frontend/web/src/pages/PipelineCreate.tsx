@@ -48,7 +48,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
-import { fetchCbsCustomer, fetchPipelineConfig, ApiValidationError } from '@/lib/api';
+import { fetchCbsCustomer, fetchPipelineConfig, fetchCustomerPortfolioOwner, ApiValidationError, type CustomerPortfolioOwner } from '@/lib/api';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
@@ -154,6 +154,11 @@ export function PipelineCreate() {
   const [portfolioOwnerCode, setPortfolioOwnerCode] = useState('');
   const [portfolioOwnerName, setPortfolioOwnerName] = useState('');
   const [conflictPath,       setConflictPath]       = useState<ConflictPath>('seek_permission');
+
+  // P2: CBS portfolio-owner auto-detection (existing customers). detectedOwner
+  // holds the last lookup; the effect below auto-fills the conflict fields.
+  const [detectedOwner, setDetectedOwner] = useState<CustomerPortfolioOwner | null>(null);
+  const [ownerDetecting, setOwnerDetecting] = useState(false);
   const [referredTo,         setReferredTo]         = useState('');     // refer path only
   const [referralNote,       setReferralNote]       = useState('');     // refer path only
   const [overrideNote,       setOverrideNote]       = useState('');     // override path only
@@ -357,6 +362,37 @@ export function PipelineCreate() {
     if (segment && !segmentOptions.includes(segment)) setSegment('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientType, segmentOptions]);
+
+  // P2: when an existing customer is picked, look up their mapped portfolio
+  // owner from CBS. If the customer belongs to a DIFFERENT RM, auto-flag the
+  // conflict and pre-fill the owner so the deal can be referred for a nod.
+  // If the current user owns the portfolio (or it's unmapped), no conflict.
+  useEffect(() => {
+    const cif = pickedCustomer?.cif?.trim();
+    if (!cif) { setDetectedOwner(null); return; }
+    let cancelled = false;
+    setOwnerDetecting(true);
+    fetchCustomerPortfolioOwner(cif)
+      .then((po) => {
+        if (cancelled) return;
+        setDetectedOwner(po);
+        const me = (user?.staff_code || '').trim();
+        if (po.is_mapped && po.portfolio_owner_code && po.portfolio_owner_code !== me) {
+          setHasConflict(true);
+          setPortfolioOwnerCode(po.portfolio_owner_code);
+          setPortfolioOwnerName(po.portfolio_owner_name || '');
+          setConflictPath('refer');
+        } else {
+          setHasConflict(false);
+          setPortfolioOwnerCode('');
+          setPortfolioOwnerName('');
+        }
+      })
+      .catch(() => { if (!cancelled) setDetectedOwner(null); })
+      .finally(() => { if (!cancelled) setOwnerDetecting(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedCustomer?.cif, user?.staff_code]);
 
   // ── Live field error clearing (β5.1) ─────────────────────────────────
   //
@@ -1144,11 +1180,42 @@ export function PipelineCreate() {
                 This customer is in another RM&rsquo;s portfolio
               </span>
             </label>
-            <p className="text-xs text-gray-500 mt-2">
-              Check this if CBS already assigns the customer to a different RM.
-              Auto-detection via CBS lookup is deferred to a future batch — for
-              β3, mark manually.
-            </p>
+            {ownerDetecting && (
+              <p className="text-xs text-gray-500 mt-2">Checking portfolio ownership in CBS…</p>
+            )}
+            {!ownerDetecting && detectedOwner?.is_mapped
+              && detectedOwner.portfolio_owner_code
+              && detectedOwner.portfolio_owner_code !== (user?.staff_code || '').trim() && (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Auto-detected from CBS: this customer is in{' '}
+                <span className="font-semibold">
+                  {detectedOwner.portfolio_owner_name || `RM ${detectedOwner.portfolio_owner_code}`}
+                </span>
+                &rsquo;s portfolio. The deal will be referred to them for a nod.
+                {!detectedOwner.owner_in_roster && (
+                  <span className="block mt-1 text-amber-700">
+                    Note: this owner isn&rsquo;t a recognised system user — confirm the recipient manually.
+                  </span>
+                )}
+              </div>
+            )}
+            {!ownerDetecting && detectedOwner?.is_mapped
+              && detectedOwner.portfolio_owner_code === (user?.staff_code || '').trim() && (
+              <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                You are this customer&rsquo;s portfolio owner — no conflict.
+              </div>
+            )}
+            {!ownerDetecting && detectedOwner && !detectedOwner.is_mapped && (
+              <p className="text-xs text-gray-500 mt-2">
+                No portfolio owner on record for this customer in CBS — mark a conflict manually if needed.
+              </p>
+            )}
+            {!detectedOwner && !ownerDetecting && (
+              <p className="text-xs text-gray-500 mt-2">
+                Check this if CBS already assigns the customer to a different RM.
+                For an existing customer, ownership is detected automatically.
+              </p>
+            )}
 
             {hasConflict && (
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
