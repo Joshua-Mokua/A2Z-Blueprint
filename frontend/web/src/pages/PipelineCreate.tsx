@@ -675,9 +675,9 @@ export function PipelineCreate() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="New Pipeline Deal"
+        title="New Deal"
         breadcrumbs={[
-          { label: 'Pipeline', to: '/pipeline' },
+          { label: 'A2Z Sales Pro', to: '/pipeline' },
           { label: 'New deal' },
         ]}
         subtitle="Capture a lead — customer, classification, value, and ownership."

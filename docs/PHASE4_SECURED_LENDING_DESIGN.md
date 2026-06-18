@@ -2119,3 +2119,28 @@ BEFORE wiring the owner "nod" — otherwise referrals route to phantom owners.
 Harness: cbs_portfolio_owner_probe — probes 30 contiguous CIFs (from 100000001),
 asserts endpoint shape + mapped owners carry a code + 404 on unknown, and reports
 the roster-resolution rate. 5 checks (153 -> 158).
+
+## #60 — Frontend rename: "Pipeline" module -> "A2Z Sales Pro" [FRONTEND]
+
+User-facing product rename of the Pipeline module. Display labels only —
+route paths (/pipeline), the API (/api/pipeline), component names, types, and
+domain field labels are deliberately UNCHANGED so cross-links, bookmarks, and
+the backend contract keep working.
+
+Renamed (module identity):
+- Sidebar nav: 'Pipeline' -> 'A2Z Sales Pro'; 'Pipeline Analytics' ->
+  'A2Z Sales Pro Analytics'
+- TopBar route titles: same two
+- Pipeline list page: title + breadcrumb -> 'A2Z Sales Pro'
+- Analytics page: title + breadcrumb -> 'A2Z Sales Pro Analytics'
+- PipelineCreate: title "New Pipeline Deal" -> "New Deal"; breadcrumb -> 'A2Z Sales Pro'
+- PipelineDealDetail: loading frame "Pipeline Deal" -> "Deal"; breadcrumb -> 'A2Z Sales Pro'
+
+Deliberately KEPT: 'Pipeline category' field labels (domain attribute), the
+'Pipeline value' analytics metric series, 'Manager Queues' (its own item), and
+code-comment usage examples. Showcase demo page left as-is.
+
+P2 CONTEXT: owner-in-roster diagnostic ran 30/30 — every CBS-mapped owner resolves
+to a real pipeline user, so P3 (owner "nod") can route referrals directly with no
+CBS<->roster reconciliation needed. Next: P2-frontend (wire the portfolio-owner
+auto-detection into the create panel), then P3.

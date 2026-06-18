@@ -245,8 +245,8 @@ export function Pipeline() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        breadcrumbs={[{ label: 'Business Development' }, { label: 'Pipeline' }]}
-        title="Pipeline"
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'A2Z Sales Pro' }]}
+        title="A2Z Sales Pro"
         subtitle="Deals across your scope — assured value, stage, and ownership."
         actions={
           <>

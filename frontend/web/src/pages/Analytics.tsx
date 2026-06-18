@@ -99,8 +99,8 @@ export function Analytics() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'Business Development' }, { label: 'Pipeline Analytics' }]}
-        title="Pipeline Analytics"
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'A2Z Sales Pro Analytics' }]}
+        title="A2Z Sales Pro Analytics"
         subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."
       />
       <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">

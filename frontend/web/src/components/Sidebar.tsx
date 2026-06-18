@@ -59,10 +59,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Business Development',
     items: [
       {
-        path: '/pipeline', label: 'Pipeline',
+        path: '/pipeline', label: 'A2Z Sales Pro',
         matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')),
       },
-      { path: '/analytics', label: 'Pipeline Analytics', matchActive: (p) => p.startsWith('/analytics') },
+      { path: '/analytics', label: 'A2Z Sales Pro Analytics', matchActive: (p) => p.startsWith('/analytics') },
       {
         path: '/pipeline/queues', label: 'Manager Queues',
         matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (isMgr) => isMgr,
