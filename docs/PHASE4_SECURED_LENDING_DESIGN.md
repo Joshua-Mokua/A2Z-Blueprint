@@ -2607,3 +2607,25 @@ Surfaces the S3 backend on the SLA Monitor so step owners can actually use it.
 NEXT (queued, per Josh): surface each deal's SLA inside Sales Pro (pipeline list/detail,
 right after age) so an RM sees a deal heading for breach on the deal itself; then "due soon"
 / breaching filters in analytics.
+
+## #81 — SLA traffic-light state + per-deal SLA on the deals list [BACKEND]
+
+Foundation for surfacing SLA inside Sales Pro (not just the Monitor). Adds a deal-level
+traffic-light and the data the pipeline list needs to render it without N per-row calls.
+- _deal_sla_status now returns `state` (on_track | due_soon | breached) and
+  `remaining_business_days` (target - elapsed). breached when overdue > 0; due_soon when
+  remaining <= due_soon_days; else on_track.
+- `due_soon_days` is admin-configurable on sla_config (default 2), validated (>= 0 integer)
+  in _validate_sla_config — config-vs-hardcode honoured; "due soon" is a tunable window,
+  not a magic number.
+- GET /api/pipeline/deals now attaches a compact `sla` object to each (already-scoped,
+  paged) deal via _attach_sla_to_deals — one shared config + credit-index build per call,
+  so the pipeline list can show a per-row traffic-light from a single fetch. Closed /
+  no-timestamp deals get sla=null. Both the DB-first and manager-fallback branches attach.
+- Per-deal GET /api/pipeline/deals/{id}/sla inherits state + remaining automatically.
+
+Harness: +4 (207 -> 211) — config exposes due_soon_days, a fresh step-clock deal is
+on_track with a remaining count, the deals list attaches per-deal sla.state, and bumping
+due_soon_days reclassifies that same deal on_track -> due_soon (then restores config,
+net-zero). NEXT (frontend): traffic-light badge per pipeline row + an SLA panel on deal
+detail; then "due soon"/breaching filters in analytics.

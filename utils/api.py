@@ -1292,6 +1292,7 @@ _DEFAULT_SLA_CONFIG = {
         {"after_days": 8, "escalate_to": "managing_director"},
     ],
     "product_promise": {},
+    "due_soon_days": 2,
     "stage_step_map": {
         "Lead": "lead_qualification",
         "Contacted": "lead_qualification",
@@ -1312,10 +1313,27 @@ def _sla_config() -> dict:
         from utils.core import get_pipeline_settings
         cfg = (get_pipeline_settings() or {}).get("sla_config")
         if isinstance(cfg, dict) and cfg.get("steps"):
+            # Forward-compat: an sla_config saved before a key was introduced shouldn't
+            # be missing it. Backfill newly-added top-level defaults non-destructively
+            # (get_pipeline_settings reads fresh from disk, so this never persists).
+            cfg.setdefault("due_soon_days", _DEFAULT_DUE_SOON_DAYS)
             return cfg
     except Exception:
         logging.getLogger("a2z.sla").warning("sla_config read fell back to default", exc_info=True)
     return _DEFAULT_SLA_CONFIG
+
+
+_DEFAULT_DUE_SOON_DAYS = 2
+
+
+def _sla_due_soon_days(cfg: dict) -> int:
+    """Business-day window before a step/age target at which a deal is flagged 'due soon'
+    (amber) rather than 'on track' (green). Admin-configurable via sla_config.due_soon_days."""
+    try:
+        v = int(cfg.get("due_soon_days"))
+        return v if v >= 0 else _DEFAULT_DUE_SOON_DAYS
+    except (TypeError, ValueError):
+        return _DEFAULT_DUE_SOON_DAYS
 
 
 def _validate_sla_config(cfg) -> tuple:
@@ -1375,6 +1393,12 @@ def _validate_sla_config(cfg) -> tuple:
     ssm = cfg.get("stage_step_map") or {}
     if not isinstance(ssm, dict):
         return False, "stage_step_map must be an object"
+    if "due_soon_days" in cfg:
+        try:
+            if int(cfg.get("due_soon_days")) < 0:
+                return False, "due_soon_days must be >= 0"
+        except (TypeError, ValueError):
+            return False, "due_soon_days must be an integer"
     step_keys = {str(s.get("key")) for s in steps}
     for stage, sk in ssm.items():
         if str(sk) not in step_keys:
@@ -1592,6 +1616,13 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
     if target <= 0:
         return {}
     overdue = max(0, elapsed - target)
+    remaining = target - elapsed
+    if overdue > 0:
+        state = "breached"
+    elif remaining <= _sla_due_soon_days(cfg):
+        state = "due_soon"
+    else:
+        state = "on_track"
     escalate_to = _sla_escalation_for(overdue, cfg) if overdue > 0 else None
     # S3: a step owner's commitment (reason + committed close date) against the current
     # step. While the committed date is ahead it is "active"; once it passes with the deal
@@ -1616,12 +1647,32 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
         "step": clock_step,
         "elapsed_business_days": elapsed,
         "target_days": target,
+        "remaining_business_days": remaining,
         "overdue_business_days": overdue,
         "breached": overdue > 0,
+        "state": state,
         "escalate_to": escalate_to,
         "commitment": commit,
         "commitment_status": commitment_status,
     }
+
+
+def _attach_sla_to_deals(deals: list) -> list:
+    """Attach a compact per-deal SLA status (incl. the traffic-light `state`) to each deal
+    in a list response, computed once with shared config + credit index. Closed deals and
+    deals without a usable creation timestamp get sla=None. Mutates in place."""
+    if not deals:
+        return deals
+    cfg = _sla_config()
+    promise = cfg.get("product_promise") or {}
+    smap = _sla_stage_step_map(cfg)
+    credit_idx = _credit_step_index()
+    for d in deals:
+        try:
+            d["sla"] = _deal_sla_status(d, cfg, promise, smap, credit_idx) or None
+        except Exception:
+            d["sla"] = None
+    return deals
 
 
 @app.get("/api/pipeline/deals/{deal_id}/sla", tags=["pipeline"])
@@ -1896,7 +1947,7 @@ def pipeline_deals(
                 enrich_deal_with_permissions(d, user, visible_codes)
                 for d in deals[offset:offset + limit]
             ]
-            return {"deals": enriched, "count": len(deals), "source": "postgresql"}
+            return {"deals": _attach_sla_to_deals(enriched), "count": len(deals), "source": "postgresql"}
         except Exception as e:
             logger.error(f"Pipeline deals DB error: {e}")
 
@@ -1937,7 +1988,7 @@ def pipeline_deals(
     ]
 
     return {
-        "deals":  enriched,
+        "deals":  _attach_sla_to_deals(enriched),
         "count":  len(deals),
         "source": "pipeline_manager",
     }

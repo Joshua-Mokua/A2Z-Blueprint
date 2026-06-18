@@ -1464,6 +1464,57 @@ def sla_commitment_probe(base):
         step("sla commitment: out-of-scope deal not writable", True, True, note="no foreign deal sampled")
 
 
+def sla_state_probe(base):
+    print("\n=== SLA STATE (traffic-light: on_track / due_soon / breached) ===")
+    from datetime import datetime as _dt
+    owner = login(base, "OWNER")
+    admin = login(base, "ADMIN")
+    if not owner or not admin:
+        return
+    _sc, cc = _req(base, "GET", "/api/admin/sla-config", admin)
+    cfg0 = cc.get("sla_config") if isinstance(cc, dict) else None
+    ddays0 = (cfg0 or {}).get("due_soon_days")
+    step("sla state: config exposes due_soon_days", True,
+         isinstance(cfg0, dict) and isinstance(ddays0, int) and ddays0 >= 0,
+         note=f"due_soon_days={ddays0}")
+
+    st_c, body = _req(base, "POST", "/api/pipeline/deals", owner, {
+        "client_name": f"SLA State Probe {_dt.now():%H%M%S}",
+        "product_type": "Term Loan", "deal_value": 5000000,
+        "stage": "Lead", "segment": "SME"})
+    did = (body.get("deal") or {}).get("id") if isinstance(body, dict) else None
+    if did:
+        for tgt in ("Contacted", "Qualified", "Application", "Credit Assessment"):
+            _req(base, "POST", f"/api/pipeline/deals/{did}/advance", owner, {"target_stage": tgt})
+    _ss, s0 = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+    sla0 = s0.get("sla") if isinstance(s0, dict) else None
+    step("sla state: fresh step-clock deal is on_track", True,
+         isinstance(sla0, dict) and sla0.get("state") == "on_track"
+         and isinstance(sla0.get("remaining_business_days"), int),
+         note=f"state={sla0.get('state') if isinstance(sla0, dict) else None} remaining={sla0.get('remaining_business_days') if isinstance(sla0, dict) else None}")
+
+    _sl, lst = _req(base, "GET", "/api/pipeline/deals?limit=200", owner)
+    deals = lst.get("deals", []) if isinstance(lst, dict) else []
+    with_state = [d for d in deals if isinstance(d.get("sla"), dict) and d["sla"].get("state")]
+    step("sla state: deals list attaches per-deal sla state", True, len(with_state) >= 1,
+         note=f"{len(with_state)}/{len(deals)} deals carry sla.state")
+
+    if isinstance(cfg0, dict) and did:
+        bumped = dict(cfg0)
+        bumped["due_soon_days"] = 999
+        try:
+            _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": bumped})
+            _sd, s1 = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+            sla1 = s1.get("sla") if isinstance(s1, dict) else None
+            step("sla state: due_soon_days reclassifies on_track -> due_soon", True,
+                 isinstance(sla1, dict) and sla1.get("state") == "due_soon",
+                 note=f"state={sla1.get('state') if isinstance(sla1, dict) else None} @ due_soon_days=999")
+        finally:
+            _req(base, "POST", "/api/admin/sla-config", admin, {"sla_config": cfg0})
+    else:
+        step("sla state: due_soon_days reclassifies on_track -> due_soon", True, True, note="skipped")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1489,6 +1540,7 @@ def main():
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)
     sla_commitment_probe(args.base)
+    sla_state_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)
