@@ -12,8 +12,9 @@ import { Badge, type BadgeTone } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import {
   fetchIncomingReferrals, fetchReturnedReferrals, fetchOutgoingReferrals,
+  fetchOutgoingReferralAnalytics, fetchReferralsByDepartment,
   acceptReferral, declineReferral, reassignReferral,
-  type ReferralView,
+  type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment,
 } from '@/lib/api';
 
 type Tab = 'incoming' | 'returned' | 'following';
@@ -44,6 +45,8 @@ export default function Referrals() {
   const [incoming, setIncoming] = useState<ReferralView[]>([]);
   const [returned, setReturned] = useState<ReferralView[]>([]);
   const [outgoing, setOutgoing] = useState<ReferralView[]>([]);
+  const [analytics, setAnalytics] = useState<OutgoingReferralAnalytics | null>(null);
+  const [dept, setDept] = useState<ReferralsByDepartment | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -60,6 +63,9 @@ export default function Referrals() {
       .then(([i, r, o]) => { setIncoming(i.deals); setReturned(r.deals); setOutgoing(o.deals); })
       .catch(() => toast({ tone: 'danger', message: 'Could not load referrals.' }))
       .finally(() => setLoading(false));
+    // Funnel + alerts (own referrals); department view is management-only (403 -> hidden).
+    fetchOutgoingReferralAnalytics().then(setAnalytics).catch(() => setAnalytics(null));
+    fetchReferralsByDepartment().then(setDept).catch(() => setDept(null));
   }
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
 
@@ -154,6 +160,50 @@ export default function Referrals() {
             </button>
           ))}
         </div>
+
+        {tab === 'following' && analytics && (
+          <div className="space-y-3 mb-3">
+            <Card><Card.Body>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <span className="text-gray-500">Total referred <b className="text-gray-900">{analytics.total}</b></span>
+                <span className="text-gray-500">Pending <b className="text-amber-700">{analytics.by_status.pending}</b></span>
+                <span className="text-gray-500">Accepted <b className="text-emerald-700">{analytics.by_status.accepted}</b></span>
+                <span className="text-gray-500">Closed won <b className="text-emerald-700">{analytics.closed.won}</b></span>
+                <span className="text-gray-500">Closed lost <b className="text-gray-700">{analytics.closed.lost}</b></span>
+              </div>
+            </Card.Body></Card>
+
+            {analytics.alerts.length > 0 && (
+              <Card stripe="accent"><Card.Body>
+                <div className="text-sm font-semibold text-gray-900 mb-1">Needs attention</div>
+                <ul className="space-y-1">
+                  {analytics.alerts.map((al, i) => (
+                    <li key={al.id || i} className="text-sm text-gray-700">
+                      <span className="font-medium">{al.client_name || al.id}</span>
+                      {al.referred_to ? ` → ${al.referred_to}` : ''} — {al.message}
+                    </li>
+                  ))}
+                </ul>
+              </Card.Body></Card>
+            )}
+
+            {dept && dept.departments.length > 0 && (
+              <Card><Card.Body>
+                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="space-y-1">
+                  {dept.departments.map((row) => (
+                    <div key={row.department} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{row.department}</span>
+                      <span className="text-gray-500 tabular-nums">
+                        {row.total} total · {row.by_status.accepted} accepted · {row.closed.won} won
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card.Body></Card>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="py-16 text-center text-sm text-gray-500">Loading referrals…</div>

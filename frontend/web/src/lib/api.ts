@@ -451,6 +451,45 @@ export async function fetchOutgoingReferrals(): Promise<ReferralListResponse> {
   return getJson<ReferralListResponse>('/pipeline/referrals/outgoing');
 }
 
+export interface ReferralAlert {
+  id?: string;
+  client_name?: string;
+  referred_to?: string;
+  kind: string;
+  days?: number;
+  message: string;
+}
+
+export interface OutgoingReferralAnalytics {
+  total: number;
+  by_status: { pending: number; accepted: number; declined: number };
+  by_stage: Record<string, number>;
+  closed: { won: number; lost: number };
+  alerts: ReferralAlert[];
+  alert_count: number;
+}
+
+export async function fetchOutgoingReferralAnalytics(): Promise<OutgoingReferralAnalytics> {
+  return getJson<OutgoingReferralAnalytics>('/pipeline/referrals/outgoing/analytics');
+}
+
+export interface ReferralDepartmentRow {
+  department: string;
+  total: number;
+  by_status: { pending: number; accepted: number; declined: number };
+  closed: { won: number; lost: number };
+}
+
+export interface ReferralsByDepartment {
+  departments: ReferralDepartmentRow[];
+  total: number;
+  department_count: number;
+}
+
+export async function fetchReferralsByDepartment(): Promise<ReferralsByDepartment> {
+  return getJson<ReferralsByDepartment>('/pipeline/referrals/analytics/by-department');
+}
+
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, Record<string, never>>(
     `/pipeline/deals/${dealId}/referral/accept`, {});

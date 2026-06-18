@@ -2320,3 +2320,18 @@ Harness: referral_probe extended — by-department reachable for ADMIN + well-fo
 (departments + total + by_status), denied (403) to a non-management RM. +3 (169 ->
 172). FRONTEND (#68): Following tab shows the individual funnel + alerts AND, for
 managers, the department breakdown.
+
+## #68 — Referrals "Following" tab: funnel + alerts + department view [FRONTEND]
+
+Surfaces the analytics endpoints in the Referrals page Following tab:
+- Funnel summary card: total referred / pending / accepted / closed won / closed
+  lost (from /referrals/outgoing/analytics).
+- "Needs attention" card: the alerts list (pending too long / returned).
+- "By department" card: per-department totals (accepted, won) from
+  /referrals/analytics/by-department — only renders for managers (the endpoint
+  403s for non-management, caught -> hidden). The department lens Josh asked for,
+  and the visible precursor to the department-level referral BSC KPI.
+
+lib/api.ts: OutgoingReferralAnalytics / ReferralAlert / ReferralDepartmentRow /
+ReferralsByDepartment + fetchOutgoingReferralAnalytics / fetchReferralsByDepartment.
+esbuild alias-resolved clean; tsc gate in-env.
