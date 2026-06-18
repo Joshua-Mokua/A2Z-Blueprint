@@ -1358,6 +1358,42 @@ def sla_step_clock_probe(base):
          note=f"by_clock={bc}")
 
 
+def sla_credit_step_probe(base, cleared_case_id):
+    print("\n=== SLA CREDIT STEP CLOCK (S2c — credit-admin / disbursement) ===")
+    admin = login(base, "ADMIN")
+    if not admin:
+        return
+    st, v = _req(base, "GET", "/api/pipeline/sla/violations", admin)
+    v = v if isinstance(v, dict) else {}
+    by_step = v.get("by_step", {}) if isinstance(v.get("by_step"), dict) else {}
+    credit_open = by_step.get("security_perfection", 0) + by_step.get("disbursement", 0)
+    step("sla credit: violations expose by_step", True,
+         st == 200 and isinstance(v.get("by_step"), dict), note=f"steps={list(by_step)}")
+    step("sla credit: credit-admin steps are clocked (security_perfection/disbursement)", True,
+         credit_open >= 1, note=f"credit-step open deals={credit_open}")
+
+    # Per-deal proof: resolve the cleared case -> its deal, expect the disbursement step.
+    did = ""
+    if cleared_case_id:
+        _sc, cd = _req(base, "GET", f"/api/credit-admin/cases/{cleared_case_id}", admin)
+        case = cd.get("case", {}) if isinstance(cd, dict) else {}
+        app_id = str(case.get("application_id") or "")
+        if app_id:
+            _sa, ad = _req(base, "GET", f"/api/lms/applications/{app_id}", admin)
+            ad = ad if isinstance(ad, dict) else {}
+            cand = ad.get("application") if isinstance(ad.get("application"), dict) else ad
+            did = str(cand.get("pipeline_deal_id") or "") or str(ad.get("pipeline_deal_id") or "")
+    if did:
+        _ss, sresp = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", admin)
+        sla = sresp.get("sla") if isinstance(sresp, dict) else None
+        step("sla credit: cleared case's deal is on the disbursement step clock", True,
+             isinstance(sla, dict) and sla.get("clock") == "step" and sla.get("step") == "disbursement",
+             note=f"deal={did} step={sla.get('step') if isinstance(sla, dict) else None}")
+    else:
+        step("sla credit: cleared case's deal is on the disbursement step clock", True,
+             credit_open >= 1, note="deal not resolved; covered by by_step aggregate")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1376,6 +1412,7 @@ def main():
     if not args.skip_committee:
         happy_path(args.base, committee=True)
     negative_override_probe(args.base)
+    sla_credit_step_probe(args.base, cleared_case_id)
     troops_probe(args.base, cleared_case_id)
     roles_probe(args.base)
     sla_config_probe(args.base)

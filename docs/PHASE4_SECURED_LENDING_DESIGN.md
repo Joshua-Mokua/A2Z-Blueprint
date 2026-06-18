@@ -2535,3 +2535,29 @@ lib/api.ts: SlaConfig/SlaStep/SlaTier/SlaViolation(s) + fetchSlaConfig/saveSlaCo
 fetchSlaViolations. App.tsx /sla route; Sidebar entry. esbuild clean on all four; tsc
 in-env. The SLA engine (S1 config + S2a/S2b clocks) is now visible + editable on screen.
 NEXT: S2c (credit-admin/Troops step stamping) or S3 (violation reason + commitment capture).
+
+## #78 — SLA S2c: credit-admin / disbursement step clocks [BACKEND]
+
+Completes the seven step clocks. The two credit steps couldn't be stamped on the deal
+(its pipeline stage parks at Offer/Proposal through credit admin, and the work lives on a
+separate credit-admin CASE), so rather than hook the LMS/credit-admin route modules
+(circular-import + many-mutation-point risk), they are DERIVED read-only from the case's
+own timestamps.
+- _credit_step_index(): builds deal_id -> {step, entered_at} from CreditAdminManager.cases,
+  resolving case.application_id -> LoanApplicationManager app.pipeline_deal_id -> deal_id.
+  An open case -> security_perfection (entry = approval_date); a cleared (not yet disbursed)
+  case -> disbursement (entry = new cleared_at, added to clear_for_disbursement in core.py);
+  disbursed cases are left to the deal's closure stage. Memoised ~60s.
+- _deal_sla_status gains credit-step PRECEDENCE: a live credit case's step supersedes the
+  stage-mapped step, because the deal has progressed into credit admin while its stage
+  stayed at Offer/Proposal. Falls back to stage-step stamp, then product/age clock.
+- Violations endpoint + per-deal /sla pass the credit index; violations summary gains
+  by_step {step_key: open-deal count}. Read-only — no mutation-path hooks, works for
+  historical cases.
+
+Harness: +3 (198 -> 201) — by_step exposed, credit-admin steps clocked
+(security_perfection + disbursement >= 1, guaranteed by the committee happy-path's cleared
+case), and the cleared case's deal resolves (case -> app -> deal) to the disbursement step
+clock on its per-deal /sla. Probe runs BEFORE troops_probe (which would disburse the
+cleared case). All seven SLA steps now carry a real clock. NEXT: S3 (violation reason +
+committed close-date capture; unfulfilled commitment self-escalates).

@@ -6364,6 +6364,7 @@ class CreditAdminManager:
                 # a separate finance-system step. (Previously this set
                 # disbursed=True + disbursement_date directly.)
                 case["cleared_for_disbursement"] = True
+                case["cleared_at"]         = datetime.now().isoformat()
                 case["last_updated"]       = datetime.now().date().isoformat()
                 self.save()
                 return True

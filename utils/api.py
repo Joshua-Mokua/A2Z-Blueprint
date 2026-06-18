@@ -1493,21 +1493,73 @@ def _stamp_sla_step(pm, deal_id: str, deal: dict, by: str) -> None:
         logging.getLogger("a2z.sla").warning("sla step stamp failed for %s", deal_id, exc_info=True)
 
 
-def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict) -> dict:
+_CREDIT_STEP_CACHE = {"ts": 0.0, "map": {}}
+
+
+def _credit_step_index() -> dict:
+    """deal_id -> {step, entered_at} derived (read-only) from credit-admin cases, so the
+    security_perfection / disbursement steps get a real clock even though the deal's
+    pipeline stage parks at Offer/Proposal through credit admin. case.application_id ->
+    application.pipeline_deal_id resolves the deal; a cleared (not yet disbursed) case is
+    in disbursement, an open case is in security_perfection; disbursed cases are left to
+    the deal's closure stage. Memoised ~60s."""
+    import time
+    now = time.time()
+    if _CREDIT_STEP_CACHE["map"] and now - _CREDIT_STEP_CACHE["ts"] < 60:
+        return _CREDIT_STEP_CACHE["map"]
+    out: dict = {}
+    try:
+        from utils.core import CreditAdminManager, LoanApplicationManager
+        app_to_deal = {}
+        for a in (LoanApplicationManager().apps or []):
+            aid = str(a.get("id") or "")
+            did = str(a.get("pipeline_deal_id") or "")
+            if aid and did:
+                app_to_deal[aid] = did
+        for c in (CreditAdminManager().cases or []):
+            if c.get("disbursed"):
+                continue
+            did = app_to_deal.get(str(c.get("application_id") or ""))
+            if not did:
+                continue
+            if c.get("cleared_for_disbursement"):
+                step = "disbursement"
+                ts = c.get("cleared_at") or c.get("last_updated") or c.get("approval_date")
+            else:
+                step = "security_perfection"
+                ts = c.get("approval_date") or c.get("last_updated")
+            if ts:
+                out[did] = {"step": step, "entered_at": ts}
+    except Exception:
+        logging.getLogger("a2z.sla").warning("credit step index build failed", exc_info=True)
+    _CREDIT_STEP_CACHE["ts"] = now
+    _CREDIT_STEP_CACHE["map"] = out
+    return out
+
+
+def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_idx: dict = None) -> dict:
     """Unified per-deal SLA. {} for a closed deal or one with no usable creation
-    timestamp. Prefers the per-STEP clock (business days since the current step's entry
-    stamp vs that step's target) when the deal carries an sla_step_log entry for its
-    current step; otherwise falls back to the product/age clock (create->now vs the
-    product promise or step-target sum). Reports which clock was used."""
+    timestamp. Step clock precedence: (1) the credit-admin-derived step (security_
+    perfection / disbursement) when the deal has a live credit case — it supersedes the
+    stage step because the deal has progressed into credit admin while its pipeline stage
+    stayed at Offer/Proposal; (2) the stage-mapped step's sla_step_log stamp; else the
+    product/age clock. Reports which clock was used."""
     stage = str(deal.get("stage") or "")
     if any(m in stage.lower() for m in _SLA_CLOSED_MARKERS):
         return {}
     base_ts = deal.get("created_at") or deal.get("open_date") or deal.get("created")
     if not base_ts:
         return {}
-    step_key = smap.get(stage)
+    credit_idx = credit_idx or {}
+    ci = credit_idx.get(str(deal.get("id") or ""))
     log = deal.get("sla_step_log") or {}
-    step_entered = log.get(step_key) if step_key else None
+    step_key = step_entered = None
+    if ci and ci.get("entered_at") and _sla_step_target(cfg, ci["step"]) > 0:
+        step_key, step_entered = ci["step"], ci["entered_at"]
+    else:
+        sk = smap.get(stage)
+        if sk and log.get(sk):
+            step_key, step_entered = sk, log.get(sk)
     if step_key and step_entered:
         target = _sla_step_target(cfg, step_key)
         elapsed = _business_days_since(step_entered)
@@ -1556,7 +1608,7 @@ def pipeline_deal_sla(deal_id: str, user: dict = Depends(get_current_user)):
     if visible and sc not in visible and (not po or po not in visible):
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     cfg = _sla_config()
-    status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {}, _sla_stage_step_map(cfg))
+    status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {}, _sla_stage_step_map(cfg), _credit_step_index())
     return {"deal_id": deal_id, "sla": status or None}
 
 
@@ -1571,18 +1623,22 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
     cfg = _sla_config()
     promise = cfg.get("product_promise") or {}
     smap = _sla_stage_step_map(cfg)
+    credit_idx = _credit_step_index()
     visible = set(get_visible_staff_codes(user) or [])
     deals = filter_deals_by_visible_codes(_all_pipeline_deals(), visible)
     open_count = 0
     violations = []
     by_escalation: dict = {}
     by_clock = {"step": 0, "age": 0}
+    by_step: dict = {}
     for d in deals:
-        s = _deal_sla_status(d, cfg, promise, smap)
+        s = _deal_sla_status(d, cfg, promise, smap, credit_idx)
         if not s:
             continue
         open_count += 1
         by_clock[s["clock"]] = by_clock.get(s["clock"], 0) + 1
+        sk = s.get("step") or "age"
+        by_step[sk] = by_step.get(sk, 0) + 1
         if s["breached"]:
             violations.append(s)
             esc = s["escalate_to"] or "step_owner"
@@ -1594,6 +1650,7 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
         "open_deals": open_count,
         "by_escalation": by_escalation,
         "by_clock": by_clock,
+        "by_step": by_step,
     }
 
 
