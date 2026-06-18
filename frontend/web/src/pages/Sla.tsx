@@ -7,6 +7,7 @@
 //     /api/admin/sla-config with mandatory-before-save validation surfaced
 //     back to the user.
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -43,6 +44,7 @@ type Tab = 'violations' | 'config';
 
 export default function Sla() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user, isAdmin } = useRole();
   const canEdit = useMemo(() => isConfigAdminRole(user?.role, isAdmin), [user?.role, isAdmin]);
   const [tab, setTab] = useState<Tab>('violations');
@@ -212,7 +214,14 @@ export default function Sla() {
                     <div className="divide-y divide-gray-100">
                       {vio.violations.map((v) => (
                         <div key={v.deal_id} className="py-2.5">
-                          <div className="flex items-start justify-between gap-3">
+                          <div
+                            className="flex items-start justify-between gap-3 -mx-2 px-2 py-1 rounded-md cursor-pointer hover:bg-gray-50"
+                            role="button"
+                            tabIndex={0}
+                            title="Open this deal"
+                            onClick={() => navigate(`/pipeline/${encodeURIComponent(v.deal_id)}`)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/pipeline/${encodeURIComponent(v.deal_id)}`); }}
+                          >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-gray-900 truncate">{v.client_name || v.deal_id}</span>
@@ -244,7 +253,7 @@ export default function Sla() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => (commitFor === v.deal_id ? closeCommit() : openCommit(v))}
+                                  onClick={(e) => { e.stopPropagation(); commitFor === v.deal_id ? closeCommit() : openCommit(v); }}
                                 >
                                   {v.commitment ? 'Update' : 'Commit'}
                                 </Button>

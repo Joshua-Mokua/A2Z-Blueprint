@@ -2677,3 +2677,11 @@ Closes the "SLA visible everywhere" arc. A summary card that drives the list.
 Phase-4 SLA arc COMPLETE end-to-end: S1 config -> S2 clocks (age/step/credit) -> S3
 commitments -> traffic-light state -> Monitor + Sales Pro + Analytics surfaces. Remaining
 SLA work is S4 (BSC per-role SLA KPI), a BSC-phase item.
+
+## #85 — SLA Monitor breach rows click-through to the deal [FRONTEND]
+
+Small carried item closed: each breaching row on the SLA Monitor is now clickable (role
+button + keyboard Enter) and navigates to /pipeline/{deal_id}, so a manager can jump
+straight from a breach to the deal. The Commit/Update button calls stopPropagation so it
+toggles the commitment form without navigating; the inline form sits outside the clickable
+region. Single-file change (Sla.tsx).
