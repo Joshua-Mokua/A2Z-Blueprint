@@ -449,6 +449,7 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "referral_note":        deal.get("referral_note"),
                 "decline_reason":       deal.get("decline_reason"),
                 "sla_step_log":         deal.get("sla_step_log"),
+                "sla_commitments":      deal.get("sla_commitments"),
             }),
         }
         if not row["id"]:
@@ -503,7 +504,7 @@ def _normalize_db_deal_row(row):
                    "sector", "segment", "validated_by", "validated_at",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
-                   "decline_reason", "sla_step_log"):
+                   "decline_reason", "sla_step_log", "sla_commitments"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
@@ -1474,6 +1475,21 @@ def _sla_escalation_for(overdue_bd: int, cfg: dict) -> str:
     return role
 
 
+def _sla_ceiling_role(cfg: dict) -> str:
+    """The top escalation tier's role — where an UNFULFILLED commitment escalates to,
+    regardless of the normal overdue-day ladder."""
+    role = "managing_director"
+    best = -1
+    for tier in (cfg.get("escalation_ladder") or []):
+        try:
+            a = int(tier.get("after_days"))
+        except (TypeError, ValueError):
+            continue
+        if a >= best and str(tier.get("escalate_to") or "").strip():
+            best, role = a, str(tier.get("escalate_to"))
+    return role
+
+
 def _stamp_sla_step(pm, deal_id: str, deal: dict, by: str) -> None:
     """Record first entry into the deal's current SLA step on sla_step_log, enabling the
     per-step business-day clock. No-op if the stage maps to no step or it's already
@@ -1576,6 +1592,20 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
     if target <= 0:
         return {}
     overdue = max(0, elapsed - target)
+    escalate_to = _sla_escalation_for(overdue, cfg) if overdue > 0 else None
+    # S3: a step owner's commitment (reason + committed close date) against the current
+    # step. While the committed date is ahead it is "active"; once it passes with the deal
+    # still on this step it is "unfulfilled" and escalates on its own to the ceiling tier,
+    # beyond the normal overdue ladder — independent of whether the raw SLA target tripped.
+    commit = (deal.get("sla_commitments") or {}).get(clock_step) if clock_step else None
+    commitment_status = None
+    if commit and commit.get("committed_date"):
+        try:
+            commitment_status = "unfulfilled" if date.fromisoformat(str(commit["committed_date"])) < date.today() else "active"
+        except (TypeError, ValueError):
+            commitment_status = "active"
+        if commitment_status == "unfulfilled":
+            escalate_to = _sla_ceiling_role(cfg)
     return {
         "deal_id": deal.get("id"),
         "client_name": deal.get("client_name"),
@@ -1588,7 +1618,9 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
         "target_days": target,
         "overdue_business_days": overdue,
         "breached": overdue > 0,
-        "escalate_to": _sla_escalation_for(overdue, cfg) if overdue > 0 else None,
+        "escalate_to": escalate_to,
+        "commitment": commit,
+        "commitment_status": commitment_status,
     }
 
 
@@ -1610,6 +1642,56 @@ def pipeline_deal_sla(deal_id: str, user: dict = Depends(get_current_user)):
     cfg = _sla_config()
     status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {}, _sla_stage_step_map(cfg), _credit_step_index())
     return {"deal_id": deal_id, "sla": status or None}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/sla/commitment", tags=["pipeline"])
+def pipeline_deal_sla_commitment(
+    deal_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """S3 — the step owner records a reason + committed close date against the deal's
+    current breaching SLA step. Stored per step on the deal; surfaced by the SLA engine.
+    Once the committed date passes with the deal still on that step, the commitment is
+    UNFULFILLED and self-escalates to the ceiling tier. Scope-checked like advance."""
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    reason = str(payload.get("reason") or "").strip()
+    committed_date = str(payload.get("committed_date") or "").strip()
+    if len(reason) < 5:
+        raise HTTPException(status_code=400, detail="A reason of at least 5 characters is required.")
+    try:
+        date.fromisoformat(committed_date)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="committed_date must be a valid YYYY-MM-DD date.")
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = set(get_visible_staff_codes(user) or [])
+    sc = str(deal.get("staff_code") or "")
+    po = str(deal.get("portfolio_owner_code") or "")
+    if visible and sc not in visible and (not po or po not in visible):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    cfg = _sla_config()
+    status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {},
+                              _sla_stage_step_map(cfg), _credit_step_index())
+    step_key = (status or {}).get("step")
+    if not step_key:
+        raise HTTPException(status_code=400,
+                            detail="This deal is not on a step clock, so no SLA commitment applies.")
+    code, name, _ = _resolve_actor(user)
+    commitments = dict(deal.get("sla_commitments") or {})
+    commitments[step_key] = {
+        "reason": reason,
+        "committed_date": committed_date,
+        "recorded_by": code,
+        "recorded_by_name": name,
+        "recorded_at": datetime.now().isoformat(),
+    }
+    pm.update_deal(deal_id, {"sla_commitments": commitments}, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    return {"deal_id": deal_id, "step": step_key, "commitment": commitments[step_key]}
 
 
 @app.get("/api/pipeline/sla/violations", tags=["pipeline"])
@@ -1639,7 +1721,7 @@ def pipeline_sla_violations(user: dict = Depends(get_current_user)):
         by_clock[s["clock"]] = by_clock.get(s["clock"], 0) + 1
         sk = s.get("step") or "age"
         by_step[sk] = by_step.get(sk, 0) + 1
-        if s["breached"]:
+        if s["breached"] or s.get("commitment_status") == "unfulfilled":
             violations.append(s)
             esc = s["escalate_to"] or "step_owner"
             by_escalation[esc] = by_escalation.get(esc, 0) + 1

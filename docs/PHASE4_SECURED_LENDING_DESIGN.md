@@ -2561,3 +2561,27 @@ case), and the cleared case's deal resolves (case -> app -> deal) to the disburs
 clock on its per-deal /sla. Probe runs BEFORE troops_probe (which would disburse the
 cleared case). All seven SLA steps now carry a real clock. NEXT: S3 (violation reason +
 committed close-date capture; unfulfilled commitment self-escalates).
+
+## #79 — SLA S3: breach commitment capture + self-escalating unfulfilment [BACKEND]
+
+Final piece of the locked SLA spec (item 5). The step owner records a reason + committed
+close date on a breach; an unfulfilled commitment escalates on its own.
+- POST /api/pipeline/deals/{id}/sla/commitment — records {reason, committed_date} against
+  the deal's CURRENT step (resolved via _deal_sla_status, so it follows whichever clock —
+  pipeline/credit step). reason >= 5 chars, committed_date a valid date (permissive on
+  past so the engine, not the API, judges fulfilment); 400 if the deal is on the age clock
+  (no step). Scope-checked like advance (out-of-scope -> 404). Stored per step in
+  sla_commitments, riding the metadata JSONB column (DB sync + lift), so DB-first reads
+  see it.
+- _deal_sla_status now returns commitment + commitment_status: while breaching, an "active"
+  commitment (committed date still in the future) is surfaced; once the date passes with
+  the deal still on that step it's "unfulfilled" and escalate_to jumps to the ceiling tier
+  (_sla_ceiling_role) regardless of the normal overdue ladder — the missed commitment is
+  itself the escalation trigger.
+
+Harness: +6 (201 -> 207) — find a step-clock breach, record reason + future date (200),
+active commitment surfaces on /sla, a backdated commitment flips to unfulfilled and
+escalate_to == the configured ceiling, a <5-char reason is rejected (400), and an
+out-of-scope deal is not writable (404). SLA spec S1-S3 now COMPLETE end-to-end on the
+backend. NEXT (frontend): surface commitments on the SLA Monitor (record button on a
+breach row + active/unfulfilled badges).

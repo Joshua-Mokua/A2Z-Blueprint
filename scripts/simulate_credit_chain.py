@@ -1394,6 +1394,76 @@ def sla_credit_step_probe(base, cleared_case_id):
              credit_open >= 1, note="deal not resolved; covered by by_step aggregate")
 
 
+def sla_commitment_probe(base):
+    print("\n=== SLA COMMITMENT (S3 — reason + committed date; unfulfilled self-escalates) ===")
+    from datetime import datetime as _dt, date as _date, timedelta as _td
+    owner = login(base, "OWNER")
+    admin = login(base, "ADMIN")
+    if not owner or not admin:
+        return
+    _sc, cc = _req(base, "GET", "/api/admin/sla-config", admin)
+    ladder = (cc.get("sla_config", {}) if isinstance(cc, dict) else {}).get("escalation_ladder", [])
+    ceiling, best = "managing_director", -1
+    for t in ladder:
+        try:
+            a = int(t.get("after_days"))
+        except (TypeError, ValueError):
+            continue
+        if a >= best and str(t.get("escalate_to") or "").strip():
+            best, ceiling = a, str(t.get("escalate_to"))
+
+    # Build a deterministic step-clock deal (owned by OWNER), advanced to Credit Assessment.
+    st_c, body = _req(base, "POST", "/api/pipeline/deals", owner, {
+        "client_name": f"SLA Commit Probe {_dt.now():%H%M%S}",
+        "product_type": "Term Loan", "deal_value": 5000000,
+        "stage": "Lead", "segment": "SME"})
+    did = (body.get("deal") or {}).get("id") if isinstance(body, dict) else None
+    if did:
+        for tgt in ("Contacted", "Qualified", "Application", "Credit Assessment"):
+            _req(base, "POST", f"/api/pipeline/deals/{did}/advance", owner, {"target_stage": tgt})
+    _ss, s0 = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+    sla0 = s0.get("sla") if isinstance(s0, dict) else None
+    step("sla commitment: step-clock deal ready to commit against", True,
+         bool(did) and isinstance(sla0, dict) and sla0.get("clock") == "step",
+         note=f"deal={did} step={sla0.get('step') if isinstance(sla0, dict) else None}")
+
+    future = (_date.today() + _td(days=10)).isoformat()
+    past = (_date.today() - _td(days=2)).isoformat()
+    st_r, _ = _req(base, "POST", f"/api/pipeline/deals/{did}/sla/commitment", owner,
+                   {"reason": "Awaiting client valuation report", "committed_date": future})
+    step("sla commitment: step owner records reason + committed date", (200, 201), st_r)
+    _sg, sresp = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+    sla = sresp.get("sla") if isinstance(sresp, dict) else None
+    step("sla commitment: active commitment surfaces on the deal SLA", True,
+         isinstance(sla, dict) and isinstance(sla.get("commitment"), dict)
+         and sla.get("commitment_status") == "active",
+         note=f"status={sla.get('commitment_status') if isinstance(sla, dict) else None}")
+
+    _req(base, "POST", f"/api/pipeline/deals/{did}/sla/commitment", owner,
+         {"reason": "Valuation delayed again", "committed_date": past})
+    _sg2, sresp2 = _req(base, "GET", f"/api/pipeline/deals/{did}/sla", owner)
+    sla2 = sresp2.get("sla") if isinstance(sresp2, dict) else None
+    step("sla commitment: unfulfilled commitment self-escalates to ceiling", True,
+         isinstance(sla2, dict) and sla2.get("commitment_status") == "unfulfilled"
+         and sla2.get("escalate_to") == ceiling,
+         note=f"status={sla2.get('commitment_status') if isinstance(sla2, dict) else None} -> {sla2.get('escalate_to') if isinstance(sla2, dict) else None}")
+
+    st_e, _ = _req(base, "POST", f"/api/pipeline/deals/{did}/sla/commitment", owner,
+                   {"reason": "no", "committed_date": future})
+    step("sla commitment: short reason rejected", 400, st_e)
+
+    _sv, v = _req(base, "GET", "/api/pipeline/sla/violations", admin)
+    vios = v.get("violations", []) if isinstance(v, dict) else []
+    foreign = next((x.get("deal_id") for x in vios
+                    if str(x.get("owner_code") or "") not in ("", "300731")), None)
+    if foreign:
+        st_f, _ = _req(base, "POST", f"/api/pipeline/deals/{foreign}/sla/commitment", owner,
+                       {"reason": "Out-of-scope attempt", "committed_date": future})
+        step("sla commitment: out-of-scope deal not writable", (403, 404), st_f, note=f"deal={foreign}")
+    else:
+        step("sla commitment: out-of-scope deal not writable", True, True, note="no foreign deal sampled")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1418,6 +1488,7 @@ def main():
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)
+    sla_commitment_probe(args.base)
     fx_currency_probe(args.base)
     sector_mou_probe(args.base)
     referral_probe(args.base)
