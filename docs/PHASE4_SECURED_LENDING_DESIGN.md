@@ -2092,3 +2092,30 @@ FINDINGS confirmed during grounding (drive P2-P4):
   owner "nod" (accept loop) lives only in the new referral lifecycle and is not yet
   wired to this path — that's P3.
 - Portfolio assignment is not mandatory for existing customers — that's P4.
+
+## #59 — P2: CBS portfolio-owner auto-detection [BACKEND]
+
+New GET /api/cbs/customers/{cif}/portfolio-owner (utils/api_cbs_routes.py). Every
+CBS customer carries relationship_manager_code (their mapped relationship owner,
+a 300xxx staff code or "UNASSIGNED" — generate_cbs assigns it). The endpoint turns
+that into a referable portfolio owner:
+
+  { cif, customer_name, is_mapped, portfolio_owner_code, portfolio_owner_name,
+    owner_in_roster, relationship_manager_code, source }
+
+- is_mapped: rm_code set and != UNASSIGNED (else treat like NTB).
+- portfolio_owner_name: best-effort resolved from the PIPELINE roster
+  (get_staff_roster) via _resolve_owner_name — logged (not silent) on miss.
+- owner_in_roster: whether that owner is an ADDRESSABLE pipeline user — the
+  signal for whether P3's referral routing can actually notify them.
+
+GROUNDING NOTE / OPEN RISK: generate_cbs mints its OWN staff pool (from 300001)
+and does NOT read staff_register.xlsx, so CBS rm_codes and the pipeline roster are
+independent universes that only coincidentally overlap. The harness owner-in-roster
+diagnostic reports the resolution rate at runtime. If it's low/zero, P3 needs a
+CBS↔roster reconciliation (regenerate CBS against the real roster, or add a mapping)
+BEFORE wiring the owner "nod" — otherwise referrals route to phantom owners.
+
+Harness: cbs_portfolio_owner_probe — probes 30 contiguous CIFs (from 100000001),
+asserts endpoint shape + mapped owners carry a code + 404 on unknown, and reports
+the roster-resolution rate. 5 checks (153 -> 158).

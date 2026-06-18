@@ -1033,6 +1033,53 @@ def portfolio_conflict_probe(base):
          note=f"is_referral={rd.get('is_referral')}")
 
 
+def cbs_portfolio_owner_probe(base):
+    """P2 — CBS auto-detects a customer's mapped portfolio owner.
+
+    Every CBS customer carries relationship_manager_code (their relationship
+    owner). The new /customers/{cif}/portfolio-owner endpoint resolves that to
+    a referable owner (code + roster-resolved name) so the deal-create flow can
+    route an existing-customer deal to its owner for a nod. The owner-in-roster
+    diagnostic reports how many mapped owners are addressable pipeline users —
+    the signal for whether P3's referral routing will land.
+    """
+    print("\n=== CBS PORTFOLIO OWNER (P2 — auto-detect mapped owner) ===")
+    admin = login(base, "ADMIN")
+    if not admin:
+        step("cbs: admin login", 200, 0, note="cannot proceed")
+        return
+
+    # CIFs are contiguous from 100000001 — probe directly, no name-search dependency.
+    sample_po = {}
+    mapped_pos = []
+    for i in range(1, 31):
+        cif = str(100000000 + i)
+        st, p = _req(base, "GET", f"/api/cbs/customers/{cif}/portfolio-owner", admin)
+        if st == 200 and isinstance(p, dict):
+            if not sample_po:
+                sample_po = p
+            if p.get("is_mapped"):
+                mapped_pos.append(p)
+
+    step("cbs: portfolio-owner endpoint resolves a real CIF", (200, 201),
+         200 if sample_po else 0, sample_po,
+         note=f"cif={sample_po.get('cif')} mapped={sample_po.get('is_mapped')}")
+    step("cbs: endpoint returns is_mapped + owner_in_roster fields", True,
+         "is_mapped" in sample_po and "owner_in_roster" in sample_po)
+    step("cbs: mapped customers carry a portfolio owner code", True,
+         len(mapped_pos) > 0 and all(p.get("portfolio_owner_code") for p in mapped_pos),
+         note=f"{len(mapped_pos)}/30 sampled are mapped")
+
+    # Diagnostic: are mapped owners addressable pipeline users? (P3 routing signal)
+    resolved = sum(1 for p in mapped_pos if p.get("owner_in_roster"))
+    step("cbs: owner-in-roster diagnostic (P3 routing signal)", True,
+         "owner_in_roster" in sample_po,
+         note=f"{resolved}/{len(mapped_pos)} mapped owners resolve to roster names")
+
+    st, _ = _req(base, "GET", "/api/cbs/customers/999999999/portfolio-owner", admin)
+    step("cbs: unknown CIF -> 404", 404, st)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8502")
@@ -1058,6 +1105,7 @@ def main():
     referral_probe(args.base)
     staff_search_probe(args.base)
     portfolio_conflict_probe(args.base)
+    cbs_portfolio_owner_probe(args.base)
     scope_guard(args.base)
     dashboard_check(args.base)
     credit_probe(args.base)

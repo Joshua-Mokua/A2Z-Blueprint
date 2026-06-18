@@ -28,6 +28,8 @@ Why no scope filter:
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+import logging
+
 from utils.auth_jwt import get_current_user
 from utils.core_audit import audit_log
 from utils.cbs_manager import (
@@ -38,6 +40,8 @@ from utils.cbs_manager import (
     get_aggregates,
 )
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/cbs", tags=["cbs"])
 
@@ -91,6 +95,64 @@ def fetch_customer(
     return {
         "customer": customer,
         "source":   "cbs_manager",
+    }
+
+
+# ── Portfolio owner (mapped relationship manager) ───────────────────────
+
+def _resolve_owner_name(staff_code: str) -> str:
+    """Best-effort: resolve a staff code to its display name via the pipeline
+    roster, so a CBS-mapped owner surfaces as a referable person. Returns ""
+    when the code isn't in the roster — logged, never silently swallowed."""
+    code = str(staff_code or "").strip()
+    if not code:
+        return ""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        hit = roster[roster["Staff Code"].astype(str).str.strip() == code]
+        if not hit.empty:
+            return str(hit.iloc[0].get("Staff Name") or "").strip()
+    except Exception as exc:  # surfaced, not silent (CGR1)
+        logger.warning("portfolio-owner name resolution failed for %s: %s", code, exc)
+    return ""
+
+
+@router.get("/customers/{cif}/portfolio-owner")
+def fetch_customer_portfolio_owner(
+    cif: str,
+    user: dict = Depends(get_current_user),
+):
+    """Resolve the portfolio owner (relationship manager) mapped to a CIF.
+
+    Ecobank maps every customer to a relationship owner. This turns the CBS
+    relationship_manager_code into a referable portfolio owner (code + name)
+    so the deal-create flow can route an existing-customer deal to its owner
+    for a nod. is_mapped is False for unassigned customers (treat like NTB);
+    owner_in_roster flags whether that owner is an addressable pipeline user.
+    """
+    customer = get_customer_by_cif(cif)
+    if customer is None:
+        raise HTTPException(status_code=404, detail=f"No customer found with CIF {cif}")
+
+    rm_code = str(customer.get("relationship_manager_code") or "").strip()
+    is_mapped = bool(rm_code) and rm_code.upper() != "UNASSIGNED"
+    owner_name = _resolve_owner_name(rm_code) if is_mapped else ""
+
+    audit_log(
+        "CBS_PORTFOLIO_OWNER_LOOKUP",
+        user.get("username", "unknown"),
+        detail=f"cif={cif} rm={rm_code or 'UNASSIGNED'} mapped={is_mapped}",
+    )
+    return {
+        "cif":                       str(customer.get("cif") or cif),
+        "customer_name":             str(customer.get("full_name") or ""),
+        "is_mapped":                 is_mapped,
+        "portfolio_owner_code":      rm_code if is_mapped else None,
+        "portfolio_owner_name":      owner_name if is_mapped else None,
+        "owner_in_roster":           bool(owner_name),
+        "relationship_manager_code": rm_code,
+        "source":                    "cbs_manager",
     }
 
 
