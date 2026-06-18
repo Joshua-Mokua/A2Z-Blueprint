@@ -327,6 +327,20 @@ export default function Sla() {
                 </Card.Body></Card>
 
                 <Card><Card.Body>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Due-soon window</div>
+                  <p className="text-xs text-gray-500 mb-2">Business days before a target at which a deal is flagged amber (due soon) instead of green (on track).</p>
+                  <div className="w-32">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={String(cfg.due_soon_days ?? 2)}
+                      disabled={!canEdit}
+                      onChange={(e) => setCfg((c) => (c ? { ...c, due_soon_days: Number(e.target.value) } : c))}
+                    />
+                  </div>
+                </Card.Body></Card>
+
+                <Card><Card.Body>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Escalation ladder</div>
                   <p className="text-xs text-gray-500 mb-2">Business days past the step target at which the breach escalates to the named role. Must increase down the list.</p>
                   <div className="space-y-2">

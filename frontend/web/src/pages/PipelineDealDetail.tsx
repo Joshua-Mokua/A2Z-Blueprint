@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, ApiValidationError, AuthExpiredError, type StaffMember } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, type StaffMember, type SlaViolation } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -83,6 +83,7 @@ export function PipelineDealDetail() {
 
   const [deal, setDeal] = useState<PipelineDeal | null>(null);
   const [permissions, setPermissions] = useState<DealPermissions | null>(null);
+  const [sla, setSla] = useState<SlaViolation | null>(null);
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -100,6 +101,8 @@ export function PipelineDealDetail() {
       setDeal(response.deal);
       setPermissions(response.permissions);
       setStageFlow(response.stage_flow ?? []);
+      // Per-deal SLA — non-blocking; failure leaves the panel hidden, not the page.
+      fetchDealSla(dealId).then((r) => setSla(r.sla)).catch(() => setSla(null));
     } catch (e) {
       if (e instanceof AuthExpiredError) {
         // AuthProvider's 401 callback already flipped state; the route
@@ -266,6 +269,50 @@ export function PipelineDealDetail() {
           </div>
         </Card.Body>
       </Card>
+
+      {/* SLA status panel (Phase 4 #81) — the deal's own clock, due-soon, breach */}
+      {sla && sla.state && (
+        <Card className="mt-6" stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
+          <Card.Header>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h3 className="text-sm font-semibold text-gray-900">SLA status</h3>
+              <Badge
+                tone={sla.state === 'breached' ? 'danger' : sla.state === 'due_soon' ? 'warning' : 'success'}
+                size="sm"
+              >
+                {sla.state === 'breached' ? 'Breached' : sla.state === 'due_soon' ? 'Due soon' : 'On track'}
+              </Badge>
+              <Badge tone={sla.clock === 'step' ? 'info' : 'neutral'} size="sm">
+                {sla.clock === 'step' ? (sla.step || 'step').replace(/_/g, ' ') : 'age clock'}
+              </Badge>
+              {sla.commitment_status === 'active' && (
+                <Badge tone="info" size="sm">committed {sla.commitment?.committed_date}</Badge>
+              )}
+              {sla.commitment_status === 'unfulfilled' && (
+                <Badge tone="danger" size="sm">commitment overdue</Badge>
+              )}
+            </div>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <DetailField label="Elapsed" value={`${sla.elapsed_business_days} bd`} />
+              <DetailField label="Target" value={`${sla.target_days} bd`} />
+              <DetailField
+                label={sla.breached ? 'Overdue' : 'Remaining'}
+                value={sla.breached ? `+${sla.overdue_business_days} bd` : `${sla.remaining_business_days ?? '—'} bd`}
+              />
+              <DetailField label="Escalation" value={(sla.escalate_to || '—').replace(/_/g, ' ')} />
+            </div>
+            {sla.commitment && (
+              <p className="text-xs text-gray-500 mt-3">
+                <span className="font-medium">Commitment:</span> {sla.commitment.reason}
+                {' · by '}{sla.commitment.committed_date}
+                {sla.commitment.recorded_by_name ? ` (${sla.commitment.recorded_by_name})` : ''}
+              </p>
+            )}
+          </Card.Body>
+        </Card>
+      )}
 
       {/* Permissions panel — shows what server says you can do */}
       <Card className="mt-6">

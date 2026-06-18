@@ -39,6 +39,19 @@ export interface DealPermissions {
 // known fields. Trade-off: explicit known fields, additional fields
 // accessed by string keys when needed.
 
+export interface DealSlaStatus {
+  state?:                  'on_track' | 'due_soon' | 'breached';
+  clock?:                  'step' | 'age';
+  step?:                   string | null;
+  elapsed_business_days?:  number;
+  target_days?:            number;
+  remaining_business_days?: number;
+  overdue_business_days?:  number;
+  breached?:               boolean;
+  escalate_to?:            string | null;
+  commitment_status?:      'active' | 'unfulfilled' | null;
+}
+
 export interface PipelineDeal {
   // Identity
   id:                   string;
@@ -47,6 +60,9 @@ export interface PipelineDeal {
   client_type?:         string;
   is_ntb?:              boolean;
   is_referral?:         boolean;
+
+  // Per-deal SLA status (attached by GET /api/pipeline/deals — Phase 4 #81)
+  sla?:                 DealSlaStatus | null;
 
   // Staff attribution
   staff_code:           string;

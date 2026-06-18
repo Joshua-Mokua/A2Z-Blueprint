@@ -516,6 +516,7 @@ export interface SlaConfig {
   steps: SlaStep[];
   escalation_ladder: SlaTier[];
   product_promise: Record<string, number>;
+  due_soon_days?: number;
   stage_step_map?: Record<string, string>;
 }
 export async function fetchSlaConfig(): Promise<{ sla_config: SlaConfig; is_default: boolean }> {
@@ -543,8 +544,10 @@ export interface SlaViolation {
   step?: string | null;
   elapsed_business_days: number;
   target_days: number;
+  remaining_business_days?: number;
   overdue_business_days: number;
   breached: boolean;
+  state?: 'on_track' | 'due_soon' | 'breached';
   escalate_to?: string | null;
   commitment?: SlaCommitment | null;
   commitment_status?: 'active' | 'unfulfilled' | null;
@@ -559,6 +562,9 @@ export interface SlaViolations {
 }
 export async function fetchSlaViolations(): Promise<SlaViolations> {
   return getJson<SlaViolations>('/pipeline/sla/violations');
+}
+export async function fetchDealSla(dealId: string): Promise<{ deal_id: string; sla: SlaViolation | null }> {
+  return getJson<{ deal_id: string; sla: SlaViolation | null }>(`/pipeline/deals/${dealId}/sla`);
 }
 export async function recordSlaCommitment(
   dealId: string, reason: string, committedDate: string,

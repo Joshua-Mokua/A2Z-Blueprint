@@ -2629,3 +2629,24 @@ on_track with a remaining count, the deals list attaches per-deal sla.state, and
 due_soon_days reclassifies that same deal on_track -> due_soon (then restores config,
 net-zero). NEXT (frontend): traffic-light badge per pipeline row + an SLA panel on deal
 detail; then "due soon"/breaching filters in analytics.
+
+## #82 — SLA in Sales Pro: row traffic-light + deal-detail panel + due-soon editor [FRONTEND]
+
+Surfaces SLA on the deals themselves so an RM sees a deal heading for breach without
+visiting the Monitor.
+- Pipeline list: a new "SLA" column right after "Age" renders a traffic-light Badge from
+  the per-deal sla attached by GET /api/pipeline/deals — green on track, amber due soon,
+  red breached (+overdue). Hover title shows clock/step + elapsed/target or remaining bd
+  and the escalation tier. No extra fetch — one list call carries it.
+- Deal detail: an SLA status panel (under the identity card) shows state badge, clock/step,
+  elapsed/target/remaining (or +overdue), escalation tier, and any commitment
+  (active/unfulfilled badge + reason/date/recorder). Fetched via the new fetchDealSla
+  against GET /api/pipeline/deals/{id}/sla, refreshed with the deal.
+- SLA Configuration editor gains a "Due-soon window" field bound to sla_config.due_soon_days
+  so the amber threshold is tunable from the UI (config-admin only), saved with the rest.
+- types/pipeline.ts: self-contained DealSlaStatus on PipelineDeal (no api<->types cycle).
+  lib/api.ts: SlaViolation gains state + remaining_business_days; SlaConfig gains
+  due_soon_days; fetchDealSla added.
+
+This closes the "SLA visible everywhere" step Josh asked for (deals carry their own SLA).
+NEXT (queued): "due soon" / breaching filters in Analytics.

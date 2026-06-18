@@ -33,7 +33,7 @@ import { fetchPipelineConfig, fetchPipelineAnalytics, fetchFunnelDrill, download
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Stat } from '@/components/Stat';
-import { Badge } from '@/components/Badge';
+import { Badge, type BadgeTone } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
 import { PermissionBadges } from '@/components/PermissionBadges';
@@ -67,6 +67,25 @@ function daysOpen(deal: PipelineDeal): number | null {
   const diff = Date.now() - start;
   if (diff < 0) return 0;
   return Math.floor(diff / 86_400_000);
+}
+
+/** Traffic-light cell for a deal's attached SLA status. Null when no SLA applies
+ *  (closed / no timestamp). */
+function slaCell(deal: PipelineDeal): { tone: BadgeTone; label: string; title: string } | null {
+  const s = deal.sla;
+  if (!s || !s.state) return null;
+  const clock = s.clock === 'step' ? (s.step || 'step').replace(/_/g, ' ') : 'age';
+  if (s.state === 'breached') {
+    return {
+      tone: 'danger',
+      label: `breached +${s.overdue_business_days ?? 0}`,
+      title: `${clock}: ${s.elapsed_business_days ?? '?'}/${s.target_days ?? '?'} bd — escalate to ${(s.escalate_to || '').replace(/_/g, ' ') || 'step owner'}`,
+    };
+  }
+  if (s.state === 'due_soon') {
+    return { tone: 'warning', label: 'due soon', title: `${clock}: ${s.remaining_business_days ?? '?'} bd to target` };
+  }
+  return { tone: 'success', label: 'on track', title: `${clock}: ${s.remaining_business_days ?? '?'} bd to target` };
 }
 
 
@@ -213,6 +232,16 @@ export function Pipeline() {
             {d}d{stale ? ' · stale' : ''}
           </span>
         );
+      },
+    },
+    {
+      key: 'sla',
+      header: 'SLA',
+      exportValue: (row) => row.sla?.state || '',
+      render: (row) => {
+        const c = slaCell(row);
+        if (!c) return <span className="text-xs text-gray-300">—</span>;
+        return <span title={c.title}><Badge tone={c.tone} size="sm">{c.label}</Badge></span>;
       },
     },
     {
