@@ -5,10 +5,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { fetchPipelineDrill } from '@/lib/api';
+import { fetchPipelineDrill, fetchSlaViolations } from '@/lib/api';
 import type { UnitBreakdown, PipelineDrillResponse } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
+import { Badge, type BadgeTone } from '@/components/Badge';
 import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
@@ -32,6 +33,41 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
         {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
       </Card.Body>
     </Card>
+  );
+}
+
+function SlaSummaryCard() {
+  const navigate = useNavigate();
+  const [bs, setBs] = useState<{ on_track: number; due_soon: number; breached: number } | null>(null);
+  useEffect(() => {
+    fetchSlaViolations().then((v) => setBs(v.by_state ?? null)).catch(() => setBs(null));
+  }, []);
+  if (!bs) return null;
+  const tiles: { key: 'on_track' | 'due_soon' | 'breached'; label: string; n: number; tone: BadgeTone }[] = [
+    { key: 'on_track', label: 'On track', n: bs.on_track ?? 0, tone: 'success' },
+    { key: 'due_soon', label: 'Due soon', n: bs.due_soon ?? 0, tone: 'warning' },
+    { key: 'breached', label: 'Breached', n: bs.breached ?? 0, tone: 'danger' },
+  ];
+  return (
+    <Card className="mt-4"><Card.Body>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">SLA status across your pipeline</h2>
+        <span className="text-xs text-gray-400">click a tile to view those deals</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {tiles.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => navigate(`/pipeline?sla=${t.key}`)}
+            className="rounded-lg border border-gray-200 p-4 text-left transition hover:border-gray-300 hover:shadow-sm"
+          >
+            <div className="text-2xl font-bold text-gray-900 tabular-nums">{t.n.toLocaleString()}</div>
+            <div className="mt-1"><Badge tone={t.tone} size="sm">{t.label}</Badge></div>
+          </button>
+        ))}
+      </div>
+    </Card.Body></Card>
   );
 }
 
@@ -118,6 +154,9 @@ export function Analytics() {
 
       {/* Model A slicer */}
       <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} />
+
+      {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
+      <SlaSummaryCard />
 
       {/* Click-to-drill: branch -> RM -> individual deals */}
       <BranchDrill branches={data.by_unit ?? []} kes={kes} />

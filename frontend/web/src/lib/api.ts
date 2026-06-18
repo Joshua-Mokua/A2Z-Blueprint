@@ -559,6 +559,7 @@ export interface SlaViolations {
   by_escalation: Record<string, number>;
   by_clock: { step: number; age: number };
   by_step?: Record<string, number>;
+  by_state?: { on_track: number; due_soon: number; breached: number };
 }
 export async function fetchSlaViolations(): Promise<SlaViolations> {
   return getJson<SlaViolations>('/pipeline/sla/violations');

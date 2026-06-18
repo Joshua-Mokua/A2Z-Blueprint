@@ -2662,3 +2662,18 @@ deep-link to the Sales Pro list filtered to that state.
 Harness: +1 (211 -> 212) — violations expose by_state with all three keys, summing exactly
 to open_deals. NEXT (frontend): Analytics SLA summary card (3 clickable state tiles) ->
 Sales Pro list filtered by ?sla=<state>.
+
+## #84 — Analytics SLA summary card + Sales Pro list SLA filter [FRONTEND]
+
+Closes the "SLA visible everywhere" arc. A summary card that drives the list.
+- Analytics (A2Z Sales Pro Analytics): a "SLA status across your pipeline" card with three
+  clickable tiles (On track / Due soon / Breached) fed by GET /api/pipeline/sla/violations
+  by_state. Clicking a tile navigates to /pipeline?sla=<state>.
+- Sales Pro (Pipeline) list: reads ?sla= from the URL and filters the already-loaded deals
+  client-side on sla.state (no extra fetch — the list already carries per-deal sla). A
+  clearable chip shows the active filter + "N of M" count.
+- lib/api.ts: SlaViolations gains by_state. No backend change (HB107 already shipped it).
+
+Phase-4 SLA arc COMPLETE end-to-end: S1 config -> S2 clocks (age/step/credit) -> S3
+commitments -> traffic-light state -> Monitor + Sales Pro + Analytics surfaces. Remaining
+SLA work is S4 (BSC per-role SLA KPI), a BSC-phase item.

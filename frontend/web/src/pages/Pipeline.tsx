@@ -25,7 +25,7 @@
 // Composition: 100% bespoke v10.496 primitives. No new visual atoms.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
@@ -95,6 +95,20 @@ export function Pipeline() {
   const { branding } = useBranding();
   const { user } = useRole();
   const { deals, count, loading, error, refetch } = usePipelineDeals();
+
+  // SLA traffic-light filter, driven by ?sla=on_track|due_soon|breached (e.g. from the
+  // Analytics SLA summary card). Filters the already-loaded deals client-side on sla.state.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const slaFilter = searchParams.get('sla');
+  const visibleDeals = useMemo(
+    () => (slaFilter ? deals.filter((d) => d.sla?.state === slaFilter) : deals),
+    [deals, slaFilter],
+  );
+  const clearSlaFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('sla');
+    setSearchParams(next, { replace: true });
+  };
 
   // Batch A: admin-configured category/stage filters (from /api/pipeline/stages)
   const [config, setConfig] = useState<PipelineConfig | null>(null);
@@ -542,9 +556,22 @@ export function Pipeline() {
             </div>
           </Card.Header>
           <Card.Body className="p-4">
+            {slaFilter && (
+              <div className="mb-3 flex items-center gap-2 text-sm">
+                <span className="text-gray-500">SLA filter:</span>
+                <Badge
+                  tone={slaFilter === 'breached' ? 'danger' : slaFilter === 'due_soon' ? 'warning' : 'success'}
+                  size="sm"
+                >
+                  {slaFilter.replace(/_/g, ' ')}
+                </Badge>
+                <span className="text-xs text-gray-400">{visibleDeals.length} of {deals.length}</span>
+                <button onClick={clearSlaFilter} className="text-xs text-brand-primary hover:underline">clear</button>
+              </div>
+            )}
             <Table<PipelineDeal>
               columns={columns}
-              rows={deals}
+              rows={visibleDeals}
               rowKey="id"
               loading={loading}
               searchable
