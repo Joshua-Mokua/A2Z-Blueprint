@@ -166,7 +166,10 @@ export function PipelineCreate() {
   // First-class "refer to a colleague" mode on the create page. When on, the
   // form collapses to client + recipient + note; deal-detail fields are hidden
   // and not required (the recipient completes the deal once they accept).
-  const [referMode,      setReferMode]      = useState(false);
+  const [referMode,      setReferMode]      = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('refer') === '1'; }
+    catch { return false; }
+  });
   const [referRecipient, setReferRecipient] = useState<StaffMember | null>(null);
   const [overrideNote,       setOverrideNote]       = useState('');     // override path only
 

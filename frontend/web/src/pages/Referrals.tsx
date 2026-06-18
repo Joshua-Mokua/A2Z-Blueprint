@@ -5,6 +5,7 @@
 //   • Returned  — referrals I made that were declined; Reassign to someone new.
 //   • Following — referrals I made that are live (pending/accepted); read-only.
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -42,6 +43,7 @@ function statusTone(s: string | undefined): BadgeTone {
 
 export default function Referrals() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('incoming');
   const [incoming, setIncoming] = useState<ReferralView[]>([]);
   const [returned, setReturned] = useState<ReferralView[]>([]);
@@ -143,9 +145,14 @@ export default function Referrals() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="Referrals"
+        title="A2Z Sales Referral"
         subtitle="Deals referred to you, returned to you, and the ones you're following."
-        breadcrumbs={[{ label: 'Business Development' }, { label: 'Referrals' }]}
+        breadcrumbs={[{ label: 'Business Development' }, { label: 'A2Z Sales Referral' }]}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => navigate('/pipeline/new?refer=1')}>
+            New referral
+          </Button>
+        }
       />
       <main className="max-w-4xl mx-auto px-6 py-6">
         <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-1">
@@ -170,7 +177,7 @@ export default function Referrals() {
         </div>
 
         {tab === 'team' && teamSummary && (
-          <div className="mb-3">
+          <div className="space-y-3 mb-3">
             <Card><Card.Body>
               <div className="text-sm font-semibold text-gray-900 mb-1">Team referral funnel</div>
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
@@ -181,6 +188,21 @@ export default function Referrals() {
                 <span className="text-gray-500">Closed lost <b className="text-gray-700">{teamSummary.closed.lost}</b></span>
               </div>
             </Card.Body></Card>
+            {dept && dept.departments.length > 0 && (
+              <Card><Card.Body>
+                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="space-y-1">
+                  {dept.departments.map((row) => (
+                    <div key={row.department} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{row.department}</span>
+                      <span className="text-gray-500 tabular-nums">
+                        {row.total} total · {row.by_status.accepted} accepted · {row.closed.won} won
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card.Body></Card>
+            )}
           </div>
         )}
 

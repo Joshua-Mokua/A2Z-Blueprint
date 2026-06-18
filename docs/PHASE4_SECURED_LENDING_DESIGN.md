@@ -2398,3 +2398,21 @@ accepted, SAVED CHANGE LIVE ON NEXT READ (the round-trip) (the "applies" proof),
 rejected, non-monotonic ladder rejected, non-positive target rejected, non-admin write
 denied. Probe restores the original config (net-zero). NEXT: rename Referral ->
 "A2Z Sales Referral" (frontend display), then SLA S2 (per-deal business-day clock).
+
+## #72 — Referral rename + create-entry + department analytics to MD [FRONTEND]
+
+Three asks from Josh, one frontend batch:
+1. RENAME (display only, mirrors the Pipeline -> A2Z Sales Pro rename): "Referrals"
+   -> "A2Z Sales Referral" in the Sidebar nav, TopBar route label, and the page header
+   title + breadcrumb. Route /referrals, API paths, component/type names UNCHANGED.
+2. CREATE ENTRY on the page: a "New referral" button in the PageHeader actions slot ->
+   navigate('/pipeline/new?refer=1'). PipelineCreate now initialises referMode from the
+   ?refer=1 query param (lazy useState reading window.location.search), so the create
+   page opens straight into refer-on-create mode (client name + StaffPicker + note) — no
+   need to navigate into the A2Z Sales Pro module first.
+3. DEPARTMENT ANALYTICS TO MD LEVEL: the "By department" card (management-only;
+   403 -> hidden for non-managers) now also renders on the Team tab — the hierarchy /
+   MD-level view — alongside the team funnel, so the MD sees team progress AND the
+   department-wise breakdown in one place. Still on Following too.
+
+esbuild clean on all four files; tsc in-env. Referral arc UX complete.
