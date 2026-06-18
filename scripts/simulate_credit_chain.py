@@ -836,6 +836,19 @@ def referral_probe(base):
     step("referral: BSC shadow credit computed for referrer (dry-run)", True,
          contribs >= 1 and has_frank_asset, note=f"{contribs} contributions")
 
+    # Outgoing analytics: the referrer tracks their referral funnel + alerts.
+    ref = login(base, "OWNER")
+    st, an = _req(base, "GET", "/api/pipeline/referrals/outgoing/analytics", ref)
+    an = an if isinstance(an, dict) else {}
+    step("referral analytics: endpoint reachable", 200, st)
+    step("referral analytics: funnel by_status + by_stage well-formed", True,
+         isinstance(an.get("by_status"), dict) and isinstance(an.get("by_stage"), dict)
+         and an.get("total", 0) >= 1,
+         note=f"total={an.get('total')} status={an.get('by_status')}")
+    step("referral analytics: alerts list + count present", True,
+         isinstance(an.get("alerts"), list) and "alert_count" in an,
+         note=f"{an.get('alert_count')} alert(s)")
+
 
 def troops_probe(base, case_id):
     print("\n=== TROOPS — Treasury Back Office disbursement completion ===")

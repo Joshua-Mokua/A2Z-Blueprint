@@ -40,7 +40,7 @@ import os
 import json
 import time
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 from functools import lru_cache
@@ -2915,6 +2915,78 @@ def pipeline_referrals_outgoing(user: dict = Depends(get_current_user)):
              if code and str(d.get("referred_by_code") or "") == code
              and str(d.get("referral_status") or "") in ("pending", "accepted")]
     return {"deals": [_referral_view(d) for d in deals], "count": len(deals)}
+
+
+_REFERRAL_PENDING_ALERT_DAYS = 3  # business days awaiting acceptance before flagging
+
+
+def _business_days_since(iso_ts) -> int:
+    """Whole business days (Mon-Fri) elapsed since an ISO timestamp; 0 if
+    missing/unparseable. Shared helper — also the basis for SLA elapsed-time."""
+    if not iso_ts:
+        return 0
+    try:
+        start = datetime.fromisoformat(str(iso_ts).replace("Z", "+00:00")).date()
+    except Exception:
+        return 0
+    today = datetime.now().date()
+    if today <= start:
+        return 0
+    days, d = 0, start
+    while d < today:
+        d += timedelta(days=1)
+        if d.weekday() < 5:
+            days += 1
+    return days
+
+
+@app.get("/api/pipeline/referrals/outgoing/analytics")
+def pipeline_referrals_outgoing_analytics(user: dict = Depends(get_current_user)):
+    """Referrer's-eye analytics over the deals they referred: a funnel by status
+    and by stage (progress through to closure) plus alerts — referrals awaiting
+    acceptance too long, or declined and needing reassignment. Lets a referrer
+    track their referred cases all the way to closure and act on what's stuck."""
+    code, _, _ = _resolve_actor(user)
+    mine = [d for d in _all_pipeline_deals()
+            if code and str(d.get("referred_by_code") or "") == code
+            and str(d.get("referral_status") or "")]
+    by_status = {"pending": 0, "accepted": 0, "declined": 0}
+    by_stage: dict = {}
+    won = lost = 0
+    alerts = []
+    for d in mine:
+        st = str(d.get("referral_status") or "")
+        if st in by_status:
+            by_status[st] += 1
+        stage = str(d.get("stage") or "")
+        by_stage[stage] = by_stage.get(stage, 0) + 1
+        if stage == "Closed Won":
+            won += 1
+        elif stage == "Closed Lost":
+            lost += 1
+        if st == "pending":
+            aged = _business_days_since(d.get("referred_at"))
+            if aged >= _REFERRAL_PENDING_ALERT_DAYS:
+                alerts.append({
+                    "id": d.get("id"), "client_name": d.get("client_name"),
+                    "referred_to": d.get("referred_to"), "kind": "pending_too_long",
+                    "days": aged,
+                    "message": f"Awaiting acceptance for {aged} business day{'s' if aged != 1 else ''}",
+                })
+        elif st == "declined":
+            alerts.append({
+                "id": d.get("id"), "client_name": d.get("client_name"),
+                "referred_to": d.get("referred_to"), "kind": "returned",
+                "message": "Declined and returned — needs reassignment",
+            })
+    return {
+        "total": len(mine),
+        "by_status": by_status,
+        "by_stage": by_stage,
+        "closed": {"won": won, "lost": lost},
+        "alerts": alerts,
+        "alert_count": len(alerts),
+    }
 
 
 _SEGMENT_FIX = {"ict": "ICT", "customerservice": "Customer Service"}

@@ -2267,3 +2267,39 @@ Refer mode:
   accepted.
 
 esbuild alias-resolved clean; tsc gate in-env.
+
+## #66 — Referral analytics: referrer visibility to closure + alerts [BACKEND]
+
+New GET /api/pipeline/referrals/outgoing/analytics. A referrer's-eye view over the
+deals they referred (referred_by_code == caller):
+  { total, by_status{pending,accepted,declined}, by_stage{...}, closed{won,lost},
+    alerts[], alert_count }
+- by_stage gives progress to closure (accepted referrals keep status=accepted while
+  the stage advances to Closed Won/Lost).
+- alerts: pending_too_long (>= 3 business days awaiting acceptance) + returned
+  (declined, needs reassignment) — so a referrer can act on what's stuck.
+- Introduces _business_days_since(iso) (Mon-Fri elapsed) — the shared basis for SLA
+  elapsed-time too.
+Harness: referral_probe extended — analytics reachable + funnel well-formed + alerts
+list present. +3 (166 -> 169). FRONTEND (next, incremental): surface the funnel +
+alerts in the Referrals "Following" tab.
+
+## SLA SPEC — LOCKED (Josh, 2026-06-18) — drives S1+
+
+1. Granularity: STEP/ROLE-based (line-manager validation, credit assessment,
+   disbursement, closure, etc.) — not raw stage transitions.
+2. Clock: BUSINESS DAYS (Mon-Fri). _business_days_since is the basis.
+3. Escalation: PER-PROCESS TIERS BY ELAPSED TIME (e.g. breach -> step owner,
+   +Nd -> line manager, +Md -> regional head, ... default ceiling -> MD).
+4. BSC KPI: SCOPED PER-ROLE, LOWER-IS-BETTER (each person's own violations summed
+   vs a target ceiling; fewer = higher score).
+5. Violation capture: the STEP OWNER must enter a reason + committed close date;
+   an UNFULFILLED reason itself escalates.
+6. Product promise: PER-PRODUCT config value (create->closed target) so breaches
+   are evident for corrective measures.
+
+Phasing: S1 admin SLA config (per-process step targets + per-process escalation
+tiers, mandatory-before-save, amendable) -> S2 per-deal business-day clock +
+violation detection + tiered flagging -> S3 violation reason/commitment capture
+(+ unfulfilled-reason escalation) -> S4 per-role BSC SLA-violation KPI + per-product
+promise. React added incrementally per module.
