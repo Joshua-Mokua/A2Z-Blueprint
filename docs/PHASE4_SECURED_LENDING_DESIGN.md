@@ -2773,3 +2773,22 @@ together. CRITICAL for B: the staff_counter shift (35->16 branches => ~224 staff
 300716/300731 out of range, so B must explicitly PIN the harness personas
 (frank0731=300731 RM, immaculate0716=300716 Senior Branch Manager @ Thika/P06,
 william001 MD) rather than rely on generation order.
+
+## #91 — B-deals-fix: DB re-sync + dashboard draft reconciliation [FIX]
+
+Two corrections after B-deals didn't move the FX check (CGR1 — grounded the real
+read paths instead of guessing a 3rd time):
+  * ROOT 1 — deals are dual-stored: dashboard reads pm.get_deals() (JSON), analytics
+    reads Postgres (_PIPELINE_READ_DB_FIRST=True). remap_deals edited only the JSON,
+    so DB-first analytics never saw the re-home; by_unit stayed "Unassigned" (DB
+    deals carry empty unit). FIX: scripts/sync_deals_to_db.py upserts every JSON deal
+    into pipeline_deals via the app's _db_sync_pipeline_deal, realigning the stores
+    so analytics reflects the re-home (owners + units).
+  * ROOT 2 — the constant 1,531,778,312.5 FCY gap is a draft-counting seam: the
+    dashboard loop summed draft deals while analytics `live` excludes them. Invariant
+    to the roster (proven by the exact-cent gap before+after re-home), so pre-existing,
+    not a restructure regression. FIX: dashboard loop now skips `d.get("draft")`,
+    matching analytics. pipeline_value/lcy/fcy all derive from the same loop, so the
+    LCY+FCY==pipeline_value reconciliation holds.
+Apply order on live: remap_deals (done) -> sync_deals_to_db -> patched api.py ->
+restart API -> harness should reach 217/217.

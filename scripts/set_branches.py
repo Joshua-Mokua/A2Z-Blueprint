@@ -23,24 +23,24 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 R1, R2 = "Region 1", "Region 2"
 R1_NAME, R2_NAME = "Nairobi Region", "Upcountry Region"
 
-# (branch_code, name, geo_region, area, is_area_lead)
+# (branch_code, name, region [live 11-region taxonomy], area, is_area_lead)
 SPEC = [
-    ("P01", "Towers",              "Nairobi",     R1, True),
-    ("P03", "Plaza",               "Nairobi",     R1, False),
-    ("P11", "Industrial Area",     "Nairobi",     R1, False),
-    ("P13", "Westlands",           "Nairobi",     R1, False),
-    ("P22", "Upper Hill",          "Nairobi",     R1, False),
-    ("P23", "Valley Arcade",       "Nairobi",     R1, False),
-    ("P24", "Karen",               "Nairobi",     R1, False),
-    ("P30", "Fortis Office Park",  "Nairobi",     R1, False),
-    ("P02", "Mombasa Moi Avenue",  "Coastal",     R2, False),
-    ("P06", "Thika",               "Central",     R2, False),
-    ("P07", "Eldoret",             "Rift Valley", R2, False),
-    ("P08", "Kisumu",              "Nyanza",      R2, True),
-    ("P09", "Kisii",               "Nyanza",      R2, False),
-    ("P12", "Karatina",            "Central",     R2, False),
-    ("P15", "Nakuru",              "Rift Valley", R2, False),
-    ("P17", "Nyeri",               "Central",     R2, False),
+    ("P01", "Towers",              "Nairobi CBD",   R1, True),
+    ("P03", "Plaza",               "Nairobi CBD",   R1, False),
+    ("P11", "Industrial Area",     "Nairobi CBD",   R1, False),
+    ("P13", "Westlands",           "Nairobi Metro", R1, False),
+    ("P22", "Upper Hill",          "Nairobi CBD",   R1, False),
+    ("P23", "Valley Arcade",       "Nairobi Metro", R1, False),
+    ("P24", "Karen",               "Nairobi Metro", R1, False),
+    ("P30", "Fortis Office Park",  "Nairobi Metro", R1, False),
+    ("P02", "Mombasa Moi Avenue",  "Coast",         R2, False),
+    ("P06", "Thika",               "Mt Kenya West", R2, False),
+    ("P07", "Eldoret",             "North Rift",    R2, False),
+    ("P08", "Kisumu",              "West Kenya",    R2, True),
+    ("P09", "Kisii",               "South Rift",    R2, False),
+    ("P12", "Karatina",            "Mt Kenya East", R2, False),
+    ("P15", "Nakuru",              "North Rift",    R2, False),
+    ("P17", "Nyeri",               "Mt Kenya East", R2, False),
 ]
 AREA_NAME = {R1: R1_NAME, R2: R2_NAME}
 AREA_LEAD_BRANCH = {R1: "P01", R2: "P08"}
@@ -57,14 +57,8 @@ def build_branches():
             "area_lead_branch": AREA_LEAD_BRANCH[area],
             "is_area_lead": lead,
         })
-    # Head Office shell — defined, flagged, no area / no sales structure
-    out.append({
-        "id": "P50", "name": "Head Office", "region": "Nairobi",
-        "region_group": "Nairobi", "active": True, "branch_code": "P50",
-        "dept_id": "head_office", "opened_date": "2010-01-01",
-        "area": None, "area_name": None, "area_lead_branch": None,
-        "is_area_lead": False, "is_head_office": True, "is_shell": True,
-    })
+    # Head Office is retained as units/functions (not a branch). No P50 shell —
+    # it can be added later via admin config if ever needed.
     return out
 
 
@@ -79,7 +73,7 @@ def main():
     new_branches = build_branches()
 
     print(f"org_config branches: {old_n} -> {len(new_branches)} "
-          f"(16 live + Head Office shell)")
+          f"(16 live branches; HO retained as units, no branch shell)")
     if args.dry_run:
         print("[dry-run] no write. Region 1 (Towers-led):",
               [b["branch_code"] for b in new_branches if b.get("area") == R1])

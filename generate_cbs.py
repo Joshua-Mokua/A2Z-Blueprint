@@ -57,25 +57,25 @@ BIZ_PREFIX = ["Nairobi","Kenya","East Africa","Summit","Excel","Prime","Alpha","
 BRANCHES = [
     # Format: (branch_code, branch_name, region, county, town, type, tier)
     # Tier: 1=flagship, 2=main, 3=standard, 4=light
-    # 16 live branches + Head Office shell (Ecobank Kenya P-codes).
-    # Area (manager) regions are an org construct held in org_config, not here.
-    ("P01","Towers","Nairobi","Nairobi","Nairobi CBD","Flagship",1),
-    ("P03","Plaza","Nairobi","Nairobi","Nairobi CBD","Main",2),
-    ("P11","Industrial Area","Nairobi","Nairobi","Industrial Area","Main",2),
-    ("P13","Westlands","Nairobi","Nairobi","Westlands","Flagship",1),
-    ("P22","Upper Hill","Nairobi","Nairobi","Upper Hill","Flagship",1),
-    ("P23","Valley Arcade","Nairobi","Nairobi","Lavington","Standard",3),
-    ("P24","Karen","Nairobi","Nairobi","Karen","Standard",3),
-    ("P30","Fortis Office Park","Nairobi","Nairobi","Westlands","Main",2),
-    ("P02","Mombasa Moi Avenue","Coastal","Mombasa","Mombasa CBD","Flagship",1),
-    ("P06","Thika","Central","Kiambu","Thika","Main",2),
-    ("P07","Eldoret","Rift Valley","Uasin Gishu","Eldoret","Flagship",1),
-    ("P08","Kisumu","Nyanza","Kisumu","Kisumu CBD","Flagship",1),
-    ("P09","Kisii","Nyanza","Kisii","Kisii CBD","Main",2),
-    ("P12","Karatina","Central","Nyeri","Karatina","Standard",3),
-    ("P15","Nakuru","Rift Valley","Nakuru","Nakuru CBD","Flagship",1),
-    ("P17","Nyeri","Central","Nyeri","Nyeri","Main",2),
-    ("P50","Head Office","Nairobi","Nairobi","Nairobi CBD","HO",1),
+    # 16 live branches (Ecobank Kenya P-codes). HO is retained as units/functions,
+    # not as a branch. Region uses the live register's 11-region taxonomy.
+    # Area (manager) regions are an org construct held in org_config.
+    ("P01","Towers","Nairobi CBD","Nairobi","Nairobi CBD","Flagship",1),
+    ("P03","Plaza","Nairobi CBD","Nairobi","Nairobi CBD","Main",2),
+    ("P11","Industrial Area","Nairobi CBD","Nairobi","Industrial Area","Main",2),
+    ("P13","Westlands","Nairobi Metro","Nairobi","Westlands","Flagship",1),
+    ("P22","Upper Hill","Nairobi CBD","Nairobi","Upper Hill","Main",2),
+    ("P23","Valley Arcade","Nairobi Metro","Nairobi","Lavington","Standard",3),
+    ("P24","Karen","Nairobi Metro","Nairobi","Karen","Standard",3),
+    ("P30","Fortis Office Park","Nairobi Metro","Nairobi","Westlands","Main",2),
+    ("P02","Mombasa Moi Avenue","Coast","Mombasa","Mombasa CBD","Flagship",1),
+    ("P06","Thika","Mt Kenya West","Kiambu","Thika","Main",2),
+    ("P07","Eldoret","North Rift","Uasin Gishu","Eldoret","Flagship",1),
+    ("P08","Kisumu","West Kenya","Kisumu","Kisumu CBD","Flagship",1),
+    ("P09","Kisii","South Rift","Kisii","Kisii CBD","Main",2),
+    ("P12","Karatina","Mt Kenya East","Nyeri","Karatina","Standard",3),
+    ("P15","Nakuru","North Rift","Nakuru","Nakuru CBD","Flagship",1),
+    ("P17","Nyeri","Mt Kenya East","Nyeri","Nyeri","Main",2),
 ]
 
 # Branch customer capacity by tier (approx distribution)
