@@ -6955,7 +6955,32 @@ class UserManager:
         return u
 
     def _save(self, u=None):
-        self.users_file.write_text(json.dumps(u or self.users, indent=2))
+        # Atomic write: serialize to a temp file in the same directory, then
+        # os.replace() it over the target. os.replace is atomic on both Windows
+        # and POSIX, so an interrupted or concurrent write can never leave a
+        # half-written or byte-overlapped file (the "Extra data" corruption that
+        # repeatedly bricked login). A reader sees either the complete old file
+        # or the complete new one — never a torn mix of both.
+        import os as _os
+        import tempfile as _tempfile
+        data = json.dumps(u or self.users, indent=2)
+        directory = self.users_file.parent
+        fd, tmp_path = _tempfile.mkstemp(
+            dir=str(directory), prefix=".users.", suffix=".tmp")
+        try:
+            with _os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(data)
+                fh.flush()
+                _os.fsync(fh.fileno())
+            _os.replace(tmp_path, str(self.users_file))
+        except Exception:
+            # Never leave a stray temp file behind on failure.
+            try:
+                if _os.path.exists(tmp_path):
+                    _os.remove(tmp_path)
+            except Exception:
+                pass
+            raise
 
     def save(self):
         """Alias for save_users — keeps all call sites consistent."""
