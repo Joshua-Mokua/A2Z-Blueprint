@@ -57,41 +57,25 @@ BIZ_PREFIX = ["Nairobi","Kenya","East Africa","Summit","Excel","Prime","Alpha","
 BRANCHES = [
     # Format: (branch_code, branch_name, region, county, town, type, tier)
     # Tier: 1=flagship, 2=main, 3=standard, 4=light
-    ("BRN001","Head Office","Nairobi","Nairobi","Nairobi CBD","HO",1),
-    ("BRN002","Upper Hill Branch","Nairobi","Nairobi","Upper Hill","Flagship",1),
-    ("BRN003","Westlands Branch","Nairobi","Nairobi","Westlands","Flagship",1),
-    ("BRN004","Sarit Centre Branch","Nairobi","Nairobi","Westlands","Main",2),
-    ("BRN005","Industrial Area Branch","Nairobi","Nairobi","Industrial Area","Main",2),
-    ("BRN006","Karen Branch","Nairobi","Nairobi","Karen","Standard",3),
-    ("BRN007","Eastleigh Branch","Nairobi","Nairobi","Eastleigh","Standard",3),
-    ("BRN008","Gigiri Branch","Nairobi","Nairobi","Gigiri","Standard",3),
-    ("BRN009","Mombasa Road Branch","Nairobi","Nairobi","South B","Standard",3),
-    ("BRN010","Thika Road Mall Branch","Nairobi","Nairobi","Roysambu","Standard",3),
-    ("BRN011","Mombasa Main Branch","Coastal","Mombasa","Mombasa CBD","Flagship",1),
-    ("BRN012","Nyali Branch","Coastal","Mombasa","Nyali","Main",2),
-    ("BRN013","Diani Branch","Coastal","Kwale","Diani","Standard",3),
-    ("BRN014","Malindi Branch","Coastal","Kilifi","Malindi","Standard",3),
-    ("BRN015","Kisumu Main Branch","Nyanza","Kisumu","Kisumu CBD","Flagship",1),
-    ("BRN016","Kisumu Mega Branch","Nyanza","Kisumu","Kisumu","Main",2),
-    ("BRN017","Migori Branch","Nyanza","Migori","Migori","Standard",3),
-    ("BRN018","Homabay Branch","Nyanza","Homabay","Homabay","Standard",3),
-    ("BRN019","Nakuru Main Branch","Rift Valley","Nakuru","Nakuru CBD","Flagship",1),
-    ("BRN020","Nakuru West Branch","Rift Valley","Nakuru","Nakuru West","Main",2),
-    ("BRN021","Eldoret Main Branch","Rift Valley","Uasin Gishu","Eldoret","Flagship",1),
-    ("BRN022","Kitale Branch","Rift Valley","Trans Nzoia","Kitale","Main",2),
-    ("BRN023","Bungoma Branch","Western","Bungoma","Bungoma","Main",2),
-    ("BRN024","Kakamega Branch","Western","Kakamega","Kakamega","Standard",3),
-    ("BRN025","Kisii Main Branch","Nyanza","Kisii","Kisii CBD","Main",2),
-    ("BRN026","Nyeri Branch","Central","Nyeri","Nyeri","Standard",3),
-    ("BRN027","Thika Branch","Central","Kiambu","Thika","Main",2),
-    ("BRN028","Kikuyu Branch","Central","Kiambu","Kikuyu","Standard",3),
-    ("BRN029","Meru Branch","Eastern","Meru","Meru","Standard",3),
-    ("BRN030","Embu Branch","Eastern","Embu","Embu","Standard",3),
-    ("BRN031","Machakos Branch","Eastern","Machakos","Machakos","Standard",3),
-    ("BRN032","Kitui Branch","Eastern","Kitui","Kitui","Light",4),
-    ("BRN033","Garissa Branch","North Eastern","Garissa","Garissa","Light",4),
-    ("BRN034","Wajir Branch","North Eastern","Wajir","Wajir","Light",4),
-    ("BRN035","Lamu Branch","Coastal","Lamu","Lamu","Light",4),
+    # 16 live branches + Head Office shell (Ecobank Kenya P-codes).
+    # Area (manager) regions are an org construct held in org_config, not here.
+    ("P01","Towers","Nairobi","Nairobi","Nairobi CBD","Flagship",1),
+    ("P03","Plaza","Nairobi","Nairobi","Nairobi CBD","Main",2),
+    ("P11","Industrial Area","Nairobi","Nairobi","Industrial Area","Main",2),
+    ("P13","Westlands","Nairobi","Nairobi","Westlands","Flagship",1),
+    ("P22","Upper Hill","Nairobi","Nairobi","Upper Hill","Flagship",1),
+    ("P23","Valley Arcade","Nairobi","Nairobi","Lavington","Standard",3),
+    ("P24","Karen","Nairobi","Nairobi","Karen","Standard",3),
+    ("P30","Fortis Office Park","Nairobi","Nairobi","Westlands","Main",2),
+    ("P02","Mombasa Moi Avenue","Coastal","Mombasa","Mombasa CBD","Flagship",1),
+    ("P06","Thika","Central","Kiambu","Thika","Main",2),
+    ("P07","Eldoret","Rift Valley","Uasin Gishu","Eldoret","Flagship",1),
+    ("P08","Kisumu","Nyanza","Kisumu","Kisumu CBD","Flagship",1),
+    ("P09","Kisii","Nyanza","Kisii","Kisii CBD","Main",2),
+    ("P12","Karatina","Central","Nyeri","Karatina","Standard",3),
+    ("P15","Nakuru","Rift Valley","Nakuru","Nakuru CBD","Flagship",1),
+    ("P17","Nyeri","Central","Nyeri","Nyeri","Main",2),
+    ("P50","Head Office","Nairobi","Nairobi","Nairobi CBD","HO",1),
 ]
 
 # Branch customer capacity by tier (approx distribution)
@@ -211,7 +195,7 @@ roles_by_branch = [
 ]
 
 for brn_code,brn_name,region,county,town,brn_type,tier in BRANCHES:
-    if brn_code == "BRN001":  # HO — skip branch roles
+    if brn_code == "P50":  # HO — skip branch roles (shell, no structure)
         continue
     for role, cnt_main, cnt_light in roles_by_branch:
         count = cnt_light if tier == 4 else cnt_main
@@ -231,7 +215,7 @@ for role in ["Relationship Manager Corporate","Relationship Manager SME"]:
         STAFF_POOL.append({
             "staff_code": str(staff_counter),
             "role": role,
-            "branch_code": "BRN001",
+            "branch_code": "P50",
             "branch_name": "Head Office",
             "region": "All",
         })

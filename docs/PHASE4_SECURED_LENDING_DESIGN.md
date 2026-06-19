@@ -2752,3 +2752,24 @@ Harness: troops_probe now asserts the disburse flips the linked app to 'disburse
 (GET /api/lms/applications/{id}). Troops remains the only disbursed=True setter, so
 this one seam covers the override path too (override clears to Treasury; Troops still
 does the final disburse).
+
+## #88 — A1: 16-branch + HO-shell restructure (definition) [DATA/CONFIG]
+
+First batch of the branch restructure. Defines the target 16 Ecobank P-code branches
++ P50 Head Office shell in BOTH branch sources, ready for the B regeneration:
+  * generate_cbs.py BRANCHES -> 16 + HO (P-codes); HO skip + HO-RM block repointed
+    BRN001 -> P50. This is what generate_cbs/generate_staff regenerate CBS + the staff
+    register from.
+  * scripts/set_branches.py — idempotent, backup-first; rewrites org_config.json
+    branches to the 16 + HO. Geographic region/region_group kept (analytics/CBS), the
+    two area-manager regions added as additive fields (area, area_name, area_lead_branch,
+    is_area_lead): Region 1 (Nairobi) led from Towers P01, Region 2 (Upcountry) led from
+    Kisumu P08 — matching the attached structure (8 + 8). P50 flagged is_head_office +
+    is_shell, no area, no sales structure.
+
+NOT YET APPLIED standalone — A1 pairs with B. Applying set_branches makes org_config
+show 16 while CBS/staff still reference the old set until B regenerates; run them
+together. CRITICAL for B: the staff_counter shift (35->16 branches => ~224 staff) puts
+300716/300731 out of range, so B must explicitly PIN the harness personas
+(frank0731=300731 RM, immaculate0716=300716 Senior Branch Manager @ Thika/P06,
+william001 MD) rather than rely on generation order.
