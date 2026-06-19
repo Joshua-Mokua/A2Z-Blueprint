@@ -939,6 +939,18 @@ def troops_probe(base, case_id):
     disbursed = d.get("case", {}).get("disbursed") if isinstance(d, dict) else None
     step("troops: disburse -> disbursed=True", (200, 201), st, d, note=f"disbursed={disbursed}")
 
+    # K001 autopopulate: completing disbursement must flip the linked loan
+    # application to 'disbursed' so the Loans Disbursed KPI credits the RM.
+    app_id = d.get("case", {}).get("application_id") if isinstance(d, dict) else None
+    if app_id:
+        _sa, av = _req(base, "GET", f"/api/lms/applications/{app_id}", admin)
+        app_status = (av.get("application") or av).get("status") if isinstance(av, dict) else None
+        step("troops: disburse flips loan app -> disbursed (K001 autopopulate)", True,
+             app_status == "disbursed", note=f"app={app_id} status={app_status}")
+    else:
+        step("troops: disburse flips loan app -> disbursed (K001 autopopulate)", True,
+             True, note="no application_id on case (skipped)")
+
     st, q2 = _req(base, "GET", "/api/credit-admin/troops/queue", admin)
     ids2 = [c.get("case_id") for c in (q2.get("cases") or [])] if isinstance(q2, dict) else []
     step("troops: disbursed case leaves the queue", True, case_id not in ids2,

@@ -2728,3 +2728,27 @@ Deals in credit but not yet cleared are counted as in_progress, not folded into 
 mean. Single-file change (utils/sla_tat_engine.py); endpoint + injector + probe
 unchanged. The existing harness probe's value/by_staff assertions now exercise real
 numbers instead of the structural-pass fallback.
+
+## #87 — Disbursement -> K001 autopopulate fix [BACKEND]
+
+Reviewed the "loan disbursed should autopopulate the BSC" expectation and found it
+broken at a precise point. K001 "Loans Disbursed" (staff-level) is the registry rule
+SUM(amount) over loan_applications WHERE status IN loan_approved_disbursed
+(['approved','disbursed']), per RM, by last_updated period. But the live apps were
+stuck: 189/191 at status 'credit_admin', ZERO at 'disbursed' — because completing a
+disbursement (Troops troops/disburse, the sole setter of case.disbursed=True) never
+advanced the linked loan_application's status. So the predicate never matched and the
+RM was never credited.
+
+Fix: api_credit_admin_routes.troops_disburse now, after disbursed=True, flips the
+linked application (case.application_id -> LoanApplicationManager) to status
+'disbursed' + disbursement_date (best-effort, logged, never blocks the disbursement;
+fills amount from the case only if the app lacks it). LoanApplicationManager.update
+stamps last_updated=today, so K001 credits the originating RM in the disbursement
+period via the EXISTING rule — no new KPI, no new source. Bank-aggregate K001
+(cbs_loans) is a separate CBS-snapshot path and unaffected.
+
+Harness: troops_probe now asserts the disburse flips the linked app to 'disbursed'
+(GET /api/lms/applications/{id}). Troops remains the only disbursed=True setter, so
+this one seam covers the override path too (override clears to Treasury; Troops still
+does the final disburse).

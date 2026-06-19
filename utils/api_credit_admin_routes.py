@@ -977,6 +977,26 @@ def troops_disburse(case_id: str, payload: TroopsDisburseRequest,
     case["troops_disbursed_by"] = str(user.get("username", "") or "")
     case["troops_disbursed_at"] = now
     cam.save()
+    # Autopopulate the BSC: flip the linked loan application to 'disbursed' so the
+    # K001 "Loans Disbursed" aggregation rule (SUM amount where status in
+    # loan_approved_disbursed) credits the originating RM in the disbursement
+    # period. Best-effort — a failure here must never block the disbursement.
+    try:
+        app_id = str(case.get("application_id") or "")
+        if app_id:
+            from utils.core import LoanApplicationManager
+            lam = LoanApplicationManager()
+            app = lam.get(app_id)
+            if app and app.get("status") != "disbursed":
+                fields = {"status": "disbursed",
+                          "disbursement_date": case["disbursement_date"]}
+                if not app.get("amount") and case.get("amount"):
+                    fields["amount"] = case.get("amount")
+                lam.update(app_id, fields)
+    except Exception:
+        import logging
+        logging.getLogger("a2z.creditadmin").warning(
+            "K001 autopopulate (loan-app status flip) failed for %s", case_id, exc_info=True)
     audit_log("TROOPS_DISBURSED", str(user.get("username", "") or ""), f"{case_id}|{gl}")
     return {"case": cam.get(case_id), "troops_status": "disbursed", "disbursed": True}
 
