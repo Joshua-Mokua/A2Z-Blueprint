@@ -2712,3 +2712,19 @@ S4a therefore lands shadow-first (mirrors the referral K238/K239 precedent):
 
 Promotion (S4b): once the SLA-derived numbers are validated against K011 / the
 lanes, repoint a weighted TAT KPI at this source as a deliberate, rebalanced step.
+
+## #86b — S4a engine fix: join credit-admin cleared_at for the TAT end [BACKEND]
+
+First run shipped green (216/216) but the shadow KPI reported n_deals=0 / tat_days
+None — the tell that the engine was wrong, not that there was no data. Root cause:
+the disbursement / security_perfection steps are NOT stamped on deal.sla_step_log;
+they're DERIVED from the credit-admin case (api._credit_step_index). So reading the
+TAT end from sla_step_log finds nothing for any deal. Fix: sla_tat_engine now joins
+the credit-admin case the same way _credit_step_index does (case.application_id ->
+application.id -> application.pipeline_deal_id) and takes the END as case.cleared_at
+(credit-completion = clearance for disbursement; Treasury disbursement is downstream
+and not part of credit's TAT). START stays deal.sla_step_log["credit_assessment"].
+Deals in credit but not yet cleared are counted as in_progress, not folded into the
+mean. Single-file change (utils/sla_tat_engine.py); endpoint + injector + probe
+unchanged. The existing harness probe's value/by_staff assertions now exercise real
+numbers instead of the structural-pass fallback.
