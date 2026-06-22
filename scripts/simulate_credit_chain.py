@@ -503,6 +503,35 @@ def sector_mou_probe(base):
     st_deny, _dn = _req(base, "POST", "/api/admin/pipeline-config", owner,
                         {"required_fields": ["client_name"]})
     step("admin config: non-exec (RM) denied", 403, st_deny)
+
+    # ── MOU-2: dedicated MOU write endpoint (add/edit/deactivate) ──
+    _mou_name = f"SIM Probe Partner {datetime.now():%H%M%S}"
+    st_add, add_body = _req(base, "POST", "/api/admin/mous", admin,
+                            {"partner_name": _mou_name})
+    new_id = add_body.get("mou", {}).get("id") if isinstance(add_body, dict) else None
+    step("mou admin: add accepted (minimal name)", (200, 201), st_add,
+         note=f"id={new_id}")
+    step("mou admin: new MOU is Active + title==name", True,
+         isinstance(add_body, dict)
+         and add_body.get("mou", {}).get("status") == "Active"
+         and add_body.get("mou", {}).get("title") == _mou_name)
+    # appears in the picker's active list (the file the picker actually reads)
+    _st_c, _cfg = _req(base, "GET", "/api/pipeline/stages", admin)
+    _mou_ids = {m.get("id") for m in (_cfg.get("individual_mous", []) if isinstance(_cfg, dict) else [])}
+    step("mou admin: added MOU surfaces in active picker", True, new_id in _mou_ids,
+         note=f"{len(_mou_ids)} active")
+    # non-admin denied
+    st_mdeny, _ = _req(base, "POST", "/api/admin/mous", owner, {"partner_name": "X"})
+    step("mou admin: non-admin denied", 403, st_mdeny)
+    # missing name rejected
+    st_bad, _ = _req(base, "POST", "/api/admin/mous", admin, {})
+    step("mou admin: empty add rejected", 400, st_bad)
+    # deactivate the probe MOU (keeps the register clean across runs)
+    if new_id:
+        st_de, _ = _req(base, "POST", "/api/admin/mous", admin,
+                        {"id": new_id, "status": "Inactive"})
+        step("mou admin: deactivate accepted", (200, 201), st_de)
+
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
              and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))

@@ -1218,11 +1218,15 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
-    "individual_mous", "business_sectors", "sectors", "deal_categories",
+    "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
     "probability_map", "deal_types", "disbursement_roles",
     "referral_pending_alert_days", "referral_business_departments",
 }
+# NOTE: individual_mous is deliberately NOT here — MOUs live in
+# partnerships_mous.json and are written via POST /api/admin/mous. Leaving it in
+# this set routed admin MOU edits into pipeline_settings.json (a file the picker
+# never reads), making them a silent dead-write (MOU-2 fix).
 
 # Roles permitted to complete disbursement (Troops / Treasury Back Office).
 # Mirrors api_credit_admin_routes._DEFAULT_DISBURSEMENT_ROLES; pipeline_settings
@@ -1453,7 +1457,147 @@ def set_sla_config(
 
 
 # ─────────────────────────────────────────────────────────────────────
-# SLA S2a — product/age violation engine (read-only over created_at + S1 config).
+# MOU register write path (MOU-2). MOUs are READ from partnerships_mous.json
+# (see _editable_config_view's individual_mous loader) but the admin panel used
+# to PATCH them via /api/admin/pipeline-config, which writes pipeline_settings
+# .json — a DIFFERENT file. That made admin MOU edits a silent dead-write (saved
+# to a store the picker never reads). This endpoint writes the file the picker
+# actually reads. `individual_mous` is removed from _EDITABLE_CONFIG_KEYS so the
+# dead path can't fire. Add (no id) / edit (id present) / deactivate (status).
+# ─────────────────────────────────────────────────────────────────────
+_MOU_FILE = "partnerships_mous.json"
+
+
+def _mou_path() -> str:
+    import os as _os
+    return _os.path.join("data", _MOU_FILE)
+
+
+def _load_mous() -> list:
+    import os as _os, json as _json
+    p = _mou_path()
+    if not _os.path.exists(p):
+        return []
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception as e:
+        logger.error("MOU load failed: %s", e)
+        return []
+
+
+def _save_mous_atomic(mous: list) -> None:
+    """Atomic write (mkstemp + fsync + os.replace) + .pre backup, mirroring the
+    UserManager pattern so an interrupted write can't corrupt the register."""
+    import os as _os, json as _json, tempfile as _tf
+    from datetime import datetime as _dt
+    p = _mou_path()
+    if _os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                _orig = f.read()
+            bak = f"{p}.pre_apiwrite_{_dt.now():%Y%m%d-%H%M%S}"
+            with open(bak, "w", encoding="utf-8") as f:
+                f.write(_orig)
+        except Exception as e:
+            logger.warning("MOU backup skipped: %s", e)
+    d = _os.path.dirname(p) or "."
+    fd, tmp = _tf.mkstemp(dir=d, prefix=".mou_", suffix=".json")
+    try:
+        with _os.fdopen(fd, "w", encoding="utf-8") as f:
+            _json.dump(mous, f, indent=2, ensure_ascii=False)
+            f.flush()
+            _os.fsync(f.fileno())
+        _os.replace(tmp, p)
+    except Exception:
+        try:
+            _os.unlink(tmp)
+        except Exception:
+            pass
+        raise
+
+
+def _next_mou_id(mous: list) -> str:
+    mx = 0
+    for m in mous:
+        mid = str(m.get("id", "") or "")
+        if mid.upper().startswith("MOU") and mid[3:].isdigit():
+            mx = max(mx, int(mid[3:]))
+    return f"MOU{mx + 1:04d}"
+
+
+@app.post("/api/admin/mous", tags=["admin"])
+def admin_upsert_mou(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Add / edit / deactivate a single MOU in partnerships_mous.json.
+
+    - ADD:    no `id` → mint next MOUxxxx, title = partner_name verbatim,
+              status defaults to 'Active', sensible defaults for the rest.
+    - EDIT:   `id` matches an existing MOU → shallow-merge supplied fields.
+    - DEACTIVATE: edit with `status` = 'Inactive' (kept for audit, hidden
+              from the active picker).
+
+    Minimal add: only `partner_name` is required. Gated to the exec/config-admin
+    tier (require_config_admin). Returns the saved record + new active count.
+    """
+    from datetime import datetime as _dt
+
+    name = str(payload.get("partner_name", "") or payload.get("title", "") or "").strip()
+    mou_id = str(payload.get("id", "") or "").strip()
+    if not mou_id and not name:
+        raise HTTPException(status_code=400, detail="partner_name is required to add an MOU.")
+
+    mous = _load_mous()
+
+    if mou_id:
+        # EDIT / DEACTIVATE
+        idx = next((i for i, m in enumerate(mous) if str(m.get("id")) == mou_id), None)
+        if idx is None:
+            raise HTTPException(status_code=404, detail=f"MOU {mou_id} not found.")
+        rec = dict(mous[idx])
+        for k in ("partner_name", "title", "partner_type", "mou_type", "department",
+                  "relationship_manager", "status", "expiry_date", "auto_renew"):
+            if k in payload and payload[k] is not None:
+                rec[k] = payload[k]
+        # keep title in sync with partner_name when the name changes
+        if "partner_name" in payload and "title" not in payload:
+            rec["title"] = str(payload["partner_name"]).strip()
+        mous[idx] = rec
+        action = "MOU_EDIT"
+    else:
+        # ADD — minimal: name (+ optional type/dept); backend fills the rest
+        today = _dt.now()
+        rec = {
+            "id": _next_mou_id(mous),
+            "title": name,                       # verbatim, no suffix
+            "partner_name": name,
+            "partner_type": str(payload.get("partner_type", "") or "Institution"),
+            "mou_type": str(payload.get("mou_type", "") or "Referral Agreement"),
+            "department": str(payload.get("department", "") or "Retail Banking"),
+            "relationship_manager": str(payload.get("relationship_manager", "") or ""),
+            "signed_date": today.strftime("%Y-%m-%d"),
+            "effective_date": today.strftime("%Y-%m-%d"),
+            "expiry_date": today.replace(year=today.year + 2).strftime("%Y-%m-%d"),
+            "status": "Active",
+            "auto_renew": False,
+            "renewal_notice_days": 60,
+            "deal_value_kes_m": 0.0,
+            "referral_revenue_ytd_m": 0.0,
+            "co_brand_income_ytd_m": 0.0,
+        }
+        mous.append(rec)
+        action = "MOU_ADD"
+
+    _save_mous_atomic(mous)
+    active = sum(1 for m in mous if str(m.get("status", "")).strip() == "Active")
+    _audit(action, user, f"id={rec.get('id')} name={rec.get('partner_name')}")
+    return {"status": "saved", "mou": rec, "active_count": active, "total": len(mous)}
+
+
+
 # The per-STEP business-day clock (S2b) needs step-entry timestamps deals don't
 # yet carry; this slice measures the create->now clock against the per-product
 # promise (or the step-target sum) so breaches are already evident for action.

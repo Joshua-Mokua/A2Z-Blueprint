@@ -22,6 +22,7 @@ import { useRole } from '@/hooks/useRole';
 import {
   fetchPipelineConfig,
   updatePipelineConfig,
+  upsertMou,
   type AdminConfigPatch,
 } from '@/lib/api';
 import type { PipelineConfig } from '@/types/pipeline';
@@ -110,8 +111,8 @@ function PanelShell({
 }: {
   title: string;
   hint?: string;
-  onSave: () => void;
-  saving: boolean;
+  onSave?: () => void;
+  saving?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -121,9 +122,11 @@ function PanelShell({
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
         </div>
-        <Button variant="primary" size="sm" onClick={onSave} loading={saving}>
-          Save
-        </Button>
+        {onSave && (
+          <Button variant="primary" size="sm" onClick={onSave} loading={saving}>
+            Save
+          </Button>
+        )}
       </Card.Header>
       <Card.Body className="space-y-4">{children}</Card.Body>
     </Card>
@@ -152,6 +155,12 @@ export default function AdminConfig() {
   const [custSeg, setCustSeg] = useState<Record<string, string[]>>({});
   const [products, setProducts] = useState<Record<string, string[]>>({});
   const [mous, setMous] = useState<Mou[]>([]);
+  // MOU register: add-a-partner form + search filter over the (long) list.
+  const [newMouName, setNewMouName] = useState('');
+  const [newMouType, setNewMouType] = useState('');
+  const [newMouDept, setNewMouDept] = useState('');
+  const [mouSearch, setMouSearch] = useState('');
+  const [mouBusy, setMouBusy] = useState(false);
   const [sectors, setSectors] = useState<string[]>([]);
   const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
 
@@ -196,6 +205,53 @@ export default function AdminConfig() {
       setSavingKey(null);
     }
   };
+
+  // MOU register writes go to the dedicated /admin/mous endpoint (partnerships_
+  // mous.json), NOT pipeline-config — so a newly added partner is immediately
+  // selectable on a deal. Add takes a name (+ optional type/dept); the backend
+  // mints the id and defaults the rest.
+  const addMou = async () => {
+    const name = newMouName.trim();
+    if (!name) return;
+    setMouBusy(true);
+    try {
+      const res = await upsertMou({
+        partner_name: name,
+        mou_type: newMouType.trim() || undefined,
+        department: newMouDept.trim() || undefined,
+      });
+      setMous((p) => [...p, { id: res.mou.id, title: res.mou.title, partner_name: res.mou.partner_name, active: true }]);
+      setNewMouName('');
+      setNewMouType('');
+      setNewMouDept('');
+      toast({ tone: 'success', message: `Added ${res.mou.partner_name}.` });
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not add the MOU partner.' });
+    } finally {
+      setMouBusy(false);
+    }
+  };
+
+  const setMouActive = async (id: string, active: boolean) => {
+    setMouBusy(true);
+    try {
+      await upsertMou({ id, status: active ? 'Active' : 'Inactive' });
+      setMous((p) => p.map((m) => (m.id === id ? { ...m, active } : m)));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not update the MOU.' });
+    } finally {
+      setMouBusy(false);
+    }
+  };
+
+  const visibleMous = useMemo(() => {
+    const q = mouSearch.trim().toLowerCase();
+    if (!q) return mous;
+    return mous.filter((m) =>
+      (m.title ?? '').toLowerCase().includes(q) ||
+      (m.partner_name ?? '').toLowerCase().includes(q) ||
+      (m.id ?? '').toLowerCase().includes(q));
+  }, [mous, mouSearch]);
 
   if (!allowed) {
     return (
@@ -405,59 +461,66 @@ export default function AdminConfig() {
               )}
             </PanelShell>
 
-            {/* MOU register */}
+            {/* MOU register — writes go to the dedicated endpoint, so additions
+                are immediately selectable on consumer deals. */}
             <PanelShell
               title="Partnership / MOU register"
-              hint="Active partnerships offered on individual deals."
-              onSave={() =>
-                save('mous', { individual_mous: mous.filter((m) => m.id.trim() && m.title.trim()) }, 'MOU register')
-              }
-              saving={savingKey === 'mous'}
+              hint="Partners offered on consumer deals. Add a partner here and it's selectable immediately."
             >
-              <div className="space-y-2">
-                {mous.map((m, i) => (
-                  <div key={`${m.id}-${i}`} className="grid grid-cols-[1fr_2fr_2fr_auto_auto] items-center gap-2">
-                    <Input
-                      value={m.id}
-                      placeholder="ID"
-                      onChange={(e) => setMous((p) => p.map((x, j) => (j === i ? { ...x, id: e.target.value } : x)))}
-                    />
-                    <Input
-                      value={m.title}
-                      placeholder="Title"
-                      onChange={(e) => setMous((p) => p.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
-                    />
-                    <Input
-                      value={m.partner_name ?? ''}
-                      placeholder="Partner"
-                      onChange={(e) => setMous((p) => p.map((x, j) => (j === i ? { ...x, partner_name: e.target.value } : x)))}
-                    />
-                    <label className="flex items-center gap-1 text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={m.active !== false}
-                        onChange={(e) => setMous((p) => p.map((x, j) => (j === i ? { ...x, active: e.target.checked } : x)))}
-                        className="h-4 w-4 rounded border-gray-300 text-brand-primary"
-                      />
-                      Active
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setMous((p) => p.filter((_, j) => j !== i))}
-                      className="text-gray-400 hover:text-red-600 px-1"
-                      aria-label="Remove MOU"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMous((p) => [...p, { id: '', title: '', partner_name: '', active: true }])}
-                >
-                  + Add MOU
-                </Button>
+              <div className="space-y-3">
+                {/* Add a partner */}
+                <div className="grid grid-cols-[2fr_1.3fr_1.3fr_auto] items-center gap-2">
+                  <Input
+                    value={newMouName}
+                    placeholder="Partner name"
+                    onChange={(e) => setNewMouName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addMou(); }}
+                  />
+                  <Input
+                    value={newMouType}
+                    placeholder="Type (optional)"
+                    onChange={(e) => setNewMouType(e.target.value)}
+                  />
+                  <Input
+                    value={newMouDept}
+                    placeholder="Department (optional)"
+                    onChange={(e) => setNewMouDept(e.target.value)}
+                  />
+                  <Button size="sm" onClick={addMou} disabled={mouBusy || !newMouName.trim()}>
+                    Add partner
+                  </Button>
+                </div>
+
+                {/* Search the register */}
+                <Input
+                  value={mouSearch}
+                  placeholder={`Search ${mous.length} partners…`}
+                  onChange={(e) => setMouSearch(e.target.value)}
+                />
+
+                {/* List (read-only id/title; toggle Active to deactivate) */}
+                <div className="max-h-72 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
+                  {visibleMous.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-gray-500">No partners match “{mouSearch}”.</p>
+                  ) : (
+                    visibleMous.map((m) => (
+                      <div key={m.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                        <span className="font-mono text-xs text-gray-400 w-20 shrink-0">{m.id}</span>
+                        <span className="flex-1 text-gray-900">{m.title}</span>
+                        <label className="flex items-center gap-1 text-xs text-gray-600 shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={m.active !== false}
+                            disabled={mouBusy}
+                            onChange={(e) => setMouActive(m.id, e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-brand-primary"
+                          />
+                          Active
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </PanelShell>
 

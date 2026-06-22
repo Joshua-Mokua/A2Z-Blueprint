@@ -116,6 +116,8 @@ export function PipelineCreate() {
   const [sector,      setSector]      = useState<string>('');
   const [currency,    setCurrency]    = useState<string>('KES');
   const [mouId,       setMouId]       = useState<string>('');     // Individual: selected MOU id
+  const [mouQuery,    setMouQuery]    = useState<string>('');     // MOU picker search filter
+  const [mouOpen,     setMouOpen]     = useState<boolean>(false); // MOU dropdown open
   const [otherText,   setOtherText]   = useState<string>('');     // free text when 'Other' chosen
   const SENTINEL_OTHER = '__OTHER__';
   const [isNtb,       setIsNtb]       = useState(false);
@@ -245,6 +247,18 @@ export function PipelineCreate() {
     [config],
   );
   const individualMous = useMemo(() => config?.individual_mous ?? [], [config]);
+  // Searchable picker: filter the (119+) MOU list by the typed query.
+  const filteredMous = useMemo(() => {
+    const q = mouQuery.trim().toLowerCase();
+    if (!q) return individualMous;
+    return individualMous.filter((m) =>
+      (m.title ?? '').toLowerCase().includes(q) ||
+      (m.partner_name ?? '').toLowerCase().includes(q));
+  }, [individualMous, mouQuery]);
+  const selectedMouTitle = useMemo(
+    () => individualMous.find((m) => m.id === mouId)?.title ?? '',
+    [individualMous, mouId],
+  );
 
   // Admin-configured mandatory fields (Admin → Configuration). Drives the red
   // asterisks + the extra validation for the optional selection fields (segment
@@ -1017,18 +1031,45 @@ export function PipelineCreate() {
                     {allowOther && <option value={SENTINEL_OTHER}>Other…</option>}
                   </select>
                 ) : (
-                  <select
-                    value={mouId}
-                    onChange={(e) => setMouId(e.target.value)}
-                    disabled={mutations.loading}
-                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
-                  >
-                    <option value="">Select an MOU partner (required)</option>
-                    {individualMous.map((m) => (
-                      <option key={m.id} value={m.id}>{m.title}</option>
-                    ))}
-                    {allowOther && <option value={SENTINEL_OTHER}>Other…</option>}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={mouOpen ? mouQuery : selectedMouTitle}
+                      placeholder="Search and select an MOU partner (required)"
+                      disabled={mutations.loading}
+                      autoComplete="off"
+                      onFocus={() => { setMouOpen(true); setMouQuery(''); }}
+                      onChange={(e) => { setMouQuery(e.target.value); setMouOpen(true); }}
+                      onBlur={() => { window.setTimeout(() => setMouOpen(false), 120); }}
+                      className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                    />
+                    {mouOpen && (
+                      <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                        {filteredMous.length === 0 ? (
+                          <li className="px-3 py-2 text-sm text-gray-500">
+                            No partner matches “{mouQuery}”.
+                          </li>
+                        ) : (
+                          filteredMous.map((m) => (
+                            <li key={m.id}>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setMouId(m.id);
+                                  setMouQuery('');
+                                  setMouOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-brand-primary/10 ${m.id === mouId ? 'bg-brand-primary/5 font-medium' : ''}`}
+                              >
+                                {m.title}
+                              </button>
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
+                  </div>
                 )}
                 {(sector === SENTINEL_OTHER || mouId === SENTINEL_OTHER) && (
                   <input

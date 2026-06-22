@@ -347,6 +347,27 @@ export async function updatePipelineConfig(patch: AdminConfigPatch): Promise<Adm
   return postJson<AdminConfigResponse, AdminConfigPatch>('/admin/pipeline-config', patch);
 }
 
+/** Add / edit / deactivate a single MOU in the partnership register
+ * (CEO/MD only). Add: pass partner_name (+ optional mou_type/department) with no
+ * id. Deactivate: pass the id with status 'Inactive'. Writes the file the deal
+ * picker reads, so a newly added partner is immediately selectable. */
+export interface MouUpsertInput {
+  id?: string;
+  partner_name?: string;
+  mou_type?: string;
+  department?: string;
+  status?: 'Active' | 'Inactive';
+}
+export interface MouUpsertResponse {
+  status: 'saved';
+  mou: { id: string; title: string; partner_name: string; status: string };
+  active_count: number;
+  total: number;
+}
+export async function upsertMou(input: MouUpsertInput): Promise<MouUpsertResponse> {
+  return postJson<MouUpsertResponse, MouUpsertInput>('/admin/mous', input);
+}
+
 
 // ── Role registry (admin) ────────────────────────────────────────────────
 // The full role-definition registry (kpi_library.json -> role_kpis): every
