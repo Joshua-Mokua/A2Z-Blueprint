@@ -127,7 +127,7 @@ with tabs[2]:
         r1,r2 = st.columns(2)
         nm    = r1.text_input("Name *",key="st_n_nm")
         pil   = r2.selectbox("Pillar",PILLARS,key="st_n_pil")
-        sp    = r1.selectbox("Sponsor",["MD","Director Retail","Director Commercial","Director Risk","Director IT","CFO","CRO"],key="st_n_sp")
+        sp    = r1.selectbox("Sponsor",["MD","Director Consumer & Commercial Banking (CCB)","Director Commercial","Director Risk","Director IT","CFO","CRO"],key="st_n_sp")
         bud   = r2.number_input("Budget (KES M)",0.1,1000.0,10.0,key="st_n_bud")
         td    = r1.date_input("Target end date",today+timedelta(days=365),key="st_n_td")
         roi   = r2.number_input("Expected ROI %",0.0,200.0,30.0,key="st_n_roi")

@@ -171,8 +171,8 @@ MODULE_REGISTRY: Dict[str, ModuleConfig] = {
         ],
         expected_roles=[
             "MD",
-            "Director Retail Banking",
-            "Director Commercial Banking",
+            "Director Consumer & Commercial Banking (CCB)",
+            "Director Corporate & Investment Banking (CIB)",
             "Head Of Retail",
             "Branch Manager",
         ],

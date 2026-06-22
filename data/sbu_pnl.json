@@ -2,7 +2,7 @@
   {
     "id": "SBU001",
     "name": "Retail Banking",
-    "manager": "Director Retail Banking",
+    "manager": "Director Consumer & Commercial Banking (CCB)",
     "revenue": 8950000000,
     "opex": 4120000000,
     "provisions": 580000000,
@@ -32,7 +32,7 @@
   {
     "id": "SBU003",
     "name": "Corporate Banking",
-    "manager": "Director Commercial Banking",
+    "manager": "Director Corporate & Investment Banking (CIB)",
     "revenue": 6420000000,
     "opex": 1980000000,
     "provisions": 320000000,

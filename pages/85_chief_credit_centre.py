@@ -39,7 +39,7 @@ TODAY = date.today()
 try:
     from utils.core import UserManager, require_access, audit_log
     require_access(["Chief Credit Officer", "MD", "Admin", "Admin Super User",
-                   "Director Retail Banking", "Director Commercial Banking"])
+                   "Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"])
 except Exception:
     pass
 

@@ -90,7 +90,7 @@
       "WB_NPS_SCORE",
       "DILIGENCE"
     ],
-    "Director Retail Banking": [
+    "Director Consumer & Commercial Banking (CCB)": [
       "DEP_GROWTH",
       "Loan Book Growth",
       "K003",
@@ -105,7 +105,7 @@
       "K085",
       "K120"
     ],
-    "Director Commercial Banking": [
+    "Director Corporate & Investment Banking (CIB)": [
       "Loan Book Growth",
       "K001",
       "K003",
@@ -2345,6 +2345,11 @@
       "K066",
       "K039",
       "K017"
+    ],
+    "Treasury Back Office": [
+      "COMPLIANCE",
+      "DILIGENCE",
+      "SLA_SCORE"
     ]
   },
   "pillar_weights": {
@@ -6152,6 +6157,48 @@
       "deprecated": true,
       "deprecated_v": "v10.473",
       "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+    },
+    {
+      "id": "K238",
+      "name": "Asset Referral",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "KES",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "shadow": true,
+      "description": "Value of asset (lending) deals the staff referred that materialized. Shadow / recognition only \u2014 credited to the referrer; does NOT feed consolidated P&L.",
+      "source": "referral_shadow",
+      "_origin": "v10.5xx_referral_shadow_credit"
+    },
+    {
+      "id": "K239",
+      "name": "Liabilities/Deposit Referral",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "KES",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "shadow": true,
+      "description": "Value of liability (deposit) deals the staff referred that materialized. Shadow / recognition only \u2014 credited to the referrer; does NOT feed consolidated P&L.",
+      "source": "referral_shadow",
+      "_origin": "v10.5xx_referral_shadow_credit"
+    },
+    {
+      "id": "SLA_CREDIT_TAT",
+      "name": "Credit TAT (SLA clock, days)",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "Days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "shadow": true,
+      "description": "Mean business-day credit turnaround per staff, derived from the pipeline SLA clocks (credit_assessment -> disbursement/security_perfection on deal.sla_step_log). Shadow / validation only \u2014 weight 0, does not affect appraisal scores. Source for the eventual promotion of K011 / the credit lane TATs.",
+      "source": "sla_clock",
+      "_origin": "S4a_sla_tat_shadow"
     }
   ],
   "_v10324_role_kpi_updates": {
@@ -7099,8 +7146,8 @@
       "zero_sum_count": 189,
       "broken_roles": [
         "Managing Director",
-        "Director Retail Banking",
-        "Director Commercial Banking",
+        "Director Consumer & Commercial Banking (CCB)",
+        "Director Corporate & Investment Banking (CIB)",
         "Regional Head",
         "Branch Credit Manager",
         "Relationship Officer Personal Banking",

@@ -70,7 +70,7 @@ SUPER_USER_MAP: Dict[str, Dict[str, Any]] = {
         "primary_title": "MD / BSC Super User",
         "secondary_role": "ICT Super User",
         "escalation_path": [
-            "Director Retail Banking / Director Commercial Banking",
+            "Director Consumer & Commercial Banking (CCB) / Director Corporate & Investment Banking (CIB)",
             "MD",
             "ICT Super User",
         ],

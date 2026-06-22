@@ -84,7 +84,7 @@ is_credit_committee_member = any(
     x in role for x in (
         "Chief Credit", "Chief Risk", "Chief Compliance", "Chief Executive",
         "Chief Financial", "Head of Credit", "Head of Risk", "Head Of Risk",
-        "Director Retail", "Director Commercial",
+        "Director Consumer & Commercial Banking (CCB)", "Director Commercial",
     )
 )
 

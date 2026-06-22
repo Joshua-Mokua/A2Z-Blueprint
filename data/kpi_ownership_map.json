@@ -4,66 +4,66 @@
   "_generated_at": "2026-05-14",
 
   "LOAN_GROWTH": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Credit Officer"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)", "Chief Credit Officer"],
     "secondary_owners": ["Chief Risk Officer"],
     "default_pairing": "by_prior_year",
     "note": "Loan growth split between RB and CB; Credit Officer co-owns underwriting quality"
   },
   "NPL_RATIO": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Credit Officer"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)", "Chief Credit Officer"],
     "secondary_owners": ["Chief Risk Officer"],
     "default_pairing": "equal_split",
     "note": "Asset quality is co-owned; rate KPIs should not be summed"
   },
   "FEES_COMM": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
     "secondary_owners": [],
     "default_pairing": "by_prior_year",
     "note": "Fee income split between RB and CB"
   },
   "NEW_CUST": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
     "secondary_owners": [],
     "default_pairing": "by_prior_year",
     "note": "Customer acquisition split between RB and CB"
   },
   "DILIGENCE": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Compliance Officer"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)", "Chief Compliance Officer"],
     "secondary_owners": [],
     "default_pairing": "equal_split",
     "note": "KYC/diligence co-owned across business lines"
   },
   "PBT": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
     "secondary_owners": ["Chief Financial Officer"],
     "default_pairing": "by_prior_year",
     "note": "Profit before tax — main shared bank-wide KPI"
   },
   "Total NFI": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
     "secondary_owners": ["Chief Financial Officer"],
     "default_pairing": "by_prior_year",
     "note": "Non-funded income — heavily shared"
   },
   "Total Deposits": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
     "secondary_owners": ["Chief Financial Officer"],
     "default_pairing": "by_prior_year",
     "note": "Deposit mobilization split RB vs CB"
   },
   "K001": {
-    "primary_owners": ["Director Retail Banking", "Director Commercial Banking", "Chief Retail Banking Officer"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)", "Chief Retail Banking Officer"],
     "secondary_owners": ["Chief Commercial Officer"],
     "default_pairing": "by_prior_year",
     "note": "PBT proxy K001 shared by primary business chiefs"
   },
   "K002": {
-    "primary_owners": ["Director Retail Banking", "Chief Retail Banking Officer"],
+    "primary_owners": ["Director Consumer & Commercial Banking (CCB)", "Chief Retail Banking Officer"],
     "secondary_owners": ["Chief Commercial Officer"],
     "default_pairing": "by_prior_year"
   },
   "K003": {
-    "primary_owners": ["Director Commercial Banking", "Chief Commercial Officer"],
+    "primary_owners": ["Director Corporate & Investment Banking (CIB)", "Chief Commercial Officer"],
     "secondary_owners": ["Chief Financial Officer"],
     "default_pairing": "by_prior_year"
   },

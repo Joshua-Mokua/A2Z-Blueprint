@@ -1342,7 +1342,7 @@ with sections[0]:
             from utils.core import MODULE_ACCESS
             # Build matrix — rows=roles, cols=modules
             ALL_ROLES = [
-                "Managing Director","Director Retail Banking","Director Commercial Banking",
+                "Managing Director","Director Consumer & Commercial Banking (CCB)","Director Corporate & Investment Banking (CIB)",
                 "Head Of Retail","Head Of Corporate","Head Of SME","Head Of Digital Innovation",
                 "Head Of Strategy","Head Of Internal Audit","Head Of Marketing",
                 "Chief Finance Officer","Chief Risk Officer","Chief Operations Officer",

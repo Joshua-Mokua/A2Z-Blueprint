@@ -58,7 +58,7 @@ from typing import Any, Dict, Tuple
 # who's a manager — a class of UX bug that's hard to debug.
 MANAGER_ROLE_KEYWORDS: Tuple[str, ...] = (
     "managing",         # MD
-    "director",         # Director Retail / Director Commercial
+    "director",         # Director CCB / Director CIB
     "head of",          # Head of Retail / Head of SME / Head of Corporate
     "regional",         # Regional Head
     "branch manager",   # Branch Manager

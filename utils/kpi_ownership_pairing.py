@@ -264,7 +264,7 @@ def self_test() -> None:
     # Equal split
     r1 = apply_pairing_strategy(
         "PBT", 10000.0,
-        ["Director Retail Banking", "Director Commercial Banking"],
+        ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
         "equal_split",
     )
     print(f"  Equal split: {r1.allocations}")
@@ -273,7 +273,7 @@ def self_test() -> None:
     # By prior year
     r2 = apply_pairing_strategy(
         "PBT", 10000.0,
-        ["Director Retail Banking", "Director Commercial Banking"],
+        ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
         "by_prior_year",
     )
     print(f"  By prior year: {r2.allocations} (notes: {r2.notes})")
@@ -282,14 +282,14 @@ def self_test() -> None:
     # Manual
     r3 = apply_pairing_strategy(
         "PBT", 10000.0,
-        ["Director Retail Banking", "Director Commercial Banking"],
+        ["Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)"],
         "manual",
-        manual_shares={"Director Retail Banking": 60,
-                       "Director Commercial Banking": 40},
+        manual_shares={"Director Consumer & Commercial Banking (CCB)": 60,
+                       "Director Corporate & Investment Banking (CIB)": 40},
     )
     print(f"  Manual 60/40: {r3.allocations}")
-    assert r3.allocations["Director Retail Banking"] == 6000.0
-    assert r3.allocations["Director Commercial Banking"] == 4000.0
+    assert r3.allocations["Director Consumer & Commercial Banking (CCB)"] == 6000.0
+    assert r3.allocations["Director Corporate & Investment Banking (CIB)"] == 4000.0
     print("✓ self_test passed")
 
 

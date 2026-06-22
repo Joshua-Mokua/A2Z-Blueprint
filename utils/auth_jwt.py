@@ -296,7 +296,7 @@ def get_current_user_allow_rotation(
 def _require_config_admin_impl(user: dict) -> dict:
     """Internal — config-editor gate. Broader than _require_admin_impl: the
     canonical roles carry full titles ("Chief Executive & Managing Director",
-    "Director Retail Banking", …) that never equal the literal "admin"/"director",
+    "Director Consumer & Commercial Banking (CCB)", …) that never equal the literal "admin"/"director",
     so an exact match would lock the CEO/MD out of their own configuration. This
     gate matches the executive tier by substring (chief / managing / director /
     admin) so the CEO, MD, and Directors can view + edit reference config, while
@@ -410,7 +410,7 @@ def require_role(accepted_roles: list[str]):
 
         @app.get("/api/credit/decisions")
         def credit(user: dict = Depends(require_role(
-            ["Branch Credit Manager", "Director Retail Banking", "Managing Director"]
+            ["Branch Credit Manager", "Director Consumer & Commercial Banking (CCB)", "Managing Director"]
         ))):
             ...
 

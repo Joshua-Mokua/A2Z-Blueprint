@@ -71,8 +71,8 @@ COMMON_AUTHORITY_ROLES = (
     "Head Of Retail",
     "Head Of SME",
     "Head Of Corporate",
-    "Director Retail Banking",
-    "Director Commercial Banking",
+    "Director Consumer & Commercial Banking (CCB)",
+    "Director Corporate & Investment Banking (CIB)",
     "Managing Director",
 )
 

@@ -110,7 +110,7 @@ def _is_md(user: dict) -> bool:
     Lenient match: real-world user records have role strings like
     'Chief Executive & Managing Director' (William Mwanake's title) as
     well as the bare 'Managing Director' canonical form. Both should
-    pass; non-MD director roles (e.g. 'Director Retail Banking') do not
+    pass; non-MD director roles (e.g. 'Director Consumer & Commercial Banking (CCB)') do not
     contain 'managing director' so they don't false-positive.
 
     NOTE: callers should pass an ENRICHED user dict (via _enrich) — the

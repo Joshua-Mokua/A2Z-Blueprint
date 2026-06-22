@@ -624,7 +624,7 @@ def self_test() -> None:
 
     # Role tier classification
     assert _classify_role_tier("Chief Operating Officer") == "exec_chief"
-    assert _classify_role_tier("Director Retail Banking") == "director"
+    assert _classify_role_tier("Director Consumer & Commercial Banking (CCB)") == "director"
     assert _classify_role_tier("Head Of Retail") == "head"
     assert _classify_role_tier("Regional Head") == "regional"
     assert _classify_role_tier("Branch Manager") == "branch_manager"

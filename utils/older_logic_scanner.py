@@ -4,14 +4,14 @@ across the codebase (v10.319).
 Joshua flagged on the v10.318 demo that the cascade page was
 "using older logic that doesn't see [the v10.316 hierarchy]" —
 the page had a hardcoded HIERARCHY dict with role names like
-"Director Retail Banking" that don't exist in users.json. He
+"Director Consumer & Commercial Banking (CCB)" that don't exist in users.json. He
 asked: how many other pages exhibit this pattern?
 
 This scanner does that audit. It checks pages/*.py and utils/*.py
 for known patterns of staleness:
 
   1. **Hardcoded role names that don't exist in users.json** —
-     e.g. "Director Retail Banking", "Regional Head"
+     e.g. "Director Consumer & Commercial Banking (CCB)", "Regional Head"
   2. **Hardcoded KPI IDs that don't exist in kpi_library.json** —
      e.g. dangling refs like ACCOUNT_DORMANCY without a definition
   3. **Hardcoded department names that don't match users.json** —
@@ -96,8 +96,8 @@ def _canonical_hierarchy_roles() -> Set[str]:
 
 # Role-related keywords commonly used in hardcoded lists
 SUSPECT_ROLE_PATTERNS = [
-    r'"Director Retail Banking"',
-    r'"Director Commercial Banking"',
+    r'"Director Consumer & Commercial Banking (CCB)"',
+    r'"Director Corporate & Investment Banking (CIB)"',
     r'"Regional Head"',
     r'"Head Of Retail"',
     r'"Head Of Corporate"',
@@ -200,7 +200,7 @@ def scan_for_stale_role_names() -> List[Finding]:
                 if stripped.startswith("#"):
                     continue
                 for pattern in SUSPECT_ROLE_PATTERNS:
-                    # pattern is like r'"Director Retail Banking"'
+                    # pattern is like r'"Director Consumer & Commercial Banking (CCB)"'
                     role_name = pattern.strip('r').strip('"\'')
                     if pattern in line or (
                         f'"{role_name}"' in line):

@@ -268,7 +268,7 @@ if not hasattr(casc, "cascade"):
 # ── CONSTANTS ─────────────────────────────────────────────────────────
 # ── Org hierarchy — exact role strings from BSC data ─────────────────
 # MD → Directors/Chiefs (direct reports)
-# Director Retail Banking → Head Of Retail → Regional Head → Branch Manager
+# Director Consumer & Commercial Banking (CCB) → Head Of Retail → Regional Head → Branch Manager
 # Branch Manager → Branch Operations Manager + Branch Credit Manager
 # Branch Operations Manager → Teller + Customer Service Officer
 # Branch Credit Manager → Relationship Officer Personal Banking + Direct Sales Officer
@@ -292,14 +292,14 @@ try:
 except Exception:
     HIERARCHY = {
     "Managing Director": [
-        "Director Retail Banking", "Director Commercial Banking",
+        "Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)",
         "Chief Finance Officer", "Chief Risk Officer", "Chief Operations Officer",
         "Chief Compliance Officer", "Chief Human Resources Officer",
         "Head Of Strategy", "Head Of Internal Audit", "Head Of Marketing",
         "Head Of Digital Innovation", "Debt Recovery Unit Manager",
     ],
-    "Director Retail Banking": ["Head Of Retail", "Regional Head"],
-    "Director Commercial Banking": ["Head Of SME", "Head Of Corporate"],
+    "Director Consumer & Commercial Banking (CCB)": ["Head Of Retail", "Regional Head"],
+    "Director Corporate & Investment Banking (CIB)": ["Head Of SME", "Head Of Corporate"],
     "Head Of Retail": ["Regional Head"],
     "Head Of Corporate": ["Relationship Manager Corporate"],
     "Head Of SME": ["Relationship Manager SME"],
@@ -333,8 +333,8 @@ except Exception:
 # Role → exact data role name mapping (for my_role_level lookup)
 ROLE_MAP = {
     "managing director":          "Managing Director",
-    "director retail banking":    "Director Retail Banking",
-    "director commercial banking":"Director Commercial Banking",
+    "director retail banking":    "Director Consumer & Commercial Banking (CCB)",
+    "director commercial banking":"Director Corporate & Investment Banking (CIB)",
     "head of retail":             "Head Of Retail",
     "head of corporate":          "Head Of Corporate",
     "head of sme":                "Head Of SME",
@@ -389,7 +389,7 @@ ROLE_MAP = {
 
 LEVEL_ORDER = [
     "Managing Director",
-    "Director Retail Banking", "Director Commercial Banking",
+    "Director Consumer & Commercial Banking (CCB)", "Director Corporate & Investment Banking (CIB)",
     "Head Of Retail", "Head Of Corporate", "Head Of SME",
     "Head Of Digital Innovation", "Chief Finance Officer", "Chief Risk Officer",
     "Chief Operations Officer", "Chief Compliance Officer", "Chief Human Resources Officer",
@@ -1569,7 +1569,7 @@ if _tab_visible_set_targets:
         # ── Group reportees for MD (by role cluster) ──────────
         MD_CLUSTERS = [
             ("💼 Business Directors", [
-                "Director Retail Banking","Director Commercial Banking","Director Retail"]),
+                "Director Consumer & Commercial Banking (CCB)","Director Corporate & Investment Banking (CIB)","Director Consumer & Commercial Banking (CCB)"]),
             ("📊 Finance & Risk", [
                 "Chief Finance Officer","Chief Risk Officer","Chief Credit Officer"]),
             ("⚙️ Operations & Compliance", [

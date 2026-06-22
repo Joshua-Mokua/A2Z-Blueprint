@@ -768,9 +768,9 @@ with tabs[0]:
 
         # Backup staff — cascade HIERARCHY: reportees + line manager
         _HIER = {
-            "Managing Director":["Director Retail Banking","Director Commercial Banking","Chief Finance Officer","Chief Risk Officer","Chief Operations Officer","Chief Compliance Officer","Chief Human Resources Officer","Head Of Strategy","Head Of Internal Audit","Head Of Marketing","Head Of Digital Innovation","Debt Recovery Unit Manager"],
-            "Director Retail Banking":["Head Of Retail","Regional Head"],
-            "Director Commercial Banking":["Head Of SME","Head Of Corporate"],
+            "Managing Director":["Director Consumer & Commercial Banking (CCB)","Director Corporate & Investment Banking (CIB)","Chief Finance Officer","Chief Risk Officer","Chief Operations Officer","Chief Compliance Officer","Chief Human Resources Officer","Head Of Strategy","Head Of Internal Audit","Head Of Marketing","Head Of Digital Innovation","Debt Recovery Unit Manager"],
+            "Director Consumer & Commercial Banking (CCB)":["Head Of Retail","Regional Head"],
+            "Director Corporate & Investment Banking (CIB)":["Head Of SME","Head Of Corporate"],
             "Head Of Retail":["Regional Head"],
             "Regional Head":["Branch Manager"],
             "Branch Manager":["Branch Operations Manager","Branch Credit Manager"],

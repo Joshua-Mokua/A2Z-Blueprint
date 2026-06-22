@@ -399,7 +399,7 @@ def self_test() -> None:
     try:
         # Eligibility — Tier 1 NOT eligible
         assert is_eligible_for_retention("Branch Manager") is False
-        assert is_eligible_for_retention("Director Retail Banking") is False
+        assert is_eligible_for_retention("Director Consumer & Commercial Banking (CCB)") is False
         assert is_eligible_for_retention("Head Of Retail") is False
         assert is_eligible_for_retention("Regional Head") is False
         assert is_eligible_for_retention("Managing Director") is False
