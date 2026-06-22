@@ -178,6 +178,18 @@ export interface DealCategoryConfig {
   stages:       string[];
 }
 
+/** P4a: one stage in a product's flow, carrying its own SLA target (days). */
+export interface ProductFlowStage {
+  stage: string;
+  target_days: number;
+}
+/** P4a: a single product's process flow — ordered stages (each with a target)
+ * plus the client types that offer it (empty list = offered to all). */
+export interface ProductFlow {
+  client_types: string[];
+  stages: ProductFlowStage[];
+}
+
 export interface PipelineConfig {
   stages:            PipelineStageConfig[];
   deal_categories:   DealCategoryConfig[];
@@ -188,6 +200,9 @@ export interface PipelineConfig {
   product_catalogue: Record<string, string[]>;
   /** B17: per-product-class stage flows (asset/liability/insurance/other). */
   stage_flows?:      Record<string, string[]>;
+  /** P4a: per-PRODUCT flows — each product's own stage sequence (with a
+   * per-stage target_days) and the client types that offer it (empty = all). */
+  product_flows?:    Record<string, ProductFlow>;
   /** Admin display-name map for segments (e.g. Ecobank: Mass/Retail→Direct). */
   segment_labels?:   Record<string, string>;
   /** Segment options per client type (Individual / Business). */

@@ -346,15 +346,25 @@ export function PipelineCreate() {
       Loan: ['asset'], Deposit: ['liability'], Account: ['liability', 'other'],
     };
     const buckets = want[category] ?? ['asset', 'liability', 'insurance', 'other'];
+    // P4a: a product whose flow declares client_types is offered ONLY to those
+    // client types; an empty (or absent) client_types means offered to all.
+    const flows = config?.product_flows ?? {};
+    const offeredToClient = (product: string): boolean => {
+      const cts = flows[product]?.client_types;
+      if (!cts || cts.length === 0) return true;       // all client types
+      return !clientType || cts.includes(clientType);
+    };
     if (cat) {
       const out: string[] = [];
       for (const [cls, prods] of Object.entries(cat)) {
-        if (buckets.includes(PRODUCT_CLASS_MAP[cls] ?? 'other')) out.push(...prods);
+        if (buckets.includes(PRODUCT_CLASS_MAP[cls] ?? 'other')) {
+          out.push(...prods.filter(offeredToClient));
+        }
       }
       if (out.length) return Array.from(new Set(out));
     }
     return productSuggestions;
-  }, [config, category, productSuggestions]);
+  }, [config, category, clientType, productSuggestions]);
   const dealValueNum       = useMemo(() => {
     const n = Number(String(dealValue).replace(/[,\s]/g, ''));
     return Number.isFinite(n) ? n : NaN;

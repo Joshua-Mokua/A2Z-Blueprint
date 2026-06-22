@@ -368,6 +368,30 @@ export async function upsertMou(input: MouUpsertInput): Promise<MouUpsertRespons
   return postJson<MouUpsertResponse, MouUpsertInput>('/admin/mous', input);
 }
 
+/** Author one product's process flow (CEO/MD only). Pass `product` plus its
+ * ordered `stages` (each {stage, target_days}) and the `client_types` that offer
+ * it (empty = all). Pass `delete: true` with a `product` to revert it to its
+ * class flow. Writes pipeline_settings.product_flows; the deal form picks it up. */
+export interface ProductFlowStageInput { stage: string; target_days: number; }
+export interface ProductFlowUpsertInput {
+  product: string;
+  stages?: ProductFlowStageInput[];
+  client_types?: string[];
+  delete?: boolean;
+}
+export interface ProductFlowUpsertResponse {
+  status: 'saved';
+  product?: string;
+  flow?: { client_types: string[]; stages: ProductFlowStageInput[] };
+  deleted?: string;
+  total: number;
+}
+export async function upsertProductFlow(
+  input: ProductFlowUpsertInput,
+): Promise<ProductFlowUpsertResponse> {
+  return postJson<ProductFlowUpsertResponse, ProductFlowUpsertInput>('/admin/product-flows', input);
+}
+
 
 // ── Role registry (admin) ────────────────────────────────────────────────
 // The full role-definition registry (kpi_library.json -> role_kpis): every

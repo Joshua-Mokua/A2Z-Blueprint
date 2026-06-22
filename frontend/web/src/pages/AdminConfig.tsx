@@ -23,9 +23,10 @@ import {
   fetchPipelineConfig,
   updatePipelineConfig,
   upsertMou,
+  upsertProductFlow,
   type AdminConfigPatch,
 } from '@/lib/api';
-import type { PipelineConfig } from '@/types/pipeline';
+import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
 
 type Mou = { id: string; title: string; partner_name?: string; active?: boolean };
 type ClientType = { key: string; label: string; field: 'mou' | 'sector' };
@@ -163,6 +164,11 @@ export default function AdminConfig() {
   const [mouBusy, setMouBusy] = useState(false);
   const [sectors, setSectors] = useState<string[]>([]);
   const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
+  // Product flows: the authored map + which product is being edited + a draft.
+  const [productFlows, setProductFlows] = useState<Record<string, ProductFlow>>({});
+  const [flowProduct, setFlowProduct] = useState<string>('');
+  const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
+  const [flowBusy, setFlowBusy] = useState(false);
 
   const hydrate = (c: PipelineConfig) => {
     setCfg(c);
@@ -173,6 +179,7 @@ export default function AdminConfig() {
     setMous((c.individual_mous ?? []).map((m) => ({ active: true, ...m })));
     setSectors([...(c.business_sectors ?? [])]);
     setClientTypes((c.client_types ?? []).map((t) => ({ ...t })));
+    setProductFlows({ ...(c.product_flows ?? {}) });
   };
 
   useEffect(() => {
@@ -252,6 +259,56 @@ export default function AdminConfig() {
       (m.partner_name ?? '').toLowerCase().includes(q) ||
       (m.id ?? '').toLowerCase().includes(q));
   }, [mous, mouSearch]);
+
+  // ── Product flows ──
+  // All catalogued products, flattened, for the picker.
+  const allProducts = useMemo(
+    () => Array.from(new Set(Object.values(products).flat())).sort(),
+    [products],
+  );
+  // When a product is selected, load its authored flow into the draft (or a
+  // single empty stage if it has none yet).
+  const selectFlowProduct = (product: string) => {
+    setFlowProduct(product);
+    const existing = productFlows[product];
+    setFlowDraft(existing
+      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })) }
+      : { client_types: [], stages: [{ stage: '', target_days: 3 }] });
+  };
+  const saveFlow = async () => {
+    if (!flowProduct) return;
+    const stages = flowDraft.stages
+      .map((s) => ({ stage: s.stage.trim(), target_days: Number(s.target_days) }))
+      .filter((s) => s.stage && Number.isFinite(s.target_days) && s.target_days > 0);
+    if (stages.length === 0) {
+      toast({ tone: 'danger', message: 'Add at least one stage with a positive target.' });
+      return;
+    }
+    setFlowBusy(true);
+    try {
+      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types });
+      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages } }));
+      toast({ tone: 'success', message: `${flowProduct} flow saved.` });
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save the flow.' });
+    } finally {
+      setFlowBusy(false);
+    }
+  };
+  const resetFlowToClass = async () => {
+    if (!flowProduct) return;
+    setFlowBusy(true);
+    try {
+      await upsertProductFlow({ product: flowProduct, delete: true });
+      setProductFlows((p) => { const n = { ...p }; delete n[flowProduct]; return n; });
+      setFlowDraft({ client_types: [], stages: [{ stage: '', target_days: 3 }] });
+      toast({ tone: 'success', message: `${flowProduct} reverted to its class flow.` });
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not reset the flow.' });
+    } finally {
+      setFlowBusy(false);
+    }
+  };
 
   if (!allowed) {
     return (
@@ -521,6 +578,118 @@ export default function AdminConfig() {
                     ))
                   )}
                 </div>
+              </div>
+            </PanelShell>
+
+            {/* Product flows — per-product stage sequence + per-stage SLA */}
+            <PanelShell
+              title="Product flows"
+              hint="Each product can have its own stage sequence and per-stage target days. Pick a product to customise its flow; unset products follow their class flow."
+            >
+              <div className="space-y-3">
+                <select
+                  value={flowProduct}
+                  onChange={(e) => selectFlowProduct(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                >
+                  <option value="">Select a product to edit its flow…</option>
+                  {allProducts.map((p) => (
+                    <option key={p} value={p}>
+                      {p}{productFlows[p] ? '  • customised' : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {flowProduct && (
+                  <>
+                    {/* Client types that offer this product */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Offered to</p>
+                      <div className="flex flex-wrap gap-2">
+                        {clientTypes.map((ct) => {
+                          const on = flowDraft.client_types.includes(ct.key);
+                          return (
+                            <button
+                              key={ct.key}
+                              type="button"
+                              onClick={() => setFlowDraft((d) => ({
+                                ...d,
+                                client_types: on
+                                  ? d.client_types.filter((k) => k !== ct.key)
+                                  : [...d.client_types, ct.key],
+                              }))}
+                              className={`px-2.5 py-1 rounded-full text-xs border ${on
+                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary'
+                                : 'bg-white border-gray-300 text-gray-600'}`}
+                            >
+                              {ct.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {flowDraft.client_types.length === 0
+                          ? 'No selection = offered to all client types.'
+                          : 'Offered only to the selected client types.'}
+                      </p>
+                    </div>
+
+                    {/* Stage sequence with per-stage target_days */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-600">Stages &amp; targets (days)</p>
+                      {flowDraft.stages.map((s, i) => (
+                        <div key={i} className="grid grid-cols-[1fr_5rem_auto] items-center gap-2">
+                          <Input
+                            value={s.stage}
+                            placeholder={`Stage ${i + 1}`}
+                            onChange={(e) => setFlowDraft((d) => ({
+                              ...d,
+                              stages: d.stages.map((x, j) => (j === i ? { ...x, stage: e.target.value } : x)),
+                            }))}
+                          />
+                          <Input
+                            value={String(s.target_days)}
+                            type="number"
+                            onChange={(e) => setFlowDraft((d) => ({
+                              ...d,
+                              stages: d.stages.map((x, j) => (j === i ? { ...x, target_days: Number(e.target.value) } : x)),
+                            }))}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFlowDraft((d) => ({
+                              ...d, stages: d.stages.filter((_, j) => j !== i),
+                            }))}
+                            className="text-gray-400 hover:text-red-600 px-1"
+                            aria-label="Remove stage"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFlowDraft((d) => ({
+                          ...d, stages: [...d.stages, { stage: '', target_days: 3 }],
+                        }))}
+                      >
+                        + Add stage
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
+                        Save flow
+                      </Button>
+                      {productFlows[flowProduct] && (
+                        <Button variant="secondary" size="sm" onClick={resetFlowToClass} disabled={flowBusy}>
+                          Reset to class flow
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </PanelShell>
 
