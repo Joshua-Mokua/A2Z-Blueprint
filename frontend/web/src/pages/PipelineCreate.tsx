@@ -259,7 +259,7 @@ export function PipelineCreate() {
   const reqStar = (key: string) => (isReq(key) ? <RedStar /> : null);
   const allowOther = usesSector
     ? (config?.allow_other_sector ?? true)
-    : (config?.allow_other_mou ?? true);
+    : false;  // consumer MOU: no "Other" escape — must pick a listed MOU partner
 
   // Once config loads, default the client type to the first configured line.
   useEffect(() => {
@@ -523,8 +523,15 @@ export function PipelineCreate() {
     if (usesSector && isReq('sector') && !sector.trim()) {
       errors.sectorMou = 'CBK sector is required.';
     }
-    if (!usesSector && isReq('mou_id') && !mouId.trim()) {
-      errors.sectorMou = 'Partnership / MOU is required.';
+    // Ecobank rule: Consumer deals lend ONLY through an MOU partner, so the
+    // MOU is ALWAYS required for a consumer (mou-field) deal — not contingent on
+    // admin required_fields config — and the "Other" escape is not permitted.
+    if (!usesSector) {
+      if (!mouId.trim()) {
+        errors.sectorMou = 'An MOU partner is required for consumer deals.';
+      } else if (mouId === SENTINEL_OTHER) {
+        errors.sectorMou = 'Consumer deals must use a listed MOU partner (no "Other").';
+      }
     }
 
     if (hasConflict) {
@@ -994,7 +1001,7 @@ export function PipelineCreate() {
                 <label className="text-sm font-medium text-gray-700">
                   {usesSector
                     ? <>Sector (CBK){reqStar('sector')}</>
-                    : <>Partnership / MOU{reqStar('mou_id')}</>}
+                    : <>Partnership / MOU<RedStar /></>}
                 </label>
                 {usesSector ? (
                   <select
@@ -1016,7 +1023,7 @@ export function PipelineCreate() {
                     disabled={mutations.loading}
                     className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
                   >
-                    <option value="">Select partnership / MOU (optional)</option>
+                    <option value="">Select an MOU partner (required)</option>
                     {individualMous.map((m) => (
                       <option key={m.id} value={m.id}>{m.title}</option>
                     ))}

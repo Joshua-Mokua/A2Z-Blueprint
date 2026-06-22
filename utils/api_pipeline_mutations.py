@@ -292,10 +292,41 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
                 "to be meaningful for manager review."
             )
 
+    # Consumer deals lend ONLY through an MOU partnership (Ecobank rule):
+    # a deal whose client_type resolves to the 'mou' business line MUST carry a
+    # non-empty mou_id. This is the server-side mirror of the create-form's
+    # required MOU picker — a direct API call can't book a consumer deal with no
+    # MOU. Commercial/CIB (sector-field) deals are unaffected.
+    if _is_consumer_mou_deal(deal_data):
+        mou_id = str(deal_data.get("mou_id", "") or "").strip()
+        if not mou_id:
+            return False, (
+                "Consumer deals must be booked against an MOU partner "
+                "(Ecobank consumer lending flows only through MOUs). "
+                "Select an MOU before creating the deal."
+            )
+
     return True, ""
 
 
-def _configured_stage_names() -> Set[str]:
+def _is_consumer_mou_deal(deal_data: Dict[str, Any]) -> bool:
+    """True when the deal's client_type resolves to the 'mou' business line
+    (Consumer). Mirrors api._client_type_field locally to avoid a circular
+    import; falls back to keyword detection for legacy 'Individual' aliases."""
+    ct = str(deal_data.get("client_type", "") or "").strip().lower()
+    if not ct:
+        return False
+    # explicit config-key resolution (best-effort; tolerant of absence)
+    try:
+        from utils.core import get_pipeline_settings as _lps  # type: ignore
+        cfg = _lps() or {}
+        for e in (cfg.get("client_types") or []):
+            if isinstance(e, dict) and str(e.get("key", "")).lower() == ct:
+                return str(e.get("field", "")).lower() == "mou"
+    except Exception:
+        pass
+    # legacy aliases + keyword fallback (Consumer / Individual -> mou)
+    return ct.startswith("consumer") or ct.startswith("individual")
     """Stage names from the admin-configured pipeline (org_config), so
     per-bank custom/configured stages advance without code changes.
     Batch A (2026-06-15). Lazy import to avoid a cycle; best-effort.
