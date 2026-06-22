@@ -532,6 +532,44 @@ def sector_mou_probe(base):
                         {"id": new_id, "status": "Inactive"})
         step("mou admin: deactivate accepted", (200, 201), st_de)
 
+    # ── P4a: per-product flows (product_flows) ──
+    _stc, _pcfg = _req(base, "GET", "/api/pipeline/stages", admin)
+    pflows = _pcfg.get("product_flows", {}) if isinstance(_pcfg, dict) else {}
+    step("product flows: config exposes product_flows", True, isinstance(pflows, dict) and len(pflows) >= 1,
+         note=f"{len(pflows)} products with flows")
+    # author a custom flow for a probe product (add), then confirm + clean up
+    _probe_prod = "SIM Probe Product"
+    _custom_stages = [
+        {"stage": "Lead", "target_days": 1},
+        {"stage": "Custom Review", "target_days": 4},
+        {"stage": "Closed Won", "target_days": 1},
+    ]
+    st_pf, pf_body = _req(base, "POST", "/api/admin/product-flows", admin,
+                          {"product": _probe_prod, "stages": _custom_stages,
+                           "client_types": ["Consumer"]})
+    step("product flows: admin upsert accepted", (200, 201), st_pf,
+         note=f"total={pf_body.get('total') if isinstance(pf_body, dict) else '—'}")
+    # the custom flow should now resolve for that product (re-read config)
+    _stc2, _pcfg2 = _req(base, "GET", "/api/pipeline/stages", admin)
+    _pf2 = _pcfg2.get("product_flows", {}) if isinstance(_pcfg2, dict) else {}
+    _entry = _pf2.get(_probe_prod, {})
+    _stages_ok = ([s.get("stage") for s in _entry.get("stages", [])]
+                  == ["Lead", "Custom Review", "Closed Won"])
+    step("product flows: custom flow persists with its stages", True, _stages_ok,
+         note=f"client_types={_entry.get('client_types')}")
+    # validation: empty stages rejected
+    st_bad, _ = _req(base, "POST", "/api/admin/product-flows", admin,
+                     {"product": "X", "stages": []})
+    step("product flows: empty stages rejected", 400, st_bad)
+    # non-admin denied
+    st_pdeny, _ = _req(base, "POST", "/api/admin/product-flows", owner,
+                       {"product": "X", "stages": _custom_stages})
+    step("product flows: non-admin denied", 403, st_pdeny)
+    # clean up the probe flow (delete -> reverts to class resolution)
+    st_del, _ = _req(base, "POST", "/api/admin/product-flows", admin,
+                     {"product": _probe_prod, "delete": True})
+    step("product flows: delete accepted (reverts to class)", (200, 201), st_del)
+
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
              and all(k in fd for k in ("totals", "by_product", "by_segment", "by_sector", "deals")))

@@ -1829,18 +1829,82 @@ def get_scoring_scale() -> list:
 
 
 def get_pipeline_settings() -> dict:
-    """Load pipeline settings (custom products, stages etc.) from disk."""
+    """Load pipeline settings (custom products, stages etc.) from disk.
+
+    HARDENING (2026-06-22): never silently return {} on a transient read error.
+    A concurrent atomic write (os.replace) can momentarily make the file
+    unreadable on Windows; returning {} here let callers (read-modify-write
+    admin endpoints) persist a near-empty config, thinning the file. Retry a few
+    times, and on persistent failure RAISE rather than mask — a thin save is far
+    worse than a surfaced error.
+    """
+    import time as _time
     _f = DATA_DIR / "pipeline_settings.json"
     if not _f.exists():
         return {}
-    try:
-        return json.loads(_f.read_text())
-    except:
-        return {}
+    last_exc = None
+    for _attempt in range(4):
+        try:
+            txt = _f.read_text(encoding="utf-8")
+            if txt.strip():
+                return json.loads(txt)
+        except Exception as e:  # transient (mid-replace) or parse error
+            last_exc = e
+            _time.sleep(0.05)
+    # Persistent failure: do NOT return {} (that thins the config on save).
+    raise RuntimeError(
+        f"could not read pipeline_settings.json after retries: {last_exc}"
+    )
 
 def save_pipeline_settings(settings: dict):
+    """Persist pipeline settings atomically with anti-thinning protection.
+
+    ROOT CAUSE (2026-06-22): the config file was repeatedly thinned to a few
+    admin-write keys. Two compounding bugs: (1) get_pipeline_settings silently
+    returned {} on a transient read, so read-modify-write endpoints saved a
+    near-empty dict; (2) any guard comparing against the CURRENT file couldn't
+    tell a clobber from a legit save once the file was already thin.
+
+    Fix: a STRUCTURAL guard. A dict missing ALL core keys
+    (stage_flows/deal_categories/product_catalogue/stages) is treated as a
+    clobber and rejected — independent of the current file state — because a
+    real pipeline config always has at least one of these. Plus an atomic write.
+    """
+    import os as _os, tempfile as _tf
     _f = DATA_DIR / "pipeline_settings.json"
-    _f.write_text(json.dumps(settings, indent=2))
+    _CORE = ("stage_flows", "deal_categories", "product_catalogue", "stages")
+
+    if not isinstance(settings, dict):
+        raise ValueError("pipeline settings must be a dict")
+
+    # Structural guard: a config with NONE of the core keys is a clobber.
+    # (A brand-new install legitimately has none — allow only when the file
+    # doesn't yet exist, i.e. a genuine first write.)
+    has_core = any(k in settings for k in _CORE)
+    if not has_core and _f.exists():
+        raise ValueError(
+            "refusing to overwrite pipeline_settings.json with a config missing "
+            "all core keys (stage_flows/deal_categories/product_catalogue/"
+            "stages) — this would empty the stage allowlist. The caller likely "
+            "read an empty config (transient read failure) before modifying; "
+            "re-read and retry."
+        )
+
+    # Atomic write.
+    d = str(_f.parent)
+    fd, tmp = _tf.mkstemp(dir=d, prefix=".pipeset_", suffix=".json")
+    try:
+        with _os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(settings, fh, indent=2, ensure_ascii=False)
+            fh.flush()
+            _os.fsync(fh.fileno())
+        _os.replace(tmp, str(_f))
+    except Exception:
+        try:
+            _os.unlink(tmp)
+        except Exception:
+            pass
+        raise
 
 def get_all_pipeline_stage_names() -> set:
     """Every stage name across the configured pipeline — top-level stages plus

@@ -1206,6 +1206,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "deal_types":        cfg.get("deal_types", []),
         "product_catalogue": cfg.get("product_catalogue", {}),
         "stage_flows":       cfg.get("stage_flows", {}),
+        "product_flows":     cfg.get("product_flows", {}),
         "customer_segments": _customer_segments(),
         "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
@@ -1275,6 +1276,7 @@ def _editable_config_view() -> dict:
         "sectors":            cfg.get("sectors", []),
         "deal_categories":    cfg.get("deal_categories", []),
         "stage_flows":        cfg.get("stage_flows", {}),
+        "product_flows":      cfg.get("product_flows", {}),
         "required_fields":    _required_fields(),
         "allow_other_sector": cfg.get("allow_other_sector", True),
         "allow_other_mou":    cfg.get("allow_other_mou", True),
@@ -1595,6 +1597,89 @@ def admin_upsert_mou(
     active = sum(1 for m in mous if str(m.get("status", "")).strip() == "Active")
     _audit(action, user, f"id={rec.get('id')} name={rec.get('partner_name')}")
     return {"status": "saved", "mou": rec, "active_count": active, "total": len(mous)}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Product flows (P4a). Each product has its own ordered stage sequence with a
+# per-stage target_days (SLA rides inside the flow) and a client_types list that
+# narrows which business lines offer it (empty = all). product_flows lives in
+# pipeline_settings.json; _stage_flow_for resolves per-product first, falling
+# back to the per-class stage_flows then the core category flow. This endpoint
+# authors one product's flow at a time (add or replace), validated.
+# ─────────────────────────────────────────────────────────────────────
+def _validate_product_flow(entry: dict) -> tuple:
+    """(ok, reason) for a single product-flow entry. stages must be a non-empty
+    list of {stage, target_days(>0 int)}; client_types a list of strings."""
+    if not isinstance(entry, dict):
+        return False, "flow must be an object"
+    stages = entry.get("stages")
+    if not isinstance(stages, list) or not stages:
+        return False, "stages must be a non-empty list"
+    seen = set()
+    for s in stages:
+        if not isinstance(s, dict):
+            return False, "each stage must be an object {stage, target_days}"
+        nm = str(s.get("stage", "") or "").strip()
+        if not nm:
+            return False, "each stage needs a non-empty 'stage' name"
+        if nm in seen:
+            return False, f"duplicate stage '{nm}' in flow"
+        seen.add(nm)
+        try:
+            t = int(s.get("target_days"))
+        except (TypeError, ValueError):
+            return False, f"stage '{nm}': target_days must be an integer"
+        if t <= 0:
+            return False, f"stage '{nm}': target_days must be positive"
+    cts = entry.get("client_types", [])
+    if not isinstance(cts, list):
+        return False, "client_types must be a list"
+    return True, ""
+
+
+@app.post("/api/admin/product-flows", tags=["admin"])
+def admin_upsert_product_flow(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Author one product's flow (add or replace) in product_flows.
+
+    Body: { product: str, stages: [{stage, target_days}], client_types: [str] }
+    A `delete: true` with a `product` removes that product's flow (reverts it to
+    class-flow resolution). Gated to the exec/config-admin tier.
+    """
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+
+    product = str(payload.get("product", "") or "").strip()
+    if not product:
+        raise HTTPException(status_code=400, detail="product is required.")
+
+    settings = get_pipeline_settings() or {}
+    if not isinstance(settings, dict):
+        settings = {}
+    flows = dict(settings.get("product_flows", {}) or {})
+
+    if payload.get("delete"):
+        flows.pop(product, None)
+        settings["product_flows"] = flows
+        save_pipeline_settings(settings)
+        _audit("PRODUCT_FLOW_DELETE", user, f"product={product}")
+        return {"status": "saved", "deleted": product, "total": len(flows)}
+
+    entry = {
+        "client_types": payload.get("client_types", []) or [],
+        "stages": payload.get("stages", []) or [],
+    }
+    ok, reason = _validate_product_flow(entry)
+    if not ok:
+        raise HTTPException(status_code=400, detail=reason)
+
+    flows[product] = entry
+    settings["product_flows"] = flows
+    save_pipeline_settings(settings)
+    _audit("PRODUCT_FLOW_UPSERT", user,
+           f"product={product} stages={len(entry['stages'])}")
+    return {"status": "saved", "product": product, "flow": entry, "total": len(flows)}
 
 
 
@@ -2528,17 +2613,45 @@ def _sector_of(d: dict) -> str:
 
 
 def _stage_flow_for(product_type: str) -> list:
-    """Ordered stage flow for a product's class, from pipeline_settings
-    stage_flows (admin config, the single source of truth). Classes:
-    asset / liability / insurance / other. Falls back to the core per-category
-    flow if stage_flows isn't configured, so nothing breaks pre-config."""
-    cls = _classify_product(product_type)
+    """Ordered stage flow for a product, from pipeline_settings (admin config).
+
+    Resolution precedence (P4a, 2026-06-22):
+      1. product_flows[product] — per-PRODUCT flow (each product can diverge).
+      2. stage_flows[class]     — per-CLASS flow (asset/liability/insurance/other).
+      3. core per-category flow — pre-stage_flows fallback so nothing breaks.
+
+    Per-product entries carry their stages as {"stage", "target_days"} dicts
+    (SLA rides inside the flow); we return just the ordered stage names here.
+    """
     cfg = _load_json("pipeline_settings.json") or {}
+
+    # 1) per-product flow (highest precedence)
+    pflows = cfg.get("product_flows", {}) if isinstance(cfg, dict) else {}
+    pentry = pflows.get(product_type) if isinstance(pflows, dict) else None
+    if isinstance(pentry, dict):
+        stages = pentry.get("stages")
+        if isinstance(stages, list) and stages:
+            out = []
+            for s in stages:
+                if isinstance(s, dict):
+                    nm = str(s.get("stage", "")).strip()
+                elif s:
+                    nm = str(s).strip()
+                else:
+                    nm = ""
+                if nm:
+                    out.append(nm)
+            if out:
+                return out
+
+    # 2) per-class flow
+    cls = _classify_product(product_type)
     flows = cfg.get("stage_flows", {}) if isinstance(cfg, dict) else {}
     flow = flows.get(cls)
     if isinstance(flow, list) and flow:
         return [str(s) for s in flow]
-    # Fallback: core per-category flow (pre-stage_flows behaviour).
+
+    # 3) core per-category flow (pre-stage_flows behaviour)
     try:
         from utils.core import get_pipeline_category, get_stages_for_category
         cat = get_pipeline_category(product_type or "")
