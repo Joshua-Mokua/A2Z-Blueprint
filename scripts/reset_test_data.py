@@ -80,6 +80,12 @@ def main():
             rows = _db.fetch_all("SELECT COUNT(*) AS n FROM pipeline_deals")
             n = (rows[0].get("n") if rows else 0) or 0
             print(f"  Postgres pipeline_deals: {n} rows -> truncated")
+            try:
+                wlr = _db.fetch_all("SELECT COUNT(*) AS n FROM watchlist")
+                wln = (wlr[0].get("n") if wlr else 0) or 0
+                print(f"  Postgres watchlist:      {wln} rows -> truncated")
+            except Exception as e:
+                print(f"  Postgres watchlist:      unavailable ({e})")
         else:
             print("  Postgres: not ready -> pipeline_deals NOT truncated")
     except Exception as e:
@@ -109,6 +115,18 @@ def main():
                 json.dumps(rows, indent=2, default=str), encoding="utf-8")
             _db.execute("DELETE FROM pipeline_deals")
             print(f"  truncated pipeline_deals ({len(rows)} rows backed up)")
+            # watchlist lives in BOTH credit_monitoring.json AND the Postgres
+            # `watchlist` table; the API reads the DB. Emptying only the JSON
+            # leaves the DB full and the two stores diverge (the bug that made a
+            # credit-table remap look like it had no effect). Truncate both.
+            try:
+                wl = _db.fetch_all("SELECT * FROM watchlist")
+                (backup_dir / "watchlist_postgres.json").write_text(
+                    json.dumps(wl, indent=2, default=str), encoding="utf-8")
+                _db.execute("DELETE FROM watchlist")
+                print(f"  truncated watchlist ({len(wl)} rows backed up)")
+            except Exception as e:
+                print(f"  watchlist truncate skipped: {e}")
     except Exception as e:
         print(f"  Postgres truncate skipped: {e}")
 
