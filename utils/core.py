@@ -746,7 +746,7 @@ def calc_avg_deal_size(total_pipeline_value, deal_count):
 BUSINESS_ROLES: frozenset = frozenset([
     'Relationship Manager SME','Relationship Manager Corporate',
     'Relationship Officer Business Banking','Relationship Officer Personal Banking',
-    'Direct Sales Officer','Head Of SME','Head Of Corporate','Head Of Retail',
+    'Direct Sales Agent','Head Of SME','Head Of Corporate','Head Of Retail',
     'Director Corporate & Investment Banking (CIB)','Director Consumer & Commercial Banking (CCB)',
     'Head Of Digital Innovation','Digital Innovation Manager','Digital Innovation Officer',
     'Head Of Products','Products Manager','Products Officer',
@@ -1422,7 +1422,10 @@ DEFAULT_ROLE_KPIS = {
     "Branch Operations Supervisor":     ["TRANSACTIONS","DORMANCY_REACT","COMPLIANCE","DILIGENCE"],
     "Relationship Officer Personal Banking": ["DEP_GROWTH","LOAN_GROWTH","FEES_COMM","NEW_CUST","ACTIVE_ACCTS","COMPLIANCE","DILIGENCE"],
     "Relationship Officer Business Banking": ["LOAN_GROWTH","LOAN_DISB","DEP_GROWTH","FEES_COMM","NPL_RATIO","NEW_CUST","COMPLIANCE","DILIGENCE"],
-    "Direct Sales Officer":             ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","DILIGENCE"],
+    "Direct Sales Agent":             ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","DILIGENCE"],
+    "Branch DSA Team Lead":             ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","DILIGENCE"],
+    "Regional DSA Head":                ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","COMPLIANCE","DILIGENCE"],
+    "DSA Head":                         ["NEW_CUST","DEP_GROWTH","LOAN_GROWTH","ACTIVE_ACCTS","DIGITAL_ACT","COMPLIANCE","DILIGENCE"],
     "Customer Service Officer":         ["TRANSACTIONS","NEW_CUST","DORMANCY_REACT","COMPLIANCE","DILIGENCE"],
     "Teller":                           ["TRANSACTIONS","COMPLIANCE","DILIGENCE"],
     "Relationship Manager Corporate":   ["LOAN_GROWTH","LOAN_DISB","FEES_COMM","TRADE_FIN","DEP_GROWTH","NPL_RATIO","NEW_CUST","DILIGENCE"],
@@ -1566,7 +1569,10 @@ DEFAULT_ORG_CONFIG = {
         "Teller": ["Branch Operations Manager"],
         "Relationship Officer Personal Banking": ["Branch Credit Manager"],
         "Relationship Officer Business Banking": ["Branch Credit Manager"],
-        "Direct Sales Officer": ["Branch Credit Manager"],
+        "Direct Sales Agent": ["Branch Manager","Branch DSA Team Lead"],
+        "Branch DSA Team Lead": ["Regional DSA Head","Branch Manager"],
+        "Regional DSA Head": ["DSA Head"],
+        "DSA Head": ["Director Consumer & Commercial Banking (CCB)"],
         "Relationship Manager Corporate": ["Head Of Corporate"],
         "Relationship Manager SME": ["Head Of SME"],
         "Chief Finance Officer": ["Managing Director"],
@@ -1581,7 +1587,7 @@ DEFAULT_ORG_CONFIG = {
         "Branch Manager","Branch Operations Manager","Branch Credit Manager",
         "Branch Operations Supervisor","Customer Service Officer","Teller",
         "Relationship Officer Personal Banking","Relationship Officer Business Banking",
-        "Direct Sales Officer","Relationship Manager Corporate","Relationship Manager SME",
+        "Direct Sales Agent","Branch DSA Team Lead","Regional DSA Head","DSA Head","Relationship Manager Corporate","Relationship Manager SME",
         "Chief Finance Officer","Chief Risk Officer","Chief Operations Officer",
         "Chief Compliance Officer","Chief Human Resources Officer","Chief Credit Officer",
         "Head Of Digital Innovation","Head Of Strategy","Head Of Internal Audit",
@@ -5189,7 +5195,7 @@ MODULE_ACCESS = {
                                                    "Chief Compliance Officer","Chief Human Resources Officer",
                                                    "Head Of Strategy","Head Of Internal Audit","Head Of Marketing",
                                                    "Regional Head","Branch Manager","Branch Operations Manager",
-                                                   "Branch Credit Manager","Direct Sales Officer",
+                                                   "Branch Credit Manager","Direct Sales Agent",
                                                    "Relationship Officer Personal Banking","Teller",
                                                    "Customer Service Officer","Relationship Manager Corporate",
                                                    "Relationship Manager SME"]},
@@ -5199,13 +5205,13 @@ MODULE_ACCESS = {
                                                    "Chief Compliance Officer"]},
     "branch_log":  {"min": "unit",  "roles_all": ["Admin","Managing Director","Regional Head",
                                                    "Branch Manager","Branch Operations Manager","Teller",
-                                                   "Customer Service Officer","Direct Sales Officer",
+                                                   "Customer Service Officer","Direct Sales Agent",
                                                    "Relationship Officer Personal Banking"]},
     "optimize":    {"min": "all",   "roles_all": ["Admin","Managing Director","Director Consumer & Commercial Banking (CCB)",
                                                    "Regional Head","Branch Manager","Chief Operations Officer"]},
     "commission":  {"min": "team",  "roles_all": ["Admin","Managing Director","Director Consumer & Commercial Banking (CCB)",
                                                    "Director Corporate & Investment Banking (CIB)","Regional Head","Branch Manager",
-                                                   "Branch Credit Manager","Direct Sales Officer",
+                                                   "Branch Credit Manager","Direct Sales Agent",
                                                    "Relationship Manager Corporate","Relationship Manager SME",
                                                    "Relationship Officer Personal Banking"]},
     "campaigns":   {"min": "all",   "roles_all": ["Admin","Managing Director","Head Of Marketing",
@@ -5235,7 +5241,7 @@ MODULE_ACCESS = {
                                                    "Director Corporate & Investment Banking (CIB)","Chief Operations Officer",
                                                    "Branch Manager","Branch Operations Manager",
                                                    "Branch Credit Manager","Regional Head",
-                                                   "Customer Service Officer","Teller","Direct Sales Officer",
+                                                   "Customer Service Officer","Teller","Direct Sales Agent",
                                                    "Relationship Officer Personal Banking",
                                                    "Relationship Manager Corporate","Relationship Manager SME"]},
 
@@ -6545,7 +6551,7 @@ REPORTING_TREE = {
         "tree_roles": [
             "Director Consumer & Commercial Banking (CCB)","Head Of Retail","Regional Head",
             "Branch Manager","Branch Operations Manager","Branch Credit Manager",
-            "Teller","Customer Service Officer","Direct Sales Officer",
+            "Teller","Customer Service Officer","Direct Sales Agent",
             "Relationship Officer Personal Banking",
         ],
         "units": None,   # handled specially — all Branch units
@@ -6562,10 +6568,29 @@ REPORTING_TREE = {
         "tree_roles": [
             "Head Of Retail","Regional Head","Branch Manager",
             "Branch Operations Manager","Branch Credit Manager",
-            "Teller","Customer Service Officer","Direct Sales Officer",
+            "Teller","Customer Service Officer","Direct Sales Agent",
             "Relationship Officer Personal Banking",
         ],
         "units": None,
+    },
+    # ── DSA sales-overlay spine (dotted-line rollup; does NOT drive branch P&L) ──
+    "DSA Head": {
+        "tree_roles": [
+            "DSA Head","Regional DSA Head","Branch DSA Team Lead","Direct Sales Agent",
+        ],
+        "units": None,   # sees the whole DSA spine bank-wide
+    },
+    "Regional DSA Head": {
+        "tree_roles": [
+            "Regional DSA Head","Branch DSA Team Lead","Direct Sales Agent",
+        ],
+        "units": None,   # scoped by region (matched via Region column)
+    },
+    "Branch DSA Team Lead": {
+        "tree_roles": [
+            "Branch DSA Team Lead","Direct Sales Agent",
+        ],
+        "units": None,   # scoped by unit (branch)
     },
     "Head Of Corporate":          {"tree_roles":["Head Of Corporate","Relationship Manager Corporate"],"units":["Corporate Banking"]},
     "Head Of SME":                {"tree_roles":["Head Of SME","Relationship Manager SME"],"units":["SME Banking"]},
@@ -6588,7 +6613,7 @@ REPORTING_TREE = {
         "tree_roles": [
             "Regional Head","Branch Manager","Branch Operations Manager","Branch Credit Manager",
             "Branch Operations Supervisor","Teller","Customer Service Officer",
-            "Direct Sales Officer","Relationship Officer Personal Banking",
+            "Direct Sales Agent","Relationship Officer Personal Banking",
             "Relationship Officer Business Banking",
         ],
         "units": None,   # scoped by region (matched via Region column)
@@ -6597,7 +6622,7 @@ REPORTING_TREE = {
         "tree_roles": [
             "Branch Manager","Branch Operations Manager","Branch Credit Manager",
             "Branch Operations Supervisor","Teller","Customer Service Officer",
-            "Direct Sales Officer","Relationship Officer Personal Banking",
+            "Direct Sales Agent","Relationship Officer Personal Banking",
             "Relationship Officer Business Banking",
         ],
         "units": None,   # scoped by unit (branch) in _UNIT_SCOPED_ROLES
@@ -6612,7 +6637,7 @@ REPORTING_TREE = {
     "Branch Credit Manager": {
         "tree_roles": [
             "Branch Credit Manager","Relationship Officer Personal Banking",
-            "Relationship Officer Business Banking","Direct Sales Officer",
+            "Relationship Officer Business Banking","Direct Sales Agent",
         ],
         "units": None,
     },

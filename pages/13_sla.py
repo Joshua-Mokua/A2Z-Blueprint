@@ -69,7 +69,7 @@ SLA_CATEGORIES = {
     "DFS Registration": {
         "sla_hours": 1, "priority": "Medium",
         "description": "Mobile money / DFS account registered and activated",
-        "owner_roles": ["Customer Service Officer","Direct Sales Officer","Teller"],
+        "owner_roles": ["Customer Service Officer","Direct Sales Agent","Teller"],
         "color": "#16A085",
     },
     "Dormancy Reactivation": {

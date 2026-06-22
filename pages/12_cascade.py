@@ -271,7 +271,7 @@ if not hasattr(casc, "cascade"):
 # Director Consumer & Commercial Banking (CCB) → Head Of Retail → Regional Head → Branch Manager
 # Branch Manager → Branch Operations Manager + Branch Credit Manager
 # Branch Operations Manager → Teller + Customer Service Officer
-# Branch Credit Manager → Relationship Officer Personal Banking + Direct Sales Officer
+# Branch Credit Manager → Relationship Officer Personal Banking + Direct Sales Agent
 # Load hierarchy from org config (admin-configurable), fall back to hardcoded
 try:
     from utils.core import get_org_config as _get_org
@@ -324,7 +324,7 @@ except Exception:
     "Branch Credit Manager": [
         "Relationship Officer Personal Banking",
         "Relationship Officer Business Banking",
-        "Direct Sales Officer",
+        "Direct Sales Agent",
     ],
     "IT Manager": ["IT Support Officer"],
     "Operations Manager": ["Branch Operations Manager"],
@@ -359,7 +359,7 @@ ROLE_MAP = {
     "branch operations supervisor": "Branch Operations Supervisor",
     "relationship officer business banking": "Relationship Officer Business Banking",
     "relationship officer personal banking": "Relationship Officer Personal Banking",
-    "direct sales officer":       "Direct Sales Officer",
+    "direct sales officer":       "Direct Sales Agent",
     "customer service officer":   "Customer Service Officer",
     "teller":                     "Teller",
     # Bank-specific roles (configurable via Admin)
@@ -399,7 +399,7 @@ LEVEL_ORDER = [
     "Teller", "Customer Service Officer",
     "Relationship Officer Personal Banking",
     "Relationship Officer Business Banking",
-    "Direct Sales Officer",
+    "Direct Sales Agent",
 ]
 PILLARS = ["Financial","Customer Focus","Operational Excellence","People & Learning"]
 PC  = {"Financial":"var(--brand-primary,#006B3F)","Customer Focus":"#185FA5",

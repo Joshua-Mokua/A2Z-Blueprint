@@ -236,7 +236,7 @@
       "K053",
       "K116"
     ],
-    "Direct Sales Officer": [
+    "Direct Sales Agent": [
       "NEW_CUSTOMERS_ACQUIRED",
       "DEP_GROWTH",
       "Loan Book Growth",
@@ -7152,7 +7152,7 @@
         "Branch Credit Manager",
         "Relationship Officer Personal Banking",
         "Relationship Officer Business Banking",
-        "Direct Sales Officer",
+        "Direct Sales Agent",
         "Customer Service Officer",
         "Relationship Manager Corporate",
         "Relationship Manager SME",

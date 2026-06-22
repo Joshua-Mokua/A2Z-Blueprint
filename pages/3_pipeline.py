@@ -775,7 +775,7 @@ with tabs[0]:
             "Regional Head":["Branch Manager"],
             "Branch Manager":["Branch Operations Manager","Branch Credit Manager"],
             "Branch Operations Manager":["Teller","Customer Service Officer","Branch Operations Supervisor"],
-            "Branch Credit Manager":["Relationship Officer Personal Banking","Relationship Officer Business Banking","Direct Sales Officer"],
+            "Branch Credit Manager":["Relationship Officer Personal Banking","Relationship Officer Business Banking","Direct Sales Agent"],
             "IT Manager":["IT Support Officer"],
             "Operations Manager":["Branch Operations Manager"],
         }

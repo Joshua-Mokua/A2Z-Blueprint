@@ -1351,7 +1351,7 @@ with sections[0]:
                 "Regional Head","Branch Manager","Branch Operations Manager","Branch Credit Manager",
                 "IT Manager","Operations Manager","HR Business Partner",
                 "Relationship Manager Corporate","Relationship Manager SME",
-                "Relationship Officer Personal Banking","Direct Sales Officer",
+                "Relationship Officer Personal Banking","Direct Sales Agent",
                 "Teller","Customer Service Officer","Recovery Officer",
             ]
             MODULE_LABELS = {

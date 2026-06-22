@@ -108,7 +108,7 @@ SUSPECT_ROLE_PATTERNS = [
     r'"Chief Operations Officer"',  # vs "Chief Operating Officer"
     r'"Chief Human Resources Officer"',  # vs "Chief Human Resource Officer"
     r'"Branch Credit Manager"',  # not in users.json
-    r'"Direct Sales Officer"',  # vs "Direct Sales Representative ..."
+    r'"Direct Sales Agent"',  # vs "Direct Sales Representative ..."
     r'"Relationship Officer Personal Banking"',  # vs "Relationship Officer-Personal Banker"
     r'"Relationship Officer Business Banking"',  # vs "Relationship Officer-Business Banker"
 ]

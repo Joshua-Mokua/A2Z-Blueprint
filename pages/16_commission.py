@@ -67,7 +67,7 @@ COMMISSION_TIERS = {
     ],
 }
 
-DSO_ROLES = ["Direct Sales Officer","Relationship Officer Personal Banking",
+DSO_ROLES = ["Direct Sales Agent","Relationship Officer Personal Banking",
              "Relationship Manager SME","Relationship Manager Corporate"]
 
 BONUS_MULTIPLIERS = {
@@ -140,7 +140,7 @@ st.markdown(
 
 
 st.markdown(
-    "<div style=\'padding:16px 22px;background:#1D4D35;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Commission Model & Sales Rankings</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Direct Sales Officers · Relationship Managers · Tier-based commissions · Leaderboard</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
+    "<div style=\'padding:16px 22px;background:#1D4D35;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15)\'><div style=\'display:flex;align-items:center;justify-content:space-between\'><div><div style=\'color:var(--color-background-primary);font-size:16px;font-weight:700;letter-spacing:-0.2px\'>Commission Model & Sales Rankings</div><div style=\'color:rgba(255,255,255,0.65);font-size:11px;margin-top:3px;font-weight:400\'>Direct Sales Agents · Relationship Managers · Tier-based commissions · Leaderboard</div></div><div style=\'opacity:0.12;font-size:36px;line-height:1;color:white\'>◆</div></div></div>",
     unsafe_allow_html=True)
 
 tabs = st.tabs([

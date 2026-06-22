@@ -23,7 +23,7 @@ staff_scores = st.session_state.get("staff_scores", pd.DataFrame())
 df_proc      = st.session_state.get("df_processed", pd.DataFrame())
 
 BUSINESS_ROLES = {
-    "Branch Manager","Direct Sales Officer","Relationship Officer Personal Banking",
+    "Branch Manager","Direct Sales Agent","Relationship Officer Personal Banking",
     "Branch Credit Manager","Relationship Manager SME","Relationship Manager Corporate",
     "Regional Head",
 }
