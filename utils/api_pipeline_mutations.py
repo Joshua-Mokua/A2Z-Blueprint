@@ -327,6 +327,9 @@ def _is_consumer_mou_deal(deal_data: Dict[str, Any]) -> bool:
         pass
     # legacy aliases + keyword fallback (Consumer / Individual -> mou)
     return ct.startswith("consumer") or ct.startswith("individual")
+
+
+def _configured_stage_names() -> Set[str]:
     """Stage names from the admin-configured pipeline (org_config), so
     per-bank custom/configured stages advance without code changes.
     Batch A (2026-06-15). Lazy import to avoid a cycle; best-effort.
