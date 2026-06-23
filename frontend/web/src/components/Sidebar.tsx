@@ -44,6 +44,10 @@ interface NavGroup {
 
 // Grouped into business domains so the platform reads as coherent areas
 // rather than a flat list. Item order and match logic unchanged.
+//
+// DEMO_HIDE (2026-06-23): temporarily hide nav items not yet ready to show.
+// Flip to an empty Set to restore them. Matched by `path`.
+const DEMO_HIDE = new Set<string>(['/', '/initiatives', '/profitability']);
 const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Executive Intelligence',
@@ -147,7 +151,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !item.visibleFor || item.visibleFor(isMgr, isAdmin, isConfigAdmin),
+            (item) => !DEMO_HIDE.has(item.path)
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isConfigAdmin)),
           );
           if (items.length === 0) return null;
           return (
@@ -185,18 +190,27 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       {/* Bottom: user info + logout */}
       <div className="px-4 py-4 border-t border-white/10 text-sm flex-shrink-0">
         {user && (
-          <div className="mb-3">
-            <div className="font-semibold text-white truncate">
-              {user.full_name}
+          <div className="mb-3 flex items-center gap-3">
+            <div
+              className="flex-shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: 'var(--brand-primary)' }}
+              aria-hidden
+            >
+              {(user.full_name || user.username || '?').trim().charAt(0).toUpperCase()}
             </div>
-            <div className="text-xs text-white/60 truncate">
-              {user.role}
-            </div>
-            {user.staff_code && (
-              <div className="text-[10px] text-white/40 font-mono mt-0.5">
-                {user.staff_code}
+            <div className="min-w-0">
+              <div className="font-semibold text-white truncate">
+                {user.full_name}
               </div>
-            )}
+              <div className="text-xs text-white/60 truncate">
+                {user.role}
+              </div>
+              {user.staff_code && (
+                <div className="text-[10px] text-white/40 font-mono mt-0.5">
+                  {user.staff_code}
+                </div>
+              )}
+            </div>
           </div>
         )}
         <button

@@ -9,6 +9,11 @@ import { useRole } from '@/hooks/useRole';
 
 interface RouteEntry { label: string; domain: string; path: string; match: (p: string) => boolean }
 
+// DEMO_HIDE (2026-06-23): keep these out of the command-search jump so the demo
+// can't navigate to pages we're temporarily hiding from the sidebar. Mirrors
+// Sidebar's DEMO_HIDE. Flip to an empty Set to restore.
+const DEMO_HIDE = new Set<string>(['/', '/initiatives', '/profitability']);
+
 const ROUTES: RouteEntry[] = [
   { label: 'Dashboard',           domain: 'Executive Intelligence', path: '/',                 match: (p) => p === '/' },
   { label: 'BSC Performance',     domain: 'Executive Intelligence', path: '/perform',          match: (p) => p === '/perform' },
@@ -48,7 +53,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const domain = current?.domain ?? '';
 
   const query = q.trim().toLowerCase();
-  const matches = query ? ROUTES.filter((r) => r.label.toLowerCase().includes(query)) : [];
+  const matches = query ? ROUTES.filter((r) => !DEMO_HIDE.has(r.path) && r.label.toLowerCase().includes(query)) : [];
   const go = (path: string) => { setQ(''); navigate(path); };
 
   return (

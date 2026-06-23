@@ -888,8 +888,8 @@ export function PipelineCreate() {
                 disabled={mutations.loading}
                 className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
               >
-                <option value="existing">Existing customer (has CBS relationship)</option>
-                <option value="ntb">New to Bank (NTB) — first-time customer</option>
+                <option value="existing">Existing customer</option>
+                <option value="ntb">New to Bank</option>
               </select>
             </div>
 
