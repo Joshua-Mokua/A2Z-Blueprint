@@ -143,12 +143,23 @@ def happy_path(base, committee=False):
                     owner, {"documents_provided": []})
     step("GUARD: submit with missing docs blocked", 400, st, body)
 
-    # 4. Read the checklist, then submit with all docs -> deal auto-advances.
+    # 4. Read the checklist. C1: submitting with docs but WITHOUT manager
+    # validation must now be blocked — a deal must be validated first.
     st, chk = _req(base, "GET", f"/api/pipeline/deals/{deal_id}/credit-checklist", owner)
     required = chk.get("required", []) if isinstance(chk, dict) else []
     st, body = _req(base, "POST", f"/api/pipeline/deals/{deal_id}/submit-to-credit",
                     owner, {"documents_provided": required})
-    step("pipeline: submit-to-credit (docs complete)", (200, 201), st, body,
+    step("GUARD: submit-to-credit blocked until manager-validated", 400, st, body)
+
+    # 5. Manager validates the deal (the new control point).
+    st, body = _req(base, "POST", f"/api/pipeline/deals/{deal_id}/validate",
+                    manager, {"approved": True, "note": "validated for credit (sim)"})
+    step("pipeline: manager validates deal", (200, 201), st, body)
+
+    # 6. Now submit with all docs -> deal auto-advances.
+    st, body = _req(base, "POST", f"/api/pipeline/deals/{deal_id}/submit-to-credit",
+                    owner, {"documents_provided": required})
+    step("pipeline: submit-to-credit (validated + docs complete)", (200, 201), st, body,
          note=f"deal stage now: {body.get('stage')}")
     app_id = body.get("application_id")
     if not app_id:
@@ -314,6 +325,9 @@ def negative_override_probe(base):
         _req(base, "POST", f"/api/pipeline/deals/{deal_id}/advance", owner, {"target_stage": tgt})
     st, chk = _req(base, "GET", f"/api/pipeline/deals/{deal_id}/credit-checklist", owner)
     required = chk.get("required", []) if isinstance(chk, dict) else []
+    # C1: manager must validate before submit-to-credit.
+    _req(base, "POST", f"/api/pipeline/deals/{deal_id}/validate", manager,
+         {"approved": True, "note": "validated (sim override probe)"})
     st, body = _req(base, "POST", f"/api/pipeline/deals/{deal_id}/submit-to-credit",
                     owner, {"documents_provided": required})
     app_id = body.get("application_id")
@@ -659,6 +673,18 @@ def sector_mou_probe(base):
          note=f"{len(by_ct)} client types; e.g. {[r.get('client_type') for r in by_ct][:3]}")
     step("analytics: by_client_type rows carry client_type+value+count", True,
          bool(by_ct) and all(("client_type" in r and "value" in r and "count" in r) for r in by_ct))
+    # by_area: the 2 sanctioned mainstream regions (Nairobi / Upcountry)
+    by_area = an.get("by_area", []) if isinstance(an, dict) else []
+    step("analytics: by_area (2 sanctioned regions) dimension present", True, len(by_area) >= 1,
+         note=f"{len(by_area)} areas; e.g. {[r.get('area') for r in by_area][:3]}")
+    # NO-DOUBLE-COUNT: by_area and by_region are VIEWS over the same deals, so
+    # each must sum to the SAME total (the DSA region lens is a shadow, not an
+    # additional tier). Compare the two facet sums to each other.
+    area_sum = sum(float(r.get("value", 0)) for r in by_area)
+    region_sum = sum(float(r.get("value", 0)) for r in by_region)
+    step("analytics: by_area sum == by_region sum (no double-count across lenses)", True,
+         abs(area_sum - region_sum) < max(1.0, region_sum * 0.0001),
+         note=f"area_sum={area_sum:.0f} vs region_sum={region_sum:.0f}")
     # #8: drill endpoint — branch -> RM -> deals (scope-safe).
     st, dr = _req(base, "GET", "/api/pipeline/drill", admin)
     drill_ok = isinstance(dr, dict) and "by_rm" in dr and "deals" in dr and "totals" in dr

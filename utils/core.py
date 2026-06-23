@@ -682,6 +682,34 @@ def _build_branch_region_from_org_config() -> dict:
 
 
 BRANCH_REGION: dict = _build_branch_region_from_org_config()
+def _build_branch_area_from_org_config() -> dict:
+    """Build BRANCH_AREA (branch name -> area_name) from org_config.json.
+
+    `area_name` is the bank-SANCTIONED mainstream region scheme (the 2 areas:
+    Nairobi Region / Upcountry Region), distinct from `region` which carries the
+    (temporary) 4-region DSA scheme. Both are views over the same branches; the
+    area rollup is the official one for pipeline. Empty dict surfaces a config
+    error rather than masking it (same contract as BRANCH_REGION)."""
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        _path = _Path(__file__).parent.parent / "data" / "org_config.json"
+        if not _path.exists():
+            return {}
+        _cfg = _json.loads(_path.read_text(encoding="utf-8"))
+        _branches = _cfg.get("branches", [])
+        if not _branches:
+            return {}
+        return {
+            b["name"]: b.get("area_name", "Other")
+            for b in _branches
+            if b.get("active", True) and b.get("name")
+        }
+    except Exception:
+        return {}
+
+
+BRANCH_AREA: dict = _build_branch_area_from_org_config()
 def _build_regions_from_org_config() -> list:
     """v10.361 — REGIONS derived from active branches in org_config.
 

@@ -2417,6 +2417,18 @@ def pipeline_submit_to_credit(
             detail="Cannot submit to credit — missing documents: "
                    + ", ".join(missing),
         )
+    # C1 (manager-validation gate): a deal must be validated by a manager before
+    # it can be handed to credit. Validation is a deliberate control point — the
+    # manager confirms the deal is real/qualified before it consumes credit
+    # capacity. Without this, an RM could push an unvalidated deal straight to
+    # credit (the gap the demo surfaced). manager_validated is set by the
+    # /validate endpoint (manager + scope gated).
+    if not bool(deal.get("manager_validated")):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot submit to credit — this deal has not been validated "
+                   "by a manager. A manager must validate the deal first.",
+        )
     # Gate passed — create the linked credit application (canonical handoff).
     lam = LoanApplicationManager()
     app_id = lam.create_from_pipeline_deal(deal, str(user.get("username", "")))
@@ -3028,6 +3040,21 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_region = sorted(_region.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_area: the bank-SANCTIONED 2-region mainstream rollup (Nairobi Region /
+    # Upcountry Region), from org_config area_name. This is the OFFICIAL pipeline
+    # rollup the Senior Managers own. Like by_region it is a VIEW over the same
+    # deals — each deal counted once — so areas/regions/branches all reconcile to
+    # the same bank total (no double-count between the DSA shadow lens and area).
+    from utils.core import BRANCH_AREA as _BA
+    _area: dict = {}
+    for d in live:
+        unit = d.get("unit") or ""
+        ar = _BA.get(unit) or "Unassigned"
+        e = _area.setdefault(ar, {"area": ar, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_area = sorted(_area.values(), key=lambda x: x["value"], reverse=True)
+
     # by_client_type: the business line (Ecobank: Consumer / Commercial / CIB).
     # Stored on every deal as client_type; old binary values (Individual/Business)
     # are normalized via the same alias map the config uses, so CCB/CIB views are
@@ -3066,6 +3093,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_unit": _by_unit,
         "by_rm": _by_rm,
         "by_region": _by_region,
+        "by_area": _by_area,
         "by_client_type": _by_client_type,
     }
 
