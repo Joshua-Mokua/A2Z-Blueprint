@@ -6716,9 +6716,10 @@ _UNIT_SCOPED_ROLES = {
     "branch operations supervisor","it manager","operations manager","hr business partner",
     "relationship officer personal banking","relationship officer business banking",
     "direct sales officer","customer service officer","teller",
+    "branch dsa team lead",
 }
 # Regional Heads scope by Region column, not Unit
-_REGION_SCOPED_ROLES = {"regional head"}
+_REGION_SCOPED_ROLES = {"regional head", "regional dsa head"}
 _ALL_VIEW_ROLES = {
     "managing director",
     "admin",

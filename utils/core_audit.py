@@ -326,21 +326,31 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
         visible = visible[visible["Unit"].isin(tree_units)]
 
     elif role_l in _REGION_SCOPED_ROLES:
-        # Regional Head — scope by Region column, not Unit
-        # Determine the region this person covers from their unit name or Region field
-        my_region = user_data.get("region","")
+        # Regional Head / Regional DSA Head — scope by Region column, not Unit.
+        # Determine the region this person covers, in priority order:
+        #   1. explicit user_data["region"] (set at login from the register)
+        #   2. BRANCH_REGION[my_unit] — the org_config-derived source of truth,
+        #      so this works for ANY region scheme (Western / Mt. Kenya / etc),
+        #      not just the legacy north/central/south names.
+        my_region = user_data.get("region", "")
+        if not my_region and my_unit:
+            try:
+                from utils.core import BRANCH_REGION as _BR
+                my_region = _BR.get(my_unit, "") or ""
+            except Exception:
+                my_region = ""
         if not my_region:
-            # Derive from unit name e.g. "North Region" → "North"
+            # Last-resort legacy derivation from a "<X> Region" unit name.
             unit_parts = str(my_unit).lower().split()
-            for part in ("north","central","south"):
+            for part in ("north", "central", "south"):
                 if part in unit_parts:
                     my_region = part.title()
                     break
         if my_region:
-            # Match "North" against Region column values like "North","North Region"
-            region_clean = my_region.lower().replace(" region","").strip()
+            # Match against Region column values, tolerant of a " Region" suffix.
+            region_clean = my_region.lower().replace(" region", "").strip()
             def _region_match(r):
-                return str(r).lower().replace(" region","").strip() == region_clean
+                return str(r).lower().replace(" region", "").strip() == region_clean
             visible = visible[visible["Region"].apply(_region_match)]
         # If we couldn't determine region, fall back to full tree (better than nothing)
 
