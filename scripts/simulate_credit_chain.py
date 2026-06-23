@@ -647,6 +647,18 @@ def sector_mou_probe(base):
          note=f"{len(by_unit)} units; top={by_unit[0].get('unit') if by_unit else '—'}")
     step("analytics: by_rm drill dimension present", True, len(by_rm) >= 1,
          note=f"{len(by_rm)} RMs")
+    # by_region: DSA regional rollup (Western / Mt. Kenya / Nairobi 1 / Nairobi 2)
+    by_region = an.get("by_region", []) if isinstance(an, dict) else []
+    step("analytics: by_region drill dimension present", True, len(by_region) >= 1,
+         note=f"{len(by_region)} regions; top={by_region[0].get('region') if by_region else '—'}")
+    step("analytics: by_region rows carry region+value+count", True,
+         bool(by_region) and all(("region" in r and "value" in r and "count" in r) for r in by_region))
+    # by_client_type: CCB / CIB / Consumer business-line rollup
+    by_ct = an.get("by_client_type", []) if isinstance(an, dict) else []
+    step("analytics: by_client_type (CCB/CIB) dimension present", True, len(by_ct) >= 1,
+         note=f"{len(by_ct)} client types; e.g. {[r.get('client_type') for r in by_ct][:3]}")
+    step("analytics: by_client_type rows carry client_type+value+count", True,
+         bool(by_ct) and all(("client_type" in r and "value" in r and "count" in r) for r in by_ct))
     # #8: drill endpoint — branch -> RM -> deals (scope-safe).
     st, dr = _req(base, "GET", "/api/pipeline/drill", admin)
     drill_ok = isinstance(dr, dict) and "by_rm" in dr and "deals" in dr and "totals" in dr

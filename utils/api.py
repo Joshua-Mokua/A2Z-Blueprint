@@ -3014,6 +3014,34 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_rm = sorted(_rm.values(), key=lambda x: x["value"], reverse=True)[:25]
 
+    # by_region: the deal's branch (unit) -> region, from org_config-derived
+    # BRANCH_REGION (the same single source of truth core.py builds REGIONS from).
+    # Lets the DSA regional structure (Western / Mt. Kenya / Nairobi 1 / Nairobi 2)
+    # roll up in pipeline analytics, matching credit analytics' by_region.
+    from utils.core import BRANCH_REGION as _BR
+    _region: dict = {}
+    for d in live:
+        unit = d.get("unit") or ""
+        reg = _BR.get(unit) or "Unassigned"
+        e = _region.setdefault(reg, {"region": reg, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_region = sorted(_region.values(), key=lambda x: x["value"], reverse=True)
+
+    # by_client_type: the business line (Ecobank: Consumer / Commercial / CIB).
+    # Stored on every deal as client_type; old binary values (Individual/Business)
+    # are normalized via the same alias map the config uses, so CCB/CIB views are
+    # correct without a data migration. Answers "what's in the larger CCB/CIB books".
+    _CT_ALIAS = {"individual": "Consumer", "business": "Commercial"}
+    _ctype: dict = {}
+    for d in live:
+        raw = str(d.get("client_type") or "").strip()
+        key = _CT_ALIAS.get(raw.lower(), raw) or "Unspecified"
+        e = _ctype.setdefault(key, {"client_type": key, "value": 0.0, "count": 0})
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+    _by_client_type = sorted(_ctype.values(), key=lambda x: x["value"], reverse=True)
+
     return {
         "totals": {
             "total_value": total_value,
@@ -3037,6 +3065,8 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
         "by_rm": _by_rm,
+        "by_region": _by_region,
+        "by_client_type": _by_client_type,
     }
 
 
