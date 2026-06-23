@@ -425,6 +425,11 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
                 "pipeline_category":   deal.get("pipeline_category"),
                 "client_type":         deal.get("client_type"),
                 "is_ntb":              deal.get("is_ntb"),
+                "is_top_up":           deal.get("is_top_up"),
+                "top_up_amount":       deal.get("top_up_amount"),
+                "original_facility_amount": deal.get("original_facility_amount"),
+                "existing_facility_id": deal.get("existing_facility_id"),
+                "is_repeat_borrower":  deal.get("is_repeat_borrower"),
                 "source":              deal.get("source"),
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
@@ -502,6 +507,8 @@ def _normalize_db_deal_row(row):
         for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
                    "fx_rate_source", "client_type", "mou_id", "mou_title",
                    "sector", "segment", "validated_by", "validated_at",
+                   "is_top_up", "top_up_amount", "original_facility_amount",
+                   "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
                    "decline_reason", "sla_step_log", "sla_commitments"):
@@ -4207,6 +4214,20 @@ def pipeline_deal_create(
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
     # P4-1b: stamp the normalized money set (fx_rate, amount_kes, currency_book,
+    # Top-up (P4-credit): the pipeline value of a top-up is the INCREMENT only —
+    # the new money the bank commits — not the whole facility. Set deal_value to
+    # top_up_amount BEFORE FX stamping so amount_kes (and every downstream value
+    # consumer) reflects the increment. The original facility is preserved
+    # separately for context (metadata + column) but never enters pipeline value.
+    if deal_dict.get("is_top_up"):
+        try:
+            _inc = float(deal_dict.get("top_up_amount") or 0)
+        except (TypeError, ValueError):
+            _inc = 0.0
+        if _inc > 0:
+            deal_dict["deal_value"] = _inc
+        deal_dict["is_repeat_borrower"] = True  # a top-up implies an existing relationship
+
     # rate date/source) at booking. Additive + resilient — never blocks create
     # if a currency rate is unconfigured (currency_book is always computed).
     try:

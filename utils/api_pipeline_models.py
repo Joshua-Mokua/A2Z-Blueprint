@@ -340,6 +340,28 @@ class PipelineDealCreate(BaseModel):
     is_ntb: Optional[bool] = Field(
         default=None, description="True if New To Bank"
     )
+    # Top-up (P4-credit): an increase on an EXISTING facility. When is_top_up is
+    # true, the deal's pipeline value reflects ONLY the increment (top_up_amount)
+    # — the original facility is recorded for context but excluded from pipeline
+    # value (the bank's new commitment is just the top-up). Enforced in
+    # validate_create_payload + applied at create (deal_value := top_up_amount).
+    is_top_up: Optional[bool] = Field(
+        default=None, description="True if this deal tops up an existing facility."
+    )
+    top_up_amount: Optional[float] = Field(
+        default=None,
+        description="The increment being added (becomes the deal's pipeline "
+                    "value when is_top_up). Must be > 0 for a top-up.",
+    )
+    original_facility_amount: Optional[float] = Field(
+        default=None,
+        description="The existing facility's size (context only — NOT counted in "
+                    "pipeline value). Should be >= top_up_amount.",
+    )
+    existing_facility_id: Optional[str] = Field(
+        default=None,
+        description="Identifier of the facility being topped up (optional).",
+    )
     pipeline_category: Optional[str] = Field(default=None)
     probability: Optional[float] = Field(default=None)
     next_action: Optional[str] = Field(default=None)

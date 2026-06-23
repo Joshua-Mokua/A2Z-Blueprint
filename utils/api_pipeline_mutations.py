@@ -306,6 +306,31 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
                 "Select an MOU before creating the deal."
             )
 
+    # Top-up: an increase on an existing facility. The pipeline value reflects
+    # only the increment, so a top-up MUST carry a positive top_up_amount, and
+    # the original facility (if given) must be at least the increment.
+    if deal_data.get("is_top_up"):
+        try:
+            inc = float(deal_data.get("top_up_amount") or 0)
+        except (TypeError, ValueError):
+            inc = 0.0
+        if inc <= 0:
+            return False, (
+                "A top-up requires a positive top-up amount (the increment "
+                "being added to the existing facility)."
+            )
+        orig_raw = deal_data.get("original_facility_amount")
+        if orig_raw not in (None, ""):
+            try:
+                orig = float(orig_raw)
+            except (TypeError, ValueError):
+                return False, "Original facility amount must be a number."
+            if orig < inc:
+                return False, (
+                    "Original facility amount must be at least the top-up "
+                    "amount (you're adding to an existing facility)."
+                )
+
     return True, ""
 
 

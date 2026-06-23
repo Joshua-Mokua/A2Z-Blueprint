@@ -463,6 +463,45 @@ def sector_mou_probe(base):
     step("pipeline: Business deal carries CBK sector", True, got_sec == cbk,
          note=f"sector={got_sec}")
 
+    # ── Top-up: pipeline value reflects the INCREMENT only, not the facility ──
+    tu_body = {"client_name": f"SIM TopUp {datetime.now():%H%M%S}", "client_type": "Business",
+               "product_type": "Term Loan", "deal_value": 99999999, "stage": "Lead",
+               "segment": "SME", "sector": cbk,
+               "is_top_up": True, "top_up_amount": 4000000,
+               "original_facility_amount": 10000000, "existing_facility_id": "FAC-SIM-1"}
+    st_tu, tu = _req(base, "POST", "/api/pipeline/deals", owner, tu_body)
+    tud = (tu.get("deal") if isinstance(tu, dict) else {}) or {}
+    def _f(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    step("top-up: deal created", (200, 201), st_tu)
+    # the deal's value must be the increment (4M), NOT the bogus 99,999,999
+    # deal_value sent, and NOT the 10M facility.
+    tu_val = tud.get("deal_value") or tud.get("amount_kes")
+    step("top-up: pipeline value = increment, not facility", True,
+         _f(tu_val) == 4000000,
+         note=f"deal_value={tu_val} (increment 4M, facility 10M)")
+    step("top-up: deal carries is_top_up + original facility", True,
+         bool(tud.get("is_top_up")) and _f(tud.get("original_facility_amount")) == 10000000,
+         note=f"original={tud.get('original_facility_amount')}")
+    # validation: a top-up with no positive increment is rejected
+    bad_tu = {"client_name": "SIM TopUp Bad", "client_type": "Business",
+              "product_type": "Term Loan", "deal_value": 5000000, "stage": "Lead",
+              "segment": "SME", "sector": cbk,
+              "is_top_up": True, "top_up_amount": 0}
+    st_bad, _ = _req(base, "POST", "/api/pipeline/deals", owner, bad_tu)
+    step("top-up: zero-increment top-up rejected", 400, st_bad)
+    # validation: original facility smaller than the increment is rejected
+    bad_tu2 = {"client_name": "SIM TopUp Bad2", "client_type": "Business",
+               "product_type": "Term Loan", "deal_value": 5000000, "stage": "Lead",
+               "segment": "SME", "sector": cbk,
+               "is_top_up": True, "top_up_amount": 8000000,
+               "original_facility_amount": 3000000}
+    st_bad2, _ = _req(base, "POST", "/api/pipeline/deals", owner, bad_tu2)
+    step("top-up: facility < increment rejected", 400, st_bad2)
+
     # #3a: analytics now exposes cross-cutting breakdowns.
     st, an = _req(base, "GET", "/api/pipeline/analytics", admin)
     by_prod = an.get("by_product", []) if isinstance(an, dict) else []
