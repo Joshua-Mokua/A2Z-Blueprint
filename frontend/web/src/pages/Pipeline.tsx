@@ -222,11 +222,11 @@ export function Pipeline() {
       header: 'Value',
       align: 'right',
       sortable: true,
-      sortAccessor: (row) => Number(row.deal_value) || 0,
-      exportValue: (row) => String(row.deal_value ?? ''),
+      sortAccessor: (row) => Number(row.amount_kes ?? row.deal_value) || 0,
+      exportValue: (row) => String(row.amount_kes ?? row.deal_value ?? ''),
       render: (row) => (
         <span className="font-medium text-gray-900">
-          {formatValue(Number(row.deal_value), branding?.currency_symbol ?? '')}
+          {formatValue(Number(row.amount_kes ?? row.deal_value), branding?.currency_symbol ?? '')}
         </span>
       ),
     },

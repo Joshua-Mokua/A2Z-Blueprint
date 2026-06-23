@@ -80,6 +80,10 @@ export interface PipelineDeal {
 
   // Financials
   deal_value:           number;
+  /** KES-equivalent of deal_value (FCY deals); equals deal_value for LCY.
+   * The pipeline reports in KES, so DISPLAY this, not the native deal_value. */
+  amount_kes?:          number;
+  currency_book?:       string;       // 'LCY' | 'FCY'
   probability?:         number;
   currency?:            string;
 

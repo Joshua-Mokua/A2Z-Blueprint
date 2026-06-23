@@ -461,6 +461,7 @@ export interface ReferralView {
   id: string;
   client_name?: string;
   deal_value?: number;
+  amount_kes?: number;   // KES-equivalent; display this, not native deal_value
   product_type?: string;
   stage?: string;
   segment?: string;

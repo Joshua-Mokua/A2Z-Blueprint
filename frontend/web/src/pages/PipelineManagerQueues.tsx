@@ -338,7 +338,7 @@ function QueueCard({ deal, onNavigate, children }: QueueCardCommonProps) {
         <div className="text-xs text-gray-500 text-right">
           <div>{deal.product_type ?? deal.product ?? '—'}</div>
           <div className="font-medium text-gray-900 mt-0.5">
-            {sym} {Number(deal.deal_value ?? 0).toLocaleString()}
+            {sym} {Number(deal.amount_kes ?? deal.deal_value ?? 0).toLocaleString()}
           </div>
         </div>
       </Card.Header>

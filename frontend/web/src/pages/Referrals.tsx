@@ -143,7 +143,7 @@ export default function Referrals() {
         <div className="mt-0.5 text-xs text-gray-500">
           {[d.product_type, d.stage, d.segment].filter(Boolean).join(' · ') || '—'}
         </div>
-        <div className="mt-0.5 text-sm text-gray-700 tabular-nums">{formatKes(d.deal_value)}</div>
+        <div className="mt-0.5 text-sm text-gray-700 tabular-nums">{formatKes(d.amount_kes ?? d.deal_value)}</div>
       </div>
     );
   }

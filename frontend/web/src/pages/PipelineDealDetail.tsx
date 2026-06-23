@@ -252,7 +252,7 @@ export function PipelineDealDetail() {
             <DetailField label="Pipeline category" value={deal.pipeline_category ?? deal.deal_category} />
             <DetailField label="Source" value={deal.source} />
             <DetailField label="Client type" value={deal.client_type} />
-            <DetailField label="Deal value" value={formatValue(deal.deal_value, currency)} />
+            <DetailField label="Deal value" value={formatValue(deal.amount_kes ?? deal.deal_value, currency)} />
             <DetailField label="Probability" value={
               typeof deal.probability === 'number'
                 ? `${Math.round(deal.probability * 100)}%`
