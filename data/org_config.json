@@ -1,6 +1,6 @@
 {
   "_version": "5.3",
-  "_description": "Master organisational configuration \u2014 editable via Admin without code",
+  "_description": "Master organisational configuration — editable via Admin without code",
   "_last_modified": "2026-05-11",
   "_modified_by": "v10.318",
   "departments": [
@@ -10,7 +10,7 @@
       "cluster": "Business",
       "active": true,
       "color": "#0F6E56",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "order": 1
     },
     {
@@ -19,7 +19,7 @@
       "cluster": "Business",
       "active": true,
       "color": "#185FA5",
-      "icon": "\ud83d\udcbc",
+      "icon": "💼",
       "order": 2
     },
     {
@@ -28,7 +28,7 @@
       "cluster": "Business",
       "active": true,
       "color": "#0891B2",
-      "icon": "\ud83d\udea2",
+      "icon": "🚢",
       "order": 3
     },
     {
@@ -37,7 +37,7 @@
       "cluster": "Business",
       "active": true,
       "color": "#16A34A",
-      "icon": "\ud83c\udf0d",
+      "icon": "🌍",
       "order": 4
     },
     {
@@ -46,7 +46,7 @@
       "cluster": "Risk",
       "active": true,
       "color": "#DC2626",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "order": 5
     },
     {
@@ -55,7 +55,7 @@
       "cluster": "Risk",
       "active": true,
       "color": "#991B1B",
-      "icon": "\ud83d\udee1\ufe0f",
+      "icon": "🛡️",
       "order": 6
     },
     {
@@ -64,7 +64,7 @@
       "cluster": "Risk",
       "active": true,
       "color": "#3C3489",
-      "icon": "\u2696\ufe0f",
+      "icon": "⚖️",
       "order": 7
     },
     {
@@ -73,7 +73,7 @@
       "cluster": "Finance",
       "active": true,
       "color": "#854F0B",
-      "icon": "\ud83d\udcb9",
+      "icon": "💹",
       "order": 8
     },
     {
@@ -82,7 +82,7 @@
       "cluster": "Finance",
       "active": true,
       "color": "#3B6D11",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "order": 9
     },
     {
@@ -91,7 +91,7 @@
       "cluster": "Finance",
       "active": true,
       "color": "#0C447C",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "order": 10
     },
     {
@@ -100,7 +100,7 @@
       "cluster": "COO",
       "active": true,
       "color": "#7C3AED",
-      "icon": "\ud83d\udcf1",
+      "icon": "📱",
       "order": 11
     },
     {
@@ -109,7 +109,7 @@
       "cluster": "COO",
       "active": true,
       "color": "#4F46E5",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "order": 12
     },
     {
@@ -118,7 +118,7 @@
       "cluster": "COO",
       "active": true,
       "color": "#0891B2",
-      "icon": "\ud83c\udfea",
+      "icon": "🏪",
       "order": 13
     },
     {
@@ -127,7 +127,7 @@
       "cluster": "COO",
       "active": true,
       "color": "#5F5E5A",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "order": 14
     },
     {
@@ -136,7 +136,7 @@
       "cluster": "COO",
       "active": true,
       "color": "#D97706",
-      "icon": "\ud83d\ude80",
+      "icon": "🚀",
       "order": 15
     },
     {
@@ -145,7 +145,7 @@
       "cluster": "Business",
       "active": true,
       "color": "#993556",
-      "icon": "\ud83c\udfe5",
+      "icon": "🏥",
       "order": 16
     },
     {
@@ -154,7 +154,7 @@
       "cluster": "Support",
       "active": true,
       "color": "#993556",
-      "icon": "\ud83d\udc65",
+      "icon": "👥",
       "order": 17
     },
     {
@@ -163,7 +163,7 @@
       "cluster": "Support",
       "active": true,
       "color": "#185FA5",
-      "icon": "\ud83d\udcbb",
+      "icon": "💻",
       "order": 18
     },
     {
@@ -172,7 +172,7 @@
       "cluster": "Support",
       "active": true,
       "color": "#3C3489",
-      "icon": "\ud83d\udd10",
+      "icon": "🔐",
       "order": 19
     },
     {
@@ -181,7 +181,7 @@
       "cluster": "Governance",
       "active": true,
       "color": "#6B7280",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "order": 20
     },
     {
@@ -190,7 +190,7 @@
       "cluster": "Support",
       "active": true,
       "color": "#6B7280",
-      "icon": "\ud83d\udd27",
+      "icon": "🔧",
       "order": 21
     },
     {
@@ -199,7 +199,7 @@
       "cluster": "Executive",
       "active": true,
       "color": "#26215C",
-      "icon": "\ud83d\udd17",
+      "icon": "🔗",
       "order": 22
     }
   ],
@@ -207,986 +207,270 @@
     {
       "id": "Business",
       "name": "Business Divisions",
-      "icon": "\ud83d\udcbc",
+      "icon": "💼",
       "order": 1
     },
     {
       "id": "Risk",
       "name": "Risk & Governance",
-      "icon": "\ud83d\udee1\ufe0f",
+      "icon": "🛡️",
       "order": 2
     },
     {
       "id": "Finance",
       "name": "Finance & Analytics",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "order": 3
     },
     {
       "id": "COO",
       "name": "COO Cluster",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "order": 4
     },
     {
       "id": "Support",
       "name": "Support Functions",
-      "icon": "\ud83d\udd27",
+      "icon": "🔧",
       "order": 5
     },
     {
       "id": "Governance",
       "name": "Governance",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "order": 6
     },
     {
       "id": "Executive",
       "name": "Executive",
-      "icon": "\ud83d\udd17",
+      "icon": "🔗",
       "order": 7
     }
   ],
   "branches": [
     {
-      "id": "BRN001",
-      "name": "Banana",
-      "region": "Other",
+      "id": "P01",
+      "name": "Towers",
+      "region": "Nairobi 1",
+      "region_group": "Nairobi CBD",
       "active": true,
-      "branch_code": "B001",
+      "branch_code": "P01",
       "dept_id": "retail",
       "opened_date": "2010-01-01",
-      "region_group": "Other"
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": true
     },
     {
-      "id": "BRN002",
-      "name": "Bomet",
-      "region": "Other",
+      "id": "P03",
+      "name": "Plaza",
+      "region": "Nairobi 1",
+      "region_group": "Nairobi CBD",
       "active": true,
-      "branch_code": "B002",
+      "branch_code": "P03",
       "dept_id": "retail",
       "opened_date": "2010-01-01",
-      "region_group": "Other"
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
     },
     {
-      "id": "BRN003",
-      "name": "Bungoma",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B003",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN004",
-      "name": "Busia",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B004",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN005",
-      "name": "Cargen House",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B005",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN006",
-      "name": "Chuka",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B006",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN007",
-      "name": "City Hall",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B007",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN008",
-      "name": "Dagoretti",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B008",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN009",
-      "name": "Digo",
-      "region": "Coast",
-      "active": true,
-      "branch_code": "B009",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Coast"
-    },
-    {
-      "id": "BRN010",
-      "name": "Donholm",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B010",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN011",
-      "name": "Eastleigh",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B011",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN012",
-      "name": "Eldoret",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B012",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN013",
-      "name": "Eldoret West",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B013",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN014",
-      "name": "Embu",
-      "region": "Central",
-      "active": true,
-      "branch_code": "B014",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Central"
-    },
-    {
-      "id": "BRN015",
-      "name": "FB Towers Corporate",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B015",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN016",
-      "name": "FB Towers Retail",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B016",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN017",
-      "name": "Gateway Mall",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B017",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN018",
-      "name": "Gatundu",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B018",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN019",
-      "name": "Gikomba",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B019",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN020",
-      "name": "Gikomba Area 42",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B020",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN021",
-      "name": "Githunguri",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B021",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN022",
-      "name": "Githurai",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B022",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN023",
+      "id": "P11",
       "name": "Industrial Area",
-      "region": "Nairobi",
+      "region": "Nairobi 1",
+      "region_group": "Nairobi CBD",
       "active": true,
-      "branch_code": "B023",
+      "branch_code": "P11",
       "dept_id": "retail",
       "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
     },
     {
-      "id": "BRN024",
-      "name": "Isiolo",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B024",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN025",
-      "name": "JKIA",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B025",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN026",
-      "name": "KTDA Retail",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B026",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN027",
-      "name": "Kagwe",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B027",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN028",
-      "name": "Kahawa West",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B028",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN029",
-      "name": "Kajiado",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B029",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN030",
-      "name": "Kakamega",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B030",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN031",
-      "name": "Kangari",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B031",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN032",
-      "name": "Kangema",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B032",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN033",
-      "name": "Kangemi",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B033",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN034",
-      "name": "Kapsabet",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B034",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN035",
-      "name": "Karatina",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B035",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN036",
-      "name": "Kariobangi",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B036",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN037",
-      "name": "Kasarani",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B037",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN038",
-      "name": "Kayole",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B038",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN039",
-      "name": "Kenyatta Avenue",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B039",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN040",
-      "name": "Kericho",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B040",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN041",
-      "name": "Kerugoya",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B041",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN042",
-      "name": "Kiambu",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B042",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN043",
-      "name": "Kikuyu",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B043",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN044",
-      "name": "Kilimani",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B044",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN045",
-      "name": "Kiriaini",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B045",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN046",
-      "name": "Kisii",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B046",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN047",
-      "name": "Kisumu Express",
-      "region": "Nyanza",
-      "active": true,
-      "branch_code": "B047",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nyanza"
-    },
-    {
-      "id": "BRN048",
-      "name": "Kitale",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B048",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN049",
-      "name": "Kitengela",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B049",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN050",
-      "name": "Kitui",
-      "region": "Eastern",
-      "active": true,
-      "branch_code": "B050",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Eastern"
-    },
-    {
-      "id": "BRN051",
-      "name": "Kongowea",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B051",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN052",
-      "name": "Kutus",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B052",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN053",
-      "name": "Laptrust",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B053",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN054",
-      "name": "Limuru",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B054",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN055",
-      "name": "Litein",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B055",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN056",
-      "name": "Machakos",
-      "region": "Eastern",
-      "active": true,
-      "branch_code": "B056",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Eastern"
-    },
-    {
-      "id": "BRN057",
-      "name": "Makongeni",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B057",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN058",
-      "name": "Malindi",
-      "region": "Coast",
-      "active": true,
-      "branch_code": "B058",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Coast"
-    },
-    {
-      "id": "BRN059",
-      "name": "Maua",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B059",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN060",
-      "name": "Meru",
-      "region": "Central",
-      "active": true,
-      "branch_code": "B060",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Central"
-    },
-    {
-      "id": "BRN061",
-      "name": "Migori",
-      "region": "Nyanza",
-      "active": true,
-      "branch_code": "B061",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nyanza"
-    },
-    {
-      "id": "BRN062",
-      "name": "Mlolongo",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B062",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN063",
-      "name": "Moi Avenue",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B063",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN064",
-      "name": "Molo",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B064",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN065",
-      "name": "Mombasa Kenyatta Avenue",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B065",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN066",
-      "name": "Mombasa Nkrumah",
-      "region": "Coast",
-      "active": true,
-      "branch_code": "B066",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Coast"
-    },
-    {
-      "id": "BRN067",
-      "name": "Mtwapa",
-      "region": "Coast",
-      "active": true,
-      "branch_code": "B067",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Coast"
-    },
-    {
-      "id": "BRN068",
-      "name": "Mumias",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B068",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN069",
-      "name": "Muranga",
-      "region": "Central",
-      "active": true,
-      "branch_code": "B069",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Central"
-    },
-    {
-      "id": "BRN070",
-      "name": "Mwea",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B070",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN071",
-      "name": "Naivasha",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B071",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN072",
-      "name": "Nakuru Finance",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B072",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN073",
-      "name": "Nakuru Market",
-      "region": "Rift Valley",
-      "active": true,
-      "branch_code": "B073",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Rift Valley"
-    },
-    {
-      "id": "BRN074",
-      "name": "Nanyuki",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B074",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN075",
-      "name": "Narok",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B075",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN076",
-      "name": "Ngara",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B076",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN077",
-      "name": "Nkubu",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B077",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN078",
-      "name": "Nyahururu",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B078",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN079",
-      "name": "Nyali",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B079",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN080",
-      "name": "Nyamira",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B080",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN081",
-      "name": "Nyeri",
-      "region": "Central",
-      "active": true,
-      "branch_code": "B081",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Central"
-    },
-    {
-      "id": "BRN082",
-      "name": "Ol Kalau",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B082",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN083",
-      "name": "Othaya",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B083",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN084",
-      "name": "River Road",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B084",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN085",
-      "name": "River Road West",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B085",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN086",
-      "name": "Rongai",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B086",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN087",
-      "name": "Ruaka",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B087",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN088",
-      "name": "Ruiru",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B088",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN089",
-      "name": "Thika",
-      "region": "Central",
-      "active": true,
-      "branch_code": "B089",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Central"
-    },
-    {
-      "id": "BRN090",
-      "name": "Ukunda",
-      "region": "Coast",
-      "active": true,
-      "branch_code": "B090",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Coast"
-    },
-    {
-      "id": "BRN091",
-      "name": "Utawala",
-      "region": "Nairobi",
-      "active": true,
-      "branch_code": "B091",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
-    },
-    {
-      "id": "BRN092",
-      "name": "Wangige",
-      "region": "Other",
-      "active": true,
-      "branch_code": "B092",
-      "dept_id": "retail",
-      "opened_date": "2010-01-01",
-      "region_group": "Other"
-    },
-    {
-      "id": "BRN093",
+      "id": "P13",
       "name": "Westlands",
-      "region": "Nairobi",
+      "region": "Nairobi 2",
+      "region_group": "Nairobi Metro",
       "active": true,
-      "branch_code": "B093",
+      "branch_code": "P13",
       "dept_id": "retail",
       "opened_date": "2010-01-01",
-      "region_group": "Nairobi"
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
     },
     {
-      "id": "BRN094",
-      "name": "Wote",
-      "region": "Other",
+      "id": "P22",
+      "name": "Upper Hill",
+      "region": "Nairobi 1",
+      "region_group": "Nairobi CBD",
       "active": true,
-      "branch_code": "B094",
+      "branch_code": "P22",
       "dept_id": "retail",
       "opened_date": "2010-01-01",
-      "region_group": "Other"
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
+    },
+    {
+      "id": "P23",
+      "name": "Valley Arcade",
+      "region": "Nairobi 2",
+      "region_group": "Nairobi Metro",
+      "active": true,
+      "branch_code": "P23",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
+    },
+    {
+      "id": "P24",
+      "name": "Karen",
+      "region": "Nairobi 2",
+      "region_group": "Nairobi Metro",
+      "active": true,
+      "branch_code": "P24",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
+    },
+    {
+      "id": "P30",
+      "name": "Fortis Office Park",
+      "region": "Nairobi 2",
+      "region_group": "Nairobi Metro",
+      "active": true,
+      "branch_code": "P30",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 1",
+      "area_name": "Nairobi Region",
+      "area_lead_branch": "P01",
+      "is_area_lead": false
+    },
+    {
+      "id": "P02",
+      "name": "Mombasa Moi Avenue",
+      "region": "Mt. Kenya",
+      "region_group": "Coast",
+      "active": true,
+      "branch_code": "P02",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P06",
+      "name": "Thika",
+      "region": "Mt. Kenya",
+      "region_group": "Mt Kenya West",
+      "active": true,
+      "branch_code": "P06",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P07",
+      "name": "Eldoret",
+      "region": "Western",
+      "region_group": "North Rift",
+      "active": true,
+      "branch_code": "P07",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P08",
+      "name": "Kisumu",
+      "region": "Western",
+      "region_group": "West Kenya",
+      "active": true,
+      "branch_code": "P08",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": true
+    },
+    {
+      "id": "P09",
+      "name": "Kisii",
+      "region": "Western",
+      "region_group": "South Rift",
+      "active": true,
+      "branch_code": "P09",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P12",
+      "name": "Karatina",
+      "region": "Mt. Kenya",
+      "region_group": "Mt Kenya East",
+      "active": true,
+      "branch_code": "P12",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P15",
+      "name": "Nakuru",
+      "region": "Western",
+      "region_group": "North Rift",
+      "active": true,
+      "branch_code": "P15",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
+    },
+    {
+      "id": "P17",
+      "name": "Nyeri",
+      "region": "Mt. Kenya",
+      "region_group": "Mt Kenya East",
+      "active": true,
+      "branch_code": "P17",
+      "dept_id": "retail",
+      "opened_date": "2010-01-01",
+      "area": "Region 2",
+      "area_name": "Upcountry Region",
+      "area_lead_branch": "P08",
+      "is_area_lead": false
     }
   ],
   "ho_units": [
@@ -2188,7 +1472,7 @@
       "key": "perform",
       "name": "My BSC",
       "page": "1_perform.py",
-      "icon": "\ud83c\udfc6",
+      "icon": "🏆",
       "active": true,
       "universal": true,
       "description": "Individual BSC scorecard and KPI tracking"
@@ -2197,7 +1481,7 @@
       "key": "cascade",
       "name": "Target Cascade",
       "page": "12_cascade.py",
-      "icon": "\ud83c\udfaf",
+      "icon": "🎯",
       "active": true,
       "universal": false,
       "description": "Set and cascade targets from bank to individual"
@@ -2206,7 +1490,7 @@
       "key": "pipeline",
       "name": "Pipeline",
       "page": "3_pipeline.py",
-      "icon": "\ud83d\udcbc",
+      "icon": "💼",
       "active": true,
       "universal": false,
       "description": "CRM pipeline and deal management"
@@ -2215,7 +1499,7 @@
       "key": "loan_applications",
       "name": "Loan Applications",
       "page": "21_loan_applications.py",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "active": true,
       "universal": false,
       "description": "Loan origination, swim lanes, team capacity"
@@ -2224,7 +1508,7 @@
       "key": "cims",
       "name": "CIMS",
       "page": "18_cims.py",
-      "icon": "\ud83d\udce8",
+      "icon": "📨",
       "active": true,
       "universal": false,
       "description": "Customer instruction management"
@@ -2233,7 +1517,7 @@
       "key": "sla",
       "name": "SLA Tracker",
       "page": "13_sla.py",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "active": true,
       "universal": false,
       "description": "Service level adherence and TAT tracking"
@@ -2242,7 +1526,7 @@
       "key": "branch_log",
       "name": "Branch Daily Log",
       "page": "14_branch_log.py",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "active": true,
       "universal": false,
       "description": "Daily branch activity log"
@@ -2251,7 +1535,7 @@
       "key": "commission",
       "name": "Commission",
       "page": "16_commission.py",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "active": true,
       "universal": false,
       "description": "RM commission calculation and view"
@@ -2260,7 +1544,7 @@
       "key": "campaigns",
       "name": "Campaigns",
       "page": "17_campaigns.py",
-      "icon": "\ud83d\ude80",
+      "icon": "🚀",
       "active": true,
       "universal": false,
       "description": "Marketing campaigns and conversion tracking"
@@ -2269,7 +1553,7 @@
       "key": "propositions",
       "name": "Propositions",
       "page": "27_propositions.py",
-      "icon": "\ud83c\udfaf",
+      "icon": "🎯",
       "active": true,
       "universal": false,
       "description": "Customer proposition performance"
@@ -2278,7 +1562,7 @@
       "key": "optimize",
       "name": "Branch Optimizer",
       "page": "15_optimize.py",
-      "icon": "\ud83d\udcd0",
+      "icon": "📐",
       "active": true,
       "universal": false,
       "description": "Branch capacity and efficiency optimization"
@@ -2287,7 +1571,7 @@
       "key": "products",
       "name": "Products",
       "page": "5_products.py",
-      "icon": "\ud83c\udff7\ufe0f",
+      "icon": "🏷️",
       "active": true,
       "universal": false,
       "description": "Product P&L and portfolio"
@@ -2296,7 +1580,7 @@
       "key": "nps",
       "name": "NPS / Voice of Cust",
       "page": "38_nps.py",
-      "icon": "\u2b50",
+      "icon": "⭐",
       "active": true,
       "universal": false,
       "description": "Net Promoter Score by branch and product"
@@ -2305,7 +1589,7 @@
       "key": "crosssell",
       "name": "Cross-sell Intel",
       "page": "45_crosssell.py",
-      "icon": "\ud83d\udd01",
+      "icon": "🔁",
       "active": true,
       "universal": false,
       "description": "Products per customer and deepening"
@@ -2314,7 +1598,7 @@
       "key": "trade_finance",
       "name": "Trade Finance",
       "page": "46_trade_finance.py",
-      "icon": "\ud83d\udea2",
+      "icon": "🚢",
       "active": true,
       "universal": false,
       "description": "LC, documentary collections, acceptances"
@@ -2323,7 +1607,7 @@
       "key": "credit_analysis",
       "name": "Credit Analysis",
       "page": "22_credit_analysis.py",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "active": true,
       "universal": false,
       "description": "Credit analysis and AI credit memo"
@@ -2332,7 +1616,7 @@
       "key": "credit_admin",
       "name": "Credit Admin",
       "page": "23_credit_admin.py",
-      "icon": "\ud83d\udcd1",
+      "icon": "📑",
       "active": true,
       "universal": false,
       "description": "Pre-disbursement conditions and queue"
@@ -2341,7 +1625,7 @@
       "key": "credit_monitoring",
       "name": "Credit Monitoring",
       "page": "19_credit_monitoring.py",
-      "icon": "\ud83d\udd34",
+      "icon": "🔴",
       "active": true,
       "universal": false,
       "description": "Watch list, NPL, IFRS 9 staging"
@@ -2350,7 +1634,7 @@
       "key": "debt_recovery",
       "name": "Debt Recovery",
       "page": "20_debt_recovery.py",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "active": true,
       "universal": false,
       "description": "DRS, collections, legal escalation"
@@ -2359,7 +1643,7 @@
       "key": "ews",
       "name": "Early Warning Sys",
       "page": "39_ews.py",
-      "icon": "\u26a0\ufe0f",
+      "icon": "⚠️",
       "active": true,
       "universal": false,
       "description": "Credit deterioration triggers and staging"
@@ -2368,7 +1652,7 @@
       "key": "collateral",
       "name": "Collateral Register",
       "page": "40_collateral.py",
-      "icon": "\ud83c\udfe0",
+      "icon": "🏠",
       "active": true,
       "universal": false,
       "description": "Collateral, valuations, insurance, LTV"
@@ -2377,7 +1661,7 @@
       "key": "ifrs9",
       "name": "IFRS 9",
       "page": "32_ifrs9.py",
-      "icon": "\ud83d\udcd0",
+      "icon": "📐",
       "active": true,
       "universal": false,
       "description": "ECL provisioning and stage migration"
@@ -2386,7 +1670,7 @@
       "key": "statement_analyzer",
       "name": "Statement Analyzer",
       "page": "33_statement_analyzer.py",
-      "icon": "\ud83e\uddfe",
+      "icon": "🧾",
       "active": true,
       "universal": true,
       "description": "AI-powered bank statement analysis"
@@ -2395,7 +1679,7 @@
       "key": "treasury",
       "name": "Treasury",
       "page": "25_treasury.py",
-      "icon": "\ud83d\udcb9",
+      "icon": "💹",
       "active": true,
       "universal": false,
       "description": "FD, FX, Money Market, Gov Securities, ALM"
@@ -2404,7 +1688,7 @@
       "key": "stress_testing",
       "name": "Stress Testing",
       "page": "35_stress_testing.py",
-      "icon": "\ud83d\udd25",
+      "icon": "🔥",
       "active": true,
       "universal": false,
       "description": "Portfolio stress scenarios and ICAAP"
@@ -2413,7 +1697,7 @@
       "key": "sbu",
       "name": "SBU Performance",
       "page": "9_sbu.py",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "active": true,
       "universal": false,
       "description": "SBU and branch P&L"
@@ -2422,7 +1706,7 @@
       "key": "opex",
       "name": "Operating Leverage",
       "page": "10_opex.py",
-      "icon": "\ud83d\udcc9",
+      "icon": "📉",
       "active": true,
       "universal": false,
       "description": "CIR, cost efficiency, branch profitability"
@@ -2431,7 +1715,7 @@
       "key": "revenue_assurance",
       "name": "Revenue Assurance",
       "page": "29_revenue_assurance.py",
-      "icon": "\ud83d\udcb0",
+      "icon": "💰",
       "active": true,
       "universal": false,
       "description": "Fee leakage, waiver management"
@@ -2440,7 +1724,7 @@
       "key": "rms",
       "name": "Reconciliation",
       "page": "30_rms.py",
-      "icon": "\ud83d\udd04",
+      "icon": "🔄",
       "active": true,
       "universal": false,
       "description": "CBS-GL reconciliation management"
@@ -2449,7 +1733,7 @@
       "key": "ra",
       "name": "Analytics",
       "page": "28_ra.py",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "active": true,
       "universal": false,
       "description": "Executive analytics and month-end pack"
@@ -2458,7 +1742,7 @@
       "key": "budget",
       "name": "Budget vs Actual",
       "page": "41_budget.py",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "active": true,
       "universal": false,
       "description": "Department budget tracking and variance"
@@ -2467,7 +1751,7 @@
       "key": "compliance",
       "name": "Compliance",
       "page": "24_compliance.py",
-      "icon": "\ud83d\udee1\ufe0f",
+      "icon": "🛡️",
       "active": true,
       "universal": false,
       "description": "AML, KYC, CBK regulatory calendar"
@@ -2476,7 +1760,7 @@
       "key": "legal",
       "name": "Legal",
       "page": "26_legal.py",
-      "icon": "\u2696\ufe0f",
+      "icon": "⚖️",
       "active": true,
       "universal": false,
       "description": "Legal matters, SLA, attorney pipeline"
@@ -2485,7 +1769,7 @@
       "key": "edms",
       "name": "EDMS",
       "page": "31_edms.py",
-      "icon": "\ud83d\udcc1",
+      "icon": "📁",
       "active": true,
       "universal": false,
       "description": "Electronic document management"
@@ -2494,7 +1778,7 @@
       "key": "ops",
       "name": "Operations",
       "page": "30_rms.py",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "active": true,
       "universal": false,
       "description": "Operations and reconciliations"
@@ -2503,7 +1787,7 @@
       "key": "digital_channels",
       "name": "Digital Channels",
       "page": "47_digital_channels.py",
-      "icon": "\ud83d\udcf1",
+      "icon": "📱",
       "active": true,
       "universal": false,
       "description": "Mobile, USSD, internet banking KPIs"
@@ -2512,7 +1796,7 @@
       "key": "contact_centre",
       "name": "Contact Centre",
       "page": "48_contact_centre.py",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "active": true,
       "universal": false,
       "description": "Call centre KPIs and agent scorecards"
@@ -2521,7 +1805,7 @@
       "key": "agency_banking",
       "name": "Agent Network",
       "page": "51_agency_banking.py",
-      "icon": "\ud83c\udfea",
+      "icon": "🏪",
       "active": true,
       "universal": false,
       "description": "Agency banking float and compliance"
@@ -2530,7 +1814,7 @@
       "key": "bancassurance_mgmt",
       "name": "Bancassurance",
       "page": "49_bancassurance.py",
-      "icon": "\ud83c\udfe5",
+      "icon": "🏥",
       "active": true,
       "universal": false,
       "description": "Policies, claims, insurer reconciliation"
@@ -2539,7 +1823,7 @@
       "key": "cybersecurity",
       "name": "Cybersecurity",
       "page": "50_cybersecurity.py",
-      "icon": "\ud83d\udd10",
+      "icon": "🔐",
       "active": true,
       "universal": false,
       "description": "Threat posture, patch compliance, phishing"
@@ -2548,7 +1832,7 @@
       "key": "incidents",
       "name": "Incident Management",
       "page": "44_incidents.py",
-      "icon": "\ud83d\udea8",
+      "icon": "🚨",
       "active": true,
       "universal": false,
       "description": "IT incidents P1-P4 and SLA tracking"
@@ -2557,7 +1841,7 @@
       "key": "people",
       "name": "People",
       "page": "2_people.py",
-      "icon": "\ud83d\udc65",
+      "icon": "👥",
       "active": true,
       "universal": false,
       "description": "HR module: leave, payroll, succession"
@@ -2566,7 +1850,7 @@
       "key": "lms",
       "name": "Learning Mgmt",
       "page": "42_lms.py",
-      "icon": "\ud83c\udf93",
+      "icon": "🎓",
       "active": true,
       "universal": false,
       "description": "CBK mandatory training and CPD"
@@ -2575,7 +1859,7 @@
       "key": "pip",
       "name": "Perf. Improvement",
       "page": "43_pip.py",
-      "icon": "\ud83d\udcc8",
+      "icon": "📈",
       "active": true,
       "universal": false,
       "description": "PIP workflow for below-2.5 staff"
@@ -2584,7 +1868,7 @@
       "key": "cbs",
       "name": "CBS Explorer",
       "page": "15_cbs.py",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "active": true,
       "universal": false,
       "description": "Core banking account and CIF lookup"
@@ -2593,7 +1877,7 @@
       "key": "export",
       "name": "Export",
       "page": "8_export.py",
-      "icon": "\ud83d\udce5",
+      "icon": "📥",
       "active": true,
       "universal": false,
       "description": "Data extracts and regulatory reports"
@@ -2602,7 +1886,7 @@
       "key": "customer360",
       "name": "Customer 360",
       "page": "34_customer360.py",
-      "icon": "\ud83c\udfaf",
+      "icon": "🎯",
       "active": true,
       "universal": true,
       "description": "Customer propensity, churn, NBA"
@@ -2611,7 +1895,7 @@
       "key": "integrate",
       "name": "Command Centre",
       "page": "6_integrate.py",
-      "icon": "\ud83d\udd17",
+      "icon": "🔗",
       "active": true,
       "universal": false,
       "description": "MD executive command centre"
@@ -2620,7 +1904,7 @@
       "key": "competitor",
       "name": "Competitor Intel",
       "page": "11_competitor.py",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "active": true,
       "universal": false,
       "description": "Kenya banking market benchmarking"
@@ -2629,7 +1913,7 @@
       "key": "smart_alerts",
       "name": "Smart Alerts",
       "page": "36_smart_alerts.py",
-      "icon": "\ud83d\udd14",
+      "icon": "🔔",
       "active": true,
       "universal": true,
       "description": "Proactive real-time alerts"
@@ -2638,7 +1922,7 @@
       "key": "approvals",
       "name": "Approvals",
       "page": "37_approvals.py",
-      "icon": "\u2705",
+      "icon": "✅",
       "active": true,
       "universal": true,
       "description": "Maker-checker pending approvals"
@@ -2647,7 +1931,7 @@
       "key": "admin",
       "name": "Admin",
       "page": "7_admin.py",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "active": true,
       "universal": false,
       "description": "System administration"
@@ -2656,7 +1940,7 @@
       "key": "mgmt_accounts",
       "name": "Management Accounts",
       "page": "52_mgmt_accounts.py",
-      "icon": "\ud83d\udcd1",
+      "icon": "📑",
       "active": true,
       "universal": false,
       "description": "Monthly P&L, balance sheet, key ratios auto-generated from CBS"
@@ -2665,16 +1949,16 @@
       "key": "irrbb",
       "name": "IRRBB Dashboard",
       "page": "53_irrbb.py",
-      "icon": "\ud83d\udcc9",
+      "icon": "📉",
       "active": true,
       "universal": false,
-      "description": "Interest rate risk: EaR, EVE, repricing gap \u2014 CBK IRRBB guideline"
+      "description": "Interest rate risk: EaR, EVE, repricing gap — CBK IRRBB guideline"
     },
     {
       "key": "rcsa",
       "name": "Risk Register (RCSA)",
       "page": "54_rcsa.py",
-      "icon": "\ud83d\udee1\ufe0f",
+      "icon": "🛡️",
       "active": true,
       "universal": false,
       "description": "Operational risk register, KRIs, control effectiveness"
@@ -2683,7 +1967,7 @@
       "key": "aml_monitoring",
       "name": "AML Monitoring",
       "page": "55_aml.py",
-      "icon": "\ud83d\udd0d",
+      "icon": "🔍",
       "active": true,
       "universal": false,
       "description": "Transaction monitoring, alert management, STR filing"
@@ -2692,7 +1976,7 @@
       "key": "transfer_pricing",
       "name": "Transfer Pricing",
       "page": "56_ftp.py",
-      "icon": "\ud83d\udcb1",
+      "icon": "💱",
       "active": true,
       "universal": false,
       "description": "FTP by product, SBU NIM contribution, spread analysis"
@@ -2701,7 +1985,7 @@
       "key": "deal_room",
       "name": "Deal Room",
       "page": "57_deal_room.py",
-      "icon": "\ud83e\udd1d",
+      "icon": "🤝",
       "active": true,
       "universal": false,
       "description": "Term sheet engine, deal structuring, conditions precedent"
@@ -2710,7 +1994,7 @@
       "key": "workforce",
       "name": "Workforce Planning",
       "page": "58_workforce.py",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "active": true,
       "universal": false,
       "description": "Headcount plan, attrition, succession depth, open positions"
@@ -2719,7 +2003,7 @@
       "key": "cab",
       "name": "Change Management",
       "page": "59_cab.py",
-      "icon": "\ud83d\udd04",
+      "icon": "🔄",
       "active": true,
       "universal": false,
       "description": "CAB register, change risk, rollback plans, PIR"
@@ -2728,7 +2012,7 @@
       "key": "disciplinary",
       "name": "Disciplinary Register",
       "page": "60_disciplinary.py",
-      "icon": "\u2696\ufe0f",
+      "icon": "⚖️",
       "active": true,
       "universal": false,
       "description": "Disciplinary cases, hearings, outcomes, appeals"
@@ -2737,16 +2021,16 @@
       "key": "projects",
       "name": "Project Management",
       "page": "61_projects.py",
-      "icon": "\ud83d\uddc2\ufe0f",
+      "icon": "🗂️",
       "active": true,
       "universal": false,
-      "description": "Project portfolio, RAG status, milestones, budget tracking \u2014 links from Execute"
+      "description": "Project portfolio, RAG status, milestones, budget tracking — links from Execute"
     },
     {
       "key": "p2p",
       "name": "Procure-to-Pay",
       "page": "62_p2p.py",
-      "icon": "\ud83d\uded2",
+      "icon": "🛒",
       "active": true,
       "universal": false
     },
@@ -2754,7 +2038,7 @@
       "key": "asset_management",
       "name": "Asset Register",
       "page": "63_assets.py",
-      "icon": "\ud83c\udfe2",
+      "icon": "🏢",
       "active": true,
       "universal": false
     },
@@ -2762,7 +2046,7 @@
       "key": "vendor_management",
       "name": "Vendor Management",
       "page": "64_vendors.py",
-      "icon": "\ud83e\udd1d",
+      "icon": "🤝",
       "active": true,
       "universal": false
     },
@@ -2770,7 +2054,7 @@
       "key": "contracts",
       "name": "Contracts Register",
       "page": "65_contracts.py",
-      "icon": "\ud83d\udcc4",
+      "icon": "📄",
       "active": true,
       "universal": false
     },
@@ -2778,7 +2062,7 @@
       "key": "partnerships",
       "name": "Partnerships & MOUs",
       "page": "66_partnerships.py",
-      "icon": "\ud83e\udd1d",
+      "icon": "🤝",
       "active": true,
       "universal": false,
       "description": "MOUs, referrals, sponsored events, beyond banking, revenue yield tracking"
@@ -2787,7 +2071,7 @@
       "key": "fraud_detection",
       "name": "Agent Fraud Detection",
       "page": "67_fraud.py",
-      "icon": "\ud83d\udd0e",
+      "icon": "🔎",
       "active": true,
       "universal": false,
       "description": "Transaction splitting detection, velocity alerts, agent commission anomalies"
@@ -2796,16 +2080,16 @@
       "key": "sponsored_events",
       "name": "Sponsored Events",
       "page": "66_partnerships.py",
-      "icon": "\ud83c\udfaa",
+      "icon": "🎪",
       "active": true,
       "universal": false,
-      "description": "Event tracking, ROI, penetration \u2014 tab within Partnerships module"
+      "description": "Event tracking, ROI, penetration — tab within Partnerships module"
     },
     {
       "key": "clearing",
       "name": "Clearing & Settlement",
       "page": "68_clearing.py",
-      "icon": "\ud83c\udfe6",
+      "icon": "🏦",
       "active": true,
       "dept": "Operations"
     },
@@ -2813,7 +2097,7 @@
       "key": "consent_management",
       "name": "Consent Management",
       "page": "69_consent.py",
-      "icon": "\ud83d\udd0f",
+      "icon": "🔏",
       "active": true,
       "dept": "Compliance"
     },
@@ -2821,7 +2105,7 @@
       "key": "retailer_finance",
       "name": "Retailer Finance",
       "page": "70_retailer_finance.py",
-      "icon": "\ud83d\uded2",
+      "icon": "🛒",
       "active": true,
       "dept": "Commercial & Corporate"
     },
@@ -2829,7 +2113,7 @@
       "key": "bid_bond",
       "name": "Bid Bond & Guarantees",
       "page": "71_bid_bond.py",
-      "icon": "\ud83d\udcdc",
+      "icon": "📜",
       "active": true,
       "dept": "Trade Finance"
     },
@@ -2837,7 +2121,7 @@
       "key": "observability",
       "name": "System Observability",
       "page": "72_observability.py",
-      "icon": "\ud83d\udce1",
+      "icon": "📡",
       "active": true,
       "dept": "IT & Digital"
     },
@@ -2845,7 +2129,7 @@
       "key": "channels_management",
       "name": "Channels Management",
       "page": "73_channels.py",
-      "icon": "\ud83d\udcf2",
+      "icon": "📲",
       "active": true,
       "dept": "Digital Financial Services"
     },
@@ -2853,7 +2137,7 @@
       "key": "cbk_returns",
       "name": "CBK Returns Centre",
       "page": "74_cbk_returns.py",
-      "icon": "\ud83d\udcca",
+      "icon": "📊",
       "active": true,
       "dept": "Compliance"
     },
@@ -2861,7 +2145,7 @@
       "key": "data_protection",
       "name": "Data Protection",
       "page": "75_data_protection.py",
-      "icon": "\ud83d\udd12",
+      "icon": "🔒",
       "active": true,
       "dept": "Compliance"
     },
@@ -2869,7 +2153,7 @@
       "key": "sanctions_screening",
       "name": "Sanctions Screening",
       "page": "76_sanctions.py",
-      "icon": "\ud83d\udea8",
+      "icon": "🚨",
       "active": true,
       "dept": "Compliance"
     },
@@ -2877,7 +2161,7 @@
       "key": "regulatory_capital",
       "name": "Capital & Liquidity",
       "page": "77_capital.py",
-      "icon": "\ud83c\udfdb\ufe0f",
+      "icon": "🏛️",
       "active": true,
       "dept": "Treasury"
     },
@@ -2885,7 +2169,7 @@
       "key": "customer_onboarding",
       "name": "Customer Onboarding",
       "page": "78_onboarding.py",
-      "icon": "\ud83c\udfaf",
+      "icon": "🎯",
       "active": true,
       "dept": "Retail Banking"
     },
@@ -2893,7 +2177,7 @@
       "key": "card_management",
       "name": "Card Management",
       "page": "79_cards.py",
-      "icon": "\ud83d\udcb3",
+      "icon": "💳",
       "active": true,
       "dept": "Retail Banking"
     },
@@ -2901,7 +2185,7 @@
       "key": "merchant_acquiring",
       "name": "Merchant Acquiring",
       "page": "80_merchant.py",
-      "icon": "\ud83c\udfea",
+      "icon": "🏪",
       "active": true,
       "dept": "Commercial & Corporate"
     },
@@ -2909,7 +2193,7 @@
       "key": "alm_liquidity",
       "name": "ALM & Liquidity",
       "page": "81_alm.py",
-      "icon": "\ud83d\udca7",
+      "icon": "💧",
       "active": true,
       "dept": "Treasury"
     },
@@ -2917,7 +2201,7 @@
       "key": "operational_risk",
       "name": "Operational Risk",
       "page": "82_oprisk.py",
-      "icon": "\u26a0\ufe0f",
+      "icon": "⚠️",
       "active": true,
       "dept": "Risk & Compliance"
     },
@@ -2925,7 +2209,7 @@
       "key": "strategic_initiatives",
       "name": "Strategic Initiatives",
       "page": "83_strategy.py",
-      "icon": "\ud83c\udfaf",
+      "icon": "🎯",
       "active": true,
       "dept": "Executive"
     },
@@ -2933,7 +2217,7 @@
       "key": "board_papers",
       "name": "Board Pack & Papers",
       "page": "84_board.py",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "active": true,
       "dept": "Executive"
     },
@@ -2941,7 +2225,7 @@
       "key": "esg_climate",
       "name": "ESG & Climate Risk",
       "page": "85_esg.py",
-      "icon": "\ud83c\udf31",
+      "icon": "🌱",
       "active": true,
       "dept": "Risk & Compliance"
     },
@@ -2949,7 +2233,7 @@
       "key": "flexcube_integration",
       "name": "FLEXCUBE Integration",
       "page": "86_flexcube.py",
-      "icon": "\ud83d\udd0c",
+      "icon": "🔌",
       "active": true,
       "dept": "IT & Digital"
     }
@@ -3347,13 +2631,14 @@
   },
   "module_config": {},
   "regions": [
-    "Central",
     "Coast",
-    "Eastern",
-    "Nairobi",
-    "Nyanza",
-    "Other",
-    "Rift Valley"
+    "Mt Kenya East",
+    "Mt Kenya West",
+    "Nairobi CBD",
+    "Nairobi Metro",
+    "North Rift",
+    "South Rift",
+    "West Kenya"
   ],
   "hierarchy": {
     "Managing Director": [],
