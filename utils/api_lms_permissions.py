@@ -84,7 +84,10 @@ def resolve_application_permissions(
         from utils.api_pipeline_scope import get_visible_staff_codes
         visible_codes = get_visible_staff_codes(user)
 
-    in_scope = is_app_in_scope(app, visible_codes, caller_code)
+    in_scope = is_app_in_scope(
+        app, visible_codes, caller_code,
+        caller_role=str(user.get('role', '') or ''),
+    )
 
     # Stake-holders on the application
     rm_code = str(app.get('rm_code', '') or '')

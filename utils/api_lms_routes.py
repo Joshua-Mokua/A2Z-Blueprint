@@ -41,7 +41,7 @@ from typing import Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from utils.auth_jwt import get_current_user
+from utils.auth_jwt import get_current_user, require_config_admin
 from utils.core import LoanApplicationManager
 from utils.core_audit import audit_log
 
@@ -127,7 +127,10 @@ def lms_applications_list(
     visible_codes = get_visible_staff_codes(user)
     caller_code = str(user.get('staff_code', '') or '')
 
-    apps = filter_apps_by_visibility(lam.apps, visible_codes, caller_code)
+    apps = filter_apps_by_visibility(
+        lam.apps, visible_codes, caller_code,
+        caller_role=str(user.get('role', '') or ''),
+    )
 
     return {
         "applications": apps,
@@ -793,3 +796,81 @@ def lms_committee_resolve(
     return {"application": lam.get(app_id),
             "status": str(lam.get(app_id).get("status", "")),
             "committee_result": result}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Credit work-pool visibility config (admin-configurable)
+# GET/POST /api/lms/config/pool-visibility — which credit roles see the
+# work pool, and at which statuses. Admin-only write. Mirrors the
+# config-not-hardcode pattern used across the platform.
+# ─────────────────────────────────────────────────────────────────────
+
+
+@router.get("/config/pool-visibility")
+def lms_pool_visibility_get(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Read the credit work-pool visibility policy (roles + statuses).
+    Readable by any authenticated user (so the UI can show it); only
+    admins may write it."""
+    from utils.api_lms_scope import get_pool_visibility_config
+    return {"pool_visibility": get_pool_visibility_config()}
+
+
+@router.post("/config/pool-visibility")
+def lms_pool_visibility_set(
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(require_config_admin),
+) -> Dict[str, Any]:
+    """Update the credit work-pool visibility policy. Admin only (uses the
+    same require_config_admin gate as the other admin config endpoints).
+
+    Body: { roles: [str], statuses: [str] }. Both optional; whichever is
+    provided replaces that list. Atomic write + backup-before-mutation."""
+    roles = payload.get("roles")
+    statuses = payload.get("statuses")
+    if roles is not None and not (isinstance(roles, list) and all(isinstance(r, str) for r in roles)):
+        raise HTTPException(status_code=400, detail="roles must be a list of strings")
+    if statuses is not None and not (isinstance(statuses, list) and all(isinstance(s, str) for s in statuses)):
+        raise HTTPException(status_code=400, detail="statuses must be a list of strings")
+    if roles is None and statuses is None:
+        raise HTTPException(status_code=400, detail="Provide roles and/or statuses")
+
+    import json as _json, os as _os, tempfile as _tempfile
+    from datetime import datetime as _dt
+    from pathlib import Path as _Path
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    try:
+        cfg = _json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    except Exception:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    section = cfg.get("pool_visibility")
+    if not isinstance(section, dict):
+        section = {}
+    if roles is not None:
+        section["roles"] = roles
+    if statuses is not None:
+        section["statuses"] = statuses
+    cfg["pool_visibility"] = section
+
+    # Backup-before-mutation + atomic write.
+    try:
+        if p.exists():
+            backup = p.with_suffix(f".pre_poolvis_{_dt.now():%Y%m%d-%H%M%S}.json")
+            backup.write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
+        fd, tmp = _tempfile.mkstemp(dir=str(p.parent), suffix=".tmp")
+        with _os.fdopen(fd, "w", encoding="utf-8") as fh:
+            _json.dump(cfg, fh, ensure_ascii=False, indent=2)
+            fh.flush()
+            _os.fsync(fh.fileno())
+        _os.replace(tmp, str(p))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not save config: {e}")
+
+    audit_log("LMS_POOL_VISIBILITY_SET",
+              str(user.get("username", "") or ""),
+              f"roles={section.get('roles')}|statuses={section.get('statuses')}")
+    from utils.api_lms_scope import get_pool_visibility_config
+    return {"pool_visibility": get_pool_visibility_config()}

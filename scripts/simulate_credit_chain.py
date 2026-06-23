@@ -1143,6 +1143,51 @@ def roles_probe(base):
          note=f"{d.get('kpi_count') if isinstance(d, dict) else '?'} kpis")
 
 
+def pool_visibility_probe(base):
+    """Credit work-pool visibility config (admin-configurable): a credit role
+    sees the submitted/assigned pool; which roles + statuses is config, not
+    hardcode; non-admin cannot write it."""
+    print("\n=== CREDIT POOL VISIBILITY (admin-configurable) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER") or admin
+    if not admin:
+        step("pool: admin login", 200, 0, note="cannot proceed"); return
+
+    # Config readable + well-formed (roles + statuses).
+    st, cfg = _req(base, "GET", "/api/lms/config/pool-visibility", admin)
+    pv = cfg.get("pool_visibility", {}) if isinstance(cfg, dict) else {}
+    step("pool: visibility config readable + well-formed", True,
+         isinstance(pv, dict) and isinstance(pv.get("roles"), list)
+         and isinstance(pv.get("statuses"), list) and len(pv["roles"]) >= 1,
+         note=f"{len(pv.get('roles', []))} roles, {len(pv.get('statuses', []))} statuses")
+    # Defaults include the credit-analyst role + submitted status (the demo case).
+    roles_l = [str(r).lower() for r in pv.get("roles", [])]
+    statuses_l = [str(s).lower() for s in pv.get("statuses", [])]
+    step("pool: credit analyst role is in the pool policy", True,
+         any("credit analyst" in r or "analyst" in r for r in roles_l),
+         note=f"roles e.g. {pv.get('roles', [])[:3]}")
+    step("pool: 'submitted' is a pool status (line manager assigns from here)", True,
+         "submitted" in statuses_l)
+    # Admin can update the policy (atomic + backup).
+    new_statuses = list(pv.get("statuses", [])) or ["submitted", "assigned"]
+    st, r = _req(base, "POST", "/api/lms/config/pool-visibility", admin,
+                 {"statuses": new_statuses})
+    step("pool: admin update accepted", (200, 201), st, r)
+    # Saved change is live on next read.
+    st, cfg2 = _req(base, "GET", "/api/lms/config/pool-visibility", admin)
+    pv2 = cfg2.get("pool_visibility", {}) if isinstance(cfg2, dict) else {}
+    step("pool: saved change is live on next read", True,
+         isinstance(pv2.get("statuses"), list) and len(pv2["statuses"]) == len(new_statuses))
+    # Validation: bad payload rejected.
+    st, r = _req(base, "POST", "/api/lms/config/pool-visibility", admin,
+                 {"roles": "not-a-list"})
+    step("pool: non-list payload rejected", 400, st, r)
+    # Non-admin cannot write.
+    st, r = _req(base, "POST", "/api/lms/config/pool-visibility", owner,
+                 {"statuses": ["submitted"]})
+    step("pool: non-admin write denied", 403, st, r)
+
+
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")
     admin = login(base, "ADMIN")
@@ -1735,6 +1780,7 @@ def main():
     sla_credit_step_probe(args.base, cleared_case_id)
     troops_probe(args.base, cleared_case_id)
     roles_probe(args.base)
+    pool_visibility_probe(args.base)
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)
