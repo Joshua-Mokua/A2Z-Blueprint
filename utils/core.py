@@ -1656,6 +1656,20 @@ def save_org_config(cfg: dict):
     _ORG_CONFIG_MTIME = 0.0
     ORG_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
 
+
+def rebuild_branch_maps() -> dict:
+    """Rebuild the module-level BRANCH_REGION / BRANCH_AREA / REGIONS maps from
+    the current org_config. These are computed once at import, so any code path
+    that mutates org_config at runtime (e.g. the React admin branches panel)
+    MUST call this afterwards — otherwise the running process serves stale
+    region/area mappings until the next restart. Returns a small summary."""
+    global BRANCH_REGION, BRANCH_AREA, REGIONS
+    BRANCH_REGION = _build_branch_region_from_org_config()
+    BRANCH_AREA = _build_branch_area_from_org_config()
+    REGIONS = _build_regions_from_org_config()
+    return {"branches": len(BRANCH_REGION), "regions": len(REGIONS),
+            "areas": len(set(BRANCH_AREA.values()))}
+
 def get_branch_region_map() -> dict:
     """Dynamic branch→region map from org config. Replaces hardcoded BRANCH_REGION."""
     cfg = get_org_config()

@@ -347,6 +347,18 @@ export async function updatePipelineConfig(patch: AdminConfigPatch): Promise<Adm
   return postJson<AdminConfigResponse, AdminConfigPatch>('/admin/pipeline-config', patch);
 }
 
+/** SW-1 — admin branches / regions panel. */
+export interface AdminBranch {
+  id?: string; name: string; region?: string; area_name?: string;
+  branch_code?: string; active?: boolean;
+}
+export async function getAdminBranches(): Promise<{ branches: AdminBranch[]; regions: string[]; areas: string[] }> {
+  return getJson<{ branches: AdminBranch[]; regions: string[]; areas: string[] }>('/admin/branches');
+}
+export async function saveAdminBranches(branches: AdminBranch[]): Promise<{ status: string; added: number; updated: number; branches: AdminBranch[] }> {
+  return postJson<{ status: string; added: number; updated: number; branches: AdminBranch[] }, { branches: AdminBranch[] }>('/admin/branches', { branches });
+}
+
 /** Add / edit / deactivate a single MOU in the partnership register
  * (CEO/MD only). Add: pass partner_name (+ optional mou_type/department) with no
  * id. Deactivate: pass the id with status 'Inactive'. Writes the file the deal
@@ -1166,7 +1178,7 @@ export interface LmsAttachment {
   added_by?: string; added_at?: string; meta?: Record<string, unknown>;
 }
 export async function listLmsAttachments(appId: string): Promise<{ attachments: LmsAttachment[]; bcc?: Record<string, unknown> | null }> {
-  return getJson<{ attachments: LmsAttachment[]; bcc?: Record<string, unknown> | null }>(`/api/lms/applications/${appId}/attachments`);
+  return getJson<{ attachments: LmsAttachment[]; bcc?: Record<string, unknown> | null }>(`/lms/applications/${appId}/attachments`);
 }
 export async function addLmsAttachment(appId: string, body: { kind: string; filename?: string; ref?: string }): Promise<{ attachment: LmsAttachment; attachments: LmsAttachment[] }> {
   return postJson<{ attachment: LmsAttachment; attachments: LmsAttachment[] }, typeof body>(lmsAction(appId, 'attachments'), body);
@@ -1187,7 +1199,7 @@ export interface CrView {
   updated_at?: string | null;
 }
 export async function getLmsCr(appId: string): Promise<{ cr: CrView }> {
-  return getJson<{ cr: CrView }>(`/api/lms/applications/${appId}/cr`);
+  return getJson<{ cr: CrView }>(`/lms/applications/${appId}/cr`);
 }
 export async function saveLmsCr(appId: string, body: { values: Record<string, unknown>; completed?: boolean }): Promise<{ cr: CrView }> {
   return postJson<{ cr: CrView }, typeof body>(lmsAction(appId, 'cr'), body);
@@ -1199,7 +1211,7 @@ export interface CommitteeCharter {
   authority_limit_kes: number; escalation_target: string;
 }
 export async function getCommitteeCharter(): Promise<CommitteeCharter> {
-  return getJson<CommitteeCharter>('/api/lms/committee/charter');
+  return getJson<CommitteeCharter>('/lms/committee/charter');
 }
 export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
@@ -1210,8 +1222,19 @@ export async function validateLmsOffer(appId: string, body: ValidateOfferRequest
 export async function confirmLmsToCreditAdmin(appId: string, body: ConfirmToCreditAdminRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, ConfirmToCreditAdminRequest>(lmsAction(appId, 'confirm-to-credit-admin'), body);
 }
-export async function referLmsCommittee(appId: string): Promise<LoanAppMutationResponse> {
-  return postJson<LoanAppMutationResponse, Record<string, never>>(lmsAction(appId, 'committee/refer'), {});
+export async function referLmsCommittee(appId: string, entryTier?: number): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { entry_tier?: number }>(lmsAction(appId, 'committee/refer'),
+    entryTier != null ? { entry_tier: entryTier } : {});
+}
+export interface CommitteeTier { tier: number; key: string; name: string; authority_limit_kes: number | null; can_be_entry: boolean; }
+export async function getCommitteeTiers(): Promise<{ tiers: CommitteeTier[] }> {
+  return getJson<{ tiers: CommitteeTier[] }>('/lms/committee/tiers');
+}
+export async function saveCommitteeTiers(tiers: CommitteeTier[]): Promise<{ tiers: CommitteeTier[] }> {
+  return postJson<{ tiers: CommitteeTier[] }, { tiers: CommitteeTier[] }>('/lms/committee/tiers', { tiers });
+}
+export async function submitCommitteeUpward(appId: string, note?: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { note?: string }>(lmsAction(appId, 'committee/submit-upward'), { note: note || '' });
 }
 export async function voteLmsCommittee(appId: string, body: CommitteeVoteRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, CommitteeVoteRequest>(lmsAction(appId, 'committee/vote'), body);

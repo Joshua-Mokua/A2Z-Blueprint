@@ -23,8 +23,8 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter,
-  type LmsAttachment, type CrView, type CrField, type CommitteeMember,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers,
+  type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -394,11 +394,7 @@ export function LmsApplicationDetail() {
             run={(id, note) => mutations.confirmToCreditAdmin(id, { note })} okMsg="Confirmed to Credit Admin." />
         )}
         {permissions.can_refer_committee && (
-          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
-            stripe="brand" title="Refer to credit committee"
-            desc="This facility is committee-tier under the bank's policy."
-            cta="Refer to committee"
-            run={(id) => mutations.referCommittee(id)} okMsg="Referred to committee." />
+          <WfReferCommittee appId={application.id} mutations={mutations} toast={toast} onDone={refetch} />
         )}
         {(permissions.can_vote_committee || permissions.can_resolve_committee) && (
           <WfCommittee application={application} mutations={mutations} toast={toast} onDone={refetch}
@@ -1022,6 +1018,56 @@ function WfValidateOffer({ appId, mutations, toast, onDone }: {
   );
 }
 
+function WfReferCommittee({ appId, mutations, toast, onDone }: {
+  appId: string; mutations: WfMutations; toast: WfToast; onDone: () => Promise<unknown> | unknown;
+}) {
+  const [tiers, setTiers] = useState<CommitteeTier[]>([]);
+  const [entryTier, setEntryTier] = useState<number | ''>('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    getCommitteeTiers().then((r) => { if (live) setTiers(r.tiers || []); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+
+  const refer = async () => {
+    setError(null);
+    const res = await mutations.referCommittee(appId, entryTier === '' ? undefined : Number(entryTier));
+    if (res.ok) { await onDone(); toast({ tone: 'success', message: 'Referred to committee.' }); }
+    else setError(res.error);
+  };
+
+  return (
+    <Card className="mt-6" stripe="primary">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Refer to credit committee</h3></Card.Header>
+      <Card.Body>
+        <p className="text-xs text-gray-500 mb-3">
+          This facility is committee-tier under the bank's policy. Most cases enter at the Branch
+          Credit Committee; CIB / head-office cases may enter a higher tier directly.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Entry tier</label>
+            <select value={entryTier} onChange={(e) => setEntryTier(e.target.value === '' ? '' : Number(e.target.value))}
+              disabled={mutations.loading}
+              className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900">
+              <option value="">Default (Branch Credit Committee)</option>
+              {tiers.filter((t) => t.can_be_entry).map((t) => (
+                <option key={t.tier} value={t.tier}>Tier {t.tier}: {t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Button variant="primary" onClick={refer} disabled={mutations.loading}>Refer to committee</Button>
+          </div>
+        </div>
+        {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+      </Card.Body>
+    </Card>
+  );
+}
+
 function WfCommittee({ application, mutations, toast, onDone, canVote, canResolve }: {
   application: LoanApplication; mutations: WfMutations; toast: WfToast;
   onDone: () => Promise<unknown> | unknown; canVote: boolean; canResolve: boolean;
@@ -1058,6 +1104,16 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
     <Card className="mt-6" stripe="primary">
       <Card.Header><h3 className="text-sm font-semibold text-gray-900">Credit committee</h3></Card.Header>
       <Card.Body>
+        {application.committee?.current_tier_name && (
+          <div className="mb-3 flex items-center gap-2">
+            <Badge tone="brand">Tier {application.committee.current_tier}: {application.committee.current_tier_name}</Badge>
+            {(application.committee.tier_history?.length ?? 0) > 0 && (
+              <span className="text-xs text-gray-500">
+                escalated from {application.committee.tier_history!.map((h) => h.tier_name || `Tier ${h.tier}`).join(' → ')}
+              </span>
+            )}
+          </div>
+        )}
         {votes.length > 0 && (
           <div className="mb-3 text-xs text-gray-600">
             Votes recorded: {votes.map((v) => `${v.member_id}:${v.vote}`).join(', ')}
@@ -1098,6 +1154,14 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
         <div className="mt-3 flex gap-2">
           {canVote && <Button variant="ghost" onClick={castVote} disabled={mutations.loading}>Record vote</Button>}
           {canResolve && <Button variant="primary" onClick={resolve} disabled={mutations.loading}>Resolve committee</Button>}
+          {canResolve && (
+            <Button variant="secondary" onClick={async () => {
+              setError(null);
+              const res = await mutations.submitUpward(application.id, '');
+              if (res.ok) { await onDone(); toast({ tone: 'info', message: 'Submitted to the next tier.' }); }
+              else setError(res.error);
+            }} disabled={mutations.loading}>Submit to next tier ↑</Button>
+          )}
         </div>
       </Card.Body>
     </Card>

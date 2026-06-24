@@ -1466,6 +1466,94 @@ def set_sla_config(
 
 
 # ─────────────────────────────────────────────────────────────────────
+# SW-1 — React admin branches / regions panel
+# GET  /api/admin/branches — branch list + the region/area schemes
+# POST /api/admin/branches — add / rename / edit a branch's region or area
+# org_config.json is the single source of truth; after a write we MUST rebuild
+# the in-memory BRANCH_REGION / BRANCH_AREA / REGIONS maps (computed at import)
+# so the change is live without an API restart.
+# ─────────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/admin/branches", tags=["admin"])
+def get_admin_branches(user: dict = Depends(get_current_user)):
+    """Branch list (from org_config) plus the region + area schemes, so the
+    admin UI can render dropdowns. Readable by any authenticated user."""
+    from utils.core import get_org_config
+    cfg = get_org_config() or {}
+    branches = cfg.get("branches", [])
+    regions = sorted({str(b.get("region")) for b in branches if b.get("region")})
+    areas = sorted({str(b.get("area_name")) for b in branches if b.get("area_name")})
+    return {"branches": branches, "regions": regions, "areas": areas}
+
+
+@app.post("/api/admin/branches", tags=["admin"])
+def set_admin_branches(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Add or edit branches. Body: { branches: [ {id?, name, region?, area_name?,
+    branch_code?, active?} ] }. Each entry is matched to an existing branch by
+    `id` (or `name`); unmatched entries with a name are ADDED. After persisting,
+    the in-memory region/area maps are rebuilt so the change is live at once."""
+    from utils.core import get_org_config, save_org_config, rebuild_branch_maps
+    edits = payload.get("branches")
+    if not isinstance(edits, list) or not edits:
+        raise HTTPException(status_code=400, detail="branches must be a non-empty list")
+
+    cfg = get_org_config() or {}
+    branches = list(cfg.get("branches", []))
+    by_id = {str(b.get("id")): b for b in branches if b.get("id")}
+    by_name = {str(b.get("name")): b for b in branches if b.get("name")}
+
+    added, updated = 0, 0
+    for e in edits:
+        if not isinstance(e, dict):
+            raise HTTPException(status_code=400, detail="each branch must be an object")
+        name = str(e.get("name", "") or "").strip()
+        bid = str(e.get("id", "") or "").strip()
+        target = by_id.get(bid) if bid else None
+        if target is None and name:
+            target = by_name.get(name)
+        if target is None:
+            if not name:
+                raise HTTPException(status_code=400, detail="a new branch needs a name")
+            nb = {
+                "id": bid or name.replace(" ", "_").upper()[:8],
+                "name": name,
+                "region": str(e.get("region", "") or ""),
+                "area_name": str(e.get("area_name", "") or ""),
+                "branch_code": str(e.get("branch_code", "") or (bid or "")),
+                "active": bool(e.get("active", True)),
+            }
+            branches.append(nb)
+            added += 1
+        else:
+            for fld in ("name", "region", "area_name", "branch_code"):
+                if fld in e and e[fld] is not None:
+                    target[fld] = str(e[fld])
+            if "active" in e:
+                target["active"] = bool(e["active"])
+            updated += 1
+
+    cfg["branches"] = branches
+    try:
+        from pathlib import Path as _Path
+        from datetime import datetime as _dt
+        import shutil as _shutil
+        src = _Path(__file__).resolve().parent.parent / "data" / "org_config.json"
+        if src.exists():
+            _shutil.copyfile(src, src.with_suffix(f".pre_branches_{_dt.now():%Y%m%d-%H%M%S}.json"))
+    except Exception as _exc:
+        logger.warning("branches: backup snapshot failed: %s", _exc)
+
+    save_org_config(cfg)
+    summary = rebuild_branch_maps()
+    return {"status": "saved", "added": added, "updated": updated,
+            "maps": summary, "branches": branches}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # MOU register write path (MOU-2). MOUs are READ from partnerships_mous.json
 # (see _editable_config_view's individual_mous loader) but the admin panel used
 # to PATCH them via /api/admin/pipeline-config, which writes pipeline_settings

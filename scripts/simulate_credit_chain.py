@@ -1407,6 +1407,52 @@ def committee_tiers_probe(base):
     step("tiers: non-admin tier edit denied", 403, st_deny)
 
 
+def admin_branches_probe(base):
+    """SW-1 — React admin branches/regions panel. Branches readable; an admin
+    can edit a branch's region and the in-memory region map rebuilds live;
+    non-admin is denied. Restores the original region to avoid side effects."""
+    print("\n=== ADMIN BRANCHES / REGIONS (SW-1) ===")
+    admin = login(base, "ADMIN")
+    owner = login(base, "OWNER")
+    if not (admin and owner):
+        step("branches: logins", 200, 0, note="cannot proceed"); return
+
+    st, body = _req(base, "GET", "/api/admin/branches", admin)
+    branches = body.get("branches", []) if isinstance(body, dict) else []
+    regions = body.get("regions", []) if isinstance(body, dict) else []
+    step("branches: list + region scheme readable", True,
+         st == 200 and len(branches) >= 1 and len(regions) >= 1,
+         note=f"{len(branches)} branches; {len(regions)} regions")
+    if not branches:
+        return
+    # Pick a branch that has BOTH an id and a name so the match is unambiguous.
+    target = next((b for b in branches if b.get("id") and b.get("name")), branches[0])
+    orig_region = target.get("region")
+    bid = target.get("id")
+    bname = target.get("name")
+
+    SENTINEL = "SW1 Probe Region"
+    # Send id AND name so the server can match either way.
+    st, body = _req(base, "POST", "/api/admin/branches", admin,
+                    {"branches": [{"id": bid, "name": bname, "region": SENTINEL}]})
+    step("branches: admin edit region accepted", (200, 201), st, body,
+         note=f"updated={body.get('updated') if isinstance(body, dict) else '?'}")
+    st, after = _req(base, "GET", "/api/admin/branches", admin)
+    nowregions = after.get("regions", []) if isinstance(after, dict) else []
+    step("branches: edited region is live (map rebuilt, no restart)", True,
+         SENTINEL in nowregions, note=f"sentinel present={SENTINEL in nowregions}")
+
+    st_deny, _ = _req(base, "POST", "/api/admin/branches", owner,
+                      {"branches": [{"id": bid, "name": bname, "region": "nope"}]})
+    step("branches: non-admin edit denied", 403, st_deny)
+    st_bad, _ = _req(base, "POST", "/api/admin/branches", admin, {"branches": []})
+    step("branches: empty list rejected", 400, st_bad)
+
+    if orig_region is not None:
+        _req(base, "POST", "/api/admin/branches", admin,
+             {"branches": [{"id": bid, "name": bname, "region": orig_region}]})
+
+
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")
     admin = login(base, "ADMIN")
@@ -2030,6 +2076,7 @@ def main():
     pool_visibility_probe(args.base)
     analyst_decision_probe(args.base)
     committee_tiers_probe(args.base)
+    admin_branches_probe(args.base)
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)

@@ -111,6 +111,17 @@ export interface LoanAppCommittee {
   referred_by?:  string;
   referred_at?:  string;
   resolved?:     boolean;
+  current_tier?:      number;
+  current_tier_name?: string;
+  entry_tier?:        number;
+  tier_history?:      Array<{
+    tier: number;
+    tier_name?: string;
+    votes?: LoanAppCommitteeVote[];
+    submitted_by?: string;
+    submitted_at?: string;
+    note?: string;
+  }>;
   resolved_by?:  string;
   resolved_at?:  string;
   result?:       Record<string, unknown> | null;

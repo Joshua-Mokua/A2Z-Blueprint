@@ -26,8 +26,11 @@ import {
   upsertProductFlow,
   getCommitteeTiers,
   saveCommitteeTiers,
+  getAdminBranches,
+  saveAdminBranches,
   type AdminConfigPatch,
   type CommitteeTier,
+  type AdminBranch,
 } from '@/lib/api';
 import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
 
@@ -715,6 +718,9 @@ export default function AdminConfig() {
 
             {/* Committee tiers — the multi-tier credit committee ladder. */}
             <CommitteeTiersPanel />
+
+            {/* Branches & regions — org_config single source of truth. */}
+            <BranchesPanel />
           </div>
         )}
       </main>
@@ -807,6 +813,86 @@ function CommitteeTiersPanel() {
               </div>
             ))}
             <Button variant="secondary" size="sm" onClick={addTier} disabled={saving}>Add tier</Button>
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+// ─── Branches & regions panel (SW-1) ───────────────────────────────────
+// Self-contained: loads + saves branches via /api/admin/branches. org_config
+// is the single source of truth for branch→region mapping; the server rebuilds
+// the in-memory region maps on save so edits are live without a restart.
+function BranchesPanel() {
+  const { toast } = useToast();
+  const [branches, setBranches] = useState<AdminBranch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState<Record<string, AdminBranch>>({});
+
+  const load = async () => {
+    try {
+      const r = await getAdminBranches();
+      setBranches(r.branches || []);
+    } catch {
+      toast({ tone: 'danger', message: 'Could not load branches.' });
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, []);
+
+  const edit = (id: string, patch: Partial<AdminBranch>) => {
+    setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    setDirty((d) => ({ ...d, [id]: { ...(d[id] || { id }), ...patch, id } as AdminBranch }));
+  };
+
+  const save = async () => {
+    const edits = Object.values(dirty);
+    if (edits.length === 0) { toast({ tone: 'info', message: 'No changes to save.' }); return; }
+    setSaving(true);
+    try {
+      await saveAdminBranches(edits);
+      setDirty({});
+      toast({ tone: 'success', message: `Saved ${edits.length} branch change(s).` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save branches.' });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Card stripe="primary">
+      <Card.Header>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Branches &amp; regions</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Edit a branch's region or area. Saved changes update the live region map immediately.
+          </p>
+        </div>
+        <Button variant="primary" size="sm" onClick={save} loading={saving} disabled={loading}>Save</Button>
+      </Card.Header>
+      <Card.Body className="space-y-3">
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : (
+          <>
+            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_80px] gap-2 text-xs text-gray-500 px-1">
+              <span>Branch</span><span>Region (DSA)</span><span>Area (mainstream)</span><span>Active</span>
+            </div>
+            {branches.map((b) => (
+              <div key={b.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_80px] gap-2 items-center">
+                <span className="text-sm font-medium text-gray-800">{b.name}</span>
+                <Input value={b.region || ''} placeholder="Region"
+                  onChange={(e) => edit(b.id!, { region: e.target.value })} disabled={saving} />
+                <Input value={b.area_name || ''} placeholder="Area"
+                  onChange={(e) => edit(b.id!, { area_name: e.target.value })} disabled={saving} />
+                <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                  <input type="checkbox" checked={b.active !== false}
+                    onChange={(e) => edit(b.id!, { active: e.target.checked })} disabled={saving} />
+                </label>
+              </div>
+            ))}
           </>
         )}
       </Card.Body>

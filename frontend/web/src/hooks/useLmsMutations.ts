@@ -26,6 +26,7 @@ import {
   validateLmsOffer,
   confirmLmsToCreditAdmin,
   referLmsCommittee,
+  submitCommitteeUpward,
   voteLmsCommittee,
   resolveLmsCommittee,
   ApiValidationError,
@@ -66,7 +67,8 @@ export interface LmsMutationsHookValue {
   signOffer:       (appId: string, body: SignOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   validateOffer:   (appId: string, body: ValidateOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   confirmToCreditAdmin: (appId: string, body: ConfirmToCreditAdminRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
-  referCommittee:  (appId: string) => Promise<MutationResult<LoanAppMutationResponse>>;
+  referCommittee:  (appId: string, entryTier?: number) => Promise<MutationResult<LoanAppMutationResponse>>;
+  submitUpward:    (appId: string, note?: string) => Promise<MutationResult<LoanAppMutationResponse>>;
   voteCommittee:   (appId: string, body: CommitteeVoteRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   resolveCommittee:(appId: string, body: ResolveCommitteeRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   /** True while any mutation from this instance is in flight. */
@@ -134,7 +136,9 @@ export function useLmsMutations(): LmsMutationsHookValue {
   const confirmToCreditAdmin = useCallback(
     (appId: string, body: ConfirmToCreditAdminRequest) => runMutation(confirmLmsToCreditAdmin, appId, body), [runMutation]);
   const referCommittee = useCallback(
-    (appId: string) => runMutation((id: string, _b: Record<string, never>) => referLmsCommittee(id), appId, {} as Record<string, never>), [runMutation]);
+    (appId: string, entryTier?: number) => runMutation((id: string, b: { entryTier?: number }) => referLmsCommittee(id, b.entryTier), appId, { entryTier }), [runMutation]);
+  const submitUpward = useCallback(
+    (appId: string, note?: string) => runMutation((id: string, b: { note?: string }) => submitCommitteeUpward(id, b.note), appId, { note }), [runMutation]);
   const voteCommittee = useCallback(
     (appId: string, body: CommitteeVoteRequest) => runMutation(voteLmsCommittee, appId, body), [runMutation]);
   const resolveCommittee = useCallback(
@@ -144,7 +148,7 @@ export function useLmsMutations(): LmsMutationsHookValue {
     assign, update, recordDecision,
     requestInfo, provideInfo, signOffer, validateOffer, confirmToCreditAdmin,
     escalate, managerView,
-    referCommittee, voteCommittee, resolveCommittee,
+    referCommittee, submitUpward, voteCommittee, resolveCommittee,
     loading,
   };
 }
