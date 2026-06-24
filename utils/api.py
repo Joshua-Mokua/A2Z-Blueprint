@@ -1726,6 +1726,15 @@ def _validate_product_flow(entry: dict) -> tuple:
             return False, f"stage '{nm}': target_days must be an integer"
         if t <= 0:
             return False, f"stage '{nm}': target_days must be positive"
+        # Optional per-stage win probability (0–100). Absent = unset; a deal at
+        # such a stage simply carries no derived probability.
+        if "win_probability" in s and s.get("win_probability") is not None:
+            try:
+                wp = float(s.get("win_probability"))
+            except (TypeError, ValueError):
+                return False, f"stage '{nm}': win_probability must be a number"
+            if wp < 0 or wp > 100:
+                return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
     if not isinstance(cts, list):
         return False, "client_types must be a list"
@@ -2018,6 +2027,15 @@ def _attach_sla_to_deals(deals: list) -> list:
             d["sla"] = _deal_sla_status(d, cfg, promise, smap, credit_idx) or None
         except Exception:
             d["sla"] = None
+        try:
+            # Win probability is DERIVED from the deal's current stage in its
+            # product flow (admin-authored). Never stored, so it always reflects
+            # the current stage and can't drift.
+            d["win_probability"] = _flow_stage_win_probability(
+                str(d.get("product_type") or d.get("product") or ""),
+                str(d.get("stage") or ""))
+        except Exception:
+            d["win_probability"] = None
     return deals
 
 
@@ -2387,6 +2405,14 @@ def pipeline_deal_detail(
     if not permissions.get("can_view"):
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
+    # Derive win probability from the deal's current stage in its product flow.
+    try:
+        deal["win_probability"] = _flow_stage_win_probability(
+            str(deal.get("product_type") or deal.get("product") or ""),
+            str(deal.get("stage") or ""))
+    except Exception:
+        deal["win_probability"] = None
+
     return {
         "deal":         deal,
         "permissions":  permissions,
@@ -2752,6 +2778,36 @@ def _flow_stage_target(product_type: str, stage_name: str) -> int:
             except (TypeError, ValueError):
                 return 0
     return 0
+
+
+def _flow_stage_win_probability(product_type: str, stage_name: str):
+    """The per-product flow's win_probability (0–100) for a given pipeline
+    stage, or None if the product has no flow, the stage isn't in it, or no
+    probability is set on that stage. A deal's win probability is DERIVED from
+    its current stage on read (never stored), so advancing a stage updates the
+    probability automatically and it can never drift."""
+    if not product_type or not stage_name:
+        return None
+    cfg = _load_json("pipeline_settings.json") or {}
+    pflows = cfg.get("product_flows", {}) if isinstance(cfg, dict) else {}
+    pentry = pflows.get(product_type) if isinstance(pflows, dict) else None
+    if not isinstance(pentry, dict):
+        return None
+    stages = pentry.get("stages")
+    if not isinstance(stages, list):
+        return None
+    target_stage = str(stage_name).strip().lower()
+    for s in stages:
+        if isinstance(s, dict) and str(s.get("stage", "")).strip().lower() == target_stage:
+            wp = s.get("win_probability")
+            if wp is None:
+                return None
+            try:
+                v = float(wp)
+                return v if 0 <= v <= 100 else None
+            except (TypeError, ValueError):
+                return None
+    return None
 
 
 def _stage_flow_for(product_type: str) -> list:

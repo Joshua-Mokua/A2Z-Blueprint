@@ -610,6 +610,48 @@ def sector_mou_probe(base):
                   == ["Lead", "Custom Review", "Closed Won"])
     step("product flows: custom flow persists with its stages", True, _stages_ok,
          note=f"client_types={_entry.get('client_types')}")
+
+    # ── Win probability per stage (Batch 2) ──────────────────────────
+    # Re-author the probe flow with per-stage win_probability on REAL pipeline
+    # stages (so the deal can actually advance through them), then verify a live
+    # deal derives that probability and it updates on advance (never stored).
+    _wp_stages = [
+        {"stage": "Lead", "target_days": 1, "win_probability": 10},
+        {"stage": "Qualified", "target_days": 4, "win_probability": 55},
+        {"stage": "Proposal", "target_days": 1, "win_probability": 95},
+    ]
+    st_wp, _ = _req(base, "POST", "/api/admin/product-flows", admin,
+                    {"product": _probe_prod, "stages": _wp_stages, "client_types": ["Consumer"]})
+    step("win prob: admin authors per-stage win_probability", (200, 201), st_wp)
+    st_wpbad, _ = _req(base, "POST", "/api/admin/product-flows", admin,
+                       {"product": "X", "stages": [{"stage": "Lead", "target_days": 1, "win_probability": 150}]})
+    step("win prob: out-of-range (>100) rejected", 400, st_wpbad)
+
+    # Create a deal on the probe product; it should carry the Lead-stage probability.
+    # Mirror the working flow-probe create shape (segment, not client_type, which
+    # can trip the portfolio-conflict guard and reject the create).
+    _wpb = {"client_name": f"WinProb Probe {datetime.now():%H%M%S%f}",
+            "product_type": _probe_prod, "deal_value": 1_000_000,
+            "stage": "Lead", "segment": "SME"}
+    st_wc, _wd = _req(base, "POST", "/api/pipeline/deals", owner, _wpb)
+    _wdid = (_wd.get("deal", {}) or {}).get("id") if isinstance(_wd, dict) else None
+    step("win prob: probe deal created", (200, 201), st_wc, _wd,
+         note=f"deal_id={_wdid}")
+    st_wg, _wdetail = _req(base, "GET", f"/api/pipeline/deals/{_wdid}", owner)
+    _deal = _wdetail.get("deal", {}) if isinstance(_wdetail, dict) else {}
+    step("win prob: deal derives Lead-stage probability", True,
+         _deal.get("win_probability") == 10,
+         note=f"wp={_deal.get('win_probability')} stage={_deal.get('stage')!r} "
+              f"product_type={_deal.get('product_type')!r} (expected 10)")
+    # Advance Lead -> Contacted -> Qualified (real stages); Qualified has win_probability 55.
+    _req(base, "POST", f"/api/pipeline/deals/{_wdid}/advance", owner, {"target_stage": "Contacted"})
+    _req(base, "POST", f"/api/pipeline/deals/{_wdid}/advance", owner, {"target_stage": "Qualified"})
+    st_wg2, _wdetail2 = _req(base, "GET", f"/api/pipeline/deals/{_wdid}", owner)
+    _deal2 = _wdetail2.get("deal", {}) if isinstance(_wdetail2, dict) else {}
+    step("win prob: advancing stage updates derived probability", True,
+         _deal2.get("win_probability") == 55,
+         note=f"after advance wp={_deal2.get('win_probability')} stage={_deal2.get('stage')!r} (expected 55)")
+
     # validation: empty stages rejected
     st_bad, _ = _req(base, "POST", "/api/admin/product-flows", admin,
                      {"product": "X", "stages": []})
