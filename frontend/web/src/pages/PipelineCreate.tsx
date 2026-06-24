@@ -211,15 +211,42 @@ export function PipelineCreate() {
     [productType, config],
   );
   const stageOptions = useMemo(() => {
+    // Resolution precedence mirrors the server's _stage_flow_for:
+    //   1. product_flows[productType] — the product's OWN flow (each product
+    //      can diverge, with its own stages + per-stage target_days + win %).
+    //   2. stage_flows[productClass]  — the per-class flow.
+    //   3. built-in per-category list — pre-config fallback.
+    // "Initial stage" excludes terminal stages.
+    const isTerminal = (s: string) => s === 'Closed Won' || s === 'Closed Lost';
+    const pflow = config?.product_flows?.[productType];
+    if (pflow && Array.isArray(pflow.stages) && pflow.stages.length) {
+      const names = pflow.stages
+        .map((s) => String(s.stage ?? '').trim())
+        .filter((s) => s && !isTerminal(s));
+      if (names.length) return names;
+    }
     const flows = config?.stage_flows;
     if (flows && productClass && flows[productClass]?.length) {
-      // "Initial stage" excludes terminal stages.
-      return flows[productClass].filter(
-        (s) => s !== 'Closed Won' && s !== 'Closed Lost',
-      );
+      return flows[productClass].filter((s) => !isTerminal(s));
     }
     return [...INITIAL_STAGES_BY_CATEGORY[category]];   // fallback pre-config
-  }, [config, productClass, category]);
+  }, [config, productType, productClass, category]);
+
+  // The per-stage SLA target (days) for the currently selected stage, from the
+  // product's flow — so create-time shows the stage's promise alongside its win
+  // probability. Null when the product has no flow or the stage carries none.
+  const selectedStageTargetDays = useMemo<number | null>(() => {
+    const pflow = config?.product_flows?.[productType];
+    if (!pflow || !Array.isArray(pflow.stages)) return null;
+    const target = stage.trim().toLowerCase();
+    for (const s of pflow.stages) {
+      if (String(s.stage ?? '').trim().toLowerCase() === target) {
+        const t = Number(s.target_days);
+        return Number.isFinite(t) && t > 0 ? t : null;
+      }
+    }
+    return null;
+  }, [config, productType, stage]);
 
   // Win probability is DERIVED from the chosen product's flow at the selected
   // stage (admin-authored), exactly as the server derives it on read — never a
@@ -1305,6 +1332,11 @@ export function PipelineCreate() {
                       auto from “{stage}” — updates as the deal advances
                     </span>
                   </div>
+                )}
+                {selectedStageTargetDays !== null && (
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Stage SLA: {selectedStageTargetDays} business day{selectedStageTargetDays === 1 ? '' : 's'} (from product flow)
+                  </p>
                 )}
               </div>
             </div>
