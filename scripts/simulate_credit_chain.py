@@ -1293,6 +1293,37 @@ def analyst_decision_probe(base):
     step("bcc: BCC block present on the case (travels to HO)", True,
          isinstance(lst.get("bcc"), dict) and lst["bcc"].get("verdict") == "recommended")
 
+    # (5) Credit Report (CR) — hybrid auto-populated appraisal memo.
+    aid5 = _fresh_assigned_app()
+    st, cr = _req(base, "GET", f"/api/lms/applications/{aid5}/cr", manager)
+    crv = cr.get("cr", {}) if isinstance(cr, dict) else {}
+    tmpl = crv.get("template", {})
+    step("cr: template + sections present", True,
+         isinstance(tmpl, dict) and len(tmpl.get("sections", [])) >= 5,
+         note=f"{len(tmpl.get('sections', []))} sections")
+    av = crv.get("auto_values", {})
+    step("cr: auto-populates customer name + product from the application", True,
+         bool(av.get("client_name")) and bool(av.get("product")),
+         note=f"name={av.get('client_name')!r}")
+    # Save some RM fields; completing without required fields must be blocked.
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid5}/cr", manager,
+                    {"values": {"purpose": "Working capital"}, "completed": True})
+    step("cr: complete blocked while required fields missing", 400, st, body)
+    # Save as draft (not completed) is fine.
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid5}/cr", manager,
+                    {"values": {"purpose": "Working capital", "tenor_months": "24",
+                                "repayment_source": "Trading cashflows",
+                                "rm_recommendation": "Recommend approval"}})
+    step("cr: save draft values accepted", (200, 201), st, body)
+    # Re-read: saved values persist + merge over auto.
+    st, cr2 = _req(base, "GET", f"/api/lms/applications/{aid5}/cr", manager)
+    vals = cr2.get("cr", {}).get("values", {}) if isinstance(cr2, dict) else {}
+    step("cr: saved RM values persist and merge with auto", True,
+         vals.get("purpose") == "Working capital" and bool(vals.get("client_name")))
+    # Bad payload rejected.
+    step("cr: non-object values rejected", 400,
+         _req(base, "POST", f"/api/lms/applications/{aid5}/cr", manager, {"values": "nope"})[0])
+
 
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")

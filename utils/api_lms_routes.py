@@ -1043,3 +1043,67 @@ def lms_application_bcc_record(
         raise HTTPException(status_code=500, detail="bcc record failed")
     audit_log("LMS_BCC_RECORDED", str(user.get("username", "") or ""), f"{app_id}|{verdict}")
     return {"bcc": bcc, "attachments": lam.list_attachments(app_id)}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Credit Report (CR) — hybrid auto-populated appraisal memo
+# GET  /applications/{id}/cr   — template + auto/CBS values + saved RM values
+# POST /applications/{id}/cr   — relationship owner saves filled fields
+# ─────────────────────────────────────────────────────────────────────
+
+
+@router.get("/applications/{app_id}/cr")
+def lms_application_cr_get(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Return the Credit Report for a case: the (config-driven) template, the
+    auto-populated values from the application + best-effort CBS, and any
+    RM-saved values. Visible to anyone who can view the application."""
+    from utils.api_lms_cr import build_cr_view
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    return {"cr": build_cr_view(app)}
+
+
+@router.post("/applications/{app_id}/cr")
+def lms_application_cr_save(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Save the relationship owner's CR field values. The caller must be able
+    to view the application (RM owner / analyst / credit pool / admin). If
+    `completed` is true, required fields are enforced."""
+    from utils.api_lms_cr import build_cr_view, missing_required
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    values = payload.get("values")
+    if not isinstance(values, dict):
+        raise HTTPException(status_code=400, detail="values must be an object")
+    completed = bool(payload.get("completed"))
+    if completed:
+        missing = missing_required(app, values)
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot mark CR complete — required fields missing: "
+                       + ", ".join(missing))
+    cr = lam.save_cr(app_id, by=str(user.get("username", "") or ""),
+                     values=values, completed=completed)
+    if cr is None:
+        raise HTTPException(status_code=500, detail="CR save failed")
+    audit_log("LMS_CR_SAVED", str(user.get("username", "") or ""), f"{app_id}|completed={completed}")
+    return {"cr": build_cr_view(lam.get(app_id))}

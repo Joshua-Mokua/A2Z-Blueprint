@@ -23,7 +23,8 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  type LmsAttachment,
+  getLmsCr, saveLmsCr,
+  type LmsAttachment, type CrView, type CrField,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -293,6 +294,9 @@ export function LmsApplicationDetail() {
 
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
         <AttachmentsBccCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+
+        {/* ─────────── Credit Report (CR) ─────────── */}
+        <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
 
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -1238,6 +1242,124 @@ function AttachmentsBccCard({ appId, canEdit, toast }: {
           </>
         )}
       </Card.Body>
+    </Card>
+  );
+}
+
+
+// ─── Credit Report (CR) — hybrid auto-populated appraisal memo ─────────
+// Template-driven: renders sections/fields from the server. auto/cbs fields
+// show prefilled (editable but tinted to signal provenance); rm fields are
+// blank for the relationship owner. Save draft or mark complete (required
+// fields enforced server-side).
+function CreditReportCard({ appId, canEdit, toast }: {
+  appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [cr, setCr] = useState<CrView | null>(null);
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const load = async () => {
+    try {
+      const r = await getLmsCr(appId);
+      setCr(r.cr);
+    } catch { /* page-local, non-fatal */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [appId]);
+
+  const valueFor = (key: string): string => {
+    if (key in edits) return edits[key];
+    const v = cr?.values?.[key];
+    return v === undefined || v === null ? '' : String(v);
+  };
+
+  const save = async (completed: boolean) => {
+    setBusy(true);
+    try {
+      // Send only RM-edited fields; server re-derives auto/cbs on read.
+      await saveLmsCr(appId, { values: edits, completed });
+      setEdits({});
+      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
+    } finally { setBusy(false); }
+  };
+
+  if (!cr) return null;
+
+  const sourceTint = (f: CrField, hasValue: boolean) => {
+    if (f.source === 'cbs') return hasValue ? 'bg-blue-50/50' : '';
+    if (f.source === 'auto') return hasValue ? 'bg-gray-50' : '';
+    return '';
+  };
+
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <div className="flex items-center gap-2">
+          {cr.completed && <Badge tone="success">Complete</Badge>}
+          {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
+          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
+            {open ? 'Hide' : 'Open'}
+          </button>
+        </div>
+      </Card.Header>
+      {open && (
+        <Card.Body>
+          <p className="text-xs text-gray-500 mb-4">
+            Fields tinted blue come from CBS; grey from the application. Both are editable.
+            Plain fields are for the relationship owner to complete.
+          </p>
+          <div className="space-y-6">
+            {cr.template.sections.map((sec) => (
+              <div key={sec.key}>
+                <div className="text-sm font-semibold text-gray-800 mb-2 pb-1 border-b border-gray-100">
+                  {sec.title}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {sec.fields.map((f) => {
+                    const val = valueFor(f.key);
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    return (
+                      <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          {f.label}{f.required && <span className="text-red-500"> *</span>}
+                          {f.source !== 'rm' && <span className="ml-1 text-[10px] uppercase text-gray-400">({f.source})</span>}
+                        </label>
+                        {isLong ? (
+                          <textarea
+                            value={val} disabled={!canEdit || busy} rows={2}
+                            onChange={(e) => setEdits((p) => ({ ...p, [f.key]: e.target.value }))}
+                            className={`w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm ${sourceTint(f, !!val)}`}
+                          />
+                        ) : (
+                          <input
+                            value={val} disabled={!canEdit || busy}
+                            onChange={(e) => setEdits((p) => ({ ...p, [f.key]: e.target.value }))}
+                            className={`w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm ${sourceTint(f, !!val)}`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          {canEdit && (
+            <div className="mt-4 flex gap-2">
+              <Button onClick={() => save(false)} disabled={busy}>{busy ? 'Working…' : 'Save draft'}</Button>
+              <Button variant="secondary" onClick={() => save(true)} disabled={busy}>Mark complete</Button>
+            </div>
+          )}
+          {cr.updated_by && (
+            <div className="mt-2 text-xs text-gray-400">Last saved by {cr.updated_by}</div>
+          )}
+        </Card.Body>
+      )}
     </Card>
   );
 }

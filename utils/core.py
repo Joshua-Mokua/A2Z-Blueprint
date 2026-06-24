@@ -5593,6 +5593,27 @@ class LoanApplicationManager:
         app = self.get(app_id)
         return list(app.get("attachments") or []) if app else []
 
+    def save_cr(self, app_id: str, by: str, values: dict, completed: bool = False) -> dict | None:
+        """Save the relationship owner's CR (credit report) field values onto
+        the application. Stores only the RM-entered values; auto/CBS values are
+        re-derived on read, so the CR stays fresh if CBS data changes."""
+        app = self.get(app_id)
+        if not app:
+            return None
+        cr = dict(app.get("cr") or {})
+        merged = dict(cr.get("values") or {})
+        merged.update({k: v for k, v in (values or {}).items()})
+        cr.update({
+            "values": merged,
+            "completed": bool(completed),
+            "updated_by": by,
+            "updated_at": datetime.now().isoformat(),
+        })
+        self.update(app_id, {"cr": cr})
+        self._log_event(app_id, "cr_saved", by, f"completed={completed}",
+                        {"fields": len(merged)})
+        return cr
+
     def add_bcc_record(self, app_id: str, by: str, verdict: str, branch: str = "",
                        chaired_by: str = "", attendees: list = None, minutes: str = "",
                        filename: str = "", ref: str = "") -> dict | None:

@@ -1174,6 +1174,24 @@ export async function addLmsAttachment(appId: string, body: { kind: string; file
 export async function recordLmsBcc(appId: string, body: { verdict: string; branch?: string; chaired_by?: string; attendees?: string[]; minutes?: string; filename?: string; ref?: string }): Promise<Record<string, unknown>> {
   return postJson<Record<string, unknown>, typeof body>(lmsAction(appId, 'bcc'), body);
 }
+export interface CrField { key: string; label: string; source: 'auto' | 'cbs' | 'rm'; required?: boolean; }
+export interface CrSection { key: string; title: string; fields: CrField[]; }
+export interface CrView {
+  template: { sections: CrSection[] };
+  values: Record<string, unknown>;
+  auto_values: Record<string, unknown>;
+  saved_values: Record<string, unknown>;
+  cbs_available: boolean;
+  completed: boolean;
+  updated_by?: string | null;
+  updated_at?: string | null;
+}
+export async function getLmsCr(appId: string): Promise<{ cr: CrView }> {
+  return getJson<{ cr: CrView }>(`/api/lms/applications/${appId}/cr`);
+}
+export async function saveLmsCr(appId: string, body: { values: Record<string, unknown>; completed?: boolean }): Promise<{ cr: CrView }> {
+  return postJson<{ cr: CrView }, typeof body>(lmsAction(appId, 'cr'), body);
+}
 export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
 }
