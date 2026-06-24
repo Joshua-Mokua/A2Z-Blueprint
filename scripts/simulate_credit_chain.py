@@ -1263,6 +1263,36 @@ def analyst_decision_probe(base):
     step("manager: manager view resolves the escalation", True,
          bool(esc.get("resolved")) and bool(esc.get("manager_view")))
 
+    # (4) Attachments (reference mode) + Branch Credit Committee record.
+    aid4 = _fresh_assigned_app()
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid4}/attachments", manager,
+                    {"kind": "financials", "filename": "FY2025_accounts.pdf",
+                     "ref": "dms://docs/fy2025"})
+    step("attach: add attachment reference accepted", (200, 201), st, body)
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid4}/attachments", manager,
+                    {"kind": "other"})  # no filename/ref -> 400
+    step("attach: empty attachment rejected", 400, st, body)
+    # Record the BCC outcome at branch origin (verdict + signatories + minutes file).
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid4}/bcc", manager,
+                    {"verdict": "recommended", "branch": "Thika",
+                     "chaired_by": "Branch Manager",
+                     "attendees": ["Branch Manager", "Branch Credit Manager", "RO"],
+                     "minutes": "Committee recommends to HO credit.",
+                     "filename": "BCC_minutes_signed.pdf", "ref": "dms://bcc/min1"})
+    step("bcc: record branch committee outcome accepted", (200, 201), st, body)
+    step("bcc: invalid verdict rejected", 400,
+         _req(base, "POST", f"/api/lms/applications/{aid4}/bcc", manager,
+              {"verdict": "maybe"})[0])
+    # List attachments — should include the financials AND the auto-filed BCC minutes.
+    st, lst = _req(base, "GET", f"/api/lms/applications/{aid4}/attachments", manager)
+    atts = lst.get("attachments", []) if isinstance(lst, dict) else []
+    kinds = {a.get("kind") for a in atts}
+    step("attach: list returns financials + auto-filed BCC minutes", True,
+         "financials" in kinds and "bcc_minutes" in kinds,
+         note=f"{len(atts)} attachments; kinds={kinds}")
+    step("bcc: BCC block present on the case (travels to HO)", True,
+         isinstance(lst.get("bcc"), dict) and lst["bcc"].get("verdict") == "recommended")
+
 
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")

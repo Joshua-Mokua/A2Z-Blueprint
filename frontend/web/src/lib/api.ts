@@ -1161,6 +1161,19 @@ export async function escalateLmsApplication(appId: string, body: { reason: stri
 export async function addLmsManagerView(appId: string, body: { view: string }): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, { view: string }>(lmsAction(appId, 'manager-view'), body);
 }
+export interface LmsAttachment {
+  id: string; kind: string; filename?: string; ref?: string;
+  added_by?: string; added_at?: string; meta?: Record<string, unknown>;
+}
+export async function listLmsAttachments(appId: string): Promise<{ attachments: LmsAttachment[]; bcc?: Record<string, unknown> | null }> {
+  return getJson<{ attachments: LmsAttachment[]; bcc?: Record<string, unknown> | null }>(`/api/lms/applications/${appId}/attachments`);
+}
+export async function addLmsAttachment(appId: string, body: { kind: string; filename?: string; ref?: string }): Promise<{ attachment: LmsAttachment; attachments: LmsAttachment[] }> {
+  return postJson<{ attachment: LmsAttachment; attachments: LmsAttachment[] }, typeof body>(lmsAction(appId, 'attachments'), body);
+}
+export async function recordLmsBcc(appId: string, body: { verdict: string; branch?: string; chaired_by?: string; attendees?: string[]; minutes?: string; filename?: string; ref?: string }): Promise<Record<string, unknown>> {
+  return postJson<Record<string, unknown>, typeof body>(lmsAction(appId, 'bcc'), body);
+}
 export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
 }

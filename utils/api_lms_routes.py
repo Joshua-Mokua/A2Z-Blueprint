@@ -940,3 +940,106 @@ def lms_application_manager_view(
         raise HTTPException(status_code=500, detail="manager-view failed")
     audit_log("LMS_MANAGER_VIEW", str(user.get("username", "") or ""), f"{app_id}|{view[:60]}")
     return {"application": lam.get(app_id), "status": str(lam.get(app_id).get("status", ""))}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Attachments (reference mode) + Branch Credit Committee (BCC) record
+# GET  /applications/{id}/attachments        — list attachment refs
+# POST /applications/{id}/attachments        — add an attachment ref
+# POST /applications/{id}/bcc                 — record the BCC outcome
+# Files live in the bank's document store; we record filename + ref, the
+# platform's established attachment pattern (signed_offer_attachment).
+# ─────────────────────────────────────────────────────────────────────
+
+ATTACHMENT_KINDS = {
+    "bcc_minutes", "financials", "kyc", "valuation", "collateral",
+    "bank_statements", "board_resolution", "other",
+}
+
+
+@router.get("/applications/{app_id}/attachments")
+def lms_application_attachments_list(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """List a case's attachment references. Visible to anyone who can view
+    the application (cascade / assigned analyst / credit pool / admin)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    return {"attachments": lam.list_attachments(app_id), "bcc": app.get("bcc")}
+
+
+@router.post("/applications/{app_id}/attachments")
+def lms_application_attachment_add(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Add an attachment reference (filename + storage ref). The caller must
+    be able to view the application. `kind` categorises it."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    kind = str(payload.get("kind", "other") or "other").strip().lower()
+    if kind not in ATTACHMENT_KINDS:
+        kind = "other"
+    filename = str(payload.get("filename", "") or "").strip()
+    ref = str(payload.get("ref", "") or "").strip()
+    if not filename and not ref:
+        raise HTTPException(status_code=400, detail="Provide a filename and/or ref")
+    rec = lam.add_attachment(app_id, by=str(user.get("username", "") or ""),
+                             kind=kind, filename=filename, ref=ref,
+                             meta=payload.get("meta") if isinstance(payload.get("meta"), dict) else None)
+    if rec is None:
+        raise HTTPException(status_code=500, detail="attachment add failed")
+    audit_log("LMS_ATTACHMENT_ADDED", str(user.get("username", "") or ""), f"{app_id}|{kind}|{filename}")
+    return {"attachment": rec, "attachments": lam.list_attachments(app_id)}
+
+
+@router.post("/applications/{app_id}/bcc")
+def lms_application_bcc_record(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Record the Branch Credit Committee (BCC) outcome at branch origin —
+    verdict, chair (branch manager), attendees/signatories, minutes, and a
+    reference to the signed minutes file. Caller must be able to view the
+    application (branch-side staff in cascade)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    verdict = str(payload.get("verdict", "") or "").strip()
+    if verdict.lower() not in {"approved", "declined", "recommended", "deferred"}:
+        raise HTTPException(status_code=400,
+                            detail="BCC verdict must be approved / declined / recommended / deferred")
+    attendees = payload.get("attendees")
+    if attendees is not None and not isinstance(attendees, list):
+        raise HTTPException(status_code=400, detail="attendees must be a list")
+    bcc = lam.add_bcc_record(
+        app_id, by=str(user.get("username", "") or ""),
+        verdict=verdict, branch=str(payload.get("branch", "") or ""),
+        chaired_by=str(payload.get("chaired_by", "") or ""),
+        attendees=attendees or [], minutes=str(payload.get("minutes", "") or ""),
+        filename=str(payload.get("filename", "") or ""),
+        ref=str(payload.get("ref", "") or ""))
+    if bcc is None:
+        raise HTTPException(status_code=500, detail="bcc record failed")
+    audit_log("LMS_BCC_RECORDED", str(user.get("username", "") or ""), f"{app_id}|{verdict}")
+    return {"bcc": bcc, "attachments": lam.list_attachments(app_id)}

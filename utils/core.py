@@ -5564,6 +5564,68 @@ class LoanApplicationManager:
         self._log_event(app_id, "manager_view_added", by, view, {})
         return True
 
+    def add_attachment(self, app_id: str, by: str, kind: str, filename: str = "",
+                       ref: str = "", meta: dict = None) -> dict | None:
+        """Attach a document reference to a loan application. Reference mode
+        (the platform's established pattern): we record the filename + a
+        storage ref/URL, not the bytes — files live in the bank's document
+        store. `kind` categorises the attachment (e.g. 'bcc_minutes',
+        'financials', 'kyc', 'valuation', 'other'). Returns the record."""
+        app = self.get(app_id)
+        if not app:
+            return None
+        atts = list(app.get("attachments") or [])
+        rec = {
+            "id": f"ATT{len(atts) + 1:03d}",
+            "kind": kind,
+            "filename": filename,
+            "ref": ref,
+            "meta": meta or {},
+            "added_by": by,
+            "added_at": datetime.now().isoformat(),
+        }
+        atts.append(rec)
+        self.update(app_id, {"attachments": atts})
+        self._log_event(app_id, "attachment_added", by, f"{kind}:{filename}", {"id": rec["id"]})
+        return rec
+
+    def list_attachments(self, app_id: str) -> list:
+        app = self.get(app_id)
+        return list(app.get("attachments") or []) if app else []
+
+    def add_bcc_record(self, app_id: str, by: str, verdict: str, branch: str = "",
+                       chaired_by: str = "", attendees: list = None, minutes: str = "",
+                       filename: str = "", ref: str = "") -> dict | None:
+        """Record the Branch Credit Committee (BCC) outcome at branch origin:
+        the committee's verdict, who chaired (branch manager), the attendees /
+        signatories, minutes, and a reference to the signed minutes file. This
+        is stored both as a structured `bcc` block on the case AND as an
+        attachment of kind 'bcc_minutes', so it travels with the application
+        to head office as part of the file."""
+        app = self.get(app_id)
+        if not app:
+            return None
+        bcc = {
+            "verdict": verdict,
+            "branch": branch,
+            "chaired_by": chaired_by,
+            "attendees": attendees or [],
+            "minutes": minutes,
+            "recorded_by": by,
+            "recorded_at": datetime.now().isoformat(),
+        }
+        self.update(app_id, {"bcc": bcc})
+        # Also file the signed minutes as an attachment, if provided.
+        if filename or ref:
+            self.add_attachment(app_id, by, kind="bcc_minutes",
+                                filename=filename, ref=ref,
+                                meta={"verdict": verdict, "branch": branch,
+                                      "chaired_by": chaired_by,
+                                      "attendees": attendees or []})
+        self._log_event(app_id, "bcc_recorded", by, f"{verdict}@{branch}",
+                        {"attendees": len(attendees or [])})
+        return bcc
+
     def issue_offer(self, app_id: str, by: str, note: str = "") -> bool:
         """Route an approved app back to the deal owner to issue the
         letter of offer (offer_issued)."""
