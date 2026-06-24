@@ -103,7 +103,7 @@ export function CreditAdmin() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <PageHeader
-        breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Credit Admin' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Admin' }]}
         title="Credit Admin"
         subtitle="Approved loans in the disbursement pipeline · condition tracking."
       />

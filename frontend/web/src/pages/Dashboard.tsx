@@ -281,7 +281,7 @@ export function Dashboard() {
           </ChartCard>
 
           <ChartCard
-            title="Loan Applications by Lane"
+            title="Credit Analysis by Lane"
             subtitle="Open credit work landscape"
             loading={creditLoading}
             empty={!credit || Object.keys(credit.applications_by_stage || {}).length === 0}

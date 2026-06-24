@@ -135,7 +135,7 @@ export function Analytics() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'Business Development' }, { label: 'A2Z Sales Pro Analytics' }]}
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro Analytics' }]}
         title="A2Z Sales Pro Analytics"
         subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."
       />

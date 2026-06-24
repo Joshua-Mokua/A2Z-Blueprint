@@ -67,7 +67,7 @@ export function CreditAnalytics() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'Credit Factory' }, { label: 'Credit Analytics' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Analytics' }]}
         title="Credit Analytics"
         subtitle="Loan book within your scope — outstanding and NPL by classification, region, branch, and RM."
       />

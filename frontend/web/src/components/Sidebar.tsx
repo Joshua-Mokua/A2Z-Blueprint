@@ -65,7 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'Business Development',
+    label: 'A2Z Pipeline Intelligence System (PIS)',
     items: [
       {
         path: '/pipeline', label: 'A2Z Sales Pro',
@@ -80,9 +80,9 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'Credit Factory',
+    label: 'A2Z Credit Intelligence System (CIS)',
     items: [
-      { path: '/lms', label: 'Loan Applications', matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
+      { path: '/lms', label: 'Credit Analysis', matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
       { path: '/credit-admin', label: 'Credit Admin', matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
       { path: '/credit-analytics', label: 'Credit Analytics', matchActive: (p) => p.startsWith('/credit-analytics') },
     ],

@@ -153,7 +153,7 @@ export default function Referrals() {
       <PageHeader
         title="A2Z Sales Referral"
         subtitle="Deals referred to you, returned to you, and the ones you're following."
-        breadcrumbs={[{ label: 'Business Development' }, { label: 'A2Z Sales Referral' }]}
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Referral' }]}
         actions={
           <Button variant="primary" size="sm" onClick={() => navigate('/pipeline/new?refer=1')}>
             New referral

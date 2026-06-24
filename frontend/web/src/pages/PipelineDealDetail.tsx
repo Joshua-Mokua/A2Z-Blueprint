@@ -240,7 +240,7 @@ export function PipelineDealDetail() {
                 onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
                 className="text-xs text-brand-primary hover:underline font-medium"
               >
-                View Loan Application →
+                View Credit Analysis →
               </button>
             )}
           </div>
@@ -506,7 +506,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
                     navigate(`/lms/${encodeURIComponent(checklist.lms_application_id!)}`)}
                   className="text-brand-primary hover:underline font-medium"
                 >
-                  View Loan Application →
+                  View Credit Analysis →
                 </button>
               </>
             )}
