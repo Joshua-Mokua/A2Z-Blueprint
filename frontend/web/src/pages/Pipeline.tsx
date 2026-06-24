@@ -100,13 +100,27 @@ export function Pipeline() {
   // Analytics SLA summary card). Filters the already-loaded deals client-side on sla.state.
   const [searchParams, setSearchParams] = useSearchParams();
   const slaFilter = searchParams.get('sla');
+  // Win-probability band filter (?winprob=high|medium|low). high ≥75, medium 40–74,
+  // low <40 — derived per-deal from the current stage's product flow. Combines with sla.
+  const winprobFilter = searchParams.get('winprob');
+  const winprobBand = (wp: number | null | undefined): 'high' | 'medium' | 'low' | null => {
+    if (typeof wp !== 'number') return null;
+    return wp >= 75 ? 'high' : wp >= 40 ? 'medium' : 'low';
+  };
   const visibleDeals = useMemo(
-    () => (slaFilter ? deals.filter((d) => d.sla?.state === slaFilter) : deals),
-    [deals, slaFilter],
+    () => deals.filter((d) =>
+      (!slaFilter || d.sla?.state === slaFilter)
+      && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)),
+    [deals, slaFilter, winprobFilter],
   );
   const clearSlaFilter = () => {
     const next = new URLSearchParams(searchParams);
     next.delete('sla');
+    setSearchParams(next, { replace: true });
+  };
+  const setWinprobFilter = (band: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (band) next.set('winprob', band); else next.delete('winprob');
     setSearchParams(next, { replace: true });
   };
 
@@ -256,6 +270,24 @@ export function Pipeline() {
         const c = slaCell(row);
         if (!c) return <span className="text-xs text-gray-300">—</span>;
         return <span title={c.title}><Badge tone={c.tone} size="sm">{c.label}</Badge></span>;
+      },
+    },
+    {
+      key: 'win_probability',
+      header: 'Win %',
+      align: 'right',
+      sortable: true,
+      sortAccessor: (row) => (typeof row.win_probability === 'number' ? row.win_probability : -1),
+      exportValue: (row) => (typeof row.win_probability === 'number' ? String(row.win_probability) : ''),
+      render: (row) => {
+        const wp = row.win_probability;
+        if (typeof wp !== 'number') return <span className="text-xs text-gray-300">—</span>;
+        const tone: BadgeTone = wp >= 75 ? 'success' : wp >= 40 ? 'info' : 'neutral';
+        return (
+          <span title="Likelihood of closing, from the current stage's product flow">
+            <Badge tone={tone} size="sm">{Math.round(wp)}%</Badge>
+          </span>
+        );
       },
     },
     {
@@ -545,6 +577,17 @@ export function Pipeline() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              <select
+                value={winprobFilter ?? ''}
+                onChange={(e) => setWinprobFilter(e.target.value)}
+                aria-label="Filter by win probability"
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              >
+                <option value="">All win %</option>
+                <option value="high">High (≥75%)</option>
+                <option value="medium">Medium (40–74%)</option>
+                <option value="low">Low (&lt;40%)</option>
+              </select>
               <Button
                 variant="ghost"
                 size="sm"
@@ -567,6 +610,19 @@ export function Pipeline() {
                 </Badge>
                 <span className="text-xs text-gray-400">{visibleDeals.length} of {deals.length}</span>
                 <button onClick={clearSlaFilter} className="text-xs text-brand-primary hover:underline">clear</button>
+              </div>
+            )}
+            {winprobFilter && (
+              <div className="mb-3 flex items-center gap-2 text-sm">
+                <span className="text-gray-500">Win probability:</span>
+                <Badge
+                  tone={winprobFilter === 'high' ? 'success' : winprobFilter === 'medium' ? 'info' : 'neutral'}
+                  size="sm"
+                >
+                  {winprobFilter === 'high' ? 'High (≥75%)' : winprobFilter === 'medium' ? 'Medium (40–74%)' : 'Low (<40%)'}
+                </Badge>
+                <span className="text-xs text-gray-400">{visibleDeals.length} of {deals.length}</span>
+                <button onClick={() => setWinprobFilter('')} className="text-xs text-brand-primary hover:underline">clear</button>
               </div>
             )}
             <Table<PipelineDeal>

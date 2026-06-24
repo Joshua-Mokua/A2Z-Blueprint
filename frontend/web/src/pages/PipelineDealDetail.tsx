@@ -258,6 +258,13 @@ export function PipelineDealDetail() {
                 ? `${Math.round(deal.probability * 100)}%`
                 : '—'
             } />
+            {typeof deal.win_probability === 'number' && (
+              <DetailField
+                label="Win probability"
+                value={`${Math.round(deal.win_probability)}%`}
+                sub="from current stage"
+              />
+            )}
             <DetailField label="Currency" value={deal.currency ?? currency} />
             <DetailField label="Expected close" value={formatDate(deal.expected_close)} />
             <DetailField label="Next action" value={deal.next_action} />

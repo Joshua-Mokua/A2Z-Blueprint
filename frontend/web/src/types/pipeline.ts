@@ -64,6 +64,12 @@ export interface PipelineDeal {
   // Per-deal SLA status (attached by GET /api/pipeline/deals — Phase 4 #81)
   sla?:                 DealSlaStatus | null;
 
+  /** Admin-authored win probability (0–100) DERIVED from the deal's current
+   *  stage in its product flow (P-WP). Derived on read, never stored, so it
+   *  auto-updates as the deal advances. Null when the stage has none set.
+   *  Distinct from `probability` (the generic stage-weight forecast). */
+  win_probability?:     number | null;
+
   // Staff attribution
   staff_code:           string;
   staff_name?:          string;
@@ -186,6 +192,9 @@ export interface DealCategoryConfig {
 export interface ProductFlowStage {
   stage: string;
   target_days: number;
+  /** P-WP: admin-authored win probability (0–100) for deals at this stage.
+   *  Optional — a stage without it yields no derived probability. */
+  win_probability?: number | null;
 }
 /** P4a: a single product's process flow — ordered stages (each with a target)
  * plus the client types that offer it (empty list = offered to all). */

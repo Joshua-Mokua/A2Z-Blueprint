@@ -279,12 +279,24 @@ export default function AdminConfig() {
     const existing = productFlows[product];
     setFlowDraft(existing
       ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })) }
-      : { client_types: [], stages: [{ stage: '', target_days: 3 }] });
+      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }] });
   };
   const saveFlow = async () => {
     if (!flowProduct) return;
     const stages = flowDraft.stages
-      .map((s) => ({ stage: s.stage.trim(), target_days: Number(s.target_days) }))
+      .map((s) => {
+        const wp = s.win_probability;
+        const wpNum = wp === null || wp === undefined || String(wp).trim() === ''
+          ? null : Number(wp);
+        return {
+          stage: s.stage.trim(),
+          target_days: Number(s.target_days),
+          // Only send a win_probability when set to a valid 0–100 number;
+          // otherwise omit (the stage simply carries no derived probability).
+          ...(wpNum !== null && Number.isFinite(wpNum) && wpNum >= 0 && wpNum <= 100
+            ? { win_probability: wpNum } : {}),
+        };
+      })
       .filter((s) => s.stage && Number.isFinite(s.target_days) && s.target_days > 0);
     if (stages.length === 0) {
       toast({ tone: 'danger', message: 'Add at least one stage with a positive target.' });
@@ -307,7 +319,7 @@ export default function AdminConfig() {
     try {
       await upsertProductFlow({ product: flowProduct, delete: true });
       setProductFlows((p) => { const n = { ...p }; delete n[flowProduct]; return n; });
-      setFlowDraft({ client_types: [], stages: [{ stage: '', target_days: 3 }] });
+      setFlowDraft({ client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }] });
       toast({ tone: 'success', message: `${flowProduct} reverted to its class flow.` });
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not reset the flow.' });
@@ -640,11 +652,16 @@ export default function AdminConfig() {
                       </p>
                     </div>
 
-                    {/* Stage sequence with per-stage target_days */}
+                    {/* Stage sequence with per-stage target_days + win probability */}
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-600">Stages &amp; targets (days)</p>
+                      <div className="grid grid-cols-[1fr_5rem_5rem_auto] items-center gap-2">
+                        <p className="text-xs font-medium text-gray-600">Stage</p>
+                        <p className="text-xs font-medium text-gray-600 text-center">Days</p>
+                        <p className="text-xs font-medium text-gray-600 text-center">Win&nbsp;%</p>
+                        <span />
+                      </div>
                       {flowDraft.stages.map((s, i) => (
-                        <div key={i} className="grid grid-cols-[1fr_5rem_auto] items-center gap-2">
+                        <div key={i} className="grid grid-cols-[1fr_5rem_5rem_auto] items-center gap-2">
                           <Input
                             value={s.stage}
                             placeholder={`Stage ${i + 1}`}
@@ -659,6 +676,20 @@ export default function AdminConfig() {
                             onChange={(e) => setFlowDraft((d) => ({
                               ...d,
                               stages: d.stages.map((x, j) => (j === i ? { ...x, target_days: Number(e.target.value) } : x)),
+                            }))}
+                          />
+                          <Input
+                            value={s.win_probability === null || s.win_probability === undefined
+                              ? '' : String(s.win_probability)}
+                            type="number"
+                            placeholder="—"
+                            min={0}
+                            max={100}
+                            onChange={(e) => setFlowDraft((d) => ({
+                              ...d,
+                              stages: d.stages.map((x, j) => (j === i
+                                ? { ...x, win_probability: e.target.value === '' ? null : Number(e.target.value) }
+                                : x)),
                             }))}
                           />
                           <button
@@ -677,11 +708,15 @@ export default function AdminConfig() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setFlowDraft((d) => ({
-                          ...d, stages: [...d.stages, { stage: '', target_days: 3 }],
+                          ...d, stages: [...d.stages, { stage: '', target_days: 3, win_probability: null }],
                         }))}
                       >
                         + Add stage
                       </Button>
+                      <p className="text-[11px] text-gray-400">
+                        Win&nbsp;% is the likelihood of closing a deal sitting at that stage. A deal
+                        inherits its current stage&apos;s value automatically — leave blank for none.
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
