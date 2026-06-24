@@ -5710,18 +5710,70 @@ class LoanApplicationManager:
         self._log_event(app_id, "analyst_confirmed", by, note)
         return True
 
-    def refer_to_committee(self, app_id: str, by: str, note: str = "") -> bool:
-        """Route an application to the credit committee (committee_voting mode)."""
+    def refer_to_committee(self, app_id: str, by: str, note: str = "",
+                           entry_tier: int = None) -> bool:
+        """Route an application to the credit committee (committee_voting mode).
+
+        CF-8: stamps the committee TIER the case enters at. Defaults to the
+        first (Branch Credit Committee) tier, but an `entry_tier` may be given
+        so CIB / head-office cases can enter ABOVE the branch tier (skip BCC).
+        """
         if not self.get(app_id):
             return False
+        from utils.api_lms_committee_tiers import resolve_entry_tier
+        app = self.get(app_id)
+        amount = float(app.get("amount", 0) or 0)
+        tier = resolve_entry_tier(entry_tier, amount)
         self.update(app_id, {
             "status": "referred_to_committee",
             "committee": {"votes": [], "referred_by": by,
                           "referred_at": datetime.now().isoformat(),
-                          "note": note, "resolved": False},
+                          "note": note, "resolved": False,
+                          "current_tier": tier["tier"],
+                          "current_tier_name": tier["name"],
+                          "entry_tier": tier["tier"],
+                          "tier_history": []},
         })
-        self._log_event(app_id, "referred_to_committee", by, note)
+        self._log_event(app_id, "referred_to_committee", by,
+                        f"{note} (tier {tier['tier']}: {tier['name']})")
         return True
+
+    def submit_committee_upward(self, app_id: str, by: str, note: str = "") -> dict:
+        """A tier's committee submits the case UP to the next tier. Records the
+        current tier's deliberation into tier_history, advances current_tier to
+        the next tier, and resets the vote slate for the new tier. Returns
+        {ok, tier, name} or {ok: False, reason}."""
+        app = self.get(app_id)
+        if not app:
+            return {"ok": False, "reason": "not found"}
+        committee = dict(app.get("committee") or {})
+        cur = committee.get("current_tier")
+        if cur is None:
+            return {"ok": False, "reason": "case is not before a committee tier"}
+        from utils.api_lms_committee_tiers import next_tier
+        nxt = next_tier(int(cur))
+        if not nxt:
+            return {"ok": False, "reason": "already at the top tier — cannot submit higher"}
+        history = list(committee.get("tier_history") or [])
+        history.append({
+            "tier": cur,
+            "tier_name": committee.get("current_tier_name"),
+            "votes": committee.get("votes") or [],
+            "submitted_by": by,
+            "submitted_at": datetime.now().isoformat(),
+            "note": note,
+        })
+        committee.update({
+            "current_tier": nxt["tier"],
+            "current_tier_name": nxt["name"],
+            "tier_history": history,
+            "votes": [],  # fresh slate for the new tier
+        })
+        self.update(app_id, {"committee": committee})
+        self._log_event(app_id, "committee_submitted_upward", by,
+                        f"{note} (-> tier {nxt['tier']}: {nxt['name']})",
+                        {"to_tier": nxt["tier"]})
+        return {"ok": True, "tier": nxt["tier"], "name": nxt["name"]}
 
     def record_committee_vote(self, app_id: str, member_id: str, vote: str,
                               rationale: str = "", by: str = "") -> bool:
