@@ -1855,7 +1855,11 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
         if sk and log.get(sk):
             step_key, step_entered = sk, log.get(sk)
     if step_key and step_entered:
-        target = _sla_step_target(cfg, step_key)
+        # P4b: prefer the per-product flow's per-stage target_days (the
+        # product-specific promise) over the generic global step target.
+        product = str(deal.get("product_type") or deal.get("product") or "")
+        flow_target = _flow_stage_target(product, stage)
+        target = flow_target or _sla_step_target(cfg, step_key)
         elapsed = _business_days_since(step_entered)
         clock, clock_step = "step", step_key
     else:
@@ -2629,6 +2633,37 @@ def _sector_of(d: dict) -> str:
     if _client_type_field(d.get("client_type", "")) == "mou" or d.get("mou_id"):
         return "Individual / Partnership"
     return d.get("sector") or "Unclassified"
+
+
+def _flow_stage_target(product_type: str, stage_name: str) -> int:
+    """P4b — the per-product flow's target_days for a given pipeline stage.
+
+    The per-product flow (product_flows[product].stages) carries
+    {"stage", "target_days"} entries. This resolves the target_days for the
+    deal's CURRENT stage so the product-specific promise rides the SLA
+    step-clock, taking precedence over the generic global step target.
+    Returns 0 if the product has no flow, the stage isn't in it, or the
+    target is missing/invalid (caller falls back to the global step target).
+    """
+    if not product_type or not stage_name:
+        return 0
+    cfg = _load_json("pipeline_settings.json") or {}
+    pflows = cfg.get("product_flows", {}) if isinstance(cfg, dict) else {}
+    pentry = pflows.get(product_type) if isinstance(pflows, dict) else None
+    if not isinstance(pentry, dict):
+        return 0
+    stages = pentry.get("stages")
+    if not isinstance(stages, list):
+        return 0
+    target_stage = str(stage_name).strip().lower()
+    for s in stages:
+        if isinstance(s, dict) and str(s.get("stage", "")).strip().lower() == target_stage:
+            try:
+                t = int(s.get("target_days", 0))
+                return t if t > 0 else 0
+            except (TypeError, ValueError):
+                return 0
+    return 0
 
 
 def _stage_flow_for(product_type: str) -> list:

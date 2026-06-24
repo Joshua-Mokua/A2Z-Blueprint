@@ -1695,6 +1695,34 @@ def sla_step_clock_probe(base):
          isinstance(bc, dict) and bc.get("step", 0) >= 1,
          note=f"by_clock={bc}")
 
+    # P4b: the per-product flow's per-stage target_days drives the step-clock,
+    # taking precedence over the generic global step target.
+    DISTINCT = 9  # a value unlikely to equal the global credit_assessment target
+    prod = "PP3 Flow Probe Loan"
+    st_a, _ = _req(base, "POST", "/api/admin/product-flows", admin, {
+        "product": prod, "client_types": ["Consumer"],
+        "stages": [
+            {"stage": "Application", "target_days": 3},
+            {"stage": "Credit Assessment", "target_days": DISTINCT},
+            {"stage": "Offer / Proposal", "target_days": 4},
+        ]})
+    step("sla flow: author per-product flow with distinct stage target", (200, 201), st_a)
+    st_d, bd = _req(base, "POST", "/api/pipeline/deals", owner, {
+        "client_name": f"PP3 Flow Deal {_dt.now():%H%M%S}",
+        "product_type": prod, "deal_value": 2000000, "stage": "Lead", "segment": "SME"})
+    fdid = (bd.get("deal") or {}).get("id") if isinstance(bd, dict) else None
+    if fdid:
+        for tgt in ("Contacted", "Qualified", "Application", "Credit Assessment"):
+            _req(base, "POST", f"/api/pipeline/deals/{fdid}/advance", owner, {"target_stage": tgt})
+    st_fs, fs = _req(base, "GET", f"/api/pipeline/deals/{fdid}/sla", owner)
+    fsla = fs.get("sla") if isinstance(fs, dict) else None
+    step("sla flow: deal's step-clock target == per-product flow target_days", True,
+         isinstance(fsla, dict) and fsla.get("clock") == "step"
+         and fsla.get("target_days") == DISTINCT,
+         note=f"target_days={fsla.get('target_days') if isinstance(fsla, dict) else None} (flow={DISTINCT})")
+    # Cleanup: delete the probe flow (revert to class).
+    _req(base, "POST", "/api/admin/product-flows", admin, {"product": prod, "delete": True})
+
 
 def sla_credit_step_probe(base, cleared_case_id):
     print("\n=== SLA CREDIT STEP CLOCK (S2c — credit-admin / disbursement) ===")
