@@ -1398,6 +1398,14 @@ def committee_tiers_probe(base):
          comm.get("current_tier") == tiers[1]["tier"] and comm.get("entry_tier") == tiers[1]["tier"],
          note=f"entry_tier={comm.get('entry_tier')}")
 
+    # (4) Admin can edit the tier ladder (config-not-hardcode); non-admin denied.
+    st_save, _ = _req(base, "POST", "/api/lms/committee/tiers", admin, {"tiers": tiers})
+    step("tiers: admin save (round-trip same ladder) accepted", (200, 201), st_save)
+    st_bad, _ = _req(base, "POST", "/api/lms/committee/tiers", admin, {"tiers": []})
+    step("tiers: empty ladder rejected", 400, st_bad)
+    st_deny, _ = _req(base, "POST", "/api/lms/committee/tiers", owner, {"tiers": tiers})
+    step("tiers: non-admin tier edit denied", 403, st_deny)
+
 
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")

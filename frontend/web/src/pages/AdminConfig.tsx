@@ -24,7 +24,10 @@ import {
   updatePipelineConfig,
   upsertMou,
   upsertProductFlow,
+  getCommitteeTiers,
+  saveCommitteeTiers,
   type AdminConfigPatch,
+  type CommitteeTier,
 } from '@/lib/api';
 import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
 
@@ -709,9 +712,104 @@ export default function AdminConfig() {
                 </div>
               </Card.Body>
             </Card>
+
+            {/* Committee tiers — the multi-tier credit committee ladder. */}
+            <CommitteeTiersPanel />
           </div>
         )}
       </main>
     </div>
+  );
+}
+
+
+// ─── Committee tiers panel ─────────────────────────────────────────────
+// Self-contained: loads + saves the multi-tier credit committee ladder via
+// the dedicated /api/lms/committee/tiers endpoint, independent of the main
+// pipeline config flow. Lets the business rename tiers, set authority limits,
+// and control which tiers permit direct entry (CIB leeway).
+function CommitteeTiersPanel() {
+  const { toast } = useToast();
+  const [tiers, setTiers] = useState<CommitteeTier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    getCommitteeTiers()
+      .then((r) => { if (live) setTiers(r.tiers || []); })
+      .catch(() => toast({ tone: 'danger', message: 'Could not load committee tiers.' }))
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [toast]);
+
+  const update = (i: number, patch: Partial<CommitteeTier>) =>
+    setTiers((prev) => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
+
+  const addTier = () => {
+    const nextNum = tiers.length ? Math.max(...tiers.map((t) => t.tier)) + 1 : 1;
+    setTiers((prev) => [...prev, {
+      tier: nextNum, key: `tier_${nextNum}`, name: '',
+      authority_limit_kes: null, can_be_entry: true,
+    }]);
+  };
+  const removeTier = (i: number) => setTiers((prev) => prev.filter((_, idx) => idx !== i));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const r = await saveCommitteeTiers(tiers);
+      setTiers(r.tiers || []);
+      toast({ tone: 'success', message: 'Committee tiers saved.' });
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save tiers.' });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Card stripe="primary">
+      <Card.Header>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Credit committee tiers</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            The ordered committee ladder. A case enters at a tier and the committee submits it
+            upward as needed. Limits inform routing; entry-permitted tiers can be skipped to.
+          </p>
+        </div>
+        <Button variant="primary" size="sm" onClick={save} loading={saving} disabled={loading}>
+          Save
+        </Button>
+      </Card.Header>
+      <Card.Body className="space-y-3">
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : (
+          <>
+            <div className="hidden md:grid grid-cols-[60px_1fr_1.2fr_110px_auto] gap-2 text-xs text-gray-500 px-1">
+              <span>Tier</span><span>Name</span><span>Authority limit (KES)</span><span>Entry?</span><span></span>
+            </div>
+            {tiers.map((t, i) => (
+              <div key={i} className="grid grid-cols-1 md:grid-cols-[60px_1fr_1.2fr_110px_auto] gap-2 items-center">
+                <Input value={String(t.tier)} onChange={(e) => update(i, { tier: Number(e.target.value) || t.tier })} disabled={saving} />
+                <Input value={t.name} placeholder="Tier name" onChange={(e) => update(i, { name: e.target.value })} disabled={saving} />
+                <Input
+                  value={t.authority_limit_kes == null ? '' : String(t.authority_limit_kes)}
+                  placeholder="No ceiling"
+                  onChange={(e) => update(i, { authority_limit_kes: e.target.value === '' ? null : Number(e.target.value) })}
+                  disabled={saving}
+                />
+                <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                  <input type="checkbox" checked={t.can_be_entry}
+                    onChange={(e) => update(i, { can_be_entry: e.target.checked })} disabled={saving} />
+                  Entry
+                </label>
+                <Button variant="ghost" size="sm" onClick={() => removeTier(i)} disabled={saving}>Remove</Button>
+              </div>
+            ))}
+            <Button variant="secondary" size="sm" onClick={addTier} disabled={saving}>Add tier</Button>
+          </>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
