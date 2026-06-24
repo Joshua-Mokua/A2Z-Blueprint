@@ -899,6 +899,58 @@ def troops_queue(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, 
     return {"cases": out, "count": len(out), "source": "troops_queue"}
 
 
+@router.get("/troops/flow-by-stage")
+def troops_flow_by_stage(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Disbursement case flow grouped by Treasury Back Office (Troops) stage —
+    the live disbursement workload so Operations can prep against what sits at
+    each step. Buckets cleared-but-not-yet-disbursed cases by troops_status
+    (queued → booked → value-dated), plus a disbursed bucket for recently
+    completed work. Bank-wide, like the queue itself."""
+    if not _is_troops(user):
+        raise HTTPException(status_code=403,
+                            detail="Treasury Back Office (disbursement) authority required")
+    cam = _cam()
+
+    STAGE_ORDER = [
+        ("queued",      "Cleared — awaiting booking", {"queued"}),
+        ("booked",      "Booked to core banking",     {"booked"}),
+        ("value_dated", "Value-dated — ready",        {"value_dated"}),
+        ("disbursed",   "Disbursed",                  {"disbursed"}),
+    ]
+    buckets = {key: {"key": key, "label": label, "count": 0, "value": 0.0}
+               for key, label, _ in STAGE_ORDER}
+
+    def _amt(c):
+        try:
+            return float(c.get("amount") or c.get("facility_amount") or c.get("loan_amount") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    for c in cam.cases:
+        if not c.get("cleared_for_disbursement"):
+            continue
+        if c.get("disbursed"):
+            tgt = buckets["disbursed"]
+        else:
+            st = str(c.get("troops_status") or "queued").strip().lower()
+            tgt = buckets.get(st, buckets["queued"])
+        tgt["count"] += 1
+        tgt["value"] += _amt(c)
+
+    stages = [buckets[key] for key, _, _ in STAGE_ORDER]
+    pending = [s for s in stages if s["key"] != "disbursed"]
+    return {
+        "stages": stages,
+        "totals": {
+            "count": sum(s["count"] for s in stages),
+            "value": sum(s["value"] for s in stages),
+            "pending_count": sum(s["count"] for s in pending),
+            "pending_value": sum(s["value"] for s in pending),
+        },
+        "source": "troops_flow_by_stage",
+    }
+
+
 @router.post("/cases/{case_id}/troops/book")
 def troops_book(case_id: str, payload: TroopsBookRequest,
                 user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:

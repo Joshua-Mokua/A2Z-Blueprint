@@ -1100,6 +1100,29 @@ export async function fetchCreditFlowByStage(): Promise<CreditFlowByStageRespons
   return getJson<CreditFlowByStageResponse>('/lms/flow-by-stage');
 }
 
+// Troops (Treasury Back Office) disbursement flow grouped by stage — the live
+// disbursement workload (cleared → booked → value-dated → disbursed). Bank-wide,
+// role-gated to Treasury Back Office.
+export interface TroopsFlowStage {
+  key: string;
+  label: string;
+  count: number;
+  value: number;
+}
+export interface TroopsFlowByStageResponse {
+  stages: TroopsFlowStage[];
+  totals: {
+    count: number;
+    value: number;
+    pending_count: number;
+    pending_value: number;
+  };
+  source: string;
+}
+export async function fetchTroopsFlowByStage(): Promise<TroopsFlowByStageResponse> {
+  return getJson<TroopsFlowByStageResponse>('/credit-admin/troops/flow-by-stage');
+}
+
 
 /**
  * Fetch a single application by id.

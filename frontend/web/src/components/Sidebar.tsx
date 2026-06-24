@@ -84,6 +84,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/lms', label: 'Credit Analysis', matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
       { path: '/credit-admin', label: 'Credit Admin', matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
+      { path: '/troops', label: 'Troops Disbursement', matchActive: (p) => p.startsWith('/troops') },
       { path: '/credit-analytics', label: 'Credit Analytics', matchActive: (p) => p.startsWith('/credit-analytics') },
     ],
   },
