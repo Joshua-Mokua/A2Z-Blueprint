@@ -144,6 +144,81 @@ def lms_applications_list(
 # ─────────────────────────────────────────────────────────────────────
 
 
+@router.get("/flow-by-stage")
+def lms_flow_by_stage(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Pipeline-origin credit flow grouped by workflow stage — the live credit
+    workload for Operations to prep against, scoped to the caller's cascade.
+
+    This is deliberately NOT the loan book / NPL view (that's deferred to the
+    Phase-2 Credit Monitoring module). It only reflects in-flight credit cases
+    that originated from the pipeline, bucketed by their lifecycle stage so a
+    team can see how much work sits at each step.
+
+    Returns ordered stages, each with {key, label, count, value}, plus totals.
+    """
+    lam = _lam()
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    apps = filter_apps_by_visibility(
+        lam.apps, visible_codes, caller_code,
+        caller_role=str(user.get('role', '') or ''),
+    )
+
+    # Operations-facing stage buckets (ordered along the credit workflow). Each
+    # raw LMS status maps to exactly one bucket; terminal/closed outcomes are
+    # surfaced separately so the live work-in-progress is clear.
+    STAGE_ORDER = [
+        ("intake",        "Intake / submitted",      {"submitted"}),
+        ("assessment",    "Under assessment",        {"assigned", "updated"}),
+        ("decision",      "Decisioned",              {"decision_approved", "decision_returned", "returned"}),
+        ("offer",         "Offer & acceptance",      {"offer_issued", "offer_signed", "offer_validated"}),
+        ("credit_admin",  "Credit admin / security", {"credit_admin"}),
+        ("disbursement",  "Cleared for disbursement",{"cleared_for_disbursement"}),
+        ("disbursed",     "Disbursed",               {"disbursed"}),
+        ("declined",      "Declined",                {"declined"}),
+    ]
+    status_to_bucket = {}
+    for key, _label, statuses in STAGE_ORDER:
+        for s in statuses:
+            status_to_bucket[s] = key
+
+    buckets = {key: {"key": key, "label": label, "count": 0, "value": 0.0}
+               for key, label, _ in STAGE_ORDER}
+    other = {"key": "other", "label": "Other / unmapped", "count": 0, "value": 0.0}
+
+    for a in apps:
+        st = str(a.get("status", "") or "").strip().lower()
+        try:
+            amt = float(a.get("amount") or 0)
+        except (TypeError, ValueError):
+            amt = 0.0
+        target = buckets.get(status_to_bucket.get(st)) if st in status_to_bucket else other
+        if target is None:
+            target = other
+        target["count"] += 1
+        target["value"] += amt
+
+    stages = [buckets[key] for key, _, _ in STAGE_ORDER]
+    if other["count"]:
+        stages.append(other)
+
+    # "In flight" = everything not yet terminal (disbursed/declined).
+    terminal = {"disbursed", "declined"}
+    in_flight = [s for s in stages if s["key"] not in terminal]
+    return {
+        "stages": stages,
+        "totals": {
+            "count": sum(s["count"] for s in stages),
+            "value": sum(s["value"] for s in stages),
+            "in_flight_count": sum(s["count"] for s in in_flight),
+            "in_flight_value": sum(s["value"] for s in in_flight),
+        },
+        "source": "loan_application_manager",
+    }
+
+
 @router.get(
     "/applications/{app_id}",
     response_model=LoanApplicationDetailResponse,

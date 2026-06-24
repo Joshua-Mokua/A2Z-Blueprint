@@ -1077,6 +1077,29 @@ export async function fetchLmsApplications(): Promise<LoanApplicationsResponse> 
   return getJson<LoanApplicationsResponse>('/lms/applications');
 }
 
+// Pipeline-origin credit flow grouped by workflow stage — the live credit
+// workload (NOT the loan book / NPL view, which is deferred to Phase-2 Credit
+// Monitoring). Scoped to the caller's cascade.
+export interface CreditFlowStage {
+  key: string;
+  label: string;
+  count: number;
+  value: number;
+}
+export interface CreditFlowByStageResponse {
+  stages: CreditFlowStage[];
+  totals: {
+    count: number;
+    value: number;
+    in_flight_count: number;
+    in_flight_value: number;
+  };
+  source: string;
+}
+export async function fetchCreditFlowByStage(): Promise<CreditFlowByStageResponse> {
+  return getJson<CreditFlowByStageResponse>('/lms/flow-by-stage');
+}
+
 
 /**
  * Fetch a single application by id.
