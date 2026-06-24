@@ -53,7 +53,7 @@ import { CustomerSearchInput } from '@/components/CustomerSearchInput';
 import { fetchCbsCustomer, fetchPipelineConfig, fetchCustomerPortfolioOwner, ApiValidationError, type CustomerPortfolioOwner, type StaffMember } from '@/lib/api';
 import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
-  COMMON_PRODUCTS_BY_CATEGORY, SOURCE_OPTIONS,
+  SOURCE_OPTIONS,
   MIN_OVERRIDE_NOTE_LEN,
   type PipelineCategory, type CreateDealRequest, type ReferDealRequest,
   type PipelineConfig,
@@ -141,7 +141,6 @@ export function PipelineCreate() {
 
   const [category,    setCategory]    = useState<PipelineCategory>('Loan');
   const [productType, setProductType] = useState('');
-  const [productOther, setProductOther] = useState(false);
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
   const [stage,       setStage]       = useState<string>('Lead');
   // (Manual probability slider removed — win probability is now DERIVED from the
@@ -383,36 +382,42 @@ export function PipelineCreate() {
     [currency, fxRates],
   );
 
-  const productSuggestions = useMemo(() => COMMON_PRODUCTS_BY_CATEGORY[category], [category]);
-  // Products offered in the dropdown — sourced from the admin product_catalogue,
-  // filtered to the classes that belong to the selected category; falls back to
-  // the built-in per-category list if the catalogue is empty.
-  const PRODUCT_OTHER = '__other__';
   const productOptions = useMemo(() => {
     const cat = config?.product_catalogue;
     const want: Record<string, ProductClass[]> = {
       Loan: ['asset'], Deposit: ['liability'], Account: ['liability', 'other'],
     };
     const buckets = want[category] ?? ['asset', 'liability', 'insurance', 'other'];
+    const flows = config?.product_flows ?? {};
     // P4a: a product whose flow declares client_types is offered ONLY to those
     // client types; an empty (or absent) client_types means offered to all.
-    const flows = config?.product_flows ?? {};
     const offeredToClient = (product: string): boolean => {
       const cts = flows[product]?.client_types;
       if (!cts || cts.length === 0) return true;       // all client types
       return !clientType || cts.includes(clientType);
     };
+    // Product gate (matches the server): a product is selectable only once it's
+    // set up — it must have its OWN process flow (whose stage day-sum is the
+    // SLA). Products without a flow can't be used on a deal, so they aren't
+    // offered. Admin sets up the flow + SLA before a product appears here.
+    const isReady = (product: string): boolean => {
+      const entry = flows[product];
+      return !!(entry && Array.isArray(entry.stages) && entry.stages.length > 0);
+    };
     if (cat) {
       const out: string[] = [];
       for (const [cls, prods] of Object.entries(cat)) {
         if (buckets.includes(PRODUCT_CLASS_MAP[cls] ?? 'other')) {
-          out.push(...prods.filter(offeredToClient));
+          out.push(...prods.filter((p) => offeredToClient(p) && isReady(p)));
         }
       }
       if (out.length) return Array.from(new Set(out));
     }
-    return productSuggestions;
-  }, [config, category, clientType, productSuggestions]);
+    // No fallback to free-text suggestions: an empty list means no ready product
+    // for this category/client type — the user must pick a different category or
+    // an admin must set one up.
+    return [];
+  }, [config, category, clientType]);
   const dealValueNum       = useMemo(() => {
     const n = Number(String(dealValue).replace(/[,\s]/g, ''));
     return Number.isFinite(n) ? n : NaN;
@@ -445,12 +450,13 @@ export function PipelineCreate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientType, segmentOptions]);
 
-  // Batch 4: clear a selected catalogue product when narrowing (by client type
-  // or category) removes it from the offered set, so a product not offered to
-  // the chosen client type can't be silently submitted. Leaves free-text
-  // "Other…" products untouched (they aren't catalogue-narrowed).
+  // Clear a selected product when narrowing (by client type or category)
+  // removes it from the offered set, so a product not offered to the chosen
+  // client type / category can't be silently submitted. Products are now
+  // selection-only from the catalogue (no free-text), so any selected product
+  // must always be in the offered list.
   useEffect(() => {
-    if (!productOther && productType && !productOptions.includes(productType)) {
+    if (productType && !productOptions.includes(productType)) {
       setProductType('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1218,7 +1224,6 @@ export function PipelineCreate() {
                     setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
                   }
                   setProductType('');
-                  setProductOther(false);
                 }}
                 disabled={mutations.loading}
                 className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
@@ -1232,14 +1237,12 @@ export function PipelineCreate() {
             <div className="mt-4" data-field="productType">
               <label className="text-sm font-medium text-gray-700">Product type <RedStar /></label>
               <select
-                value={productOther ? PRODUCT_OTHER : (productOptions.includes(productType) ? productType : '')}
+                value={productOptions.includes(productType) ? productType : ''}
                 onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === PRODUCT_OTHER) { setProductOther(true); setProductType(''); }
-                  else { setProductOther(false); setProductType(v); }
+                  setProductType(e.target.value);
                   clearFieldError('productType');
                 }}
-                disabled={mutations.loading}
+                disabled={mutations.loading || productOptions.length === 0}
                 aria-invalid={!!fieldErrors.productType}
                 className={`mt-1 w-full h-10 px-3 rounded-md border bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 ${
                   fieldErrors.productType
@@ -1251,17 +1254,12 @@ export function PipelineCreate() {
                 {productOptions.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
-                <option value={PRODUCT_OTHER}>Other…</option>
               </select>
-              {productOther && (
-                <input
-                  type="text"
-                  value={productType}
-                  onChange={(e) => { setProductType(e.target.value); clearFieldError('productType'); }}
-                  disabled={mutations.loading}
-                  placeholder="Specify product"
-                  className="mt-2 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                />
+              {productOptions.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  No products are set up for this category{clientType ? ` and client type` : ''} yet.
+                  Products must be created in Admin with a process flow and SLA before they can be used.
+                </p>
               )}
               {fieldErrors.productType && (
                 <p className="mt-1 text-xs text-red-700">{fieldErrors.productType}</p>
