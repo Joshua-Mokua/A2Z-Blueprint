@@ -1325,6 +1325,80 @@ def analyst_decision_probe(base):
          _req(base, "POST", f"/api/lms/applications/{aid5}/cr", manager, {"values": "nope"})[0])
 
 
+def committee_tiers_probe(base):
+    """CF-8 — multi-tier committee ladder: tiers readable; a case enters at a
+    tier (default branch, or higher for CIB leeway); the tier's committee can
+    submit the case UP to the next tier, preserving prior-tier history."""
+    print("\n=== MULTI-TIER COMMITTEE (CF-8 — BCC -> Mgmt -> Board -> Group) ===")
+    owner = login(base, "OWNER")
+    manager = login(base, "MANAGER")
+    admin = login(base, "ADMIN")
+    if not (owner and manager and admin):
+        step("tiers: logins", 200, 0, note="cannot proceed"); return
+
+    # Tier ladder is readable + ordered.
+    st, body = _req(base, "GET", "/api/lms/committee/tiers", manager)
+    tiers = body.get("tiers", []) if isinstance(body, dict) else []
+    step("tiers: ladder readable + ordered", True,
+         st == 200 and len(tiers) >= 2
+         and [t["tier"] for t in tiers] == sorted(t["tier"] for t in tiers),
+         note=f"{len(tiers)} tiers; e.g. {[t.get('name') for t in tiers][:2]}")
+
+    def _fresh_submitted_app():
+        b = {"client_name": f"Tier Probe {datetime.now():%H%M%S%f}",
+             "client_type": "Business", "product_type": "Term Loan",
+             "deal_value": 250000000, "stage": "Lead", "segment": "Corporate",
+             "sector": "Manufacturing"}
+        st, d = _req(base, "POST", "/api/pipeline/deals", owner, b)
+        did = d.get("id") or d.get("deal", {}).get("id")
+        for tgt in ["Contacted", "Qualified", "Application", "Credit Assessment"]:
+            _req(base, "POST", f"/api/pipeline/deals/{did}/advance", owner, {"target_stage": tgt})
+        _req(base, "POST", f"/api/pipeline/deals/{did}/validate", manager,
+             {"approved": True, "note": "validated (tier probe)"})
+        st, chk = _req(base, "GET", f"/api/pipeline/deals/{did}/credit-checklist", owner)
+        req = chk.get("required", []) if isinstance(chk, dict) else []
+        st, body = _req(base, "POST", f"/api/pipeline/deals/{did}/submit-to-credit",
+                        owner, {"documents_provided": req})
+        return body.get("application_id")
+
+    # (1) Default entry = first tier (Branch Credit Committee).
+    aid = _fresh_submitted_app()
+    _req(base, "POST", f"/api/lms/applications/{aid}/assign", manager,
+         {"analyst_code": "300716", "analyst_name": "Sim Analyst"})
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid}/committee/refer", manager, {})
+    step("tiers: default refer enters at tier 1", (200, 201), st, body)
+    st, app = _req(base, "GET", f"/api/lms/applications/{aid}", admin)
+    comm = app.get("application", {}).get("committee", {}) if isinstance(app, dict) else {}
+    step("tiers: case stamped at entry tier 1", True,
+         comm.get("current_tier") == tiers[0]["tier"],
+         note=f"current_tier={comm.get('current_tier')} ({comm.get('current_tier_name')})")
+
+    # (2) Submit upward: tier 1 committee pushes the case to tier 2.
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid}/committee/submit-upward",
+                    manager, {"note": "Above branch authority — escalate to management"})
+    step("tiers: submit-upward to next tier accepted", (200, 201), st, body)
+    st, app = _req(base, "GET", f"/api/lms/applications/{aid}", admin)
+    comm = app.get("application", {}).get("committee", {}) if isinstance(app, dict) else {}
+    step("tiers: case advanced to tier 2 + prior tier in history", True,
+         comm.get("current_tier") == tiers[1]["tier"]
+         and len(comm.get("tier_history", [])) == 1
+         and comm["tier_history"][0]["tier"] == tiers[0]["tier"],
+         note=f"now tier {comm.get('current_tier')}; history={len(comm.get('tier_history', []))}")
+
+    # (3) CIB leeway: a case can ENTER above the branch tier (skip BCC).
+    aid2 = _fresh_submitted_app()
+    _req(base, "POST", f"/api/lms/applications/{aid2}/assign", manager,
+         {"analyst_code": "300716", "analyst_name": "Sim Analyst"})
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid2}/committee/refer", manager,
+                    {"entry_tier": tiers[1]["tier"]})
+    step("tiers: CIB case enters above branch (skip BCC) accepted", (200, 201), st, body)
+    st, app = _req(base, "GET", f"/api/lms/applications/{aid2}", admin)
+    comm = app.get("application", {}).get("committee", {}) if isinstance(app, dict) else {}
+    step("tiers: CIB case entry tier == requested (branch skipped)", True,
+         comm.get("current_tier") == tiers[1]["tier"] and comm.get("entry_tier") == tiers[1]["tier"],
+         note=f"entry_tier={comm.get('entry_tier')}")
+
+
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")
     admin = login(base, "ADMIN")
@@ -1947,6 +2021,7 @@ def main():
     roles_probe(args.base)
     pool_visibility_probe(args.base)
     analyst_decision_probe(args.base)
+    committee_tiers_probe(args.base)
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)

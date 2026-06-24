@@ -1192,6 +1192,15 @@ export async function getLmsCr(appId: string): Promise<{ cr: CrView }> {
 export async function saveLmsCr(appId: string, body: { values: Record<string, unknown>; completed?: boolean }): Promise<{ cr: CrView }> {
   return postJson<{ cr: CrView }, typeof body>(lmsAction(appId, 'cr'), body);
 }
+export interface CommitteeMember { member_id: string; name: string; role: string; is_independent: boolean; }
+export interface CommitteeCharter {
+  committee_id: string; name: string; members: CommitteeMember[];
+  voting_rule: string; min_quorum_count: number; independent_member_min: number;
+  authority_limit_kes: number; escalation_target: string;
+}
+export async function getCommitteeCharter(): Promise<CommitteeCharter> {
+  return getJson<CommitteeCharter>('/api/lms/committee/charter');
+}
 export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
 }

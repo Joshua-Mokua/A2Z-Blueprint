@@ -23,8 +23,8 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr,
-  type LmsAttachment, type CrView, type CrField,
+  getLmsCr, saveLmsCr, getCommitteeCharter,
+  type LmsAttachment, type CrView, type CrField, type CommitteeMember,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -1030,7 +1030,16 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
   const [vote, setVote] = useState('YES');
   const [rationale, setRationale] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [members, setMembers] = useState<CommitteeMember[]>([]);
   const votes = application.committee?.votes ?? [];
+
+  useEffect(() => {
+    let live = true;
+    getCommitteeCharter()
+      .then((ch) => { if (live) setMembers(ch.members || []); })
+      .catch(() => { /* dropdown falls back to manual entry */ });
+    return () => { live = false; };
+  }, []);
 
   const castVote = async () => {
     setError(null);
@@ -1056,9 +1065,24 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
         )}
         {canVote && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
-            <Input label="Member id" value={memberId}
-                   onChange={(e) => setMemberId(e.target.value)} disabled={mutations.loading}
-                   placeholder="m1" />
+            <div>
+              <label className="text-sm font-medium text-gray-700">Committee member</label>
+              {members.length > 0 ? (
+                <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={mutations.loading}
+                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-base text-gray-900">
+                  <option value="">Select member…</option>
+                  {members.map((m) => (
+                    <option key={m.member_id} value={m.member_id}>
+                      {m.name} — {m.role.replace(/_/g, ' ').toLowerCase()}{m.is_independent ? ' (independent)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input label="" value={memberId}
+                       onChange={(e) => setMemberId(e.target.value)} disabled={mutations.loading}
+                       placeholder="m1" />
+              )}
+            </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Vote</label>
               <select value={vote} onChange={(e) => setVote(e.target.value)} disabled={mutations.loading}

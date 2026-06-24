@@ -695,9 +695,14 @@ def lms_confirm_to_credit_admin(
              response_model=LoanAppMutationResponse)
 def lms_committee_refer(
     app_id: str,
+    payload: Dict[str, Any] = None,
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    """Refer an application to the credit committee. Manager-tier."""
+    """Refer an application to the credit committee. Manager-tier.
+
+    CF-8: an optional `entry_tier` (number) lets CIB / head-office cases enter
+    ABOVE the branch tier (skip the Branch Credit Committee). Omitted = enters
+    at the first tier."""
     if not is_manager(user):
         raise HTTPException(status_code=403,
                             detail="Manager authority required to refer to committee")
@@ -711,7 +716,13 @@ def lms_committee_refer(
     if not is_valid_lms_transition(str(app.get("status", "")), "referred_to_committee"):
         raise HTTPException(status_code=400,
                             detail=f"Cannot refer to committee from status '{app.get('status')}'")
-    lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""))
+    entry_tier = None
+    if isinstance(payload, dict) and payload.get("entry_tier") is not None:
+        try:
+            entry_tier = int(payload.get("entry_tier"))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="entry_tier must be a number")
+    lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""), entry_tier=entry_tier)
     audit_log("LMS_REFERRED_TO_COMMITTEE", str(user.get("username", "") or ""), app_id)
     return {"application": lam.get(app_id), "status": "referred_to_committee"}
 
@@ -1107,3 +1118,52 @@ def lms_application_cr_save(
         raise HTTPException(status_code=500, detail="CR save failed")
     audit_log("LMS_CR_SAVED", str(user.get("username", "") or ""), f"{app_id}|completed={completed}")
     return {"cr": build_cr_view(lam.get(app_id))}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CF-8 — Multi-tier credit committee ladder
+# GET  /committee/tiers                         — the ordered tier ladder
+# POST /applications/{id}/committee/submit-upward — push case to next tier
+# ─────────────────────────────────────────────────────────────────────
+
+
+@router.get("/committee/tiers")
+def lms_committee_tiers(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The ordered committee tier ladder (Branch CC → Management CC → Board CC
+    → Group). Admin-configurable via lms_config.json -> committee_tiers."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    return {"tiers": get_committee_tiers()}
+
+
+@router.post("/applications/{app_id}/committee/submit-upward",
+             response_model=LoanAppMutationResponse)
+def lms_committee_submit_upward(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The current tier's committee submits the case UP to the next tier.
+    Manager-tier. The prior tier's deliberation is preserved in tier_history;
+    the new tier starts with a fresh vote slate."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403,
+                            detail="Manager authority required to submit upward")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) != "referred_to_committee":
+        raise HTTPException(status_code=400,
+                            detail="Application is not before the committee")
+    note = str((payload or {}).get("note", "") or "")
+    res = lam.submit_committee_upward(app_id, by=str(user.get("username", "") or ""), note=note)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("reason", "cannot submit upward"))
+    audit_log("LMS_COMMITTEE_SUBMITTED_UPWARD",
+              str(user.get("username", "") or ""), f"{app_id}|tier={res.get('tier')}")
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
