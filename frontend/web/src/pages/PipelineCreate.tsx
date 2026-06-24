@@ -418,6 +418,17 @@ export function PipelineCreate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientType, segmentOptions]);
 
+  // Batch 4: clear a selected catalogue product when narrowing (by client type
+  // or category) removes it from the offered set, so a product not offered to
+  // the chosen client type can't be silently submitted. Leaves free-text
+  // "Other…" products untouched (they aren't catalogue-narrowed).
+  useEffect(() => {
+    if (!productOther && productType && !productOptions.includes(productType)) {
+      setProductType('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientType, category, productOptions]);
+
   // P2: when an existing customer is picked, look up their mapped portfolio
   // owner from CBS. If the customer belongs to a DIFFERENT RM, auto-flag the
   // conflict and pre-fill the owner so the deal can be referred for a nod.
