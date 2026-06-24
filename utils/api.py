@@ -2632,6 +2632,83 @@ def _norm_product(s: str) -> str:
     return "".join(ch for ch in str(s or "").lower() if ch.isalnum())
 
 
+def _is_product_catalogued(product_type: str) -> bool:
+    """STRICT catalogue membership (exact, case-insensitive after normalization).
+    Unlike _product_class (which falls back to lenient containment), this is an
+    exact-membership test used to enforce the rule that a deal's product must be
+    an actual catalogued product — no free-text products at deal creation."""
+    pt_n = _norm_product(product_type)
+    if not pt_n:
+        return False
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("product_catalogue", {}) if isinstance(cfg, dict) else {}
+    if isinstance(cat, dict):
+        for prods in cat.values():
+            if isinstance(prods, list):
+                for p in prods:
+                    if _norm_product(p) == pt_n:
+                        return True
+    return False
+
+
+def _product_readiness(product_type: str) -> dict:
+    """A product is USABLE in a deal only once admin has set it up:
+    it must (1) be in the catalogue and (2) have its OWN process flow authored
+    in product_flows. The flow's per-stage target_days define the product's SLA
+    (the violation engine uses their sum as the effective end-to-end target when
+    no explicit product_promise is set — see _deal_sla_status), so a flow with a
+    positive day-sum inherently carries an SLA. An explicit product_promise in
+    sla_config is an optional tightening, not a separate requirement.
+    Returns {catalogued, has_flow, has_sla, ready, missing:[...]}."""
+    pt_n = _norm_product(product_type)
+    catalogued = _is_product_catalogued(product_type)
+    cfg = _load_json("pipeline_settings.json") or {}
+    pflows = cfg.get("product_flows", {}) if isinstance(cfg, dict) else {}
+    has_flow = False
+    flow_day_sum = 0
+    if isinstance(pflows, dict):
+        for prod, entry in pflows.items():
+            if _norm_product(prod) == pt_n and isinstance(entry, dict):
+                stages = entry.get("stages")
+                if isinstance(stages, list) and stages:
+                    has_flow = True
+                    for s in stages:
+                        if isinstance(s, dict):
+                            try:
+                                t = int(s.get("target_days", 0))
+                                if t > 0:
+                                    flow_day_sum += t
+                            except (TypeError, ValueError):
+                                pass
+                break
+    # Explicit per-product promise (optional override).
+    promise = (cfg.get("sla_config", {}) or {}).get("product_promise", {}) if isinstance(cfg, dict) else {}
+    explicit_sla = False
+    if isinstance(promise, dict):
+        for prod, days in promise.items():
+            if _norm_product(prod) == pt_n:
+                try:
+                    if int(days) > 0:
+                        explicit_sla = True
+                except (TypeError, ValueError):
+                    pass
+                break
+    # SLA is satisfied by an explicit promise OR the flow's positive day-sum
+    # (which the engine uses as the effective SLA).
+    has_sla = explicit_sla or flow_day_sum > 0
+    missing = []
+    if not catalogued:
+        missing.append("catalogue entry")
+    if not has_flow:
+        missing.append("process flow")
+    if not has_sla:
+        missing.append("SLA (stage target days)")
+    return {
+        "catalogued": catalogued, "has_flow": has_flow, "has_sla": has_sla,
+        "ready": catalogued and has_flow and has_sla, "missing": missing,
+    }
+
+
 def _product_class(product_type: str):
     """The product_catalogue class for a product, from pipeline_settings.json
     (admin-owned config). Returns one of: Assets, Liabilities, Transactional,
@@ -4419,6 +4496,25 @@ def pipeline_deal_create(
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
         raise HTTPException(status_code=400, detail=reason)
+
+    # Product gate (single-source-of-truth rule): a deal's product must be a
+    # real catalogued product that admin has FULLY set up — catalogue entry +
+    # process flow + SLA promise. No free-text products at deal creation; a new
+    # product is born in admin (catalogue → flow → SLA) before it can be used.
+    _prod = str(deal_dict.get("product_type") or deal_dict.get("product") or "").strip()
+    _readiness = _product_readiness(_prod)
+    if not _readiness["ready"]:
+        _missing = ", ".join(_readiness["missing"]) or "setup"
+        _detail = (
+            f"Product '{_prod}' cannot be used yet — missing: {_missing}. "
+            "Products must be created in Admin with a process flow and SLA "
+            "defined before they can be selected on a deal."
+            if _readiness["catalogued"] else
+            f"Product '{_prod}' is not in the product catalogue. Pick a listed "
+            "product, or have an admin add it (with a process flow and SLA) first."
+        )
+        _audit("API_PIPELINE_CREATE_REJECTED", user, f"product_not_ready|{_prod}|missing={_readiness['missing']}")
+        raise HTTPException(status_code=400, detail=_detail)
 
     # P4.5: mandatory portfolio resolution for EXISTING customers. If the deal
     # carries a client_cif that CBS maps to a DIFFERENT relationship owner than

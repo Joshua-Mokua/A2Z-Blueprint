@@ -97,6 +97,20 @@ def step(name, expect, actual_status, payload=None, note=""):
     return ok
 
 
+def _ensure_catalogued(base, admin, product, cls="Assets"):
+    """Add a product to the product_catalogue (idempotent) so it passes the
+    create gate (catalogued + flowed). Mirrors what an admin does before a
+    product can be used on a deal."""
+    _st, _cfg = _req(base, "GET", "/api/pipeline/stages", admin)
+    cat = dict(_cfg.get("product_catalogue", {}) if isinstance(_cfg, dict) else {})
+    lst = list(cat.get(cls, []) or [])
+    if product not in lst:
+        lst.append(product)
+        cat[cls] = lst
+        _req(base, "POST", "/api/admin/pipeline-config", admin, {"product_catalogue": cat})
+    return product
+
+
 # ── Happy path: full chain end to end ───────────────────────────────────
 
 def happy_path(base, committee=False):
@@ -592,6 +606,7 @@ def sector_mou_probe(base):
          note=f"{len(pflows)} products with flows")
     # author a custom flow for a probe product (add), then confirm + clean up
     _probe_prod = "SIM Probe Product"
+    _ensure_catalogued(base, admin, _probe_prod)
     _custom_stages = [
         {"stage": "Lead", "target_days": 1},
         {"stage": "Custom Review", "target_days": 4},
@@ -664,6 +679,28 @@ def sector_mou_probe(base):
     st_del, _ = _req(base, "POST", "/api/admin/product-flows", admin,
                      {"product": _probe_prod, "delete": True})
     step("product flows: delete accepted (reverts to class)", (200, 201), st_del)
+
+    # ── Product gate: a deal's product must be CATALOGUED and SET UP (flow). ──
+    # No free-text products at deal creation; a product is born in admin
+    # (catalogue → flow → SLA) before it can be selected on a deal.
+    _uncat = {"client_name": f"Gate Probe {datetime.now():%H%M%S%f}",
+              "product_type": f"NOT A REAL PRODUCT {datetime.now():%H%M%S%f}",
+              "deal_value": 500_000, "stage": "Lead", "segment": "SME"}
+    st_uncat, _ = _req(base, "POST", "/api/pipeline/deals", owner, _uncat)
+    step("gate: uncatalogued product rejected", 400, st_uncat)
+    # A catalogued product WITH a flow (its day-sum is the SLA) is accepted.
+    _gate_prod = f"SIM Gate Product {datetime.now():%H%M%S%f}"
+    _req(base, "POST", "/api/admin/product-flows", admin,
+         {"product": _gate_prod, "client_types": [],
+          "stages": [{"stage": "Lead", "target_days": 2},
+                     {"stage": "Qualified", "target_days": 3}]})
+    _ensure_catalogued(base, admin, _gate_prod)
+    _gate_deal = {"client_name": f"Gate OK {datetime.now():%H%M%S%f}",
+                  "product_type": _gate_prod, "deal_value": 500_000,
+                  "stage": "Lead", "segment": "SME"}
+    st_gate_ok, _ = _req(base, "POST", "/api/pipeline/deals", owner, _gate_deal)
+    step("gate: catalogued + flowed product accepted", (200, 201), st_gate_ok,
+         note=f"product={_gate_prod}")
 
     st_fd, fd = _req(base, "GET", "/api/pipeline/funnel/drill?cls=all&stage=", admin)
     fd_ok = (st_fd == 200 and isinstance(fd, dict)
@@ -1869,6 +1906,7 @@ def sla_step_clock_probe(base):
     # taking precedence over the generic global step target.
     DISTINCT = 9  # a value unlikely to equal the global credit_assessment target
     prod = "PP3 Flow Probe Loan"
+    _ensure_catalogued(base, admin, prod)
     st_a, _ = _req(base, "POST", "/api/admin/product-flows", admin, {
         "product": prod, "client_types": ["Consumer"],
         "stages": [
