@@ -46,7 +46,7 @@ export function Lms() {
   const navigate = useNavigate();
   const { branding } = useBranding();
   const { user } = useRole();
-  const { applications, count, loading, error, refetch } = useLmsApplications();
+  const { applications, loading, error, refetch } = useLmsApplications();
 
   // ── Filter state (client-side; server always returns all in-scope) ──
   const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
@@ -94,6 +94,36 @@ export function Lms() {
       />
 
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+
+        {/* ── Summary strip ──────────────────────────────────────── */}
+        {!loading && !error && applications.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {(() => {
+              const total = applications.length;
+              const inAnalysis = applications.filter((a) =>
+                ['submitted', 'assigned', 'info_requested'].includes((a.status || '').toLowerCase())).length;
+              const decided = applications.filter((a) =>
+                ['approved', 'declined', 'returned'].includes((a.status || '').toLowerCase())).length;
+              const totalValue = applications.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+              const stat = (label: string, value: string, accent: string) => (
+                <Card>
+                  <Card.Body className="py-3">
+                    <div className="text-xs text-gray-500">{label}</div>
+                    <div className={`text-xl font-semibold mt-0.5 ${accent}`}>{value}</div>
+                  </Card.Body>
+                </Card>
+              );
+              return (
+                <>
+                  {stat('In queue', String(total), 'text-gray-900')}
+                  {stat('In analysis', String(inAnalysis), 'text-brand-primary')}
+                  {stat('Decided', String(decided), 'text-gray-900')}
+                  {stat('Total value', formatAmount(totalValue, currencySymbol), 'text-gray-900')}
+                </>
+              );
+            })()}
+          </div>
+        )}
 
         {/* ── Filter bar ─────────────────────────────────────────── */}
         <Card className="mb-4">
@@ -178,15 +208,36 @@ export function Lms() {
         {!loading && !error && filteredApps.length === 0 && (
           <Card>
             <Card.Body>
-              <div className="text-center py-8">
-                <div className="text-sm font-medium text-gray-700 mb-1">
-                  No applications match the current filter
-                </div>
-                <div className="text-xs text-gray-500">
-                  {applications.length === 0
-                    ? `No applications in your cascade${user?.full_name ? ` (${user.full_name})` : ''}.`
-                    : `${applications.length} total in cascade; ${count} returned by server.`}
-                </div>
+              <div className="text-center py-10">
+                {applications.length === 0 ? (
+                  <>
+                    <div className="text-sm font-medium text-gray-800 mb-1">
+                      No applications in your queue yet
+                    </div>
+                    <div className="text-xs text-gray-500 max-w-md mx-auto">
+                      Applications submitted to credit{user?.full_name ? ` for ${user.full_name}` : ''} will
+                      appear here once a relationship manager submits a deal and it is assigned for analysis.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-medium text-gray-800 mb-1">
+                      Nothing matches this filter
+                    </div>
+                    <div className="text-xs text-gray-500 mb-3">
+                      {applications.length} application{applications.length === 1 ? '' : 's'} in your queue,
+                      none in {statusFilter !== 'all' ? `“${statusFilter}”` : 'this view'}
+                      {searchTerm ? ` matching “${searchTerm}”` : ''}.
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}
+                    >
+                      Clear filters
+                    </Button>
+                  </>
+                )}
               </div>
             </Card.Body>
           </Card>
@@ -218,11 +269,11 @@ export function Lms() {
                         onClick={() => navigate(`/lms/${encodeURIComponent(app.id)}`)}
                         className="hover:bg-gray-50 cursor-pointer transition"
                       >
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                        <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap">
                           {app.id}
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-900">
-                          {app.client_name}
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">{app.client_name}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-700">
                           {app.product || '—'}
