@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Badge } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
@@ -28,9 +29,12 @@ import {
   saveCommitteeTiers,
   getAdminBranches,
   saveAdminBranches,
+  fetchSlaConfig,
+  saveSlaConfig,
   type AdminConfigPatch,
   type CommitteeTier,
   type AdminBranch,
+  type SlaConfig,
 } from '@/lib/api';
 import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
 
@@ -175,6 +179,15 @@ export default function AdminConfig() {
   const [flowProduct, setFlowProduct] = useState<string>('');
   const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
   const [flowBusy, setFlowBusy] = useState(false);
+  // SLA config (the single source of truth for product_promise — the overall
+  // per-product end-to-end SLA budget). Loaded so the flow editor can show the
+  // product's promise against the running sum of its stage target_days and flag
+  // over-allocation, and let the admin adjust the promise inline. Writing here
+  // saves to the SAME sla_config the SLA page + violation engine use.
+  const [slaConfig, setSlaConfig] = useState<SlaConfig | null>(null);
+  // Draft budget for the selected product (business days), seeded from
+  // product_promise[product]; '' means no promise set (falls back to step sum).
+  const [flowBudget, setFlowBudget] = useState<string>('');
 
   const hydrate = (c: PipelineConfig) => {
     setCfg(c);
@@ -195,6 +208,10 @@ export default function AdminConfig() {
       .then((c) => { if (active) hydrate(c); })
       .catch(() => toast({ tone: 'danger', message: 'Could not load configuration.' }))
       .finally(() => { if (active) setLoading(false); });
+    // SLA config carries product_promise (the overall per-product SLA budget).
+    fetchSlaConfig()
+      .then((r) => { if (active) setSlaConfig(r.sla_config); })
+      .catch(() => { /* non-fatal — flow editor just won't show a budget */ });
     return () => { active = false; };
   }, [allowed]);
 
@@ -280,7 +297,27 @@ export default function AdminConfig() {
     setFlowDraft(existing
       ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })) }
       : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }] });
+    // Seed the overall SLA budget from the existing product_promise (if any).
+    const promised = slaConfig?.product_promise?.[product];
+    setFlowBudget(typeof promised === 'number' && promised > 0 ? String(promised) : '');
   };
+  // Running sum of the flow's per-stage target_days, vs the overall SLA budget.
+  // Over-allocation = the stages promise more days than the product's end-to-end
+  // SLA, which would mean a deal can blow the product promise before it even
+  // reaches the last stage. Surfaced live as the admin distributes the days.
+  const flowDaysSum = useMemo(
+    () => flowDraft.stages.reduce((acc, s) => {
+      const t = Number(s.target_days);
+      return acc + (Number.isFinite(t) && t > 0 ? t : 0);
+    }, 0),
+    [flowDraft.stages],
+  );
+  const flowBudgetNum = useMemo(() => {
+    const n = Number(flowBudget);
+    return flowBudget.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null;
+  }, [flowBudget]);
+  const flowOverBudget = flowBudgetNum !== null && flowDaysSum > flowBudgetNum;
+
   const saveFlow = async () => {
     if (!flowProduct) return;
     const stages = flowDraft.stages
@@ -306,6 +343,27 @@ export default function AdminConfig() {
     try {
       await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types });
       setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages } }));
+
+      // Persist the overall SLA budget to product_promise (the SAME sla_config
+      // the SLA page + violation engine use), so the two stay reconciled. A
+      // blank/zero budget removes the promise (product falls back to step-sum).
+      if (slaConfig) {
+        const budgetNum = flowBudget.trim() === '' ? 0 : Number(flowBudget);
+        const promise = { ...(slaConfig.product_promise ?? {}) };
+        const had = flowProduct in promise;
+        let changed = false;
+        if (Number.isFinite(budgetNum) && budgetNum > 0) {
+          if (promise[flowProduct] !== budgetNum) { promise[flowProduct] = budgetNum; changed = true; }
+        } else if (had) {
+          delete promise[flowProduct]; changed = true;
+        }
+        if (changed) {
+          const nextSla = { ...slaConfig, product_promise: promise };
+          await saveSlaConfig(nextSla);
+          setSlaConfig(nextSla);
+        }
+      }
+
       toast({ tone: 'success', message: `${flowProduct} flow saved.` });
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save the flow.' });
@@ -650,6 +708,53 @@ export default function AdminConfig() {
                           ? 'No selection = offered to all client types.'
                           : 'Offered only to the selected client types.'}
                       </p>
+                    </div>
+
+                    {/* Overall product SLA budget (product_promise) — the
+                        single source of truth used by the SLA module + violation
+                        engine. Distribute the per-stage days under this ceiling. */}
+                    <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-medium text-gray-700">Overall SLA (create → closed)</p>
+                          <p className="text-[11px] text-gray-400">
+                            Business days. This is the product promise the violation engine references.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={flowBudget}
+                            type="number"
+                            placeholder="—"
+                            min={0}
+                            className="w-20"
+                            onChange={(e) => setFlowBudget(e.target.value)}
+                          />
+                          <span className="text-xs text-gray-500">bd</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600">
+                          Distributed across stages: <span className="font-semibold text-gray-900">{flowDaysSum} bd</span>
+                        </span>
+                        {flowBudgetNum !== null && (
+                          flowOverBudget ? (
+                            <Badge tone="danger" size="sm">
+                              Over by {flowDaysSum - flowBudgetNum} bd
+                            </Badge>
+                          ) : (
+                            <Badge tone="success" size="sm">
+                              {flowBudgetNum - flowDaysSum} bd to spare
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                      {flowOverBudget && (
+                        <p className="text-[11px] text-red-600">
+                          The stage days exceed the overall SLA — a deal would breach the product
+                          promise before reaching the final stage. Reduce stage targets or raise the SLA.
+                        </p>
+                      )}
                     </div>
 
                     {/* Stage sequence with per-stage target_days + win probability */}
