@@ -1155,6 +1155,12 @@ export async function requestLmsInfo(appId: string, body: RequestInfoRequest): P
 export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, ProvideInfoRequest>(lmsAction(appId, 'provide-info'), body);
 }
+export async function escalateLmsApplication(appId: string, body: { reason: string; to_manager?: string }): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { reason: string; to_manager?: string }>(lmsAction(appId, 'escalate'), body);
+}
+export async function addLmsManagerView(appId: string, body: { view: string }): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { view: string }>(lmsAction(appId, 'manager-view'), body);
+}
 export async function signLmsOffer(appId: string, body: SignOfferRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, SignOfferRequest>(lmsAction(appId, 'sign-offer'), body);
 }

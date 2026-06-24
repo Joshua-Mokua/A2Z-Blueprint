@@ -35,6 +35,7 @@ def _all_false() -> Dict[str, bool]:
         "can_update": False,
         "can_assign": False,
         "can_record_decision": False,
+        "can_escalate": False,
         "can_request_info": False,
         "can_provide_info": False,
         "can_sign_offer": False,
@@ -124,11 +125,22 @@ def resolve_application_permissions(
     )
 
     # ── can_record_decision ──
-    # Manager-tier-only (per Q2 decision in α8 planning). Status must
-    # permit a decision (submitted or assigned).
+    # The assigned analyst records the verdict (approve / decline / return-
+    # for-rework) on their case. Manager-tier and admin also retain this
+    # (oversight / acting on behalf). Status must permit a decision.
     can_record_decision = (
         status in STATUSES_PERMITTING_DECISION
-        and (is_admin or (is_mgr and in_scope))
+        and (is_admin or is_assigned_analyst or (is_mgr and in_scope))
+    )
+
+    # ── can_escalate ──
+    # When the assigned analyst cannot decide alone, they escalate / seek
+    # guidance — routing the case to their line manager for input. Available
+    # to the assigned analyst (and admin) while the case is in an analysable
+    # state. The line manager then picks it up in their cascade.
+    can_escalate = (
+        status in STATUSES_PERMITTING_DECISION
+        and (is_admin or is_assigned_analyst)
     )
 
     # ── Credit workflow flags (v10.587) ──
@@ -188,6 +200,7 @@ def resolve_application_permissions(
         "can_update": bool(can_update),
         "can_assign": bool(can_assign),
         "can_record_decision": bool(can_record_decision),
+        "can_escalate": bool(can_escalate),
         "can_request_info": bool(can_request_info),
         "can_provide_info": bool(can_provide_info),
         "can_sign_offer": bool(can_sign_offer),

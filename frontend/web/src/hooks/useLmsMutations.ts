@@ -20,6 +20,8 @@ import {
   recordLmsDecision,
   requestLmsInfo,
   provideLmsInfo,
+  escalateLmsApplication,
+  addLmsManagerView,
   signLmsOffer,
   validateLmsOffer,
   confirmLmsToCreditAdmin,
@@ -59,6 +61,8 @@ export interface LmsMutationsHookValue {
   recordDecision:  (appId: string, body: RecordDecisionRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   requestInfo:     (appId: string, body: RequestInfoRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   provideInfo:     (appId: string, body: ProvideInfoRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
+  escalate:        (appId: string, body: { reason: string; to_manager?: string }) => Promise<MutationResult<LoanAppMutationResponse>>;
+  managerView:     (appId: string, body: { view: string }) => Promise<MutationResult<LoanAppMutationResponse>>;
   signOffer:       (appId: string, body: SignOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   validateOffer:   (appId: string, body: ValidateOfferRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
   confirmToCreditAdmin: (appId: string, body: ConfirmToCreditAdminRequest) => Promise<MutationResult<LoanAppMutationResponse>>;
@@ -119,6 +123,10 @@ export function useLmsMutations(): LmsMutationsHookValue {
     (appId: string, body: RequestInfoRequest) => runMutation(requestLmsInfo, appId, body), [runMutation]);
   const provideInfo = useCallback(
     (appId: string, body: ProvideInfoRequest) => runMutation(provideLmsInfo, appId, body), [runMutation]);
+  const escalate = useCallback(
+    (appId: string, body: { reason: string; to_manager?: string }) => runMutation(escalateLmsApplication, appId, body), [runMutation]);
+  const managerView = useCallback(
+    (appId: string, body: { view: string }) => runMutation(addLmsManagerView, appId, body), [runMutation]);
   const signOffer = useCallback(
     (appId: string, body: SignOfferRequest) => runMutation(signLmsOffer, appId, body), [runMutation]);
   const validateOffer = useCallback(
@@ -135,6 +143,7 @@ export function useLmsMutations(): LmsMutationsHookValue {
   return {
     assign, update, recordDecision,
     requestInfo, provideInfo, signOffer, validateOffer, confirmToCreditAdmin,
+    escalate, managerView,
     referCommittee, voteCommittee, resolveCommittee,
     loading,
   };

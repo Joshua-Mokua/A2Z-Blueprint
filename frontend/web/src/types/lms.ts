@@ -29,8 +29,10 @@ export interface LoanApplicationPermissions {
   can_update:             boolean;
   /** Caller can assign analyst. Manager-tier only, status=submitted. */
   can_assign:             boolean;
-  /** Caller can record decision. Manager-tier, status=submitted|assigned. */
+  /** Caller can record decision. Assigned analyst, manager-tier, or admin. */
   can_record_decision:    boolean;
+  /** Assigned analyst can escalate / seek guidance to their line manager. */
+  can_escalate?:          boolean;
   // Credit workflow (v10.587)
   can_request_info?:           boolean;
   can_provide_info?:           boolean;
@@ -183,6 +185,17 @@ export interface LoanApplication {
   history?:               LoanAppHistoryEvent[];
   offer?:                 LoanAppOffer | null;
   info_request?:          LoanAppInfoRequest | null;
+  escalation?:            {
+    escalated?: boolean;
+    by?: string;
+    at?: string;
+    reason?: string;
+    to_manager?: string;
+    resolved?: boolean;
+    manager_view?: string;
+    view_by?: string;
+    view_at?: string;
+  } | null;
   committee?:             LoanAppCommittee | null;
   credit_admin_case_id?:  string;
 

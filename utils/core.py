@@ -5520,6 +5520,50 @@ class LoanApplicationManager:
                         {"documents": documents or []})
         return True
 
+    def escalate(self, app_id: str, by: str, reason: str = "",
+                 to_manager: str = "") -> bool:
+        """Assigned analyst seeks guidance / cannot decide alone — routes
+        the case to their line manager for input. The case stays in its
+        analysable status (so it remains in the queue and the SLA clock is
+        unbroken); an `escalation` block is stamped so the line manager
+        sees it as pending their input. The manager can then add views or
+        record the decision themselves (both already permitted in scope)."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        self.update(app_id, {
+            "escalation": {
+                "escalated": True,
+                "by": by,
+                "at": datetime.now().isoformat(),
+                "reason": reason,
+                "to_manager": to_manager,
+                "resolved": False,
+                "manager_view": "",
+            },
+        })
+        self._log_event(app_id, "escalated_to_manager", by, reason,
+                        {"to_manager": to_manager})
+        return True
+
+    def add_manager_view(self, app_id: str, by: str, view: str = "") -> bool:
+        """Line manager records their input on an escalated case. Marks the
+        escalation resolved and stores the manager's view. Best-effort: if
+        there is no open escalation, still records the view as a note."""
+        app = self.get(app_id)
+        if not app:
+            return False
+        esc = dict(app.get("escalation") or {})
+        esc.update({
+            "resolved": True,
+            "manager_view": view,
+            "view_by": by,
+            "view_at": datetime.now().isoformat(),
+        })
+        self.update(app_id, {"escalation": esc})
+        self._log_event(app_id, "manager_view_added", by, view, {})
+        return True
+
     def issue_offer(self, app_id: str, by: str, note: str = "") -> bool:
         """Route an approved app back to the deal owner to issue the
         letter of offer (offer_issued)."""

@@ -346,6 +346,22 @@ export function LmsApplicationDetail() {
         {permissions.can_request_info && (
           <WfRequestInfo appId={application.id} mutations={mutations} toast={toast} onDone={refetch} />
         )}
+        {permissions.can_escalate && (
+          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="warning" title="Escalate / seek guidance"
+            desc="If you cannot decide this case alone, escalate it to your line manager for input. Give a brief reason."
+            cta="Escalate to line manager"
+            run={(id, note) => mutations.escalate(id, { reason: note })}
+            okMsg="Escalated to your line manager." requireNote />
+        )}
+        {application.escalation?.escalated && !application.escalation?.resolved && (permissions.can_record_decision) && (
+          <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
+            stripe="primary" title="Add your view (line manager)"
+            desc={`Escalated by ${application.escalation?.by || 'the analyst'}: ${application.escalation?.reason || ''}`}
+            cta="Record manager view"
+            run={(id, note) => mutations.managerView(id, { view: note })}
+            okMsg="Your view was recorded." requireNote />
+        )}
         {permissions.can_provide_info && (
           <WfSimple appId={application.id} mutations={mutations} toast={toast} onDone={refetch}
             stripe="accent" title="Provide requested information"
@@ -848,19 +864,24 @@ interface WfSimpleProps {
   mutations: WfMutations;
   toast: WfToast;
   onDone: () => Promise<unknown> | unknown;
-  stripe: 'primary' | 'secondary' | 'accent' | 'brand';
+  stripe: 'primary' | 'secondary' | 'accent' | 'brand' | 'warning';
   title: string;
   desc: string;
   cta: string;
   run: WfRun;
   okMsg: string;
+  requireNote?: boolean;
 }
 
-function WfSimple({ appId, toast, onDone, stripe, title, desc, cta, run, okMsg, mutations }: WfSimpleProps) {
+function WfSimple({ appId, toast, onDone, stripe, title, desc, cta, run, okMsg, mutations, requireNote }: WfSimpleProps) {
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const onClick = async () => {
     setError(null);
+    if (requireNote && note.trim().length < 3) {
+      setError('Please enter a reason (at least a few characters).');
+      return;
+    }
     const res = await run(appId, note.trim());
     if (res.ok) {
       await onDone();
@@ -870,7 +891,7 @@ function WfSimple({ appId, toast, onDone, stripe, title, desc, cta, run, okMsg, 
       setError(res.error);
     }
   };
-  const cardStripe = stripe === 'brand' ? 'primary' : stripe;
+  const cardStripe = stripe === 'brand' ? 'primary' : stripe === 'warning' ? 'accent' : stripe;
   return (
     <Card className="mt-6" stripe={cardStripe}>
       <Card.Header><h3 className="text-sm font-semibold text-gray-900">{title}</h3></Card.Header>

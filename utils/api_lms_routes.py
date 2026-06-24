@@ -874,3 +874,69 @@ def lms_pool_visibility_set(
               f"roles={section.get('roles')}|statuses={section.get('statuses')}")
     from utils.api_lms_scope import get_pool_visibility_config
     return {"pool_visibility": get_pool_visibility_config()}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Analyst escalation ("seek guidance") + line-manager input
+# POST /applications/{id}/escalate        — analyst routes to line manager
+# POST /applications/{id}/manager-view    — line manager records input
+# ─────────────────────────────────────────────────────────────────────
+
+
+@router.post("/applications/{app_id}/escalate",
+             response_model=LoanAppMutationResponse)
+def lms_application_escalate(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Assigned analyst seeks guidance / cannot decide alone — routes the
+    case to their line manager for input. Gated by can_escalate."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    perms = resolve_application_permissions(user, app, visible_codes)
+    if not perms.get("can_escalate"):
+        raise HTTPException(status_code=403,
+                            detail="You cannot escalate this application")
+    reason = str(payload.get("reason", "") or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(status_code=400,
+                            detail="An escalation reason is required")
+    ok = lam.escalate(app_id, by=str(user.get("username", "") or ""),
+                      reason=reason, to_manager=str(payload.get("to_manager", "") or ""))
+    if not ok:
+        raise HTTPException(status_code=500, detail="escalate failed")
+    audit_log("LMS_ESCALATED", str(user.get("username", "") or ""), f"{app_id}|{reason[:60]}")
+    return {"application": lam.get(app_id), "status": str(lam.get(app_id).get("status", ""))}
+
+
+@router.post("/applications/{app_id}/manager-view",
+             response_model=LoanAppMutationResponse)
+def lms_application_manager_view(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Line manager records their input/views on an escalated case. The
+    manager must have the app in scope (manager-tier or admin)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, visible_codes, caller_code,
+            caller_role=str(user.get('role', '') or '')):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    view = str(payload.get("view", "") or "").strip()
+    if len(view) < 3:
+        raise HTTPException(status_code=400, detail="A manager view is required")
+    ok = lam.add_manager_view(app_id, by=str(user.get("username", "") or ""), view=view)
+    if not ok:
+        raise HTTPException(status_code=500, detail="manager-view failed")
+    audit_log("LMS_MANAGER_VIEW", str(user.get("username", "") or ""), f"{app_id}|{view[:60]}")
+    return {"application": lam.get(app_id), "status": str(lam.get(app_id).get("status", ""))}

@@ -1188,6 +1188,82 @@ def pool_visibility_probe(base):
     step("pool: non-admin write denied", 403, st, r)
 
 
+def analyst_decision_probe(base):
+    """Assigned analyst can decide directly (approve/decline/return) AND can
+    escalate / seek guidance to their line manager; the line manager can then
+    add their view. Uses the MANAGER persona as the assigned analyst (the
+    assign step sets analyst=MANAGER), so both new permissions are exercised."""
+    print("\n=== ANALYST DECISION + ESCALATE (credit analyst workspace) ===")
+    owner = login(base, "OWNER")
+    manager = login(base, "MANAGER")
+    admin = login(base, "ADMIN")
+    if not (owner and manager and admin):
+        step("analyst: logins", 200, 0, note="cannot proceed"); return
+
+    def _fresh_assigned_app():
+        # create -> advance -> validate -> submit -> assign analyst(=MANAGER)
+        b = {
+            "client_name": f"SIM Analyst Case {datetime.now():%H%M%S%f}",
+            "client_type": "Business", "product_type": "Term Loan",
+            "deal_value": 3000000, "stage": "Lead",
+            "segment": "SME", "sector": "Manufacturing",
+        }
+        st, d = _req(base, "POST", "/api/pipeline/deals", owner, b)
+        did = d.get("id") or d.get("deal", {}).get("id") or d.get("deal_id")
+        for tgt in ["Contacted", "Qualified", "Application", "Credit Assessment"]:
+            _req(base, "POST", f"/api/pipeline/deals/{did}/advance", owner, {"target_stage": tgt})
+        _req(base, "POST", f"/api/pipeline/deals/{did}/validate", manager,
+             {"approved": True, "note": "validated (analyst probe)"})
+        st, chk = _req(base, "GET", f"/api/pipeline/deals/{did}/credit-checklist", owner)
+        req = chk.get("required", []) if isinstance(chk, dict) else []
+        st, body = _req(base, "POST", f"/api/pipeline/deals/{did}/submit-to-credit",
+                        owner, {"documents_provided": req})
+        aid = body.get("application_id")
+        if aid:
+            _req(base, "POST", f"/api/lms/applications/{aid}/assign", manager,
+                 {"analyst_code": "300716", "analyst_name": "Sim Analyst"})
+        return aid
+
+    # (1) Assigned analyst can record a decision DIRECTLY (return-for-rework).
+    aid = _fresh_assigned_app()
+    if not aid:
+        step("analyst: app ready", True, False, note="no app"); return
+    st, perms = _req(base, "GET", f"/api/lms/applications/{aid}", manager)
+    p = perms.get("permissions", {}) if isinstance(perms, dict) else {}
+    step("analyst: assigned analyst gets can_record_decision", True,
+         bool(p.get("can_record_decision")), note=f"can_escalate={p.get('can_escalate')}")
+    step("analyst: assigned analyst gets can_escalate", True, bool(p.get("can_escalate")))
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid}/decision", manager,
+                    {"verdict": "returned", "authority": "Credit Analyst",
+                     "reason": "Needs updated financials (sim)"})
+    step("analyst: analyst records return-for-rework directly", (200, 201), st, body,
+         note=f"status: {body.get('status') if isinstance(body, dict) else '?'}")
+
+    # (2) Escalate / seek guidance routes to the line manager.
+    aid2 = _fresh_assigned_app()
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid2}/escalate", manager,
+                    {"reason": "Borderline DSCR — need manager steer (sim)"})
+    step("analyst: escalate to line manager accepted", (200, 201), st, body)
+    st, app = _req(base, "GET", f"/api/lms/applications/{aid2}", admin)
+    esc = (app.get("application", {}) if isinstance(app, dict) else {}).get("escalation", {}) or {}
+    step("analyst: escalation stamped (pending manager input)", True,
+         bool(esc.get("escalated")) and not esc.get("resolved"),
+         note=f"by={esc.get('by')}")
+    # Short reason rejected.
+    aid3 = _fresh_assigned_app()
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid3}/escalate", manager, {"reason": "x"})
+    step("analyst: escalate with too-short reason rejected", 400, st, body)
+
+    # (3) Line manager adds their view; escalation resolves.
+    st, body = _req(base, "POST", f"/api/lms/applications/{aid2}/manager-view", manager,
+                    {"view": "Proceed to decline — DSCR below floor (sim)"})
+    step("manager: line manager records view on escalated case", (200, 201), st, body)
+    st, app = _req(base, "GET", f"/api/lms/applications/{aid2}", admin)
+    esc = (app.get("application", {}) if isinstance(app, dict) else {}).get("escalation", {}) or {}
+    step("manager: manager view resolves the escalation", True,
+         bool(esc.get("resolved")) and bool(esc.get("manager_view")))
+
+
 def staff_search_probe(base):
     print("\n=== STAFF SEARCH (referral recipient picker) ===")
     admin = login(base, "ADMIN")
@@ -1781,6 +1857,7 @@ def main():
     troops_probe(args.base, cleared_case_id)
     roles_probe(args.base)
     pool_visibility_probe(args.base)
+    analyst_decision_probe(args.base)
     sla_config_probe(args.base)
     sla_violations_probe(args.base)
     sla_step_clock_probe(args.base)
