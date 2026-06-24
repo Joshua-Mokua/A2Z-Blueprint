@@ -47,6 +47,7 @@ import { Card } from '@/components/Card';
 import { StaffPicker } from '@/components/StaffPicker';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
+import { Badge } from '@/components/Badge';
 import { Input } from '@/components/Input';
 import { CustomerSearchInput } from '@/components/CustomerSearchInput';
 import { fetchCbsCustomer, fetchPipelineConfig, fetchCustomerPortfolioOwner, ApiValidationError, type CustomerPortfolioOwner, type StaffMember } from '@/lib/api';
@@ -143,7 +144,8 @@ export function PipelineCreate() {
   const [productOther, setProductOther] = useState(false);
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
   const [stage,       setStage]       = useState<string>('Lead');
-  const [probability, setProbability] = useState<number>(10);     // percent 0..100
+  // (Manual probability slider removed — win probability is now DERIVED from the
+  //  selected product flow's stage; see derivedWinProbability below.)
 
   const [nextAction,     setNextAction]     = useState('');
   const [nextActionDate, setNextActionDate] = useState('');
@@ -218,6 +220,25 @@ export function PipelineCreate() {
     }
     return [...INITIAL_STAGES_BY_CATEGORY[category]];   // fallback pre-config
   }, [config, productClass, category]);
+
+  // Win probability is DERIVED from the chosen product's flow at the selected
+  // stage (admin-authored), exactly as the server derives it on read — never a
+  // manual figure. Null when the product has no flow or the stage carries no
+  // win_probability. Mirrors _flow_stage_win_probability server-side.
+  const derivedWinProbability = useMemo<number | null>(() => {
+    const flow = config?.product_flows?.[productType];
+    if (!flow || !Array.isArray(flow.stages)) return null;
+    const target = stage.trim().toLowerCase();
+    for (const s of flow.stages) {
+      if (String(s.stage ?? '').trim().toLowerCase() === target) {
+        const wp = s.win_probability;
+        if (wp === null || wp === undefined) return null;
+        const v = Number(wp);
+        return Number.isFinite(v) && v >= 0 && v <= 100 ? v : null;
+      }
+    }
+    return null;
+  }, [config, productType, stage]);
 
   // Client business lines (Consumer / Commercial / CIB) — admin-configurable.
   // The selected type's `field` (mou|sector) drives the third selector.
@@ -752,7 +773,10 @@ export function PipelineCreate() {
       client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
       is_ntb:             isNtb,
       pipeline_category:  category,
-      probability:        probability / 100,
+      // Legacy `probability` (0..1) now reflects the DERIVED stage win
+      // probability rather than a manual slider; omitted when the stage has
+      // none authored (server derives win_probability on read regardless).
+      probability:        derivedWinProbability !== null ? derivedWinProbability / 100 : undefined,
       next_action:        nextAction.trim() || undefined,
       next_action_date:   nextActionDate || undefined,
       expected_close:     expectedClose  || undefined,
@@ -1248,18 +1272,29 @@ export function PipelineCreate() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Probability ({probability}%)
+                  Win probability
                 </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={probability}
-                  onChange={(e) => setProbability(Number(e.target.value))}
-                  disabled={mutations.loading}
-                  className="mt-3 w-full"
-                />
+                {derivedWinProbability === null ? (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge tone="neutral" size="sm">—</Badge>
+                    <span className="text-xs text-gray-400">
+                      Set per stage in the product flow (Admin → Product flows).
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge
+                      tone={derivedWinProbability >= 75 ? 'success'
+                        : derivedWinProbability >= 40 ? 'info' : 'neutral'}
+                      size="sm"
+                    >
+                      {Math.round(derivedWinProbability)}%
+                    </Badge>
+                    <span className="text-xs text-gray-400">
+                      auto from “{stage}” — updates as the deal advances
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Card.Body>
