@@ -1050,7 +1050,9 @@ def referral_probe(base):
 
     # BSC shadow credit: materialize the accepted deal -> the REFERRER (Frank,
     # 300731) earns Asset Referral (K238) shadow credit. Term Loan -> asset.
-    _req(base, "PUT", f"/api/pipeline/deals/{did}", manager, {"stage": "Closed Won"})
+    # Stage changes go through /advance (PUT no longer accepts stage changes).
+    _req(base, "POST", f"/api/pipeline/deals/{did}/advance", manager,
+         {"new_stage": "Closed Won", "note": "stress: materialize for BSC shadow credit"})
     st, sync = _req(base, "POST", "/api/pipeline/referrals/sync-bsc?dry_run=true", admin, {})
     contribs = sync.get("contributions", 0) if isinstance(sync, dict) else 0
     sample = sync.get("sample", []) if isinstance(sync, dict) else []
