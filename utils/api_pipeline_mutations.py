@@ -250,13 +250,42 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
         if v is None or (isinstance(v, str) and not v.strip()):
             return False, f"Missing required field: {field}"
 
-    # Numeric sanity on deal_value
+    # Numeric sanity on deal_value. float() accepts NaN/Infinity and absurd
+    # magnitudes, which then crash the persistence layer (a 500 / DoS surface
+    # found in stress Phase 3). Reject non-finite and out-of-range values here.
+    import math as _math
     try:
         val = float(deal_data["deal_value"])
-        if val < 0:
-            return False, "deal_value must be non-negative"
     except (TypeError, ValueError):
         return False, "deal_value must be a number"
+    if not _math.isfinite(val):
+        return False, "deal_value must be a finite number"
+    if val < 0:
+        return False, "deal_value must be non-negative"
+    # Upper bound: 1 quadrillion KES is already absurd for a single facility;
+    # anything beyond is malformed input, not a real deal. Prevents overflow /
+    # persistence crashes from values like 1e308.
+    if val > 1_000_000_000_000_000:
+        return False, "deal_value exceeds the maximum allowed magnitude"
+
+    # String sanity on free-text fields (stress Phase 3): cap length to prevent
+    # oversized-payload persistence crashes (a 1 MB name 500'd the DB layer),
+    # and reject control characters / NUL. Control chars (\x00-\x08, \x0b-\x0c,
+    # \x0e-\x1f, \x7f) cannot be written into an Excel cell (openpyxl raises
+    # IllegalCharacterError), so a single poisoned name would break the xlsx
+    # export for the whole scoped pipeline; reject them at the door.
+    def _has_control_chars(s: str) -> bool:
+        return any((ord(ch) < 0x20 and ch not in "\t\n\r") or ord(ch) == 0x7f
+                   for ch in s)
+    for _fld in ("client_name", "product_type"):
+        _v = deal_data.get(_fld)
+        if isinstance(_v, str) and _v:
+            if "\x00" in _v:
+                return False, f"{_fld} contains an invalid null character"
+            if _has_control_chars(_v):
+                return False, f"{_fld} contains invalid control characters"
+            if len(_v) > 512:
+                return False, f"{_fld} is too long (max 512 characters)"
 
     # Stage must be a known non-LMS stage. Creating a deal directly
     # at an LMS stage would have the same inconsistency problem as

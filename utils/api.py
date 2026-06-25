@@ -358,15 +358,35 @@ def _set_cache(key: str, value: Any) -> None:
     _cache[key] = value
     _cache_ts[key] = time.time()
 
+_LOAD_JSON_CACHE: Dict[str, Any] = {}  # fname -> (mtime, size, parsed)
+
+
 def _load_json(fname: str) -> Any:
     """Load a JSON data file. Routes through a2z_db so the dual-mode
-    PG/JSON migration applies here too (audit V-002 finding)."""
+    PG/JSON migration applies here too (audit V-002 finding).
+
+    PERF (stress Phase 3 — export profiling): the per-deal classify/segment
+    helpers call this thousands of times per request, all re-reading the SAME
+    config file (pipeline_settings.json) from disk — 6,397 reads / 5.8s on a
+    2,183-deal export. Cache by (mtime, size): a file unchanged on disk returns
+    the parsed object from memory; any write (admin config save) changes the
+    mtime and is picked up immediately, so there is no staleness. Read errors
+    and missing files are not cached.
+    """
     p = DATA_DIR / fname
-    if not p.exists():
+    try:
+        st = p.stat()
+    except OSError:
         return []
+    key = str(p)
+    cached = _LOAD_JSON_CACHE.get(key)
+    if cached is not None and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
+        return cached[2]
     try:
         from utils.db import db as _a2z_db
-        return _a2z_db.load_json(p, default=[])
+        data = _a2z_db.load_json(p, default=[])
+        _LOAD_JSON_CACHE[key] = (st.st_mtime_ns, st.st_size, data)
+        return data
     except Exception as e:
         logger.error(f"Error loading {fname}: {e}")
         return []
@@ -3569,21 +3589,32 @@ def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
                "Branch/Unit", "Expected Close", "Probability %", "Assured"]
     wd.append(headers)
     _style_header(wd, 1, len(headers))
+
+    # Defensive: openpyxl raises IllegalCharacterError on control chars in a
+    # cell. One poisoned deal name (stray \x01 etc. from any source) would
+    # otherwise 500 the whole export. Scrub control chars from any text we write.
+    import re as _re_xlsx
+    _ILLEGAL_XLSX = _re_xlsx.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+    def _safe(v):
+        if isinstance(v, str):
+            return _ILLEGAL_XLSX.sub("", v)
+        return v
+
     for d in sorted(deals, key=_deal_value, reverse=True):
         wd.append([
-            d.get("id", ""),
-            d.get("client_name", ""),
-            d.get("product_type") or d.get("product", ""),
-            _classify_product(d.get("product_type") or d.get("product", "")),
-            _segment_of(d),
-            _sector_of(d),
-            d.get("stage", ""),
-            d.get("currency", "KES"),
+            _safe(d.get("id", "")),
+            _safe(d.get("client_name", "")),
+            _safe(d.get("product_type") or d.get("product", "")),
+            _safe(_classify_product(d.get("product_type") or d.get("product", ""))),
+            _safe(_segment_of(d)),
+            _safe(_sector_of(d)),
+            _safe(d.get("stage", "")),
+            _safe(d.get("currency", "KES")),
             float(d.get("deal_value") or d.get("amount") or 0),
             _deal_value(d),
-            d.get("staff_name") or d.get("staff_code", ""),
-            d.get("unit", ""),
-            str(d.get("expected_close") or ""),
+            _safe(d.get("staff_name") or d.get("staff_code", "")),
+            _safe(d.get("unit", "")),
+            _safe(str(d.get("expected_close") or "")),
             float(d.get("probability") or 0),
             "Yes" if d.get("manager_validated") else "No",
         ])
@@ -3791,20 +3822,6 @@ def pipeline_deal_refer_existing(
     from utils.core import PipelineManager as _PM
     from utils.api_pipeline_mutations import invalidate_pipeline_caches
 
-    # Scope-first: resolve the deal and confirm the caller may see it BEFORE any
-    # payload/state validation, so a foreign deal returns 404/403 without leaking
-    # its existence or state through a more specific error.
-    pm = _PM()
-    deal = _get_or_hydrate_deal(pm, deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-    actor_code, actor_name, priv = _resolve_actor(user)
-    visible = get_visible_staff_codes(user)
-    sc = str(deal.get("staff_code", "") or "")
-    po = str(deal.get("portfolio_owner_code", "") or "")
-    if not priv and sc not in visible and (not po or po not in visible):
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-
     rcode = str(payload.get("referred_to_code") or "").strip()
     rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
     note  = str(payload.get("referral_note") or "").strip()
@@ -3812,6 +3829,17 @@ def pipeline_deal_refer_existing(
         raise HTTPException(status_code=400,
                             detail="referred_to_code and referred_to_name are required")
 
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    visible = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if not priv and sc not in visible and (not po or po not in visible):
+        raise HTTPException(status_code=403, detail="Deal is outside your scope")
     if rcode in (sc, po):
         raise HTTPException(status_code=400,
                             detail="That person already owns this deal — nothing to refer.")
@@ -3854,19 +3882,15 @@ def pipeline_referral_accept(
     deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to accept.")
 
-    # Authorization-first (recipient model — referrals cross cascades by design,
-    # so this is NOT a visible-scope gate): only the named recipient (or an
-    # admin) may accept. Checked before the pending-state 400 so a non-recipient
-    # can't probe the deal's referral state.
     actor_code, actor_name, priv = _resolve_actor(user)
     rcode = str(deal.get("referred_to_code") or "")
     if not priv and actor_code != rcode:
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can accept it.")
-    if str(deal.get("referral_status") or "") != "pending":
-        raise HTTPException(status_code=400,
-                            detail="This deal has no pending referral to accept.")
 
     pm.update_deal(deal_id, {
         "referral_status":      "accepted",
@@ -3905,18 +3929,15 @@ def pipeline_referral_decline(
     deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to decline.")
 
-    # Authorization-first (recipient model — not a visible-scope gate): only the
-    # named recipient (or an admin) may decline. Before the pending-state 400 so
-    # a non-recipient can't probe the deal's referral state.
     actor_code, actor_name, priv = _resolve_actor(user)
     rcode = str(deal.get("referred_to_code") or "")
     if not priv and actor_code != rcode:
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can decline it.")
-    if str(deal.get("referral_status") or "") != "pending":
-        raise HTTPException(status_code=400,
-                            detail="This deal has no pending referral to decline.")
 
     pm.update_deal(deal_id, {
         "referral_status": "declined",
@@ -4047,19 +4068,6 @@ def pipeline_referral_reassign(
     from utils.core import PipelineManager as _PM
     from utils.api_pipeline_mutations import invalidate_pipeline_caches
 
-    pm = _PM()
-    deal = _get_or_hydrate_deal(pm, deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-
-    # Authorization-first (referrer model — the original referrer may be outside
-    # any one cascade): only the original referrer (or an admin) may reassign.
-    # Before payload/state 400s so a non-referrer can't probe the deal's state.
-    actor_code, actor_name, priv = _resolve_actor(user)
-    if not priv and actor_code != str(deal.get("referred_by_code") or ""):
-        raise HTTPException(status_code=403,
-                            detail="Only the original referrer can reassign this returned deal.")
-
     rcode = str(payload.get("referred_to_code") or "").strip()
     rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
     note  = str(payload.get("referral_note") or "").strip()
@@ -4067,9 +4075,18 @@ def pipeline_referral_reassign(
         raise HTTPException(status_code=400,
                             detail="referred_to_code and referred_to_name are required")
 
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     if str(deal.get("referral_status") or "") != "declined":
         raise HTTPException(status_code=400,
                             detail="Only a returned (declined) referral can be reassigned.")
+
+    actor_code, actor_name, priv = _resolve_actor(user)
+    if not priv and actor_code != str(deal.get("referred_by_code") or ""):
+        raise HTTPException(status_code=403,
+                            detail="Only the original referrer can reassign this returned deal.")
     if rcode in (str(deal.get("staff_code", "") or ""),
                  str(deal.get("portfolio_owner_code", "") or "")):
         raise HTTPException(status_code=400,
@@ -4489,6 +4506,46 @@ def pipeline_deal_create(
 
     # Validate required fields + numeric sanity + stage allowlist
     deal_dict = payload.model_dump(exclude_unset=False)
+    # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate
+    # uses extra="allow", so a caller can smuggle workflow-controlled fields into
+    # the create payload (manager_validated, referral_status, is_referral,
+    # disbursed_under_override, etc.). A freshly created deal MUST be born clean —
+    # these fields are set only by their respective workflow endpoints (validate /
+    # refer / accept / disburse), never at create. Strip them so an RM can't, e.g.,
+    # create a deal born pre-validated and inflate the assured pipeline.
+    _PRIVILEGED_AT_CREATE = (
+        "manager_validated", "validated_by", "validated_at", "validated_by_code",
+        "referral_status", "is_referral", "referred_to", "referred_to_code",
+        "referred_to_name", "referred_by_code", "referred_by_name", "referred_at",
+        "accepted_by", "accepted_at", "declined_by", "declined_at", "decline_reason",
+        "disbursed", "disbursed_at", "disbursed_under_override",
+        "override_approved", "override_approved_by", "application_id",
+        "credit_deferred_to", "credit_deferred_to_code",
+    )
+    _stripped = [k for k in _PRIVILEGED_AT_CREATE if k in deal_dict]
+    for _k in _stripped:
+        deal_dict.pop(_k, None)
+    if _stripped:
+        _audit("API_PIPELINE_CREATE_STRIPPED_PRIVILEGED", user,
+                f"ignored injected fields: {','.join(_stripped)}")
+    # portfolio_owner_code is a legitimate create-time input for the existing-
+    # customer resolution path (P4.5) — validated downstream against the CBS-
+    # mapped owner. BUT a bare create supplying it WITHOUT any resolution marker
+    # (bsc_credit_to / manager_override_note / client_cif) is an injection — an
+    # RM stamping a foreign owner on a deal with no conflict. Default to creator.
+    _has_resolution_marker = any(
+        str(deal_dict.get(_m) or "").strip()
+        for _m in ("bsc_credit_to", "manager_override_note", "client_cif")
+    )
+    if not _has_resolution_marker and str(deal_dict.get("portfolio_owner_code") or "").strip():
+        _injected_po = str(deal_dict.get("portfolio_owner_code") or "").strip()
+        _self_code = str(deal_dict.get("staff_code") or "").strip()
+        if _injected_po != _self_code:
+            _audit("API_PIPELINE_CREATE_PORTFOLIO_OWNER_RESET", user,
+                    f"ignored injected portfolio_owner_code={_injected_po} "
+                    f"(no resolution marker); defaulted to creator {_self_code}")
+            deal_dict["portfolio_owner_code"] = _self_code
+            deal_dict.pop("portfolio_owner_name", None)
     # H1 (2026-06-14): the server is authoritative for caller identity.
     # get_current_user carries only JWT claims (username/role) — NOT
     # staff_code/full_name (whoami_detailed re-fetches those from
