@@ -515,6 +515,25 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "decline_reason":       deal.get("decline_reason"),
                 "sla_step_log":         deal.get("sla_step_log"),
                 "sla_commitments":      deal.get("sla_commitments"),
+                # Phase B0: persist the remaining deal fields so PG is a COMPLETE
+                # mirror (these were JSON-only and vanished under PG-first reads).
+                "bsc_credit_to":            deal.get("bsc_credit_to"),
+                "manager_override_note":    deal.get("manager_override_note"),
+                "is_referral":              deal.get("is_referral"),
+                "referred_at":              deal.get("referred_at"),
+                "accepted_by":              deal.get("accepted_by"),
+                "accepted_at":              deal.get("accepted_at"),
+                "declined_by":              deal.get("declined_by"),
+                "declined_at":              deal.get("declined_at"),
+                "disbursed":                deal.get("disbursed"),
+                "disbursed_at":             deal.get("disbursed_at"),
+                "disbursed_under_override": deal.get("disbursed_under_override"),
+                "override_approved":        deal.get("override_approved"),
+                "override_approved_by":     deal.get("override_approved_by"),
+                "win_probability":          deal.get("win_probability"),
+                "credit_deferred_to":       deal.get("credit_deferred_to"),
+                "credit_deferred_to_code":  deal.get("credit_deferred_to_code"),
+                "history":                  deal.get("history"),
             }),
         }
         if not row["id"]:
@@ -587,7 +606,16 @@ def _normalize_db_deal_row(row):
                    "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
-                   "decline_reason", "sla_step_log", "sla_commitments"):
+                   "decline_reason", "sla_step_log", "sla_commitments",
+                   # Phase B0: lift the full field set back so DB-first reads
+                   # reconstruct a complete deal (write side in _db_sync).
+                   "portfolio_owner_code", "portfolio_owner_name", "is_ntb",
+                   "source", "bsc_credit_to", "manager_override_note",
+                   "is_referral", "referred_at", "accepted_by", "accepted_at",
+                   "declined_by", "declined_at", "disbursed", "disbursed_at",
+                   "disbursed_under_override", "override_approved",
+                   "override_approved_by", "win_probability",
+                   "credit_deferred_to", "credit_deferred_to_code", "history"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
