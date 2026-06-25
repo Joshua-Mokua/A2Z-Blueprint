@@ -1212,6 +1212,91 @@ def lms_committee_tiers(
     return {"tiers": get_committee_tiers()}
 
 
+@router.post("/committee/tiers")
+def lms_committee_tiers_set(
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(require_config_admin),
+) -> Dict[str, Any]:
+    """Replace the committee tier ladder. Admin only (require_config_admin,
+    same gate as the other admin-config endpoints).
+
+    Body: { tiers: [ {tier:int, key?:str, name:str, authority_limit_kes?:num|null,
+    can_be_entry?:bool}, ... ] }. The list must be non-empty. Tiers are
+    normalised + sorted by tier number. Atomic write + backup-before-mutation.
+    """
+    tiers = payload.get("tiers")
+    if not isinstance(tiers, list) or not tiers:
+        raise HTTPException(status_code=400,
+                            detail="tiers must be a non-empty list")
+    # Validate + normalise each tier entry.
+    norm: List[Dict[str, Any]] = []
+    seen_numbers = set()
+    for entry in tiers:
+        if not isinstance(entry, dict):
+            raise HTTPException(status_code=400,
+                                detail="each tier must be an object")
+        try:
+            tn = int(entry.get("tier"))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400,
+                                detail="each tier needs an integer 'tier' number")
+        if tn in seen_numbers:
+            raise HTTPException(status_code=400,
+                                detail=f"duplicate tier number {tn}")
+        seen_numbers.add(tn)
+        name = str(entry.get("name", "") or "").strip()
+        if not name:
+            raise HTTPException(status_code=400,
+                                detail=f"tier {tn} needs a name")
+        lim = entry.get("authority_limit_kes")
+        if lim is not None:
+            try:
+                lim = float(lim)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400,
+                                    detail=f"tier {tn} authority_limit_kes must be a number or null")
+        norm.append({
+            "tier": tn,
+            "key": str(entry.get("key", f"tier_{tn}")),
+            "name": name,
+            "authority_limit_kes": lim,
+            "can_be_entry": bool(entry.get("can_be_entry", True)),
+        })
+    norm.sort(key=lambda x: x["tier"])
+
+    import json as _json, os as _os, tempfile as _tempfile
+    from datetime import datetime as _dt
+    from pathlib import Path as _Path
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    try:
+        cfg = _json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    except Exception:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    cfg["committee_tiers"] = norm
+
+    # Backup-before-mutation + atomic write.
+    try:
+        if p.exists():
+            backup = p.with_suffix(f".pre_tiers_{_dt.now():%Y%m%d-%H%M%S}.json")
+            backup.write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
+        fd, tmp = _tempfile.mkstemp(dir=str(p.parent), suffix=".tmp")
+        with _os.fdopen(fd, "w", encoding="utf-8") as fh:
+            _json.dump(cfg, fh, ensure_ascii=False, indent=2)
+            fh.flush()
+            _os.fsync(fh.fileno())
+        _os.replace(tmp, str(p))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not save config: {e}")
+
+    audit_log("LMS_COMMITTEE_TIERS_SET",
+              str(user.get("username", "") or ""),
+              f"tiers={len(norm)}")
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    return {"tiers": get_committee_tiers(), "status": "saved"}
+
+
 @router.post("/applications/{app_id}/committee/submit-upward",
              response_model=LoanAppMutationResponse)
 def lms_committee_submit_upward(
