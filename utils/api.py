@@ -3791,6 +3791,20 @@ def pipeline_deal_refer_existing(
     from utils.core import PipelineManager as _PM
     from utils.api_pipeline_mutations import invalidate_pipeline_caches
 
+    # Scope-first: resolve the deal and confirm the caller may see it BEFORE any
+    # payload/state validation, so a foreign deal returns 404/403 without leaking
+    # its existence or state through a more specific error.
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    actor_code, actor_name, priv = _resolve_actor(user)
+    visible = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if not priv and sc not in visible and (not po or po not in visible):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
     rcode = str(payload.get("referred_to_code") or "").strip()
     rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
     note  = str(payload.get("referral_note") or "").strip()
@@ -3798,17 +3812,6 @@ def pipeline_deal_refer_existing(
         raise HTTPException(status_code=400,
                             detail="referred_to_code and referred_to_name are required")
 
-    pm = _PM()
-    deal = _get_or_hydrate_deal(pm, deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-
-    actor_code, actor_name, priv = _resolve_actor(user)
-    visible = get_visible_staff_codes(user)
-    sc = str(deal.get("staff_code", "") or "")
-    po = str(deal.get("portfolio_owner_code", "") or "")
-    if not priv and sc not in visible and (not po or po not in visible):
-        raise HTTPException(status_code=403, detail="Deal is outside your scope")
     if rcode in (sc, po):
         raise HTTPException(status_code=400,
                             detail="That person already owns this deal — nothing to refer.")
@@ -3851,15 +3854,19 @@ def pipeline_referral_accept(
     deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-    if str(deal.get("referral_status") or "") != "pending":
-        raise HTTPException(status_code=400,
-                            detail="This deal has no pending referral to accept.")
 
+    # Authorization-first (recipient model — referrals cross cascades by design,
+    # so this is NOT a visible-scope gate): only the named recipient (or an
+    # admin) may accept. Checked before the pending-state 400 so a non-recipient
+    # can't probe the deal's referral state.
     actor_code, actor_name, priv = _resolve_actor(user)
     rcode = str(deal.get("referred_to_code") or "")
     if not priv and actor_code != rcode:
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can accept it.")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to accept.")
 
     pm.update_deal(deal_id, {
         "referral_status":      "accepted",
@@ -3898,15 +3905,18 @@ def pipeline_referral_decline(
     deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-    if str(deal.get("referral_status") or "") != "pending":
-        raise HTTPException(status_code=400,
-                            detail="This deal has no pending referral to decline.")
 
+    # Authorization-first (recipient model — not a visible-scope gate): only the
+    # named recipient (or an admin) may decline. Before the pending-state 400 so
+    # a non-recipient can't probe the deal's referral state.
     actor_code, actor_name, priv = _resolve_actor(user)
     rcode = str(deal.get("referred_to_code") or "")
     if not priv and actor_code != rcode:
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can decline it.")
+    if str(deal.get("referral_status") or "") != "pending":
+        raise HTTPException(status_code=400,
+                            detail="This deal has no pending referral to decline.")
 
     pm.update_deal(deal_id, {
         "referral_status": "declined",
@@ -4037,6 +4047,19 @@ def pipeline_referral_reassign(
     from utils.core import PipelineManager as _PM
     from utils.api_pipeline_mutations import invalidate_pipeline_caches
 
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Authorization-first (referrer model — the original referrer may be outside
+    # any one cascade): only the original referrer (or an admin) may reassign.
+    # Before payload/state 400s so a non-referrer can't probe the deal's state.
+    actor_code, actor_name, priv = _resolve_actor(user)
+    if not priv and actor_code != str(deal.get("referred_by_code") or ""):
+        raise HTTPException(status_code=403,
+                            detail="Only the original referrer can reassign this returned deal.")
+
     rcode = str(payload.get("referred_to_code") or "").strip()
     rname = str(payload.get("referred_to_name") or payload.get("referred_to") or "").strip()
     note  = str(payload.get("referral_note") or "").strip()
@@ -4044,18 +4067,9 @@ def pipeline_referral_reassign(
         raise HTTPException(status_code=400,
                             detail="referred_to_code and referred_to_name are required")
 
-    pm = _PM()
-    deal = _get_or_hydrate_deal(pm, deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     if str(deal.get("referral_status") or "") != "declined":
         raise HTTPException(status_code=400,
                             detail="Only a returned (declined) referral can be reassigned.")
-
-    actor_code, actor_name, priv = _resolve_actor(user)
-    if not priv and actor_code != str(deal.get("referred_by_code") or ""):
-        raise HTTPException(status_code=403,
-                            detail="Only the original referrer can reassign this returned deal.")
     if rcode in (str(deal.get("staff_code", "") or ""),
                  str(deal.get("portfolio_owner_code", "") or "")):
         raise HTTPException(status_code=400,
