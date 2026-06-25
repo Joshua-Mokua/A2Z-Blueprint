@@ -2721,7 +2721,7 @@ def migrate_json_to_db(table: str, json_data: list, conn=None) -> int:
     Example:
         import json
         from pathlib import Path
-        data = json.loads((Path('data') / 'pipeline.json').read_text())
+        data = json.loads((Path('data') / 'pipeline.json').read_text(encoding="utf-8"))
         n = migrate_json_to_db('pipeline_deals', data)
         print(f"Migrated {n} rows")
     """

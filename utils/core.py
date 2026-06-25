@@ -45,7 +45,7 @@ for f in ["users.json", "validations.json", "audit_log.json", "calendar_events.j
           "staff_history.json", "email_config.json", "pending_tokens.json"]:
     p = DATA_DIR / f
     if not p.exists():
-        p.write_text("{}")
+        p.write_text("{}", encoding="utf-8")
 
 # ─── PASSWORD UTILITIES ──────────────────────────────────────────────
 def check_password_strength(pw):
@@ -74,12 +74,12 @@ def generate_token():
 # ─── EMAIL SENDER ────────────────────────────────────────────────────
 def load_email_config():
     try:
-        raw = (DATA_DIR/"email_config.json").read_text()
+        raw = (DATA_DIR/"email_config.json").read_text(encoding="utf-8")
         return json.loads(raw) if raw.strip() else {}
     except: return {}
 
 def save_email_config(cfg):
-    (DATA_DIR/"email_config.json").write_text(json.dumps(cfg, indent=2))
+    (DATA_DIR/"email_config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
 def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
                                due_date, days_info, esc_level, workstream, io_name):
@@ -481,7 +481,7 @@ def is_bsc_locked(data_path="data") -> bool:
     from pathlib import Path
     p = Path(data_path) / "bsc_lock.json"
     if not p.exists(): return False
-    lock = json.loads(p.read_text())
+    lock = json.loads(p.read_text(encoding="utf-8"))
     return lock.get("locked", False)
 
 def lock_bsc(locked_by: str, period: str, data_path="data"):
@@ -497,7 +497,7 @@ def lock_bsc(locked_by: str, period: str, data_path="data"):
         "locked_at":  str(date.today()),
         "unlock_log": []
     }
-    p.write_text(json.dumps(lock_data, indent=2))
+    p.write_text(json.dumps(lock_data, indent=2), encoding="utf-8")
 
 def unlock_bsc(unlocked_by: str, reason: str, data_path="data"):
     """Unlock BSC scores. Requires reason for audit."""
@@ -505,14 +505,14 @@ def unlock_bsc(unlocked_by: str, reason: str, data_path="data"):
     from datetime import date
     from pathlib import Path
     p = Path(data_path) / "bsc_lock.json"
-    lock = json.loads(p.read_text()) if p.exists() else {}
+    lock = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
     lock["locked"] = False
     lock.setdefault("unlock_log", []).append({
         "unlocked_by": unlocked_by,
         "reason": reason,
         "date": str(date.today())
     })
-    p.write_text(json.dumps(lock, indent=2))
+    p.write_text(json.dumps(lock, indent=2), encoding="utf-8")
 
 # ═══════════════════════════════════════════════════════════════════════
 # PRODUCT LIFECYCLE MODULE — Banking product registry
@@ -840,7 +840,7 @@ def get_workstreams_from_hierarchy() -> dict:
     # Saved file is authoritative
     if ws_file.exists():
         try:
-            saved = json.loads(ws_file.read_text())
+            saved = json.loads(ws_file.read_text(encoding="utf-8"))
             if saved and isinstance(saved, dict):
                 return saved
         except: pass
@@ -933,7 +933,7 @@ def get_workstream_staff(workstream_id: str, include_cross_functional: bool = Tr
                 if uname_cf not in existing_codes:
                     # Look up from users.json
                     try:
-                        users_data = json.loads((DATA_DIR/"users.json").read_text())
+                        users_data = json.loads((DATA_DIR/"users.json").read_text(encoding="utf-8"))
                         ud = users_data.get(uname_cf, {})
                         if ud:
                             staff.append({
@@ -1496,7 +1496,7 @@ def get_kpi_library() -> dict:
     if not KPI_LIBRARY_FILE.exists():
         return {"pillars": DEFAULT_KPI_LIBRARY, "role_kpis": DEFAULT_ROLE_KPIS, "active_kpis": []}
     try:
-        return json.loads(KPI_LIBRARY_FILE.read_text())
+        return json.loads(KPI_LIBRARY_FILE.read_text(encoding="utf-8"))
     except:
         return {"pillars": DEFAULT_KPI_LIBRARY, "role_kpis": DEFAULT_ROLE_KPIS, "active_kpis": []}
 
@@ -1504,7 +1504,7 @@ def save_kpi_library(library: dict):
     global _KPI_LIB_CACHE, _KPI_LIB_MTIME
     _KPI_LIB_CACHE = {}; _KPI_LIB_MTIME = 0.0
     """Persist the KPI library configuration to disk."""
-    KPI_LIBRARY_FILE.write_text(json.dumps(library, indent=2))
+    KPI_LIBRARY_FILE.write_text(json.dumps(library, indent=2), encoding="utf-8")
 
 def get_active_kpis() -> list:
     """Return only the KPIs the bank has activated."""
@@ -1640,7 +1640,7 @@ def get_org_config() -> dict:
             return DEFAULT_ORG_CONFIG.copy()
         mtime = ORG_CONFIG_FILE.stat().st_mtime
         if mtime != _ORG_CONFIG_MTIME or not _ORG_CONFIG_CACHE:
-            saved = json.loads(ORG_CONFIG_FILE.read_text())
+            saved = json.loads(ORG_CONFIG_FILE.read_text(encoding="utf-8"))
             merged = DEFAULT_ORG_CONFIG.copy()
             merged.update(saved)
             _ORG_CONFIG_CACHE = merged
@@ -1654,7 +1654,7 @@ def save_org_config(cfg: dict):
     global _ORG_CONFIG_CACHE, _ORG_CONFIG_MTIME
     _ORG_CONFIG_CACHE = {}
     _ORG_CONFIG_MTIME = 0.0
-    ORG_CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
+    ORG_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
 
 def rebuild_branch_maps() -> dict:
@@ -2290,7 +2290,7 @@ def compute_initiative_kpis(staff_name: str) -> dict:
         init_file = DATA_DIR / "execute_initiatives.json"
         if not init_file.exists():
             return {'Initiative Implementation Score': 0, 'Active Initiatives Count': 0}
-        initiatives = json.loads(init_file.read_text())
+        initiatives = json.loads(init_file.read_text(encoding="utf-8"))
         if not isinstance(initiatives, list):
             initiatives = []
 
@@ -2399,7 +2399,7 @@ def _load_leave_settings() -> dict:
     _f = DATA_DIR / "leave_settings.json"
     if _f.exists():
         try:
-            saved = json.loads(_f.read_text())
+            saved = json.loads(_f.read_text(encoding="utf-8"))
             merged = {}
             for lt, defaults in LEAVE_TYPES_DEFAULT.items():
                 merged[lt] = {**defaults, **(saved.get(lt,{}))}
@@ -2412,7 +2412,7 @@ LEAVE_TYPES = _load_leave_settings()
 def save_leave_settings(settings: dict):
     """Persist admin-configured leave days to disk."""
     _f = DATA_DIR / "leave_settings.json"
-    _f.write_text(json.dumps(settings, indent=2))
+    _f.write_text(json.dumps(settings, indent=2), encoding="utf-8")
     # Reload global
     global LEAVE_TYPES
     LEAVE_TYPES = settings
@@ -2515,16 +2515,16 @@ DILIGENCE_WEIGHTS = {
 class LeaveManager:
     def __init__(self):
         self.file = DATA_DIR / "leave_records.json"
-        if not self.file.exists(): self.file.write_text("[]")
+        if not self.file.exists(): self.file.write_text("[]", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             self.records = json.loads(raw) if raw.strip() else []
             if not isinstance(self.records, list): self.records = []
         except:
             self.records = []
 
     def save(self):
-        self.file.write_text(json.dumps(self.records, indent=2))
+        self.file.write_text(json.dumps(self.records, indent=2), encoding="utf-8")
 
     def add_leave(self, staff_code, staff_name, leave_type, start_date, end_date,
                   reason, approved_by, notify_suppress=True):
@@ -2697,15 +2697,15 @@ class HRManager:
         self.pips        = self._load(self.pip_file)
 
     def _load(self, path):
-        if not path.exists(): path.write_text("[]")
+        if not path.exists(): path.write_text("[]", encoding="utf-8")
         try:
-            raw = path.read_text()
+            raw = path.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else []
             return d if isinstance(d, list) else []
         except: return []
 
     def _save(self, path, data):
-        path.write_text(json.dumps(data, indent=2, default=str))
+        path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
 
     # ── EXITS ─────────────────────────────────────────────────────
     def record_exit(self, data: dict) -> dict:
@@ -2985,31 +2985,31 @@ class CascadeManager:
         return lambda *a, **k: None
 
     def _load(self):
-        if not self.file.exists(): self.file.write_text("{}")
+        if not self.file.exists(): self.file.write_text("{}", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _load_bank(self):
-        if not self.bank_file.exists(): self.bank_file.write_text("{}")
+        if not self.bank_file.exists(): self.bank_file.write_text("{}", encoding="utf-8")
         try:
-            raw = self.bank_file.read_text()
+            raw = self.bank_file.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _load_fixed(self):
-        if not self.fixed_file.exists(): self.fixed_file.write_text("{}")
+        if not self.fixed_file.exists(): self.fixed_file.write_text("{}", encoding="utf-8")
         try:
-            raw = self.fixed_file.read_text()
+            raw = self.fixed_file.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _save(self):
-        self.file.write_text(json.dumps(self.cascade, indent=2, default=str))
+        self.file.write_text(json.dumps(self.cascade, indent=2, default=str), encoding="utf-8")
 
     # ── Deadline tracking ─────────────────────────────────────────────
     def set_cascade_deadline(self, from_code: str, period: str,
@@ -3235,9 +3235,9 @@ class CascadeManager:
                         period: str, kpi: str, reason: str, requested_target: float):
         """Staff member requests a review of their cascaded target."""
         rr_file = DATA_DIR / "cascade_review_requests.json"
-        if not rr_file.exists(): rr_file.write_text("[]")
+        if not rr_file.exists(): rr_file.write_text("[]", encoding="utf-8")
         try:
-            requests = json.loads(rr_file.read_text())
+            requests = json.loads(rr_file.read_text(encoding="utf-8"))
         except:
             requests = []
         requests.append({
@@ -3254,13 +3254,13 @@ class CascadeManager:
             "resolved_at":      None,
             "resolved_by":      None,
         })
-        rr_file.write_text(json.dumps(requests, indent=2, default=str))
+        rr_file.write_text(json.dumps(requests, indent=2, default=str), encoding="utf-8")
 
     def get_review_requests(self, period: str = None, staff_code: str = None) -> list:
         rr_file = DATA_DIR / "cascade_review_requests.json"
         if not rr_file.exists(): return []
         try:
-            requests = json.loads(rr_file.read_text())
+            requests = json.loads(rr_file.read_text(encoding="utf-8"))
         except:
             return []
         if period:     requests = [r for r in requests if r.get("period")==period]
@@ -3288,7 +3288,7 @@ class CascadeManager:
         rr_file = DATA_DIR / "cascade_review_requests.json"
         if not rr_file.exists(): return
         try:
-            requests = json.loads(rr_file.read_text())
+            requests = json.loads(rr_file.read_text(encoding="utf-8"))
         except:
             return
         for r in requests:
@@ -3319,7 +3319,7 @@ class CascadeManager:
                     "escalate_to": escalate_to or None,
                 })
                 r["history"] = hist
-        rr_file.write_text(json.dumps(requests, indent=2, default=str))
+        rr_file.write_text(json.dumps(requests, indent=2, default=str), encoding="utf-8")
 
     def auto_escalate_overdue_reviews(self, sla_days: int = 7) -> int:
         """v10.409 — Auto-escalate Pending reviews older than `sla_days`.
@@ -3330,7 +3330,7 @@ class CascadeManager:
         rr_file = DATA_DIR / "cascade_review_requests.json"
         if not rr_file.exists(): return 0
         try:
-            requests = json.loads(rr_file.read_text())
+            requests = json.loads(rr_file.read_text(encoding="utf-8"))
         except:
             return 0
         cutoff = datetime.now() - timedelta(days=sla_days)
@@ -3350,7 +3350,7 @@ class CascadeManager:
                 r["sla_breached"] = True
                 escalated += 1
         if escalated > 0:
-            rr_file.write_text(json.dumps(requests, indent=2, default=str))
+            rr_file.write_text(json.dumps(requests, indent=2, default=str), encoding="utf-8")
         return escalated
 
     # ── Target locking (on acceptance) ────────────────────────────────
@@ -3382,11 +3382,11 @@ class CascadeManager:
         # 2. Update locked_targets.json for fast lookup
         lt_file = DATA_DIR / "locked_targets.json"
         try:
-            lt_data = json.loads(lt_file.read_text()) if lt_file.exists() else {}
+            lt_data = json.loads(lt_file.read_text(encoding="utf-8")) if lt_file.exists() else {}
             if not isinstance(lt_data, dict):
                 lt_data = {}
             lt_data[f"{sc}|{period}"] = True
-            lt_file.write_text(json.dumps(lt_data, indent=2))
+            lt_file.write_text(json.dumps(lt_data, indent=2), encoding="utf-8")
         except Exception:
             pass
 
@@ -3446,7 +3446,7 @@ class CascadeManager:
         try:
             lt_file = DATA_DIR / "locked_targets.json"
             if lt_file.exists():
-                lt_data = json.loads(lt_file.read_text())
+                lt_data = json.loads(lt_file.read_text(encoding="utf-8"))
                 if isinstance(lt_data, dict) and lt_data.get(f"{sc}|{period}"):
                     return True
         except Exception:
@@ -3521,7 +3521,7 @@ class CascadeManager:
 
         self.bank_targets[key] = new_entry
         # noqa: a2z-bootstrap-fallback — CascadeManager bootstraps state
-        self.bank_file.write_text(json.dumps(self.bank_targets, indent=2, default=str))
+        self.bank_file.write_text(json.dumps(self.bank_targets, indent=2, default=str), encoding="utf-8")
         return True
 
     def get_bank_target(self, kpi: str, period: str):
@@ -3538,7 +3538,7 @@ class CascadeManager:
             existing = {"kpis": existing, "values": {}}
         entry = {"kpis": kpis, "values": values or existing.get("values", {})}
         self.fixed_kpis[period] = entry
-        self.fixed_file.write_text(json.dumps(self.fixed_kpis, indent=2, default=str))
+        self.fixed_file.write_text(json.dumps(self.fixed_kpis, indent=2, default=str), encoding="utf-8")
 
     def get_fixed_kpis(self, period: str) -> list:
         entry = self.fixed_kpis.get(period, [])
@@ -3851,15 +3851,15 @@ class ValidationManager:
         self.records = self._load()
 
     def _load(self):
-        if not self.file.exists(): self.file.write_text("{}")
+        if not self.file.exists(): self.file.write_text("{}", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _save(self):
-        self.file.write_text(json.dumps(self.records, indent=2, default=str))
+        self.file.write_text(json.dumps(self.records, indent=2, default=str), encoding="utf-8")
 
     def validate(self, manager: str, staff_name: str, period: str,
                  status: str, action_plan: str = '', comments: str = ''):
@@ -3898,26 +3898,26 @@ class ReportingLineManager:
         self.units     = self._load_units()  # {staff_code: {unit, region}}
 
     def _load(self):
-        if not self.file.exists(): self.file.write_text("{}")
+        if not self.file.exists(): self.file.write_text("{}", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _load_units(self):
-        if not self.unit_map.exists(): self.unit_map.write_text("{}")
+        if not self.unit_map.exists(): self.unit_map.write_text("{}", encoding="utf-8")
         try:
-            raw = self.unit_map.read_text()
+            raw = self.unit_map.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _save(self):
-        self.file.write_text(json.dumps(self.overrides, indent=2, default=str))
+        self.file.write_text(json.dumps(self.overrides, indent=2, default=str), encoding="utf-8")
 
     def _save_units(self):
-        self.unit_map.write_text(json.dumps(self.units, indent=2, default=str))
+        self.unit_map.write_text(json.dumps(self.units, indent=2, default=str), encoding="utf-8")
 
     def remap(self, staff_code: str, new_manager_code: str,
               updated_by: str, reason: str = ''):
@@ -4050,22 +4050,22 @@ class PipelineManager:
         self.deals_file      = DATA_DIR / "pipeline_deals.json"
         self.activities_file = DATA_DIR / "pipeline_activities.json"
         for f in [self.deals_file, self.activities_file]:
-            if not f.exists(): f.write_text("[]")
+            if not f.exists(): f.write_text("[]", encoding="utf-8")
         self.deals      = self._load(self.deals_file)
         self.activities = self._load(self.activities_file)
 
     def _load(self, f):
         try:
-            raw = f.read_text()
+            raw = f.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else []
             return d if isinstance(d, list) else []
         except: return []
 
     def _save_deals(self):
-        self.deals_file.write_text(json.dumps(self.deals, indent=2))
+        self.deals_file.write_text(json.dumps(self.deals, indent=2), encoding="utf-8")
 
     def _save_activities(self):
-        self.activities_file.write_text(json.dumps(self.activities, indent=2))
+        self.activities_file.write_text(json.dumps(self.activities, indent=2), encoding="utf-8")
 
     def add_deal(self, d):
         d['id']         = f"D{len(self.deals)+1:04d}"
@@ -4250,7 +4250,7 @@ class ExecuteManager:
         self.ws_file      = DATA_DIR / "execute_workstreams.json"
         self.impact_file  = DATA_DIR / "execute_impact.json"
         for f in [self.init_file, self.ideas_file, self.ws_file, self.impact_file]:
-            if not f.exists(): f.write_text("[]" if f != self.ws_file else "{}")
+            if not f.exists(): f.write_text("[]" if f != self.ws_file else "{}", encoding="utf-8")
         self.initiatives  = self._load_list(self.init_file)
         self.ideas        = self._load_list(self.ideas_file)
         self.workstreams  = self._load_dict(self.ws_file)
@@ -4258,29 +4258,29 @@ class ExecuteManager:
 
     def _load_list(self, f):
         try:
-            raw = f.read_text()
+            raw = f.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else []
             return d if isinstance(d, list) else []
         except: return []
 
     def _load_dict(self, f):
         try:
-            raw = f.read_text()
+            raw = f.read_text(encoding="utf-8")
             d = json.loads(raw) if raw.strip() else {}
             return d if isinstance(d, dict) else {}
         except: return {}
 
     def _save_initiatives(self):
-        self.init_file.write_text(json.dumps(self.initiatives, indent=2))
+        self.init_file.write_text(json.dumps(self.initiatives, indent=2), encoding="utf-8")
 
     def _save_ideas(self):
-        self.ideas_file.write_text(json.dumps(self.ideas, indent=2))
+        self.ideas_file.write_text(json.dumps(self.ideas, indent=2), encoding="utf-8")
 
     def _save_workstreams(self):
-        self.ws_file.write_text(json.dumps(self.workstreams, indent=2))
+        self.ws_file.write_text(json.dumps(self.workstreams, indent=2), encoding="utf-8")
 
     def _save_impact(self):
-        self.impact_file.write_text(json.dumps(self.impact_data, indent=2))
+        self.impact_file.write_text(json.dumps(self.impact_data, indent=2), encoding="utf-8")
 
     # ── WORKSTREAM MANAGEMENT ─────────────────────────────────────
     def upsert_workstream(self, ws_id, name, sponsor, sub_workstreams=None):
@@ -4732,7 +4732,7 @@ class ExecuteManager:
             identifiers.add(full_name)
         # Also resolve via users.json if possible
         try:
-            users_data = json.loads((DATA_DIR / "users.json").read_text())
+            users_data = json.loads((DATA_DIR / "users.json").read_text(encoding="utf-8"))
             ud = users_data.get(username, {})
             if ud.get("full_name"):
                 identifiers.add(ud["full_name"])
@@ -4857,16 +4857,16 @@ class ProductManager:
     """
     def __init__(self):
         self.file = DATA_DIR / "product_registry.json"
-        if not self.file.exists(): self.file.write_text("[]")
+        if not self.file.exists(): self.file.write_text("[]", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             self.products = json.loads(raw) if raw.strip() else []
             if not isinstance(self.products, list): self.products = []
         except:
             self.products = []
 
     def save(self):
-        self.file.write_text(json.dumps(self.products, indent=2))
+        self.file.write_text(json.dumps(self.products, indent=2), encoding="utf-8")
 
     def add_product(self, data: dict) -> str:
         prod_id = f"PRD{len(self.products)+1:04d}"
@@ -4982,16 +4982,16 @@ class RIPipelineManager:
     """
     def __init__(self):
         self.file = DATA_DIR / "ri_pipeline.json"
-        if not self.file.exists(): self.file.write_text("[]")
+        if not self.file.exists(): self.file.write_text("[]", encoding="utf-8")
         try:
-            raw = self.file.read_text()
+            raw = self.file.read_text(encoding="utf-8")
             self.deals = json.loads(raw) if raw.strip() else []
             if not isinstance(self.deals, list): self.deals = []
         except:
             self.deals = []
 
     def save(self):
-        self.file.write_text(json.dumps(self.deals, indent=2))
+        self.file.write_text(json.dumps(self.deals, indent=2), encoding="utf-8")
 
     def add_deal(self, d):
         d['id']         = f"RI{len(self.deals)+1:05d}"
@@ -5432,12 +5432,12 @@ class LoanApplicationManager:
 
     def _load(self) -> list:
         try:
-            return json.loads(self.file.read_text()) if self.file.exists() else []
+            return json.loads(self.file.read_text(encoding="utf-8")) if self.file.exists() else []
         except Exception:
             return []
 
     def save(self):
-        self.file.write_text(json.dumps(self.apps, indent=2, default=str))
+        self.file.write_text(json.dumps(self.apps, indent=2, default=str), encoding="utf-8")
 
     def get(self, app_id: str) -> dict:
         return next((a for a in self.apps if a["id"] == app_id), {})
@@ -6028,12 +6028,12 @@ class CreditAdminManager:
 
     def _load(self) -> list:
         try:
-            return json.loads(self.file.read_text()) if self.file.exists() else []
+            return json.loads(self.file.read_text(encoding="utf-8")) if self.file.exists() else []
         except Exception:
             return []
 
     def save(self):
-        self.file.write_text(json.dumps(self.cases, indent=2, default=str))
+        self.file.write_text(json.dumps(self.cases, indent=2, default=str), encoding="utf-8")
 
     def get(self, case_id: str) -> dict:
         return next((c for c in self.cases if c["id"] == case_id), {})
@@ -6746,12 +6746,12 @@ class ComplianceManager:
 
     def _load(self) -> list:
         try:
-            return json.loads(self.file.read_text()) if self.file.exists() else []
+            return json.loads(self.file.read_text(encoding="utf-8")) if self.file.exists() else []
         except Exception:
             return []
 
     def save(self):
-        self.file.write_text(json.dumps(self.cases, indent=2, default=str))
+        self.file.write_text(json.dumps(self.cases, indent=2, default=str), encoding="utf-8")
 
     def update_status(self, case_id: str, new_status: str,
                        officer: str = "", notes: str = "",
@@ -6794,12 +6794,12 @@ class TreasuryManager:
 
     def _load(self) -> list:
         try:
-            return json.loads(self.file.read_text()) if self.file.exists() else []
+            return json.loads(self.file.read_text(encoding="utf-8")) if self.file.exists() else []
         except Exception:
             return []
 
     def save(self):
-        self.file.write_text(json.dumps(self.requests, indent=2, default=str))
+        self.file.write_text(json.dumps(self.requests, indent=2, default=str), encoding="utf-8")
 
     def get(self, req_id: str) -> dict:
         return next((r for r in self.requests if r["id"] == req_id), {})
@@ -8161,7 +8161,7 @@ def update_bsc_from_modules(username: str, period: str = "Feb 2026") -> dict:
                 user_score["final_score"] = round(min(weighted/total_w, 5.0), 2)
         
         scores[username] = user_score
-        scores_file.write_text(json.dumps(scores, indent=2))
+        scores_file.write_text(json.dumps(scores, indent=2), encoding="utf-8")
     
     return user_score
 
