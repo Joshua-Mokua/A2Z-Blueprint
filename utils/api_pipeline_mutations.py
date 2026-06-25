@@ -268,6 +268,19 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
             "(LMS handoff stage — deferred to Arc α4). "
             "Create at 'Lead' and advance through the workflow."
         )
+    # State-machine integrity (stress-pass Phase 1): a deal must be BORN at an
+    # early stage and walk the workflow. Block creation directly at terminal
+    # outcomes (Closed Won/Lost) — which would book an instant fake win/loss
+    # with no workflow — and at the Compliance handoff stage, which would skip
+    # the entire pipeline and the LMS handoff.
+    _CREATE_BLOCKED_STAGES = {"Closed Won", "Closed Lost", "Compliance"}
+    if stage in _CREATE_BLOCKED_STAGES:
+        return False, (
+            f"Cannot create a deal directly at stage '{stage}'. "
+            "Deals must start at an early stage (e.g. 'Lead') and advance "
+            "through the workflow; terminal and handoff stages are reached "
+            "by progressing a deal, not by creating one there."
+        )
     if stage not in ALLOWED_ADVANCE_STAGES and stage not in _configured_stage_names():
         return False, f"Unknown stage: '{stage}'"
 

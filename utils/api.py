@@ -4668,6 +4668,27 @@ def pipeline_deal_update(
             detail="No fields supplied for update",
         )
 
+    # State-machine integrity (stress-pass Phase 1): PUT is a field editor, NOT
+    # a stage-transition path. Allowing `stage` here bypassed the /advance
+    # guards (terminal freeze, backward-sanction, flow validation, SLA stamping,
+    # LMS handoff). Stage changes MUST go through /advance so every transition
+    # is guarded and logged. Reject a stage field that would actually change the
+    # stage (a no-op same-stage value is tolerated and dropped).
+    if "stage" in updates:
+        if str(updates.get("stage")) != str(deal.get("stage", "")):
+            _audit("API_PIPELINE_UPDATE_STAGE_BLOCKED", user,
+                   f"deal_id={deal_id} stage={updates.get('stage')}")
+            raise HTTPException(
+                status_code=400,
+                detail=("Stage changes must use the /advance endpoint so the "
+                        "transition is validated and logged. Remove 'stage' from "
+                        "this update."))
+        updates.pop("stage", None)
+        if not updates:
+            raise HTTPException(
+                status_code=400,
+                detail="No fields supplied for update (stage changes use /advance).")
+
     pm.update_deal(deal_id, updates, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
     _audit("DEAL_UPDATED", user,
@@ -4770,6 +4791,61 @@ def pipeline_deal_advance(
                     f"{_cls} deal. Allowed stages: {', '.join(_flow)}"))
 
     old_stage = deal.get("stage", "?")
+
+    # ── State-machine integrity guards (stress-pass Phase 1) ──────────────
+    _TERMINAL_STAGES = {"Closed Won", "Closed Lost"}
+    _new = str(payload.new_stage)
+    _cur = str(old_stage)
+    _note = str(payload.note or "").strip()
+
+    # Guard A — terminal freeze: a Closed Won/Lost deal is a committed outcome
+    # and cannot move to any other stage. (Re-asserting the same terminal stage
+    # is a harmless no-op and allowed.)
+    if _cur in _TERMINAL_STAGES and _new != _cur:
+        _audit("API_PIPELINE_ADVANCE_TERMINAL_BLOCKED", user,
+               f"deal_id={deal_id} {_cur}->{_new}")
+        raise HTTPException(
+            status_code=400,
+            detail=(f"This deal is {_cur} — a closed deal cannot be reopened or "
+                    "moved. Closed outcomes are final."))
+
+    # Guard B — backward moves on a VALIDATED deal need sanction. Once a manager
+    # has validated a deal (it counts as assured pipeline), moving it to an
+    # EARLIER stage requires a manager/admin caller AND a reason note. Moving to
+    # Closed Lost is exempt (it's a terminal outcome, not a regression) but still
+    # requires a reason. Pre-validation backward moves are unrestricted.
+    if _flow and _new in _flow and _cur in _flow:
+        _is_backward = _flow.index(_new) < _flow.index(_cur)
+    else:
+        _is_backward = False
+
+    if _new == "Closed Lost" and _new != _cur:
+        # Always allowed (any user) but a reason is mandatory.
+        if not _note:
+            _audit("API_PIPELINE_ADVANCE_LOST_NO_REASON", user, f"deal_id={deal_id}")
+            raise HTTPException(
+                status_code=400,
+                detail="Marking a deal Closed Lost requires a reason note.")
+    elif _is_backward and bool(deal.get("manager_validated")):
+        from utils.api_pipeline_manager_actions import is_manager as _is_mgr
+        if not _is_mgr(user):
+            _audit("API_PIPELINE_ADVANCE_BACKWARD_UNSANCTIONED", user,
+                   f"deal_id={deal_id} {_cur}->{_new}")
+            raise HTTPException(
+                status_code=403,
+                detail=("This deal has been validated; moving it backward to "
+                        f"'{_new}' must be sanctioned by a line manager. Ask a "
+                        "manager to perform this move with a reason."))
+        if not _note:
+            _audit("API_PIPELINE_ADVANCE_BACKWARD_NO_REASON", user,
+                   f"deal_id={deal_id} {_cur}->{_new}")
+            raise HTTPException(
+                status_code=400,
+                detail=("A sanctioned backward move on a validated deal requires "
+                        "a reason note."))
+        _audit("API_PIPELINE_ADVANCE_BACKWARD_SANCTIONED", user,
+               f"deal_id={deal_id} {_cur}->{_new} by={user.get('username','')}")
+
     pm.update_stage(
         deal_id,
         payload.new_stage,
