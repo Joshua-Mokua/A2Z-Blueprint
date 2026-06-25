@@ -81,8 +81,6 @@ def _deal_count(base, admin):
 
 def probe_parallel_create(base, owner, admin, n):
     print(f"\n=== PROBE 1: {n} parallel creates (ID race + lost writes) ===")
-    before = _deal_count(base, admin)
-    n_before = len(before)
     ids = []
     lock = threading.Lock()
     def _create(i):
@@ -93,33 +91,43 @@ def probe_parallel_create(base, owner, admin, n):
     with ThreadPoolExecutor(max_workers=n) as ex:
         list(ex.map(_create, range(n)))
     time.sleep(1.0)  # let writes settle
-    after = _deal_count(base, admin)
-    n_after = len(after)
+
     created_ok = [d for (s, d) in ids if s in (200, 201) and d]
     unique_ids = set(created_ok)
-    # duplicate IDs returned?
+    server_errors = [s for (s, d) in ids if s in (0, 500)]
+
+    # 1) duplicate IDs returned?
     if len(unique_ids) < len(created_ok):
         record("HOLE", "parallel create: DUPLICATE deal IDs returned",
                f"{len(created_ok)} created, {len(unique_ids)} unique")
     else:
         record("OK", "parallel create: returned IDs unique", f"{len(unique_ids)} ids")
-    # lost writes? net deal count should rise by the number of successful creates
-    delta = n_after - n_before
-    ok_count = len([s for (s, d) in ids if s in (200, 201)])
-    if delta < ok_count:
-        record("HOLE", "parallel create: LOST writes (count rose < successes)",
-               f"+{delta} persisted vs {ok_count} created OK — {ok_count - delta} lost")
+
+    # 2) LOST WRITES — verify each successfully-returned id ACTUALLY persisted, by
+    #    fetching it back individually (robust: avoids the scoped/capped list-count
+    #    that made the old delta unreliable). A 201 whose id is not retrievable is
+    #    a genuine lost write.
+    missing = []
+    for did in unique_ids:
+        st, body = _req(base, "GET", f"/api/pipeline/deals/{did}", admin)
+        deal = (body.get("deal") or {}) if isinstance(body, dict) else {}
+        if str(deal.get("id") or "") != did:
+            missing.append(did)
+    if missing:
+        record("HOLE", "parallel create: LOST writes (201 but not retrievable)",
+               f"{len(missing)}/{len(unique_ids)} missing: {sorted(missing)[:5]}")
     else:
-        record("OK", "parallel create: all successful creates persisted",
-               f"+{delta} for {ok_count} successes")
-    # duplicate IDs actually persisted on disk?
-    all_ids = [str(d.get("id") or d.get("deal_id")) for d in after if isinstance(d, dict)]
-    dupes = {x for x in all_ids if all_ids.count(x) > 1}
-    if dupes:
-        record("HOLE", "parallel create: DUPLICATE IDs persisted on disk",
-               f"dupes={list(dupes)[:5]}")
+        record("OK", "parallel create: every successful create is retrievable",
+               f"{len(unique_ids)}/{len(unique_ids)} persisted")
+
+    # 3) Server errors under load — NOT data loss (those creates persisted nothing),
+    #    but creates should not 500. Surfaced separately: this is the JSON-mirror
+    #    write race (non-atomic whole-file write), addressed by Phase B/C.
+    if server_errors:
+        record("INFO", "parallel create: some creates 500'd under load (JSON write race)",
+               f"{len(server_errors)}/{n} errored — fixed when JSON mirror is retired (Phase C)")
     else:
-        record("OK", "parallel create: no duplicate IDs on disk", f"{len(all_ids)} total")
+        record("OK", "parallel create: no server errors under load", f"{n} clean")
 
 def probe_lost_update(base, owner, admin, k):
     print(f"\n=== PROBE 2: {k} concurrent updates to distinct deals (lost update) ===")

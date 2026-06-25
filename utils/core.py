@@ -4068,7 +4068,12 @@ class PipelineManager:
         self.activities_file.write_text(json.dumps(self.activities, indent=2), encoding="utf-8")
 
     def add_deal(self, d):
-        d['id']         = f"D{len(self.deals)+1:04d}"
+        # Phase A (PG persistence migration): the id may be PRE-ASSIGNED by the
+        # caller from a race-free source (PG-derived next id). The legacy
+        # len()+1 scheme races under concurrency (two creates compute the same
+        # id) and is only a fallback when no id was supplied (JSON-only / no PG).
+        if not str(d.get('id') or '').strip():
+            d['id'] = f"D{len(self.deals)+1:04d}"
         d['created_at'] = datetime.now().isoformat()
         d['updated_at'] = datetime.now().isoformat()
         # Batch A: stamp open_date so new deals have a real date for the

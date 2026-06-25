@@ -400,7 +400,47 @@ def _db_available() -> bool:
         return False
 
 
-def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
+def _next_deal_id_from_pg() -> Optional[str]:
+    """Race-free next deal id derived from Postgres (the source of truth).
+
+    Phase A (PG persistence migration). The legacy `D{len(deals)+1}` scheme
+    races: two concurrent creates compute the same id, producing duplicates or
+    lost writes (confirmed by stress_concurrency.py). Here we derive the next id
+    from the MAX existing numeric suffix in pipeline_deals.
+
+    NOTE on ordering: ids are `D` + zero-padded integer. We extract the integer
+    and take MAX numerically (not string MAX, which breaks once the width grows
+    past 9999: 'D9999' > 'D10000' lexically). Returns None if PG is unavailable,
+    so the caller falls back to the JSON scheme (dev / no-PG).
+
+    This is NOT by itself a hard guarantee against a concurrent collision — two
+    requests can still read the same MAX in the gap before either inserts. The
+    create path therefore relies on the pipeline_deals PRIMARY KEY as the final
+    backstop and RETRIES on a unique-violation. This helper just makes
+    collisions rare; the PK makes them impossible to persist.
+    """
+    if not _db_available():
+        return None
+    try:
+        from utils.db import db as _db
+        # Atomic, collision-free id from a Postgres SEQUENCE. nextval() hands
+        # every concurrent caller a DISTINCT value with no read-then-write gap,
+        # so two simultaneous creates can never derive the same id (the flaw in
+        # the MAX(id)+1 approach). Requires pipeline_deal_seq — create it once
+        # with scripts/create_deal_id_sequence.py. If the sequence is missing,
+        # fall back to the JSON scheme (dev / no-PG); never silently reuse MAX.
+        n = _db.fetch_scalar("SELECT nextval('pipeline_deal_seq')", ())
+        if n is None:
+            return None
+        return f"D{int(n):04d}"
+    except Exception as e:
+        logger.warning(f"_next_deal_id_from_pg (nextval) failed ({e}); "
+                       f"falling back to JSON id scheme. Did you run "
+                       f"create_deal_id_sequence.py?")
+        return None
+
+
+def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> None:
     """Upsert a pipeline deal into Postgres so DB-backed reads reflect runtime
     mutations. H5 (2026-06-14): pipeline reads are DB-first but mutations
     write only the JSON store, so created/changed deals were invisible in the
@@ -481,11 +521,27 @@ def _db_sync_pipeline_deal(deal: Optional[dict]) -> None:
             return
         cols = list(row.keys())
         placeholders = ", ".join(["%s"] * len(cols))
-        updates = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c != "id")
-        sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
-               f"VALUES ({placeholders}) "
-               f"ON CONFLICT (id) DO UPDATE SET {updates}")
-        _db.execute(sql, tuple(row[c] for c in cols))
+        if conflict == "raise":
+            # Create path (Phase A): fail-closed on a duplicate id. DO NOTHING
+            # suppresses the insert on conflict; RETURNING id is then empty, which
+            # we detect and raise so the caller's retry derives a fresh id. This
+            # makes concurrent creates with a colliding id IMPOSSIBLE to persist
+            # as a silent overwrite (the PK is the hard guarantee, not a hint).
+            sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
+                   f"VALUES ({placeholders}) "
+                   f"ON CONFLICT (id) DO NOTHING RETURNING id")
+            from utils.db import db as _db2
+            got = _db2.fetch_one(sql, tuple(row[c] for c in cols))
+            if not got:
+                raise RuntimeError(
+                    f"duplicate key: deal id {row['id']} already exists in Postgres")
+        else:
+            # Update/mirror path (default): upsert. Existing row is refreshed.
+            updates = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c != "id")
+            sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
+                   f"VALUES ({placeholders}) "
+                   f"ON CONFLICT (id) DO UPDATE SET {updates}")
+            _db.execute(sql, tuple(row[c] for c in cols))
     except Exception as e:
         # B13: do NOT swallow. A deal that can't persist to Postgres must fail
         # loudly — silent swallowing is exactly what let JSON and the DB drift
@@ -3765,8 +3821,39 @@ def pipeline_deal_refer(
 
     from utils.core import PipelineManager as _PM_for_api
     pm = _PM_for_api()
-    new_id = pm.add_deal(referral_record)
-    _db_sync_pipeline_deal(pm.get_deal(new_id))  # H5: mirror to DB-backed reads
+    # Phase A (PG persistence migration): race-free id + fail-closed insert,
+    # same pattern as the main create path (retry on PK collision).
+    new_id = None
+    _ref_err = None
+    for _attempt in range(5):
+        _pg_id = _next_deal_id_from_pg()
+        if _pg_id:
+            referral_record["id"] = _pg_id
+        else:
+            referral_record.pop("id", None)
+        candidate = pm.add_deal(referral_record)
+        try:
+            _db_sync_pipeline_deal(pm.get_deal(candidate), conflict="raise")
+            new_id = candidate
+            break
+        except Exception as e:
+            _ref_err = e
+            try:
+                pm.delete_deal(candidate, str(user.get("username", "")))
+            except Exception:
+                logger.error(f"Rollback delete failed for {candidate}")
+            _msg = str(e).lower()
+            if (("duplicate key" in _msg or "unique" in _msg or "already exists" in _msg
+                 or "primary key" in _msg) and _db_available()):
+                _audit("API_PIPELINE_REFER_ID_COLLISION", user,
+                        f"id={candidate} attempt={_attempt+1}; retrying")
+                continue
+            break
+    if not new_id:
+        _audit("API_PIPELINE_REFER_DB_FAILED", user, f"err={_ref_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not persist the referral deal to PostgreSQL — nothing was created.")
 
     # Mirror Streamlit's audit emission (line 573: DEAL_REFERRED)
     _audit("DEAL_REFERRED", user,
@@ -4639,25 +4726,47 @@ def pipeline_deal_create(
         stamp_money_fields(deal_dict, amount_key="deal_value")
     except Exception:
         pass
-    new_id = pm.add_deal(deal_dict)
-    try:
-        _db_sync_pipeline_deal(pm.get_deal(new_id))  # mirror to Postgres (raises on failure)
-        # B13: verify the row actually landed (guards against a silent no-op).
-        if _db_available():
-            from utils.db import db as _db
-            if not _db.fetch_all(
-                    "SELECT id FROM pipeline_deals WHERE id = %s", (new_id,)):
-                raise RuntimeError(
-                    f"Deal {new_id} not present in Postgres after sync")
-    except Exception as e:
-        # Atomic create: roll back the JSON add so JSON and Postgres never
-        # diverge — the deal is in BOTH stores or NEITHER. Honors the standing
-        # rule that PostgreSQL is the source of truth.
+    # Phase A (PG persistence migration): assign a race-free id from Postgres
+    # BEFORE the JSON add, and retry on a primary-key collision so two concurrent
+    # creates can never persist a duplicate id or clobber each other. The create
+    # uses an INSERT ... ON CONFLICT (id) DO NOTHING RETURNING id (conflict=
+    # "raise"): if the id was taken in the race window, no row returns and we
+    # raise -> roll back the JSON add -> derive a fresh id -> retry. The PK is the
+    # hard guarantee; _next_deal_id_from_pg just keeps collisions rare. Falls
+    # back to the JSON len()+1 scheme only when PG is unavailable (dev / no-PG).
+    new_id = None
+    _last_err = None
+    for _attempt in range(5):
+        _pg_id = _next_deal_id_from_pg()
+        if _pg_id:
+            deal_dict["id"] = _pg_id
+        else:
+            deal_dict.pop("id", None)  # let add_deal fall back to len()+1
+        candidate = pm.add_deal(deal_dict)
         try:
-            pm.delete_deal(new_id, str(user.get("username", "")))
-        except Exception:
-            logger.error(f"Rollback delete failed for {new_id}")
-        _audit("API_PIPELINE_CREATE_DB_FAILED", user, f"deal_id={new_id} err={e}")
+            # conflict="raise": fail-closed insert — raises on a duplicate id
+            # rather than silently UPDATE-ing (overwriting) the existing deal.
+            _db_sync_pipeline_deal(pm.get_deal(candidate), conflict="raise")
+            new_id = candidate
+            break
+        except Exception as e:
+            _last_err = e
+            # Roll back the JSON add so the stores never diverge (both or neither).
+            try:
+                pm.delete_deal(candidate, str(user.get("username", "")))
+            except Exception:
+                logger.error(f"Rollback delete failed for {candidate}")
+            _msg = str(e).lower()
+            is_collision = ("duplicate key" in _msg or "unique" in _msg
+                            or "already exists" in _msg
+                            or "primary key" in _msg)
+            if is_collision and _db_available():
+                _audit("API_PIPELINE_CREATE_ID_COLLISION", user,
+                        f"id={candidate} attempt={_attempt+1}; retrying")
+                continue
+            break
+    if not new_id:
+        _audit("API_PIPELINE_CREATE_DB_FAILED", user, f"err={_last_err}")
         raise HTTPException(
             status_code=500,
             detail="Could not persist the deal to PostgreSQL — no deal was created.")
