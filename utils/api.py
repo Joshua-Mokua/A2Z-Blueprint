@@ -636,9 +636,16 @@ def _get_or_hydrate_deal(pm, deal_id: str):
     it. Mutations then re-sync to Postgres via _db_sync_pipeline_deal (H5),
     keeping the DB authoritative. Returns None if the deal is in neither store.
     """
-    deal = pm.get_deal(deal_id)
-    if deal:
-        return deal
+    # Phase B2: POSTGRES-FIRST. The JSON store is rewritten whole-file and
+    # non-atomically on every mutation, so under concurrency a JSON read can
+    # return a deal with clobbered fields (e.g. a blanked staff_code), which then
+    # fails the cascade-scope check -> spurious 403s, and feeds stale data into
+    # mutations. Postgres reads are atomic and authoritative, and B0 made it a
+    # complete field mirror (verified by B1), so detail + mutation routes resolve
+    # the deal from PG when available, registering it on the request-scoped
+    # PipelineManager (replacing any stale JSON copy of the same id) so
+    # update_deal/update_stage mutate the PG-sourced record. Falls back to the
+    # JSON store only when Postgres is unavailable or the row is absent.
     if _db_available():
         try:
             from utils.db import db as _db
@@ -646,12 +653,19 @@ def _get_or_hydrate_deal(pm, deal_id: str):
             if row:
                 hydrated = _normalize_db_deal_row(_serialize(row))
                 try:
-                    pm.deals.append(hydrated)  # register for in-request mutation
+                    # Drop any stale JSON copy of this id, then register the
+                    # PG-sourced record for in-request mutation.
+                    pm.deals = [d for d in pm.deals if d.get("id") != deal_id]
+                    pm.deals.append(hydrated)
                 except Exception:
                     pass
                 return hydrated
         except Exception as e:
-            logger.error(f"Pipeline deal hydrate failed for {deal_id}: {e}")
+            logger.error(f"Pipeline deal hydrate (PG-first) failed for {deal_id}: {e}")
+    # Postgres unavailable or row absent -> JSON fallback.
+    deal = pm.get_deal(deal_id)
+    if deal:
+        return deal
     return None
 
 def _safe_float(val) -> float:
