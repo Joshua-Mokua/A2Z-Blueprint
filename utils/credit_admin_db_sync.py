@@ -1,20 +1,29 @@
 """
-utils/credit_admin_db_sync.py  —  Batch CA-1 (DORMANT in CA-1).
+utils/credit_admin_db_sync.py  —  Batch CA-1 (sync + normalizer) + CA-2 (live wiring).
 
-PostgreSQL write-sync + read-normalizer for credit_admin cases, modeled
-byte-for-intent on api._db_sync_pipeline_deal (the proven pipeline template).
-
-CA-1 status: these functions are ADDED but NOT yet called by any route.
-Only scripts/migrate_credit_admin_to_pg.py calls _db_sync_credit_admin_case
-(for the one-time backfill). Wiring into the live mutation routes and the
-DB-first read flip is Batch CA-2 — kept separate so CA-1 cannot change any
-runtime behaviour and cannot break the 295/295 harness.
+PostgreSQL write-sync + read-normalizer for credit_admin cases, plus the CA-2
+installer that makes CreditAdminManager read Postgres-first and serialize every
+mutation through a transactional, row-locked read-modify-write.
 
 Design choice vs pipeline: the COMPLETE case is stored in `data` JSONB, so no
 sub-flow field (collateral / legal / perfection / insurance / authorizations /
-override) is ever lost. Scalar columns are query/index helpers only.
+override) is ever lost. Scalar columns are query/index helpers only. This is
+what lets CA-2's distinct-case probe pass without an unmirrored-field gap (the
+pipeline mirror is partial — e.g. next_action is not synced).
+
+CA-2 concurrency model:
+  * READS  — _load() pulls every case from Postgres when the table is DB-backed,
+             so list (cam.cases) and detail (cam.get) are PG-first.
+  * WRITES — each case-mutating method is wrapped: open a transaction, SELECT the
+             target row FOR UPDATE (lock + fresh read), run the original mutation
+             on that fresh case, then upsert the whole case back in the SAME
+             transaction. Concurrent writes to one case serialize on the row lock
+             (fixes lost appends); writes to distinct cases lock distinct rows
+             (no contention, no lost update). The JSON file remains a best-effort
+             mirror; Postgres is authoritative. No-op when PG is unavailable.
 """
 from __future__ import annotations
+import functools
 import json as _json
 import logging
 from datetime import date as _date
@@ -28,6 +37,20 @@ _SCALAR_ORDER = [
     "rm_code", "rm_name", "approval_date", "all_conditions_met",
     "ready_for_disbursement", "disbursed", "disbursement_date",
     "last_updated", "data",
+]
+
+# Instance methods on CreditAdminManager that mutate ONE case (case_id is the
+# first positional arg) and persist via self.save(). Each is wrapped in the
+# transactional row-locked RMW. Static/compute helpers and the create path are
+# deliberately excluded (create is handled separately).
+_MUTATION_METHODS = [
+    "fulfill_condition", "set_facility_classification", "classify_condition",
+    "link_collateral", "unlink_collateral",
+    "assign_legal_officer", "add_legal_comment", "set_legal_outcome",
+    "add_security_perfection", "update_security_perfection",
+    "add_insurance_policy", "update_insurance_policy",
+    "request_perfection_override", "add_override_approval",
+    "request_authorization", "authorize", "clear_for_disbursement",
 ]
 
 
@@ -63,20 +86,19 @@ def _row_from_case(case: dict) -> Optional[dict]:
 
 
 def _db_sync_credit_admin_case(case: Optional[dict], conflict: str = "update",
-                               swallow: bool = True) -> None:
+                               swallow: bool = True, conn=None) -> None:
     """Upsert a credit_admin case into Postgres.
 
     conflict='update' (default): mirror/upsert — ON CONFLICT (id) DO UPDATE.
-                                  Best-effort: logs on failure (matches pipeline
-                                  mirror semantics).
-    conflict='raise':            create path — ON CONFLICT DO NOTHING; if the
-                                  insert is suppressed (id already present) we
-                                  raise, so a colliding create can never be a
-                                  silent overwrite. The PK is the hard guarantee.
+    conflict='raise':            create path — ON CONFLICT DO NOTHING; raises if
+                                 the id already exists (no silent overwrite).
     swallow=True (default):      log-and-continue on error (live mirror).
-    swallow=False:               re-raise on error — used by the one-time
-                                  backfill so it reports a TRUTHFUL ok/fail tally
-                                  instead of a false 'all ok'.
+    swallow=False:               re-raise on error (backfill / transactional RMW
+                                 — a failed write inside the txn MUST abort it).
+    conn:                        when given (update path only), the upsert runs
+                                 on this connection so it participates in an open
+                                 transaction (the row-locked RMW). Commit is the
+                                 caller's transaction boundary.
 
     No-op when Postgres is unavailable.
     """
@@ -111,23 +133,15 @@ def _db_sync_credit_admin_case(case: Optional[dict], conflict: str = "update",
             sql = (f"INSERT INTO credit_admin ({', '.join(cols)}) "
                    f"VALUES ({placeholders}) "
                    f"ON CONFLICT (id) DO UPDATE SET {updates}")
-            _db.execute(sql, values)
+            _db.execute(sql, values, conn=conn)
     except Exception as e:
-        # Do NOT swallow silently — drift between JSON and PG is exactly what a
-        # silent except causes. Log loudly; re-raise on the create path, or when
-        # the caller explicitly asked (swallow=False, e.g. the backfill).
         _log.error(f"credit_admin DB sync FAILED for {row['id']}: {e}")
         if conflict == "raise" or not swallow:
             raise
 
 
 def _normalize_db_credit_admin_row(row: Optional[dict]) -> Optional[dict]:
-    """Reconstruct the full case dict from a PG row.
-
-    The complete case lives in `data` JSONB, so we start from there and lose
-    nothing. Scalar columns are not re-merged (data is authoritative); we only
-    backfill `id` defensively.
-    """
+    """Reconstruct the full case dict from a PG row (complete case in `data`)."""
     if not row:
         return None
     data = row.get("data")
@@ -140,3 +154,106 @@ def _normalize_db_credit_admin_row(row: Optional[dict]) -> Optional[dict]:
     if not case.get("id") and row.get("id"):
         case["id"] = row["id"]
     return case
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CA-2: live installer — PG-first reads + transactional row-locked RMW writes.
+# ─────────────────────────────────────────────────────────────────────────────
+def _wrap_mutation(method):
+    """Serialize a single-case mutation through a row-locked transaction.
+
+    On the DB-backed path: open a transaction, SELECT the target row FOR UPDATE
+    (lock + fresh read), swap that fresh case into self.cases, run the original
+    mutation (which edits the fresh case and writes the JSON mirror via
+    self.save()), then upsert the mutated case back inside the SAME transaction.
+    Concurrent same-case calls block on FOR UPDATE and apply in series.
+    """
+    @functools.wraps(method)
+    def wrapper(self, case_id, *args, **kwargs):
+        try:
+            from utils.db import db as _db
+        except Exception:
+            return method(self, case_id, *args, **kwargs)
+        if not _db.table_uses_db("credit_admin"):
+            return method(self, case_id, *args, **kwargs)   # JSON-only legacy path
+
+        with _db.transaction() as conn:
+            # Lock + fresh-read the target case; replace any stale snapshot.
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT data FROM credit_admin WHERE id = %s FOR UPDATE",
+                    (str(case_id),))
+                got = cur.fetchone()
+            if got is not None:
+                data = got[0]
+                fresh = data if isinstance(data, dict) else _json.loads(data)
+                self.cases = [c for c in self.cases if c.get("id") != case_id]
+                self.cases.append(fresh)
+
+            result = method(self, case_id, *args, **kwargs)   # mutate + JSON mirror
+
+            mutated = self.get(case_id)
+            if mutated:
+                # swallow=False: a failed PG write must roll the txn back, not
+                # leave JSON and PG silently diverged.
+                _db_sync_credit_admin_case(
+                    mutated, conflict="update", swallow=False, conn=conn)
+        return result
+    return wrapper
+
+
+def install_credit_admin_concurrency(cls) -> None:
+    """Idempotently install PG-first reads + transactional RMW on the manager."""
+    if getattr(cls, "_ca2_installed", False):
+        return
+
+    # 1) PG-first _load (covers list + detail reads).
+    _orig_load = cls._load
+
+    def _load_pg_first(self):
+        try:
+            from utils.db import db as _db
+            if _db.table_uses_db("credit_admin"):
+                rows = _db.fetch_all("SELECT id, data FROM credit_admin")
+                cases = [_normalize_db_credit_admin_row(r) for r in rows if r]
+                return [c for c in cases if c]
+        except Exception as e:
+            _log.error(f"credit_admin PG-first load failed; JSON fallback: {e}")
+        return _orig_load(self)
+
+    cls._load = _load_pg_first
+
+    # 2) Wrap single-case mutations with the row-locked RMW.
+    for name in _MUTATION_METHODS:
+        orig = getattr(cls, name, None)
+        if callable(orig):
+            setattr(cls, name, _wrap_mutation(orig))
+
+    # 3) Create path: mirror the newly created case to PG so PG-first reads see
+    #    it immediately. (Create-race is out of scope for CA-2, same as pipeline
+    #    Probe 1 — tracked under JSON-mirror retirement.)
+    _orig_create = getattr(cls, "create_case_from_application", None)
+    if callable(_orig_create):
+        @functools.wraps(_orig_create)
+        def _create_wrapped(self, *args, **kwargs):
+            result = _orig_create(self, *args, **kwargs)
+            try:
+                from utils.db import db as _db
+                if _db.table_uses_db("credit_admin"):
+                    new_case = None
+                    if isinstance(result, dict) and result.get("id"):
+                        new_case = result
+                    elif isinstance(result, str):
+                        new_case = self.get(result)
+                    if not new_case and self.cases:
+                        new_case = self.cases[-1]
+                    if new_case:
+                        _db_sync_credit_admin_case(
+                            new_case, conflict="update", swallow=True)
+            except Exception as e:
+                _log.error(f"credit_admin create-sync failed: {e}")
+            return result
+        cls.create_case_from_application = _create_wrapped
+
+    cls._ca2_installed = True
+    _log.info("CA-2 installed on CreditAdminManager (PG-first reads + RMW writes)")

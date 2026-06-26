@@ -8192,3 +8192,16 @@ def _get_default_target(kpi_id: str, kpi_def: dict) -> float:
         "K053": 90.0,   # 90% log submission rate
     }
     return defaults.get(kpi_id, kpi_def.get("default_target", 80.0))
+
+
+# ── CA-2 INSTALL (credit_admin PG concurrency) ──
+# Installed once at import: CreditAdminManager reads Postgres-first and routes
+# every single-case mutation through a transactional, row-locked read-modify-
+# write. No-op when Postgres is unavailable. See utils/credit_admin_db_sync.py.
+try:
+    from utils.credit_admin_db_sync import install_credit_admin_concurrency as _install_ca2
+    _install_ca2(CreditAdminManager)
+except Exception as _ca2_e:  # never block module import on the installer
+    import logging as _logging
+    _logging.getLogger("a2z.credit_admin").error(f"CA-2 install skipped: {_ca2_e}")
+# ── /CA-2 INSTALL ──
