@@ -7126,6 +7126,14 @@ def validate_password_policy(pw: str) -> tuple:
     return True, ""
 
 
+# ── AUTH-CACHE (process-wide user store) ─────────────────────────────────────
+# Shared across every UserManager() construction so per-request enrichment never
+# re-loads or re-runs the ensure_* self-heal. See UserManager.__init__ for why.
+import threading as _um_threading
+_USER_STORE = None
+_USER_STORE_LOCK = _um_threading.Lock()
+
+
 class UserManager:
     # P-AUTH-c: canonical test logins that must ALWAYS be available during
     # the frontend phase. ensure_test_logins() recreates any that are missing
@@ -7141,9 +7149,40 @@ class UserManager:
 
     def __init__(self):
         self.users_file = DATA_DIR / "users.json"
-        self.users = self._load()
-        self.ensure_test_logins()
-        self.ensure_branch_test_logins()
+        # AUTH-CACHE: process-wide shared user store. Constructing a UserManager
+        # per authenticated request (auth_jwt._enrich_identity_from_store)
+        # previously re-ran _load() + ensure_* self-heal EVERY time. The self-heal
+        # calls save_users() whenever a login is missing — which, per request and
+        # under concurrency, re-creates the os.replace contention storm the
+        # read-only _load fix removed (a latent landmine: invisible while logins
+        # are healthy, a storm the moment one goes missing). The store is loaded
+        # and self-healed ONCE per process (double-checked locking); every later
+        # construction reuses the cached dict (O(1), zero I/O, zero writes).
+        # Mutations (add_user / delete_user / save_users / authenticate rehash)
+        # mutate this shared dict in place and persist, so all readers see them.
+        global _USER_STORE
+        if _USER_STORE is None:
+            with _USER_STORE_LOCK:
+                if _USER_STORE is None:
+                    _USER_STORE = self._load()        # read-only load
+                    self.users = _USER_STORE
+                    self.ensure_test_logins()         # one-time, at startup only
+                    self.ensure_branch_test_logins()
+                else:
+                    self.users = _USER_STORE
+        else:
+            self.users = _USER_STORE
+
+    @classmethod
+    def reload(cls):
+        """Force a re-read of users.json into the process-wide store (e.g. after
+        an out-of-band edit). In-app mutations are write-through, so this is
+        normally unnecessary. Single-process deployment; no cross-process
+        invalidation."""
+        global _USER_STORE
+        with _USER_STORE_LOCK:
+            _USER_STORE = None
+        cls()  # repopulate the cache
 
     def ensure_test_logins(self) -> int:
         """Recreate any missing canonical test logins. Returns count restored.
