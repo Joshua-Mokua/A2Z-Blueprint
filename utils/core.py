@@ -6666,6 +6666,67 @@ class CreditAdminManager:
                 return True
         return False
 
+    def troops_book(self, case_id, cbs_account_no, user_name, now):
+        """Treasury step 1 — book to core banking. Serialized via the CA-2
+        FOR UPDATE wrapper (registered in _MUTATION_METHODS)."""
+        case = self.get(case_id)
+        if not case:
+            return {"ok": False, "code": 404, "detail": f"Case '{case_id}' not found"}
+        if not case.get("cleared_for_disbursement"):
+            return {"ok": False, "code": 400,
+                    "detail": "Case has not been released to Treasury for disbursement yet"}
+        if case.get("disbursed"):
+            return {"ok": False, "code": 400, "detail": "Case already disbursed"}
+        case["cbs_account_no"] = cbs_account_no
+        case["troops_status"] = "booked"
+        case["troops_booked_by"] = user_name
+        case["troops_booked_at"] = now
+        self.save()
+        return {"ok": True, "cbs_account_no": cbs_account_no}
+
+    def troops_set_value_date(self, case_id, value_date, user_name, now):
+        """Treasury step 2 — set value date (requires booked). Serialized."""
+        case = self.get(case_id)
+        if not case:
+            return {"ok": False, "code": 404, "detail": f"Case '{case_id}' not found"}
+        if case.get("disbursed"):
+            return {"ok": False, "code": 400, "detail": "Case already disbursed"}
+        if case.get("troops_status") not in ("booked", "value_dated"):
+            return {"ok": False, "code": 400, "detail": "Book the facility to core banking first"}
+        case["value_date"] = value_date
+        case["troops_status"] = "value_dated"
+        self.save()
+        return {"ok": True, "value_date": value_date}
+
+    def troops_disburse(self, case_id, gl_reference, user_name, now):
+        """Treasury step 3 — post to GL and complete. Serialized via FOR UPDATE:
+        the guard reads the row-locked, fresh state, so exactly one concurrent
+        caller flips disbursed=True; the rest get 'already disbursed'."""
+        case = self.get(case_id)
+        if not case:
+            return {"ok": False, "code": 404, "detail": f"Case '{case_id}' not found"}
+        if case.get("disbursed"):
+            return {"ok": False, "code": 400, "detail": "Case already disbursed"}
+        if not case.get("cleared_for_disbursement"):
+            return {"ok": False, "code": 400, "detail": "Case has not been released to Treasury"}
+        if case.get("troops_status") != "value_dated" or not case.get("value_date"):
+            return {"ok": False, "code": 400, "detail": "Set the value date before disbursing"}
+        if not case.get("cbs_account_no"):
+            return {"ok": False, "code": 400,
+                    "detail": "Book the facility to core banking before disbursing"}
+        disbursement_date = case.get("value_date") or now[:10]
+        case["disbursed"] = True
+        case["disbursement_date"] = disbursement_date
+        case["gl_reference"] = gl_reference
+        case["troops_status"] = "disbursed"
+        case["troops_disbursed_by"] = user_name
+        case["troops_disbursed_at"] = now
+        self.save()
+        return {"ok": True, "gl_reference": gl_reference,
+                "disbursement_date": disbursement_date,
+                "application_id": str(case.get("application_id") or ""),
+                "amount": case.get("amount")}
+
     def create_case_from_application(self, app: dict, conditions=None,
                                       authority: str = "") -> str:
         """Create a credit-admin case from an approved LMS application.

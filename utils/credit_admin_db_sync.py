@@ -51,6 +51,7 @@ _MUTATION_METHODS = [
     "add_insurance_policy", "update_insurance_policy",
     "request_perfection_override", "add_override_approval",
     "request_authorization", "authorize", "clear_for_disbursement",
+    "troops_book", "troops_set_value_date", "troops_disburse",
 ]
 
 
@@ -159,6 +160,14 @@ def _normalize_db_credit_admin_row(row: Optional[dict]) -> Optional[dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 # CA-2: live installer — PG-first reads + transactional row-locked RMW writes.
 # ─────────────────────────────────────────────────────────────────────────────
+def _case_hash(case: dict) -> int:
+    """Stable within-process hash of a case, for dirty-diff at save()."""
+    try:
+        return hash(_json.dumps(case, sort_keys=True, default=str))
+    except Exception:
+        return hash(repr(case))
+
+
 def _wrap_mutation(method):
     """Serialize a single-case mutation through a row-locked transaction.
 
@@ -190,7 +199,11 @@ def _wrap_mutation(method):
                 self.cases = [c for c in self.cases if c.get("id") != case_id]
                 self.cases.append(fresh)
 
-            result = method(self, case_id, *args, **kwargs)   # mutate + JSON mirror
+            self._in_rmw = True   # tells save() to skip its own PG-sync (we do it in-txn)
+            try:
+                result = method(self, case_id, *args, **kwargs)   # mutate + JSON mirror
+            finally:
+                self._in_rmw = False
 
             mutated = self.get(case_id)
             if mutated:
@@ -198,6 +211,12 @@ def _wrap_mutation(method):
                 # leave JSON and PG silently diverged.
                 _db_sync_credit_admin_case(
                     mutated, conflict="update", swallow=False, conn=conn)
+                try:
+                    snap = getattr(self, "_ca_snapshot", None)
+                    if snap is not None:
+                        snap[case_id] = _case_hash(mutated)
+                except Exception:
+                    pass
         return result
     return wrapper
 
@@ -211,17 +230,56 @@ def install_credit_admin_concurrency(cls) -> None:
     _orig_load = cls._load
 
     def _load_pg_first(self):
+        cases = None
         try:
             from utils.db import db as _db
             if _db.table_uses_db("credit_admin"):
                 rows = _db.fetch_all("SELECT id, data FROM credit_admin")
-                cases = [_normalize_db_credit_admin_row(r) for r in rows if r]
-                return [c for c in cases if c]
+                cases = [c for c in (_normalize_db_credit_admin_row(r) for r in rows if r) if c]
         except Exception as e:
             _log.error(f"credit_admin PG-first load failed; JSON fallback: {e}")
-        return _orig_load(self)
+            cases = None
+        if cases is None:
+            cases = _orig_load(self)
+        # Snapshot for dirty-diff at save() — so ANY mutation (manager method OR
+        # route-level get()+field-set) that ends in save() is synced to PG.
+        try:
+            self._ca_snapshot = {c.get("id"): _case_hash(c) for c in cases if c.get("id")}
+        except Exception:
+            self._ca_snapshot = {}
+        return cases
 
     cls._load = _load_pg_first
+
+    # save()-hook: universal PG-sync net. Every credit-admin mutation funnels
+    # through save(); diff against the load snapshot and upsert changed cases.
+    # Skipped inside a wrapped RMW txn (that path syncs in-transaction).
+    _orig_save = cls.save
+
+    def _save_with_sync(self):
+        _orig_save(self)   # JSON mirror — always
+        if getattr(self, "_in_rmw", False):
+            return
+        try:
+            from utils.db import db as _db
+            if not _db.table_uses_db("credit_admin"):
+                return
+            snap = getattr(self, "_ca_snapshot", None)
+            if snap is None:
+                snap = {}
+            for c in self.cases:
+                cid = c.get("id")
+                if not cid:
+                    continue
+                h = _case_hash(c)
+                if snap.get(cid) != h:
+                    _db_sync_credit_admin_case(c, conflict="update", swallow=True)
+                    snap[cid] = h
+            self._ca_snapshot = snap
+        except Exception as e:
+            _log.error(f"credit_admin save-sync failed: {e}")
+
+    cls.save = _save_with_sync
 
     # 2) Wrap single-case mutations with the row-locked RMW.
     for name in _MUTATION_METHODS:
@@ -229,31 +287,10 @@ def install_credit_admin_concurrency(cls) -> None:
         if callable(orig):
             setattr(cls, name, _wrap_mutation(orig))
 
-    # 3) Create path: mirror the newly created case to PG so PG-first reads see
-    #    it immediately. (Create-race is out of scope for CA-2, same as pipeline
-    #    Probe 1 — tracked under JSON-mirror retirement.)
-    _orig_create = getattr(cls, "create_case_from_application", None)
-    if callable(_orig_create):
-        @functools.wraps(_orig_create)
-        def _create_wrapped(self, *args, **kwargs):
-            result = _orig_create(self, *args, **kwargs)
-            try:
-                from utils.db import db as _db
-                if _db.table_uses_db("credit_admin"):
-                    new_case = None
-                    if isinstance(result, dict) and result.get("id"):
-                        new_case = result
-                    elif isinstance(result, str):
-                        new_case = self.get(result)
-                    if not new_case and self.cases:
-                        new_case = self.cases[-1]
-                    if new_case:
-                        _db_sync_credit_admin_case(
-                            new_case, conflict="update", swallow=True)
-            except Exception as e:
-                _log.error(f"credit_admin create-sync failed: {e}")
-            return result
-        cls.create_case_from_application = _create_wrapped
+    # Create path needs no special handling: create_case_from_application appends
+    # the new case and calls self.save(), so the save()-hook above upserts it
+    # (a brand-new id is "changed" vs the load snapshot). (Create-RACE under
+    # burst remains Phase-C / JSON-mirror retirement, same as pipeline Probe 1.)
 
     cls._ca2_installed = True
     _log.info("CA-2 installed on CreditAdminManager (PG-first reads + RMW writes)")

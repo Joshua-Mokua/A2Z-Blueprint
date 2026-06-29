@@ -19,6 +19,8 @@ sequential 295/295 harness (which cannot see this class of bug).
            Count distinct cases whose write survived. (lost-update analog.)
   Probe B: ONE case, N unique perfections fired in parallel.
            Count how many of the N appends survived. (two-officers-one-case.)
+  Probe C: ONE ready case, N parallel troops/disburse. Exactly one must win;
+           more than one 2xx == double-disburse (CA-3 target).
 
 Read-only setup; appends test perfections to existing cases (harmless on dev
 data, re-runnable — each run uses a fresh run id). Run against a live API:8502.
@@ -100,7 +102,7 @@ def main():
     base, N = a.base, a.n
     run = datetime.now().strftime("%H%M%S%f")
 
-    print(f"A2Z STRESS — credit-admin concurrency @ {base} (n={N})  ({datetime.now():%Y-%m-%d %H:%M:%S})")
+    print(f"A2Z STRESS — credit-admin concurrency @ {base} (n={N}) [rev C4]  ({datetime.now():%Y-%m-%d %H:%M:%S})")
     token = login(base)
     if not token:
         print("  cannot proceed without ADMIN token"); sys.exit(2)
@@ -160,6 +162,65 @@ def main():
     else:
         record("HOLE", "single-case appends: LOST appends",
                f"{survived}/{N} survived — {N-survived} clobbered")
+
+    # ── Probe C: ONE ready case, N parallel troops/disburse (double-disburse) ──
+    print("=== PROBE C: N parallel troops/disburse on ONE ready case (double-disburse) ===")
+    # Prefer the full cases list (reliable `id`); fall back to the troops queue
+    # projection (which keys the id as `case_id`).
+    st, lc = _req(base, "GET", "/api/credit-admin/cases", token)
+    allcases = (lc.get("cases") if isinstance(lc, dict) else None) or []
+    cand = next((c.get("id") for c in allcases
+                 if c.get("cleared_for_disbursement") and not c.get("disbursed") and c.get("id")), None)
+    if not cand:
+        st, q = _req(base, "GET", "/api/credit-admin/troops/queue", token)
+        queue = (q.get("cases") if isinstance(q, dict) else None) or []
+        cand = next((c.get("case_id") or c.get("id")
+                     for c in queue if (c.get("case_id") or c.get("id"))), None)
+        if not cand and queue:
+            record("INFO", "double-disburse: queue items lack a usable id key",
+                   f"first-item keys={sorted(queue[0].keys())}")
+    candidates = [c.get("id") for c in allcases
+                  if c.get("cleared_for_disbursement") and not c.get("disbursed") and c.get("id")]
+    today = datetime.now().strftime("%Y-%m-%d")
+    staged = None
+    diag = []
+    for cid in candidates[:6]:
+        sb, bb = _req(base, "POST", f"/api/credit-admin/cases/{cid}/troops/book", token, {})
+        body_ts = (bb or {}).get("troops_status") if isinstance(bb, dict) else None
+        sg, dg = _req(base, "GET", f"/api/credit-admin/cases/{cid}", token)
+        mid = (dg.get("case", dg) if isinstance(dg, dict) else {})
+        reread_ts = mid.get("troops_status")
+        if reread_ts != "booked":
+            diag.append(f"{cid}: book={sb} body_ts={body_ts} reread_ts={reread_ts} "
+                        f"(book write did NOT persist)")
+            continue
+        sv, vb = _req(base, "POST", f"/api/credit-admin/cases/{cid}/troops/value-date",
+                      token, {"value_date": today})
+        sg2, dg2 = _req(base, "GET", f"/api/credit-admin/cases/{cid}", token)
+        c2 = (dg2.get("case", dg2) if isinstance(dg2, dict) else {})
+        if c2.get("troops_status") == "value_dated" and not c2.get("disbursed"):
+            staged = cid
+            break
+        diag.append(f"{cid}: value-date={sv}:{(vb or {}).get('detail','ok')} "
+                    f"reread_ts={c2.get('troops_status')}")
+
+    if not staged:
+        record("INFO", "double-disburse: could not stage a value_dated case",
+               " | ".join(diag[:3]) if diag else f"candidates={len(candidates)}")
+    else:
+        def _disb(_i):
+            stt, _b = _req(base, "POST", f"/api/credit-admin/cases/{staged}/troops/disburse",
+                           token, {"gl_reference": f"GLPROBE-{run}-{_i}"})
+            return stt
+        with ThreadPoolExecutor(max_workers=N) as ex:
+            codes = list(ex.map(_disb, range(N)))
+        wins = sum(1 for c in codes if c in (200, 201))
+        if wins == 1:
+            record("OK", "double-disburse: exactly one disburse won (serialized)",
+                   f"case={staged} {wins}/{N} returned 2xx")
+        else:
+            record("HOLE", "double-disburse: MULTIPLE disburses succeeded",
+                   f"case={staged} {wins}/{N} returned 2xx — same case disbursed {wins}x")
 
     _summary()
 

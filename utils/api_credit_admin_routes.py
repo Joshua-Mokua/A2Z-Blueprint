@@ -958,21 +958,12 @@ def troops_book(case_id: str, payload: TroopsBookRequest,
     if not _is_troops(user):
         raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
     cam = _cam()
-    case = cam.get(case_id)
-    if not case:
-        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
-    if not case.get("cleared_for_disbursement"):
-        raise HTTPException(status_code=400,
-                            detail="Case has not been released to Treasury for disbursement yet")
-    if case.get("disbursed"):
-        raise HTTPException(status_code=400, detail="Case already disbursed")
     acct = (payload.cbs_account_no or "").strip() or f"ECO{str(case_id)[-10:].zfill(10)}"
-    case["cbs_account_no"] = acct
-    case["troops_status"] = "booked"
-    case["troops_booked_by"] = str(user.get("username", "") or "")
-    case["troops_booked_at"] = _now_iso()
-    cam.save()
-    audit_log("TROOPS_BOOKED", str(user.get("username", "") or ""), f"{case_id}|{acct}")
+    uname = str(user.get("username", "") or "")
+    res = cam.troops_book(case_id, acct, uname, _now_iso())  # serialized (CA-3)
+    if not res.get("ok"):
+        raise HTTPException(status_code=res["code"], detail=res["detail"])
+    audit_log("TROOPS_BOOKED", uname, f"{case_id}|{acct}")
     return {"case": cam.get(case_id), "troops_status": "booked"}
 
 
@@ -982,21 +973,15 @@ def troops_value_date(case_id: str, payload: TroopsValueDateRequest,
     """Step 2 — set the value date for the disbursement (requires booked)."""
     if not _is_troops(user):
         raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
-    cam = _cam()
-    case = cam.get(case_id)
-    if not case:
-        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
-    if case.get("disbursed"):
-        raise HTTPException(status_code=400, detail="Case already disbursed")
-    if case.get("troops_status") not in ("booked", "value_dated"):
-        raise HTTPException(status_code=400, detail="Book the facility to core banking first")
     vd = (payload.value_date or "").strip()
     if not vd:
         raise HTTPException(status_code=400, detail="value_date is required")
-    case["value_date"] = vd
-    case["troops_status"] = "value_dated"
-    cam.save()
-    audit_log("TROOPS_VALUE_DATED", str(user.get("username", "") or ""), f"{case_id}|{vd}")
+    cam = _cam()
+    uname = str(user.get("username", "") or "")
+    res = cam.troops_set_value_date(case_id, vd, uname, _now_iso())  # serialized (CA-3)
+    if not res.get("ok"):
+        raise HTTPException(status_code=res["code"], detail=res["detail"])
+    audit_log("TROOPS_VALUE_DATED", uname, f"{case_id}|{vd}")
     return {"case": cam.get(case_id), "troops_status": "value_dated"}
 
 
@@ -1008,48 +993,32 @@ def troops_disburse(case_id: str, payload: TroopsDisburseRequest,
     if not _is_troops(user):
         raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
     cam = _cam()
-    case = cam.get(case_id)
-    if not case:
-        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
-    if case.get("disbursed"):
-        raise HTTPException(status_code=400, detail="Case already disbursed")
-    if not case.get("cleared_for_disbursement"):
-        raise HTTPException(status_code=400, detail="Case has not been released to Treasury")
-    if case.get("troops_status") != "value_dated" or not case.get("value_date"):
-        raise HTTPException(status_code=400, detail="Set the value date before disbursing")
-    if not case.get("cbs_account_no"):
-        raise HTTPException(status_code=400,
-                            detail="Book the facility to core banking before disbursing")
     gl = (payload.gl_reference or "").strip() or f"GL{_now_iso()[:19].replace('-', '').replace(':', '').replace('T', '')}"
-    now = _now_iso()
-    case["disbursed"] = True
-    case["disbursement_date"] = case.get("value_date") or now[:10]
-    case["gl_reference"] = gl
-    case["troops_status"] = "disbursed"
-    case["troops_disbursed_by"] = str(user.get("username", "") or "")
-    case["troops_disbursed_at"] = now
-    cam.save()
+    uname = str(user.get("username", "") or "")
+    res = cam.troops_disburse(case_id, gl, uname, _now_iso())  # serialized (CA-3): one winner
+    if not res.get("ok"):
+        raise HTTPException(status_code=res["code"], detail=res["detail"])
     # Autopopulate the BSC: flip the linked loan application to 'disbursed' so the
     # K001 "Loans Disbursed" aggregation rule (SUM amount where status in
     # loan_approved_disbursed) credits the originating RM in the disbursement
     # period. Best-effort — a failure here must never block the disbursement.
     try:
-        app_id = str(case.get("application_id") or "")
+        app_id = str(res.get("application_id") or "")
         if app_id:
             from utils.core import LoanApplicationManager
             lam = LoanApplicationManager()
             app = lam.get(app_id)
             if app and app.get("status") != "disbursed":
                 fields = {"status": "disbursed",
-                          "disbursement_date": case["disbursement_date"]}
-                if not app.get("amount") and case.get("amount"):
-                    fields["amount"] = case.get("amount")
+                          "disbursement_date": res["disbursement_date"]}
+                if not app.get("amount") and res.get("amount"):
+                    fields["amount"] = res.get("amount")
                 lam.update(app_id, fields)
     except Exception:
         import logging
         logging.getLogger("a2z.creditadmin").warning(
             "K001 autopopulate (loan-app status flip) failed for %s", case_id, exc_info=True)
-    audit_log("TROOPS_DISBURSED", str(user.get("username", "") or ""), f"{case_id}|{gl}")
+    audit_log("TROOPS_DISBURSED", uname, f"{case_id}|{gl}")
     return {"case": cam.get(case_id), "troops_status": "disbursed", "disbursed": True}
 
 
