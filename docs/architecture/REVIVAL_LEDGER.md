@@ -1785,6 +1785,28 @@ Total: **35 Stage C gates planned**. Stage C completion estimate: 6 batches with
 
 ---
 
+### 2026-06-29 CA-1..CA-3 — Credit Admin migrated to PostgreSQL-authoritative storage with row-locked disbursement serialization
+
+**Type:** migration
+**Owner:** Joshua + Claude (CGR1 maintained; RED-probe-first)
+**Rationale:** Credit Admin held the disbursement money-path on a JSON store with no concurrency control. Probes proved real holes: lost-update on distinct cases, lost-append on one case, and same-case double-disburse (10/10 concurrent `troops/disburse` all succeeded = 10 GL postings + 10x BSC credit for one loan).
+**Changes:** CA-1 (`88820eb`) lossless PG mirror (scalars + complete-case `data JSONB` + indexes; reads still JSON). CA-2 (`cbc983d`) PG-authoritative reads + `SELECT … FOR UPDATE` row-locked RMW via `install_credit_admin_concurrency()`; `save()`-hook as universal write chokepoint. CA-3 (`7ca9e35`) troops book/value-date/disburse became row-locked `CreditAdminManager` methods in `_MUTATION_METHODS`; routes slimmed; K001 autopopulate + audit run winner-only.
+**Verification:** `stress_credit_admin.py` A 10/10, B 10/10, C double-disburse 10/10→**1/N**; `simulate_credit_chain.py` 295/295 at each step.
+**Cross-references:** RL5 (canonical migration registry); pairs with the auth-store entry below; OPERATIONAL_PROTOCOL silent-except + stale-process trap.
+
+---
+
+### 2026-06-29 auth-store — `UserManager._load` made read-only; cross-cutting enrichment scope race eliminated
+
+**Type:** vulnerability
+**Owner:** Joshua + Claude (mechanism pinned by instrumentation, not hypothesis)
+**Rationale:** `_enrich_identity_from_store` (`auth_jwt.py`) built a fresh `UserManager()` per request, and `_load()` called `self._save(users)` on *every* load (admin normalization). Under concurrency the simultaneous `os.replace(tmp, users.json)` collided on Windows (`WinError 5`); `_load` raised, `_enrich`'s `except Exception: pass` swallowed it, `staff_code` never filled, scope came back empty → spurious 403/404 on the user's *own* resources (~50% under load). The atomic write that fixed *corruption* had introduced *contention*. Affected every scoped endpoint.
+**Changes:** `utils/core.py` — `_load` is now read-only: admin normalization in memory; `users.json` persisted only when admin was genuinely absent (first-run seed), best-effort. Common path performs zero writes. `scripts/stress_auth_scope.py` committed as the gate.
+**Verification:** in-process trace pinned every failure to `_load → _save → os.replace WinError 5`; after fix, Probe R/U/L spurious-403/404 ~50%→**0/N**, trace 100% `outcome:OK`, `simulate` 295/295. Commit `5c34117`.
+**Cross-references:** supersedes the `efb8fbd` hypothesis (the true cause was `_load`'s unconditional save, not `ensure_*` self-heal).
+
+---
+
 ## Recurring ledger sections (future entries)
 
 When entries accumulate, this artifact may be split per the **`Index → Per-year detail`** pattern. The current scope (single page) is feasible because the ledger has just been initialized. After approximately **50 entries**, refactor into:

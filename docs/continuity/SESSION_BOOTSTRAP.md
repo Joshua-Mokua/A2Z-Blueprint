@@ -27,7 +27,10 @@ development across multiple concurrent arcs.
 
 ## Current certified state
 
-**Last commit on main:** `92c2e0a` (v10.500 Batch 3d follow-up — gitignored runtime audit files)
+**Last commit on main:** `5c34117` (2026-06-29 — auth-store read-only `_load`; enrichment scope race closed)
+
+**Latest arc — PostgreSQL concurrency + auth hardening (2026-06-29, pushed to origin/main):** Two concurrency P0s closed, each gated by a committed RED→GREEN probe + `simulate_credit_chain.py` 295/295. (1) Credit Admin money-path: `88820eb` CA-1 PG mirror → `cbc983d` CA-2 PG-authoritative reads + row-locked RMW + save()-hook → `7ca9e35` CA-3 troops disbursement serialized (double-disburse probe 10/10→1/N). (2) `5c34117` auth-store: `UserManager._load` made read-only — removed the per-request `users.json` rewrite whose `os.replace` collisions (Windows `WinError 5`) were swallowed by `_enrich`'s bare `except`, causing spurious 403/404 on users' own resources under load (R/U/L probe ~50%→0/N). Standing probes: `scripts/stress_credit_admin.py`, `scripts/stress_auth_scope.py`. Full detail in REVIVAL_LEDGER (2026-06-29 entries). NOTE: the Stage C / Arc-D block below predates this arc and was not refreshed during it.
+
 **Phase 1 closure commit:** `f268330` (v10.500 Phase 1 Batch 3d — doctrine refresh)
 **Last shipped batch:** v10.501 Phase 2 Arc A Batch 4a — 2026-06-10 (password policy hardening)
 **Phase 1 status:** **CLOSED** — 10/10 gates green

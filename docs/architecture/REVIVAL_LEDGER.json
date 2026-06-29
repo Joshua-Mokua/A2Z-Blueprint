@@ -5,7 +5,7 @@
     "status": "canonical",
     "version": "1.0.0",
     "introduced_in": "v10.497 governance batch, Stage B Wave 6",
-    "last_updated": "2026-05-23",
+    "last_updated": "2026-06-29",
     "owner": "Architecture / Doctrine",
     "human_readable_equivalent": "REVIVAL_LEDGER.md",
     "companion_artifact": "CHANGELOG_MASTER.md",
@@ -385,6 +385,35 @@
       "changes": "See RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md Section 'The certification ladder (24 rungs)' for full enumeration. Each rung corresponds to a v10.4xx batch.",
       "verification": "Each rung's audit gate at scripts/audit.py; cumulative property G380 implies G379 implies ... G357 enforced",
       "cross_references": ["RESILIENCE_AND_CERTIFICATION_GOVERNANCE.md", "Per-rung CHANGELOG entries pending CHANGELOG_MASTER seeding"]
+    },
+    {
+      "date": "2026-06-29",
+      "batch_id": "CA-1..CA-3 credit-admin PG concurrency",
+      "title": "Credit Admin migrated to PostgreSQL-authoritative storage with row-locked disbursement serialization (money-path concurrency P0 closed)",
+      "type": "migration",
+      "owner": "Joshua + Claude (CGR1 maintained: every fix grounded in same-session code inspection + RED-probe-first)",
+      "rationale": "Credit Admin held the disbursement money-path on a JSON store with no concurrency control. Probes proved real data-loss/double-spend holes: lost-update on distinct cases, lost-append on one case, and same-case double-disburse (10/10 concurrent troops/disburse all succeeded = 10 GL postings + 10x BSC credit for one loan). Migrated to PG with row-level locking; each hole closed by a fix whose RED->GREEN flip is the proof.",
+      "changes": [
+        "CA-1 (88820eb): lossless PG mirror of credit_admin (scalars + complete-case data JSONB, 2 indexes); reads still JSON.",
+        "CA-2 (cbc983d): PG-authoritative reads + transactional SELECT...FOR UPDATE row-locked RMW via install_credit_admin_concurrency(); save()-hook universal write chokepoint (captures route-level troops mutations).",
+        "CA-3 (7ca9e35): troops book/value-date/disburse became row-locked CreditAdminManager methods in _MUTATION_METHODS; routes slimmed; K001 autopopulate + audit run winner-only."
+      ],
+      "verification": "stress_credit_admin.py A 10/10, B 10/10, C double-disburse 10/10->1/N; simulate_credit_chain.py 295/295 at each step. Committed probe is the standing gate.",
+      "cross_references": "RL5 canonical migration registry; OPERATIONAL_PROTOCOL silent-except + Trap #15 stale-process; pairs with auth-store entry."
+    },
+    {
+      "date": "2026-06-29",
+      "batch_id": "auth-store read-only _load (5c34117)",
+      "title": "UserManager._load made read-only; cross-cutting enrichment scope race (spurious 403/404 under load) eliminated",
+      "type": "vulnerability",
+      "owner": "Joshua + Claude (mechanism pinned by instrumentation, not hypothesis; prior B3/B4 attempts had failed by guessing)",
+      "rationale": "_enrich_identity_from_store (auth_jwt.py) constructed a fresh UserManager() per request, and _load() called self._save(users) on EVERY load (admin normalization). Under concurrency the simultaneous os.replace(tmp, users.json) collided on Windows (WinError 5); _load raised, _enrich's 'except Exception: pass' swallowed it, staff_code never filled, cascade scope empty -> spurious 403/404 on the user's OWN resources (~50% under load). The atomic write that fixed CORRUPTION had introduced CONTENTION. Affected every scoped endpoint.",
+      "changes": [
+        "utils/core.py: UserManager._load() is READ-ONLY. Admin normalization in memory; users.json persisted ONLY when admin genuinely absent (first-run seed), best-effort. Common path performs zero writes.",
+        "scripts/stress_auth_scope.py: committed RED->GREEN gate (R concurrent scoped reads, U concurrent scoped updates, L fresh-login+read storm)."
+      ],
+      "verification": "In-process trace pinned every failure to _load -> _save -> os.replace WinError 5. After fix: Probe R/U/L spurious-403/404 ~50% -> 0/N; trace 100% outcome=OK; simulate 295/295. Commit 5c34117.",
+      "cross_references": "Supersedes efb8fbd hypothesis (self-heal writes); true cause was _load's unconditional save. OPERATIONAL_PROTOCOL silent-except (existing) + Trap #15 (new)."
     }
   ],
 

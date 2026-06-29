@@ -362,6 +362,25 @@ This is a single-batch arc when it lands; not in scope for Phase 2.
 
 ---
 
+## Trap #15 — Verify a fresh process before trusting a probe
+
+**The single biggest confounder of the 2026-06-29 concurrency work (three separate episodes): a stale or duplicate uvicorn serving old code, making probe results meaningless.** A fix on disk that the probe does not reflect is almost always a stale process, not a code bug — confirm process freshness *before* debugging further.
+
+Before trusting ANY concurrency-probe result, confirm exactly one listener:
+
+```
+netstat -ano | findstr "LISTENING" | findstr :8502
+```
+
+- Exactly one PID expected. Two listeners = a stale process serving pre-fix code; results are invalid until resolved.
+- Clean restart: stop the server (Ctrl+C) → re-run the netstat check until it prints **nothing** → `taskkill /F /PID <pid>` for any straggler → fresh `python -m uvicorn utils.api:app --host 127.0.0.1 --port 8502` → wait for `Application startup complete`.
+- Corollary: a sequential harness (`simulate_credit_chain.py`) can never validate a concurrency fix — it does not create the collision. Only the stress probes (credit-admin A/B/C, auth R/U/L) gate concurrency; `simulate` only proves parity.
+- Related: when behaviour contradicts committed code, an in-process read-only diagnostic (or a loud-failure trace) disambiguates in one run what abstract reasoning chases for many turns. See "Silent-except is a latent bug" — both the credit-admin troops-persistence scare and the auth-store scope race were masked by swallowed exceptions and only yielded once the swallow was made loud.
+
+**Read-only-load corollary (CGR1 application):** a `_load()` must never write, and a per-request read path (e.g. identity enrichment) must never construct-and-write a shared file. Normalization belongs in memory; persistence is a separate, deliberate, infrequent act. This is what the 2026-06-29 auth-store fix encoded.
+
+---
+
 ## Future protocol candidates (under consideration)
 
 These have not yet been codified but may be added in Phase 2:
