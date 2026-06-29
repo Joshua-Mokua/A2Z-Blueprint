@@ -7263,7 +7263,8 @@ class UserManager:
             return self._defaults()
 
         # Always ensure admin account exists and cannot be permanently removed
-        if 'admin' not in users:
+        _admin_was_missing = 'admin' not in users
+        if _admin_was_missing:
             users['admin'] = {
                 "password":   self.hash_pw("admin123"),
                 "full_name":  "System Admin",
@@ -7284,7 +7285,21 @@ class UserManager:
                 'active': True,
                 '_protected': True,
             })
-        self._save(users)
+        # AUTH-RACE FIX: a _load() must be READ-ONLY. This method previously
+        # called self._save(users) on EVERY load to persist the admin
+        # normalization above. Because _enrich_identity_from_store constructs a
+        # fresh UserManager() per authenticated request, every request rewrote
+        # users.json; under concurrency the simultaneous os.replace() calls
+        # collided (Windows WinError 5 Access denied), the load raised, _enrich
+        # swallowed it, and the request got an empty cascade scope -> spurious
+        # 403/404. The normalization is now in-memory; we persist ONLY when the
+        # admin account was genuinely absent (first-run seed), best-effort, so
+        # file contention can never turn a read into a failed request.
+        if _admin_was_missing:
+            try:
+                self._save(users)
+            except Exception:
+                pass  # in-memory dict is already correct; disk seed deferred
         return users
 
     def _backup_unreadable(self, tag: str) -> None:
