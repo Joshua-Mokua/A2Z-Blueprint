@@ -91,15 +91,7 @@ export function Cascade() {
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">
             {user?.full_name && (
-              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})
-              {/* γ5a-hotfix1 diagnostic: surface role + MD status so we can see
-                  what user.role actually looks like and confirm the MD gate. */}
-              <span className="ml-3 text-gray-400">·</span>
-              <span className="ml-3">role: <span className="font-mono text-gray-700">{user.role || '(none)'}</span></span>
-              {isMd && (
-                <span className="ml-3 inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-[10px] font-medium">MD</span>
-              )}
-              </>
+              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})</>
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
@@ -273,16 +265,7 @@ export function Cascade() {
         </Card>
 
 
-        <Card>
-          <Card.Body>
-            <div className="text-xs text-gray-500 italic">
-              <strong>Read-only view (γ3).</strong> Editing surfaces — MD setting bank targets,
-              leaders cascading to their downline, deadline timelines, lock & review workflows — live in
-              the Streamlit "Target Cascade" page (the legacy admin interface), and will land in
-              React in batch γ5.
-            </div>
-          </Card.Body>
-        </Card>
+
 
       </main>
     </div>
