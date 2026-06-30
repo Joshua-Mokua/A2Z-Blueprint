@@ -1593,6 +1593,62 @@ def set_sla_config(
 # ─────────────────────────────────────────────────────────────────────
 
 
+@app.get("/api/admin/staff", tags=["admin"])
+def get_admin_staff(user: dict = Depends(require_admin)):
+    """Full staff roster from the PostgreSQL `users` table (authoritative store).
+
+    Read-only. Returns every user row shaped for the React staff-admin table.
+    Deliberately reads the DB table directly — NOT via UserManager / users.json,
+    which is a stale 70-user shadow. Reporting lines and managed_* scope live in
+    the row's `metadata` JSONB and are surfaced here when present.
+    """
+    from utils.db import db as _db
+    if not _db.table_uses_db("users"):
+        raise HTTPException(status_code=503,
+                            detail="users table not active in PostgreSQL")
+    try:
+        rows = _db.fetch_all(
+            "SELECT username, staff_code, full_name, role, department, unit, "
+            "       email, active, is_admin, can_view_all, "
+            "       must_change_password, last_login, metadata "
+            "FROM users ORDER BY full_name NULLS LAST, username"
+        ) or []
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"staff read failed: {exc}")
+
+    staff = []
+    for r in rows:
+        meta = r.get("metadata") or {}
+        if isinstance(meta, str):
+            try:
+                import json as _json
+                meta = _json.loads(meta)
+            except Exception:
+                meta = {}
+        staff.append({
+            "username":        r.get("username"),
+            "staff_code":      r.get("staff_code"),
+            "full_name":       r.get("full_name"),
+            "role":            r.get("role"),
+            "department":      r.get("department"),
+            "unit":            r.get("unit"),
+            "email":           r.get("email") or "",
+            "active":          bool(r.get("active")),
+            "is_admin":        bool(r.get("is_admin")),
+            "can_view_all":    bool(r.get("can_view_all")),
+            "must_change_password": bool(r.get("must_change_password")),
+            "last_login":      str(r.get("last_login")) if r.get("last_login") else None,
+            # Reporting line + scope (from metadata JSONB, if populated):
+            "reports_to":          meta.get("reports_to"),
+            "managed_staff_codes": meta.get("managed_staff_codes", []),
+            "managed_units":       meta.get("managed_units", []),
+            "managed_roles":       meta.get("managed_roles", []),
+            "region":              meta.get("region"),
+        })
+    _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff")
+    return {"staff": staff, "count": len(staff)}
+
+
 @app.get("/api/admin/branches", tags=["admin"])
 def get_admin_branches(user: dict = Depends(get_current_user)):
     """Branch list (from org_config) plus the region + area schemes, so the
