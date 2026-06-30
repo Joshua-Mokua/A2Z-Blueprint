@@ -55,7 +55,7 @@ import {
   PIPELINE_CATEGORIES, INITIAL_STAGES_BY_CATEGORY,
   SOURCE_OPTIONS,
   MIN_OVERRIDE_NOTE_LEN,
-  type PipelineCategory, type CreateDealRequest, type ReferDealRequest,
+  type CreateDealRequest, type ReferDealRequest,
   type PipelineConfig,
 } from '@/types/pipeline';
 import { segmentToCustomerType, type CbsCustomer } from '@/types/cbs';
@@ -139,7 +139,7 @@ export function PipelineCreate() {
   const [cifLookupLoading, setCifLookupLoading] = useState<boolean>(false);
   const [cifLookupError,   setCifLookupError]   = useState<string | null>(null);
 
-  const [category,    setCategory]    = useState<PipelineCategory>('Loan');
+  const [category,    setCategory]    = useState<string>('Loan');
   const [productType, setProductType] = useState('');
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
   const [stage,       setStage]       = useState<string>('Lead');
@@ -209,6 +209,22 @@ export function PipelineCreate() {
     () => classifyProduct(productType, config?.product_catalogue),
     [productType, config],
   );
+  // Config-driven categories (admin-authored via deal_categories), with the
+  // built-in PIPELINE_CATEGORIES as the pre-config fallback.
+  const categories = useMemo<string[]>(
+    () => (config?.deal_categories && config.deal_categories.length
+      ? config.deal_categories.map((c) => c.category)
+      : [...PIPELINE_CATEGORIES]),
+    [config],
+  );
+  // Initial stages for a category: admin-config flow first, then the legacy
+  // per-category map, then a minimal default — never throws for a new category.
+  const stagesForCategory = (cat: string): string[] => {
+    const fromCfg = config?.deal_categories?.find((c) => c.category === cat)?.stages;
+    if (fromCfg && fromCfg.length) return [...fromCfg];
+    const legacy = (INITIAL_STAGES_BY_CATEGORY as Record<string, readonly string[]>)[cat];
+    return legacy ? [...legacy] : ['Lead'];
+  };
   const stageOptions = useMemo(() => {
     // Resolution precedence mirrors the server's _stage_flow_for:
     //   1. product_flows[productType] — the product's OWN flow (each product
@@ -228,7 +244,7 @@ export function PipelineCreate() {
     if (flows && productClass && flows[productClass]?.length) {
       return flows[productClass].filter((s) => !isTerminal(s));
     }
-    return [...INITIAL_STAGES_BY_CATEGORY[category]];   // fallback pre-config
+    return stagesForCategory(category);   // config-driven, with legacy fallback
   }, [config, productType, productClass, category]);
 
   // The per-stage SLA target (days) for the currently selected stage, from the
@@ -1218,17 +1234,18 @@ export function PipelineCreate() {
               <select
                 value={category}
                 onChange={(e) => {
-                  const c = e.target.value as PipelineCategory;
+                  const c = e.target.value;
                   setCategory(c);
-                  if (!INITIAL_STAGES_BY_CATEGORY[c].includes(stage)) {
-                    setStage(INITIAL_STAGES_BY_CATEGORY[c][0]);
+                  const initStages = stagesForCategory(c);
+                  if (!initStages.includes(stage)) {
+                    setStage(initStages[0] ?? 'Lead');
                   }
                   setProductType('');
                 }}
                 disabled={mutations.loading}
                 className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
               >
-                {PIPELINE_CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

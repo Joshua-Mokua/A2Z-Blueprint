@@ -428,7 +428,7 @@ export interface CreateDealRequest {
   mou_title?:            string;     // MOU title or free-text partner ("Other")
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
-  pipeline_category?:    PipelineCategory;
+  pipeline_category?:    string;
   probability?:          number;     // 0..1 (NOT 0..100)
   next_action?:          string;
   next_action_date?:     string;     // YYYY-MM-DD
