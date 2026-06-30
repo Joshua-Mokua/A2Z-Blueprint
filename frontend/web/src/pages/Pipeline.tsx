@@ -133,11 +133,13 @@ export function Pipeline() {
   // broken down by product and segment.
   const [drill, setDrill] = useState<FunnelDrillResponse | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
+  const [drillVisible, setDrillVisible] = useState(50);
   const [exporting, setExporting] = useState(false);
   const drillRef = useRef<HTMLDivElement | null>(null);
   const onStageDrill = (cls: string, stage: string): void => {
     setDrillLoading(true);
     setDrill(null);
+    setDrillVisible(50);
     fetchFunnelDrill(cls, stage)
       .then((d) => setDrill(d))
       .catch(() => setDrill(null))
@@ -506,7 +508,7 @@ export function Pipeline() {
                           </tr>
                         </thead>
                         <tbody>
-                          {drill.deals.slice(0, 50).map((d) => (
+                          {drill.deals.slice(0, drillVisible).map((d) => (
                             <tr key={d.id} className="border-b border-gray-100">
                               <td className="py-1.5 pr-3 font-mono text-xs text-gray-500">{d.id}</td>
                               <td className="py-1.5 pr-3 text-gray-800">{d.client_name}</td>
@@ -518,9 +520,16 @@ export function Pipeline() {
                           ))}
                         </tbody>
                       </table>
-                      {drill.deals.length > 50 && (
-                        <div className="mt-2 text-xs text-gray-400">Showing top 50 of {drill.deals.length} deals.</div>
-                      )}
+                      {drill.deals.length > drillVisible ? (
+                        <div className="mt-2 flex items-center gap-3">
+                          <Button variant="ghost" size="sm" onClick={() => setDrillVisible((n) => n + 50)}>
+                            Show more ({drill.deals.length - drillVisible} more)
+                          </Button>
+                          <span className="text-xs text-gray-400">Showing {drillVisible} of {drill.deals.length}</span>
+                        </div>
+                      ) : drill.deals.length > 50 ? (
+                        <div className="mt-2 text-xs text-gray-400">Showing all {drill.deals.length} deals.</div>
+                      ) : null}
                     </div>
                   )}
                 </div>
