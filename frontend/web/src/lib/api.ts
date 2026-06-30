@@ -1745,3 +1745,19 @@ export async function applyStaffUpload(contentB64: string, keep: string[]): Prom
     '/admin/staff/upload/apply', { content_b64: contentB64, keep });
 }
 
+// reporting hierarchy (role -> parent roles)
+export interface HierarchyResponse {
+  roles: string[];
+  hierarchy: Record<string, string[]>;
+  top: string[];
+}
+export async function fetchHierarchy(): Promise<HierarchyResponse> {
+  return getJson<HierarchyResponse>('/admin/hierarchy');
+}
+export async function saveHierarchy(
+  body: { action: string; role?: string; parents?: string[]; new_name?: string },
+): Promise<{ status: string; hierarchy: Record<string, string[]> }> {
+  return postJson<{ status: string; hierarchy: Record<string, string[]> }, typeof body>(
+    '/admin/hierarchy', body);
+}
+
