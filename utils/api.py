@@ -1649,6 +1649,165 @@ def get_admin_staff(user: dict = Depends(require_admin)):
     return {"staff": staff, "count": len(staff)}
 
 
+# ── Staff write endpoints (A-minimal Step 2) ─────────────────────────────────
+# Postgres-backed user CRUD against the `users` table. Mirrors the proven
+# Streamlit create-user contract (pages/7_admin.py) but writes the authoritative
+# DB store, not users.json. Reporting-line remap is a SEPARATE endpoint (Step 2b).
+
+class _StaffCreate(BaseModel):
+    username: str = ""
+    staff_code: str = ""
+    password: str = ""
+    full_name: str = ""
+    email: str = ""
+    role: str = "Staff"
+    department: str = ""
+    unit: str = ""
+    can_view_all: bool = False
+    can_execute: bool = False
+    is_admin: bool = False
+    can_validate: bool = False
+
+
+class _StaffPatch(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    unit: Optional[str] = None
+    staff_code: Optional[str] = None
+    can_view_all: Optional[bool] = None
+    can_execute: Optional[bool] = None
+    is_admin: Optional[bool] = None
+    can_validate: Optional[bool] = None
+    active: Optional[bool] = None
+
+
+def _staff_row_or_404(_db, username: str):
+    row = _db.fetch_one("SELECT username, is_admin, metadata FROM users WHERE username = %s",
+                        (username,))
+    if not row:
+        raise HTTPException(status_code=404, detail=f"user '{username}' not found")
+    return row
+
+
+@app.post("/api/admin/staff", tags=["admin"])
+def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_admin)):
+    """Create a user in the PostgreSQL users table (mirrors UserManager.add_user)."""
+    from utils.db import db as _db
+    from utils.core_audit import _hash_password
+    if not _db.table_uses_db("users"):
+        raise HTTPException(status_code=503, detail="users table not active")
+
+    final_user = (payload.username or "").strip() or (payload.staff_code or "").strip()
+    final_sc = (payload.staff_code or "").strip() or final_user
+    if not final_user or not payload.password or not (payload.full_name or "").strip():
+        raise HTTPException(status_code=400,
+                            detail="username (or staff_code), password and full_name are required")
+
+    exists = _db.fetch_one("SELECT 1 FROM users WHERE username = %s", (final_user,))
+    if exists:
+        raise HTTPException(status_code=409, detail=f"username '{final_user}' already exists")
+
+    pw_hash = _hash_password(payload.password)
+    meta = {"can_validate": bool(payload.can_validate),
+            "managed_staff_codes": [], "managed_units": [payload.unit] if payload.unit else [],
+            "managed_roles": []}
+    import json as _json
+    try:
+        _db.execute(
+            "INSERT INTO users (username, password_hash, full_name, email, role, "
+            "department, unit, staff_code, active, is_admin, can_view_all, "
+            "must_change_password, metadata) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (final_user, pw_hash, payload.full_name.strip(), payload.email or "",
+             payload.role or "Staff", payload.department or payload.unit or "",
+             payload.unit or "", final_sc, True, bool(payload.is_admin),
+             bool(payload.can_view_all), False, _json.dumps(meta)),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"create failed: {exc}")
+    _audit("API_ADMIN_STAFF_CREATE", user, f"{final_user}|sc:{final_sc}")
+    return {"status": "created", "username": final_user, "staff_code": final_sc}
+
+
+@app.patch("/api/admin/staff/{username}", tags=["admin"])
+def update_admin_staff(username: str, payload: _StaffPatch,
+                       user: dict = Depends(require_admin)):
+    """Partial update of an existing user's editable fields."""
+    from utils.db import db as _db
+    if not _db.table_uses_db("users"):
+        raise HTTPException(status_code=503, detail="users table not active")
+    row = _staff_row_or_404(_db, username)
+
+    cols, vals = [], []
+    col_map = {"full_name": payload.full_name, "email": payload.email,
+               "role": payload.role, "department": payload.department,
+               "unit": payload.unit, "staff_code": payload.staff_code,
+               "can_view_all": payload.can_view_all, "is_admin": payload.is_admin,
+               "active": payload.active}
+    for col, val in col_map.items():
+        if val is not None:
+            cols.append(f"{col} = %s"); vals.append(val)
+
+    # metadata-merged extension fields
+    import json as _json
+    meta = row.get("metadata") or {}
+    if isinstance(meta, str):
+        try: meta = _json.loads(meta)
+        except Exception: meta = {}
+    meta_changed = False
+    if payload.can_validate is not None:
+        meta["can_validate"] = bool(payload.can_validate); meta_changed = True
+    if payload.can_execute is not None:
+        meta["can_execute"] = bool(payload.can_execute); meta_changed = True
+    if meta_changed:
+        cols.append("metadata = %s"); vals.append(_json.dumps(meta))
+
+    if not cols:
+        raise HTTPException(status_code=400, detail="no editable fields supplied")
+    vals.append(username)
+    try:
+        _db.execute(f"UPDATE users SET {', '.join(cols)} WHERE username = %s", tuple(vals))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"update failed: {exc}")
+    _audit("API_ADMIN_STAFF_UPDATE", user, f"{username}|{','.join(c.split(' = ')[0] for c in cols)}")
+    return {"status": "updated", "username": username}
+
+
+@app.post("/api/admin/staff/{username}/deactivate", tags=["admin"])
+def deactivate_admin_staff(username: str, user: dict = Depends(require_admin)):
+    """Soft-delete: set active=false. Protected/admin accounts refused."""
+    from utils.db import db as _db
+    if not _db.table_uses_db("users"):
+        raise HTTPException(status_code=503, detail="users table not active")
+    row = _staff_row_or_404(_db, username)
+    if username == "admin" or row.get("is_admin"):
+        raise HTTPException(status_code=403, detail="cannot deactivate an admin account")
+    try:
+        _db.execute("UPDATE users SET active = false WHERE username = %s", (username,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"deactivate failed: {exc}")
+    _audit("API_ADMIN_STAFF_DEACTIVATE", user, username)
+    return {"status": "deactivated", "username": username}
+
+
+@app.post("/api/admin/staff/{username}/reactivate", tags=["admin"])
+def reactivate_admin_staff(username: str, user: dict = Depends(require_admin)):
+    """Undo deactivate: set active=true."""
+    from utils.db import db as _db
+    if not _db.table_uses_db("users"):
+        raise HTTPException(status_code=503, detail="users table not active")
+    _staff_row_or_404(_db, username)
+    try:
+        _db.execute("UPDATE users SET active = true WHERE username = %s", (username,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"reactivate failed: {exc}")
+    _audit("API_ADMIN_STAFF_REACTIVATE", user, username)
+    return {"status": "reactivated", "username": username}
+
+
+
 @app.get("/api/admin/branches", tags=["admin"])
 def get_admin_branches(user: dict = Depends(get_current_user)):
     """Branch list (from org_config) plus the region + area schemes, so the
