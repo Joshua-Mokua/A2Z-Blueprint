@@ -602,26 +602,30 @@ export default function AdminConfig() {
             >
               <div className="space-y-3">
                 {/* Add a partner */}
-                <div className="grid grid-cols-[2fr_1.3fr_1.3fr_auto] items-center gap-2">
+                <div className="space-y-2">
                   <Input
                     value={newMouName}
                     placeholder="Partner name"
                     onChange={(e) => setNewMouName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') addMou(); }}
                   />
-                  <Input
-                    value={newMouType}
-                    placeholder="Type (optional)"
-                    onChange={(e) => setNewMouType(e.target.value)}
-                  />
-                  <Input
-                    value={newMouDept}
-                    placeholder="Department (optional)"
-                    onChange={(e) => setNewMouDept(e.target.value)}
-                  />
-                  <Button size="sm" onClick={addMou} disabled={mouBusy || !newMouName.trim()}>
-                    Add partner
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      containerClassName="flex-1 min-w-[7rem]"
+                      value={newMouType}
+                      placeholder="Type (optional)"
+                      onChange={(e) => setNewMouType(e.target.value)}
+                    />
+                    <Input
+                      containerClassName="flex-1 min-w-[7rem]"
+                      value={newMouDept}
+                      placeholder="Department (optional)"
+                      onChange={(e) => setNewMouDept(e.target.value)}
+                    />
+                    <Button size="sm" onClick={addMou} disabled={mouBusy || !newMouName.trim()}>
+                      Add partner
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Search the register */}
