@@ -177,7 +177,7 @@ export class ApiValidationError extends Error {
 async function postJson<TResponse, TBody = unknown>(
   path: string,
   body: TBody,
-  method: 'POST' | 'PUT' = 'POST',
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST',
 ): Promise<TResponse> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -1650,4 +1650,64 @@ export async function upsertFxRate(
   body: FxRateUpsertRequest,
 ): Promise<FxRateUpsertResponse> {
   return postJson<FxRateUpsertResponse, FxRateUpsertRequest>('/fx/rates', body);
+}
+
+
+// ── Staff administration (Postgres users table) ──────────────────────────
+export interface StaffRow {
+  username: string;
+  staff_code: string | null;
+  full_name: string | null;
+  role: string | null;
+  department: string | null;
+  unit: string | null;
+  email: string;
+  active: boolean;
+  is_admin: boolean;
+  can_view_all: boolean;
+  must_change_password: boolean;
+  last_login: string | null;
+  reports_to?: string | null;
+  managed_staff_codes?: string[];
+  managed_units?: string[];
+  managed_roles?: string[];
+  region?: string | null;
+}
+
+export interface StaffListResponse { staff: StaffRow[]; count: number; }
+
+export interface StaffCreateInput {
+  username?: string; staff_code?: string; password: string; full_name: string;
+  email?: string; role?: string; department?: string; unit?: string;
+  band?: string; gender?: string; can_view_all?: boolean; is_admin?: boolean;
+}
+
+export interface StaffPatchInput {
+  full_name?: string; email?: string; role?: string; department?: string;
+  unit?: string; staff_code?: string; band?: string; gender?: string;
+  can_view_all?: boolean; is_admin?: boolean; active?: boolean;
+}
+
+export async function fetchAdminStaff(): Promise<StaffListResponse> {
+  return getJson<StaffListResponse>('/admin/staff');
+}
+export async function createAdminStaff(
+  input: StaffCreateInput,
+): Promise<{ status: string; username: string; staff_code: string }> {
+  return postJson('/admin/staff', input, 'POST');
+}
+export async function updateAdminStaff(
+  username: string, patch: StaffPatchInput,
+): Promise<{ status: string; username: string }> {
+  return postJson(`/admin/staff/${encodeURIComponent(username)}`, patch, 'PATCH');
+}
+export async function deactivateAdminStaff(
+  username: string,
+): Promise<{ status: string; username: string }> {
+  return postJson(`/admin/staff/${encodeURIComponent(username)}/deactivate`, {}, 'POST');
+}
+export async function reactivateAdminStaff(
+  username: string,
+): Promise<{ status: string; username: string }> {
+  return postJson(`/admin/staff/${encodeURIComponent(username)}/reactivate`, {}, 'POST');
 }

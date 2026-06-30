@@ -87,6 +87,7 @@ import { Initiatives } from './pages/Initiatives';
 import { FxRates } from './pages/FxRates';
 import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
+import StaffAdmin from './pages/StaffAdmin';
 import Referrals from './pages/Referrals';
 import Sla from './pages/Sla';
 import { InitiativeDetail } from './pages/InitiativeDetail';
@@ -166,6 +167,7 @@ function App() {
                     {/* Admin → Configuration — P4 Batch 1b. CEO/MD/Director; server enforces. */}
                     <Route path="/admin/config" element={<AdminConfig />} />
                     <Route path="/admin/roles" element={<RolesAdmin />} />
+                    <Route path="/admin/staff" element={<StaffAdmin />} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/sla" element={<Sla />} />
 
