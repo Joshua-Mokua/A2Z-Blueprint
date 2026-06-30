@@ -1594,7 +1594,7 @@ def set_sla_config(
 
 
 @app.get("/api/admin/staff", tags=["admin"])
-def get_admin_staff(user: dict = Depends(require_admin)):
+def get_admin_staff(user: dict = Depends(require_config_admin)):
     """Full staff roster from the PostgreSQL `users` table (authoritative store).
 
     Read-only. Returns every user row shaped for the React staff-admin table.
@@ -1690,7 +1690,7 @@ def _staff_row_or_404(_db, username: str):
 
 
 @app.post("/api/admin/staff", tags=["admin"])
-def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_admin)):
+def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_config_admin)):
     """Create a user in the PostgreSQL users table (real columns only)."""
     from utils.db import db as _db
     from utils.core_audit import _hash_password
@@ -1723,7 +1723,7 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_admin
 
 @app.patch("/api/admin/staff/{username}", tags=["admin"])
 def update_admin_staff(username: str, payload: _StaffPatch,
-                       user: dict = Depends(require_admin)):
+                       user: dict = Depends(require_config_admin)):
     """Partial update of editable real columns."""
     from utils.db import db as _db
     if not _db.table_uses_db("users"):
@@ -1751,7 +1751,7 @@ def update_admin_staff(username: str, payload: _StaffPatch,
 
 
 @app.post("/api/admin/staff/{username}/deactivate", tags=["admin"])
-def deactivate_admin_staff(username: str, user: dict = Depends(require_admin)):
+def deactivate_admin_staff(username: str, user: dict = Depends(require_config_admin)):
     """Soft-delete: active=false. Admin accounts refused."""
     from utils.db import db as _db
     if not _db.table_uses_db("users"):
@@ -1768,7 +1768,7 @@ def deactivate_admin_staff(username: str, user: dict = Depends(require_admin)):
 
 
 @app.post("/api/admin/staff/{username}/reactivate", tags=["admin"])
-def reactivate_admin_staff(username: str, user: dict = Depends(require_admin)):
+def reactivate_admin_staff(username: str, user: dict = Depends(require_config_admin)):
     """Undo deactivate: active=true."""
     from utils.db import db as _db
     if not _db.table_uses_db("users"):
