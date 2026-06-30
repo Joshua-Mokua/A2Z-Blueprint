@@ -1721,3 +1721,27 @@ export async function fetchAccessModules(): Promise<AccessModule[]> {
   return res.modules ?? [];
 }
 
+// staff Excel upload (preview + apply)
+export interface StaffUploadPreview {
+  ok: boolean;
+  errors: string[];
+  summary: {
+    total: number;
+    root: { code: string; name: string; role: string } | null;
+    reporting_to_md: { code: string; name: string; role: string }[];
+    staff_per_branch: Record<string, number>;
+    roles: Record<string, number>;
+  } | null;
+}
+export interface StaffUploadResult {
+  ok: boolean; applied: number; before: number; after: number; preserved: string[];
+}
+export async function previewStaffUpload(contentB64: string): Promise<StaffUploadPreview> {
+  return postJson<StaffUploadPreview, { content_b64: string }>(
+    '/admin/staff/upload/preview', { content_b64: contentB64 });
+}
+export async function applyStaffUpload(contentB64: string, keep: string[]): Promise<StaffUploadResult> {
+  return postJson<StaffUploadResult, { content_b64: string; keep: string[] }>(
+    '/admin/staff/upload/apply', { content_b64: contentB64, keep });
+}
+

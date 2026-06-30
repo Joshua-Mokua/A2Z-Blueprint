@@ -27,6 +27,9 @@ import {
   reactivateAdminStaff,
   fetchAccessModules,
   type AccessModule,
+  previewStaffUpload,
+  applyStaffUpload,
+  type StaffUploadPreview,
   type StaffRow,
   type StaffCreateInput,
   type StaffPatchInput,
@@ -71,6 +74,47 @@ export default function StaffAdmin() {
   const [modal, setModal] = useState<ModalMode>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [allModules, setAllModules] = useState<AccessModule[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadB64, setUploadB64] = useState<string | null>(null);
+  const [uploadName, setUploadName] = useState<string>('');
+  const [uploadPreview, setUploadPreview] = useState<StaffUploadPreview | null>(null);
+
+  function pickStaffFile() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.xlsx';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setUploadName(f.name);
+      const buf = await f.arrayBuffer();
+      let bin = '';
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+      setUploadB64(b64); setUploadBusy(true); setUploadOpen(true); setUploadPreview(null);
+      try {
+        const p = await previewStaffUpload(b64);
+        setUploadPreview(p);
+      } catch (e) {
+        setUploadPreview({ ok: false, errors: [String((e as Error)?.message || e)], summary: null });
+      } finally { setUploadBusy(false); }
+    };
+    inp.click();
+  }
+
+  async function confirmStaffUpload() {
+    if (!uploadB64) return;
+    setUploadBusy(true);
+    try {
+      const r = await applyStaffUpload(uploadB64, ['william001', 'admin']);
+      toast({ tone: 'success', message: `Uploaded ${r.applied} staff (was ${r.before}, now ${r.after}).` });
+      setUploadOpen(false); setUploadB64(null); setUploadPreview(null);
+      void load();
+    } catch (e) {
+      toast({ tone: 'danger', message: `Upload failed: ${String((e as Error)?.message || e)}` });
+    } finally { setUploadBusy(false); }
+  }
   useEffect(() => {
     fetchAccessModules().then(setAllModules).catch(() => setAllModules([]));
   }, []);
@@ -244,7 +288,12 @@ export default function StaffAdmin() {
         title="Staff Administration"
         subtitle="Manage staff accounts in the system of record (PostgreSQL)."
         actions={
-          canAdmin ? <Button onClick={openCreate}>+ Add staff</Button> : undefined
+          canAdmin ? (
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={pickStaffFile}>Upload Excel</Button>
+              <Button onClick={openCreate}>+ Add staff</Button>
+            </div>
+          ) : undefined
         }
       />
 
@@ -390,6 +439,62 @@ export default function StaffAdmin() {
         onConfirm={() => void confirmDeactivate()}
         onCancel={() => setConfirmTarget(null)}
       />
+
+      {uploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+             onClick={() => !uploadBusy && setUploadOpen(false)}>
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-lg bg-white p-6 shadow-xl"
+               onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-1 text-lg font-semibold">Staff upload preview</h3>
+            <p className="mb-4 text-sm text-gray-500">{uploadName}</p>
+            {uploadBusy && !uploadPreview && <p className="text-sm">Validating…</p>}
+            {uploadPreview && !uploadPreview.ok && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-red-600">
+                  Validation failed — {uploadPreview.errors.length} error(s). Nothing was written.
+                </p>
+                <ul className="max-h-64 list-disc overflow-auto pl-5 text-sm text-red-600">
+                  {uploadPreview.errors.map((er, i) => <li key={i}>{er}</li>)}
+                </ul>
+              </div>
+            )}
+            {uploadPreview && uploadPreview.ok && uploadPreview.summary && (
+              <div className="space-y-3 text-sm">
+                <p className="font-medium text-green-700">
+                  ✓ Valid. {uploadPreview.summary.total} staff. Root:{' '}
+                  {uploadPreview.summary.root?.name} ({uploadPreview.summary.root?.role}).
+                </p>
+                <div>
+                  <p className="font-medium">Reporting directly to MD ({uploadPreview.summary.reporting_to_md.length}):</p>
+                  <ul className="list-disc pl-5">
+                    {uploadPreview.summary.reporting_to_md.map((m) => (
+                      <li key={m.code}>{m.name} — {m.role}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium">Staff per branch:</p>
+                  <div className="grid grid-cols-2 gap-x-4">
+                    {Object.entries(uploadPreview.summary.staff_per_branch).map(([b, n]) => (
+                      <div key={b} className="flex justify-between"><span>{b}</span><span>{n}</span></div>
+                    ))}
+                  </div>
+                </div>
+                <p className="rounded bg-amber-50 p-2 text-amber-800">
+                  Applying will REPLACE the staff table (preserving william001 + admin) and
+                  cannot be undone. Confirm only if the tree above is correct.
+                </p>
+              </div>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setUploadOpen(false)} disabled={uploadBusy}>Cancel</Button>
+              <Button onClick={() => void confirmStaffUpload()} disabled={uploadBusy || !uploadPreview?.ok}>
+                {uploadBusy ? 'Applying…' : 'Confirm & Apply'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
