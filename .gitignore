@@ -123,3 +123,44 @@ frontend_inspection.zip
 frontend_inspection.zip
 TEST_LOGINS.md
 a2z/a2z/
+
+
+# ── Hygiene: class-level backup / patcher / artifact ignores ────────────
+# Catches the WHOLE class of throwaway files regardless of the specific
+# suffix a script invents, so `git add -A` can't sweep them in.
+
+# Any "before-mutation" snapshot, anywhere (covers .pre_<name>, .pre-<name>,
+# .pre_<name>.json, *.pre_<name> etc.)
+*.pre_*
+*.pre-*
+*.preBatch*
+
+# Timestamped .bak snapshots (.bak-YYYY..., .bak_YYYY...)
+*.bak-*
+*.bak_*
+*.bak
+
+# Corruption/diagnostic auto-saves (the users.json.corrupt-* family)
+*.corrupt-*
+*.corrupt_*
+
+# Reset / backup snapshot folders
+data/_backups/
+data/_reset_backup_*/
+
+# Delivered patch kits land here as scripts/apply_*.py + README_*.md.
+# Ignore the delivery artifacts (the real change is the patched source file,
+# which you stage explicitly — never the patcher).
+scripts/apply_*.py
+scripts/diag_*.py
+scripts/http_source_probe.py
+scripts/storage_readiness_probe.py
+README_*.md
+_*_payload/
+*.zip
+run_*_probe.bat
+
+# Misc local scratch
+installed_packages.txt
+.api
+simulate_credit_chain (*).py
