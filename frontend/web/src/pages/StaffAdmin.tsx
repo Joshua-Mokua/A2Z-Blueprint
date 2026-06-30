@@ -25,6 +25,8 @@ import {
   updateAdminStaff,
   deactivateAdminStaff,
   reactivateAdminStaff,
+  fetchAccessModules,
+  type AccessModule,
   type StaffRow,
   type StaffCreateInput,
   type StaffPatchInput,
@@ -49,11 +51,12 @@ interface FormState {
   unit: string;
   can_view_all: boolean;
   is_admin: boolean;
+  accessible_modules: string[];
 }
 
 const EMPTY_FORM: FormState = {
   username: '', staff_code: '', password: '', full_name: '', email: '',
-  role: 'Staff', department: '', unit: '', can_view_all: false, is_admin: false,
+  role: 'Staff', department: '', unit: '', can_view_all: false, is_admin: false, accessible_modules: [],
 };
 
 export default function StaffAdmin() {
@@ -67,6 +70,18 @@ export default function StaffAdmin() {
 
   const [modal, setModal] = useState<ModalMode>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [allModules, setAllModules] = useState<AccessModule[]>([]);
+  useEffect(() => {
+    fetchAccessModules().then(setAllModules).catch(() => setAllModules([]));
+  }, []);
+  function toggleModule(key: string) {
+    setForm((f) => ({
+      ...f,
+      accessible_modules: f.accessible_modules.includes(key)
+        ? f.accessible_modules.filter((m) => m !== key)
+        : [...f.accessible_modules, key],
+    }));
+  }
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -105,6 +120,7 @@ export default function StaffAdmin() {
       unit: row.unit ?? '',
       can_view_all: row.can_view_all,
       is_admin: row.is_admin,
+      accessible_modules: row.accessible_modules ?? [],
     });
     setEditingUser(row.username);
     setModal('edit');
@@ -150,6 +166,7 @@ export default function StaffAdmin() {
           staff_code: form.staff_code.trim(),
           can_view_all: form.can_view_all,
           is_admin: form.is_admin,
+          accessible_modules: form.accessible_modules,
         };
         await updateAdminStaff(editingUser, patch);
         toast({ tone: 'success', message: `Updated ${editingUser}` });
@@ -312,6 +329,26 @@ export default function StaffAdmin() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
+              {modal === 'edit' && allModules.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-1 text-sm font-medium">Module access</p>
+                  <p className="mb-2 text-xs text-gray-500">
+                    Tick modules this user can access. Empty = role default applies.
+                  </p>
+                  <div className="grid max-h-48 grid-cols-2 gap-x-4 gap-y-1 overflow-auto rounded border p-2">
+                    {allModules.map((m) => (
+                      <label key={m.key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={form.accessible_modules.includes(m.key)}
+                          onChange={() => toggleModule(m.key)}
+                        />
+                        {m.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-6 pt-1">
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input

@@ -1655,6 +1655,7 @@ export async function upsertFxRate(
 
 // ── Staff administration (Postgres users table) ──────────────────────────
 export interface StaffRow {
+  accessible_modules?: string[];
   username: string;
   staff_code: string | null;
   full_name: string | null;
@@ -1683,6 +1684,7 @@ export interface StaffCreateInput {
 }
 
 export interface StaffPatchInput {
+  accessible_modules?: string[];
   full_name?: string; email?: string; role?: string; department?: string;
   unit?: string; staff_code?: string; band?: string; gender?: string;
   can_view_all?: boolean; is_admin?: boolean; active?: boolean;
@@ -1711,3 +1713,11 @@ export async function reactivateAdminStaff(
 ): Promise<{ status: string; username: string }> {
   return postJson(`/admin/staff/${encodeURIComponent(username)}/reactivate`, {}, 'POST');
 }
+
+// staff module-access (module-level RBAC)
+export interface AccessModule { key: string; label: string; min: string; }
+export async function fetchAccessModules(): Promise<AccessModule[]> {
+  const res = await getJson<{ modules: AccessModule[] }>('/admin/modules');
+  return res.modules ?? [];
+}
+

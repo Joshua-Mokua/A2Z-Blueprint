@@ -1680,6 +1680,7 @@ class _StaffPatch(BaseModel):
     can_view_all: Optional[bool] = None
     is_admin: Optional[bool] = None
     active: Optional[bool] = None
+    accessible_modules: Optional[list] = None
 
 
 def _staff_row_or_404(_db, username: str):
@@ -1739,6 +1740,13 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     for col, val in col_map.items():
         if val is not None:
             cols.append(f"{col} = %s"); vals.append(val)
+    # accessible_modules (jsonb) — module-level access grant. Stored as a JSON
+    # array of module keys. Empty list = explicit "no extra modules" (role
+    # default still applies at read time via MODULE_ACCESS).
+    if getattr(payload, "accessible_modules", None) is not None:
+        import json as _json_mod
+        cols.append("accessible_modules = %s")
+        vals.append(_json_mod.dumps(list(payload.accessible_modules)))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)
@@ -8692,3 +8700,24 @@ app.include_router(cascade_api_router)
 # v10.540 Phase 8 Batch gamma4a -- Strategic Initiatives read-only routes
 from utils.api_initiatives_routes import router as initiatives_api_router
 app.include_router(initiatives_api_router)
+
+
+# === MODULE ACCESS LIST ENDPOINT ===
+@app.get("/api/admin/modules", tags=["admin"])
+def list_access_modules(user: dict = Depends(require_config_admin)):
+    """Canonical module list for the Staff Admin module-access picker.
+    Returns [{key, label, default_roles}] from utils.core.MODULE_ACCESS."""
+    try:
+        from utils.core import MODULE_ACCESS
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"module registry unavailable: {exc}")
+    out = []
+    for key, cfg in MODULE_ACCESS.items():
+        out.append({
+            "key": key,
+            "label": key.replace("_", " ").title(),
+            "min": cfg.get("min", ""),
+        })
+    return {"modules": out}
+# === END MODULE ACCESS LIST ENDPOINT ===
+
