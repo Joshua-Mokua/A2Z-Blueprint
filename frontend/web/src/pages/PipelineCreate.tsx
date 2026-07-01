@@ -140,6 +140,9 @@ export function PipelineCreate() {
   const [cifLookupError,   setCifLookupError]   = useState<string | null>(null);
 
   const [category,    setCategory]    = useState<string>('Loan');
+  const [isTopUp,     setIsTopUp]     = useState<boolean>(false);
+  const [existingAmt, setExistingAmt] = useState<string>('');
+  const [topUpAmt,    setTopUpAmt]    = useState<string>('');
   const [productType, setProductType] = useState('');
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
   const [stage,       setStage]       = useState<string>('Lead');
@@ -438,6 +441,14 @@ export function PipelineCreate() {
     const n = Number(String(dealValue).replace(/[,\s]/g, ''));
     return Number.isFinite(n) ? n : NaN;
   }, [dealValue]);
+  const existingAmtNum = useMemo(() => {
+    const n = Number(String(existingAmt).replace(/[,\s]/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+  }, [existingAmt]);
+  const topUpAmtNum = useMemo(() => {
+    const n = Number(String(topUpAmt).replace(/[,\s]/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+  }, [topUpAmt]);
 
   // Override note is required when conflictPath === 'override' AND user has conflict
   const overrideNoteTooShort = hasConflict && conflictPath === 'override'
@@ -616,7 +627,13 @@ export function PipelineCreate() {
     if (stage.trim() && !stageIsValidForCategory) {
       errors.stage = `Stage "${stage}" is not valid for ${category} pipeline.`;
     }
-    if (!Number.isFinite(dealValueNum) || dealValueNum < 0) {
+    if (isTopUp) {
+      if (!Number.isFinite(topUpAmtNum) || topUpAmtNum <= 0) {
+        errors.dealValue = 'Top-up amount must be greater than zero.';
+      } else if (Number.isFinite(existingAmtNum) && existingAmtNum > 0 && existingAmtNum < topUpAmtNum) {
+        errors.dealValue = 'Existing facility amount should be at least the top-up amount.';
+      }
+    } else if (!Number.isFinite(dealValueNum) || dealValueNum < 0) {
       errors.dealValue = 'Deal value must be a non-negative number.';
     }
 
@@ -819,7 +836,7 @@ export function PipelineCreate() {
       client_name:  clientName.trim(),
       staff_code:   user.staff_code,
       staff_name:   user.full_name,
-      deal_value:   dealValueNum,
+      deal_value:   isTopUp ? topUpAmtNum : dealValueNum,
       product_type: productType.trim(),
       stage:        stage,
 
@@ -833,6 +850,9 @@ export function PipelineCreate() {
       client_cif:         clientCif.trim() || undefined,  // δ2: persist CIF when known
       is_ntb:             isNtb,
       pipeline_category:  category,
+      is_top_up:          isTopUp || undefined,
+      top_up_amount:      isTopUp && Number.isFinite(topUpAmtNum) ? topUpAmtNum : undefined,
+      original_facility_amount: isTopUp && Number.isFinite(existingAmtNum) ? existingAmtNum : undefined,
       // Legacy `probability` (0..1) now reflects the DERIVED stage win
       // probability rather than a manual slider; omitted when the stage has
       // none authored (server derives win_probability on read regardless).
@@ -1283,7 +1303,57 @@ export function PipelineCreate() {
               )}
             </div>
 
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700">Facility type</label>
+              <div className="mt-1 inline-flex rounded-md border border-gray-300 overflow-hidden">
+                <button type="button"
+                  className={`px-4 py-1.5 text-sm ${!isTopUp ? 'bg-brand-primary text-white' : 'bg-white text-gray-700'}`}
+                  onClick={() => { setIsTopUp(false); clearFieldError('dealValue'); }}
+                  disabled={mutations.loading}>New facility</button>
+                <button type="button"
+                  className={`px-4 py-1.5 text-sm ${isTopUp ? 'bg-brand-primary text-white' : 'bg-white text-gray-700'}`}
+                  onClick={() => { setIsTopUp(true); clearFieldError('dealValue'); }}
+                  disabled={mutations.loading}>Top-up</button>
+              </div>
+              {isTopUp && (
+                <p className="mt-1 text-xs text-gray-500">
+                  A top-up adds to an existing facility. The pipeline value reflects only the increment (the new money), not the whole facility.
+                </p>
+              )}
+            </div>
+
+            {isTopUp && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Input
+                    label={<>Existing facility amount (KES) <RedStar /></>}
+                    placeholder="e.g. 20000000" type="number"
+                    value={existingAmt}
+                    onChange={(e) => setExistingAmt(e.target.value)}
+                    disabled={mutations.loading}
+                    helper={Number.isFinite(existingAmtNum) && existingAmtNum > 0
+                      ? `${branding?.currency_symbol ?? 'KES'} ${existingAmtNum.toLocaleString()} (context only)`
+                      : 'Context only — not counted in pipeline value'}
+                  />
+                </div>
+                <div data-field="dealValue">
+                  <Input
+                    label={<>Top-up amount (KES) <RedStar /></>}
+                    placeholder="e.g. 5000000" type="number"
+                    value={topUpAmt}
+                    onChange={(e) => { setTopUpAmt(e.target.value); clearFieldError('dealValue'); }}
+                    disabled={mutations.loading}
+                    helper={Number.isFinite(topUpAmtNum) && topUpAmtNum > 0
+                      ? `${branding?.currency_symbol ?? 'KES'} ${topUpAmtNum.toLocaleString()} — this IS the pipeline value`
+                      : undefined}
+                    error={fieldErrors.dealValue}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              {!isTopUp && (
               <div data-field="dealValue">
                 <Input
                   label={category === 'Account'
@@ -1300,6 +1370,20 @@ export function PipelineCreate() {
                   error={fieldErrors.dealValue}
                 />
               </div>
+              )}
+              {isTopUp && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Pipeline value</label>
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge tone="info" size="sm">
+                    {Number.isFinite(topUpAmtNum) && topUpAmtNum > 0
+                      ? `${branding?.currency_symbol ?? 'KES'} ${topUpAmtNum.toLocaleString()}`
+                      : '—'}
+                  </Badge>
+                  <span className="text-xs text-gray-400">top-up increment</span>
+                </div>
+              </div>
+              )}
               <div data-field="stage">
                 <label className="text-sm font-medium text-gray-700">
                   Initial stage <RedStar />

@@ -432,6 +432,9 @@ export interface CreateDealRequest {
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
   pipeline_category?:    string;
+  is_top_up?:            boolean;   // true if topping up an existing facility
+  top_up_amount?:        number;    // the increment (becomes pipeline value)
+  original_facility_amount?: number; // existing facility size (context only)
   probability?:          number;     // 0..1 (NOT 0..100)
   next_action?:          string;
   next_action_date?:     string;     // YYYY-MM-DD
