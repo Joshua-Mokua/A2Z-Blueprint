@@ -433,16 +433,28 @@ export function Lms() {
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {app.sla ? (
-                            <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
-                              app.sla.state === 'breached' ? 'bg-red-100 text-red-700'
-                              : app.sla.state === 'due_soon' ? 'bg-amber-100 text-amber-700'
-                              : 'bg-green-100 text-green-700'}`}>
-                              {app.sla.state === 'breached'
-                                ? `${app.sla.overdue_business_days}d over`
-                                : app.sla.state === 'due_soon'
-                                ? `${app.sla.remaining_business_days}d left`
-                                : 'On track'}
-                            </span>
+                            <div className="flex flex-col gap-0.5">
+                              {app.sla.stage && (
+                                <span className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
+                                  app.sla.stage.state === 'breached' ? 'bg-red-100 text-red-700'
+                                  : app.sla.stage.state === 'due_soon' ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-green-100 text-green-700'}`}>
+                                  My: {app.sla.stage.state === 'breached'
+                                    ? `${app.sla.stage.overdue_business_days}d over`
+                                    : `${app.sla.stage.remaining_business_days}d left`}
+                                </span>
+                              )}
+                              <span className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 ${
+                                app.sla.state === 'breached' ? 'text-red-600'
+                                : app.sla.state === 'due_soon' ? 'text-amber-600'
+                                : 'text-green-600'}`}>
+                                Case: {app.sla.state === 'breached'
+                                  ? `${app.sla.overdue_business_days}d over`
+                                  : app.sla.state === 'due_soon'
+                                  ? `${app.sla.remaining_business_days}d left`
+                                  : 'on track'}
+                              </span>
+                            </div>
                           ) : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">

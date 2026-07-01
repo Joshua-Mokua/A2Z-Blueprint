@@ -148,6 +148,16 @@ export function LmsApplicationDetail() {
                     : `SLA on track — ${application.sla.remaining_business_days}d left`}
                 </span>
               )}
+              {application.sla?.stage && (
+                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                  application.sla.stage.state === 'breached' ? 'bg-red-500/90 text-white'
+                  : application.sla.stage.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
+                  : 'bg-green-500/90 text-white'}`}>
+                  {application.sla.stage.state === 'breached'
+                    ? `My stage — ${application.sla.stage.overdue_business_days}d over`
+                    : `My stage — ${application.sla.stage.remaining_business_days}d left of ${application.sla.stage.target_days}`}
+                </span>
+              )}
               {application.swim_lane && (
                 <span className="text-xs text-white/70">{application.swim_lane}</span>
               )}

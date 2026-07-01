@@ -140,13 +140,19 @@ export interface AssignmentRequest {
   note?:   string;
 }
 
-export interface AppSla {
+export interface AppSlaClock {
   state: 'on_track' | 'due_soon' | 'breached';
+  step_key?: string;
   elapsed_business_days: number;
   target_days: number;
   remaining_business_days: number;
   overdue_business_days: number;
   breached: boolean;
+}
+export interface AppSla extends AppSlaClock {
+  // C-SLA2: two-level — overall (customer promise) + stage ("My SLA").
+  overall?: AppSlaClock;
+  stage?: AppSlaClock | null;
 }
 
 export interface LoanApplication {

@@ -5445,9 +5445,13 @@ class LoanApplicationManager:
         app = self.get(app_id)
         if not app:
             return False
+        _now = datetime.now().isoformat(timespec="seconds")
         updates = {"status": "assigned", "last_updated": datetime.now().date().isoformat()}
         if analyst_code:
             updates["analyst"] = {"code": analyst_code, "name": analyst_name}
+            # C-SLA2: the analyst's stage clock starts now.
+            updates["assigned_at"] = _now
+            updates["stage_entered_at"] = _now
         return self.update(app_id, updates)
 
     def record_decision(self, app_id: str, verdict: str, authority: str,

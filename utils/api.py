@@ -9837,7 +9837,7 @@ def _app_sla_status(app: dict) -> dict:
         state = "due_soon"
     else:
         state = "on_track"
-    return {
+    overall = {
         "state": state,
         "elapsed_business_days": elapsed,
         "target_days": target,
@@ -9845,6 +9845,45 @@ def _app_sla_status(app: dict) -> dict:
         "overdue_business_days": overdue,
         "breached": overdue > 0,
     }
+    # --- Stage / "My" SLA: current stage clock vs that stage's target_days. ---
+    stage = None
+    try:
+        smap = _sla_stage_step_map(cfg)
+        # Map the app's status to an SLA step. Assigned/analysis -> credit_assessment.
+        status_key = status
+        step_key = smap.get(status_key)
+        if not step_key and status_key in ("assigned", "info_requested"):
+            step_key = "credit_assessment"
+        if step_key:
+            stage_target = _sla_step_target(cfg, step_key)
+            stage_base = (app.get("stage_entered_at") or app.get("assigned_at")
+                          or app.get("last_updated") or base_ts)
+            if stage_target > 0 and stage_base:
+                s_elapsed = _business_days_since(stage_base)
+                s_overdue = max(0, s_elapsed - stage_target)
+                s_remaining = stage_target - s_elapsed
+                if s_overdue > 0:
+                    s_state = "breached"
+                elif s_remaining <= _sla_due_soon_days(cfg):
+                    s_state = "due_soon"
+                else:
+                    s_state = "on_track"
+                stage = {
+                    "state": s_state,
+                    "step_key": step_key,
+                    "elapsed_business_days": s_elapsed,
+                    "target_days": stage_target,
+                    "remaining_business_days": s_remaining,
+                    "overdue_business_days": s_overdue,
+                    "breached": s_overdue > 0,
+                }
+    except Exception:
+        stage = None
+    # Return overall at top level (back-compat) + nested overall/stage.
+    out = dict(overall)
+    out["overall"] = overall
+    out["stage"] = stage
+    return out
 
 
 def _attach_sla_to_apps(apps: list) -> list:
