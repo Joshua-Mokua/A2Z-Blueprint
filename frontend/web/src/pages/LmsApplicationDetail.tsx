@@ -23,7 +23,7 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, getLmsCommitteeRecords, fetchMyAnalysts, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -1053,12 +1053,18 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
   const [tiers, setTiers] = useState<CommitteeTier[]>([]);
   const [entryTier, setEntryTier] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<{ tier: number | null; name: string | null; amount: number } | null>(null);
 
   useEffect(() => {
     let live = true;
     getCommitteeTiers().then((r) => { if (live) setTiers(r.tiers || []); }).catch(() => {});
+    fetchCommitteeRouting(appId).then((r) => {
+      if (!live) return;
+      setSuggested({ tier: r.suggested_tier, name: r.suggested_name, amount: r.amount });
+      if (r.suggested_tier != null) setEntryTier(r.suggested_tier);
+    }).catch(() => {});
     return () => { live = false; };
-  }, []);
+  }, [appId]);
 
   const refer = async () => {
     setError(null);
@@ -1075,6 +1081,11 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
           This facility is committee-tier under the bank's policy. Most cases enter at the Branch
           Credit Committee; CIB / head-office cases may enter a higher tier directly.
         </p>
+        {suggested?.name && (
+          <div className="mb-3 rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            By limit, KES {suggested.amount.toLocaleString()} routes to <span className="font-semibold">{suggested.name}</span> (pre-selected). You can override below.
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
           <div>
             <label className="text-sm font-medium text-gray-700">Entry tier</label>

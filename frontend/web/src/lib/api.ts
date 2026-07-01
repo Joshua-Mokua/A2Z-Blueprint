@@ -1929,3 +1929,16 @@ export async function fetchAssignmentRequests(): Promise<{ cases: AssignmentRequ
     '/lms/applications/assignment-requests');
 }
 
+// C1: committee routing suggestion (Chief routes by limit)
+export interface CommitteeRouting {
+  tiers: CommitteeTier[];
+  amount: number;
+  suggested_tier: number | null;
+  suggested_name: string | null;
+  can_refer: boolean;
+  current_status: string;
+}
+export async function fetchCommitteeRouting(appId: string): Promise<CommitteeRouting> {
+  return getJson<CommitteeRouting>(`/lms/applications/${encodeURIComponent(appId)}/committee-routing`);
+}
+

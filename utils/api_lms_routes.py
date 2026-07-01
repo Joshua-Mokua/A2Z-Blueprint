@@ -1411,3 +1411,60 @@ def lms_assignment_requests(
     return {"cases": out, "count": len(out)}
 # === END B2: ASSIGNMENT REQUESTS ===
 
+
+# === C1: COMMITTEE ROUTING (suggest tier by limit) ===
+def _suggest_committee_tier(amount_kes: float) -> dict:
+    """First tier whose authority_limit_kes >= amount (i.e. can decide it).
+    A tier with authority_limit_kes None (uncapped) catches everything above the
+    highest limit. Returns the suggested tier dict, or the highest tier."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    tiers = get_committee_tiers()
+    if not tiers:
+        return {}
+    # tiers sorted ascending by tier number; limits generally increase.
+    for t in tiers:
+        lim = t.get("authority_limit_kes")
+        if lim is None:
+            return t  # uncapped — decides anything
+        try:
+            if amount_kes <= float(lim):
+                return t
+        except (TypeError, ValueError):
+            continue
+    return tiers[-1]  # above all limits -> highest tier
+
+
+@router.get("/applications/{app_id}/committee-routing")
+def lms_committee_routing(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Routing helper for the Chief: the tier ladder + the tier suggested by the
+    case amount + whether it can be referred now. Manager-tier."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    try:
+        amount = float(app.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    suggested = _suggest_committee_tier(amount)
+    can_refer = is_manager(user) and is_valid_lms_transition(
+        str(app.get("status", "")), "referred_to_committee")
+    return {
+        "tiers": get_committee_tiers(),
+        "amount": amount,
+        "suggested_tier": suggested.get("tier"),
+        "suggested_name": suggested.get("name"),
+        "can_refer": bool(can_refer),
+        "current_status": app.get("status"),
+    }
+# === END C1: COMMITTEE ROUTING ===
+
