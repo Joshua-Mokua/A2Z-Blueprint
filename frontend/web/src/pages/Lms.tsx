@@ -6,7 +6,7 @@
 // Layout mirrors Pipeline.tsx: header strip + filter chips + Card-based
 // table + empty/loading/error states.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
@@ -45,12 +45,19 @@ function formatDate(s: string | undefined): string {
 export function Lms() {
   const navigate = useNavigate();
   const { branding } = useBranding();
-  const { user } = useRole();
+  const { user, isAdmin } = useRole();
   const { applications, loading, error, refetch } = useLmsApplications();
 
   // ── Filter state (client-side; server always returns all in-scope) ──
   const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
   const [searchTerm,   setSearchTerm]   = useState<string>('');
+  // B1: workload tabs. Analysts default to their own cases; managers to All.
+  const myCode = String(user?.staff_code ?? '');
+  const roleLc = String(user?.role ?? '').toLowerCase();
+  const isPureAnalyst = roleLc.includes('analyst') && !isAdmin
+    && !/chief|head|manager|officer|director|managing/.test(roleLc);
+  const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
+  useEffect(() => { setTab(isPureAnalyst ? 'mine' : 'all'); }, [isPureAnalyst]);
 
   // ── Filtered apps ──
   const filteredApps = useMemo<LoanApplication[]>(() => {
@@ -67,8 +74,15 @@ export function Lms() {
         (a.rm_name || '').toLowerCase().includes(t)
       );
     }
+    // B1: workload tab filter.
+    if (tab === 'mine') {
+      result = result.filter((a) => String(a.analyst?.code ?? '') === myCode);
+    } else if (tab === 'pool') {
+      result = result.filter((a) => !a.analyst?.code
+        && ['submitted'].includes((a.status || '').toLowerCase()));
+    }
     return result;
-  }, [applications, statusFilter, searchTerm]);
+  }, [applications, statusFilter, searchTerm, tab, myCode]);
 
   // ── Status counts for the filter chips ──
   const statusCounts = useMemo(() => {
@@ -80,6 +94,12 @@ export function Lms() {
     }
     return counts;
   }, [applications]);
+
+  const tabCounts = useMemo(() => ({
+    mine: applications.filter((a) => String(a.analyst?.code ?? '') === myCode).length,
+    pool: applications.filter((a) => !a.analyst?.code && (a.status || '').toLowerCase() === 'submitted').length,
+    all: applications.length,
+  }), [applications, myCode]);
 
   const currencySymbol = branding?.currency_symbol ?? 'KES';
 
@@ -128,6 +148,23 @@ export function Lms() {
         {/* ── Filter bar ─────────────────────────────────────────── */}
         <Card className="mb-4">
           <Card.Body>
+            {/* B1: workload tabs */}
+            <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-3">
+              {([['mine', 'My cases'], ['pool', 'Pool'], ['all', 'All']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    tab === key ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {label} ({tabCounts[key]})
+                </button>
+              ))}
+              {tab === 'pool' && (
+                <span className="ml-2 text-xs text-gray-400">Read-only — request assignment from a case to work it.</span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <button
                 onClick={() => setStatusFilter('all')}
