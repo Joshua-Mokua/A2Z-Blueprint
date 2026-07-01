@@ -1069,6 +1069,7 @@ import type {
   ConfirmToCreditAdminRequest,
   CommitteeVoteRequest,
   ResolveCommitteeRequest,
+  AppSla,
 } from '@/types/lms';
 
 
@@ -1981,5 +1982,21 @@ export async function recordCommitteePreRead(
 export async function fetchCommitteePreReads(appId: string): Promise<CommitteePreReadsResponse> {
   return getJson<CommitteePreReadsResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/committee/pre-reads`);
+}
+
+// C4: MD convening queue
+export interface ConveningCase {
+  id: string; client_name?: string; product?: string; amount?: number;
+  pre_read_count: number; pre_read_tally: Record<string, number>;
+  convened: boolean; sla?: AppSla | null;
+}
+export interface ConveningTier { tier: number | null; name: string | null; count: number; cases: ConveningCase[]; }
+export interface ConveningQueueResponse { tiers: ConveningTier[]; total: number; awaiting: number; }
+export async function fetchConveningQueue(): Promise<ConveningQueueResponse> {
+  return getJson<ConveningQueueResponse>('/lms/committee/convening-queue');
+}
+export async function convokeCommittee(appId: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/convene`, {});
 }
 

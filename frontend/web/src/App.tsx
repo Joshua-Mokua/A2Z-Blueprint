@@ -89,6 +89,7 @@ import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
 import HierarchyAdmin from './pages/HierarchyAdmin';
 import CommitteeAdmin from './pages/CommitteeAdmin';
+import { CommitteeConvening } from './pages/CommitteeConvening';
 import StaffAdmin from './pages/StaffAdmin';
 import Referrals from './pages/Referrals';
 import Sla from './pages/Sla';
@@ -150,6 +151,7 @@ function App() {
                     {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
                     <Route path="/lms"         element={<Lms />} />
                     <Route path="/lms/:appId"  element={<LmsApplicationDetail />} />
+                    <Route path="/committee/convening" element={<CommitteeConvening />} />
 
                     {/* Credit Admin subroutes — β6. */}
                     <Route path="/credit-admin"          element={<CreditAdmin />} />

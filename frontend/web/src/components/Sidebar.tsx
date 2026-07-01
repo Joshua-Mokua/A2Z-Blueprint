@@ -83,6 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'A2Z Credit Intelligence System (CIS)',
     items: [
       { path: '/lms', label: 'Credit Analysis', matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
+      { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening') },
       { path: '/credit-admin', label: 'Credit Admin', matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
       { path: '/troops', label: 'Trops Disbursement', matchActive: (p) => p.startsWith('/troops') },
       { path: '/credit-analytics', label: 'Credit Analytics', matchActive: (p) => p.startsWith('/credit-analytics') },
