@@ -9755,3 +9755,35 @@ def get_lms_committee_records(app_id: str, user: dict = Depends(get_current_user
     }
 # === END ANALYST COMMITTEE VIEW ===
 
+
+# === MY ANALYSTS DROPDOWN (assignment) ===
+_ANALYST_ROLE_HINTS = ("analyst",)  # substring match, case-insensitive
+
+
+@app.get("/api/lms/my-analysts", tags=["lms"])
+def get_my_analysts(user: dict = Depends(get_current_user)):
+    """The assigning manager's assignable credit analysts — their visible staff
+    filtered to analyst-type roles. Powers the assign-analyst dropdown."""
+    from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
+    visible = get_visible_staff_codes(user)
+    roster = get_staff_roster()
+    analysts = []
+    try:
+        for _, row in roster.iterrows():
+            code = str(row.get("Staff Code", "") or "").strip()
+            role = str(row.get("Role", "") or "")
+            if not code or code not in visible:
+                continue
+            if any(h in role.lower() for h in _ANALYST_ROLE_HINTS):
+                analysts.append({
+                    "staff_code": code,
+                    "name": str(row.get("Staff Name", "") or ""),
+                    "role": role,
+                    "unit": str(row.get("Unit", "") or ""),
+                })
+    except Exception as exc:
+        logger.warning("my-analysts: roster scan failed: %s", exc)
+    analysts.sort(key=lambda a: a["name"])
+    return {"analysts": analysts, "count": len(analysts)}
+# === END MY ANALYSTS DROPDOWN ===
+

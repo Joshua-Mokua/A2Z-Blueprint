@@ -1903,3 +1903,9 @@ export async function getLmsCommitteeRecords(appId: string): Promise<LmsCommitte
   return getJson<LmsCommitteeRecordsResponse>(`/lms/applications/${appId}/committee-records`);
 }
 
+// assignable analysts for the current manager (assign-analyst dropdown)
+export interface AssignableAnalyst { staff_code: string; name: string; role: string; unit: string; }
+export async function fetchMyAnalysts(): Promise<{ analysts: AssignableAnalyst[]; count: number }> {
+  return getJson<{ analysts: AssignableAnalyst[]; count: number }>('/lms/my-analysts');
+}
+

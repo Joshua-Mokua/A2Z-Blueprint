@@ -23,7 +23,7 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, getLmsCommitteeRecords, type LmsCommitteeRecordsResponse,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, getLmsCommitteeRecords, fetchMyAnalysts, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -468,6 +468,10 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
   const [analystCode, setAnalystCode] = useState('');
   const [analystName, setAnalystName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [analysts, setAnalysts] = useState<AssignableAnalyst[]>([]);
+  useEffect(() => {
+    fetchMyAnalysts().then((r) => setAnalysts(r.analysts)).catch(() => setAnalysts([]));
+  }, []);
 
   if (!open) {
     return (
@@ -512,22 +516,46 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
         <h3 className="text-sm font-semibold text-gray-900">Assign credit analyst</h3>
       </Card.Header>
       <Card.Body>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Input
-            label="Analyst staff code *"
-            placeholder="e.g. 300080"
-            value={analystCode}
-            onChange={(e) => setAnalystCode(e.target.value)}
-            disabled={mutations.loading}
-          />
-          <Input
-            label="Analyst name *"
-            placeholder="e.g. Zainab Okello"
-            value={analystName}
-            onChange={(e) => setAnalystName(e.target.value)}
-            disabled={mutations.loading}
-          />
-        </div>
+        {analysts.length > 0 ? (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Credit analyst *</label>
+            <select
+              className="w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              value={analystCode}
+              disabled={mutations.loading}
+              onChange={(e) => {
+                const a = analysts.find((x) => x.staff_code === e.target.value);
+                setAnalystCode(a?.staff_code ?? '');
+                setAnalystName(a?.name ?? '');
+              }}
+            >
+              <option value="">— select an analyst —</option>
+              {analysts.map((a) => (
+                <option key={a.staff_code} value={a.staff_code}>
+                  {a.name} ({a.staff_code}){a.unit ? ` — ${a.unit}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">{analysts.length} analyst(s) in your team.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input
+              label="Analyst staff code *"
+              placeholder="e.g. 300080"
+              value={analystCode}
+              onChange={(e) => setAnalystCode(e.target.value)}
+              disabled={mutations.loading}
+            />
+            <Input
+              label="Analyst name *"
+              placeholder="e.g. Zainab Okello"
+              value={analystName}
+              onChange={(e) => setAnalystName(e.target.value)}
+              disabled={mutations.loading}
+            />
+          </div>
+        )}
         {error && (
           <div className="mt-3 px-3 py-2 rounded-md bg-red-50 border border-red-200 text-sm text-red-800">
             {error}
