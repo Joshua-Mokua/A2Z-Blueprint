@@ -1810,3 +1810,35 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
   return res.blob();
 }
 
+// credit committee palette (4b-1)
+export interface CommitteeMemberDef { name: string; role: string; }
+export interface CommitteeDef {
+  code: string;
+  name: string;
+  chaired_by?: string;
+  recording_mode: string;
+  voting_rule: string;
+  amount_threshold_kes: number;
+  members: CommitteeMemberDef[];
+}
+export interface CommitteePaletteResponse {
+  committees: CommitteeDef[];
+  recording_modes: string[];
+  voting_rules: string[];
+}
+export async function fetchCommitteePalette(): Promise<CommitteePaletteResponse> {
+  return getJson<CommitteePaletteResponse>('/admin/committee-palette');
+}
+export async function upsertCommittee(committee: CommitteeDef): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, { committee: CommitteeDef }>(
+    '/admin/committee-palette', { committee });
+}
+export async function deleteCommittee(code: string): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, { delete: string }>(
+    '/admin/committee-palette', { delete: code });
+}
+export async function seedCommitteePalette(): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, Record<string, never>>(
+    '/admin/committee-palette/seed', {});
+}
+

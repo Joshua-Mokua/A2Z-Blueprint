@@ -111,6 +111,11 @@ const NAV_GROUPS: NavGroup[] = [
         visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,
       },
       {
+        path: '/admin/committees', label: 'Credit Committees',
+        matchActive: (p) => p.startsWith('/admin/committees'),
+        visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,
+      },
+      {
         path: '/admin/staff', label: 'Staff Admin',
         matchActive: (p) => p.startsWith('/admin/staff'),
         visibleFor: (_isMgr, _isAdmin, isConfigAdmin) => isConfigAdmin,

@@ -88,6 +88,7 @@ import { FxRates } from './pages/FxRates';
 import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
 import HierarchyAdmin from './pages/HierarchyAdmin';
+import CommitteeAdmin from './pages/CommitteeAdmin';
 import StaffAdmin from './pages/StaffAdmin';
 import Referrals from './pages/Referrals';
 import Sla from './pages/Sla';
@@ -169,6 +170,7 @@ function App() {
                     <Route path="/admin/config" element={<AdminConfig />} />
                     <Route path="/admin/roles" element={<RolesAdmin />} />
                     <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
+                    <Route path="/admin/committees" element={<CommitteeAdmin />} />
                     <Route path="/admin/staff" element={<StaffAdmin />} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/sla" element={<Sla />} />
