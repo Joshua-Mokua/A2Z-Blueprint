@@ -300,7 +300,9 @@ def lms_application_assign(
     # Scope check
     visible_codes = get_visible_staff_codes(user)
     caller_code = str(user.get('staff_code', '') or '')
-    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, visible_codes, caller_code,
+            caller_role=str(user.get('role', '') or '')):
         raise HTTPException(
             status_code=403,
             detail="Application not in your cascade scope",
@@ -467,7 +469,9 @@ def lms_application_decision(
     # Scope check
     visible_codes = get_visible_staff_codes(user)
     caller_code = str(user.get('staff_code', '') or '')
-    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, visible_codes, caller_code,
+            caller_role=str(user.get('role', '') or '')):
         raise HTTPException(
             status_code=403,
             detail="Application not in your cascade scope",
