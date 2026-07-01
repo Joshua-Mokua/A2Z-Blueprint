@@ -26,6 +26,8 @@ import {
   upsertMou,
   upsertProductFlow,
   fetchDocumentCatalog,
+  fetchCommitteePalette,
+  type CommitteeDef,
   getCommitteeTiers,
   saveCommitteeTiers,
   getAdminBranches,
@@ -180,6 +182,28 @@ export default function AdminConfig() {
   const [flowProduct, setFlowProduct] = useState<string>('');
   const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
   const [docCatalog, setDocCatalog] = useState<string[]>([]);
+  const [committeePalette, setCommitteePalette] = useState<CommitteeDef[]>([]);
+  useEffect(() => {
+    fetchCommitteePalette().then((d) => setCommitteePalette(d.committees)).catch(() => setCommitteePalette([]));
+  }, []);
+  function addJourneyGate(code: string) {
+    setFlowDraft((f) => {
+      const cur = f.committee_journey ?? [];
+      return cur.includes(code) ? f : { ...f, committee_journey: [...cur, code] };
+    });
+  }
+  function removeJourneyGate(idx: number) {
+    setFlowDraft((f) => ({ ...f, committee_journey: (f.committee_journey ?? []).filter((_, i) => i !== idx) }));
+  }
+  function moveJourneyGate(idx: number, dir: -1 | 1) {
+    setFlowDraft((f) => {
+      const arr = [...(f.committee_journey ?? [])];
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return f;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return { ...f, committee_journey: arr };
+    });
+  }
   useEffect(() => {
     fetchDocumentCatalog().then(setDocCatalog).catch(() => setDocCatalog([]));
   }, []);
@@ -306,8 +330,8 @@ export default function AdminConfig() {
     setFlowProduct(product);
     const existing = productFlows[product];
     setFlowDraft(existing
-      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })), required_documents: [...(existing.required_documents ?? [])], documents_required_at_stage: existing.documents_required_at_stage ?? '' }
-      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }], required_documents: [], documents_required_at_stage: '' });
+      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })), required_documents: [...(existing.required_documents ?? [])], documents_required_at_stage: existing.documents_required_at_stage ?? '', committee_journey: [...(existing.committee_journey ?? [])] }
+      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }], required_documents: [], documents_required_at_stage: '', committee_journey: [] });
     // Seed the overall SLA budget from the existing product_promise (if any).
     const promised = slaConfig?.product_promise?.[product];
     setFlowBudget(typeof promised === 'number' && promised > 0 ? String(promised) : '');
@@ -352,8 +376,8 @@ export default function AdminConfig() {
     }
     setFlowBusy(true);
     try {
-      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '' });
-      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '' } }));
+      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '', committee_journey: flowDraft.committee_journey ?? [] });
+      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '', committee_journey: flowDraft.committee_journey ?? [] } }));
 
       // Persist the overall SLA budget to product_promise (the SAME sla_config
       // the SLA page + violation engine use), so the two stay reconciled. A
@@ -863,7 +887,39 @@ export default function AdminConfig() {
                   ))}
                 </select>
               </div>
-              <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
+<div className="mb-3 rounded border p-3">
+                <p className="mb-1 text-sm font-medium">Credit committee journey (this product)</p>
+                <p className="mb-2 text-xs text-gray-500">Ordered committee gates this product opens before Credit Analysis. Empty = CR only. Amount-triggered committees are added automatically.</p>
+                {(flowDraft.committee_journey ?? []).length === 0 && (
+                  <p className="mb-2 text-xs text-gray-400">No committees — CR-only path.</p>
+                )}
+                <ol className="mb-2 space-y-1">
+                  {(flowDraft.committee_journey ?? []).map((code, i) => {
+                    const def = committeePalette.find((c) => c.code === code);
+                    return (
+                      <li key={code} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                        <span>{i + 1}. {def ? `${def.code} — ${def.name}` : code}</span>
+                        <span className="flex gap-1">
+                          <button type="button" className="text-xs text-gray-500 hover:text-gray-800" onClick={() => moveJourneyGate(i, -1)}>up</button>
+                          <button type="button" className="text-xs text-gray-500 hover:text-gray-800" onClick={() => moveJourneyGate(i, 1)}>down</button>
+                          <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => removeJourneyGate(i)}>remove</button>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+                <div className="flex items-center gap-2">
+                  <select id="journeyAdd" className="rounded border px-2 py-1.5 text-sm"
+                    onChange={(e) => { if (e.target.value) { addJourneyGate(e.target.value); e.target.value = ''; } }}
+                    defaultValue="">
+                    <option value="">+ Add committee gate…</option>
+                    {committeePalette
+                      .filter((c) => !(flowDraft.committee_journey ?? []).includes(c.code))
+                      .map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+                            <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
                         Save flow
                       </Button>
                       {productFlows[flowProduct] && (

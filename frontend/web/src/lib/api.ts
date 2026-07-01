@@ -394,6 +394,7 @@ export interface ProductFlowUpsertInput {
   client_types?: string[];
   required_documents?: string[];
   documents_required_at_stage?: string;
+  committee_journey?: string[];
   delete?: boolean;
 }
 export interface ProductFlowUpsertResponse {

@@ -203,6 +203,7 @@ export interface ProductFlow {
   stages: ProductFlowStage[];
   required_documents?: string[];
   documents_required_at_stage?: string;
+  committee_journey?: string[];
 }
 
 export interface PipelineConfig {

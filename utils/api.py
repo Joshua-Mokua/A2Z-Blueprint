@@ -2059,6 +2059,17 @@ def _validate_product_flow(entry: dict) -> tuple:
         stage_names = {str(s.get("stage", "")).strip() for s in stages}
         if str(dstage).strip() not in stage_names:
             return False, f"documents_required_at_stage '{dstage}' is not one of this product's stages"
+    journey = entry.get("committee_journey")
+    if journey is not None:
+        if not isinstance(journey, list) or any(not isinstance(x, str) for x in journey):
+            return False, "committee_journey must be a list of committee codes"
+        try:
+            palette_codes = {str(c.get("code")) for c in _read_committee_palette()}
+        except Exception:
+            palette_codes = set()
+        for code in journey:
+            if palette_codes and code not in palette_codes:
+                return False, f"committee '{code}' is not in the committee palette"
             if wp < 0 or wp > 100:
                 return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
@@ -2101,6 +2112,7 @@ def admin_upsert_product_flow(
         "stages": payload.get("stages", []) or [],
         "required_documents": payload.get("required_documents", []) or [],
         "documents_required_at_stage": str(payload.get("documents_required_at_stage", "") or ""),
+        "committee_journey": payload.get("committee_journey", []) or [],
     }
     ok, reason = _validate_product_flow(entry)
     if not ok:
@@ -9370,4 +9382,63 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
     _audit("COMMITTEE_PALETTE_UPSERT", user, f"code={code} replaced={replaced}")
     return {"status": "saved", "committee": norm, "committees": palette}
 # === END COMMITTEE PALETTE ENDPOINTS ===
+
+
+# === COMMITTEE JOURNEY RESOLVER (4b-2) ===
+def _product_committee_journey(deal: dict) -> list:
+    """The product's configured committee_journey (ordered codes). [] if none."""
+    product = str(deal.get("product") or deal.get("product_type") or "").strip()
+    if not product:
+        return []
+    pcfg = _load_json("pipeline_settings.json") or {}
+    flows = pcfg.get("product_flows", {}) if isinstance(pcfg, dict) else {}
+    entry = flows.get(product) if isinstance(flows, dict) else None
+    if not isinstance(entry, dict):
+        return []
+    j = entry.get("committee_journey") or []
+    return [str(c) for c in j if str(c).strip()]
+
+
+def _effective_committee_journey(deal: dict) -> list:
+    """Effective journey = product-configured committees, plus any palette
+    committee whose amount_threshold_kes is met by the deal amount (auto-trigger),
+    de-duplicated, preserving configured order then appending triggered ones."""
+    configured = _product_committee_journey(deal)
+    out = list(configured)
+    try:
+        amount = float(deal.get("deal_value") or deal.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    for c in _read_committee_palette():
+        thr = 0.0
+        try:
+            thr = float(c.get("amount_threshold_kes", 0) or 0)
+        except (TypeError, ValueError):
+            thr = 0.0
+        code = str(c.get("code"))
+        if thr > 0 and amount >= thr and code not in out:
+            out.append(code)
+    return out
+
+
+@app.get("/api/pipeline/deals/{deal_id}/committee-journey", tags=["pipeline"])
+def get_deal_committee_journey(deal_id: str, user: dict = Depends(get_current_user)):
+    """The effective committee journey for a deal (configured + amount-triggered),
+    with each committee's palette definition for display."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    codes = _effective_committee_journey(deal)
+    palette = {str(c.get("code")): c for c in _read_committee_palette()}
+    journey = [palette.get(code, {"code": code, "name": code}) for code in codes]
+    return {"journey": journey, "codes": codes,
+            "cr_only": len(codes) == 0}
+# === END COMMITTEE JOURNEY RESOLVER ===
 
