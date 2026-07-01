@@ -65,8 +65,11 @@ let _on401Callback: (() => void) | null        = null;
  * AuthProvider whenever its token state changes (login, logout, expiry).
  * Pass null to clear.
  */
+let _blobTokenRef: string | null = null;
+export function getCurrentTokenForBlob(): string | null { return _blobTokenRef; }
 export function setCurrentToken(token: string | null): void {
   _currentToken = token;
+  _blobTokenRef = token;
 }
 
 /**
@@ -1767,5 +1770,43 @@ export async function saveHierarchy(
 export async function fetchDocumentCatalog(): Promise<string[]> {
   const res = await getJson<{ documents: string[] }>('/admin/document-catalog');
   return res.documents ?? [];
+}
+
+// deal document upload/attach (Batch 3)
+export interface DealDocumentMeta {
+  filename: string; path: string; sha256: string; size: number;
+  uploaded_by: string; uploaded_at: string;
+}
+export interface DealDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  required: string[];
+  provided: string[];
+}
+export async function listDealDocuments(dealId: string): Promise<DealDocumentsResponse> {
+  return getJson<DealDocumentsResponse>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents`);
+}
+export async function uploadDealDocument(
+  dealId: string, docName: string, filename: string, contentB64: string,
+): Promise<{ status: string; doc_name: string; meta: DealDocumentMeta }> {
+  return postJson<{ status: string; doc_name: string; meta: DealDocumentMeta },
+    { doc_name: string; filename: string; content_b64: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents`,
+    { doc_name: docName, filename, content_b64: contentB64 });
+}
+export async function deleteDealDocument(dealId: string, docName: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, Record<string, never>>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(docName)}`,
+    {}, 'DELETE');
+}
+export async function downloadDealDocument(dealId: string, docName: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const tok = getCurrentTokenForBlob();
+  if (tok) headers['Authorization'] = `Bearer ${tok}`;
+  const res = await fetch(
+    `/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(docName)}`,
+    { headers });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  return res.blob();
 }
 

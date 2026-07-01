@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, type StaffMember, type SlaViolation } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -476,9 +476,63 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
-  const [checked,    setChecked]    = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
+  const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
+  const [busyDoc,    setBusyDoc]    = useState<string | null>(null);
+
+  const reloadDocs = () => {
+    listDealDocuments(deal.id)
+      .then((d) => setDocFiles(d.files || {}))
+      .catch(() => { /* leave as-is */ });
+  };
+  useEffect(() => { reloadDocs(); /* eslint-disable-next-line */ }, [deal.id]);
+
+  const uploadFor = (doc: string) => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusyDoc(doc); setError(null);
+      try {
+        const buf = await f.arrayBuffer();
+        let bin = '';
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(deal.id, doc, f.name, btoa(bin));
+        reloadDocs();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Upload failed');
+      } finally {
+        setBusyDoc(null);
+      }
+    };
+    inp.click();
+  };
+
+  const viewDoc = async (doc: string) => {
+    try {
+      const blob = await downloadDealDocument(deal.id, doc);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not open document');
+    }
+  };
+
+  const removeDoc = async (doc: string) => {
+    setBusyDoc(doc);
+    try {
+      await deleteDealDocument(deal.id, doc);
+      reloadDocs();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Remove failed');
+    } finally {
+      setBusyDoc(null);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -486,7 +540,6 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
       .then((c) => {
         if (!alive) return;
         setChecklist(c);
-        setChecked(new Set(c.provided));
       })
       .catch(() => { /* checklist unavailable — panel stays hidden */ });
     return () => { alive = false; };
@@ -526,23 +579,13 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   // Only the owner / admin sees the submission form.
   if (!checklist.can_submit) return null;
 
-  const toggle = (doc: string) => {
-    setError(null);
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(doc)) next.delete(doc);
-      else next.add(doc);
-      return next;
-    });
-  };
-
-  const missing = checklist.required.filter((d) => !checked.has(d));
+  const missing = checklist.required.filter((d) => !docFiles[d]);
 
   const onSubmit = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await submitDealToCredit(deal.id, Array.from(checked));
+      const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
       toast({
         tone: 'success',
         message: `✓ Submitted to credit — application ${res.application_id}.`,
@@ -565,22 +608,39 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
       </Card.Header>
       <Card.Body>
         <p className="text-xs text-gray-500 mb-3">
-          Confirm each required document is on file. All required documents
-          must be checked before the deal can be submitted to credit analysis.
+          Upload each required document. All required documents must be attached
+          before the deal can be submitted to credit analysis.
         </p>
         <div className="space-y-2">
-          {checklist.required.map((doc) => (
-            <label key={doc} className="flex items-center gap-2 text-sm text-gray-800">
-              <input
-                type="checkbox"
-                checked={checked.has(doc)}
-                onChange={() => toggle(doc)}
-                disabled={submitting}
-                className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary/30"
-              />
-              <span>{doc}</span>
-            </label>
-          ))}
+          {checklist.required.map((doc) => {
+            const attached = docFiles[doc];
+            return (
+              <div key={doc} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={attached ? 'text-green-700' : 'text-gray-800'}>
+                    {attached ? '✓' : '○'} {doc}
+                  </span>
+                  {attached && (
+                    <span className="text-xs text-gray-500">{attached.filename}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {attached && (
+                    <button type="button" className="text-brand-primary hover:underline text-xs"
+                      onClick={() => void viewDoc(doc)}>View</button>
+                  )}
+                  <button type="button" className="text-brand-primary hover:underline text-xs"
+                    onClick={() => uploadFor(doc)} disabled={busyDoc === doc}>
+                    {busyDoc === doc ? 'Uploading…' : attached ? 'Replace' : 'Upload'}
+                  </button>
+                  {attached && (
+                    <button type="button" className="text-red-600 hover:underline text-xs"
+                      onClick={() => void removeDoc(doc)} disabled={busyDoc === doc}>Remove</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
         {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
         {!error && missing.length > 0 && (
