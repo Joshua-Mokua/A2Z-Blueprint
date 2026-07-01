@@ -103,7 +103,7 @@ export default function CommitteeAdmin() {
     } finally { setSaving(false); }
   }
 
-  function setMember(i: number, field: 'name' | 'role', value: string) {
+  function setMember(i: number, field: 'name' | 'role' | 'staff_code', value: string) {
     if (!draft) return;
     const members = [...(draft.members ?? [])];
     members[i] = { ...members[i], [field]: value };
@@ -195,19 +195,21 @@ export default function CommitteeAdmin() {
 
             <div className="mt-4">
               <div className="mb-1 flex items-center justify-between">
-                <p className="text-sm font-medium">Members (name + role, for the audit trail)</p>
+                <p className="text-sm font-medium">Members (name + role + staff code — staff code lets them be notified & record a pre-read)</p>
                 <Button variant="ghost" size="sm"
-                  onClick={() => setDraft({ ...draft, members: [...(draft.members ?? []), { name: '', role: '' }] })}>
+                  onClick={() => setDraft({ ...draft, members: [...(draft.members ?? []), { name: '', role: '', staff_code: '' }] })}>
                   + Member
                 </Button>
               </div>
               <div className="space-y-2">
                 {(draft.members ?? []).map((m, i) => (
                   <div key={i} className="flex gap-2">
-                    <input className="w-1/2 rounded border px-2 py-1.5 text-sm" placeholder="Name" value={m.name}
+                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Name" value={m.name}
                       onChange={(e) => setMember(i, 'name', e.target.value)} />
-                    <input className="w-1/2 rounded border px-2 py-1.5 text-sm" placeholder="Role" value={m.role}
+                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Role" value={m.role}
                       onChange={(e) => setMember(i, 'role', e.target.value)} />
+                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Staff code" value={m.staff_code ?? ''}
+                      onChange={(e) => setMember(i, 'staff_code', e.target.value)} />
                     <Button variant="ghost" size="sm"
                       onClick={() => setDraft({ ...draft, members: (draft.members ?? []).filter((_, j) => j !== i) })}>
                       x

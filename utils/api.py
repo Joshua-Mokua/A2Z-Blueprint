@@ -9406,7 +9406,8 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
         "voting_rule": str(c.get("voting_rule", "SIMPLE_MAJORITY")),
         "amount_threshold_kes": float(c.get("amount_threshold_kes", 0) or 0),
         "members": [
-            {"name": str(m.get("name", "")).strip(), "role": str(m.get("role", "")).strip()}
+            {"name": str(m.get("name", "")).strip(), "role": str(m.get("role", "")).strip(),
+             "staff_code": str(m.get("staff_code", "") or "").strip()}
             for m in (c.get("members", []) or []) if isinstance(m, dict)
         ],
     }

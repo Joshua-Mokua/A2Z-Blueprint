@@ -1814,7 +1814,7 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 }
 
 // credit committee palette (4b-1)
-export interface CommitteeMemberDef { name: string; role: string; }
+export interface CommitteeMemberDef { name: string; role: string; staff_code?: string; }
 export interface CommitteeDef {
   code: string;
   name: string;
