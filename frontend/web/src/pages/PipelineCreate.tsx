@@ -215,9 +215,14 @@ export function PipelineCreate() {
   // Config-driven categories (admin-authored via deal_categories), with the
   // built-in PIPELINE_CATEGORIES as the pre-config fallback.
   const categories = useMemo<string[]>(
-    () => (config?.deal_categories && config.deal_categories.length
-      ? config.deal_categories.map((c) => c.category)
-      : [...PIPELINE_CATEGORIES]),
+    () => {
+      const cfg = config?.deal_categories ?? [];
+      // A2a: show only pipeline-surfaced categories (balance-sheet class);
+      // dormant deal-types are kept in config but hidden from the dropdown.
+      const surfaced = cfg.filter((c) => (c.surface ?? 'pipeline') !== 'dormant');
+      const list = surfaced.length ? surfaced : cfg;
+      return list.length ? list.map((c) => c.category) : [...PIPELINE_CATEGORIES];
+    },
     [config],
   );
   // Initial stages for a category: admin-config flow first, then the legacy
@@ -403,10 +408,15 @@ export function PipelineCreate() {
 
   const productOptions = useMemo(() => {
     const cat = config?.product_catalogue;
-    const want: Record<string, ProductClass[]> = {
+    // A2a: the category carries its own product_class (balance-sheet class);
+    // fall back to the legacy name map, then to all classes.
+    const catCfg = config?.deal_categories?.find((c) => c.category === category);
+    const legacyWant: Record<string, ProductClass[]> = {
       Loan: ['asset'], Deposit: ['liability'], Account: ['liability', 'other'],
     };
-    const buckets = want[category] ?? ['asset', 'liability', 'insurance', 'other'];
+    const buckets: ProductClass[] = (catCfg?.product_class?.length
+      ? (catCfg.product_class as ProductClass[])
+      : (legacyWant[category] ?? ['asset', 'liability', 'insurance', 'other']));
     const flows = config?.product_flows ?? {};
     // P4a: a product whose flow declares client_types is offered ONLY to those
     // client types; an empty (or absent) client_types means offered to all.
@@ -453,6 +463,17 @@ export function PipelineCreate() {
   // Override note is required when conflictPath === 'override' AND user has conflict
   const overrideNoteTooShort = hasConflict && conflictPath === 'override'
     && overrideNote.trim().length < MIN_OVERRIDE_NOTE_LEN;
+
+  // A2a: default category to first pipeline category once config loads (so the
+  // create form opens on a balance-sheet class, not the hardcoded 'Loan').
+  useEffect(() => {
+    if (categories.length && !categories.includes(category)) {
+      setCategory(categories[0]);
+      const initStages = stagesForCategory(categories[0]);
+      setStage((cur) => (initStages.includes(cur) ? cur : (initStages[0] ?? 'Lead')));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories]);
 
   // When category changes, ensure stage is valid for the new category.
   // β5.1: AUTO-UPDATE stage to the first option for the new category.

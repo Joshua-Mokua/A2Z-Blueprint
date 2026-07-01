@@ -186,6 +186,10 @@ export interface DealCategoryConfig {
   category:     string;
   description?: string;
   stages:       string[];
+  /** A2a: which product classes this category filters to (asset/liability/insurance/other). */
+  product_class?: string[];
+  /** A2a: "pipeline" = shown in create-deal dropdown; "dormant" = kept but hidden. */
+  surface?:     string;
 }
 
 /** P4a: one stage in a product's flow, carrying its own SLA target (days). */

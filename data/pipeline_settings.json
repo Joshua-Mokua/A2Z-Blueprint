@@ -121,7 +121,10 @@
       "Overdraft",
       "Invoice Discounting",
       "Trade Finance LC",
-      "Structured Finance"
+      "Structured Finance",
+      "Term Loan",
+      "Trade Finance",
+      "Working Capital"
     ],
     "Liabilities": [
       "Current Account",
@@ -134,7 +137,6 @@
     "Transactional": [
       "Internet Banking",
       "Mobile Banking",
-      "USSD Banking",
       "Debit Card",
       "Credit Card",
       "Prepaid Card"
@@ -178,7 +180,8 @@
         "Closed Lost"
       ],
       "avg_tap_days": 45,
-      "docs_required": "Full KYC, financials, security docs"
+      "docs_required": "Full KYC, financials, security docs",
+      "surface": "dormant"
     },
     {
       "category": "Top Up",
@@ -199,7 +202,8 @@
         "max_utilisation_pct": 90,
         "repayment_status": "Clean",
         "min_relationship_months": 12
-      }
+      },
+      "surface": "dormant"
     },
     {
       "category": "Renewal",
@@ -218,7 +222,8 @@
       "auto_qualifiers": {
         "days_before_maturity": 90,
         "repayment_status": "Clean or 1-2 late"
-      }
+      },
+      "surface": "dormant"
     },
     {
       "category": "Restructure",
@@ -233,7 +238,8 @@
       ],
       "avg_tap_days": 21,
       "docs_required": "Full financial review, viability assessment, security review",
-      "requires_cco_approval": true
+      "requires_cco_approval": true,
+      "surface": "dormant"
     },
     {
       "category": "Partnership / MOU",
@@ -255,7 +261,8 @@
         "referral_revenue_m",
         "co_brand_income_m",
         "revenue_share_pct"
-      ]
+      ],
+      "surface": "dormant"
     },
     {
       "category": "Customer Referral",
@@ -275,7 +282,8 @@
         "referral_fee_kes",
         "referral_source",
         "referee_converted"
-      ]
+      ],
+      "surface": "dormant"
     },
     {
       "category": "Sponsored Event",
@@ -296,7 +304,8 @@
         "leads_generated",
         "accounts_opened",
         "media_value_kes"
-      ]
+      ],
+      "surface": "dormant"
     },
     {
       "category": "Beyond Banking",
@@ -316,7 +325,8 @@
         "product_type",
         "premium_or_aum_kes",
         "commission_kes"
-      ]
+      ],
+      "surface": "dormant"
     },
     {
       "category": "Retailer Finance",
@@ -337,6 +347,67 @@
         "lpo_value_kes",
         "discount_rate_pct",
         "tenor_days"
+      ],
+      "surface": "dormant"
+    },
+    {
+      "category": "Loan / Asset",
+      "product_class": [
+        "asset"
+      ],
+      "surface": "pipeline",
+      "description": "Asset-side pipeline — loans and credit facilities.",
+      "stages": [
+        "Lead",
+        "Prospecting",
+        "Needs Analysis",
+        "Proposal",
+        "Negotiation",
+        "Credit Review",
+        "Approval",
+        "Documentation",
+        "Disbursed",
+        "Closed Won",
+        "Closed Lost"
+      ]
+    },
+    {
+      "category": "Deposit / Liability",
+      "product_class": [
+        "liability",
+        "other"
+      ],
+      "surface": "pipeline",
+      "description": "Liability-side pipeline — deposits, accounts, transactional.",
+      "stages": [
+        "Lead",
+        "Prospecting",
+        "Needs Analysis",
+        "Proposal",
+        "Negotiation",
+        "Account Opening",
+        "Funded",
+        "Closed Won",
+        "Closed Lost"
+      ]
+    },
+    {
+      "category": "Insurance",
+      "product_class": [
+        "insurance"
+      ],
+      "surface": "pipeline",
+      "description": "Bancassurance / insurance product pipeline.",
+      "stages": [
+        "Lead",
+        "Prospecting",
+        "Needs Analysis",
+        "Quotation",
+        "Proposal",
+        "Negotiation",
+        "Policy Issued",
+        "Closed Won",
+        "Closed Lost"
       ]
     }
   ],
@@ -416,5 +487,1760 @@
     "Other / Not Classified"
   ],
   "allow_other_sector": true,
-  "allow_other_mou": true
+  "allow_other_mou": true,
+  "sla_config": {
+    "steps": [
+      {
+        "key": "lead_qualification",
+        "label": "Lead qualification",
+        "owner_role": "Relationship Manager",
+        "target_days": 3
+      },
+      {
+        "key": "line_manager_validation",
+        "label": "Line-manager validation",
+        "owner_role": "Branch Manager",
+        "target_days": 2
+      },
+      {
+        "key": "credit_assessment",
+        "label": "Credit assessment",
+        "owner_role": "Credit Analyst",
+        "target_days": 5
+      },
+      {
+        "key": "offer_acceptance",
+        "label": "Offer & acceptance",
+        "owner_role": "Relationship Manager",
+        "target_days": 3
+      },
+      {
+        "key": "security_perfection",
+        "label": "Security perfection & authorization",
+        "owner_role": "Credit Admin",
+        "target_days": 7
+      },
+      {
+        "key": "disbursement",
+        "label": "Disbursement",
+        "owner_role": "Treasury Back Office",
+        "target_days": 2
+      },
+      {
+        "key": "closure",
+        "label": "Closure",
+        "owner_role": "Relationship Manager",
+        "target_days": 2
+      }
+    ],
+    "escalation_ladder": [
+      {
+        "after_days": 0,
+        "escalate_to": "step_owner"
+      },
+      {
+        "after_days": 2,
+        "escalate_to": "line_manager"
+      },
+      {
+        "after_days": 5,
+        "escalate_to": "regional_head"
+      },
+      {
+        "after_days": 8,
+        "escalate_to": "managing_director"
+      }
+    ],
+    "product_promise": {},
+    "due_soon_days": 2,
+    "stage_step_map": {
+      "Lead": "lead_qualification",
+      "Contacted": "lead_qualification",
+      "Qualified": "lead_qualification",
+      "Application": "line_manager_validation",
+      "Credit Assessment": "credit_assessment",
+      "Offer / Proposal": "offer_acceptance",
+      "Closed Won": "closure",
+      "Closed Lost": "closure"
+    }
+  },
+  "disbursement_roles": [
+    "Treasury Back Office"
+  ],
+  "product_flows": {
+    "Business Loan": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Mortgage": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Asset Finance": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Overdraft": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Invoice Discounting": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Trade Finance LC": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Structured Finance": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Current Account": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Savings Account": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Fixed Deposit": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Call Deposit": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Foreign Currency Account": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Junior Savings": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Internet Banking": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Mobile Banking": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "USSD Banking": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Debit Card": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Credit Card": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Prepaid Card": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Bancassurance": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Credit Life": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Home Owner": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Motor Comprehensive": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Medical Cover": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Personal Accident": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Business Interruption": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Treasury Bills": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Treasury Bonds": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Unit Trusts": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Offshore Investment": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Structured Products": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Personal Loan": {
+      "client_types": [
+        "Consumer"
+      ],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 3,
+          "win_probability": 2
+        },
+        {
+          "stage": "Contact",
+          "target_days": 1,
+          "win_probability": 5
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 1,
+          "win_probability": 9
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1,
+          "win_probability": 10
+        }
+      ]
+    },
+    "SIM Gate Product 165749535718": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "Term Loan": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "Trade Finance": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "SIM Novel Loan 164113506109": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Contacted",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        },
+        {
+          "stage": "Application",
+          "target_days": 3
+        },
+        {
+          "stage": "Credit Assessment",
+          "target_days": 5
+        },
+        {
+          "stage": "Offer / Proposal",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Compliance",
+          "target_days": 4
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 1
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 1
+        }
+      ]
+    },
+    "SIM Gate Product 170919126316": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 110601529219": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 113332334359": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 114019054054": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 160247216425": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 162259373445": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 162852375361": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 164712551589": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 165611454011": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 171512643907": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 175121963830": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 180440589891": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 181620640730": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 183030772249": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 183805652824": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 184246783760": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 184848995452": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 185637076354": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 112326009272": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 122144837370": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 133649337325": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 171953088695": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 180309110088": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 182051821470": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 074308013716": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 103532689125": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    },
+    "SIM Gate Product 151414346784": {
+      "client_types": [],
+      "stages": [
+        {
+          "stage": "Lead",
+          "target_days": 2
+        },
+        {
+          "stage": "Qualified",
+          "target_days": 3
+        }
+      ]
+    }
+  },
+  "customer_segments": {
+    "Consumer": [
+      "Premier",
+      "Advantage",
+      "Direct"
+    ],
+    "Commercial": [
+      "Large Corporate",
+      "SME",
+      "Micro Enterprise",
+      "EFS"
+    ],
+    "CIB": [
+      "Multinational",
+      "Large Local Corporate",
+      "Financial Institution",
+      "Public Sector"
+    ]
+  },
+  "client_types": [
+    {
+      "key": "Consumer",
+      "label": "Consumer",
+      "field": "mou"
+    },
+    {
+      "key": "Commercial",
+      "label": "Commercial",
+      "field": "sector"
+    },
+    {
+      "key": "CIB",
+      "label": "Corporate & Investment Banking",
+      "field": "sector"
+    },
+    {
+      "key": "Treasury",
+      "label": "Treasury",
+      "field": "sector"
+    }
+  ]
 }
