@@ -2762,10 +2762,38 @@ class SubmitToCreditRequest(BaseModel):
     documents_provided: List[str] = []
 
 
+def _product_document_config(deal: dict) -> tuple:
+    """(required_documents, required_at_stage) from the deal's PRODUCT flow
+    (Batch 1 config in pipeline_settings.product_flows). ([], "") if unset."""
+    product = str(deal.get("product") or deal.get("product_type") or "").strip()
+    if not product:
+        return [], ""
+    pcfg = _load_json("pipeline_settings.json") or {}
+    flows = pcfg.get("product_flows", {}) if isinstance(pcfg, dict) else {}
+    entry = flows.get(product) if isinstance(flows, dict) else None
+    if not isinstance(entry, dict):
+        return [], ""
+    docs = entry.get("required_documents") or []
+    if not isinstance(docs, list):
+        docs = []
+    stage = str(entry.get("documents_required_at_stage", "") or "")
+    return [str(d) for d in docs if str(d).strip()], stage
+
+
 def _get_required_documents_for_deal(deal: dict) -> list:
-    """Required credit documents for a deal, from lms_config's tiered
-    document_checklist: default + amount/product add-ons. Order preserved,
-    de-duplicated."""
+    """Required documents for a deal. Precedence:
+      1. the deal's PRODUCT config (product_flows[product].required_documents), else
+      2. legacy lms_config tiered document_checklist (default + amount/product).
+    Order preserved, de-duplicated."""
+    # 1) per-product configured documents (Batch 1) take precedence.
+    prod_docs, _stage = _product_document_config(deal)
+    if prod_docs:
+        seen, out = set(), []
+        for d in prod_docs:
+            if d not in seen:
+                seen.add(d); out.append(d)
+        return out
+    # 2) legacy fallback (unchanged behavior for unconfigured products).
     cfg = _load_json("lms_config.json") or {}
     dc = cfg.get("document_checklist", {}) if isinstance(cfg, dict) else {}
     req = list(dc.get("default", []))
