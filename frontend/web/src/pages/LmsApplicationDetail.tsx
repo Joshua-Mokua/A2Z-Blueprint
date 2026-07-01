@@ -23,7 +23,7 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, getLmsCommitteeRecords, type LmsCommitteeRecordsResponse,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -297,6 +297,7 @@ export function LmsApplicationDetail() {
 
         {/* ─────────── Credit Report (CR) ─────────── */}
         <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+        <BranchCommitteeDecisionsCard appId={application.id} />
 
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -1451,3 +1452,46 @@ function CreditReportCard({ appId, canEdit, toast }: {
     </Card>
   );
 }
+
+// ── Branch committee decisions (4b-7b): read-only, carried from the deal ──
+function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
+  const [data, setData] = useState<LmsCommitteeRecordsResponse | null>(null);
+  useEffect(() => {
+    getLmsCommitteeRecords(appId).then(setData).catch(() => setData(null));
+  }, [appId]);
+  if (!data) return null;
+  const codes = Object.keys(data.committee_records || {});
+  if (codes.length === 0) return null;
+  const tone = (o: string) => (o === 'APPROVED' ? 'success' : o === 'REJECTED' ? 'danger' : 'warning');
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Branch Committee Decisions</h2>
+        <Badge tone="info" size="sm">from branch</Badge>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-3 text-xs text-gray-500">Recorded at the branch before submission (read-only).</p>
+        <div className="space-y-3">
+          {codes.map((code) => {
+            const r = data.committee_records[code];
+            return (
+              <div key={code} className="rounded border p-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{code}</span>
+                  <Badge tone={tone(r.outcome)} size="sm">{r.outcome}</Badge>
+                </div>
+                <p className="text-xs text-gray-500">Recorded by {r.recorded_by} on {r.recorded_at}.</p>
+                {r.mode === 'voting' && r.votes.length > 0 && (
+                  <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                    {r.votes.map((v, i) => <li key={i}>{v.name} ({v.role}): {v.vote}</li>)}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+

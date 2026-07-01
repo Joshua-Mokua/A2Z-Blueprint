@@ -6004,6 +6004,21 @@ class LoanApplicationManager:
             "created_by":         username or "",
             "created_via":        "api_pipeline_advance",
         }
+        # 4b-7: carry the branch-originated CR + committee decisions onto the
+        # application so Credit Analysis sees the completed inputs (read-only).
+        try:
+            deal_cr = deal.get("cr")
+            if isinstance(deal_cr, dict) and deal_cr:
+                app["cr"] = deal_cr                       # same shape build_cr_view reads
+                app["cr_origin"] = "branch"
+            deal_committees = deal.get("committee_records")
+            if isinstance(deal_committees, dict) and deal_committees:
+                app["committee_records"] = deal_committees
+            deal_appeals = deal.get("appeals")
+            if isinstance(deal_appeals, list) and deal_appeals:
+                app["committee_appeals"] = deal_appeals
+        except Exception:
+            pass
         self.apps.append(app)
         self.save()
         return new_id

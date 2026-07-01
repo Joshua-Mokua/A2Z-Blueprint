@@ -9738,3 +9738,20 @@ def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
     return {"status": "closed_lost", "deal_id": deal_id}
 # === END REJECT -> OWNER FALLBACK ===
 
+
+# === ANALYST COMMITTEE VIEW (4b-7b) ===
+@app.get("/api/lms/applications/{app_id}/committee-records", tags=["lms"])
+def get_lms_committee_records(app_id: str, user: dict = Depends(get_current_user)):
+    """Read-only branch committee decisions carried onto the application (4b-7)."""
+    from utils.core import LoanApplicationManager
+    lam = LoanApplicationManager()
+    app_rec = lam.get(app_id)
+    if not app_rec:
+        raise HTTPException(status_code=404, detail=f"Application {app_id} not found")
+    return {
+        "committee_records": app_rec.get("committee_records", {}) or {},
+        "committee_appeals": app_rec.get("committee_appeals", []) or [],
+        "cr_origin": app_rec.get("cr_origin", ""),
+    }
+# === END ANALYST COMMITTEE VIEW ===
+

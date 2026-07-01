@@ -1889,3 +1889,17 @@ export async function closeDealAsLost(dealId: string, reason: string): Promise<{
     `/pipeline/deals/${encodeURIComponent(dealId)}/close-lost`, { reason });
 }
 
+// analyst read-only view of branch committee decisions (4b-7b)
+export interface LmsCommitteeRecordsResponse {
+  committee_records: Record<string, {
+    outcome: string; mode: string;
+    votes: { name: string; role: string; vote: string }[];
+    note?: string; recorded_by?: string; recorded_at?: string;
+  }>;
+  committee_appeals: { code: string; reason: string; outcome: string; by: string; at: string }[];
+  cr_origin: string;
+}
+export async function getLmsCommitteeRecords(appId: string): Promise<LmsCommitteeRecordsResponse> {
+  return getJson<LmsCommitteeRecordsResponse>(`/lms/applications/${appId}/committee-records`);
+}
+
