@@ -1462,16 +1462,102 @@ def lms_committee_routing(
         amount = float(app.get("amount") or 0)
     except (TypeError, ValueError):
         amount = 0.0
-    suggested = _suggest_committee_tier(amount)
+    final = _suggest_committee_tier(amount)
+    entry = _committee_entry_tier(amount)
     can_refer = is_manager(user) and is_valid_lms_transition(
         str(app.get("status", "")), "referred_to_committee")
     return {
         "tiers": get_committee_tiers(),
         "amount": amount,
-        "suggested_tier": suggested.get("tier"),
-        "suggested_name": suggested.get("name"),
+        # C1b: entry (where it starts) vs final (ultimate authority). The case
+        # climbs from entry to final, capturing each verdict.
+        "entry_tier": entry.get("tier"),
+        "entry_name": entry.get("name"),
+        "final_tier": final.get("tier"),
+        "final_name": final.get("name"),
+        "require_mcc": _committee_require_mcc(),
+        "must_climb": bool(entry.get("tier") and final.get("tier")
+                           and entry.get("tier") != final.get("tier")),
+        # back-compat: suggested_* now points at the ENTRY tier (what to pre-select).
+        "suggested_tier": entry.get("tier"),
+        "suggested_name": entry.get("name"),
         "can_refer": bool(can_refer),
         "current_status": app.get("status"),
     }
 # === END C1: COMMITTEE ROUTING ===
+
+
+# === C1b: CLIMB LADDER + MCC-MANDATORY ===
+def _committee_require_mcc() -> bool:
+    """Admin toggle: cases needing Board/Group must pass MCC first. Default True."""
+    try:
+        from pathlib import Path as _Path
+        p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+        if p.exists():
+            import json as _json
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+            v = cfg.get("require_mcc_before_higher")
+            if v is not None:
+                return bool(v)
+    except Exception:
+        pass
+    return True
+
+
+def _committee_mcc_tier() -> dict:
+    """The MCC tier (key management_cc), or the middle tier as a fallback."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    tiers = get_committee_tiers()
+    for t in tiers:
+        if str(t.get("key", "")).lower() in ("management_cc", "mcc"):
+            return t
+    # fallback: second tier if present
+    return tiers[1] if len(tiers) > 1 else (tiers[0] if tiers else {})
+
+
+def _committee_entry_tier(amount_kes: float) -> dict:
+    """The tier the case ENTERS at. If the final authority is above MCC and the
+    require-MCC rule is on, entry = MCC (the case then climbs). Otherwise entry =
+    the final authority tier (small cases enter directly at their committee)."""
+    final = _suggest_committee_tier(amount_kes)
+    if not final:
+        return {}
+    if not _committee_require_mcc():
+        return final
+    mcc = _committee_mcc_tier()
+    if not mcc:
+        return final
+    try:
+        # if the final authority sits ABOVE MCC, the case must enter at MCC.
+        if int(final.get("tier", 0)) > int(mcc.get("tier", 0)):
+            return mcc
+    except (TypeError, ValueError):
+        pass
+    return final
+# === END C1b ===
+
+
+
+@router.post("/committee/require-mcc")
+def lms_committee_set_require_mcc(
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(require_config_admin),
+) -> Dict[str, Any]:
+    """Admin toggle: require MCC before Board/Group. Config-admin gated."""
+    enabled = bool((payload or {}).get("enabled", True))
+    from pathlib import Path as _Path
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    import json as _json
+    cfg = {}
+    try:
+        if p.exists():
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+    except Exception:
+        cfg = {}
+    cfg["require_mcc_before_higher"] = enabled
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(_json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    import os as _os
+    _os.replace(str(tmp), str(p))
+    return {"status": "saved", "require_mcc_before_higher": enabled}
 

@@ -1075,15 +1075,16 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
   const [tiers, setTiers] = useState<CommitteeTier[]>([]);
   const [entryTier, setEntryTier] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
-  const [suggested, setSuggested] = useState<{ tier: number | null; name: string | null; amount: number } | null>(null);
+  const [suggested, setSuggested] = useState<{ tier: number | null; name: string | null; amount: number; finalName?: string | null; mustClimb?: boolean } | null>(null);
 
   useEffect(() => {
     let live = true;
     getCommitteeTiers().then((r) => { if (live) setTiers(r.tiers || []); }).catch(() => {});
     fetchCommitteeRouting(appId).then((r) => {
       if (!live) return;
-      setSuggested({ tier: r.suggested_tier, name: r.suggested_name, amount: r.amount });
-      if (r.suggested_tier != null) setEntryTier(r.suggested_tier);
+      setSuggested({ tier: r.entry_tier ?? r.suggested_tier, name: r.entry_name ?? r.suggested_name, amount: r.amount, finalName: r.final_name, mustClimb: r.must_climb });
+      const preselect = r.entry_tier ?? r.suggested_tier;
+      if (preselect != null) setEntryTier(preselect);
     }).catch(() => {});
     return () => { live = false; };
   }, [appId]);
@@ -1105,7 +1106,11 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
         </p>
         {suggested?.name && (
           <div className="mb-3 rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
-            By limit, KES {suggested.amount.toLocaleString()} routes to <span className="font-semibold">{suggested.name}</span> (pre-selected). You can override below.
+            {suggested.mustClimb ? (
+              <>By limit, KES {suggested.amount.toLocaleString()} enters at <span className="font-semibold">{suggested.name}</span> and climbs to <span className="font-semibold">{suggested.finalName}</span> — each committee's verdict is captured before the next.</>
+            ) : (
+              <>By limit, KES {suggested.amount.toLocaleString()} is decided by <span className="font-semibold">{suggested.name}</span> (pre-selected). You can override below.</>
+            )}
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">

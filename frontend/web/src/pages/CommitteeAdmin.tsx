@@ -10,6 +10,7 @@ import {
   upsertCommittee,
   deleteCommittee,
   seedCommitteePalette,
+  setRequireMcc,
   type CommitteeDef,
 } from '@/lib/api';
 
@@ -34,6 +35,8 @@ export default function CommitteeAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<CommitteeDef | null>(null);
+  const [requireMcc, setRequireMccState] = useState(true);
+  const [savingMcc, setSavingMcc] = useState(false);
 
   async function load() {
     setLoading(true); setError(null);
@@ -124,6 +127,23 @@ export default function CommitteeAdmin() {
           <Button variant="ghost" size="sm" onClick={() => void load()}>Retry</Button>
         </Card.Body></Card>
       )}
+
+      {/* C1b: ladder policy toggle */}
+      <Card stripe="accent"><Card.Body>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={requireMcc} className="mt-1"
+            onChange={async (e) => {
+              const v = e.target.checked; setRequireMccState(v); setSavingMcc(true);
+              try { await setRequireMcc(v); toast({ tone: 'success', message: 'Ladder policy saved.' }); }
+              catch { toast({ tone: 'danger', message: 'Could not save.' }); setRequireMccState(!v); }
+              finally { setSavingMcc(false); }
+            }} disabled={savingMcc} />
+          <div>
+            <div className="text-sm font-medium text-gray-900">Require MCC before Board / Group</div>
+            <div className="text-xs text-gray-500">When on (recommended), any case whose limit needs the Board or Group committee must first pass through the Management Credit Committee, whose verdict is captured before it climbs. When off, cases route directly to the committee their limit requires.</div>
+          </div>
+        </label>
+      </Card.Body></Card>
 
       <Card><Card.Body>
         <div className="mb-3 flex justify-between">

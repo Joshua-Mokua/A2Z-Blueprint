@@ -1935,10 +1935,22 @@ export interface CommitteeRouting {
   amount: number;
   suggested_tier: number | null;
   suggested_name: string | null;
+  entry_tier?: number | null;
+  entry_name?: string | null;
+  final_tier?: number | null;
+  final_name?: string | null;
+  require_mcc?: boolean;
+  must_climb?: boolean;
   can_refer: boolean;
   current_status: string;
 }
 export async function fetchCommitteeRouting(appId: string): Promise<CommitteeRouting> {
   return getJson<CommitteeRouting>(`/lms/applications/${encodeURIComponent(appId)}/committee-routing`);
+}
+
+// C1b: require-MCC-before-higher admin toggle
+export async function setRequireMcc(enabled: boolean): Promise<{ status: string; require_mcc_before_higher: boolean }> {
+  return postJson<{ status: string; require_mcc_before_higher: boolean }, { enabled: boolean }>(
+    '/lms/committee/require-mcc', { enabled });
 }
 
