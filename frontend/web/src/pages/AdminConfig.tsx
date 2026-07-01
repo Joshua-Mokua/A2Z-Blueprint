@@ -39,7 +39,7 @@ import {
   type AdminBranch,
   type SlaConfig,
 } from '@/lib/api';
-import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
+import type { PipelineConfig, ProductFlow, DealCategoryConfig } from '@/types/pipeline';
 
 type Mou = { id: string; title: string; partner_name?: string; active?: boolean };
 type ClientType = { key: string; label: string; field: 'mou' | 'sector' };
@@ -176,6 +176,7 @@ export default function AdminConfig() {
   const [mouSearch, setMouSearch] = useState('');
   const [mouBusy, setMouBusy] = useState(false);
   const [sectors, setSectors] = useState<string[]>([]);
+  const [dealCategories, setDealCategories] = useState<DealCategoryConfig[]>([]);
   const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
   // Product flows: the authored map + which product is being edited + a draft.
   const [productFlows, setProductFlows] = useState<Record<string, ProductFlow>>({});
@@ -232,6 +233,7 @@ export default function AdminConfig() {
     setProducts({ ...(c.product_catalogue ?? {}) });
     setMous((c.individual_mous ?? []).map((m) => ({ active: true, ...m })));
     setSectors([...(c.business_sectors ?? [])]);
+    setDealCategories([...(c.deal_categories ?? [])]);
     setClientTypes((c.client_types ?? []).map((t) => ({ ...t })));
     setProductFlows({ ...(c.product_flows ?? {}) });
   };
@@ -260,6 +262,7 @@ export default function AdminConfig() {
       if (res.config.segment_labels) setLabels({ ...res.config.segment_labels });
       if (res.config.customer_segments) setCustSeg({ ...res.config.customer_segments });
       if (res.config.product_catalogue) setProducts({ ...res.config.product_catalogue });
+      if (res.config.deal_categories) setDealCategories([...res.config.deal_categories]);
       if (res.config.individual_mous) setMous(res.config.individual_mous.map((m) => ({ active: true, ...m })));
       if (res.config.business_sectors) setSectors([...res.config.business_sectors]);
       if (res.config.client_types) setClientTypes(res.config.client_types.map((t) => ({ ...t })));
@@ -550,6 +553,16 @@ export default function AdminConfig() {
               saving={savingKey === 'sectors'}
             >
               <StringListEditor items={sectors} onChange={setSectors} placeholder="Add a sector…" />
+            </PanelShell>
+
+            {/* Pipeline categories (A2b) — balance-sheet class the bank tracks */}
+            <PanelShell
+              title="Pipeline categories"
+              hint="Balance-sheet classes shown on the create-deal form (Loan/Asset, Deposit/Liability, Insurance). Add a new pipeline class here. Dormant categories are kept but hidden."
+              onSave={() => save('deal_categories', { deal_categories: dealCategories }, 'Pipeline categories')}
+              saving={savingKey === 'deal_categories'}
+            >
+              <CategoryEditor categories={dealCategories} onChange={setDealCategories} />
             </PanelShell>
 
             {/* Segment display names */}
@@ -1131,5 +1144,86 @@ function BranchesPanel() {
         )}
       </Card.Body>
     </Card>
+  );
+}
+
+
+// ── A2b: Pipeline category editor ──────────────────────────────────────
+const PRODUCT_CLASSES = ['asset', 'liability', 'insurance', 'other'] as const;
+
+function CategoryEditor({
+  categories, onChange,
+}: {
+  categories: DealCategoryConfig[];
+  onChange: (next: DealCategoryConfig[]) => void;
+}) {
+  const [newName, setNewName] = useState('');
+
+  const update = (i: number, patch: Partial<DealCategoryConfig>) => {
+    onChange(categories.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  };
+  const remove = (i: number) => onChange(categories.filter((_, j) => j !== i));
+  const add = () => {
+    const name = newName.trim();
+    if (!name || categories.some((c) => c.category === name)) return;
+    onChange([...categories, {
+      category: name, product_class: ['asset'], surface: 'pipeline',
+      stages: ['Lead', 'Prospecting', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'],
+    }]);
+    setNewName('');
+  };
+  const toggleClass = (i: number, cls: string) => {
+    const cur = categories[i].product_class ?? [];
+    update(i, { product_class: cur.includes(cls) ? cur.filter((x) => x !== cls) : [...cur, cls] });
+  };
+
+  return (
+    <div className="space-y-3">
+      {categories.map((c, i) => {
+        const dormant = (c.surface ?? 'pipeline') === 'dormant';
+        return (
+          <div key={c.category} className={`rounded border p-3 ${dormant ? 'bg-gray-50 opacity-70' : ''}`}>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold">{c.category}</span>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1 text-xs text-gray-600">
+                  <input type="checkbox" checked={!dormant}
+                    onChange={(e) => update(i, { surface: e.target.checked ? 'pipeline' : 'dormant' })} />
+                  Shown on create-deal
+                </label>
+                <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => remove(i)}>remove</button>
+              </div>
+            </div>
+            <div className="mb-2">
+              <span className="mr-2 text-xs text-gray-500">Product classes:</span>
+              {PRODUCT_CLASSES.map((cls) => (
+                <label key={cls} className="mr-3 inline-flex items-center gap-1 text-xs">
+                  <input type="checkbox" checked={(c.product_class ?? []).includes(cls)}
+                    onChange={() => toggleClass(i, cls)} />
+                  {cls}
+                </label>
+              ))}
+            </div>
+            <div>
+              <span className="mb-1 block text-xs text-gray-500">Stages (initial flow; a product's own flow overrides):</span>
+              <StringListEditor
+                items={c.stages ?? []}
+                onChange={(items) => update(i, { stages: items })}
+                placeholder="Add a stage…"
+              />
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-2 pt-2">
+        <input
+          className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm"
+          placeholder="New pipeline category name (e.g. Trade Finance)…"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+        <Button size="sm" onClick={add} disabled={!newName.trim()}>Add category</Button>
+      </div>
+    </div>
   );
 }

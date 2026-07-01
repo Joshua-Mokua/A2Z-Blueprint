@@ -41,6 +41,7 @@ import type {
   PipelineAnalyticsResponse,
   PipelineDrillResponse,
   FunnelDrillResponse,
+  DealCategoryConfig,
 } from '@/types/pipeline';
 import type {
   CreditAnalyticsResponse,
@@ -338,6 +339,7 @@ export interface AdminConfigPatch {
   required_fields?:    string[];
   allow_other_sector?: boolean;
   allow_other_mou?:    boolean;
+  deal_categories?:    DealCategoryConfig[];
 }
 export interface AdminConfigResponse {
   status: 'saved' | 'noop';
