@@ -109,6 +109,12 @@ export default function CommitteeAdmin() {
     members[i] = { ...members[i], [field]: value };
     setDraft({ ...draft, members });
   }
+  function toggleFunnel(i: number, value: boolean) {
+    if (!draft) return;
+    const members = [...(draft.members ?? [])];
+    members[i] = { ...members[i], full_funnel: value };
+    setDraft({ ...draft, members });
+  }
 
   if (!canAdmin) {
     return <Card><Card.Body><div className="text-sm text-gray-600">No access to committee configuration.</div></Card.Body></Card>;
@@ -208,8 +214,13 @@ export default function CommitteeAdmin() {
                       onChange={(e) => setMember(i, 'name', e.target.value)} />
                     <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Role" value={m.role}
                       onChange={(e) => setMember(i, 'role', e.target.value)} />
-                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Staff code" value={m.staff_code ?? ''}
+                    <input className="w-1/4 rounded border px-2 py-1.5 text-sm" placeholder="Staff code" value={m.staff_code ?? ''}
                       onChange={(e) => setMember(i, 'staff_code', e.target.value)} />
+                    <label className="flex items-center gap-1 text-xs text-gray-600 whitespace-nowrap" title="EXCO full-funnel visibility (planning view like the MD)">
+                      <input type="checkbox" checked={!!m.full_funnel}
+                        onChange={(e) => toggleFunnel(i, e.target.checked)} />
+                      EXCO view
+                    </label>
                     <Button variant="ghost" size="sm"
                       onClick={() => setDraft({ ...draft, members: (draft.members ?? []).filter((_, j) => j !== i) })}>
                       x
