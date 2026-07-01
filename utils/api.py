@@ -9809,3 +9809,54 @@ def get_my_analysts(user: dict = Depends(get_current_user)):
     return {"analysts": analysts, "count": len(analysts)}
 # === END MY ANALYSTS DROPDOWN ===
 
+
+# === C-SLA: APPLICATION SLA STATUS ===
+def _app_sla_status(app: dict) -> dict:
+    """Compact SLA status for an LMS application — the case-age customer promise.
+    Reuses _business_days_since + _sla_due_soon_days + the deal state vocabulary
+    (on_track / due_soon / breached). Terminal cases return {}."""
+    if not isinstance(app, dict):
+        return {}
+    status = str(app.get("status", "") or "").lower()
+    if status in ("disbursed", "declined", "closed"):
+        return {}
+    base_ts = app.get("application_date") or app.get("created_at") or app.get("last_updated")
+    if not base_ts:
+        return {}
+    try:
+        target = int(app.get("sla_target_days") or 10)
+    except (TypeError, ValueError):
+        target = 10
+    elapsed = _business_days_since(base_ts)
+    overdue = max(0, elapsed - target)
+    remaining = target - elapsed
+    cfg = _sla_config()
+    if overdue > 0:
+        state = "breached"
+    elif remaining <= _sla_due_soon_days(cfg):
+        state = "due_soon"
+    else:
+        state = "on_track"
+    return {
+        "state": state,
+        "elapsed_business_days": elapsed,
+        "target_days": target,
+        "remaining_business_days": remaining,
+        "overdue_business_days": overdue,
+        "breached": overdue > 0,
+    }
+
+
+def _attach_sla_to_apps(apps: list) -> list:
+    """Attach a compact SLA status to each application in a list response. Mutates."""
+    if not apps:
+        return apps
+    for a in apps:
+        if isinstance(a, dict):
+            try:
+                a["sla"] = _app_sla_status(a) or None
+            except Exception:
+                a["sla"] = None
+    return apps
+# === END C-SLA: APPLICATION SLA STATUS ===
+

@@ -140,6 +140,15 @@ export interface AssignmentRequest {
   note?:   string;
 }
 
+export interface AppSla {
+  state: 'on_track' | 'due_soon' | 'breached';
+  elapsed_business_days: number;
+  target_days: number;
+  remaining_business_days: number;
+  overdue_business_days: number;
+  breached: boolean;
+}
+
 export interface LoanApplication {
   // Identity
   id:                     string;
@@ -188,6 +197,7 @@ export interface LoanApplication {
   // SLA
   tat_days?:              number;
   sla_target_days?:       number;
+  sla?:                   AppSla | null;
 
   // Categorization
   proposition_tag?:       string;

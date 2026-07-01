@@ -132,6 +132,8 @@ def lms_applications_list(
         caller_role=str(user.get('role', '') or ''),
     )
 
+    from utils.api import _attach_sla_to_apps as _attach_sla
+    _attach_sla(apps)
     return {
         "applications": apps,
         "count": len(apps),
@@ -250,6 +252,11 @@ def lms_application_detail(
             detail="You do not have visibility to this application",
         )
 
+    try:
+        from utils.api import _app_sla_status as _app_sla
+        app["sla"] = _app_sla(app) or None
+    except Exception:
+        pass
     return {
         "application": app,
         "permissions": permissions,

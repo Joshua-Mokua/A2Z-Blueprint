@@ -384,6 +384,7 @@ export function Lms() {
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">RM</th>
                       <th className="px-4 py-3">Analyst</th>
+                      <th className="px-4 py-3">SLA</th>
                       <th className="px-4 py-3">Applied</th>
                     </tr>
                   </thead>
@@ -429,6 +430,20 @@ export function Lms() {
                                   : (requestBusy === app.id ? 'Requesting…' : 'Request assignment')}
                               </button>
                             ) : <span className="text-gray-400">unassigned</span>)}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {app.sla ? (
+                            <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
+                              app.sla.state === 'breached' ? 'bg-red-100 text-red-700'
+                              : app.sla.state === 'due_soon' ? 'bg-amber-100 text-amber-700'
+                              : 'bg-green-100 text-green-700'}`}>
+                              {app.sla.state === 'breached'
+                                ? `${app.sla.overdue_business_days}d over`
+                                : app.sla.state === 'due_soon'
+                                ? `${app.sla.remaining_business_days}d left`
+                                : 'On track'}
+                            </span>
+                          ) : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {formatDate(app.application_date)}

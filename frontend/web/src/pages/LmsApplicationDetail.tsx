@@ -136,6 +136,18 @@ export function LmsApplicationDetail() {
               <Badge tone={statusTone(application.status)} size="md">
                 {application.status}
               </Badge>
+              {application.sla && (
+                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                  application.sla.state === 'breached' ? 'bg-red-500/90 text-white'
+                  : application.sla.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
+                  : 'bg-green-500/90 text-white'}`}>
+                  {application.sla.state === 'breached'
+                    ? `SLA breached — ${application.sla.overdue_business_days}d over promise`
+                    : application.sla.state === 'due_soon'
+                    ? `SLA due soon — ${application.sla.remaining_business_days}d left`
+                    : `SLA on track — ${application.sla.remaining_business_days}d left`}
+                </span>
+              )}
               {application.swim_lane && (
                 <span className="text-xs text-white/70">{application.swim_lane}</span>
               )}
