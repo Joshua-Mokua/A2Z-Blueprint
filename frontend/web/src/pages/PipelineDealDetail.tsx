@@ -581,20 +581,32 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   // Only the owner / admin sees the submission form. If the ONLY thing blocking
   // submission is the stage gate, show an explanation instead of hiding.
   if (!checklist.can_submit) {
+    const gateReasons: string[] = [];
     if (checklist.stage_ok === false && checklist.stage_required) {
+      gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
+    }
+    if ((checklist.committee_rejected ?? []).length > 0) {
+      gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
+    }
+    if ((checklist.committee_pending ?? []).length > 0) {
+      gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
+    }
+    if (checklist.cr_required && checklist.cr_ok === false) {
+      gateReasons.push('The Credit Report (CR) must be completed first.');
+    }
+    if (gateReasons.length > 0) {
+      const rejected = (checklist.committee_rejected ?? []).length > 0;
       return (
         <Card className="mt-6" stripe="accent">
           <Card.Header>
             <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
-            <Badge tone="warning" size="sm">stage gate</Badge>
+            <Badge tone={rejected ? 'danger' : 'warning'} size="sm">{rejected ? 'committee gate' : 'prerequisites'}</Badge>
           </Card.Header>
           <Card.Body>
-            <p className="text-sm text-amber-700">
-              This product requires this deal to be at stage
-              {' '}<span className="font-medium">"{checklist.stage_required}"</span>
-              {' '}before it can be submitted to credit analysis
-              {checklist.current_stage ? <> (currently "{checklist.current_stage}")</> : null}.
-            </p>
+            <p className="mb-2 text-sm text-gray-700">Before this deal can be submitted to credit analysis:</p>
+            <ul className="list-disc pl-5 text-sm text-amber-700">
+              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
           </Card.Body>
         </Card>
       );

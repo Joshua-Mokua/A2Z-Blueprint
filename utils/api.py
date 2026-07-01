@@ -2850,6 +2850,24 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     if doc_stage:
         stage_required = doc_stage
         stage_ok = (current_stage == doc_stage)
+    # Batch 4b-5: CR + committee journey gating.
+    journey_codes = _effective_committee_journey(deal)
+    cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}
+    cr_required = True  # CR is the baseline artifact (Josh: "a CR should suffice")
+    cr_ok = bool(cr.get("completed"))
+    records = deal.get("committee_records", {}) or {}
+    committee_pending = []
+    committee_rejected = []
+    for code in journey_codes:
+        rec = records.get(code) or {}
+        outcome = str(rec.get("outcome", "")).upper()
+        if outcome == "APPROVED":
+            continue
+        if outcome == "REJECTED":
+            committee_rejected.append(code)
+        else:
+            committee_pending.append(code)
+    committee_ok = (len(committee_pending) == 0 and len(committee_rejected) == 0)
     return {
         "required": required,
         "provided": provided,
@@ -2859,8 +2877,16 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
         "current_stage": current_stage,
         "stage_required": stage_required,
         "stage_ok": stage_ok,
+        "cr_required": cr_required,
+        "cr_ok": cr_ok,
+        "committee_ok": committee_ok,
+        "committee_pending": committee_pending,
+        "committee_rejected": committee_rejected,
         "can_submit": (is_owner or is_admin_like) and not already
-                      and not terminal and stage_ok and perms.get("can_view", False),
+                      and not terminal and stage_ok
+                      and (cr_ok or not cr_required)
+                      and committee_ok
+                      and perms.get("can_view", False),
     }
 
 
@@ -2910,6 +2936,18 @@ def pipeline_submit_to_credit(
                 detail=f"Cannot submit to credit — this product requires the deal "
                        f"to be at stage '{state.get('stage_required')}' "
                        f"(currently '{state.get('current_stage')}').")
+        if state.get("committee_rejected"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — committee(s) rejected: "
+                       + ", ".join(state["committee_rejected"])
+                       + ". The deal returns to the owner (appeal or close).")
+        if state.get("committee_pending"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — committee decision(s) outstanding: "
+                       + ", ".join(state["committee_pending"]) + ".")
+        if state.get("cr_required") and not state.get("cr_ok"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — the Credit Report (CR) must be completed first.")
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
     provided = list(payload.documents_provided or [])

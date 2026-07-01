@@ -559,6 +559,11 @@ export interface CreditChecklistResponse {
   current_stage?:      string;
   stage_required?:     string;
   stage_ok?:           boolean;
+  cr_required?:        boolean;
+  cr_ok?:              boolean;
+  committee_ok?:       boolean;
+  committee_pending?:  string[];
+  committee_rejected?: string[];
 }
 
 export interface SubmitToCreditResponse {
