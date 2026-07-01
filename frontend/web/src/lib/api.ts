@@ -1854,3 +1854,26 @@ export async function saveDealCr(
     `/pipeline/deals/${encodeURIComponent(dealId)}/cr`, body);
 }
 
+// committee decision capture on the deal (4b-4)
+export interface CommitteeVote { name: string; role: string; vote: string; }
+export interface CommitteeRecord {
+  outcome: string; mode: string; votes: CommitteeVote[];
+  note?: string; recorded_by?: string; recorded_at?: string;
+}
+export interface CommitteeGate {
+  code: string; name: string; recording_mode: string; voting_rule: string;
+  members: { name: string; role: string }[];
+  record: CommitteeRecord | null;
+}
+export interface CommitteeRecordsResponse { gates: CommitteeGate[]; cr_only: boolean; }
+export async function getDealCommitteeRecords(dealId: string): Promise<CommitteeRecordsResponse> {
+  return getJson<CommitteeRecordsResponse>(`/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`);
+}
+export async function recordDealCommitteeDecision(
+  dealId: string,
+  body: { code: string; outcome?: string; votes?: CommitteeVote[]; note?: string },
+): Promise<{ status: string; code: string; record: CommitteeRecord }> {
+  return postJson<{ status: string; code: string; record: CommitteeRecord }, typeof body>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`, body);
+}
+
