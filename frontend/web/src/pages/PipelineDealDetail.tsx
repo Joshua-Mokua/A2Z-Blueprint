@@ -576,8 +576,29 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     );
   }
 
-  // Only the owner / admin sees the submission form.
-  if (!checklist.can_submit) return null;
+  // Only the owner / admin sees the submission form. If the ONLY thing blocking
+  // submission is the stage gate, show an explanation instead of hiding.
+  if (!checklist.can_submit) {
+    if (checklist.stage_ok === false && checklist.stage_required) {
+      return (
+        <Card className="mt-6" stripe="accent">
+          <Card.Header>
+            <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
+            <Badge tone="warning" size="sm">stage gate</Badge>
+          </Card.Header>
+          <Card.Body>
+            <p className="text-sm text-amber-700">
+              This product requires this deal to be at stage
+              {' '}<span className="font-medium">"{checklist.stage_required}"</span>
+              {' '}before it can be submitted to credit analysis
+              {checklist.current_stage ? <> (currently "{checklist.current_stage}")</> : null}.
+            </p>
+          </Card.Body>
+        </Card>
+      );
+    }
+    return null;
+  }
 
   const missing = checklist.required.filter((d) => !docFiles[d]);
 

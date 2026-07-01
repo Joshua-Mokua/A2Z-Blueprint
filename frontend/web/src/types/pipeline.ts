@@ -555,6 +555,9 @@ export interface CreditChecklistResponse {
   already_submitted:   boolean;
   lms_application_id:   string | null;
   can_submit:          boolean;
+  current_stage?:      string;
+  stage_required?:     string;
+  stage_ok?:           boolean;
 }
 
 export interface SubmitToCreditResponse {

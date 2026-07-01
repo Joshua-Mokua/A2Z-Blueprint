@@ -2829,14 +2829,26 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
     is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
     terminal = str(deal.get("stage", "")) in ("Closed Won", "Closed Lost")
+    # Batch 4a: stage gate. If the product configured a doc-stage, submission is
+    # only allowed when the deal is AT that stage. Unset = no stage restriction.
+    _prod_docs, doc_stage = _product_document_config(deal)
+    current_stage = str(deal.get("stage", "") or "").strip()
+    stage_ok = True
+    stage_required = ""
+    if doc_stage:
+        stage_required = doc_stage
+        stage_ok = (current_stage == doc_stage)
     return {
         "required": required,
         "provided": provided,
         "missing": missing,
         "already_submitted": already,
         "lms_application_id": deal.get("lms_application_id"),
+        "current_stage": current_stage,
+        "stage_required": stage_required,
+        "stage_ok": stage_ok,
         "can_submit": (is_owner or is_admin_like) and not already
-                      and not terminal and perms.get("can_view", False),
+                      and not terminal and stage_ok and perms.get("can_view", False),
     }
 
 
@@ -2881,6 +2893,11 @@ def pipeline_submit_to_credit(
             raise HTTPException(status_code=400,
                 detail=f"Deal already submitted to credit "
                        f"(application {state['lms_application_id']}).")
+        if not state.get("stage_ok", True):
+            raise HTTPException(status_code=400,
+                detail=f"Cannot submit to credit — this product requires the deal "
+                       f"to be at stage '{state.get('stage_required')}' "
+                       f"(currently '{state.get('current_stage')}').")
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
     provided = list(payload.documents_provided or [])
