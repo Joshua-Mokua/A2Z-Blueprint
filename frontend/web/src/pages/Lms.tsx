@@ -76,17 +76,18 @@ export function Lms() {
   const [analystPool, setAnalystPool] = useState<AssignableAnalyst[]>([]);
   const [assignBusy, setAssignBusy] = useState<string | null>(null);
   const [assignMenuFor, setAssignMenuFor] = useState<string | null>(null);
+  const [assignPurpose, setAssignPurpose] = useState<'decisioning' | 'correctness'>('decisioning');
   const loadRequests = async () => {
     if (!isManagerRole) return;
     try { const r = await fetchAssignmentRequests(); setRequestsCases(r.cases); } catch { /* non-fatal */ }
     try { const a = await fetchMyAnalysts(); setAnalystPool(a.analysts); } catch { /* non-fatal */ }
   };
   useEffect(() => { void loadRequests(); /* eslint-disable-next-line */ }, [isManagerRole, applications]);
-  const doAssign = async (appId: string, code: string, name: string) => {
+  const doAssign = async (appId: string, code: string, name: string, purpose: 'decisioning' | 'correctness' = 'decisioning') => {
     setAssignBusy(appId + code);
     try {
-      await assignLmsAnalyst(appId, { analyst_code: code, analyst_name: name });
-      toast({ tone: 'success', message: `Assigned to ${name}.` });
+      await assignLmsAnalyst(appId, { analyst_code: code, analyst_name: name, purpose });
+      toast({ tone: 'success', message: purpose === 'correctness' ? `Assigned to ${name} for correctness check.` : `Assigned to ${name} for decisioning.` });
       await refetch();
       await loadRequests();
     } catch (e) {
@@ -473,17 +474,28 @@ export function Lms() {
                                   Assign ▾
                                 </button>
                                 {assignMenuFor === app.id && (
-                                  <div className="absolute right-0 z-10 mt-1 w-56 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
-                                    <div className="mb-1 text-xs font-medium text-gray-500">To an analyst</div>
+                                  <div className="absolute right-0 z-10 mt-1 w-64 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">Purpose</div>
+                                    <div className="mb-2 flex gap-1">
+                                      {(['decisioning', 'correctness'] as const).map((pp) => (
+                                        <button key={pp}
+                                          onClick={() => setAssignPurpose(pp)}
+                                          className={`flex-1 rounded px-2 py-1 text-xs ${
+                                            assignPurpose === pp ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-700'}`}>
+                                          {pp === 'decisioning' ? 'Decisioning' : 'Correctness check'}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="mb-1 text-xs font-medium text-gray-500">To</div>
                                     <select
                                       className="mb-2 w-full rounded border px-2 py-1 text-xs"
                                       defaultValue=""
                                       onChange={(e) => {
                                         const a = analystPool.find((x) => x.staff_code === e.target.value);
-                                        if (a) { void doAssign(app.id, a.staff_code, a.name); setAssignMenuFor(null); }
+                                        if (a) { void doAssign(app.id, a.staff_code, a.name, assignPurpose); setAssignMenuFor(null); }
                                       }}
                                     >
-                                      <option value="">— pick analyst —</option>
+                                      <option value="">— pick person —</option>
                                       {analystPool.map((a) => (
                                         <option key={a.staff_code} value={a.staff_code}>{a.name}</option>
                                       ))}

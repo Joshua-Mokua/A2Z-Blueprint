@@ -1954,3 +1954,12 @@ export async function setRequireMcc(enabled: boolean): Promise<{ status: string;
     '/lms/committee/require-mcc', { enabled });
 }
 
+// C2: correctness-staging readiness (ready for committee / return for rework)
+export async function setCommitteeReadiness(
+  appId: string, decision: 'ready' | 'rework', opinion?: string, reasons?: string[],
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { decision: string; opinion?: string; reasons?: string[] }>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee-readiness`,
+    { decision, opinion, reasons });
+}
+

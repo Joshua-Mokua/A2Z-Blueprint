@@ -21,9 +21,10 @@ import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
 import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
+import { useRole } from '@/hooks/useRole';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -62,6 +63,7 @@ export function LmsApplicationDetail() {
   const navigate = useNavigate();
   const { branding } = useBranding();
   const { toast } = useToast();
+  const { user } = useRole();
 
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
@@ -336,6 +338,33 @@ export function LmsApplicationDetail() {
             }}
             toast={toast}
           />
+        )}
+
+        {/* C2: assignment purpose banner + correctness action set */}
+        {application.assignment_purpose && (
+          <div className={`mt-4 rounded-md px-4 py-2 text-sm ${
+            application.assignment_purpose === 'correctness'
+              ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
+            {application.assignment_purpose === 'correctness'
+              ? 'Assigned for correctness check — confirm the case is well-packaged (CR complete, docs attached) and mark it ready for committee, or return it for rework.'
+              : 'Assigned for decisioning — analyse the case and record the credit decision.'}
+          </div>
+        )}
+        {application.committee_readiness && (
+          <div className={`mt-2 rounded-md px-4 py-2 text-xs ${
+            application.committee_readiness.state === 'ready_for_committee'
+              ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            {application.committee_readiness.state === 'ready_for_committee'
+              ? `Ready for committee — checked by ${application.committee_readiness.by_name}`
+              : `Returned for rework — by ${application.committee_readiness.by_name}`}
+            {application.committee_readiness.opinion
+              && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
+          </div>
+        )}
+        {application.assignment_purpose === 'correctness'
+          && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
+          && (
+          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
 
@@ -1561,3 +1590,41 @@ function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
   );
 }
 
+
+// C2: correctness-check action set — mark ready for committee or return for rework,
+// with an optional opinion for the Chief.
+function CorrectnessPanel({ appId, onDone, toast }: {
+  appId: string; onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [opinion, setOpinion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const act = async (decision: 'ready' | 'rework') => {
+    setBusy(true);
+    try {
+      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined);
+      toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Correctness check</h3></Card.Header>
+      <Card.Body>
+        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. You may add an opinion for the Chief.</p>
+        <textarea
+          value={opinion}
+          onChange={(e) => setOpinion(e.target.value)}
+          placeholder="Optional opinion / notes for the Chief…"
+          className="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          rows={3}
+        />
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
+          <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}

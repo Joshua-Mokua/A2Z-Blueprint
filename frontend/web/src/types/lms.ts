@@ -155,6 +155,15 @@ export interface AppSla extends AppSlaClock {
   stage?: AppSlaClock | null;
 }
 
+export interface CommitteeReadiness {
+  state: 'ready_for_committee' | 'returned_for_rework';
+  by_code: string;
+  by_name: string;
+  at: string;
+  opinion?: string;
+  reasons?: string[];
+}
+
 export interface LoanApplication {
   // Identity
   id:                     string;
@@ -183,6 +192,8 @@ export interface LoanApplication {
   rm_unit?:               string;
   analyst?:               LoanApplicationAnalyst | null;
   assignment_requests?:   AssignmentRequest[];
+  assignment_purpose?:    string;  // C2: 'decisioning' | 'correctness'
+  committee_readiness?:   CommitteeReadiness | null;
 
   // Decision
   decision?:              LoanApplicationDecisionRecord | null;
@@ -264,6 +275,7 @@ export interface LoanAppMutationResponse {
 export interface AssignAnalystRequest {
   analyst_code:           string;
   analyst_name:           string;
+  purpose?:               'decisioning' | 'correctness';  // C2
 }
 
 export interface LoanAppUpdateRequest {
