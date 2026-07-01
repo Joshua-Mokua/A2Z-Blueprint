@@ -9442,3 +9442,61 @@ def get_deal_committee_journey(deal_id: str, user: dict = Depends(get_current_us
             "cr_only": len(codes) == 0}
 # === END COMMITTEE JOURNEY RESOLVER ===
 
+
+# === DEAL-LEVEL CR ENDPOINTS (4b-3) ===
+@app.get("/api/pipeline/deals/{deal_id}/cr", tags=["pipeline"])
+def get_deal_cr(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's Credit Report: template + auto-populated + saved values.
+    The CR originates at the branch (deal owner) after documents are complete."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from utils.api_lms_cr import build_cr_view
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return build_cr_view(deal)
+
+
+@app.post("/api/pipeline/deals/{deal_id}/cr", tags=["pipeline"])
+def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
+                 user: dict = Depends(get_current_user)):
+    """Save the deal owner's CR field values. If completed=true, required
+    fields are enforced. Stored under deal['cr'] (mirrors app['cr'] shape)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from utils.api_lms_cr import build_cr_view, missing_required
+    from datetime import datetime as _dt
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    values = payload.get("values")
+    if not isinstance(values, dict):
+        raise HTTPException(status_code=400, detail="values must be an object")
+    completed = bool(payload.get("completed"))
+    if completed:
+        missing = missing_required(deal, values)
+        if missing:
+            raise HTTPException(status_code=400,
+                detail="Cannot mark CR complete — required fields missing: " + ", ".join(missing))
+    cr = {
+        "values": values,
+        "completed": completed,
+        "updated_by": str(user.get("username", "") or ""),
+        "updated_at": _dt.now().isoformat(timespec="seconds"),
+    }
+    pm.update_deal(deal_id, {"cr": cr}, str(user.get("username", "") or ""))
+    _audit("API_DEAL_CR_SAVE", user, f"deal={deal_id}|completed={completed}")
+    deal2 = _get_or_hydrate_deal(pm, deal_id)
+    return build_cr_view(deal2)
+# === END DEAL-LEVEL CR ENDPOINTS ===
+
