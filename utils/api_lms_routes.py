@@ -1674,3 +1674,64 @@ def lms_committee_pre_reads(
             "current_tier": cur_tier}
 # === END C3a ===
 
+
+# === C3b: MEMBER PRE-READ QUEUE ===
+def _member_committee_names(staff_code: str) -> set:
+    """Committee names (palette) whose members include this staff_code."""
+    try:
+        from utils.api import _read_committee_palette
+        pal = _read_committee_palette() or []
+    except Exception:
+        pal = []
+    names = set()
+    for c in pal:
+        for m in (c.get("members") or []):
+            if str(m.get("staff_code", "") or "") == str(staff_code):
+                names.add(str(c.get("name", "") or "").strip().lower())
+    return names
+
+
+@router.get("/committee/my-pre-read-queue")
+def lms_member_pre_read_queue(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Referred cases awaiting THIS member's non-binding pre-read. A member sees
+    cases at a committee they belong to (by name match to current tier), plus (as a
+    scope-safe fallback) referred cases visible to them. Each case flags whether the
+    member has already pre-read it at the current tier."""
+    lam = _lam()
+    caller_code = str(user.get('staff_code', '') or '')
+    my_committees = _member_committee_names(caller_code)
+    visible_codes = get_visible_staff_codes(user)
+    caller_role = str(user.get('role', '') or '')
+    out = []
+    for app in lam.apps:
+        if str(app.get("status", "") or "") != "referred_to_committee":
+            continue
+        committee = app.get("committee") or {}
+        tier_name = str(committee.get("current_tier_name", "") or "").strip().lower()
+        in_my_committee = bool(my_committees and tier_name in my_committees)
+        in_scope = user.get('is_admin') or is_app_in_scope(
+            app, visible_codes, caller_code, caller_role=caller_role)
+        # Show if it's my committee, OR (fallback) it's referred and in my scope.
+        if not (in_my_committee or in_scope):
+            continue
+        prereads = app.get("committee_prereads", []) or []
+        cur_tier = committee.get("current_tier")
+        mine = next((r for r in prereads
+                     if str(r.get("by_code")) == caller_code and r.get("tier") == cur_tier), None)
+        out.append({
+            "id": app.get("id"),
+            "client_name": app.get("client_name"),
+            "product": app.get("product"),
+            "amount": app.get("amount"),
+            "current_tier": cur_tier,
+            "current_tier_name": committee.get("current_tier_name"),
+            "in_my_committee": in_my_committee,
+            "my_pre_read": mine,
+            "sla": app.get("sla"),
+        })
+    return {"cases": out, "count": len(out),
+            "pending": sum(1 for c in out if not c["my_pre_read"])}
+# === END C3b ===
+

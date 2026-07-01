@@ -24,7 +24,7 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -322,6 +322,9 @@ export function LmsApplicationDetail() {
         {/* ─────────── Credit Report (CR) ─────────── */}
         <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
         <BranchCommitteeDecisionsCard appId={application.id} />
+        {application.status === 'referred_to_committee' && (
+          <CommitteePreReadPanel appId={application.id} toast={toast} />
+        )}
 
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -1624,6 +1627,66 @@ function CorrectnessPanel({ appId, onDone, toast }: {
           <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+// C3b: committee pre-read — members record a non-binding view; everyone sees leanings.
+function CommitteePreReadPanel({ appId, toast }: {
+  appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [data, setData] = useState<CommitteePreReadsResponse | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    try { setData(await fetchCommitteePreReads(appId)); } catch { /* non-fatal */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [appId]);
+  const record = async (view: 'leaning_approve' | 'leaning_decline' | 'questions') => {
+    setBusy(true);
+    try {
+      await recordCommitteePreRead(appId, view, note.trim() || undefined);
+      toast({ tone: 'success', message: 'Pre-read recorded.' });
+      setNote(''); await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not record' });
+    } finally { setBusy(false); }
+  };
+  const label: Record<string, string> = {
+    leaning_approve: 'Leaning approve', leaning_decline: 'Leaning decline', questions: 'Questions',
+  };
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Committee pre-read (non-binding)</h3></Card.Header>
+      <Card.Body>
+        <p className="mb-2 text-xs text-gray-500">Members review independently ahead of the convened meeting. This is a non-binding leaning, not the vote.</p>
+        {data && (
+          <div className="mb-3 flex gap-3 text-xs">
+            <span className="rounded bg-green-50 px-2 py-1 text-green-700">Approve: {data.tally.leaning_approve ?? 0}</span>
+            <span className="rounded bg-red-50 px-2 py-1 text-red-700">Decline: {data.tally.leaning_decline ?? 0}</span>
+            <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">Questions: {data.tally.questions ?? 0}</span>
+          </div>
+        )}
+        <textarea value={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Optional note with your leaning…"
+          className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" rows={2} />
+        <div className="flex gap-2">
+          <Button variant="primary" size="sm" onClick={() => void record('leaning_approve')} disabled={busy}>Leaning approve</Button>
+          <Button variant="ghost" size="sm" onClick={() => void record('leaning_decline')} disabled={busy}>Leaning decline</Button>
+          <Button variant="ghost" size="sm" onClick={() => void record('questions')} disabled={busy}>Questions</Button>
+        </div>
+        {data && data.pre_reads.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {data.pre_reads.map((r) => (
+              <div key={r.by_code} className="rounded bg-gray-50 px-2 py-1 text-xs">
+                <span className="font-medium">{r.by_name}</span>: {label[r.view] ?? r.view}
+                {r.note && <span className="text-gray-500"> — {r.note}</span>}
+              </div>
+            ))}
+          </div>
+        )}
       </Card.Body>
     </Card>
   );

@@ -1963,3 +1963,23 @@ export async function setCommitteeReadiness(
     { decision, opinion, reasons });
 }
 
+// C3b: committee pre-read (member non-binding view)
+export interface CommitteePreRead {
+  by_code: string; by_name: string; view: 'leaning_approve' | 'leaning_decline' | 'questions';
+  note?: string; at: string; tier?: number | null;
+}
+export interface CommitteePreReadsResponse {
+  pre_reads: CommitteePreRead[]; all: CommitteePreRead[];
+  tally: Record<string, number>; current_tier: number | null;
+}
+export async function recordCommitteePreRead(
+  appId: string, view: 'leaning_approve' | 'leaning_decline' | 'questions', note?: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { view: string; note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/pre-read`, { view, note });
+}
+export async function fetchCommitteePreReads(appId: string): Promise<CommitteePreReadsResponse> {
+  return getJson<CommitteePreReadsResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/pre-reads`);
+}
+
