@@ -9757,24 +9757,46 @@ def get_lms_committee_records(app_id: str, user: dict = Depends(get_current_user
 
 
 # === MY ANALYSTS DROPDOWN (assignment) ===
-_ANALYST_ROLE_HINTS = ("analyst",)  # substring match, case-insensitive
+def _is_analyst_role(role: str) -> bool:
+    """A credit-analyst role (excludes cyber/SOC/business analysts)."""
+    r = str(role or "").lower()
+    if "cyber" in r or "soc" in r or "business analyst" in r:
+        return False
+    return "credit analyst" in r or "credit analysis" in r
+
+
+_CREDIT_MANAGER_HINTS = ("chief credit", "credit officer", "head of credit",
+                         "credit analysis", "senior manager", "credit manager",
+                         "managing director", "admin")
+
+
+def _is_credit_manager(user: dict) -> bool:
+    if bool(user.get("is_admin")):
+        return True
+    r = str(user.get("role", "") or "").lower()
+    return any(h in r for h in _CREDIT_MANAGER_HINTS)
 
 
 @app.get("/api/lms/my-analysts", tags=["lms"])
 def get_my_analysts(user: dict = Depends(get_current_user)):
-    """The assigning manager's assignable credit analysts — their visible staff
-    filtered to analyst-type roles. Powers the assign-analyst dropdown."""
+    """Assignable credit analysts for the assign-analyst dropdown. Credit managers
+    see the FULL analyst pool (the scope walk's unit filter wrongly excludes
+    analysts whose Unit diverges from "Credit" — e.g. Unit="Head Office").
+    Non-managers fall back to their visible scope."""
     from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
-    visible = get_visible_staff_codes(user)
     roster = get_staff_roster()
+    manager = _is_credit_manager(user)
+    visible = set() if manager else get_visible_staff_codes(user)
     analysts = []
     try:
         for _, row in roster.iterrows():
             code = str(row.get("Staff Code", "") or "").strip()
             role = str(row.get("Role", "") or "")
-            if not code or code not in visible:
+            if not code:
                 continue
-            if any(h in role.lower() for h in _ANALYST_ROLE_HINTS):
+            if not manager and code not in visible:
+                continue
+            if _is_analyst_role(role):
                 analysts.append({
                     "staff_code": code,
                     "name": str(row.get("Staff Name", "") or ""),
