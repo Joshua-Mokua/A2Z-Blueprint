@@ -1911,3 +1911,21 @@ export async function fetchMyAnalysts(): Promise<{ analysts: AssignableAnalyst[]
   return getJson<{ analysts: AssignableAnalyst[]; count: number }>('/lms/my-analysts');
 }
 
+
+// B2: assignment requests (analyst pull + manager resolve)
+export interface AssignmentRequestCase {
+  id: string; client_name?: string; product?: string; amount?: number;
+  rm_name?: string; status?: string;
+  requests: { by_code: string; by_name: string; at: string; note?: string }[];
+}
+export async function requestLmsAssignment(
+  appId: string, note?: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/request-assignment`, { note });
+}
+export async function fetchAssignmentRequests(): Promise<{ cases: AssignmentRequestCase[]; count: number }> {
+  return getJson<{ cases: AssignmentRequestCase[]; count: number }>(
+    '/lms/applications/assignment-requests');
+}
+

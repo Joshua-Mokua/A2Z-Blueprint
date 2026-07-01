@@ -133,6 +133,13 @@ export interface LoanAppCommittee {
 // Matches LoanApplication Pydantic model with extra="allow". Known fields
 // are explicit here; future backend additions tolerated via index signature.
 
+export interface AssignmentRequest {
+  by_code: string;
+  by_name: string;
+  at:      string;
+  note?:   string;
+}
+
 export interface LoanApplication {
   // Identity
   id:                     string;
@@ -160,6 +167,7 @@ export interface LoanApplication {
   rm_name?:               string;
   rm_unit?:               string;
   analyst?:               LoanApplicationAnalyst | null;
+  assignment_requests?:   AssignmentRequest[];
 
   // Decision
   decision?:              LoanApplicationDecisionRecord | null;

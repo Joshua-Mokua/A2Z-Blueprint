@@ -345,6 +345,11 @@ def lms_application_assign(
         f"{app_id}|{payload.analyst_code}",
     )
 
+    # B2: clear any pending assignment requests now the case is assigned.
+    try:
+        lam.update(app_id, {"assignment_requests": []})
+    except Exception:
+        pass
     updated = lam.get(app_id)
     return {"application": updated, "status": "assigned"}
 
@@ -1331,3 +1336,78 @@ def lms_committee_submit_upward(
     audit_log("LMS_COMMITTEE_SUBMITTED_UPWARD",
               str(user.get("username", "") or ""), f"{app_id}|tier={res.get('tier')}")
     return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
+# === B2: ASSIGNMENT REQUESTS ===
+@router.post("/applications/{app_id}/request-assignment",
+             response_model=LoanAppMutationResponse)
+def lms_request_assignment(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """An analyst requests to be assigned an unassigned (pool) case. The caller
+    must be able to see the case (pool visibility) and the case must be
+    unassigned + submitted. Records the request on the app; the Chief resolves it."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if (app.get('analyst') or {}).get('code'):
+        raise HTTPException(status_code=400, detail="This case is already assigned.")
+    if str(app.get('status', '') or '').lower() != 'submitted':
+        raise HTTPException(status_code=400, detail="Only submitted (unassigned) cases can be requested.")
+    from datetime import datetime as _dt
+    reqs = list(app.get('assignment_requests', []) or [])
+    if any(str(r.get('by_code')) == caller_code for r in reqs):
+        raise HTTPException(status_code=400, detail="You have already requested this case.")
+    reqs.append({
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "note": str((payload or {}).get('note', '') or ''),
+    })
+    lam.update(app_id, {"assignment_requests": reqs})
+    audit_log("LMS_ASSIGNMENT_REQUESTED", str(user.get('username', '') or ''),
+              f"{app_id}|by={caller_code}")
+    return {"application": lam.get(app_id), "status": "requested"}
+
+
+@router.get("/applications/assignment-requests")
+def lms_assignment_requests(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The consolidated list of cases with pending assignment requests, for a
+    manager to resolve. Manager-tier only. Scoped to the caller's visibility."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403, detail="Manager authority required")
+    lam = _lam()
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    out = []
+    for app in lam.apps:
+        reqs = app.get('assignment_requests') or []
+        if not reqs:
+            continue
+        if (app.get('analyst') or {}).get('code'):
+            continue  # already assigned — requests are moot
+        if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+            continue
+        out.append({
+            "id": app.get("id"),
+            "client_name": app.get("client_name"),
+            "product": app.get("product"),
+            "amount": app.get("amount"),
+            "rm_name": app.get("rm_name"),
+            "status": app.get("status"),
+            "requests": reqs,
+        })
+    return {"cases": out, "count": len(out)}
+# === END B2: ASSIGNMENT REQUESTS ===
+
