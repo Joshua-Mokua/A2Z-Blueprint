@@ -9080,3 +9080,143 @@ def admin_document_catalog(user: dict = Depends(get_current_user)):
     return {"documents": sorted(set(catalog))}
 # === END DOCUMENT CATALOG ENDPOINT ===
 
+
+# === DOCUMENT UPLOAD ENDPOINTS (Batch 3) ===
+import base64 as _b64_docup
+import hashlib as _hash_docup
+import re as _re_docup
+from datetime import datetime as _dt_docup
+
+_DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
+_DOC_MAX_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+class _DocUploadBody(BaseModel):
+    doc_name: str
+    filename: str = ""
+    content_b64: str
+
+
+def _safe_filename(name: str) -> str:
+    base = _re_docup.sub(r"[^A-Za-z0-9._-]", "_", (name or "file").strip())
+    return base[:120] or "file"
+
+
+def _deal_for_docs(deal_id: str, user: dict):
+    """Resolve + scope-check a deal for document ops. Returns (pm, deal)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return pm, deal
+
+
+@app.post("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])
+def upload_deal_document(deal_id: str, body: _DocUploadBody,
+                         user: dict = Depends(get_current_user)):
+    """Attach a file for one required document of a deal."""
+    pm, deal = _deal_for_docs(deal_id, user)
+    doc_name = str(body.doc_name or "").strip()
+    if not doc_name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+    required = _get_required_documents_for_deal(deal)
+    if required and doc_name not in required:
+        raise HTTPException(status_code=400,
+            detail=f"'{doc_name}' is not a required document for this deal")
+    try:
+        raw = _b64_docup.b64decode(body.content_b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"content_b64 invalid: {exc}")
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    if len(raw) > _DOC_MAX_BYTES:
+        raise HTTPException(status_code=400,
+            detail=f"file too large ({len(raw)} bytes; max {_DOC_MAX_BYTES})")
+
+    sha = _hash_docup.sha256(raw).hexdigest()
+    fname = _safe_filename(body.filename or doc_name)
+    ddir = _DOC_UPLOAD_ROOT / _safe_filename(deal_id)
+    ddir.mkdir(parents=True, exist_ok=True)
+    stored = ddir / f"{_safe_filename(doc_name)}__{fname}"
+    stored.write_bytes(raw)
+
+    files = dict(deal.get("document_files", {}) or {})
+    files[doc_name] = {
+        "filename": fname,
+        "path": str(stored.relative_to(ROOT)),
+        "sha256": sha,
+        "size": len(raw),
+        "uploaded_by": str(user.get("username", "") or ""),
+        "uploaded_at": _dt_docup.now().isoformat(timespec="seconds"),
+    }
+    provided = list(deal.get("documents_provided", []) or [])
+    if doc_name not in provided:
+        provided.append(doc_name)
+    pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
+                   str(user.get("username", "") or ""))
+    # EDMS metadata registration (best-effort; governance, not blocking)
+    try:
+        from utils.document_management import compute_sha256  # noqa: F401
+    except Exception:
+        pass
+    _audit("API_DEAL_DOC_UPLOAD", user, f"deal={deal_id}|doc={doc_name}|sha={sha[:12]}")
+    return {"status": "attached", "doc_name": doc_name, "meta": files[doc_name]}
+
+
+@app.get("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])
+def list_deal_documents(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's attached document metadata + the required list."""
+    _pm, deal = _deal_for_docs(deal_id, user)
+    return {"files": deal.get("document_files", {}) or {},
+            "required": _get_required_documents_for_deal(deal),
+            "provided": list(deal.get("documents_provided", []) or [])}
+
+
+@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+def download_deal_document(deal_id: str, doc_name: str,
+                           user: dict = Depends(get_current_user)):
+    """Stream one attached document back."""
+    from fastapi.responses import StreamingResponse
+    import io as _io_docup
+    _pm, deal = _deal_for_docs(deal_id, user)
+    files = deal.get("document_files", {}) or {}
+    meta = files.get(doc_name)
+    if not meta:
+        raise HTTPException(status_code=404, detail=f"No file for '{doc_name}'")
+    fpath = ROOT / meta.get("path", "")
+    if not fpath.exists():
+        raise HTTPException(status_code=404, detail="stored file missing")
+    data = fpath.read_bytes()
+    _audit("API_DEAL_DOC_DOWNLOAD", user, f"deal={deal_id}|doc={doc_name}")
+    return StreamingResponse(_io_docup.BytesIO(data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{meta.get("filename","file")}"'})
+
+
+@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+def delete_deal_document(deal_id: str, doc_name: str,
+                         user: dict = Depends(get_current_user)):
+    """Remove an attached document (so it can be re-uploaded)."""
+    pm, deal = _deal_for_docs(deal_id, user)
+    files = dict(deal.get("document_files", {}) or {})
+    meta = files.pop(doc_name, None)
+    if meta:
+        try:
+            fp = ROOT / meta.get("path", "")
+            if fp.exists():
+                fp.unlink()
+        except Exception:
+            pass
+    provided = [d for d in (deal.get("documents_provided", []) or []) if d != doc_name]
+    pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
+                   str(user.get("username", "") or ""))
+    _audit("API_DEAL_DOC_DELETE", user, f"deal={deal_id}|doc={doc_name}")
+    return {"status": "removed", "doc_name": doc_name}
+# === END DOCUMENT UPLOAD ENDPOINTS ===
+
