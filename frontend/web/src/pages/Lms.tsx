@@ -75,6 +75,7 @@ export function Lms() {
   const [requestsCases, setRequestsCases] = useState<AssignmentRequestCase[]>([]);
   const [analystPool, setAnalystPool] = useState<AssignableAnalyst[]>([]);
   const [assignBusy, setAssignBusy] = useState<string | null>(null);
+  const [assignMenuFor, setAssignMenuFor] = useState<string | null>(null);
   const loadRequests = async () => {
     if (!isManagerRole) return;
     try { const r = await fetchAssignmentRequests(); setRequestsCases(r.cases); } catch { /* non-fatal */ }
@@ -386,6 +387,7 @@ export function Lms() {
                       <th className="px-4 py-3">Analyst</th>
                       <th className="px-4 py-3">SLA</th>
                       <th className="px-4 py-3">Applied</th>
+                      {isManagerRole && <th className="px-4 py-3">Assign</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -460,6 +462,48 @@ export function Lms() {
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {formatDate(app.application_date)}
                         </td>
+                        {isManagerRole && (
+                          <td className="px-4 py-3 text-xs relative" onClick={(e) => e.stopPropagation()}>
+                            {!app.analyst?.code && (app.status || '').toLowerCase() === 'submitted' ? (
+                              <>
+                                <button
+                                  onClick={() => setAssignMenuFor(assignMenuFor === app.id ? null : app.id)}
+                                  className="rounded border border-brand-primary px-2 py-0.5 text-xs text-brand-primary hover:bg-brand-primary/5"
+                                >
+                                  Assign ▾
+                                </button>
+                                {assignMenuFor === app.id && (
+                                  <div className="absolute right-0 z-10 mt-1 w-56 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">To an analyst</div>
+                                    <select
+                                      className="mb-2 w-full rounded border px-2 py-1 text-xs"
+                                      defaultValue=""
+                                      onChange={(e) => {
+                                        const a = analystPool.find((x) => x.staff_code === e.target.value);
+                                        if (a) { void doAssign(app.id, a.staff_code, a.name); setAssignMenuFor(null); }
+                                      }}
+                                    >
+                                      <option value="">— pick analyst —</option>
+                                      {analystPool.map((a) => (
+                                        <option key={a.staff_code} value={a.staff_code}>{a.name}</option>
+                                      ))}
+                                    </select>
+                                    <div className="border-t border-gray-100 pt-2">
+                                      <button
+                                        onClick={() => { setAssignMenuFor(null); navigate(`/lms/${encodeURIComponent(app.id)}`); }}
+                                        className="w-full rounded bg-gray-50 px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
+                                      >
+                                        Route to committee →
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
