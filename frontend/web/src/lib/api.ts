@@ -1877,3 +1877,15 @@ export async function recordDealCommitteeDecision(
     `/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`, body);
 }
 
+// reject -> owner fallback (4b-6)
+export async function appealCommitteeDecision(
+  dealId: string, code: string, reason: string,
+): Promise<{ status: string; message: string }> {
+  return postJson<{ status: string; message: string }, { code: string; reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee-appeal`, { code, reason });
+}
+export async function closeDealAsLost(dealId: string, reason: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, { reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/close-lost`, { reason });
+}
+

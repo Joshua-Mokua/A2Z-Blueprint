@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -1093,6 +1093,30 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   const [busy, setBusy] = useState<string | null>(null);
   const [voteDraft, setVoteDraft] = useState<Record<string, CommitteeVote[]>>({});
   const [outcomeDraft, setOutcomeDraft] = useState<Record<string, string>>({});
+  const [appealReason, setAppealReason] = useState<Record<string, string>>({});
+  const doAppeal = async (code: string) => {
+    const reason = (appealReason[code] ?? '').trim();
+    if (!reason) { toast({ tone: 'danger', message: 'Enter an appeal reason.' }); return; }
+    setBusy(code);
+    try {
+      const r = await appealCommitteeDecision(dealId, code, reason);
+      toast({ tone: 'success', message: r.message });
+      setAppealReason((p) => ({ ...p, [code]: '' }));
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Appeal failed' });
+    } finally { setBusy(null); }
+  };
+  const doCloseLost = async (code: string) => {
+    setBusy(code);
+    try {
+      await closeDealAsLost(dealId, `Committee ${code} rejected`);
+      toast({ tone: 'success', message: 'Deal closed as Lost.' });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Close failed' });
+    } finally { setBusy(null); }
+  };
 
   const load = async () => {
     try { setData(await getDealCommitteeRecords(dealId)); } catch { /* non-fatal */ }
@@ -1170,6 +1194,23 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                         <li key={i}>{v.name} ({v.role}): {v.vote}</li>
                       ))}
                     </ul>
+                  )}
+                  {gate.record.outcome === 'REJECTED' && canEdit && (
+                    <div className="mt-3 rounded bg-red-50 p-2">
+                      <p className="mb-2 font-medium text-red-700">Rejected — appeal or close as lost.</p>
+                      <textarea className="mb-2 w-full rounded border px-2 py-1 text-xs" rows={2}
+                        placeholder="Appeal reason / justification"
+                        value={appealReason[gate.code] ?? ''}
+                        onChange={(e) => setAppealReason((p) => ({ ...p, [gate.code]: e.target.value }))} />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => void doAppeal(gate.code)} disabled={busy === gate.code}>
+                          {busy === gate.code ? 'Working…' : 'Appeal (re-open)'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => void doCloseLost(gate.code)} disabled={busy === gate.code}>
+                          Close as Lost
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : canEdit ? (
