@@ -25,6 +25,7 @@ import {
   updatePipelineConfig,
   upsertMou,
   upsertProductFlow,
+  fetchDocumentCatalog,
   getCommitteeTiers,
   saveCommitteeTiers,
   getAdminBranches,
@@ -178,6 +179,16 @@ export default function AdminConfig() {
   const [productFlows, setProductFlows] = useState<Record<string, ProductFlow>>({});
   const [flowProduct, setFlowProduct] = useState<string>('');
   const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
+  const [docCatalog, setDocCatalog] = useState<string[]>([]);
+  useEffect(() => {
+    fetchDocumentCatalog().then(setDocCatalog).catch(() => setDocCatalog([]));
+  }, []);
+  function toggleFlowDoc(doc: string) {
+    setFlowDraft((f) => {
+      const cur = f.required_documents ?? [];
+      return { ...f, required_documents: cur.includes(doc) ? cur.filter((d) => d !== doc) : [...cur, doc] };
+    });
+  }
   const [flowBusy, setFlowBusy] = useState(false);
   // SLA config (the single source of truth for product_promise — the overall
   // per-product end-to-end SLA budget). Loaded so the flow editor can show the
@@ -295,8 +306,8 @@ export default function AdminConfig() {
     setFlowProduct(product);
     const existing = productFlows[product];
     setFlowDraft(existing
-      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })) }
-      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }] });
+      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })), required_documents: [...(existing.required_documents ?? [])], documents_required_at_stage: existing.documents_required_at_stage ?? '' }
+      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }], required_documents: [], documents_required_at_stage: '' });
     // Seed the overall SLA budget from the existing product_promise (if any).
     const promised = slaConfig?.product_promise?.[product];
     setFlowBudget(typeof promised === 'number' && promised > 0 ? String(promised) : '');
@@ -341,8 +352,8 @@ export default function AdminConfig() {
     }
     setFlowBusy(true);
     try {
-      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types });
-      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages } }));
+      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '' });
+      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '' } }));
 
       // Persist the overall SLA budget to product_promise (the SAME sla_config
       // the SLA page + violation engine use), so the two stay reconciled. A
@@ -829,7 +840,30 @@ export default function AdminConfig() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
-                      <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
+                      <div className="mb-3 rounded border p-3">
+                <p className="mb-1 text-sm font-medium">Required documents (this product)</p>
+                <p className="mb-2 text-xs text-gray-500">Tick documents this product requires. Choose the stage they must be attached at.</p>
+                <div className="mb-2 grid max-h-40 grid-cols-2 gap-x-4 gap-y-1 overflow-auto rounded border p-2">
+                  {docCatalog.map((doc) => (
+                    <label key={doc} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={(flowDraft.required_documents ?? []).includes(doc)} onChange={() => toggleFlowDoc(doc)} />
+                      {doc}
+                    </label>
+                  ))}
+                </div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Documents required at stage</label>
+                <select
+                  className="w-full rounded border px-2 py-1.5 text-sm"
+                  value={flowDraft.documents_required_at_stage ?? ''}
+                  onChange={(e) => setFlowDraft((f) => ({ ...f, documents_required_at_stage: e.target.value }))}
+                >
+                  <option value="">— none —</option>
+                  {flowDraft.stages.filter((s) => s.stage.trim()).map((s) => (
+                    <option key={s.stage} value={s.stage}>{s.stage}</option>
+                  ))}
+                </select>
+              </div>
+              <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
                         Save flow
                       </Button>
                       {productFlows[flowProduct] && (

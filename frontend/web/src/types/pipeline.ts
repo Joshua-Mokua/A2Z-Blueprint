@@ -201,6 +201,8 @@ export interface ProductFlowStage {
 export interface ProductFlow {
   client_types: string[];
   stages: ProductFlowStage[];
+  required_documents?: string[];
+  documents_required_at_stage?: string;
 }
 
 export interface PipelineConfig {

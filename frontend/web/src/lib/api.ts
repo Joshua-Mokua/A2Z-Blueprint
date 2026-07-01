@@ -389,6 +389,8 @@ export interface ProductFlowUpsertInput {
   product: string;
   stages?: ProductFlowStageInput[];
   client_types?: string[];
+  required_documents?: string[];
+  documents_required_at_stage?: string;
   delete?: boolean;
 }
 export interface ProductFlowUpsertResponse {
@@ -1759,5 +1761,11 @@ export async function saveHierarchy(
 ): Promise<{ status: string; hierarchy: Record<string, string[]> }> {
   return postJson<{ status: string; hierarchy: Record<string, string[]> }, typeof body>(
     '/admin/hierarchy', body);
+}
+
+// document catalog (master list for per-product required documents)
+export async function fetchDocumentCatalog(): Promise<string[]> {
+  const res = await getJson<{ documents: string[] }>('/admin/document-catalog');
+  return res.documents ?? [];
 }
 

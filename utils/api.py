@@ -2049,6 +2049,16 @@ def _validate_product_flow(entry: dict) -> tuple:
                 wp = float(s.get("win_probability"))
             except (TypeError, ValueError):
                 return False, f"stage '{nm}': win_probability must be a number"
+    # Batch 1: optional per-product document config.
+    rd = entry.get("required_documents")
+    if rd is not None:
+        if not isinstance(rd, list) or any(not isinstance(x, str) for x in rd):
+            return False, "required_documents must be a list of strings"
+    dstage = entry.get("documents_required_at_stage")
+    if dstage:
+        stage_names = {str(s.get("stage", "")).strip() for s in stages}
+        if str(dstage).strip() not in stage_names:
+            return False, f"documents_required_at_stage '{dstage}' is not one of this product's stages"
             if wp < 0 or wp > 100:
                 return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
@@ -2089,6 +2099,8 @@ def admin_upsert_product_flow(
     entry = {
         "client_types": payload.get("client_types", []) or [],
         "stages": payload.get("stages", []) or [],
+        "required_documents": payload.get("required_documents", []) or [],
+        "documents_required_at_stage": str(payload.get("documents_required_at_stage", "") or ""),
     }
     ok, reason = _validate_product_flow(entry)
     if not ok:
@@ -9011,4 +9023,32 @@ def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
     _audit("API_HIERARCHY_CHANGE", user, f"{action}|{role}|{payload.get('parents') or payload.get('new_name') or ''}")
     return {"status": "saved", "action": action, "role": role, "hierarchy": hierarchy}
 # === END REPORTING HIERARCHY ENDPOINTS ===
+
+
+# === DOCUMENT CATALOG ENDPOINT ===
+@app.get("/api/admin/document-catalog", tags=["admin"])
+def admin_document_catalog(user: dict = Depends(get_current_user)):
+    """Master list of documents an admin can require per product. Sourced from
+    lms_config document_checklist tiers, plus workflow artifacts (Credit Report,
+    Branch Committee Decision). De-duplicated, case-normalized, sorted."""
+    cfg = _load_json("lms_config.json") or {}
+    dc = cfg.get("document_checklist", {}) if isinstance(cfg, dict) else {}
+    docs = set()
+    for tier, items in dc.items():
+        if isinstance(items, list):
+            for d in items:
+                if isinstance(d, str) and d.strip():
+                    docs.add(d.strip())
+    # normalize known casing dupes
+    norm = {}
+    for d in docs:
+        key = d.lower()
+        norm[key] = norm.get(key, d)  # keep first-seen canonical
+    catalog = sorted(set(norm.values()))
+    # workflow artifacts that also travel as required items
+    for extra in ("Credit Report", "Branch Committee Decision"):
+        if extra not in catalog:
+            catalog.append(extra)
+    return {"documents": sorted(set(catalog))}
+# === END DOCUMENT CATALOG ENDPOINT ===
 
