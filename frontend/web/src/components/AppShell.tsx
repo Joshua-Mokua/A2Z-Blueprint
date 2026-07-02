@@ -1,17 +1,3 @@
-// Application shell — the persistent frame.
-//
-//   ┌──────────┬─────────────────────────────────────────────┐
-//   │          │  TopBar (fixed, never scrolls)               │
-//   │ Sidebar  ├─────────────────────────────────────────────┤
-//   │ (fixed,  │                                             ▲ │
-//   │  full    │  <Outlet /> — ONLY this area scrolls        │ │
-//   │  height) │                                             ▼ │
-//   └──────────┴─────────────────────────────────────────────┘
-//
-// h-screen + overflow-hidden on the outer container means the browser page
-// never scrolls; the sidebar and top bar stay put; only <main> scrolls.
-// Presentation only — no routes, logic, or page content changed.
-
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
@@ -21,12 +7,11 @@ export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { pathname } = useLocation();
 
-  // Close the mobile drawer on any navigation.
   useEffect(() => { setMobileNavOpen(false); }, [pathname]);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
-      {/* Desktop sidebar — full height, fixed */}
+    <div className="app-shell h-screen flex overflow-hidden">
+      {/* Desktop sidebar */}
       <div className="hidden md:block flex-shrink-0 h-full">
         <Sidebar />
       </div>
@@ -45,7 +30,7 @@ export function AppShell() {
         </>
       )}
 
-      {/* Right column: fixed top bar + the single scroll area */}
+      {/* Main column */}
       <div className="flex-1 min-w-0 flex flex-col h-full">
         <TopBar onMenuClick={() => setMobileNavOpen(true)} />
         <main className="flex-1 overflow-y-auto">

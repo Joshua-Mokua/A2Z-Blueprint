@@ -25,6 +25,9 @@ data/A2Z*.xlsx
 # Backup files
 *_backup.py
 
+# Claude Code session data (local only — never push)
+.claude/
+
 # OS files
 .DS_Store
 Thumbs.db
