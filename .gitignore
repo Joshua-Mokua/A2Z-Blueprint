@@ -167,3 +167,6 @@ run_*_probe.bat
 installed_packages.txt
 .api
 simulate_credit_chain (*).py
+
+# credit document uploads (customer files — never commit)
+data/uploads/credit_docs/

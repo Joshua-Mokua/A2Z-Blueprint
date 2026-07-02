@@ -25,6 +25,9 @@ import {
   updatePipelineConfig,
   upsertMou,
   upsertProductFlow,
+  fetchDocumentCatalog,
+  fetchCommitteePalette,
+  type CommitteeDef,
   getCommitteeTiers,
   saveCommitteeTiers,
   getAdminBranches,
@@ -36,7 +39,7 @@ import {
   type AdminBranch,
   type SlaConfig,
 } from '@/lib/api';
-import type { PipelineConfig, ProductFlow } from '@/types/pipeline';
+import type { PipelineConfig, ProductFlow, DealCategoryConfig } from '@/types/pipeline';
 
 type Mou = { id: string; title: string; partner_name?: string; active?: boolean };
 type ClientType = { key: string; label: string; field: 'mou' | 'sector' };
@@ -173,11 +176,44 @@ export default function AdminConfig() {
   const [mouSearch, setMouSearch] = useState('');
   const [mouBusy, setMouBusy] = useState(false);
   const [sectors, setSectors] = useState<string[]>([]);
+  const [dealCategories, setDealCategories] = useState<DealCategoryConfig[]>([]);
   const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
   // Product flows: the authored map + which product is being edited + a draft.
   const [productFlows, setProductFlows] = useState<Record<string, ProductFlow>>({});
   const [flowProduct, setFlowProduct] = useState<string>('');
   const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
+  const [docCatalog, setDocCatalog] = useState<string[]>([]);
+  const [committeePalette, setCommitteePalette] = useState<CommitteeDef[]>([]);
+  useEffect(() => {
+    fetchCommitteePalette().then((d) => setCommitteePalette(d.committees)).catch(() => setCommitteePalette([]));
+  }, []);
+  function addJourneyGate(code: string) {
+    setFlowDraft((f) => {
+      const cur = f.committee_journey ?? [];
+      return cur.includes(code) ? f : { ...f, committee_journey: [...cur, code] };
+    });
+  }
+  function removeJourneyGate(idx: number) {
+    setFlowDraft((f) => ({ ...f, committee_journey: (f.committee_journey ?? []).filter((_, i) => i !== idx) }));
+  }
+  function moveJourneyGate(idx: number, dir: -1 | 1) {
+    setFlowDraft((f) => {
+      const arr = [...(f.committee_journey ?? [])];
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return f;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return { ...f, committee_journey: arr };
+    });
+  }
+  useEffect(() => {
+    fetchDocumentCatalog().then(setDocCatalog).catch(() => setDocCatalog([]));
+  }, []);
+  function toggleFlowDoc(doc: string) {
+    setFlowDraft((f) => {
+      const cur = f.required_documents ?? [];
+      return { ...f, required_documents: cur.includes(doc) ? cur.filter((d) => d !== doc) : [...cur, doc] };
+    });
+  }
   const [flowBusy, setFlowBusy] = useState(false);
   // SLA config (the single source of truth for product_promise — the overall
   // per-product end-to-end SLA budget). Loaded so the flow editor can show the
@@ -197,6 +233,7 @@ export default function AdminConfig() {
     setProducts({ ...(c.product_catalogue ?? {}) });
     setMous((c.individual_mous ?? []).map((m) => ({ active: true, ...m })));
     setSectors([...(c.business_sectors ?? [])]);
+    setDealCategories([...(c.deal_categories ?? [])]);
     setClientTypes((c.client_types ?? []).map((t) => ({ ...t })));
     setProductFlows({ ...(c.product_flows ?? {}) });
   };
@@ -225,6 +262,7 @@ export default function AdminConfig() {
       if (res.config.segment_labels) setLabels({ ...res.config.segment_labels });
       if (res.config.customer_segments) setCustSeg({ ...res.config.customer_segments });
       if (res.config.product_catalogue) setProducts({ ...res.config.product_catalogue });
+      if (res.config.deal_categories) setDealCategories([...res.config.deal_categories]);
       if (res.config.individual_mous) setMous(res.config.individual_mous.map((m) => ({ active: true, ...m })));
       if (res.config.business_sectors) setSectors([...res.config.business_sectors]);
       if (res.config.client_types) setClientTypes(res.config.client_types.map((t) => ({ ...t })));
@@ -295,8 +333,8 @@ export default function AdminConfig() {
     setFlowProduct(product);
     const existing = productFlows[product];
     setFlowDraft(existing
-      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })) }
-      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }] });
+      ? { client_types: [...existing.client_types], stages: existing.stages.map((s) => ({ ...s })), required_documents: [...(existing.required_documents ?? [])], documents_required_at_stage: existing.documents_required_at_stage ?? '', committee_journey: [...(existing.committee_journey ?? [])] }
+      : { client_types: [], stages: [{ stage: '', target_days: 3, win_probability: null }], required_documents: [], documents_required_at_stage: '', committee_journey: [] });
     // Seed the overall SLA budget from the existing product_promise (if any).
     const promised = slaConfig?.product_promise?.[product];
     setFlowBudget(typeof promised === 'number' && promised > 0 ? String(promised) : '');
@@ -341,8 +379,8 @@ export default function AdminConfig() {
     }
     setFlowBusy(true);
     try {
-      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types });
-      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages } }));
+      await upsertProductFlow({ product: flowProduct, stages, client_types: flowDraft.client_types, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '', committee_journey: flowDraft.committee_journey ?? [] });
+      setProductFlows((p) => ({ ...p, [flowProduct]: { client_types: flowDraft.client_types, stages, required_documents: flowDraft.required_documents ?? [], documents_required_at_stage: flowDraft.documents_required_at_stage ?? '', committee_journey: flowDraft.committee_journey ?? [] } }));
 
       // Persist the overall SLA budget to product_promise (the SAME sla_config
       // the SLA page + violation engine use), so the two stay reconciled. A
@@ -515,6 +553,16 @@ export default function AdminConfig() {
               saving={savingKey === 'sectors'}
             >
               <StringListEditor items={sectors} onChange={setSectors} placeholder="Add a sector…" />
+            </PanelShell>
+
+            {/* Pipeline categories (A2b) — balance-sheet class the bank tracks */}
+            <PanelShell
+              title="Pipeline categories"
+              hint="Balance-sheet classes shown on the create-deal form (Loan/Asset, Deposit/Liability, Insurance). Add a new pipeline class here. Dormant categories are kept but hidden."
+              onSave={() => save('deal_categories', { deal_categories: dealCategories }, 'Pipeline categories')}
+              saving={savingKey === 'deal_categories'}
+            >
+              <CategoryEditor categories={dealCategories} onChange={setDealCategories} />
             </PanelShell>
 
             {/* Segment display names */}
@@ -828,15 +876,72 @@ export default function AdminConfig() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
-                      <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
-                        Save flow
-                      </Button>
-                      {productFlows[flowProduct] && (
-                        <Button variant="secondary" size="sm" onClick={resetFlowToClass} disabled={flowBusy}>
-                          Reset to class flow
+                    <div className="space-y-3 pt-1">
+                      <div className="rounded border p-3">
+                <p className="mb-1 text-sm font-medium">Required documents (this product)</p>
+                <p className="mb-2 text-xs text-gray-500">Tick documents this product requires. Choose the stage they must be attached at.</p>
+                <div className="mb-2 grid max-h-40 grid-cols-2 gap-x-4 gap-y-1 overflow-auto rounded border p-2">
+                  {docCatalog.map((doc) => (
+                    <label key={doc} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={(flowDraft.required_documents ?? []).includes(doc)} onChange={() => toggleFlowDoc(doc)} />
+                      {doc}
+                    </label>
+                  ))}
+                </div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Documents required at stage</label>
+                <select
+                  className="w-full rounded border px-2 py-1.5 text-sm"
+                  value={flowDraft.documents_required_at_stage ?? ''}
+                  onChange={(e) => setFlowDraft((f) => ({ ...f, documents_required_at_stage: e.target.value }))}
+                >
+                  <option value="">— none —</option>
+                  {flowDraft.stages.filter((s) => s.stage.trim()).map((s) => (
+                    <option key={s.stage} value={s.stage}>{s.stage}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="rounded border p-3">
+                <p className="mb-1 text-sm font-medium">Credit committee journey (this product)</p>
+                <p className="mb-2 text-xs text-gray-500">Ordered committee gates this product opens before Credit Analysis. Empty = CR only. Amount-triggered committees are added automatically.</p>
+                {(flowDraft.committee_journey ?? []).length === 0 && (
+                  <p className="mb-2 text-xs text-gray-400">No committees — CR-only path.</p>
+                )}
+                <ol className="mb-2 space-y-1">
+                  {(flowDraft.committee_journey ?? []).map((code, i) => {
+                    const def = committeePalette.find((c) => c.code === code);
+                    return (
+                      <li key={code} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                        <span>{i + 1}. {def ? `${def.code} — ${def.name}` : code}</span>
+                        <span className="flex gap-1">
+                          <button type="button" className="text-xs text-gray-500 hover:text-gray-800" onClick={() => moveJourneyGate(i, -1)}>up</button>
+                          <button type="button" className="text-xs text-gray-500 hover:text-gray-800" onClick={() => moveJourneyGate(i, 1)}>down</button>
+                          <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => removeJourneyGate(i)}>remove</button>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+                <div className="flex items-center gap-2">
+                  <select id="journeyAdd" className="rounded border px-2 py-1.5 text-sm"
+                    onChange={(e) => { if (e.target.value) { addJourneyGate(e.target.value); e.target.value = ''; } }}
+                    defaultValue="">
+                    <option value="">+ Add committee gate…</option>
+                    {committeePalette
+                      .filter((c) => !(flowDraft.committee_journey ?? []).includes(c.code))
+                      .map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
+                          Save flow
                         </Button>
-                      )}
+                        {productFlows[flowProduct] && (
+                          <Button variant="secondary" size="sm" onClick={resetFlowToClass} disabled={flowBusy}>
+                            Reset to class flow
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
@@ -1041,5 +1146,86 @@ function BranchesPanel() {
         )}
       </Card.Body>
     </Card>
+  );
+}
+
+
+// ── A2b: Pipeline category editor ──────────────────────────────────────
+const PRODUCT_CLASSES = ['asset', 'liability', 'insurance', 'other'] as const;
+
+function CategoryEditor({
+  categories, onChange,
+}: {
+  categories: DealCategoryConfig[];
+  onChange: (next: DealCategoryConfig[]) => void;
+}) {
+  const [newName, setNewName] = useState('');
+
+  const update = (i: number, patch: Partial<DealCategoryConfig>) => {
+    onChange(categories.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  };
+  const remove = (i: number) => onChange(categories.filter((_, j) => j !== i));
+  const add = () => {
+    const name = newName.trim();
+    if (!name || categories.some((c) => c.category === name)) return;
+    onChange([...categories, {
+      category: name, product_class: ['asset'], surface: 'pipeline',
+      stages: ['Lead', 'Prospecting', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'],
+    }]);
+    setNewName('');
+  };
+  const toggleClass = (i: number, cls: string) => {
+    const cur = categories[i].product_class ?? [];
+    update(i, { product_class: cur.includes(cls) ? cur.filter((x) => x !== cls) : [...cur, cls] });
+  };
+
+  return (
+    <div className="space-y-3">
+      {categories.map((c, i) => {
+        const dormant = (c.surface ?? 'pipeline') === 'dormant';
+        return (
+          <div key={c.category} className={`rounded border p-3 ${dormant ? 'bg-gray-50 opacity-70' : ''}`}>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold">{c.category}</span>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1 text-xs text-gray-600">
+                  <input type="checkbox" checked={!dormant}
+                    onChange={(e) => update(i, { surface: e.target.checked ? 'pipeline' : 'dormant' })} />
+                  Shown on create-deal
+                </label>
+                <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => remove(i)}>remove</button>
+              </div>
+            </div>
+            <div className="mb-2">
+              <span className="mr-2 text-xs text-gray-500">Product classes:</span>
+              {PRODUCT_CLASSES.map((cls) => (
+                <label key={cls} className="mr-3 inline-flex items-center gap-1 text-xs">
+                  <input type="checkbox" checked={(c.product_class ?? []).includes(cls)}
+                    onChange={() => toggleClass(i, cls)} />
+                  {cls}
+                </label>
+              ))}
+            </div>
+            <div>
+              <span className="mb-1 block text-xs text-gray-500">Stages (initial flow; a product's own flow overrides):</span>
+              <StringListEditor
+                items={c.stages ?? []}
+                onChange={(items) => update(i, { stages: items })}
+                placeholder="Add a stage…"
+              />
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-2 pt-2">
+        <input
+          className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm"
+          placeholder="New pipeline category name (e.g. Trade Finance)…"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+        <Button size="sm" onClick={add} disabled={!newName.trim()}>Add category</Button>
+      </div>
+    </div>
   );
 }

@@ -62,7 +62,7 @@ def resolve_case_permissions(
         from utils.api_pipeline_scope import get_visible_staff_codes
         visible_codes = get_visible_staff_codes(user)
 
-    in_scope = is_case_in_scope(case, visible_codes)
+    in_scope = is_case_in_scope(case, visible_codes, user)
 
     disbursed = bool(case.get('disbursed', False))
     all_conditions_met = bool(case.get('all_conditions_met', False))

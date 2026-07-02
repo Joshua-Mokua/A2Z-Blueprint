@@ -87,6 +87,9 @@ import { Initiatives } from './pages/Initiatives';
 import { FxRates } from './pages/FxRates';
 import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
+import HierarchyAdmin from './pages/HierarchyAdmin';
+import CommitteeAdmin from './pages/CommitteeAdmin';
+import { CommitteeConvening } from './pages/CommitteeConvening';
 import StaffAdmin from './pages/StaffAdmin';
 import Referrals from './pages/Referrals';
 import Sla from './pages/Sla';
@@ -148,6 +151,7 @@ function App() {
                     {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
                     <Route path="/lms"         element={<Lms />} />
                     <Route path="/lms/:appId"  element={<LmsApplicationDetail />} />
+                    <Route path="/committee/convening" element={<CommitteeConvening />} />
 
                     {/* Credit Admin subroutes — β6. */}
                     <Route path="/credit-admin"          element={<CreditAdmin />} />
@@ -167,6 +171,8 @@ function App() {
                     {/* Admin → Configuration — P4 Batch 1b. CEO/MD/Director; server enforces. */}
                     <Route path="/admin/config" element={<AdminConfig />} />
                     <Route path="/admin/roles" element={<RolesAdmin />} />
+                    <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
+                    <Route path="/admin/committees" element={<CommitteeAdmin />} />
                     <Route path="/admin/staff" element={<StaffAdmin />} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/sla" element={<Sla />} />

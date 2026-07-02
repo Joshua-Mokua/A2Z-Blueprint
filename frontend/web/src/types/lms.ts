@@ -133,6 +133,37 @@ export interface LoanAppCommittee {
 // Matches LoanApplication Pydantic model with extra="allow". Known fields
 // are explicit here; future backend additions tolerated via index signature.
 
+export interface AssignmentRequest {
+  by_code: string;
+  by_name: string;
+  at:      string;
+  note?:   string;
+}
+
+export interface AppSlaClock {
+  state: 'on_track' | 'due_soon' | 'breached';
+  step_key?: string;
+  elapsed_business_days: number;
+  target_days: number;
+  remaining_business_days: number;
+  overdue_business_days: number;
+  breached: boolean;
+}
+export interface AppSla extends AppSlaClock {
+  // C-SLA2: two-level — overall (customer promise) + stage ("My SLA").
+  overall?: AppSlaClock;
+  stage?: AppSlaClock | null;
+}
+
+export interface CommitteeReadiness {
+  state: 'ready_for_committee' | 'returned_for_rework';
+  by_code: string;
+  by_name: string;
+  at: string;
+  opinion?: string;
+  reasons?: string[];
+}
+
 export interface LoanApplication {
   // Identity
   id:                     string;
@@ -160,6 +191,9 @@ export interface LoanApplication {
   rm_name?:               string;
   rm_unit?:               string;
   analyst?:               LoanApplicationAnalyst | null;
+  assignment_requests?:   AssignmentRequest[];
+  assignment_purpose?:    string;  // C2: 'decisioning' | 'correctness'
+  committee_readiness?:   CommitteeReadiness | null;
 
   // Decision
   decision?:              LoanApplicationDecisionRecord | null;
@@ -180,6 +214,7 @@ export interface LoanApplication {
   // SLA
   tat_days?:              number;
   sla_target_days?:       number;
+  sla?:                   AppSla | null;
 
   // Categorization
   proposition_tag?:       string;
@@ -240,6 +275,7 @@ export interface LoanAppMutationResponse {
 export interface AssignAnalystRequest {
   analyst_code:           string;
   analyst_name:           string;
+  purpose?:               'decisioning' | 'correctness';  // C2
 }
 
 export interface LoanAppUpdateRequest {

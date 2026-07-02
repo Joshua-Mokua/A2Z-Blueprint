@@ -6,8 +6,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
-import { fetchTroopsFlowByStage, type TroopsFlowByStageResponse } from '@/lib/api';
+import { fetchTroopsFlowByStage, fetchTroopsQueue, troopsBook, troopsValueDate, troopsDisburse, type TroopsFlowByStageResponse, type TroopsQueueCase } from '@/lib/api';
 import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { useToast } from '@/components/Toast';
 import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { Badge } from '@/components/Badge';
@@ -77,8 +79,8 @@ export function Troops() {
     return (
       <>
         <PageHeader
-          breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Troops Disbursement' }]}
-          title="Troops Disbursement"
+          breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
+          title="Trops Disbursement"
           subtitle="Treasury Back Office disbursement desk."
         />
         <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
@@ -108,8 +110,8 @@ export function Troops() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Troops Disbursement' }]}
-        title="Troops Disbursement"
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
+        title="Trops Disbursement"
         subtitle="Treasury Back Office disbursement flow by stage — cleared facilities moving through booking, value-dating, and disbursement."
       />
       <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto space-y-6">
@@ -175,7 +177,82 @@ export function Troops() {
           </Card.Body>
         </Card>
 
+        <TroopsActionQueue />
+
       </div>
     </>
+  );
+}
+
+
+// CA1: the actionable disbursement queue — book -> value-date -> disburse.
+function TroopsActionQueue() {
+  const { toast } = useToast();
+  const [cases, setCases] = useState<TroopsQueueCase[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [vd, setVd] = useState<Record<string, string>>({});
+  const load = async () => {
+    try { const r = await fetchTroopsQueue(); setCases(r.cases); }
+    catch { /* forbidden or empty — the flow view above still shows */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, []);
+  const act = async (id: string, fn: () => Promise<unknown>, ok: string) => {
+    setBusy(id);
+    try { await fn(); toast({ tone: 'success', message: ok }); await load(); }
+    catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' }); }
+    finally { setBusy(null); }
+  };
+  if (cases.length === 0) return null;
+  return (
+    <Card>
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Disbursement queue — actions</h2>
+        <span className="text-xs text-gray-400">Book → value-date → disburse</span>
+      </Card.Header>
+      <Card.Body>
+        <div className="space-y-2">
+          {cases.map((c) => {
+            const st = String(c.troops_status || 'queued').toLowerCase();
+            return (
+              <div key={c.case_id} className="flex items-center justify-between rounded border p-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">{c.client_name || c.case_id}</div>
+                  <div className="text-xs text-gray-500">
+                    {c.case_id} · KES {(c.amount ?? 0).toLocaleString()}
+                    {c.cbs_account_no && ` · a/c ${c.cbs_account_no}`}
+                    {c.value_date && ` · value ${c.value_date}`}
+                    {' · '}<span className="font-medium">{st}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {st === 'queued' && (
+                    <Button size="sm" disabled={busy === c.case_id}
+                      onClick={() => void act(c.case_id, () => troopsBook(c.case_id), 'Facility booked to core banking.')}>
+                      {busy === c.case_id ? '…' : 'Book'}
+                    </Button>
+                  )}
+                  {st === 'booked' && (
+                    <>
+                      <input type="date" className="rounded border px-2 py-1 text-xs"
+                        value={vd[c.case_id] ?? ''} onChange={(e) => setVd({ ...vd, [c.case_id]: e.target.value })} />
+                      <Button size="sm" disabled={busy === c.case_id || !vd[c.case_id]}
+                        onClick={() => void act(c.case_id, () => troopsValueDate(c.case_id, vd[c.case_id]), 'Value date set.')}>
+                        Value-date
+                      </Button>
+                    </>
+                  )}
+                  {st === 'value_dated' && (
+                    <Button size="sm" disabled={busy === c.case_id}
+                      onClick={() => void act(c.case_id, () => troopsDisburse(c.case_id), 'Disbursed — posted to GL.')}>
+                      {busy === c.case_id ? '…' : 'Disburse'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card.Body>
+    </Card>
   );
 }

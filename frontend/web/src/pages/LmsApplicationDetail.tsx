@@ -21,9 +21,10 @@ import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
 import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
+import { useRole } from '@/hooks/useRole';
 import {
   listLmsAttachments, addLmsAttachment, recordLmsBcc,
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
@@ -62,6 +63,7 @@ export function LmsApplicationDetail() {
   const navigate = useNavigate();
   const { branding } = useBranding();
   const { toast } = useToast();
+  const { user } = useRole();
 
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
@@ -136,6 +138,28 @@ export function LmsApplicationDetail() {
               <Badge tone={statusTone(application.status)} size="md">
                 {application.status}
               </Badge>
+              {application.sla && (
+                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                  application.sla.state === 'breached' ? 'bg-red-500/90 text-white'
+                  : application.sla.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
+                  : 'bg-green-500/90 text-white'}`}>
+                  {application.sla.state === 'breached'
+                    ? `SLA breached — ${application.sla.overdue_business_days}d over promise`
+                    : application.sla.state === 'due_soon'
+                    ? `SLA due soon — ${application.sla.remaining_business_days}d left`
+                    : `SLA on track — ${application.sla.remaining_business_days}d left`}
+                </span>
+              )}
+              {application.sla?.stage && (
+                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                  application.sla.stage.state === 'breached' ? 'bg-red-500/90 text-white'
+                  : application.sla.stage.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
+                  : 'bg-green-500/90 text-white'}`}>
+                  {application.sla.stage.state === 'breached'
+                    ? `My stage — ${application.sla.stage.overdue_business_days}d over`
+                    : `My stage — ${application.sla.stage.remaining_business_days}d left of ${application.sla.stage.target_days}`}
+                </span>
+              )}
               {application.swim_lane && (
                 <span className="text-xs text-white/70">{application.swim_lane}</span>
               )}
@@ -297,6 +321,10 @@ export function LmsApplicationDetail() {
 
         {/* ─────────── Credit Report (CR) ─────────── */}
         <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+        <BranchCommitteeDecisionsCard appId={application.id} />
+        {application.status === 'referred_to_committee' && (
+          <CommitteePreReadPanel appId={application.id} toast={toast} />
+        )}
 
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -313,6 +341,33 @@ export function LmsApplicationDetail() {
             }}
             toast={toast}
           />
+        )}
+
+        {/* C2: assignment purpose banner + correctness action set */}
+        {application.assignment_purpose && (
+          <div className={`mt-4 rounded-md px-4 py-2 text-sm ${
+            application.assignment_purpose === 'correctness'
+              ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
+            {application.assignment_purpose === 'correctness'
+              ? 'Assigned for correctness check — confirm the case is well-packaged (CR complete, docs attached) and mark it ready for committee, or return it for rework.'
+              : 'Assigned for decisioning — analyse the case and record the credit decision.'}
+          </div>
+        )}
+        {application.committee_readiness && (
+          <div className={`mt-2 rounded-md px-4 py-2 text-xs ${
+            application.committee_readiness.state === 'ready_for_committee'
+              ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            {application.committee_readiness.state === 'ready_for_committee'
+              ? `Ready for committee — checked by ${application.committee_readiness.by_name}`
+              : `Returned for rework — by ${application.committee_readiness.by_name}`}
+            {application.committee_readiness.opinion
+              && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
+          </div>
+        )}
+        {application.assignment_purpose === 'correctness'
+          && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
+          && (
+          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
 
@@ -467,6 +522,10 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
   const [analystCode, setAnalystCode] = useState('');
   const [analystName, setAnalystName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [analysts, setAnalysts] = useState<AssignableAnalyst[]>([]);
+  useEffect(() => {
+    fetchMyAnalysts().then((r) => setAnalysts(r.analysts)).catch(() => setAnalysts([]));
+  }, []);
 
   if (!open) {
     return (
@@ -511,22 +570,46 @@ function ActionPanelAssign({ appId, open, setOpen, mutations, onSuccess, toast }
         <h3 className="text-sm font-semibold text-gray-900">Assign credit analyst</h3>
       </Card.Header>
       <Card.Body>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Input
-            label="Analyst staff code *"
-            placeholder="e.g. 300080"
-            value={analystCode}
-            onChange={(e) => setAnalystCode(e.target.value)}
-            disabled={mutations.loading}
-          />
-          <Input
-            label="Analyst name *"
-            placeholder="e.g. Zainab Okello"
-            value={analystName}
-            onChange={(e) => setAnalystName(e.target.value)}
-            disabled={mutations.loading}
-          />
-        </div>
+        {analysts.length > 0 ? (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Credit analyst *</label>
+            <select
+              className="w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              value={analystCode}
+              disabled={mutations.loading}
+              onChange={(e) => {
+                const a = analysts.find((x) => x.staff_code === e.target.value);
+                setAnalystCode(a?.staff_code ?? '');
+                setAnalystName(a?.name ?? '');
+              }}
+            >
+              <option value="">— select an analyst —</option>
+              {analysts.map((a) => (
+                <option key={a.staff_code} value={a.staff_code}>
+                  {a.name} ({a.staff_code}){a.unit ? ` — ${a.unit}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">{analysts.length} analyst(s) in your team.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input
+              label="Analyst staff code *"
+              placeholder="e.g. 300080"
+              value={analystCode}
+              onChange={(e) => setAnalystCode(e.target.value)}
+              disabled={mutations.loading}
+            />
+            <Input
+              label="Analyst name *"
+              placeholder="e.g. Zainab Okello"
+              value={analystName}
+              onChange={(e) => setAnalystName(e.target.value)}
+              disabled={mutations.loading}
+            />
+          </div>
+        )}
         {error && (
           <div className="mt-3 px-3 py-2 rounded-md bg-red-50 border border-red-200 text-sm text-red-800">
             {error}
@@ -1024,12 +1107,19 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
   const [tiers, setTiers] = useState<CommitteeTier[]>([]);
   const [entryTier, setEntryTier] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<{ tier: number | null; name: string | null; amount: number; finalName?: string | null; mustClimb?: boolean } | null>(null);
 
   useEffect(() => {
     let live = true;
     getCommitteeTiers().then((r) => { if (live) setTiers(r.tiers || []); }).catch(() => {});
+    fetchCommitteeRouting(appId).then((r) => {
+      if (!live) return;
+      setSuggested({ tier: r.entry_tier ?? r.suggested_tier, name: r.entry_name ?? r.suggested_name, amount: r.amount, finalName: r.final_name, mustClimb: r.must_climb });
+      const preselect = r.entry_tier ?? r.suggested_tier;
+      if (preselect != null) setEntryTier(preselect);
+    }).catch(() => {});
     return () => { live = false; };
-  }, []);
+  }, [appId]);
 
   const refer = async () => {
     setError(null);
@@ -1046,6 +1136,15 @@ function WfReferCommittee({ appId, mutations, toast, onDone }: {
           This facility is committee-tier under the bank's policy. Most cases enter at the Branch
           Credit Committee; CIB / head-office cases may enter a higher tier directly.
         </p>
+        {suggested?.name && (
+          <div className="mb-3 rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            {suggested.mustClimb ? (
+              <>By limit, KES {suggested.amount.toLocaleString()} enters at <span className="font-semibold">{suggested.name}</span> and climbs to <span className="font-semibold">{suggested.finalName}</span> — each committee's verdict is captured before the next.</>
+            ) : (
+              <>By limit, KES {suggested.amount.toLocaleString()} is decided by <span className="font-semibold">{suggested.name}</span> (pre-selected). You can override below.</>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
           <div>
             <label className="text-sm font-medium text-gray-700">Entry tier</label>
@@ -1448,6 +1547,147 @@ function CreditReportCard({ appId, canEdit, toast }: {
           )}
         </Card.Body>
       )}
+    </Card>
+  );
+}
+
+// ── Branch committee decisions (4b-7b): read-only, carried from the deal ──
+function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
+  const [data, setData] = useState<LmsCommitteeRecordsResponse | null>(null);
+  useEffect(() => {
+    getLmsCommitteeRecords(appId).then(setData).catch(() => setData(null));
+  }, [appId]);
+  if (!data) return null;
+  const codes = Object.keys(data.committee_records || {});
+  if (codes.length === 0) return null;
+  const tone = (o: string) => (o === 'APPROVED' ? 'success' : o === 'REJECTED' ? 'danger' : 'warning');
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Branch Committee Decisions</h2>
+        <Badge tone="info" size="sm">from branch</Badge>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-3 text-xs text-gray-500">Recorded at the branch before submission (read-only).</p>
+        <div className="space-y-3">
+          {codes.map((code) => {
+            const r = data.committee_records[code];
+            return (
+              <div key={code} className="rounded border p-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{code}</span>
+                  <Badge tone={tone(r.outcome)} size="sm">{r.outcome}</Badge>
+                </div>
+                <p className="text-xs text-gray-500">Recorded by {r.recorded_by} on {r.recorded_at}.</p>
+                {r.mode === 'voting' && r.votes.length > 0 && (
+                  <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                    {r.votes.map((v, i) => <li key={i}>{v.name} ({v.role}): {v.vote}</li>)}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+// C2: correctness-check action set — mark ready for committee or return for rework,
+// with an optional opinion for the Chief.
+function CorrectnessPanel({ appId, onDone, toast }: {
+  appId: string; onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [opinion, setOpinion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const act = async (decision: 'ready' | 'rework') => {
+    setBusy(true);
+    try {
+      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined);
+      toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Correctness check</h3></Card.Header>
+      <Card.Body>
+        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. You may add an opinion for the Chief.</p>
+        <textarea
+          value={opinion}
+          onChange={(e) => setOpinion(e.target.value)}
+          placeholder="Optional opinion / notes for the Chief…"
+          className="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          rows={3}
+        />
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
+          <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+// C3b: committee pre-read — members record a non-binding view; everyone sees leanings.
+function CommitteePreReadPanel({ appId, toast }: {
+  appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [data, setData] = useState<CommitteePreReadsResponse | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    try { setData(await fetchCommitteePreReads(appId)); } catch { /* non-fatal */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [appId]);
+  const record = async (view: 'leaning_approve' | 'leaning_decline' | 'questions') => {
+    setBusy(true);
+    try {
+      await recordCommitteePreRead(appId, view, note.trim() || undefined);
+      toast({ tone: 'success', message: 'Pre-read recorded.' });
+      setNote(''); await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not record' });
+    } finally { setBusy(false); }
+  };
+  const label: Record<string, string> = {
+    leaning_approve: 'Leaning approve', leaning_decline: 'Leaning decline', questions: 'Questions',
+  };
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Committee pre-read (non-binding)</h3></Card.Header>
+      <Card.Body>
+        <p className="mb-2 text-xs text-gray-500">Members review independently ahead of the convened meeting. This is a non-binding leaning, not the vote.</p>
+        {data && (
+          <div className="mb-3 flex gap-3 text-xs">
+            <span className="rounded bg-green-50 px-2 py-1 text-green-700">Approve: {data.tally.leaning_approve ?? 0}</span>
+            <span className="rounded bg-red-50 px-2 py-1 text-red-700">Decline: {data.tally.leaning_decline ?? 0}</span>
+            <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">Questions: {data.tally.questions ?? 0}</span>
+          </div>
+        )}
+        <textarea value={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Optional note with your leaning…"
+          className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" rows={2} />
+        <div className="flex gap-2">
+          <Button variant="primary" size="sm" onClick={() => void record('leaning_approve')} disabled={busy}>Leaning approve</Button>
+          <Button variant="ghost" size="sm" onClick={() => void record('leaning_decline')} disabled={busy}>Leaning decline</Button>
+          <Button variant="ghost" size="sm" onClick={() => void record('questions')} disabled={busy}>Questions</Button>
+        </div>
+        {data && data.pre_reads.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {data.pre_reads.map((r) => (
+              <div key={r.by_code} className="rounded bg-gray-50 px-2 py-1 text-xs">
+                <span className="font-medium">{r.by_name}</span>: {label[r.view] ?? r.view}
+                {r.note && <span className="text-gray-500"> — {r.note}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card.Body>
     </Card>
   );
 }

@@ -41,6 +41,7 @@ import type {
   PipelineAnalyticsResponse,
   PipelineDrillResponse,
   FunnelDrillResponse,
+  DealCategoryConfig,
 } from '@/types/pipeline';
 import type {
   CreditAnalyticsResponse,
@@ -65,8 +66,11 @@ let _on401Callback: (() => void) | null        = null;
  * AuthProvider whenever its token state changes (login, logout, expiry).
  * Pass null to clear.
  */
+let _blobTokenRef: string | null = null;
+export function getCurrentTokenForBlob(): string | null { return _blobTokenRef; }
 export function setCurrentToken(token: string | null): void {
   _currentToken = token;
+  _blobTokenRef = token;
 }
 
 /**
@@ -335,6 +339,7 @@ export interface AdminConfigPatch {
   required_fields?:    string[];
   allow_other_sector?: boolean;
   allow_other_mou?:    boolean;
+  deal_categories?:    DealCategoryConfig[];
 }
 export interface AdminConfigResponse {
   status: 'saved' | 'noop';
@@ -389,6 +394,9 @@ export interface ProductFlowUpsertInput {
   product: string;
   stages?: ProductFlowStageInput[];
   client_types?: string[];
+  required_documents?: string[];
+  documents_required_at_stage?: string;
+  committee_journey?: string[];
   delete?: boolean;
 }
 export interface ProductFlowUpsertResponse {
@@ -1061,6 +1069,7 @@ import type {
   ConfirmToCreditAdminRequest,
   CommitteeVoteRequest,
   ResolveCommitteeRequest,
+  AppSla,
 } from '@/types/lms';
 
 
@@ -1655,6 +1664,7 @@ export async function upsertFxRate(
 
 // ── Staff administration (Postgres users table) ──────────────────────────
 export interface StaffRow {
+  accessible_modules?: string[];
   username: string;
   staff_code: string | null;
   full_name: string | null;
@@ -1683,6 +1693,7 @@ export interface StaffCreateInput {
 }
 
 export interface StaffPatchInput {
+  accessible_modules?: string[];
   full_name?: string; email?: string; role?: string; department?: string;
   unit?: string; staff_code?: string; band?: string; gender?: string;
   can_view_all?: boolean; is_admin?: boolean; active?: boolean;
@@ -1711,3 +1722,322 @@ export async function reactivateAdminStaff(
 ): Promise<{ status: string; username: string }> {
   return postJson(`/admin/staff/${encodeURIComponent(username)}/reactivate`, {}, 'POST');
 }
+
+// staff module-access (module-level RBAC)
+export interface AccessModule { key: string; label: string; min: string; }
+export async function fetchAccessModules(): Promise<AccessModule[]> {
+  const res = await getJson<{ modules: AccessModule[] }>('/admin/modules');
+  return res.modules ?? [];
+}
+
+// staff Excel upload (preview + apply)
+export interface StaffUploadPreview {
+  ok: boolean;
+  errors: string[];
+  summary: {
+    total: number;
+    root: { code: string; name: string; role: string } | null;
+    reporting_to_md: { code: string; name: string; role: string }[];
+    staff_per_branch: Record<string, number>;
+    roles: Record<string, number>;
+  } | null;
+}
+export interface StaffUploadResult {
+  ok: boolean; applied: number; before: number; after: number; preserved: string[];
+}
+export async function previewStaffUpload(contentB64: string): Promise<StaffUploadPreview> {
+  return postJson<StaffUploadPreview, { content_b64: string }>(
+    '/admin/staff/upload/preview', { content_b64: contentB64 });
+}
+export async function applyStaffUpload(contentB64: string, keep: string[]): Promise<StaffUploadResult> {
+  return postJson<StaffUploadResult, { content_b64: string; keep: string[] }>(
+    '/admin/staff/upload/apply', { content_b64: contentB64, keep });
+}
+
+// reporting hierarchy (role -> parent roles)
+export interface HierarchyResponse {
+  roles: string[];
+  hierarchy: Record<string, string[]>;
+  top: string[];
+}
+export async function fetchHierarchy(): Promise<HierarchyResponse> {
+  return getJson<HierarchyResponse>('/admin/hierarchy');
+}
+export async function saveHierarchy(
+  body: { action: string; role?: string; parents?: string[]; new_name?: string },
+): Promise<{ status: string; hierarchy: Record<string, string[]> }> {
+  return postJson<{ status: string; hierarchy: Record<string, string[]> }, typeof body>(
+    '/admin/hierarchy', body);
+}
+
+// document catalog (master list for per-product required documents)
+export async function fetchDocumentCatalog(): Promise<string[]> {
+  const res = await getJson<{ documents: string[] }>('/admin/document-catalog');
+  return res.documents ?? [];
+}
+
+// deal document upload/attach (Batch 3)
+export interface DealDocumentMeta {
+  filename: string; path: string; sha256: string; size: number;
+  uploaded_by: string; uploaded_at: string;
+}
+export interface DealDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  required: string[];
+  provided: string[];
+}
+export async function listDealDocuments(dealId: string): Promise<DealDocumentsResponse> {
+  return getJson<DealDocumentsResponse>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents`);
+}
+export async function uploadDealDocument(
+  dealId: string, docName: string, filename: string, contentB64: string,
+): Promise<{ status: string; doc_name: string; meta: DealDocumentMeta }> {
+  return postJson<{ status: string; doc_name: string; meta: DealDocumentMeta },
+    { doc_name: string; filename: string; content_b64: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents`,
+    { doc_name: docName, filename, content_b64: contentB64 });
+}
+export async function deleteDealDocument(dealId: string, docName: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, Record<string, never>>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(docName)}`,
+    {}, 'DELETE');
+}
+export async function downloadDealDocument(dealId: string, docName: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const tok = getCurrentTokenForBlob();
+  if (tok) headers['Authorization'] = `Bearer ${tok}`;
+  const res = await fetch(
+    `/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(docName)}`,
+    { headers });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  return res.blob();
+}
+
+// credit committee palette (4b-1)
+export interface CommitteeMemberDef { name: string; role: string; staff_code?: string; full_funnel?: boolean; }
+export interface CommitteeDef {
+  code: string;
+  name: string;
+  chaired_by?: string;
+  recording_mode: string;
+  voting_rule: string;
+  amount_threshold_kes: number;
+  members: CommitteeMemberDef[];
+}
+export interface CommitteePaletteResponse {
+  committees: CommitteeDef[];
+  recording_modes: string[];
+  voting_rules: string[];
+}
+export async function fetchCommitteePalette(): Promise<CommitteePaletteResponse> {
+  return getJson<CommitteePaletteResponse>('/admin/committee-palette');
+}
+export async function upsertCommittee(committee: CommitteeDef): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, { committee: CommitteeDef }>(
+    '/admin/committee-palette', { committee });
+}
+export async function deleteCommittee(code: string): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, { delete: string }>(
+    '/admin/committee-palette', { delete: code });
+}
+export async function seedCommitteePalette(): Promise<{ status: string; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; committees: CommitteeDef[] }, Record<string, never>>(
+    '/admin/committee-palette/seed', {});
+}
+
+// deal-level CR (4b-3): the CR originates at the branch on the deal.
+export async function getDealCr(dealId: string): Promise<CrView> {
+  return getJson<CrView>(`/pipeline/deals/${encodeURIComponent(dealId)}/cr`);
+}
+export async function saveDealCr(
+  dealId: string, body: { values: Record<string, unknown>; completed?: boolean },
+): Promise<CrView> {
+  return postJson<CrView, typeof body>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/cr`, body);
+}
+
+// committee decision capture on the deal (4b-4)
+export interface CommitteeVote { name: string; role: string; vote: string; }
+export interface CommitteeRecord {
+  outcome: string; mode: string; votes: CommitteeVote[];
+  note?: string; recorded_by?: string; recorded_at?: string;
+}
+export interface CommitteeGate {
+  code: string; name: string; recording_mode: string; voting_rule: string;
+  members: { name: string; role: string }[];
+  record: CommitteeRecord | null;
+}
+export interface CommitteeRecordsResponse { gates: CommitteeGate[]; cr_only: boolean; }
+export async function getDealCommitteeRecords(dealId: string): Promise<CommitteeRecordsResponse> {
+  return getJson<CommitteeRecordsResponse>(`/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`);
+}
+export async function recordDealCommitteeDecision(
+  dealId: string,
+  body: { code: string; outcome?: string; votes?: CommitteeVote[]; note?: string },
+): Promise<{ status: string; code: string; record: CommitteeRecord }> {
+  return postJson<{ status: string; code: string; record: CommitteeRecord }, typeof body>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`, body);
+}
+
+// reject -> owner fallback (4b-6)
+export async function appealCommitteeDecision(
+  dealId: string, code: string, reason: string,
+): Promise<{ status: string; message: string }> {
+  return postJson<{ status: string; message: string }, { code: string; reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee-appeal`, { code, reason });
+}
+export async function closeDealAsLost(dealId: string, reason: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, { reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/close-lost`, { reason });
+}
+
+// analyst read-only view of branch committee decisions (4b-7b)
+export interface LmsCommitteeRecordsResponse {
+  committee_records: Record<string, {
+    outcome: string; mode: string;
+    votes: { name: string; role: string; vote: string }[];
+    note?: string; recorded_by?: string; recorded_at?: string;
+  }>;
+  committee_appeals: { code: string; reason: string; outcome: string; by: string; at: string }[];
+  cr_origin: string;
+}
+export async function getLmsCommitteeRecords(appId: string): Promise<LmsCommitteeRecordsResponse> {
+  return getJson<LmsCommitteeRecordsResponse>(`/lms/applications/${appId}/committee-records`);
+}
+
+// assignable analysts for the current manager (assign-analyst dropdown)
+export interface AssignableAnalyst { staff_code: string; name: string; role: string; unit: string; }
+export async function fetchMyAnalysts(): Promise<{ analysts: AssignableAnalyst[]; count: number }> {
+  return getJson<{ analysts: AssignableAnalyst[]; count: number }>('/lms/my-analysts');
+}
+
+
+// B2: assignment requests (analyst pull + manager resolve)
+export interface AssignmentRequestCase {
+  id: string; client_name?: string; product?: string; amount?: number;
+  rm_name?: string; status?: string;
+  requests: { by_code: string; by_name: string; at: string; note?: string }[];
+}
+export async function requestLmsAssignment(
+  appId: string, note?: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/request-assignment`, { note });
+}
+export async function fetchAssignmentRequests(): Promise<{ cases: AssignmentRequestCase[]; count: number }> {
+  return getJson<{ cases: AssignmentRequestCase[]; count: number }>(
+    '/lms/applications/assignment-requests');
+}
+
+// C1: committee routing suggestion (Chief routes by limit)
+export interface CommitteeRouting {
+  tiers: CommitteeTier[];
+  amount: number;
+  suggested_tier: number | null;
+  suggested_name: string | null;
+  entry_tier?: number | null;
+  entry_name?: string | null;
+  final_tier?: number | null;
+  final_name?: string | null;
+  require_mcc?: boolean;
+  must_climb?: boolean;
+  can_refer: boolean;
+  current_status: string;
+}
+export async function fetchCommitteeRouting(appId: string): Promise<CommitteeRouting> {
+  return getJson<CommitteeRouting>(`/lms/applications/${encodeURIComponent(appId)}/committee-routing`);
+}
+
+// C1b: require-MCC-before-higher admin toggle
+export async function setRequireMcc(enabled: boolean): Promise<{ status: string; require_mcc_before_higher: boolean }> {
+  return postJson<{ status: string; require_mcc_before_higher: boolean }, { enabled: boolean }>(
+    '/lms/committee/require-mcc', { enabled });
+}
+
+// C2: correctness-staging readiness (ready for committee / return for rework)
+export async function setCommitteeReadiness(
+  appId: string, decision: 'ready' | 'rework', opinion?: string, reasons?: string[],
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { decision: string; opinion?: string; reasons?: string[] }>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee-readiness`,
+    { decision, opinion, reasons });
+}
+
+// C3b: committee pre-read (member non-binding view)
+export interface CommitteePreRead {
+  by_code: string; by_name: string; view: 'leaning_approve' | 'leaning_decline' | 'questions';
+  note?: string; at: string; tier?: number | null;
+}
+export interface CommitteePreReadsResponse {
+  pre_reads: CommitteePreRead[]; all: CommitteePreRead[];
+  tally: Record<string, number>; current_tier: number | null;
+}
+export async function recordCommitteePreRead(
+  appId: string, view: 'leaning_approve' | 'leaning_decline' | 'questions', note?: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { view: string; note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/pre-read`, { view, note });
+}
+export async function fetchCommitteePreReads(appId: string): Promise<CommitteePreReadsResponse> {
+  return getJson<CommitteePreReadsResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/pre-reads`);
+}
+
+// C4: MD convening queue
+export interface ConveningCase {
+  id: string; client_name?: string; product?: string; amount?: number;
+  pre_read_count: number; pre_read_tally: Record<string, number>;
+  convened: boolean; sla?: AppSla | null;
+}
+export interface ConveningTier { tier: number | null; name: string | null; count: number; cases: ConveningCase[]; }
+export interface ConveningQueueResponse { tiers: ConveningTier[]; total: number; awaiting: number; }
+export async function fetchConveningQueue(): Promise<ConveningQueueResponse> {
+  return getJson<ConveningQueueResponse>('/lms/committee/convening-queue');
+}
+export async function convokeCommittee(appId: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/committee/convene`, {});
+}
+
+// CA1: Troops disbursement queue + the 3 actions (book -> value-date -> disburse)
+export interface TroopsQueueCase {
+  case_id: string; application_id?: string; client_name?: string; amount?: number;
+  rm_code?: string; troops_status: string; cbs_account_no?: string | null;
+  value_date?: string | null; disbursed: boolean; disbursement_date?: string | null;
+}
+export interface TroopsQueueResponse { cases: TroopsQueueCase[]; count: number; source: string; }
+export async function fetchTroopsQueue(): Promise<TroopsQueueResponse> {
+  return getJson<TroopsQueueResponse>('/credit-admin/troops/queue');
+}
+export async function troopsBook(caseId: string, cbsAccountNo?: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { cbs_account_no?: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/book`, { cbs_account_no: cbsAccountNo });
+}
+export async function troopsValueDate(caseId: string, valueDate: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { value_date: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/value-date`, { value_date: valueDate });
+}
+export async function troopsDisburse(caseId: string, glReference?: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { gl_reference?: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/disburse`, { gl_reference: glReference });
+}
+
+// CA2: submit-to-legal-for-charging + Legal Chief queue + officer pool
+export const submitForCharging = (id: string, note?: string) =>
+  caPost(id, 'legal/submit-for-charging', { note: note ?? '' });
+export interface ChargingQueueCase {
+  case_id: string; client_name?: string; amount?: number;
+  submitted_at?: string; submitted_by?: string;
+  assigned_officer_code?: string | null; assigned_officer_name?: string | null;
+}
+export interface ChargingQueueResponse { cases: ChargingQueueCase[]; count: number; }
+export async function fetchChargingQueue(): Promise<ChargingQueueResponse> {
+  return getJson<ChargingQueueResponse>('/credit-admin/legal/charging-queue');
+}
+export interface LegalOfficer { staff_code: string; name: string; role: string; unit: string; }
+export interface LegalOfficersResponse { officers: LegalOfficer[]; count: number; }
+export async function fetchMyLegalOfficers(): Promise<LegalOfficersResponse> {
+  return getJson<LegalOfficersResponse>('/credit-admin/my-legal-officers');
+}
+

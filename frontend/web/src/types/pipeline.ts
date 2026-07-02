@@ -186,6 +186,10 @@ export interface DealCategoryConfig {
   category:     string;
   description?: string;
   stages:       string[];
+  /** A2a: which product classes this category filters to (asset/liability/insurance/other). */
+  product_class?: string[];
+  /** A2a: "pipeline" = shown in create-deal dropdown; "dormant" = kept but hidden. */
+  surface?:     string;
 }
 
 /** P4a: one stage in a product's flow, carrying its own SLA target (days). */
@@ -201,6 +205,9 @@ export interface ProductFlowStage {
 export interface ProductFlow {
   client_types: string[];
   stages: ProductFlowStage[];
+  required_documents?: string[];
+  documents_required_at_stage?: string;
+  committee_journey?: string[];
 }
 
 export interface PipelineConfig {
@@ -429,6 +436,9 @@ export interface CreateDealRequest {
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
   pipeline_category?:    string;
+  is_top_up?:            boolean;   // true if topping up an existing facility
+  top_up_amount?:        number;    // the increment (becomes pipeline value)
+  original_facility_amount?: number; // existing facility size (context only)
   probability?:          number;     // 0..1 (NOT 0..100)
   next_action?:          string;
   next_action_date?:     string;     // YYYY-MM-DD
@@ -553,6 +563,14 @@ export interface CreditChecklistResponse {
   already_submitted:   boolean;
   lms_application_id:   string | null;
   can_submit:          boolean;
+  current_stage?:      string;
+  stage_required?:     string;
+  stage_ok?:           boolean;
+  cr_required?:        boolean;
+  cr_ok?:              boolean;
+  committee_ok?:       boolean;
+  committee_pending?:  string[];
+  committee_rejected?: string[];
 }
 
 export interface SubmitToCreditResponse {

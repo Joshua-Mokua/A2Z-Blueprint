@@ -3,11 +3,12 @@
 // fetchers, and invokes onChange (parent refetch) on success. Renders only the
 // pieces relevant to a secured facility where useful.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   classifyFacility, linkCollateral, unlinkCollateral, classifyCondition,
   legalAssign, legalComment, legalOutcome, addPerfection, updatePerfection,
   addInsurance, ApiValidationError, AuthExpiredError,
+  submitForCharging, fetchMyLegalOfficers, type LegalOfficer,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
@@ -177,21 +178,50 @@ export function LegalReviewPanel({ caseRecord, onChange }: PanelProps) {
   const { busy, run } = useAction(onChange);
   const [officer, setOfficer] = useState('');
   const [comment, setComment] = useState('');
+  const [officers, setOfficers] = useState<LegalOfficer[]>([]);
   const lr = caseRecord.legal_review;
+  useEffect(() => {
+    fetchMyLegalOfficers().then((r) => setOfficers(r.officers)).catch(() => { /* fallback to code entry */ });
+  }, []);
   if (caseRecord.facility_security_type !== 'secured') return null;
+  const submitted = lr?.status === 'submitted_for_charging';
   return (
     <Card className="mt-6"><Card.Header>Legal review</Card.Header><Card.Body>
       <div className="flex items-center gap-2 mb-3 text-sm">
         <span className="text-gray-500">Status:</span>
-        <Badge tone={lr?.outcome === 'rejected' ? 'danger' : lr?.outcome ? 'success' : 'neutral'}>
+        <Badge tone={lr?.outcome === 'rejected' ? 'danger' : lr?.outcome ? 'success' : submitted ? 'brand' : 'neutral'}>
           {lr?.status || 'not_started'}</Badge>
         {lr?.outcome && <span className="text-gray-500">outcome: {lr.outcome}</span>}
       </div>
+      {/* CA2: Credit Admin submits the case to Legal for charging */}
+      <div className="mb-3 rounded border border-dashed border-gray-300 p-3">
+        <div className="mb-2 text-xs text-gray-500">
+          {submitted
+            ? `Submitted to Legal for charging${lr?.submitted_for_charging_by ? ` by ${lr.submitted_for_charging_by}` : ''}. The Legal Chief assigns an officer below.`
+            : 'Send this case to Legal for charging — it enters the Legal Chief\'s charging queue.'}
+        </div>
+        <Button disabled={busy} onClick={() => run(
+          () => submitForCharging(caseRecord.id), 'Submitted to Legal for charging.')}>
+          {submitted ? 'Re-submit for charging' : 'Submit to legal for charging'}
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end mb-3">
-        <label className={lbl}><span className={cap}>Assign officer (code)</span>
-          <Input value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="LO001" /></label>
-        <Button disabled={busy || !officer.trim()} onClick={() => run(
-          () => legalAssign(caseRecord.id, { officer_code: officer.trim() }), 'Legal officer assigned.')}>Assign</Button>
+        <label className={lbl}><span className={cap}>Assign officer</span>
+          {officers.length > 0 ? (
+            <select className="w-full rounded border px-2 py-1.5 text-sm" value={officer}
+              onChange={(e) => setOfficer(e.target.value)}>
+              <option value="">— pick legal officer —</option>
+              {officers.map((o) => <option key={o.staff_code} value={o.staff_code}>{o.name} ({o.staff_code})</option>)}
+            </select>
+          ) : (
+            <Input value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="LO001" />
+          )}
+        </label>
+        <Button disabled={busy || !officer.trim()} onClick={() => {
+          const picked = officers.find((o) => o.staff_code === officer.trim());
+          return run(() => legalAssign(caseRecord.id,
+            { officer_code: officer.trim(), officer_name: picked?.name ?? '' }), 'Legal officer assigned.');
+        }}>Assign</Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end mb-3">
         <label className={`${lbl} md:col-span-2`}><span className={cap}>Comment</span>

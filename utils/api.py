@@ -1395,6 +1395,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "product_catalogue": cfg.get("product_catalogue", {}),
         "stage_flows":       cfg.get("stage_flows", {}),
         "product_flows":     cfg.get("product_flows", {}),
+        "stage_catalogue":   cfg.get("stage_catalogue", {}),
         "customer_segments": _customer_segments(),
         "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
@@ -1406,6 +1407,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # console. Each maps straight into pipeline_settings.json; anything outside this
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
+    "stage_catalogue",
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
@@ -1782,6 +1784,7 @@ class _StaffPatch(BaseModel):
     can_view_all: Optional[bool] = None
     is_admin: Optional[bool] = None
     active: Optional[bool] = None
+    accessible_modules: Optional[list] = None
 
 
 def _staff_row_or_404(_db, username: str):
@@ -1841,6 +1844,13 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     for col, val in col_map.items():
         if val is not None:
             cols.append(f"{col} = %s"); vals.append(val)
+    # accessible_modules (jsonb) — module-level access grant. Stored as a JSON
+    # array of module keys. Empty list = explicit "no extra modules" (role
+    # default still applies at read time via MODULE_ACCESS).
+    if getattr(payload, "accessible_modules", None) is not None:
+        import json as _json_mod
+        cols.append("accessible_modules = %s")
+        vals.append(_json_mod.dumps(list(payload.accessible_modules)))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)
@@ -2130,6 +2140,14 @@ def _validate_product_flow(entry: dict) -> tuple:
         if nm in seen:
             return False, f"duplicate stage '{nm}' in flow"
         seen.add(nm)
+        # SR1: every stage must exist in the admin stage_catalogue (governed
+        # vocabulary). If the catalogue is empty (not yet seeded), skip this
+        # check so nothing breaks pre-seed.
+        if _stage_catalogue_names() and not _is_stage_catalogued(nm):
+            return False, (
+                f"Stage '{nm}' is not in the stage repository. Add it to the stage "
+                "repository first, then use it in a product flow."
+            )
         try:
             t = int(s.get("target_days"))
         except (TypeError, ValueError):
@@ -2143,6 +2161,27 @@ def _validate_product_flow(entry: dict) -> tuple:
                 wp = float(s.get("win_probability"))
             except (TypeError, ValueError):
                 return False, f"stage '{nm}': win_probability must be a number"
+    # Batch 1: optional per-product document config.
+    rd = entry.get("required_documents")
+    if rd is not None:
+        if not isinstance(rd, list) or any(not isinstance(x, str) for x in rd):
+            return False, "required_documents must be a list of strings"
+    dstage = entry.get("documents_required_at_stage")
+    if dstage:
+        stage_names = {str(s.get("stage", "")).strip() for s in stages}
+        if str(dstage).strip() not in stage_names:
+            return False, f"documents_required_at_stage '{dstage}' is not one of this product's stages"
+    journey = entry.get("committee_journey")
+    if journey is not None:
+        if not isinstance(journey, list) or any(not isinstance(x, str) for x in journey):
+            return False, "committee_journey must be a list of committee codes"
+        try:
+            palette_codes = {str(c.get("code")) for c in _read_committee_palette()}
+        except Exception:
+            palette_codes = set()
+        for code in journey:
+            if palette_codes and code not in palette_codes:
+                return False, f"committee '{code}' is not in the committee palette"
             if wp < 0 or wp > 100:
                 return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
@@ -2183,6 +2222,9 @@ def admin_upsert_product_flow(
     entry = {
         "client_types": payload.get("client_types", []) or [],
         "stages": payload.get("stages", []) or [],
+        "required_documents": payload.get("required_documents", []) or [],
+        "documents_required_at_stage": str(payload.get("documents_required_at_stage", "") or ""),
+        "committee_journey": payload.get("committee_journey", []) or [],
     }
     ok, reason = _validate_product_flow(entry)
     if not ok:
@@ -2844,10 +2886,38 @@ class SubmitToCreditRequest(BaseModel):
     documents_provided: List[str] = []
 
 
+def _product_document_config(deal: dict) -> tuple:
+    """(required_documents, required_at_stage) from the deal's PRODUCT flow
+    (Batch 1 config in pipeline_settings.product_flows). ([], "") if unset."""
+    product = str(deal.get("product") or deal.get("product_type") or "").strip()
+    if not product:
+        return [], ""
+    pcfg = _load_json("pipeline_settings.json") or {}
+    flows = pcfg.get("product_flows", {}) if isinstance(pcfg, dict) else {}
+    entry = flows.get(product) if isinstance(flows, dict) else None
+    if not isinstance(entry, dict):
+        return [], ""
+    docs = entry.get("required_documents") or []
+    if not isinstance(docs, list):
+        docs = []
+    stage = str(entry.get("documents_required_at_stage", "") or "")
+    return [str(d) for d in docs if str(d).strip()], stage
+
+
 def _get_required_documents_for_deal(deal: dict) -> list:
-    """Required credit documents for a deal, from lms_config's tiered
-    document_checklist: default + amount/product add-ons. Order preserved,
-    de-duplicated."""
+    """Required documents for a deal. Precedence:
+      1. the deal's PRODUCT config (product_flows[product].required_documents), else
+      2. legacy lms_config tiered document_checklist (default + amount/product).
+    Order preserved, de-duplicated."""
+    # 1) per-product configured documents (Batch 1) take precedence.
+    prod_docs, _stage = _product_document_config(deal)
+    if prod_docs:
+        seen, out = set(), []
+        for d in prod_docs:
+            if d not in seen:
+                seen.add(d); out.append(d)
+        return out
+    # 2) legacy fallback (unchanged behavior for unconfigured products).
     cfg = _load_json("lms_config.json") or {}
     dc = cfg.get("document_checklist", {}) if isinstance(cfg, dict) else {}
     req = list(dc.get("default", []))
@@ -2883,14 +2953,52 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
     is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
     terminal = str(deal.get("stage", "")) in ("Closed Won", "Closed Lost")
+    # Batch 4a: stage gate. If the product configured a doc-stage, submission is
+    # only allowed when the deal is AT that stage. Unset = no stage restriction.
+    _prod_docs, doc_stage = _product_document_config(deal)
+    current_stage = str(deal.get("stage", "") or "").strip()
+    stage_ok = True
+    stage_required = ""
+    if doc_stage:
+        stage_required = doc_stage
+        stage_ok = (current_stage == doc_stage)
+    # Batch 4b-5: CR + committee journey gating.
+    journey_codes = _effective_committee_journey(deal)
+    cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}
+    cr_required = True  # CR is the baseline artifact (Josh: "a CR should suffice")
+    cr_ok = bool(cr.get("completed"))
+    records = deal.get("committee_records", {}) or {}
+    committee_pending = []
+    committee_rejected = []
+    for code in journey_codes:
+        rec = records.get(code) or {}
+        outcome = str(rec.get("outcome", "")).upper()
+        if outcome == "APPROVED":
+            continue
+        if outcome == "REJECTED":
+            committee_rejected.append(code)
+        else:
+            committee_pending.append(code)
+    committee_ok = (len(committee_pending) == 0 and len(committee_rejected) == 0)
     return {
         "required": required,
         "provided": provided,
         "missing": missing,
         "already_submitted": already,
         "lms_application_id": deal.get("lms_application_id"),
+        "current_stage": current_stage,
+        "stage_required": stage_required,
+        "stage_ok": stage_ok,
+        "cr_required": cr_required,
+        "cr_ok": cr_ok,
+        "committee_ok": committee_ok,
+        "committee_pending": committee_pending,
+        "committee_rejected": committee_rejected,
         "can_submit": (is_owner or is_admin_like) and not already
-                      and not terminal and perms.get("can_view", False),
+                      and not terminal and stage_ok
+                      and (cr_ok or not cr_required)
+                      and committee_ok
+                      and perms.get("can_view", False),
     }
 
 
@@ -2935,6 +3043,23 @@ def pipeline_submit_to_credit(
             raise HTTPException(status_code=400,
                 detail=f"Deal already submitted to credit "
                        f"(application {state['lms_application_id']}).")
+        if not state.get("stage_ok", True):
+            raise HTTPException(status_code=400,
+                detail=f"Cannot submit to credit — this product requires the deal "
+                       f"to be at stage '{state.get('stage_required')}' "
+                       f"(currently '{state.get('current_stage')}').")
+        if state.get("committee_rejected"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — committee(s) rejected: "
+                       + ", ".join(state["committee_rejected"])
+                       + ". The deal returns to the owner (appeal or close).")
+        if state.get("committee_pending"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — committee decision(s) outstanding: "
+                       + ", ".join(state["committee_pending"]) + ".")
+        if state.get("cr_required") and not state.get("cr_ok"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — the Credit Report (CR) must be completed first.")
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
     provided = list(payload.documents_provided or [])
@@ -3040,6 +3165,40 @@ def _deal_value(d: dict) -> float:
 
 def _norm_product(s: str) -> str:
     return "".join(ch for ch in str(s or "").lower() if ch.isalnum())
+
+
+def _is_stage_catalogued(stage_name: str) -> bool:
+    """SR1: True if a stage NAME exists in the admin stage_catalogue (exact,
+    case-insensitive after strip). Retired stages still count as catalogued so
+    existing flows/deals never break; the UI hides retired names from NEW authoring.
+    Mirrors _is_product_catalogued."""
+    nm = str(stage_name or "").strip().lower()
+    if not nm:
+        return False
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("stage_catalogue", {}) if isinstance(cfg, dict) else {}
+    for st in (cat.get("stages", []) if isinstance(cat, dict) else []):
+        cn = st.get("name") if isinstance(st, dict) else st
+        if str(cn or "").strip().lower() == nm:
+            return True
+    return False
+
+
+def _stage_catalogue_names(include_retired: bool = True) -> list:
+    """Ordered catalogue stage names (for dropdowns / validation)."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("stage_catalogue", {}) if isinstance(cfg, dict) else {}
+    out = []
+    for st in (cat.get("stages", []) if isinstance(cat, dict) else []):
+        if isinstance(st, dict):
+            if not include_retired and st.get("retired"):
+                continue
+            nm = str(st.get("name", "") or "").strip()
+        else:
+            nm = str(st or "").strip()
+        if nm:
+            out.append(nm)
+    return out
 
 
 def _is_product_catalogued(product_type: str) -> bool:
@@ -8794,3 +8953,1181 @@ app.include_router(cascade_api_router)
 # v10.540 Phase 8 Batch gamma4a -- Strategic Initiatives read-only routes
 from utils.api_initiatives_routes import router as initiatives_api_router
 app.include_router(initiatives_api_router)
+
+
+# === MODULE ACCESS LIST ENDPOINT ===
+@app.get("/api/admin/modules", tags=["admin"])
+def list_access_modules(user: dict = Depends(require_config_admin)):
+    """Canonical module list for the Staff Admin module-access picker.
+    Returns [{key, label, default_roles}] from utils.core.MODULE_ACCESS."""
+    try:
+        from utils.core import MODULE_ACCESS
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"module registry unavailable: {exc}")
+    out = []
+    for key, cfg in MODULE_ACCESS.items():
+        out.append({
+            "key": key,
+            "label": key.replace("_", " ").title(),
+            "min": cfg.get("min", ""),
+        })
+    return {"modules": out}
+# === END MODULE ACCESS LIST ENDPOINT ===
+
+
+# === STAFF EXCEL UPLOAD ENDPOINTS (preview + apply) ===
+import base64 as _b64_staffup
+import io as _io_staffup
+from collections import Counter as _Counter_staffup, defaultdict as _dd_staffup
+
+
+class _StaffUploadBody(BaseModel):
+    filename: str = ""
+    content_b64: str
+    keep: Optional[list] = None
+
+
+def _staffup_read_rows(content_b64: str):
+    """Decode base64 xlsx -> list of row dicts. Raises ValueError on bad file."""
+    try:
+        raw = _b64_staffup.b64decode(content_b64)
+    except Exception as e:
+        raise ValueError(f"content_b64 is not valid base64: {e}")
+    from openpyxl import load_workbook
+    wb = load_workbook(_io_staffup.BytesIO(raw), read_only=True, data_only=True)
+    ws = wb["Staff"] if "Staff" in wb.sheetnames else wb.active
+    hdr = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
+    idx = {h: i for i, h in enumerate(hdr)}
+    need = ["Staff Code", "Staff Name", "Role", "Branch", "Reports To Code"]
+    missing = [n for n in need if n not in idx]
+    if missing:
+        raise ValueError(f"template missing required column(s): {missing}")
+    def g(r, key):
+        i = idx.get(key)
+        if i is None or i >= len(r) or r[i] is None:
+            return ""
+        return str(r[i]).strip()
+    rows = []
+    for r in ws.iter_rows(min_row=2, values_only=True):
+        if not any(r):
+            continue
+        name = g(r, "Staff Name")
+        if name.startswith("<"):  # skip example stubs
+            continue
+        if not g(r, "Staff Code"):
+            continue
+        rows.append({
+            "code": g(r, "Staff Code"), "name": name, "role": g(r, "Role"),
+            "branch": g(r, "Branch"),
+            "region": g(r, "Region (DSA only)"),
+            "reports_to": g(r, "Reports To Code"),
+            "dotted1": g(r, "Dotted Line Code 1"), "dotted2": g(r, "Dotted Line Code 2"),
+            "band": g(r, "Band"), "gender": g(r, "Gender"), "email": g(r, "Email"),
+        })
+    wb.close()
+    return rows
+
+
+def _staffup_validate(rows):
+    from utils.core import get_org_config
+    cfg = get_org_config() or {}
+    roles = set(cfg.get("hierarchy", {}).keys())
+    branches = set(b["name"] for b in cfg.get("branches", []))
+    errs = []
+    codes = [r["code"] for r in rows]
+    code_set = set(codes)
+    for c, n in _Counter_staffup(codes).items():
+        if n > 1:
+            errs.append(f"Duplicate Staff Code: {c} ({n}x)")
+    for r in rows:
+        if r["role"] not in roles:
+            errs.append(f"{r['code']} ({r['name']}): invalid Role '{r['role']}'")
+        if r["branch"] not in branches:
+            errs.append(f"{r['code']} ({r['name']}): invalid Branch '{r['branch']}'")
+        if r["reports_to"] and r["reports_to"] not in code_set:
+            errs.append(f"{r['code']} ({r['name']}): Reports To Code '{r['reports_to']}' not found")
+        for d in (r["dotted1"], r["dotted2"]):
+            if d and d not in code_set:
+                errs.append(f"{r['code']} ({r['name']}): dotted-line code '{d}' not found")
+    roots = [r for r in rows if not r["reports_to"]]
+    if len(roots) == 0:
+        errs.append("No root: exactly one row (the MD) must have a blank Reports To Code")
+    elif len(roots) > 1:
+        errs.append(f"Multiple roots ({len(roots)}): only the MD may have blank Reports To Code")
+    parent = {r["code"]: r["reports_to"] for r in rows}
+    for r in rows:
+        seen, cur, steps = set(), r["code"], 0
+        while cur and parent.get(cur):
+            cur = parent[cur]
+            if cur in seen or steps > 10000:
+                errs.append(f"Cycle detected involving {r['code']}"); break
+            seen.add(cur); steps += 1
+    return errs, roots, roles, branches
+
+
+def _staffup_summary(rows, roots):
+    by_branch = dict(sorted(_Counter_staffup(r["branch"] for r in rows).items()))
+    direct = [{"code": r["code"], "name": r["name"], "role": r["role"]}
+              for r in rows if roots and r["reports_to"] == roots[0]["code"]]
+    return {
+        "total": len(rows),
+        "root": ({"code": roots[0]["code"], "name": roots[0]["name"], "role": roots[0]["role"]} if roots else None),
+        "reporting_to_md": sorted(direct, key=lambda x: x["role"]),
+        "staff_per_branch": by_branch,
+        "roles": dict(sorted(_Counter_staffup(r["role"] for r in rows).items())),
+    }
+
+
+@app.post("/api/admin/staff/upload/preview", tags=["admin"])
+def staff_upload_preview(body: _StaffUploadBody, user: dict = Depends(require_config_admin)):
+    try:
+        rows = _staffup_read_rows(body.content_b64)
+    except ValueError as e:
+        return {"ok": False, "errors": [str(e)], "summary": None}
+    errs, roots, _, _ = _staffup_validate(rows)
+    return {"ok": not errs, "errors": errs[:100],
+            "summary": _staffup_summary(rows, roots) if not errs else None}
+
+
+@app.post("/api/admin/staff/upload/apply", tags=["admin"])
+def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_config_admin)):
+    from utils.db import db as _db
+    from utils.core_audit import _hash_password
+    try:
+        rows = _staffup_read_rows(body.content_b64)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    errs, roots, _, _ = _staffup_validate(rows)
+    if errs:
+        raise HTTPException(status_code=422, detail={"message": "validation failed", "errors": errs[:100]})
+    keep = set(body.keep or ["william001", "admin"])
+    before = len(_db.fetch_all("SELECT username FROM users") or [])
+    if keep:
+        ph = ",".join(["%s"] * len(keep))
+        _db.execute(f"DELETE FROM users WHERE username NOT IN ({ph})", tuple(keep))
+    else:
+        _db.execute("DELETE FROM users", ())
+    inserted = 0
+    for r in rows:
+        if r["code"] in keep:
+            continue
+        pw = _hash_password(f"EcoStaff{r['code'][-4:]}")
+        _db.execute(
+            "INSERT INTO users (username, password_hash, full_name, role, unit, "
+            "staff_code, band, gender, active, is_admin, must_change_password) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,true,false,true) "
+            "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
+            "role=EXCLUDED.role, unit=EXCLUDED.unit, staff_code=EXCLUDED.staff_code, active=true",
+            (r["code"], pw, r["name"], r["role"], r["branch"], r["code"],
+             r["band"], r["gender"]))
+        inserted += 1
+    after = len(_db.fetch_all("SELECT username FROM users") or [])
+    try:
+        from utils.api_pipeline_scope import invalidate_staff_roster_cache
+        invalidate_staff_roster_cache()
+    except Exception:
+        pass
+    return {"ok": True, "applied": inserted, "before": before, "after": after,
+            "preserved": sorted(keep)}
+# === END STAFF EXCEL UPLOAD ENDPOINTS ===
+
+
+# === REPORTING HIERARCHY ENDPOINTS ===
+def _hier_has_cycle(hierarchy: dict) -> str:
+    """Return a description of the first cycle found, or '' if acyclic."""
+    WHITE, GREY, BLACK = 0, 1, 2
+    color = {r: WHITE for r in hierarchy}
+    def visit(node, stack):
+        if color.get(node, WHITE) == GREY:
+            return " -> ".join(stack + [node])
+        if color.get(node, WHITE) == BLACK:
+            return ""
+        color[node] = GREY
+        for parent in hierarchy.get(node, []) or []:
+            if parent in hierarchy:
+                c = visit(parent, stack + [node])
+                if c:
+                    return c
+        color[node] = BLACK
+        return ""
+    for r in list(hierarchy.keys()):
+        c = visit(r, [])
+        if c:
+            return c
+    return ""
+
+
+@app.get("/api/admin/hierarchy", tags=["admin"])
+def get_admin_hierarchy(user: dict = Depends(get_current_user)):
+    """Current reporting hierarchy (role -> parent roles) from org_config.
+    Readable by any authenticated user."""
+    from utils.core import get_org_config
+    cfg = get_org_config() or {}
+    hierarchy = cfg.get("hierarchy", {}) or {}
+    roles = cfg.get("roles", []) or sorted(hierarchy.keys())
+    top = [r for r, parents in hierarchy.items() if not parents]
+    return {"roles": sorted(set(roles) | set(hierarchy.keys())),
+            "hierarchy": hierarchy, "top": top}
+
+
+@app.post("/api/admin/hierarchy", tags=["admin"])
+def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
+                        user: dict = Depends(require_config_admin)):
+    """Edit the reporting hierarchy. See module docstring for actions.
+    Persists to org_config.json (with backup) and validates against cycles."""
+    from utils.core import get_org_config, save_org_config
+    action = str(payload.get("action", "")).strip()
+    role = str(payload.get("role", "")).strip()
+    if not action:
+        raise HTTPException(status_code=400, detail="action is required")
+
+    cfg = get_org_config() or {}
+    hierarchy = dict(cfg.get("hierarchy", {}) or {})
+    roles = list(cfg.get("roles", []) or sorted(hierarchy.keys()))
+
+    if action == "set_parents":
+        if role not in hierarchy and role not in roles:
+            raise HTTPException(status_code=404, detail=f"role '{role}' not found")
+        parents = [str(p).strip() for p in (payload.get("parents") or []) if str(p).strip()]
+        for p in parents:
+            if p not in hierarchy and p not in roles:
+                raise HTTPException(status_code=400, detail=f"parent role '{p}' not found")
+        if role in parents:
+            raise HTTPException(status_code=400, detail="a role cannot report to itself")
+        hierarchy[role] = parents
+
+    elif action == "add_role":
+        if not role:
+            raise HTTPException(status_code=400, detail="role name required")
+        if role in hierarchy or role in roles:
+            raise HTTPException(status_code=409, detail=f"role '{role}' already exists")
+        parents = [str(p).strip() for p in (payload.get("parents") or []) if str(p).strip()]
+        for p in parents:
+            if p not in hierarchy and p not in roles:
+                raise HTTPException(status_code=400, detail=f"parent role '{p}' not found")
+        hierarchy[role] = parents
+        if role not in roles:
+            roles.append(role)
+
+    elif action == "rename_role":
+        new_name = str(payload.get("new_name", "")).strip()
+        if not role or not new_name:
+            raise HTTPException(status_code=400, detail="role and new_name required")
+        if role not in hierarchy and role not in roles:
+            raise HTTPException(status_code=404, detail=f"role '{role}' not found")
+        if new_name in hierarchy or new_name in roles:
+            raise HTTPException(status_code=409, detail=f"'{new_name}' already exists")
+        # use the atomic rename if available (renames across kpis, weights, etc.)
+        try:
+            from utils.core import rename_role_everywhere
+            rename_role_everywhere(role, new_name)
+            cfg = get_org_config() or {}
+            return {"status": "renamed", "from": role, "to": new_name,
+                    "hierarchy": cfg.get("hierarchy", {})}
+        except Exception:
+            # fallback: rename within hierarchy + roles only
+            hierarchy = {(new_name if k == role else k):
+                         [(new_name if p == role else p) for p in v]
+                         for k, v in hierarchy.items()}
+            roles = [new_name if r == role else r for r in roles]
+
+    elif action == "remove_role":
+        if role not in hierarchy and role not in roles:
+            raise HTTPException(status_code=404, detail=f"role '{role}' not found")
+        children = [r for r, parents in hierarchy.items() if role in (parents or [])]
+        if children:
+            raise HTTPException(status_code=409,
+                detail=f"cannot remove '{role}': {len(children)} role(s) report to it: {children[:5]}")
+        hierarchy.pop(role, None)
+        roles = [r for r in roles if r != role]
+
+    else:
+        raise HTTPException(status_code=400, detail=f"unknown action '{action}'")
+
+    cyc = _hier_has_cycle(hierarchy)
+    if cyc:
+        raise HTTPException(status_code=400, detail=f"change would create a cycle: {cyc}")
+
+    cfg["hierarchy"] = hierarchy
+    cfg["roles"] = roles
+    try:
+        from pathlib import Path as _Path
+        from datetime import datetime as _dt
+        import shutil as _shutil
+        src = _Path(__file__).resolve().parent.parent / "data" / "org_config.json"
+        if src.exists():
+            _shutil.copyfile(src, src.with_suffix(f".pre_hierarchy_{_dt.now():%Y%m%d-%H%M%S}.json"))
+    except Exception as _exc:
+        logger.warning("hierarchy: backup snapshot failed: %s", _exc)
+
+    save_org_config(cfg)
+    _audit("API_HIERARCHY_CHANGE", user, f"{action}|{role}|{payload.get('parents') or payload.get('new_name') or ''}")
+    return {"status": "saved", "action": action, "role": role, "hierarchy": hierarchy}
+# === END REPORTING HIERARCHY ENDPOINTS ===
+
+
+# === DOCUMENT CATALOG ENDPOINT ===
+@app.get("/api/admin/document-catalog", tags=["admin"])
+def admin_document_catalog(user: dict = Depends(get_current_user)):
+    """Master list of documents an admin can require per product. Sourced from
+    lms_config document_checklist tiers, plus workflow artifacts (Credit Report,
+    Branch Committee Decision). De-duplicated, case-normalized, sorted."""
+    cfg = _load_json("lms_config.json") or {}
+    dc = cfg.get("document_checklist", {}) if isinstance(cfg, dict) else {}
+    docs = set()
+    for tier, items in dc.items():
+        if isinstance(items, list):
+            for d in items:
+                if isinstance(d, str) and d.strip():
+                    docs.add(d.strip())
+    # normalize known casing dupes
+    norm = {}
+    for d in docs:
+        key = d.lower()
+        norm[key] = norm.get(key, d)  # keep first-seen canonical
+    catalog = sorted(set(norm.values()))
+    # workflow artifacts that also travel as required items
+    for extra in ("Credit Report", "Branch Committee Decision"):
+        if extra not in catalog:
+            catalog.append(extra)
+    return {"documents": sorted(set(catalog))}
+# === END DOCUMENT CATALOG ENDPOINT ===
+
+
+# === DOCUMENT UPLOAD ENDPOINTS (Batch 3) ===
+import base64 as _b64_docup
+import hashlib as _hash_docup
+import re as _re_docup
+from datetime import datetime as _dt_docup
+
+_DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
+_DOC_MAX_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+class _DocUploadBody(BaseModel):
+    doc_name: str
+    filename: str = ""
+    content_b64: str
+
+
+def _safe_filename(name: str) -> str:
+    base = _re_docup.sub(r"[^A-Za-z0-9._-]", "_", (name or "file").strip())
+    return base[:120] or "file"
+
+
+def _deal_for_docs(deal_id: str, user: dict):
+    """Resolve + scope-check a deal for document ops. Returns (pm, deal)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return pm, deal
+
+
+@app.post("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])
+def upload_deal_document(deal_id: str, body: _DocUploadBody,
+                         user: dict = Depends(get_current_user)):
+    """Attach a file for one required document of a deal."""
+    pm, deal = _deal_for_docs(deal_id, user)
+    doc_name = str(body.doc_name or "").strip()
+    if not doc_name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+    required = _get_required_documents_for_deal(deal)
+    if required and doc_name not in required:
+        raise HTTPException(status_code=400,
+            detail=f"'{doc_name}' is not a required document for this deal")
+    try:
+        raw = _b64_docup.b64decode(body.content_b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"content_b64 invalid: {exc}")
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    if len(raw) > _DOC_MAX_BYTES:
+        raise HTTPException(status_code=400,
+            detail=f"file too large ({len(raw)} bytes; max {_DOC_MAX_BYTES})")
+
+    sha = _hash_docup.sha256(raw).hexdigest()
+    fname = _safe_filename(body.filename or doc_name)
+    ddir = _DOC_UPLOAD_ROOT / _safe_filename(deal_id)
+    ddir.mkdir(parents=True, exist_ok=True)
+    stored = ddir / f"{_safe_filename(doc_name)}__{fname}"
+    stored.write_bytes(raw)
+
+    files = dict(deal.get("document_files", {}) or {})
+    files[doc_name] = {
+        "filename": fname,
+        "path": str(stored.relative_to(ROOT)),
+        "sha256": sha,
+        "size": len(raw),
+        "uploaded_by": str(user.get("username", "") or ""),
+        "uploaded_at": _dt_docup.now().isoformat(timespec="seconds"),
+    }
+    provided = list(deal.get("documents_provided", []) or [])
+    if doc_name not in provided:
+        provided.append(doc_name)
+    pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
+                   str(user.get("username", "") or ""))
+    # EDMS metadata registration (best-effort; governance, not blocking)
+    try:
+        from utils.document_management import compute_sha256  # noqa: F401
+    except Exception:
+        pass
+    _audit("API_DEAL_DOC_UPLOAD", user, f"deal={deal_id}|doc={doc_name}|sha={sha[:12]}")
+    return {"status": "attached", "doc_name": doc_name, "meta": files[doc_name]}
+
+
+@app.get("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])
+def list_deal_documents(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's attached document metadata + the required list."""
+    _pm, deal = _deal_for_docs(deal_id, user)
+    return {"files": deal.get("document_files", {}) or {},
+            "required": _get_required_documents_for_deal(deal),
+            "provided": list(deal.get("documents_provided", []) or [])}
+
+
+@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+def download_deal_document(deal_id: str, doc_name: str,
+                           user: dict = Depends(get_current_user)):
+    """Stream one attached document back."""
+    from fastapi.responses import StreamingResponse
+    import io as _io_docup
+    _pm, deal = _deal_for_docs(deal_id, user)
+    files = deal.get("document_files", {}) or {}
+    meta = files.get(doc_name)
+    if not meta:
+        raise HTTPException(status_code=404, detail=f"No file for '{doc_name}'")
+    fpath = ROOT / meta.get("path", "")
+    if not fpath.exists():
+        raise HTTPException(status_code=404, detail="stored file missing")
+    data = fpath.read_bytes()
+    _audit("API_DEAL_DOC_DOWNLOAD", user, f"deal={deal_id}|doc={doc_name}")
+    return StreamingResponse(_io_docup.BytesIO(data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{meta.get("filename","file")}"'})
+
+
+@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+def delete_deal_document(deal_id: str, doc_name: str,
+                         user: dict = Depends(get_current_user)):
+    """Remove an attached document (so it can be re-uploaded)."""
+    pm, deal = _deal_for_docs(deal_id, user)
+    files = dict(deal.get("document_files", {}) or {})
+    meta = files.pop(doc_name, None)
+    if meta:
+        try:
+            fp = ROOT / meta.get("path", "")
+            if fp.exists():
+                fp.unlink()
+        except Exception:
+            pass
+    provided = [d for d in (deal.get("documents_provided", []) or []) if d != doc_name]
+    pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
+                   str(user.get("username", "") or ""))
+    _audit("API_DEAL_DOC_DELETE", user, f"deal={deal_id}|doc={doc_name}")
+    return {"status": "removed", "doc_name": doc_name}
+# === END DOCUMENT UPLOAD ENDPOINTS ===
+
+
+# === COMMITTEE PALETTE ENDPOINTS (4b-1) ===
+_COMMITTEE_RECORDING_MODES = ("single", "voting")
+_COMMITTEE_VOTING_RULES = ("SIMPLE_MAJORITY", "SUPERMAJORITY_TWO_THIRDS", "UNANIMOUS")
+
+_DEFAULT_COMMITTEE_PALETTE = [
+    {"code": "BCC1", "name": "Branch Credit Committee", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC", "name": "Head Office Department Credit Committee", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_CONS", "name": "Consumer DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_COMM", "name": "Commercial DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_CIB", "name": "CIB DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "BCC2", "name": "Business Credit Committee", "chaired_by": "Managing Director",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "BCC3", "name": "Board Credit Committee", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SUPERMAJORITY_TWO_THIRDS",
+     "amount_threshold_kes": 1000000000, "members": []},
+    {"code": "GCC", "name": "Group Credit Committee", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SUPERMAJORITY_TWO_THIRDS",
+     "amount_threshold_kes": 2000000000, "members": []},
+]
+
+
+def _read_committee_palette() -> list:
+    cfg = _load_json("lms_config.json") or {}
+    cw = cfg.get("credit_workflow", {}) if isinstance(cfg, dict) else {}
+    pal = cw.get("committee_palette")
+    return pal if isinstance(pal, list) else []
+
+
+def _write_committee_palette(palette: list):
+    from utils.core import _data_path  # noqa
+    import json as _json
+    p = ROOT / "data" / "lms_config.json"
+    cfg = _load_json("lms_config.json") or {}
+    cw = cfg.get("credit_workflow", {})
+    if not isinstance(cw, dict):
+        cw = {}
+    cw["committee_palette"] = palette
+    cfg["credit_workflow"] = cw
+    # backup then write
+    try:
+        from datetime import datetime as _dt
+        if p.exists():
+            shutil.copyfile(p, p.with_suffix(f".pre_cmtepalette_{_dt.now():%Y%m%d-%H%M%S}.json"))
+    except Exception:
+        pass
+    p.write_text(_json.dumps(cfg, indent=2), encoding="utf-8")
+
+
+def _validate_committee(c: dict) -> tuple:
+    if not isinstance(c, dict):
+        return False, "committee must be an object"
+    code = str(c.get("code", "")).strip()
+    name = str(c.get("name", "")).strip()
+    if not code:
+        return False, "committee code is required"
+    if not name:
+        return False, "committee name is required"
+    rm = str(c.get("recording_mode", "voting"))
+    if rm not in _COMMITTEE_RECORDING_MODES:
+        return False, f"recording_mode must be one of {_COMMITTEE_RECORDING_MODES}"
+    vr = str(c.get("voting_rule", "SIMPLE_MAJORITY"))
+    if vr not in _COMMITTEE_VOTING_RULES:
+        return False, f"voting_rule must be one of {_COMMITTEE_VOTING_RULES}"
+    try:
+        float(c.get("amount_threshold_kes", 0) or 0)
+    except (TypeError, ValueError):
+        return False, "amount_threshold_kes must be a number"
+    members = c.get("members", [])
+    if not isinstance(members, list):
+        return False, "members must be a list"
+    return True, ""
+
+
+@app.get("/api/admin/committee-palette", tags=["admin"])
+def get_committee_palette(user: dict = Depends(get_current_user)):
+    """The admin-editable palette of credit committees."""
+    return {"committees": _read_committee_palette(),
+            "recording_modes": list(_COMMITTEE_RECORDING_MODES),
+            "voting_rules": list(_COMMITTEE_VOTING_RULES)}
+
+
+@app.post("/api/admin/committee-palette/seed", tags=["admin"])
+def seed_committee_palette(user: dict = Depends(require_config_admin)):
+    """Seed the 5 default committees if the palette is empty."""
+    pal = _read_committee_palette()
+    if pal:
+        return {"status": "exists", "committees": pal}
+    _write_committee_palette(list(_DEFAULT_COMMITTEE_PALETTE))
+    _audit("COMMITTEE_PALETTE_SEED", user, f"n={len(_DEFAULT_COMMITTEE_PALETTE)}")
+    return {"status": "seeded", "committees": _DEFAULT_COMMITTEE_PALETTE}
+
+
+@app.post("/api/admin/committee-palette", tags=["admin"])
+def upsert_committee_palette(payload: dict = Body(default_factory=dict),
+                             user: dict = Depends(require_config_admin)):
+    """Add/edit a committee ({committee:{...}}) or delete one ({delete:code})."""
+    palette = _read_committee_palette()
+    if payload.get("delete"):
+        code = str(payload.get("delete")).strip()
+        palette = [c for c in palette if str(c.get("code")) != code]
+        _write_committee_palette(palette)
+        _audit("COMMITTEE_PALETTE_DELETE", user, f"code={code}")
+        return {"status": "saved", "deleted": code, "committees": palette}
+    c = payload.get("committee")
+    ok, reason = _validate_committee(c if isinstance(c, dict) else {})
+    if not ok:
+        raise HTTPException(status_code=400, detail=reason)
+    code = str(c.get("code")).strip()
+    norm = {
+        "code": code,
+        "name": str(c.get("name")).strip(),
+        "chaired_by": str(c.get("chaired_by", "") or ""),
+        "recording_mode": str(c.get("recording_mode", "voting")),
+        "voting_rule": str(c.get("voting_rule", "SIMPLE_MAJORITY")),
+        "amount_threshold_kes": float(c.get("amount_threshold_kes", 0) or 0),
+        "members": [
+            {"name": str(m.get("name", "")).strip(), "role": str(m.get("role", "")).strip(),
+             "staff_code": str(m.get("staff_code", "") or "").strip(),
+             "full_funnel": bool(m.get("full_funnel", False))}
+            for m in (c.get("members", []) or []) if isinstance(m, dict)
+        ],
+    }
+    replaced = False
+    for i, existing in enumerate(palette):
+        if str(existing.get("code")) == code:
+            palette[i] = norm; replaced = True; break
+    if not replaced:
+        palette.append(norm)
+    _write_committee_palette(palette)
+    _audit("COMMITTEE_PALETTE_UPSERT", user, f"code={code} replaced={replaced}")
+    return {"status": "saved", "committee": norm, "committees": palette}
+# === END COMMITTEE PALETTE ENDPOINTS ===
+
+
+# === COMMITTEE JOURNEY RESOLVER (4b-2) ===
+def _product_committee_journey(deal: dict) -> list:
+    """The product's configured committee_journey (ordered codes). [] if none."""
+    product = str(deal.get("product") or deal.get("product_type") or "").strip()
+    if not product:
+        return []
+    pcfg = _load_json("pipeline_settings.json") or {}
+    flows = pcfg.get("product_flows", {}) if isinstance(pcfg, dict) else {}
+    entry = flows.get(product) if isinstance(flows, dict) else None
+    if not isinstance(entry, dict):
+        return []
+    j = entry.get("committee_journey") or []
+    return [str(c) for c in j if str(c).strip()]
+
+
+
+def _committee_routing_cfg() -> dict:
+    """DCC routing config (admin-set): client_type_to_dcc map + branch_only_codes."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    r = cfg.get("committee_routing", {})
+    return r if isinstance(r, dict) else {}
+
+def _client_type_dcc_for(deal: dict) -> str:
+    """The DCC committee code matching the deal's client_type, or '' if none."""
+    ct = str(deal.get("client_type", "") or "").strip()
+    m = _committee_routing_cfg().get("client_type_to_dcc", {}) or {}
+    if ct in m:
+        return str(m[ct])
+    for k, v in m.items():
+        if str(k).strip().lower() == ct.lower():
+            return str(v)
+    return ""
+
+def _deal_is_branch_originated(deal: dict) -> bool:
+    """Branch-originated = the deal has a branch. Non-branch (head-office/direct)
+    deals skip branch-only committees (e.g. BCC)."""
+    return bool(str(deal.get("branch", "") or "").strip())
+
+
+def _effective_committee_journey(deal: dict) -> list:
+    """Effective journey = product-configured committees, plus any palette
+    committee whose amount_threshold_kes is met by the deal amount (auto-trigger),
+    de-duplicated, preserving configured order then appending triggered ones."""
+    configured = _product_committee_journey(deal)
+    out = list(configured)
+
+    # DCC: insert the customer-type DCC (Consumer/Commercial/CIB) if not already present.
+    dcc = _client_type_dcc_for(deal)
+    if dcc and dcc not in out:
+        out.append(dcc)
+
+    # DCC: non-branch deals skip branch-only committees (e.g. BCC).
+    if not _deal_is_branch_originated(deal):
+        branch_only = set(_committee_routing_cfg().get("branch_only_codes", []) or [])
+        out = [c for c in out if c not in branch_only]
+    try:
+        amount = float(deal.get("deal_value") or deal.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    for c in _read_committee_palette():
+        thr = 0.0
+        try:
+            thr = float(c.get("amount_threshold_kes", 0) or 0)
+        except (TypeError, ValueError):
+            thr = 0.0
+        code = str(c.get("code"))
+        if thr > 0 and amount >= thr and code not in out:
+            out.append(code)
+    return out
+
+
+@app.get("/api/pipeline/deals/{deal_id}/committee-journey", tags=["pipeline"])
+def get_deal_committee_journey(deal_id: str, user: dict = Depends(get_current_user)):
+    """The effective committee journey for a deal (configured + amount-triggered),
+    with each committee's palette definition for display."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    codes = _effective_committee_journey(deal)
+    palette = {str(c.get("code")): c for c in _read_committee_palette()}
+    journey = [palette.get(code, {"code": code, "name": code}) for code in codes]
+    return {"journey": journey, "codes": codes,
+            "cr_only": len(codes) == 0}
+# === END COMMITTEE JOURNEY RESOLVER ===
+
+
+# === DEAL-LEVEL CR ENDPOINTS (4b-3) ===
+@app.get("/api/pipeline/deals/{deal_id}/cr", tags=["pipeline"])
+def get_deal_cr(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's Credit Report: template + auto-populated + saved values.
+    The CR originates at the branch (deal owner) after documents are complete."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from utils.api_lms_cr import build_cr_view
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return build_cr_view(deal)
+
+
+@app.post("/api/pipeline/deals/{deal_id}/cr", tags=["pipeline"])
+def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
+                 user: dict = Depends(get_current_user)):
+    """Save the deal owner's CR field values. If completed=true, required
+    fields are enforced. Stored under deal['cr'] (mirrors app['cr'] shape)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from utils.api_lms_cr import build_cr_view, missing_required
+    from datetime import datetime as _dt
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    values = payload.get("values")
+    if not isinstance(values, dict):
+        raise HTTPException(status_code=400, detail="values must be an object")
+    completed = bool(payload.get("completed"))
+    if completed:
+        missing = missing_required(deal, values)
+        if missing:
+            raise HTTPException(status_code=400,
+                detail="Cannot mark CR complete — required fields missing: " + ", ".join(missing))
+    cr = {
+        "values": values,
+        "completed": completed,
+        "updated_by": str(user.get("username", "") or ""),
+        "updated_at": _dt.now().isoformat(timespec="seconds"),
+    }
+    pm.update_deal(deal_id, {"cr": cr}, str(user.get("username", "") or ""))
+    _audit("API_DEAL_CR_SAVE", user, f"deal={deal_id}|completed={completed}")
+    deal2 = _get_or_hydrate_deal(pm, deal_id)
+    return build_cr_view(deal2)
+# === END DEAL-LEVEL CR ENDPOINTS ===
+
+
+# === COMMITTEE DECISION CAPTURE (4b-4) ===
+_COMMITTEE_OUTCOMES = ("APPROVED", "REJECTED", "DEFERRED")
+
+
+def _derive_outcome_from_votes(votes: list, voting_rule: str) -> str:
+    """Derive APPROVED/REJECTED from per-member votes and the voting rule.
+    YES/NO counted; ABSTAIN/RECUSED excluded from the base. Ties -> REJECTED."""
+    yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
+    no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
+    base = yes + no
+    if base == 0:
+        return "DEFERRED"
+    rule = str(voting_rule or "SIMPLE_MAJORITY")
+    if rule == "UNANIMOUS":
+        return "APPROVED" if no == 0 and yes > 0 else "REJECTED"
+    if rule == "SUPERMAJORITY_TWO_THIRDS":
+        return "APPROVED" if (yes / base) >= (2.0 / 3.0) else "REJECTED"
+    # SIMPLE_MAJORITY (and default): > 50%, ties -> REJECTED
+    return "APPROVED" if yes > no else "REJECTED"
+
+
+def _committee_by_code(code: str) -> dict:
+    for c in _read_committee_palette():
+        if str(c.get("code")) == code:
+            return c
+    return {}
+
+
+@app.get("/api/pipeline/deals/{deal_id}/committee-records", tags=["pipeline"])
+def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's effective journey with each gate's palette def + recorded decision."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    codes = _effective_committee_journey(deal)
+    records = deal.get("committee_records", {}) or {}
+    gates = []
+    for code in codes:
+        c = _committee_by_code(code)
+        gates.append({
+            "code": code,
+            "name": c.get("name", code),
+            "recording_mode": c.get("recording_mode", "voting"),
+            "voting_rule": c.get("voting_rule", "SIMPLE_MAJORITY"),
+            "members": c.get("members", []),
+            "record": records.get(code),
+        })
+    return {"gates": gates, "cr_only": len(codes) == 0}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/committee-records", tags=["pipeline"])
+def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_factory=dict),
+                                   user: dict = Depends(get_current_user)):
+    """Record one committee gate's decision on the deal."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from datetime import datetime as _dt
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    code = str(payload.get("code", "")).strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="committee code is required")
+    journey = _effective_committee_journey(deal)
+    if code not in journey:
+        raise HTTPException(status_code=400,
+            detail=f"'{code}' is not in this deal's committee journey")
+    committee = _committee_by_code(code)
+    mode = str(committee.get("recording_mode", "voting"))
+    note = str(payload.get("note", "") or "")
+
+    if mode == "voting":
+        votes = payload.get("votes") or []
+        if not isinstance(votes, list) or not votes:
+            raise HTTPException(status_code=400, detail="voting committee requires votes[]")
+        clean_votes = []
+        for v in votes:
+            if not isinstance(v, dict):
+                continue
+            vote = str(v.get("vote", "")).upper()
+            if vote not in ("YES", "NO", "ABSTAIN", "RECUSED"):
+                raise HTTPException(status_code=400, detail=f"invalid vote '{vote}'")
+            clean_votes.append({"name": str(v.get("name", "")).strip(),
+                                "role": str(v.get("role", "")).strip(), "vote": vote})
+        outcome = _derive_outcome_from_votes(clean_votes, committee.get("voting_rule"))
+        record = {"outcome": outcome, "mode": "voting", "votes": clean_votes, "note": note}
+    else:
+        outcome = str(payload.get("outcome", "")).upper()
+        if outcome not in _COMMITTEE_OUTCOMES:
+            raise HTTPException(status_code=400,
+                detail=f"outcome must be one of {_COMMITTEE_OUTCOMES}")
+        record = {"outcome": outcome, "mode": "single", "votes": [], "note": note}
+
+    record["recorded_by"] = str(user.get("username", "") or "")
+    record["recorded_at"] = _dt.now().isoformat(timespec="seconds")
+
+    records = dict(deal.get("committee_records", {}) or {})
+    records[code] = record
+    pm.update_deal(deal_id, {"committee_records": records}, str(user.get("username", "") or ""))
+    _audit("API_DEAL_COMMITTEE_RECORD", user, f"deal={deal_id}|code={code}|outcome={record['outcome']}")
+    return {"status": "recorded", "code": code, "record": record}
+# === END COMMITTEE DECISION CAPTURE ===
+
+
+# === REJECT -> OWNER FALLBACK (4b-6) ===
+@app.post("/api/pipeline/deals/{deal_id}/committee-appeal", tags=["pipeline"])
+def appeal_committee_decision(deal_id: str, payload: dict = Body(default_factory=dict),
+                              user: dict = Depends(get_current_user)):
+    """Appeal a REJECTED committee gate: clears its record so it can be re-decided,
+    and logs the appeal. Owner/admin only."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    from datetime import datetime as _dt
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    perms = resolve_deal_permissions(deal, user, visible)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    my_code = str(user.get("staff_code", "") or "").strip()
+    is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
+    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    if not (is_owner or is_admin_like):
+        raise HTTPException(status_code=403, detail="Only the deal owner (or admin) can appeal.")
+
+    code = str(payload.get("code", "")).strip()
+    reason = str(payload.get("reason", "") or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="committee code is required")
+    if not reason:
+        raise HTTPException(status_code=400, detail="an appeal reason is required")
+    records = dict(deal.get("committee_records", {}) or {})
+    rec = records.get(code) or {}
+    if str(rec.get("outcome", "")).upper() != "REJECTED":
+        raise HTTPException(status_code=400,
+            detail=f"'{code}' is not in a rejected state — nothing to appeal")
+
+    appeals = list(deal.get("appeals", []) or [])
+    appeals.append({
+        "code": code,
+        "reason": reason,
+        "prior_outcome": rec.get("outcome"),
+        "prior_votes": rec.get("votes", []),
+        "by": str(user.get("username", "") or ""),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "outcome": "PENDING",
+    })
+    # clear the rejected record so the gate re-opens for a fresh decision
+    records.pop(code, None)
+    pm.update_deal(deal_id, {"committee_records": records, "appeals": appeals},
+                   str(user.get("username", "") or ""))
+    _audit("API_DEAL_COMMITTEE_APPEAL", user, f"deal={deal_id}|code={code}")
+    return {"status": "appealed", "code": code,
+            "message": f"{code} re-opened for a fresh decision.", "appeals": appeals}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/close-lost", tags=["pipeline"])
+def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
+                       user: dict = Depends(get_current_user)):
+    """Close the deal as Lost (owner's option after a committee rejection)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    perms = resolve_deal_permissions(deal, user, visible)
+    if not perms.get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    my_code = str(user.get("staff_code", "") or "").strip()
+    is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
+    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    if not (is_owner or is_admin_like):
+        raise HTTPException(status_code=403, detail="Only the deal owner (or admin) can close the deal.")
+    reason = str(payload.get("reason", "") or "").strip()
+    pm.update_deal(deal_id, {"stage": "Closed Lost", "close_reason": reason},
+                   str(user.get("username", "") or ""))
+    _audit("API_DEAL_CLOSE_LOST", user, f"deal={deal_id}|reason={reason[:60]}")
+    return {"status": "closed_lost", "deal_id": deal_id}
+# === END REJECT -> OWNER FALLBACK ===
+
+
+# === ANALYST COMMITTEE VIEW (4b-7b) ===
+@app.get("/api/lms/applications/{app_id}/committee-records", tags=["lms"])
+def get_lms_committee_records(app_id: str, user: dict = Depends(get_current_user)):
+    """Read-only branch committee decisions carried onto the application (4b-7)."""
+    from utils.core import LoanApplicationManager
+    lam = LoanApplicationManager()
+    app_rec = lam.get(app_id)
+    if not app_rec:
+        raise HTTPException(status_code=404, detail=f"Application {app_id} not found")
+    return {
+        "committee_records": app_rec.get("committee_records", {}) or {},
+        "committee_appeals": app_rec.get("committee_appeals", []) or [],
+        "cr_origin": app_rec.get("cr_origin", ""),
+    }
+# === END ANALYST COMMITTEE VIEW ===
+
+
+# === MY ANALYSTS DROPDOWN (assignment) ===
+def _is_analyst_role(role: str) -> bool:
+    """A credit-analyst role (excludes cyber/SOC/business analysts)."""
+    r = str(role or "").lower()
+    if "cyber" in r or "soc" in r or "business analyst" in r:
+        return False
+    return "credit analyst" in r or "credit analysis" in r
+
+
+_CREDIT_MANAGER_HINTS = ("chief credit", "credit officer", "head of credit",
+                         "credit analysis", "senior manager", "credit manager",
+                         "managing director", "admin")
+
+
+def _is_credit_manager(user: dict) -> bool:
+    if bool(user.get("is_admin")):
+        return True
+    r = str(user.get("role", "") or "").lower()
+    return any(h in r for h in _CREDIT_MANAGER_HINTS)
+
+
+@app.get("/api/lms/my-analysts", tags=["lms"])
+def get_my_analysts(user: dict = Depends(get_current_user)):
+    """Assignable credit analysts for the assign-analyst dropdown. Credit managers
+    see the FULL analyst pool (the scope walk's unit filter wrongly excludes
+    analysts whose Unit diverges from "Credit" — e.g. Unit="Head Office").
+    Non-managers fall back to their visible scope."""
+    from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
+    roster = get_staff_roster()
+    manager = _is_credit_manager(user)
+    visible = set() if manager else get_visible_staff_codes(user)
+    analysts = []
+    try:
+        for _, row in roster.iterrows():
+            code = str(row.get("Staff Code", "") or "").strip()
+            role = str(row.get("Role", "") or "")
+            if not code:
+                continue
+            if not manager and code not in visible:
+                continue
+            if _is_analyst_role(role):
+                analysts.append({
+                    "staff_code": code,
+                    "name": str(row.get("Staff Name", "") or ""),
+                    "role": role,
+                    "unit": str(row.get("Unit", "") or ""),
+                })
+    except Exception as exc:
+        logger.warning("my-analysts: roster scan failed: %s", exc)
+    analysts.sort(key=lambda a: a["name"])
+    return {"analysts": analysts, "count": len(analysts)}
+# === END MY ANALYSTS DROPDOWN ===
+
+# === MY LEGAL OFFICERS DROPDOWN (CA2) ===
+def _is_legal_role(role: str) -> bool:
+    """A legal-officer role (for the charging-assignment dropdown)."""
+    r = str(role or "").lower()
+    return "legal" in r
+
+
+@app.get("/api/credit-admin/my-legal-officers", tags=["credit-admin"])
+def get_my_legal_officers(user: dict = Depends(get_current_user)):
+    """Assignable legal officers for the Legal Chief's charging-assignment dropdown.
+    Legal chiefs / managers see the full legal pool; others fall back to their scope.
+    Mirrors my-analysts."""
+    from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
+    roster = get_staff_roster()
+    role_l = str(user.get("role", "") or "").lower()
+    full = bool(user.get("is_admin")) or ("legal" in role_l and (
+        "chief" in role_l or "head" in role_l or "manager" in role_l)) or is_manager(user)
+    visible = set() if full else get_visible_staff_codes(user)
+    officers = []
+    try:
+        for _, row in roster.iterrows():
+            code = str(row.get("Staff Code", "") or "").strip()
+            role = str(row.get("Role", "") or "")
+            if not code:
+                continue
+            if not full and code not in visible:
+                continue
+            if _is_legal_role(role):
+                officers.append({
+                    "staff_code": code,
+                    "name": str(row.get("Staff Name", "") or ""),
+                    "role": role,
+                    "unit": str(row.get("Unit", "") or ""),
+                })
+    except Exception as exc:
+        logger.warning("my-legal-officers: roster scan failed: %s", exc)
+    officers.sort(key=lambda a: a["name"])
+    return {"officers": officers, "count": len(officers)}
+# === END MY LEGAL OFFICERS DROPDOWN ===
+
+
+
+# === C-SLA: APPLICATION SLA STATUS ===
+def _app_sla_status(app: dict) -> dict:
+    """Compact SLA status for an LMS application — the case-age customer promise.
+    Reuses _business_days_since + _sla_due_soon_days + the deal state vocabulary
+    (on_track / due_soon / breached). Terminal cases return {}."""
+    if not isinstance(app, dict):
+        return {}
+    status = str(app.get("status", "") or "").lower()
+    if status in ("disbursed", "declined", "closed"):
+        return {}
+    base_ts = app.get("application_date") or app.get("created_at") or app.get("last_updated")
+    if not base_ts:
+        return {}
+    try:
+        target = int(app.get("sla_target_days") or 10)
+    except (TypeError, ValueError):
+        target = 10
+    elapsed = _business_days_since(base_ts)
+    overdue = max(0, elapsed - target)
+    remaining = target - elapsed
+    cfg = _sla_config()
+    if overdue > 0:
+        state = "breached"
+    elif remaining <= _sla_due_soon_days(cfg):
+        state = "due_soon"
+    else:
+        state = "on_track"
+    overall = {
+        "state": state,
+        "elapsed_business_days": elapsed,
+        "target_days": target,
+        "remaining_business_days": remaining,
+        "overdue_business_days": overdue,
+        "breached": overdue > 0,
+    }
+    # --- Stage / "My" SLA: current stage clock vs that stage's target_days. ---
+    stage = None
+    try:
+        smap = _sla_stage_step_map(cfg)
+        # Map the app's status to an SLA step. Assigned/analysis -> credit_assessment.
+        status_key = status
+        step_key = smap.get(status_key)
+        if not step_key and status_key in ("assigned", "info_requested"):
+            step_key = "credit_assessment"
+        if step_key:
+            stage_target = _sla_step_target(cfg, step_key)
+            stage_base = (app.get("stage_entered_at") or app.get("assigned_at")
+                          or app.get("last_updated") or base_ts)
+            if stage_target > 0 and stage_base:
+                s_elapsed = _business_days_since(stage_base)
+                s_overdue = max(0, s_elapsed - stage_target)
+                s_remaining = stage_target - s_elapsed
+                if s_overdue > 0:
+                    s_state = "breached"
+                elif s_remaining <= _sla_due_soon_days(cfg):
+                    s_state = "due_soon"
+                else:
+                    s_state = "on_track"
+                stage = {
+                    "state": s_state,
+                    "step_key": step_key,
+                    "elapsed_business_days": s_elapsed,
+                    "target_days": stage_target,
+                    "remaining_business_days": s_remaining,
+                    "overdue_business_days": s_overdue,
+                    "breached": s_overdue > 0,
+                }
+    except Exception:
+        stage = None
+    # Return overall at top level (back-compat) + nested overall/stage.
+    out = dict(overall)
+    out["overall"] = overall
+    out["stage"] = stage
+    return out
+
+
+def _attach_sla_to_apps(apps: list) -> list:
+    """Attach a compact SLA status to each application in a list response. Mutates."""
+    if not apps:
+        return apps
+    for a in apps:
+        if isinstance(a, dict):
+            try:
+                a["sla"] = _app_sla_status(a) or None
+            except Exception:
+                a["sla"] = None
+    return apps
+# === END C-SLA: APPLICATION SLA STATUS ===
+

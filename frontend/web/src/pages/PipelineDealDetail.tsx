@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, type StaffMember, type SlaViolation } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -384,6 +384,8 @@ export function PipelineDealDetail() {
       {/* Action: submit to credit — gated by the document checklist (B10).
           The panel fetches its own checklist and renders only when the
           caller may submit, or when the deal is already submitted. */}
+      <DealCreditReportCard dealId={deal.id} canEdit={true} />
+      <CommitteeJourneyCard dealId={deal.id} canEdit={true} />
       <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
 
       {/* Action: refer this deal to another person (A1). Hidden for drafts and
@@ -476,9 +478,63 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
-  const [checked,    setChecked]    = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
+  const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
+  const [busyDoc,    setBusyDoc]    = useState<string | null>(null);
+
+  const reloadDocs = () => {
+    listDealDocuments(deal.id)
+      .then((d) => setDocFiles(d.files || {}))
+      .catch(() => { /* leave as-is */ });
+  };
+  useEffect(() => { reloadDocs(); /* eslint-disable-next-line */ }, [deal.id]);
+
+  const uploadFor = (doc: string) => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusyDoc(doc); setError(null);
+      try {
+        const buf = await f.arrayBuffer();
+        let bin = '';
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(deal.id, doc, f.name, btoa(bin));
+        reloadDocs();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Upload failed');
+      } finally {
+        setBusyDoc(null);
+      }
+    };
+    inp.click();
+  };
+
+  const viewDoc = async (doc: string) => {
+    try {
+      const blob = await downloadDealDocument(deal.id, doc);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not open document');
+    }
+  };
+
+  const removeDoc = async (doc: string) => {
+    setBusyDoc(doc);
+    try {
+      await deleteDealDocument(deal.id, doc);
+      reloadDocs();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Remove failed');
+    } finally {
+      setBusyDoc(null);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -486,7 +542,6 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
       .then((c) => {
         if (!alive) return;
         setChecklist(c);
-        setChecked(new Set(c.provided));
       })
       .catch(() => { /* checklist unavailable — panel stays hidden */ });
     return () => { alive = false; };
@@ -523,26 +578,49 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     );
   }
 
-  // Only the owner / admin sees the submission form.
-  if (!checklist.can_submit) return null;
+  // Only the owner / admin sees the submission form. If the ONLY thing blocking
+  // submission is the stage gate, show an explanation instead of hiding.
+  if (!checklist.can_submit) {
+    const gateReasons: string[] = [];
+    if (checklist.stage_ok === false && checklist.stage_required) {
+      gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
+    }
+    if ((checklist.committee_rejected ?? []).length > 0) {
+      gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
+    }
+    if ((checklist.committee_pending ?? []).length > 0) {
+      gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
+    }
+    if (checklist.cr_required && checklist.cr_ok === false) {
+      gateReasons.push('The Credit Report (CR) must be completed first.');
+    }
+    if (gateReasons.length > 0) {
+      const rejected = (checklist.committee_rejected ?? []).length > 0;
+      return (
+        <Card className="mt-6" stripe="accent">
+          <Card.Header>
+            <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
+            <Badge tone={rejected ? 'danger' : 'warning'} size="sm">{rejected ? 'committee gate' : 'prerequisites'}</Badge>
+          </Card.Header>
+          <Card.Body>
+            <p className="mb-2 text-sm text-gray-700">Before this deal can be submitted to credit analysis:</p>
+            <ul className="list-disc pl-5 text-sm text-amber-700">
+              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          </Card.Body>
+        </Card>
+      );
+    }
+    return null;
+  }
 
-  const toggle = (doc: string) => {
-    setError(null);
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(doc)) next.delete(doc);
-      else next.add(doc);
-      return next;
-    });
-  };
-
-  const missing = checklist.required.filter((d) => !checked.has(d));
+  const missing = checklist.required.filter((d) => !docFiles[d]);
 
   const onSubmit = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await submitDealToCredit(deal.id, Array.from(checked));
+      const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
       toast({
         tone: 'success',
         message: `✓ Submitted to credit — application ${res.application_id}.`,
@@ -565,22 +643,39 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
       </Card.Header>
       <Card.Body>
         <p className="text-xs text-gray-500 mb-3">
-          Confirm each required document is on file. All required documents
-          must be checked before the deal can be submitted to credit analysis.
+          Upload each required document. All required documents must be attached
+          before the deal can be submitted to credit analysis.
         </p>
         <div className="space-y-2">
-          {checklist.required.map((doc) => (
-            <label key={doc} className="flex items-center gap-2 text-sm text-gray-800">
-              <input
-                type="checkbox"
-                checked={checked.has(doc)}
-                onChange={() => toggle(doc)}
-                disabled={submitting}
-                className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary/30"
-              />
-              <span>{doc}</span>
-            </label>
-          ))}
+          {checklist.required.map((doc) => {
+            const attached = docFiles[doc];
+            return (
+              <div key={doc} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={attached ? 'text-green-700' : 'text-gray-800'}>
+                    {attached ? '✓' : '○'} {doc}
+                  </span>
+                  {attached && (
+                    <span className="text-xs text-gray-500">{attached.filename}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {attached && (
+                    <button type="button" className="text-brand-primary hover:underline text-xs"
+                      onClick={() => void viewDoc(doc)}>View</button>
+                  )}
+                  <button type="button" className="text-brand-primary hover:underline text-xs"
+                    onClick={() => uploadFor(doc)} disabled={busyDoc === doc}>
+                    {busyDoc === doc ? 'Uploading…' : attached ? 'Replace' : 'Upload'}
+                  </button>
+                  {attached && (
+                    <button type="button" className="text-red-600 hover:underline text-xs"
+                      onClick={() => void removeDoc(doc)} disabled={busyDoc === doc}>Remove</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
         {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
         {!error && missing.length > 0 && (
@@ -885,3 +980,292 @@ function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => 
     </Card>
   );
 }
+
+// ── Deal Credit Report (4b-3): CR originates at the branch, on the deal ──
+function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
+  const { toast } = useToast();
+  const [cr, setCr] = useState<CrView | null>(null);
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const load = async () => {
+    try { setCr(await getDealCr(dealId)); } catch { /* non-fatal */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [dealId]);
+
+  const valueFor = (key: string): string => {
+    if (key in edits) return edits[key];
+    const v = cr?.values?.[key];
+    return v === undefined || v === null ? '' : String(v);
+  };
+
+  const save = async (completed: boolean) => {
+    setBusy(true);
+    try {
+      await saveDealCr(dealId, { values: edits, completed });
+      setEdits({});
+      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
+    } finally { setBusy(false); }
+  };
+
+  if (!cr) return null;
+
+  const sourceTint = (f: CrField, hasValue: boolean) => {
+    if (f.source === 'cbs') return hasValue ? 'bg-blue-50/50' : '';
+    if (f.source === 'auto') return hasValue ? 'bg-gray-50' : '';
+    return '';
+  };
+
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <div className="flex items-center gap-2">
+          {cr.completed && <Badge tone="success">Complete</Badge>}
+          {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
+          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
+            {open ? 'Hide' : 'Open'}
+          </button>
+        </div>
+      </Card.Header>
+      {open && (
+        <Card.Body>
+          <p className="text-xs text-gray-500 mb-4">
+            Complete the CR at the branch (after documents). Blue = CBS, grey = deal;
+            both editable. Plain fields are for the deal owner.
+          </p>
+          <div className="space-y-6">
+            {cr.template.sections.map((sec) => (
+              <div key={sec.key}>
+                <div className="text-sm font-semibold text-gray-800 mb-2 pb-1 border-b border-gray-100">
+                  {sec.title}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {sec.fields.map((f) => {
+                    const val = valueFor(f.key);
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    return (
+                      <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          {f.label}{f.required && <span className="text-red-500"> *</span>}
+                          {f.source !== 'rm' && <span className="ml-1 text-[10px] uppercase text-gray-400">({f.source})</span>}
+                        </label>
+                        {isLong ? (
+                          <textarea
+                            value={val} disabled={!canEdit || busy} rows={2}
+                            onChange={(e) => setEdits((p) => ({ ...p, [f.key]: e.target.value }))}
+                            className={`w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm ${sourceTint(f, !!val)}`}
+                          />
+                        ) : (
+                          <input
+                            value={val} disabled={!canEdit || busy}
+                            onChange={(e) => setEdits((p) => ({ ...p, [f.key]: e.target.value }))}
+                            className={`w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm ${sourceTint(f, !!val)}`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          {canEdit && (
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => void save(false)} disabled={busy}>Save draft</Button>
+              <Button onClick={() => void save(true)} disabled={busy}>Mark complete</Button>
+            </div>
+          )}
+        </Card.Body>
+      )}
+    </Card>
+  );
+}
+
+// ── Committee Journey capture (4b-4): record each gate's decision on the deal ──
+function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
+  const { toast } = useToast();
+  const [data, setData] = useState<CommitteeRecordsResponse | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [voteDraft, setVoteDraft] = useState<Record<string, CommitteeVote[]>>({});
+  const [outcomeDraft, setOutcomeDraft] = useState<Record<string, string>>({});
+  const [appealReason, setAppealReason] = useState<Record<string, string>>({});
+  const doAppeal = async (code: string) => {
+    const reason = (appealReason[code] ?? '').trim();
+    if (!reason) { toast({ tone: 'danger', message: 'Enter an appeal reason.' }); return; }
+    setBusy(code);
+    try {
+      const r = await appealCommitteeDecision(dealId, code, reason);
+      toast({ tone: 'success', message: r.message });
+      setAppealReason((p) => ({ ...p, [code]: '' }));
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Appeal failed' });
+    } finally { setBusy(null); }
+  };
+  const doCloseLost = async (code: string) => {
+    setBusy(code);
+    try {
+      await closeDealAsLost(dealId, `Committee ${code} rejected`);
+      toast({ tone: 'success', message: 'Deal closed as Lost.' });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Close failed' });
+    } finally { setBusy(null); }
+  };
+
+  const load = async () => {
+    try { setData(await getDealCommitteeRecords(dealId)); } catch { /* non-fatal */ }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [dealId]);
+
+  if (!data || data.cr_only) return null;
+
+  const setVote = (code: string, i: number, field: keyof CommitteeVote, value: string) => {
+    setVoteDraft((p) => {
+      const gate = data.gates.find((g) => g.code === code);
+      const base = p[code] ?? (gate?.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '' }));
+      const arr = base.map((v, j) => (j === i ? { ...v, [field]: value } : v));
+      return { ...p, [code]: arr };
+    });
+  };
+
+  const votesFor = (gate: CommitteeGate): CommitteeVote[] =>
+    voteDraft[gate.code] ?? (gate.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '' }));
+
+  const recordVoting = async (gate: CommitteeGate) => {
+    const votes = votesFor(gate).filter((v) => v.vote);
+    if (votes.length === 0) { toast({ tone: 'danger', message: 'Record at least one vote.' }); return; }
+    setBusy(gate.code);
+    try {
+      await recordDealCommitteeDecision(dealId, { code: gate.code, votes });
+      toast({ tone: 'success', message: `${gate.code} decision recorded.` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' });
+    } finally { setBusy(null); }
+  };
+
+  const recordSingle = async (gate: CommitteeGate) => {
+    const outcome = outcomeDraft[gate.code];
+    if (!outcome) { toast({ tone: 'danger', message: 'Pick an outcome.' }); return; }
+    setBusy(gate.code);
+    try {
+      await recordDealCommitteeDecision(dealId, { code: gate.code, outcome });
+      toast({ tone: 'success', message: `${gate.code} decision recorded.` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' });
+    } finally { setBusy(null); }
+  };
+
+  const outcomeTone = (o: string) => (o === 'APPROVED' ? 'success' : o === 'REJECTED' ? 'danger' : 'warning');
+
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Credit Committee Journey</h2>
+        <Badge tone="info" size="sm">{data.gates.length} gate{data.gates.length === 1 ? '' : 's'}</Badge>
+      </Card.Header>
+      <Card.Body>
+        <div className="space-y-4">
+          {data.gates.map((gate) => (
+            <div key={gate.code} className="rounded border p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-semibold">{gate.code} — {gate.name}</span>
+                  <span className="ml-2 text-xs text-gray-400">
+                    {gate.recording_mode === 'voting' ? `voting · ${gate.voting_rule}` : 'single record'}
+                  </span>
+                </div>
+                {gate.record && <Badge tone={outcomeTone(gate.record.outcome)} size="sm">{gate.record.outcome}</Badge>}
+              </div>
+
+              {gate.record ? (
+                <div className="text-xs text-gray-600">
+                  Recorded by {gate.record.recorded_by} on {gate.record.recorded_at}.
+                  {gate.record.mode === 'voting' && gate.record.votes.length > 0 && (
+                    <ul className="mt-1 list-disc pl-5">
+                      {gate.record.votes.map((v, i) => (
+                        <li key={i}>{v.name} ({v.role}): {v.vote}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {gate.record.outcome === 'REJECTED' && canEdit && (
+                    <div className="mt-3 rounded bg-red-50 p-2">
+                      <p className="mb-2 font-medium text-red-700">Rejected — appeal or close as lost.</p>
+                      <textarea className="mb-2 w-full rounded border px-2 py-1 text-xs" rows={2}
+                        placeholder="Appeal reason / justification"
+                        value={appealReason[gate.code] ?? ''}
+                        onChange={(e) => setAppealReason((p) => ({ ...p, [gate.code]: e.target.value }))} />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => void doAppeal(gate.code)} disabled={busy === gate.code}>
+                          {busy === gate.code ? 'Working…' : 'Appeal (re-open)'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => void doCloseLost(gate.code)} disabled={busy === gate.code}>
+                          Close as Lost
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : canEdit ? (
+                gate.recording_mode === 'voting' ? (
+                  <div>
+                    {(gate.members ?? []).length === 0 && (
+                      <p className="mb-2 text-xs text-amber-600">No members configured for this committee — add them in Credit Committees admin.</p>
+                    )}
+                    <div className="space-y-1">
+                      {votesFor(gate).map((v, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Name" value={v.name}
+                            onChange={(e) => setVote(gate.code, i, 'name', e.target.value)} />
+                          <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Role" value={v.role}
+                            onChange={(e) => setVote(gate.code, i, 'role', e.target.value)} />
+                          <select className="w-1/3 rounded border px-2 py-1 text-xs" value={v.vote}
+                            onChange={(e) => setVote(gate.code, i, 'vote', e.target.value)}>
+                            <option value="">— vote —</option>
+                            <option value="YES">YES</option>
+                            <option value="NO">NO</option>
+                            <option value="ABSTAIN">ABSTAIN</option>
+                            <option value="RECUSED">RECUSED</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button size="sm" onClick={() => void recordVoting(gate)} disabled={busy === gate.code}>
+                        {busy === gate.code ? 'Recording…' : 'Record votes'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <select className="rounded border px-2 py-1.5 text-sm"
+                      value={outcomeDraft[gate.code] ?? ''}
+                      onChange={(e) => setOutcomeDraft((p) => ({ ...p, [gate.code]: e.target.value }))}>
+                      <option value="">— outcome —</option>
+                      <option value="APPROVED">APPROVED</option>
+                      <option value="REJECTED">REJECTED</option>
+                      <option value="DEFERRED">DEFERRED</option>
+                    </select>
+                    <Button size="sm" onClick={() => void recordSingle(gate)} disabled={busy === gate.code}>
+                      {busy === gate.code ? 'Recording…' : 'Record decision'}
+                    </Button>
+                  </div>
+                )
+              ) : (
+                <p className="text-xs text-gray-400">Not yet decided.</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
