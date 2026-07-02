@@ -1332,6 +1332,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "product_catalogue": cfg.get("product_catalogue", {}),
         "stage_flows":       cfg.get("stage_flows", {}),
         "product_flows":     cfg.get("product_flows", {}),
+        "stage_catalogue":   cfg.get("stage_catalogue", {}),
         "customer_segments": _customer_segments(),
         "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
@@ -1343,6 +1344,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # console. Each maps straight into pipeline_settings.json; anything outside this
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
+    "stage_catalogue",
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
@@ -2036,6 +2038,14 @@ def _validate_product_flow(entry: dict) -> tuple:
         if nm in seen:
             return False, f"duplicate stage '{nm}' in flow"
         seen.add(nm)
+        # SR1: every stage must exist in the admin stage_catalogue (governed
+        # vocabulary). If the catalogue is empty (not yet seeded), skip this
+        # check so nothing breaks pre-seed.
+        if _stage_catalogue_names() and not _is_stage_catalogued(nm):
+            return False, (
+                f"Stage '{nm}' is not in the stage repository. Add it to the stage "
+                "repository first, then use it in a product flow."
+            )
         try:
             t = int(s.get("target_days"))
         except (TypeError, ValueError):
@@ -3053,6 +3063,40 @@ def _deal_value(d: dict) -> float:
 
 def _norm_product(s: str) -> str:
     return "".join(ch for ch in str(s or "").lower() if ch.isalnum())
+
+
+def _is_stage_catalogued(stage_name: str) -> bool:
+    """SR1: True if a stage NAME exists in the admin stage_catalogue (exact,
+    case-insensitive after strip). Retired stages still count as catalogued so
+    existing flows/deals never break; the UI hides retired names from NEW authoring.
+    Mirrors _is_product_catalogued."""
+    nm = str(stage_name or "").strip().lower()
+    if not nm:
+        return False
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("stage_catalogue", {}) if isinstance(cfg, dict) else {}
+    for st in (cat.get("stages", []) if isinstance(cat, dict) else []):
+        cn = st.get("name") if isinstance(st, dict) else st
+        if str(cn or "").strip().lower() == nm:
+            return True
+    return False
+
+
+def _stage_catalogue_names(include_retired: bool = True) -> list:
+    """Ordered catalogue stage names (for dropdowns / validation)."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("stage_catalogue", {}) if isinstance(cfg, dict) else {}
+    out = []
+    for st in (cat.get("stages", []) if isinstance(cat, dict) else []):
+        if isinstance(st, dict):
+            if not include_retired and st.get("retired"):
+                continue
+            nm = str(st.get("name", "") or "").strip()
+        else:
+            nm = str(st or "").strip()
+        if nm:
+            out.append(nm)
+    return out
 
 
 def _is_product_catalogued(product_type: str) -> bool:
@@ -9299,6 +9343,15 @@ _DEFAULT_COMMITTEE_PALETTE = [
     {"code": "DCC", "name": "Head Office Department Credit Committee", "chaired_by": "",
      "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
      "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_CONS", "name": "Consumer DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_COMM", "name": "Commercial DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
+    {"code": "DCC_CIB", "name": "CIB DCC", "chaired_by": "",
+     "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
+     "amount_threshold_kes": 0, "members": []},
     {"code": "BCC2", "name": "Business Credit Committee", "chaired_by": "Managing Director",
      "recording_mode": "voting", "voting_rule": "SIMPLE_MAJORITY",
      "amount_threshold_kes": 0, "members": []},
@@ -9439,12 +9492,46 @@ def _product_committee_journey(deal: dict) -> list:
     return [str(c) for c in j if str(c).strip()]
 
 
+
+def _committee_routing_cfg() -> dict:
+    """DCC routing config (admin-set): client_type_to_dcc map + branch_only_codes."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    r = cfg.get("committee_routing", {})
+    return r if isinstance(r, dict) else {}
+
+def _client_type_dcc_for(deal: dict) -> str:
+    """The DCC committee code matching the deal's client_type, or '' if none."""
+    ct = str(deal.get("client_type", "") or "").strip()
+    m = _committee_routing_cfg().get("client_type_to_dcc", {}) or {}
+    if ct in m:
+        return str(m[ct])
+    for k, v in m.items():
+        if str(k).strip().lower() == ct.lower():
+            return str(v)
+    return ""
+
+def _deal_is_branch_originated(deal: dict) -> bool:
+    """Branch-originated = the deal has a branch. Non-branch (head-office/direct)
+    deals skip branch-only committees (e.g. BCC)."""
+    return bool(str(deal.get("branch", "") or "").strip())
+
+
 def _effective_committee_journey(deal: dict) -> list:
     """Effective journey = product-configured committees, plus any palette
     committee whose amount_threshold_kes is met by the deal amount (auto-trigger),
     de-duplicated, preserving configured order then appending triggered ones."""
     configured = _product_committee_journey(deal)
     out = list(configured)
+
+    # DCC: insert the customer-type DCC (Consumer/Commercial/CIB) if not already present.
+    dcc = _client_type_dcc_for(deal)
+    if dcc and dcc not in out:
+        out.append(dcc)
+
+    # DCC: non-branch deals skip branch-only committees (e.g. BCC).
+    if not _deal_is_branch_originated(deal):
+        branch_only = set(_committee_routing_cfg().get("branch_only_codes", []) or [])
+        out = [c for c in out if c not in branch_only]
     try:
         amount = float(deal.get("deal_value") or deal.get("amount") or 0)
     except (TypeError, ValueError):

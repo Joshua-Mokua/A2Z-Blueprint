@@ -876,8 +876,8 @@ export default function AdminConfig() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="mb-3 rounded border p-3">
+                    <div className="space-y-3 pt-1">
+                      <div className="rounded border p-3">
                 <p className="mb-1 text-sm font-medium">Required documents (this product)</p>
                 <p className="mb-2 text-xs text-gray-500">Tick documents this product requires. Choose the stage they must be attached at.</p>
                 <div className="mb-2 grid max-h-40 grid-cols-2 gap-x-4 gap-y-1 overflow-auto rounded border p-2">
@@ -900,7 +900,7 @@ export default function AdminConfig() {
                   ))}
                 </select>
               </div>
-<div className="mb-3 rounded border p-3">
+              <div className="rounded border p-3">
                 <p className="mb-1 text-sm font-medium">Credit committee journey (this product)</p>
                 <p className="mb-2 text-xs text-gray-500">Ordered committee gates this product opens before Credit Analysis. Empty = CR only. Amount-triggered committees are added automatically.</p>
                 {(flowDraft.committee_journey ?? []).length === 0 && (
@@ -932,14 +932,16 @@ export default function AdminConfig() {
                   </select>
                 </div>
               </div>
-                            <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
-                        Save flow
-                      </Button>
-                      {productFlows[flowProduct] && (
-                        <Button variant="secondary" size="sm" onClick={resetFlowToClass} disabled={flowBusy}>
-                          Reset to class flow
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={saveFlow} disabled={flowBusy}>
+                          Save flow
                         </Button>
-                      )}
+                        {productFlows[flowProduct] && (
+                          <Button variant="secondary" size="sm" onClick={resetFlowToClass} disabled={flowBusy}>
+                            Reset to class flow
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
