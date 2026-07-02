@@ -77,7 +77,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <aside className="sidebar">
       <div className="sb-brand">
         <img src="/img/ecobank-light.svg" alt="Ecobank" className="sb-logo" />
-        <div className="sb-brand-name">A2Z MIS 360</div>
+        <div className="sb-brand-text">
+          <div className="sb-brand-name">Meridian</div>
+          <div className="sb-brand-tag">Group Intelligence Platform</div>
+        </div>
       </div>
 
       <nav className="sb-nav">

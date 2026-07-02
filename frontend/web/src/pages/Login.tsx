@@ -45,9 +45,13 @@ export function Login() {
       {/* Left panel — brand */}
       <div className="login-left">
         <div className="login-brand">
-          <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
-          <div className="login-brand-name">A2Z MIS 360</div>
-          <div className="login-brand-tag">Intelligent Banking Platform</div>
+          <div className="login-brand-row">
+            <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
+            <div className="login-brand-text">
+              <div className="login-brand-name">Meridian</div>
+              <div className="login-brand-tag">Group Intelligence Platform</div>
+            </div>
+          </div>
         </div>
         <div className="login-tagline">
           One platform.<br />Total intelligence.
