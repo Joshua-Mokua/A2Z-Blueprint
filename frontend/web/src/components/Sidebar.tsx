@@ -78,8 +78,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="sb-brand">
         <img src="/img/ecobank-light.svg" alt="Ecobank" className="sb-logo" />
         <div className="sb-brand-text">
-          <div className="sb-brand-name">Meridian</div>
-          <div className="sb-brand-tag">Group Intelligence Platform</div>
+          <div className="sb-brand-name">ECO360</div>
+          <div className="sb-brand-tag">Intelligence Portal</div>
         </div>
       </div>
 

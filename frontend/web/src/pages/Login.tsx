@@ -48,8 +48,8 @@ export function Login() {
           <div className="login-brand-row">
             <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
             <div className="login-brand-text">
-              <div className="login-brand-name">Meridian</div>
-              <div className="login-brand-tag">Group Intelligence Platform</div>
+              <div className="login-brand-name">ECO360</div>
+              <div className="login-brand-tag">Intelligence Portal</div>
             </div>
           </div>
         </div>
