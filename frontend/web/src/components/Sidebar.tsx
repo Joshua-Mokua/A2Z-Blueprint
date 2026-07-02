@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useBranding } from '@/hooks/useBranding';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { isManager } from '@/lib/role';
@@ -66,6 +67,7 @@ interface SidebarProps { onNavigate?: () => void; }
 
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { pathname } = useLocation();
+  const { branding } = useBranding();
   const { user } = useRole();
   const { logout } = useAuth();
 
@@ -78,8 +80,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="sb-brand">
         <img src="/img/ecobank-light.svg" alt="Ecobank" className="sb-logo" />
         <div className="sb-brand-text">
-          <div className="sb-brand-name">ECO360</div>
-          <div className="sb-brand-tag">Intelligence Portal</div>
+          <div className="sb-brand-name">{branding?.app_name ?? 'A2Z Blueprint'}</div>
+          <div className="sb-brand-tag">MIS 360</div>
         </div>
       </div>
 

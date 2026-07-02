@@ -48,8 +48,8 @@ export function Login() {
           <div className="login-brand-row">
             <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
             <div className="login-brand-text">
-              <div className="login-brand-name">ECO360</div>
-              <div className="login-brand-tag">Intelligence Portal</div>
+              <div className="login-brand-name">{branding?.app_name ?? 'A2Z Blueprint'}</div>
+              <div className="login-brand-tag">MIS 360</div>
             </div>
           </div>
         </div>
