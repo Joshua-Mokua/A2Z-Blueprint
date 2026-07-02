@@ -1,6 +1,7 @@
 """app.py — A2Z Platform entry point. Run: streamlit run app.py"""
 import streamlit as st
 from pathlib import Path
+from typing import Dict, List, Optional, Any
 
 # ── Version stamp — wipes only manager objects when code is updated ──
 _APP_VERSION = "v10.502-batch5e-2026.06.10"
@@ -543,7 +544,7 @@ except Exception:
 # ── Load global CSS ──────────────────────────────────────────────────
 _css_path = Path(__file__).parent / ".streamlit" / "style.css"
 if _css_path.exists():
-    st.markdown(f"<style>{_css_path.read_text(encoding="utf-8")}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{_css_path.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 # ── Load logo SVGs ────────────────────────────────────────────────────
 import base64

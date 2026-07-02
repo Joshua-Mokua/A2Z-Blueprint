@@ -733,16 +733,79 @@ class ChangePasswordRequest(BaseModel):
 def login(request: Request, req: LoginRequest):
     """Exchange username + password for a 30-minute bearer JWT.
 
-    Verifies via UserManager.authenticate (which uses bcrypt per V-003 fix
-    and rehashes legacy SHA-256 on success). Audit log fires on both
-    success and failure so brute-force attempts are visible.
+    Auth order:
+      1. External AD (if ad_enabled=true in auth_settings.json): tries
+         primary URL then fallback URL. On success the user is upserted
+         into the local store (preserving any existing role) and a JWT
+         is issued immediately — no local password check.
+      2. Local bcrypt (UserManager.authenticate) — always attempted when
+         AD is disabled, or when AD fails and ad_fallback_to_local=true.
 
-    v10.501 Phase 2 Arc B Batch 4b: rate-limited to 10/minute and
-    100/hour per IP (closes GAP-006). The `request: Request` parameter
-    is required by slowapi to extract the client IP for keying.
+    Rate-limited to 10/minute, 100/hour per IP (GAP-006).
     """
+    from utils.core import UserManager
+
+    # ── 1. External / AD authentication ───────────────────────────────
     try:
-        from utils.core import UserManager
+        from utils.external_auth import ExternalAuthService, get_auth_settings
+        auth_cfg = get_auth_settings()
+        if auth_cfg.get("ad_enabled"):
+            svc = ExternalAuthService(auth_cfg)
+            ext_user = svc.authenticate(req.username, req.password)
+            if ext_user:
+                # Upsert into local user store. Preserve existing role if
+                # the account already exists; default to "Staff" for new ones.
+                um = UserManager()
+                existing = um.users.get(req.username, {})
+                um.users[req.username] = {
+                    **existing,
+                    "username":           req.username,
+                    "full_name":          ext_user.get("name", req.username),
+                    "email":              ext_user.get("email", ""),
+                    "department":         ext_user.get("department", ""),
+                    "title":              ext_user.get("title", ""),
+                    "role":               existing.get("role", "Staff"),
+                    "active":             True,
+                    "must_change_password": False,
+                    # Keep existing password hash so local login still works
+                    # if the user was previously registered locally.
+                    "password":           existing.get("password", ""),
+                }
+                um.save_users()
+
+                user_data = um.users[req.username]
+                user = {"username": req.username, "role": user_data.get("role", "Staff")}
+                token = create_access_token(user, scope=TOKEN_SCOPE_FULL)
+                _audit(
+                    "API_LOGIN_SUCCESS_AD", user,
+                    f"Issued full-scope token via external AD for {req.username}",
+                )
+                return TokenResponse(
+                    access_token=token,
+                    username=req.username,
+                    role=user["role"],
+                    must_change_password=False,
+                )
+
+            # AD returned nothing — fall through to local auth only if
+            # the fallback flag is set (default: true).
+            if not auth_cfg.get("ad_fallback_to_local", True):
+                _audit("API_LOGIN_FAILED", {"username": req.username},
+                       "AD auth failed and fallback_to_local=false")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid credentials",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # External auth module missing, network error, bad JSON, etc.
+        # Never block local login over an AD outage.
+        logger.warning("External auth error for '%s': %s", req.username, exc)
+
+    # ── 2. Local bcrypt authentication (UserManager) ───────────────────
+    try:
         um = UserManager()
         ok, user_data = um.authenticate(req.username, req.password)
     except Exception as e:
@@ -1586,6 +1649,45 @@ def set_sla_config(
 
 
 # ─────────────────────────────────────────────────────────────────────
+# Auth config — external / AD authentication settings
+# GET  /api/admin/auth-config  — read current settings (any authed user)
+# POST /api/admin/auth-config  — save settings (config-admin only)
+# ─────────────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/auth-config", tags=["admin"])
+def get_auth_config(user: dict = Depends(get_current_user)):
+    """Return current external-auth settings. Password is never echoed back."""
+    from utils.external_auth import get_auth_settings
+    cfg = get_auth_settings()
+    return {"auth_config": cfg}
+
+
+@app.post("/api/admin/auth-config", tags=["admin"])
+def set_auth_config(
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(require_config_admin),
+):
+    """Persist external / AD auth settings.
+
+    Accepted keys (all optional):
+      ad_enabled          bool   — enable external auth (default false)
+      ad_primary_url      str    — primary AD endpoint URL
+      ad_fallback_url     str    — secondary/fallback AD endpoint URL
+      ad_timeout_seconds  int    — per-URL request timeout (default 20)
+      ad_verify_ssl       bool   — verify TLS cert (default false)
+      ad_fallback_to_local bool  — fall back to bcrypt if AD fails (default true)
+
+    Unknown keys are silently dropped (whitelist enforced in save_auth_settings).
+    """
+    from utils.external_auth import save_auth_settings
+    cfg = save_auth_settings(payload)
+    _audit("AUTH_CONFIG_UPDATED", user,
+           f"External auth config updated by {user.get('username')} "
+           f"(ad_enabled={cfg.get('ad_enabled')})")
+    return {"status": "saved", "auth_config": cfg}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # SW-1 — React admin branches / regions panel
 # GET  /api/admin/branches — branch list + the region/area schemes
 # POST /api/admin/branches — add / rename / edit a branch's region or area
@@ -1597,58 +1699,53 @@ def set_sla_config(
 
 @app.get("/api/admin/staff", tags=["admin"])
 def get_admin_staff(user: dict = Depends(require_config_admin)):
-    """Full staff roster from the PostgreSQL `users` table (authoritative store).
-
-    Read-only. Returns every user row shaped for the React staff-admin table.
-    Deliberately reads the DB table directly — NOT via UserManager / users.json,
-    which is a stale 70-user shadow. Reporting lines and managed_* scope live in
-    the row's `metadata` JSONB and are surfaced here when present.
-    """
+    """Staff roster — PostgreSQL when available, users.json fallback otherwise."""
     from utils.db import db as _db
-    if not _db.table_uses_db("users"):
-        raise HTTPException(status_code=503,
-                            detail="users table not active in PostgreSQL")
-    try:
-        rows = _db.fetch_all(
-            "SELECT username, staff_code, full_name, role, department, unit, "
-            "       email, active, is_admin, can_view_all, "
-            "       must_change_password, last_login, accessible_modules, hidden_modules "
-            "FROM users ORDER BY full_name NULLS LAST, username"
-        ) or []
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"staff read failed: {exc}")
 
-    staff = []
-    for r in rows:
-        meta = {}  # users table has no metadata column
-        if isinstance(meta, str):
-            try:
-                import json as _json
-                meta = _json.loads(meta)
-            except Exception:
-                meta = {}
-        staff.append({
-            "username":        r.get("username"),
-            "staff_code":      r.get("staff_code"),
-            "full_name":       r.get("full_name"),
-            "role":            r.get("role"),
-            "department":      r.get("department"),
-            "unit":            r.get("unit"),
-            "email":           r.get("email") or "",
-            "active":          bool(r.get("active")),
-            "is_admin":        bool(r.get("is_admin")),
-            "can_view_all":    bool(r.get("can_view_all")),
-            "must_change_password": bool(r.get("must_change_password")),
-            "last_login":      str(r.get("last_login")) if r.get("last_login") else None,
-            # Reporting line + scope (from metadata JSONB, if populated):
-            "reports_to":          meta.get("reports_to"),
-            "managed_staff_codes": meta.get("managed_staff_codes", []),
-            "managed_units":       meta.get("managed_units", []),
-            "managed_roles":       meta.get("managed_roles", []),
-            "region":              meta.get("region"),
-        })
-    _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff")
-    return {"staff": staff, "count": len(staff)}
+    def _shape(r: dict, meta: dict = None) -> dict:
+        meta = meta or {}
+        return {
+            "username":             r.get("username"),
+            "staff_code":           r.get("staff_code"),
+            "full_name":            r.get("full_name"),
+            "role":                 r.get("role"),
+            "department":           r.get("department"),
+            "unit":                 r.get("unit"),
+            "email":                r.get("email") or "",
+            "active":               bool(r.get("active", True)),
+            "is_admin":             bool(r.get("is_admin", False)),
+            "can_view_all":         bool(r.get("can_view_all", False)),
+            "must_change_password": bool(r.get("must_change_password", False)),
+            "last_login":           str(r.get("last_login")) if r.get("last_login") else None,
+            "reports_to":           meta.get("reports_to"),
+            "managed_staff_codes":  meta.get("managed_staff_codes", []),
+            "managed_units":        meta.get("managed_units", []),
+            "managed_roles":        meta.get("managed_roles", []),
+            "region":               meta.get("region"),
+        }
+
+    # ── PostgreSQL path ──────────────────────────────────────────────────────
+    if _db.table_uses_db("users"):
+        try:
+            rows = _db.fetch_all(
+                "SELECT username, staff_code, full_name, role, department, unit, "
+                "       email, active, is_admin, can_view_all, "
+                "       must_change_password, last_login "
+                "FROM users ORDER BY full_name NULLS LAST, username"
+            ) or []
+            staff = [_shape(r) for r in rows]
+            _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (pg)")
+            return {"staff": staff, "count": len(staff), "source": "postgres"}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"staff read failed: {exc}")
+
+    # ── JSON fallback (users.json via UserManager) ───────────────────────────
+    from utils.core import UserManager
+    um = UserManager()
+    rows = sorted(um.users.values(), key=lambda u: (u.get("full_name") or u.get("username") or ""))
+    staff = [_shape(r) for r in rows]
+    _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (json)")
+    return {"staff": staff, "count": len(staff), "source": "json"}
 
 
 # ── Staff write endpoints (A-minimal Step 2 v2 — real-schema) ─────────────
