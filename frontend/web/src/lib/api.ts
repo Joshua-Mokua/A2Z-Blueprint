@@ -2000,3 +2000,26 @@ export async function convokeCommittee(appId: string): Promise<LoanAppMutationRe
     `/lms/applications/${encodeURIComponent(appId)}/committee/convene`, {});
 }
 
+// CA1: Troops disbursement queue + the 3 actions (book -> value-date -> disburse)
+export interface TroopsQueueCase {
+  case_id: string; application_id?: string; client_name?: string; amount?: number;
+  rm_code?: string; troops_status: string; cbs_account_no?: string | null;
+  value_date?: string | null; disbursed: boolean; disbursement_date?: string | null;
+}
+export interface TroopsQueueResponse { cases: TroopsQueueCase[]; count: number; source: string; }
+export async function fetchTroopsQueue(): Promise<TroopsQueueResponse> {
+  return getJson<TroopsQueueResponse>('/credit-admin/troops/queue');
+}
+export async function troopsBook(caseId: string, cbsAccountNo?: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { cbs_account_no?: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/book`, { cbs_account_no: cbsAccountNo });
+}
+export async function troopsValueDate(caseId: string, valueDate: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { value_date: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/value-date`, { value_date: valueDate });
+}
+export async function troopsDisburse(caseId: string, glReference?: string): Promise<{ troops_status: string }> {
+  return postJson<{ troops_status: string }, { gl_reference?: string }>(
+    `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/disburse`, { gl_reference: glReference });
+}
+
