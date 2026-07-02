@@ -170,3 +170,17 @@ simulate_credit_chain (*).py
 
 # credit document uploads (customer files — never commit)
 data/uploads/credit_docs/
+
+# ── Runtime/operational data (per-environment; NOT shared via git) ──
+data/pipeline_deals.json
+data/pipeline.json
+data/pipeline_activities.json
+data/loan_applications.json
+data/credit_admin.json
+data/credit_monitoring.json
+data/target_cascade.json
+data/staff_register.xlsx
+data/bsc_actuals_*.json
+data/branch_actuals.json
+data/partnerships_mous.json
+data/fx_rates.json

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/quicksand':
+        specifier: ^5.2.10
+        version: 5.2.10
       '@tanstack/react-query':
         specifier: ^5.51.0
         version: 5.100.11(react@18.3.1)
@@ -18,7 +21,7 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-router-dom:
-        specifier: ^6.30.4
+        specifier: ^6.26.0
         version: 6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       recharts:
         specifier: ^2.12.7
@@ -37,7 +40,7 @@ importers:
         specifier: ^7.18.0
         version: 7.18.0(eslint@8.57.1)(typescript@5.9.3)
       '@vitejs/plugin-react':
-        specifier: ^4.7.0
+        specifier: ^4.3.1
         version: 4.7.0(vite@5.4.21)
       autoprefixer:
         specifier: ^10.4.20
@@ -64,7 +67,7 @@ importers:
         specifier: ^5.5.3
         version: 5.9.3
       vite:
-        specifier: ^5.4.21
+        specifier: ^5.4.0
         version: 5.4.21
 
 packages:
@@ -315,6 +318,9 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@fontsource/quicksand@5.2.10':
+    resolution: {integrity: sha512-rck0ccT6vJF9RnbSW2ON1grq5qFZvjVOGvYIUixATXF8mNh4KglD+8Sn8QpRgKQBSBJF5yOR3SBYBWPg/Y8YbQ==}
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -1732,6 +1738,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.57.1': {}
+
+  '@fontsource/quicksand@5.2.10': {}
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
