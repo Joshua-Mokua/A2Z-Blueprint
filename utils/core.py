@@ -1958,6 +1958,14 @@ def get_all_pipeline_stage_names() -> set:
                     n = str(st).strip()
                     if n:
                         names.add(n)
+        # FP1 (2026-07-02): per-PRODUCT flows must be recognised too, else an
+        # admin-authored product-flow stage is "Unknown stage" at create/advance.
+        for entry in cfg.get("product_flows", {}).values():
+            if isinstance(entry, dict):
+                for st in entry.get("stages", []):
+                    n = str(st.get("stage", "")).strip() if isinstance(st, dict) else str(st).strip()
+                    if n:
+                        names.add(n)
     except Exception:
         pass
     return names

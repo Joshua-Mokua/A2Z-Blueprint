@@ -228,6 +228,59 @@ def validate_refer_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
     return True, ""
 
 
+
+
+# FP1 (2026-07-02): create-cutoff derived from the PRODUCT'S OWN flow, not a frozen set.
+# The credit-analysis handoff stage is where the deal leaves pipeline ORIGINATION and
+# becomes an LMS matter. It may be named per product ("Credit Analysis",
+# "Credit Assessment", ...); detect it flexibly.
+_CREDIT_ANALYSIS_FAMILY = {"credit analysis", "credit assessment"}
+
+def _product_flow_stage_names(product_type: str) -> list:
+    """Ordered stage names for a product's flow (product_flows)."""
+    try:
+        from utils.api import _load_json, _norm_product
+        cfg = _load_json("pipeline_settings.json") or {}
+        pf = cfg.get("product_flows", {}) or {}
+        want = _norm_product(product_type) if product_type else ""
+        for name, entry in pf.items():
+            if _norm_product(name) == want and isinstance(entry, dict):
+                out = []
+                for st in entry.get("stages", []):
+                    nm = st.get("stage") if isinstance(st, dict) else st
+                    if nm:
+                        out.append(str(nm))
+                return out
+    except Exception:
+        pass
+    return []
+
+def _credit_handoff_cutoff(product_type: str):
+    """Return (handoff_stage, handoff_index, flow_stages). handoff_index is None if
+    the product's flow has no credit-analysis handoff stage."""
+    stages = _product_flow_stage_names(product_type)
+    # explicit config override
+    explicit = None
+    try:
+        from utils.api import _load_json, _norm_product
+        cfg = _load_json("pipeline_settings.json") or {}
+        pf = cfg.get("product_flows", {}) or {}
+        want = _norm_product(product_type) if product_type else ""
+        for name, entry in pf.items():
+            if _norm_product(name) == want and isinstance(entry, dict):
+                explicit = entry.get("credit_handoff_stage")
+                break
+    except Exception:
+        pass
+    if explicit and explicit in stages:
+        return explicit, stages.index(explicit), stages
+    # family match (first stage whose name is in the credit-analysis family)
+    for i, nm in enumerate(stages):
+        if str(nm).strip().lower() in _CREDIT_ANALYSIS_FAMILY:
+            return nm, i, stages
+    return None, None, stages
+
+
 def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
     """Return (ok, reason) for a deal creation payload.
 
@@ -287,31 +340,49 @@ def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
             if len(_v) > 512:
                 return False, f"{_fld} is too long (max 512 characters)"
 
-    # Stage must be a known non-LMS stage. Creating a deal directly
-    # at an LMS stage would have the same inconsistency problem as
-    # advancing into one without the handoff.
+    # FP1 (2026-07-02): create policy derived from the PRODUCT'S OWN flow, replacing
+    # the stale hardcoded LMS_DEFERRED create-block. The pipeline tracks a deal
+    # start->disbursement (the lead never drops), but a deal may only be CREATED
+    # before the credit-analysis handoff; past there the case lives in the modules.
     stage = str(deal_data.get("stage", ""))
-    if stage in LMS_DEFERRED_STAGES:
-        return False, (
-            f"Cannot create deal directly at stage '{stage}' "
-            "(LMS handoff stage — deferred to Arc α4). "
-            "Create at 'Lead' and advance through the workflow."
-        )
-    # State-machine integrity (stress-pass Phase 1): a deal must be BORN at an
-    # early stage and walk the workflow. Block creation directly at terminal
-    # outcomes (Closed Won/Lost) — which would book an instant fake win/loss
-    # with no workflow — and at the Compliance handoff stage, which would skip
-    # the entire pipeline and the LMS handoff.
-    _CREATE_BLOCKED_STAGES = {"Closed Won", "Closed Lost", "Compliance"}
-    if stage in _CREATE_BLOCKED_STAGES:
-        return False, (
-            f"Cannot create a deal directly at stage '{stage}'. "
-            "Deals must start at an early stage (e.g. 'Lead') and advance "
-            "through the workflow; terminal and handoff stages are reached "
-            "by progressing a deal, not by creating one there."
-        )
+    product_type = str(deal_data.get("product_type", "") or "")
+
     if stage not in ALLOWED_ADVANCE_STAGES and stage not in _configured_stage_names():
         return False, f"Unknown stage: '{stage}'"
+
+    if stage in {"Closed Won", "Closed Lost"}:
+        return False, (
+            f"Cannot create a deal directly at a terminal stage ('{stage}'). "
+            "Terminal outcomes are reached by progressing a deal, not by creating one there."
+        )
+
+    handoff_stage, handoff_idx, flow_stages = _credit_handoff_cutoff(product_type)
+    if flow_stages:
+        if stage not in flow_stages:
+            return False, (
+                f"Stage '{stage}' is not part of the '{product_type}' product flow. "
+                f"Configured stages: {', '.join(flow_stages)}."
+            )
+        stage_idx = flow_stages.index(stage)
+        if handoff_idx is not None and stage_idx >= handoff_idx:
+            return False, (
+                f"Cannot create a deal at stage '{stage}'. Creation is allowed only "
+                f"before the credit-analysis handoff ('{handoff_stage}'); at or beyond "
+                "that point the deal is tracked automatically as it moves through credit "
+                "analysis, credit administration and disbursement."
+            )
+        if stage_idx > 0 and not bool(deal_data.get("manager_validated")):
+            return False, (
+                f"A deal created already at stage '{stage}' must be manager-validated "
+                "at creation (manager_validated) to record an in-progress deal entering "
+                "above the first stage."
+            )
+    else:
+        if stage not in {"Lead", "Open", "Prospecting", "Pitched", "Initiation"} and not bool(deal_data.get("manager_validated")):
+            return False, (
+                f"A deal created at stage '{stage}' (above the first stage) must be "
+                "manager-validated at creation."
+            )
 
     # Override semantics check (v10.507 α5). If the RM is claiming
     # BSC credit despite a portfolio conflict, require a manager
