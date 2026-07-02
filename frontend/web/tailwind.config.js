@@ -1,32 +1,41 @@
 /** @type {import('tailwindcss').Config} */
-
-// v10.495 — Tailwind config for A2Z Blueprint.
-// Brand colors are exposed as CSS variables (--brand-primary etc.)
-// at runtime by BrandingProvider, which reads them from
-// GET /api/branding. This keeps the React code tenant-agnostic.
-//
-// The Tailwind tokens here reference those CSS variables, so
-// utility classes like `bg-brand-primary` resolve to whatever
-// color the backend reports. Multi-tenant from day 1.
-//
-// Fallback values (#1797ce etc.) mirror Ecobank corporate brand
-// and only appear briefly before /api/branding resolves on first
-// page load (and as a safety net if the backend is down).
-
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
+        // TSquads / Ecobank palette
+        eco: {
+          blue:   '#0082BB',
+          dark:   '#005B82',
+          darker: '#00415C',
+          lime:   '#BED600',
+          dgreen: '#669438',
+          bg:     '#EEF2F5',
+          gray:   '#464646',
+          mgray:  '#979797',
+          lgray:  '#EDEDED',
+          off:    '#F8F9FA',
+        },
+        // Legacy brand tokens — still read from CSS vars at runtime via BrandingProvider
         brand: {
-          primary: 'var(--brand-primary, #1797ce)',
-          secondary: 'var(--brand-secondary, #0e2440)',
-          accent: 'var(--brand-accent, #ffd200)',
+          primary:   'var(--brand-primary,   #0082BB)',
+          secondary: 'var(--brand-secondary, #005B82)',
+          accent:    'var(--brand-accent,    #BED600)',
         },
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto',
-               'Inter', 'sans-serif'],
+        sans: ['Quicksand', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        eco:    '20px',
+        'eco-m': '16px',
+        'eco-s': '12px',
+      },
+      boxShadow: {
+        eco:    '0 4px 24px rgba(0,91,130,.10), 0 1px 4px rgba(0,0,0,.05)',
+        'eco-sm': '0 2px 8px rgba(0,91,130,.07)',
+        'eco-lg': '0 16px 48px rgba(0,91,130,.14), 0 4px 12px rgba(0,0,0,.06)',
       },
     },
   },
