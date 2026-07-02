@@ -19,12 +19,36 @@ be a small follow-up.
 """
 from __future__ import annotations
 
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Optional
+
+
+def _is_credit_admin_department_role(user: Dict[str, Any]) -> bool:
+    """CA3a: the CREDIT/LEGAL department roles that own credit admin and must see
+    its cases department-wide (not only via the originating RM's cascade). Matches
+    the real staff-register role spellings (Credit Admin Officer, Manager- Legal,
+    Legal Officer, Chief Credit Officer, etc.) by substring."""
+    if not user:
+        return False
+    if user.get("is_admin"):
+        return True
+    role = str(user.get("role", "") or "").lower()
+    if not role:
+        return False
+    # credit-admin / credit-oversight
+    if "chief credit" in role or "credit admin" in role or "credit administrat" in role:
+        return True
+    if "credit monitoring" in role or "credit reporting" in role or "credit analysis" in role:
+        return True
+    # legal (charging)
+    if "legal" in role:
+        return True
+    return False
 
 
 def filter_cases_by_visible_codes(
     cases: List[Dict[str, Any]],
     visible_codes: Set[str],
+    user: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """Filter credit-admin cases by RM cascade scope.
 
@@ -38,6 +62,8 @@ def filter_cases_by_visible_codes(
     visible_codes : set of str
         Caller's cascade scope from get_visible_staff_codes(user)
     """
+    if user is not None and _is_credit_admin_department_role(user):
+        return list(cases)  # CA3a: department roles see all credit-admin cases
     return [
         c for c in cases
         if str(c.get('rm_code', '') or '') in visible_codes
@@ -47,9 +73,12 @@ def filter_cases_by_visible_codes(
 def is_case_in_scope(
     case: Dict[str, Any],
     visible_codes: Set[str],
+    user: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Single-case scope check (same logic as filter, for one case)."""
     if not case:
         return False
+    if user is not None and _is_credit_admin_department_role(user):
+        return True  # CA3a: department roles see all credit-admin cases
     rm_code = str(case.get('rm_code', '') or '')
     return bool(rm_code) and (rm_code in visible_codes)

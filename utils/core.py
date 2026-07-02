@@ -1958,6 +1958,14 @@ def get_all_pipeline_stage_names() -> set:
                     n = str(st).strip()
                     if n:
                         names.add(n)
+        # FP1 (2026-07-02): per-PRODUCT flows must be recognised too, else an
+        # admin-authored product-flow stage is "Unknown stage" at create/advance.
+        for entry in cfg.get("product_flows", {}).values():
+            if isinstance(entry, dict):
+                for st in entry.get("stages", []):
+                    n = str(st.get("stage", "")).strip() if isinstance(st, dict) else str(st).strip()
+                    if n:
+                        names.add(n)
     except Exception:
         pass
     return names
@@ -5445,9 +5453,13 @@ class LoanApplicationManager:
         app = self.get(app_id)
         if not app:
             return False
+        _now = datetime.now().isoformat(timespec="seconds")
         updates = {"status": "assigned", "last_updated": datetime.now().date().isoformat()}
         if analyst_code:
             updates["analyst"] = {"code": analyst_code, "name": analyst_name}
+            # C-SLA2: the analyst's stage clock starts now.
+            updates["assigned_at"] = _now
+            updates["stage_entered_at"] = _now
         return self.update(app_id, updates)
 
     def record_decision(self, app_id: str, verdict: str, authority: str,
@@ -6004,6 +6016,21 @@ class LoanApplicationManager:
             "created_by":         username or "",
             "created_via":        "api_pipeline_advance",
         }
+        # 4b-7: carry the branch-originated CR + committee decisions onto the
+        # application so Credit Analysis sees the completed inputs (read-only).
+        try:
+            deal_cr = deal.get("cr")
+            if isinstance(deal_cr, dict) and deal_cr:
+                app["cr"] = deal_cr                       # same shape build_cr_view reads
+                app["cr_origin"] = "branch"
+            deal_committees = deal.get("committee_records")
+            if isinstance(deal_committees, dict) and deal_committees:
+                app["committee_records"] = deal_committees
+            deal_appeals = deal.get("appeals")
+            if isinstance(deal_appeals, list) and deal_appeals:
+                app["committee_appeals"] = deal_appeals
+        except Exception:
+            pass
         self.apps.append(app)
         self.save()
         return new_id
@@ -6198,6 +6225,25 @@ class CreditAdminManager:
             }
             case["legal_review"] = lr
         return lr
+
+    def submit_to_legal(self, case_id: str, by: str = "", note: str = "") -> bool:
+        """CA2: Credit Admin submits the case to Legal FOR CHARGING. Sets the
+        legal_review status to 'submitted_for_charging' so it appears in the Legal
+        Chief's charging queue for officer assignment. Idempotent-ish: re-submitting
+        just refreshes the stamp."""
+        from datetime import datetime as _dt
+        for case in self.cases:
+            if case["id"] == case_id:
+                lr = self._ensure_legal_review(case)
+                lr["status"] = "submitted_for_charging"
+                lr["submitted_for_charging_by"] = by
+                lr["submitted_for_charging_at"] = _dt.now().isoformat(timespec="seconds")
+                if note:
+                    lr.setdefault("charging_notes", []).append(
+                        {"by": by, "note": note, "at": lr["submitted_for_charging_at"]})
+                self.save()
+                return True
+        return False
 
     def assign_legal_officer(self, case_id: str, officer_code: str,
                              officer_name: str = "") -> bool:
@@ -6935,10 +6981,13 @@ REPORTING_TREE = {
     "Head Of Marketing":          {"tree_roles":["Head Of Marketing","Marketing Officer"],"units":["Marketing"]},
     "Chief Finance Officer":      {"tree_roles":["Chief Finance Officer","Financial Controller","Treasury Manager"],"units":["Finance","Treasury"]},
     "Chief Risk Officer":         {"tree_roles":["Chief Risk Officer","Risk Manager"],"units":["Risk"]},
-    "Chief Operations Officer":   {"tree_roles":["Chief Operations Officer","Operations Manager","Branch Operations Manager"],"units":["Operations"]},
-    "Chief Compliance Officer":   {"tree_roles":["Chief Compliance Officer","Compliance Officer","Legal Counsel"],"units":["Compliance & Legal"]},
+    "Chief Operations Officer":   {"tree_roles":["Chief Operations Officer","Chief Operating Officer","Operations Manager","Branch Operations Manager","Head of Operations","Operations Officer","Operations Supervisor-DFS","Manager Card Operations","Trade Finance Operations Officer"],"units":["Operations","Head Office"]},
+    "Chief Compliance Officer":   {"tree_roles":["Chief Compliance Officer","Compliance Officer","Legal Counsel","Company Secretary and Chief Legal Officer","Manager- Legal","Legal Officer","Regulatory Compliance Officer","Senior Manager- Compliance"],"units":["Compliance & Legal","Head Office"]},
     "Chief Human Resources Officer":{"tree_roles":["Chief Human Resources Officer","HR Business Partner","HR Officer"],"units":["Human Resources"]},
-    "Chief Credit Officer":       {"tree_roles":["Chief Credit Officer","Credit Analyst","Credit Administrator"],"units":["Credit"]},
+    "Chief Credit Officer":       {"tree_roles":["Chief Credit Officer","Credit Analyst","Credit Administrator","Credit Admin Officer","Assistant Manager -Credit Administration","Manager-Credit Monitoring","Supervisor Credit Reporting","Senior Manager -Credit Analysis"],"units":["Credit","Head Office"]},
+    "Head of Operations":         {"tree_roles":["Head of Operations","Operations Officer","Operations Supervisor-DFS","Manager Card Operations","Branch Operations Manager","Trade Finance Operations Officer"],"units":["Operations","Head Office"]},
+    "Head of Treasury":           {"tree_roles":["Head of Treasury","Senior Manager Treasury","Treasury Dealer","Treasury Front Office Officer","Manager Forex Trader","Corporate Sales Dealer"],"units":["Treasury","Head Office"]},
+    "Manager- Legal":             {"tree_roles":["Manager- Legal","Legal Officer"],"units":["Compliance & Legal","Head Office"]},
     "Debt Recovery Unit Manager": {"tree_roles":["Debt Recovery Unit Manager","Recovery Officer"],"units":None},
     "Procurement Manager":        {"tree_roles":["Procurement Manager","Procurement Officer"],"units":["Procurement"]},
     "IT Manager":                 {"tree_roles":["IT Manager","IT Support Officer"],"units":["ICT"]},

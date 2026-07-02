@@ -6,11 +6,13 @@
 // Layout mirrors Pipeline.tsx: header strip + filter chips + Card-based
 // table + empty/loading/error states.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useLmsApplications } from '@/hooks/useLmsApplications';
+import { useToast } from '@/components/Toast';
+import { requestLmsAssignment, fetchAssignmentRequests, assignLmsAnalyst, fetchMyAnalysts, type AssignmentRequestCase, type AssignableAnalyst } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
@@ -45,12 +47,54 @@ function formatDate(s: string | undefined): string {
 export function Lms() {
   const navigate = useNavigate();
   const { branding } = useBranding();
-  const { user } = useRole();
+  const { user, isAdmin } = useRole();
   const { applications, loading, error, refetch } = useLmsApplications();
 
   // ── Filter state (client-side; server always returns all in-scope) ──
   const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
   const [searchTerm,   setSearchTerm]   = useState<string>('');
+  // B1: workload tabs. Analysts default to their own cases; managers to All.
+  const myCode = String(user?.staff_code ?? '');
+  const roleLc = String(user?.role ?? '').toLowerCase();
+  const isPureAnalyst = roleLc.includes('analyst') && !isAdmin
+    && !/chief|head|manager|officer|director|managing/.test(roleLc);
+  const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
+  const { toast } = useToast();
+  const [requestBusy, setRequestBusy] = useState<string | null>(null);
+  const isManagerRole = isAdmin || /chief|head|manager|officer|director|managing/.test(roleLc);
+  const doRequest = async (appId: string) => {
+    setRequestBusy(appId);
+    try {
+      await requestLmsAssignment(appId);
+      toast({ tone: 'success', message: 'Assignment requested — the credit manager will action it.' });
+      await refetch();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Request failed' });
+    } finally { setRequestBusy(null); }
+  };
+  const [requestsCases, setRequestsCases] = useState<AssignmentRequestCase[]>([]);
+  const [analystPool, setAnalystPool] = useState<AssignableAnalyst[]>([]);
+  const [assignBusy, setAssignBusy] = useState<string | null>(null);
+  const [assignMenuFor, setAssignMenuFor] = useState<string | null>(null);
+  const [assignPurpose, setAssignPurpose] = useState<'decisioning' | 'correctness'>('decisioning');
+  const loadRequests = async () => {
+    if (!isManagerRole) return;
+    try { const r = await fetchAssignmentRequests(); setRequestsCases(r.cases); } catch { /* non-fatal */ }
+    try { const a = await fetchMyAnalysts(); setAnalystPool(a.analysts); } catch { /* non-fatal */ }
+  };
+  useEffect(() => { void loadRequests(); /* eslint-disable-next-line */ }, [isManagerRole, applications]);
+  const doAssign = async (appId: string, code: string, name: string, purpose: 'decisioning' | 'correctness' = 'decisioning') => {
+    setAssignBusy(appId + code);
+    try {
+      await assignLmsAnalyst(appId, { analyst_code: code, analyst_name: name, purpose });
+      toast({ tone: 'success', message: purpose === 'correctness' ? `Assigned to ${name} for correctness check.` : `Assigned to ${name} for decisioning.` });
+      await refetch();
+      await loadRequests();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Assign failed' });
+    } finally { setAssignBusy(null); }
+  };
+  useEffect(() => { setTab(isPureAnalyst ? 'mine' : 'all'); }, [isPureAnalyst]);
 
   // ── Filtered apps ──
   const filteredApps = useMemo<LoanApplication[]>(() => {
@@ -67,8 +111,15 @@ export function Lms() {
         (a.rm_name || '').toLowerCase().includes(t)
       );
     }
+    // B1: workload tab filter.
+    if (tab === 'mine') {
+      result = result.filter((a) => String(a.analyst?.code ?? '') === myCode);
+    } else if (tab === 'pool') {
+      result = result.filter((a) => !a.analyst?.code
+        && ['submitted'].includes((a.status || '').toLowerCase()));
+    }
     return result;
-  }, [applications, statusFilter, searchTerm]);
+  }, [applications, statusFilter, searchTerm, tab, myCode]);
 
   // ── Status counts for the filter chips ──
   const statusCounts = useMemo(() => {
@@ -80,6 +131,12 @@ export function Lms() {
     }
     return counts;
   }, [applications]);
+
+  const tabCounts = useMemo(() => ({
+    mine: applications.filter((a) => String(a.analyst?.code ?? '') === myCode).length,
+    pool: applications.filter((a) => !a.analyst?.code && (a.status || '').toLowerCase() === 'submitted').length,
+    all: applications.length,
+  }), [applications, myCode]);
 
   const currencySymbol = branding?.currency_symbol ?? 'KES';
 
@@ -125,9 +182,79 @@ export function Lms() {
           </div>
         )}
 
+        {/* B2: assignment requests (manager) */}
+        {isManagerRole && requestsCases.length > 0 && (
+          <Card className="mb-4" stripe="accent">
+            <Card.Header>
+              <h2 className="text-base font-semibold text-gray-900">Assignment requests</h2>
+              <Badge tone="warning" size="sm">{requestsCases.length}</Badge>
+            </Card.Header>
+            <Card.Body>
+              <div className="space-y-3">
+                {requestsCases.map((c) => (
+                  <div key={c.id} className="rounded border p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-xs text-gray-500">{c.id}</span>
+                        <span className="ml-2 text-sm font-medium">{c.client_name}</span>
+                        <span className="ml-2 text-xs text-gray-400">{c.product}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {c.requests.map((r) => (
+                        <div key={r.by_code} className="flex items-center justify-between rounded bg-gray-50 px-2 py-1 text-sm">
+                          <span>Requested by <span className="font-medium">{r.by_name}</span> ({r.by_code})</span>
+                          <Button size="sm" onClick={() => void doAssign(c.id, r.by_code, r.by_name)}
+                            disabled={assignBusy === c.id + r.by_code}>
+                            {assignBusy === c.id + r.by_code ? 'Assigning…' : `Assign to ${r.by_name.split(' ')[0]}`}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs text-gray-500">or assign someone else:</span>
+                      <select
+                        className="rounded border px-2 py-1 text-xs"
+                        defaultValue=""
+                        onChange={(e) => {
+                          const a = analystPool.find((x) => x.staff_code === e.target.value);
+                          if (a) void doAssign(c.id, a.staff_code, a.name);
+                          e.target.value = '';
+                        }}
+                      >
+                        <option value="">— pick analyst —</option>
+                        {analystPool.map((a) => (
+                          <option key={a.staff_code} value={a.staff_code}>{a.name} ({a.staff_code})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
         {/* ── Filter bar ─────────────────────────────────────────── */}
         <Card className="mb-4">
           <Card.Body>
+            {/* B1: workload tabs */}
+            <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-3">
+              {([['mine', 'My cases'], ['pool', 'Pool'], ['all', 'All']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    tab === key ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {label} ({tabCounts[key]})
+                </button>
+              ))}
+              {tab === 'pool' && (
+                <span className="ml-2 text-xs text-gray-400">Read-only — request assignment from a case to work it.</span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <button
                 onClick={() => setStatusFilter('all')}
@@ -259,7 +386,9 @@ export function Lms() {
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">RM</th>
                       <th className="px-4 py-3">Analyst</th>
+                      <th className="px-4 py-3">SLA</th>
                       <th className="px-4 py-3">Applied</th>
+                      {isManagerRole && <th className="px-4 py-3">Assign</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -290,11 +419,103 @@ export function Lms() {
                           {app.rm_name || '—'}
                         </td>
                         <td className="px-4 py-3 text-gray-700 text-xs">
-                          {app.analyst?.name || <span className="text-gray-400">unassigned</span>}
+                          {app.analyst?.name
+                            ? app.analyst.name
+                            : (tab === 'pool' && isPureAnalyst ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); void doRequest(app.id); }}
+                                disabled={requestBusy === app.id
+                                  || (app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)}
+                                className="rounded border border-brand-primary px-2 py-0.5 text-xs text-brand-primary hover:bg-brand-primary/5 disabled:opacity-50"
+                              >
+                                {(app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)
+                                  ? 'Requested'
+                                  : (requestBusy === app.id ? 'Requesting…' : 'Request assignment')}
+                              </button>
+                            ) : <span className="text-gray-400">unassigned</span>)}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {app.sla ? (
+                            <div className="flex flex-col gap-0.5">
+                              {app.sla.stage && (
+                                <span className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
+                                  app.sla.stage.state === 'breached' ? 'bg-red-100 text-red-700'
+                                  : app.sla.stage.state === 'due_soon' ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-green-100 text-green-700'}`}>
+                                  My: {app.sla.stage.state === 'breached'
+                                    ? `${app.sla.stage.overdue_business_days}d over`
+                                    : `${app.sla.stage.remaining_business_days}d left`}
+                                </span>
+                              )}
+                              <span className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 ${
+                                app.sla.state === 'breached' ? 'text-red-600'
+                                : app.sla.state === 'due_soon' ? 'text-amber-600'
+                                : 'text-green-600'}`}>
+                                Case: {app.sla.state === 'breached'
+                                  ? `${app.sla.overdue_business_days}d over`
+                                  : app.sla.state === 'due_soon'
+                                  ? `${app.sla.remaining_business_days}d left`
+                                  : 'on track'}
+                              </span>
+                            </div>
+                          ) : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {formatDate(app.application_date)}
                         </td>
+                        {isManagerRole && (
+                          <td className="px-4 py-3 text-xs relative" onClick={(e) => e.stopPropagation()}>
+                            {!app.analyst?.code && (app.status || '').toLowerCase() === 'submitted' ? (
+                              <>
+                                <button
+                                  onClick={() => setAssignMenuFor(assignMenuFor === app.id ? null : app.id)}
+                                  className="rounded border border-brand-primary px-2 py-0.5 text-xs text-brand-primary hover:bg-brand-primary/5"
+                                >
+                                  Assign ▾
+                                </button>
+                                {assignMenuFor === app.id && (
+                                  <div className="absolute right-0 z-10 mt-1 w-64 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">Purpose</div>
+                                    <div className="mb-2 flex gap-1">
+                                      {(['decisioning', 'correctness'] as const).map((pp) => (
+                                        <button key={pp}
+                                          onClick={() => setAssignPurpose(pp)}
+                                          className={`flex-1 rounded px-2 py-1 text-xs ${
+                                            assignPurpose === pp ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-700'}`}>
+                                          {pp === 'decisioning' ? 'Decisioning' : 'Correctness check'}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="mb-1 text-xs font-medium text-gray-500">To</div>
+                                    <select
+                                      className="mb-2 w-full rounded border px-2 py-1 text-xs"
+                                      defaultValue=""
+                                      onChange={(e) => {
+                                        const a = analystPool.find((x) => x.staff_code === e.target.value);
+                                        if (a) { void doAssign(app.id, a.staff_code, a.name, assignPurpose); setAssignMenuFor(null); }
+                                      }}
+                                    >
+                                      <option value="">— pick person —</option>
+                                      {analystPool.map((a) => (
+                                        <option key={a.staff_code} value={a.staff_code}>{a.name}</option>
+                                      ))}
+                                    </select>
+                                    <div className="border-t border-gray-100 pt-2">
+                                      <button
+                                        onClick={() => { setAssignMenuFor(null); navigate(`/lms/${encodeURIComponent(app.id)}`); }}
+                                        className="w-full rounded bg-gray-50 px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
+                                      >
+                                        Route to committee →
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

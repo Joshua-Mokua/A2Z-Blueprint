@@ -155,6 +155,25 @@ def invalidate_staff_roster_cache() -> None:
         _ROSTER_CACHE_LOADED_AT = 0.0
 
 
+
+def _is_exco_full_funnel_member(user_data: dict) -> bool:
+    """C3c: True if this user's staff_code is a committee member granted the
+    full_funnel flag — an EXCO-level member the admin has elevated to see the whole
+    pipeline+credit funnel for planning (same broad view as the MD)."""
+    code = str(user_data.get("staff_code", "") or "")
+    if not code:
+        return False
+    try:
+        from utils.api import _read_committee_palette
+        for c in (_read_committee_palette() or []):
+            for m in (c.get("members") or []):
+                if str(m.get("staff_code", "") or "") == code and bool(m.get("full_funnel", False)):
+                    return True
+    except Exception:
+        return False
+    return False
+
+
 def get_visible_staff_codes(user_data: dict) -> Set[str]:
     """Return the set of staff codes this user is permitted to see
     pipeline deals for.
@@ -196,6 +215,10 @@ def get_visible_staff_codes(user_data: dict) -> Set[str]:
     roster = get_staff_roster()
     if roster is None or len(roster) == 0:
         return visible
+
+    # C3c: a granted EXCO full-funnel member sees the whole roster (like the MD).
+    if _is_exco_full_funnel_member(user_data) and "Staff Code" in roster.columns:
+        return {str(c) for c in roster["Staff Code"].tolist() if c} | visible
 
     # get_visible_staff returns a DataFrame with the same columns
     # as the input, filtered to the caller's visible rows.

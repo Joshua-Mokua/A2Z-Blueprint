@@ -132,6 +132,8 @@ def lms_applications_list(
         caller_role=str(user.get('role', '') or ''),
     )
 
+    from utils.api import _attach_sla_to_apps as _attach_sla
+    _attach_sla(apps)
     return {
         "applications": apps,
         "count": len(apps),
@@ -250,6 +252,11 @@ def lms_application_detail(
             detail="You do not have visibility to this application",
         )
 
+    try:
+        from utils.api import _app_sla_status as _app_sla
+        app["sla"] = _app_sla(app) or None
+    except Exception:
+        pass
     return {
         "application": app,
         "permissions": permissions,
@@ -300,7 +307,9 @@ def lms_application_assign(
     # Scope check
     visible_codes = get_visible_staff_codes(user)
     caller_code = str(user.get('staff_code', '') or '')
-    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, visible_codes, caller_code,
+            caller_role=str(user.get('role', '') or '')):
         raise HTTPException(
             status_code=403,
             detail="Application not in your cascade scope",
@@ -343,6 +352,15 @@ def lms_application_assign(
         f"{app_id}|{payload.analyst_code}",
     )
 
+    # B2: clear any pending assignment requests now the case is assigned.
+    # C2: stamp the assignment purpose (decisioning | correctness) from the payload.
+    try:
+        _purpose = str(payload_dict.get("purpose", "") or "decisioning").lower()
+        if _purpose not in ("decisioning", "correctness"):
+            _purpose = "decisioning"
+        lam.update(app_id, {"assignment_requests": [], "assignment_purpose": _purpose})
+    except Exception:
+        pass
     updated = lam.get(app_id)
     return {"application": updated, "status": "assigned"}
 
@@ -467,7 +485,9 @@ def lms_application_decision(
     # Scope check
     visible_codes = get_visible_staff_codes(user)
     caller_code = str(user.get('staff_code', '') or '')
-    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code):
+    if not user.get('is_admin') and not is_app_in_scope(
+            app, visible_codes, caller_code,
+            caller_role=str(user.get('role', '') or '')):
         raise HTTPException(
             status_code=403,
             detail="Application not in your cascade scope",
@@ -1327,3 +1347,466 @@ def lms_committee_submit_upward(
     audit_log("LMS_COMMITTEE_SUBMITTED_UPWARD",
               str(user.get("username", "") or ""), f"{app_id}|tier={res.get('tier')}")
     return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
+# === B2: ASSIGNMENT REQUESTS ===
+@router.post("/applications/{app_id}/request-assignment",
+             response_model=LoanAppMutationResponse)
+def lms_request_assignment(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """An analyst requests to be assigned an unassigned (pool) case. The caller
+    must be able to see the case (pool visibility) and the case must be
+    unassigned + submitted. Records the request on the app; the Chief resolves it."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if (app.get('analyst') or {}).get('code'):
+        raise HTTPException(status_code=400, detail="This case is already assigned.")
+    if str(app.get('status', '') or '').lower() != 'submitted':
+        raise HTTPException(status_code=400, detail="Only submitted (unassigned) cases can be requested.")
+    from datetime import datetime as _dt
+    reqs = list(app.get('assignment_requests', []) or [])
+    if any(str(r.get('by_code')) == caller_code for r in reqs):
+        raise HTTPException(status_code=400, detail="You have already requested this case.")
+    reqs.append({
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "note": str((payload or {}).get('note', '') or ''),
+    })
+    lam.update(app_id, {"assignment_requests": reqs})
+    audit_log("LMS_ASSIGNMENT_REQUESTED", str(user.get('username', '') or ''),
+              f"{app_id}|by={caller_code}")
+    return {"application": lam.get(app_id), "status": "requested"}
+
+
+@router.get("/applications/assignment-requests")
+def lms_assignment_requests(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The consolidated list of cases with pending assignment requests, for a
+    manager to resolve. Manager-tier only. Scoped to the caller's visibility."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403, detail="Manager authority required")
+    lam = _lam()
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    out = []
+    for app in lam.apps:
+        reqs = app.get('assignment_requests') or []
+        if not reqs:
+            continue
+        if (app.get('analyst') or {}).get('code'):
+            continue  # already assigned — requests are moot
+        if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+            continue
+        out.append({
+            "id": app.get("id"),
+            "client_name": app.get("client_name"),
+            "product": app.get("product"),
+            "amount": app.get("amount"),
+            "rm_name": app.get("rm_name"),
+            "status": app.get("status"),
+            "requests": reqs,
+        })
+    return {"cases": out, "count": len(out)}
+# === END B2: ASSIGNMENT REQUESTS ===
+
+
+# === C1: COMMITTEE ROUTING (suggest tier by limit) ===
+def _suggest_committee_tier(amount_kes: float) -> dict:
+    """First tier whose authority_limit_kes >= amount (i.e. can decide it).
+    A tier with authority_limit_kes None (uncapped) catches everything above the
+    highest limit. Returns the suggested tier dict, or the highest tier."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    tiers = get_committee_tiers()
+    if not tiers:
+        return {}
+    # tiers sorted ascending by tier number; limits generally increase.
+    for t in tiers:
+        lim = t.get("authority_limit_kes")
+        if lim is None:
+            return t  # uncapped — decides anything
+        try:
+            if amount_kes <= float(lim):
+                return t
+        except (TypeError, ValueError):
+            continue
+    return tiers[-1]  # above all limits -> highest tier
+
+
+@router.get("/applications/{app_id}/committee-routing")
+def lms_committee_routing(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Routing helper for the Chief: the tier ladder + the tier suggested by the
+    case amount + whether it can be referred now. Manager-tier."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    try:
+        amount = float(app.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    final = _suggest_committee_tier(amount)
+    entry = _committee_entry_tier(amount)
+    can_refer = is_manager(user) and is_valid_lms_transition(
+        str(app.get("status", "")), "referred_to_committee")
+    return {
+        "tiers": get_committee_tiers(),
+        "amount": amount,
+        # C1b: entry (where it starts) vs final (ultimate authority). The case
+        # climbs from entry to final, capturing each verdict.
+        "entry_tier": entry.get("tier"),
+        "entry_name": entry.get("name"),
+        "final_tier": final.get("tier"),
+        "final_name": final.get("name"),
+        "require_mcc": _committee_require_mcc(),
+        "must_climb": bool(entry.get("tier") and final.get("tier")
+                           and entry.get("tier") != final.get("tier")),
+        # back-compat: suggested_* now points at the ENTRY tier (what to pre-select).
+        "suggested_tier": entry.get("tier"),
+        "suggested_name": entry.get("name"),
+        "can_refer": bool(can_refer),
+        "current_status": app.get("status"),
+    }
+# === END C1: COMMITTEE ROUTING ===
+
+
+# === C1b: CLIMB LADDER + MCC-MANDATORY ===
+def _committee_require_mcc() -> bool:
+    """Admin toggle: cases needing Board/Group must pass MCC first. Default True."""
+    try:
+        from pathlib import Path as _Path
+        p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+        if p.exists():
+            import json as _json
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+            v = cfg.get("require_mcc_before_higher")
+            if v is not None:
+                return bool(v)
+    except Exception:
+        pass
+    return True
+
+
+def _committee_mcc_tier() -> dict:
+    """The MCC tier (key management_cc), or the middle tier as a fallback."""
+    from utils.api_lms_committee_tiers import get_committee_tiers
+    tiers = get_committee_tiers()
+    for t in tiers:
+        if str(t.get("key", "")).lower() in ("management_cc", "mcc"):
+            return t
+    # fallback: second tier if present
+    return tiers[1] if len(tiers) > 1 else (tiers[0] if tiers else {})
+
+
+def _committee_entry_tier(amount_kes: float) -> dict:
+    """The tier the case ENTERS at. If the final authority is above MCC and the
+    require-MCC rule is on, entry = MCC (the case then climbs). Otherwise entry =
+    the final authority tier (small cases enter directly at their committee)."""
+    final = _suggest_committee_tier(amount_kes)
+    if not final:
+        return {}
+    if not _committee_require_mcc():
+        return final
+    mcc = _committee_mcc_tier()
+    if not mcc:
+        return final
+    try:
+        # if the final authority sits ABOVE MCC, the case must enter at MCC.
+        if int(final.get("tier", 0)) > int(mcc.get("tier", 0)):
+            return mcc
+    except (TypeError, ValueError):
+        pass
+    return final
+# === END C1b ===
+
+
+
+@router.post("/committee/require-mcc")
+def lms_committee_set_require_mcc(
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(require_config_admin),
+) -> Dict[str, Any]:
+    """Admin toggle: require MCC before Board/Group. Config-admin gated."""
+    enabled = bool((payload or {}).get("enabled", True))
+    from pathlib import Path as _Path
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    import json as _json
+    cfg = {}
+    try:
+        if p.exists():
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+    except Exception:
+        cfg = {}
+    cfg["require_mcc_before_higher"] = enabled
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(_json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    import os as _os
+    _os.replace(str(tmp), str(p))
+    return {"status": "saved", "require_mcc_before_higher": enabled}
+
+
+# === C2: CORRECTNESS STAGING ===
+@router.post("/applications/{app_id}/committee-readiness",
+             response_model=LoanAppMutationResponse)
+def lms_committee_readiness(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """A correctness reviewer marks a case ready_for_committee or returns it for
+    rework, optionally keying an opinion for the Chief. The assigned reviewer OR a
+    manager may act. Ready cases become routable to committee; rework cases stay in
+    staging with a reason so they can be fixed and re-submitted."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    # Only the assigned reviewer or a manager may set readiness.
+    is_assignee = str((app.get('analyst') or {}).get('code') or '') == caller_code
+    if not (is_assignee or is_manager(user) or user.get('is_admin')):
+        raise HTTPException(status_code=403, detail="Only the assigned reviewer or a manager can set readiness")
+    p = payload or {}
+    decision = str(p.get("decision", "") or "").lower()  # "ready" | "rework"
+    if decision not in ("ready", "rework"):
+        raise HTTPException(status_code=400, detail="decision must be 'ready' or 'rework'")
+    from datetime import datetime as _dt
+    readiness = {
+        "state": "ready_for_committee" if decision == "ready" else "returned_for_rework",
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "opinion": str(p.get("opinion", "") or ""),
+        "reasons": p.get("reasons") if isinstance(p.get("reasons"), list) else [],
+    }
+    lam.update(app_id, {"committee_readiness": readiness})
+    audit_log("LMS_COMMITTEE_READINESS",
+              str(user.get('username', '') or ''), f"{app_id}|{readiness['state']}")
+    return {"application": lam.get(app_id), "status": readiness["state"]}
+# === END C2: CORRECTNESS STAGING ===
+
+
+# === C3a: COMMITTEE PRE-READ ===
+_PREREAD_VIEWS = ("leaning_approve", "leaning_decline", "questions")
+
+@router.post("/applications/{app_id}/committee/pre-read",
+             response_model=LoanAppMutationResponse)
+def lms_committee_pre_read(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """A committee member records an independent, NON-BINDING pre-read on a case
+    that is before the committee. This informs the convened meeting; it is not the
+    binding vote. One pre-read per member (re-submitting updates it)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if str(app.get("status", "") or "") != "referred_to_committee":
+        raise HTTPException(status_code=400, detail="Case is not before the committee")
+    p = payload or {}
+    view = str(p.get("view", "") or "").lower()
+    if view not in _PREREAD_VIEWS:
+        raise HTTPException(status_code=400,
+                            detail=f"view must be one of {list(_PREREAD_VIEWS)}")
+    caller_code = str(user.get('staff_code', '') or '')
+    from datetime import datetime as _dt
+    prereads = list(app.get("committee_prereads", []) or [])
+    entry = {
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "view": view,
+        "note": str(p.get("note", "") or ""),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "tier": (app.get("committee") or {}).get("current_tier"),
+    }
+    # replace this member's prior pre-read at the current tier, if any.
+    prereads = [r for r in prereads
+                if not (str(r.get("by_code")) == caller_code and r.get("tier") == entry["tier"])]
+    prereads.append(entry)
+    lam.update(app_id, {"committee_prereads": prereads})
+    audit_log("LMS_COMMITTEE_PREREAD", str(user.get('username', '') or ''),
+              f"{app_id}|{view}")
+    return {"application": lam.get(app_id), "status": "pre_read_recorded"}
+
+
+@router.get("/applications/{app_id}/committee/pre-reads")
+def lms_committee_pre_reads(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The collected pre-reads for a case (for the Chief / MD to see leanings)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    prereads = app.get("committee_prereads", []) or []
+    cur_tier = (app.get("committee") or {}).get("current_tier")
+    at_tier = [r for r in prereads if r.get("tier") == cur_tier]
+    tally = {v: sum(1 for r in at_tier if r.get("view") == v) for v in _PREREAD_VIEWS}
+    return {"pre_reads": at_tier, "all": prereads, "tally": tally,
+            "current_tier": cur_tier}
+# === END C3a ===
+
+
+# === C3b: MEMBER PRE-READ QUEUE ===
+def _member_committee_names(staff_code: str) -> set:
+    """Committee names (palette) whose members include this staff_code."""
+    try:
+        from utils.api import _read_committee_palette
+        pal = _read_committee_palette() or []
+    except Exception:
+        pal = []
+    names = set()
+    for c in pal:
+        for m in (c.get("members") or []):
+            if str(m.get("staff_code", "") or "") == str(staff_code):
+                names.add(str(c.get("name", "") or "").strip().lower())
+    return names
+
+
+@router.get("/committee/my-pre-read-queue")
+def lms_member_pre_read_queue(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Referred cases awaiting THIS member's non-binding pre-read. A member sees
+    cases at a committee they belong to (by name match to current tier), plus (as a
+    scope-safe fallback) referred cases visible to them. Each case flags whether the
+    member has already pre-read it at the current tier."""
+    lam = _lam()
+    caller_code = str(user.get('staff_code', '') or '')
+    my_committees = _member_committee_names(caller_code)
+    visible_codes = get_visible_staff_codes(user)
+    caller_role = str(user.get('role', '') or '')
+    out = []
+    for app in lam.apps:
+        if str(app.get("status", "") or "") != "referred_to_committee":
+            continue
+        committee = app.get("committee") or {}
+        tier_name = str(committee.get("current_tier_name", "") or "").strip().lower()
+        in_my_committee = bool(my_committees and tier_name in my_committees)
+        in_scope = user.get('is_admin') or is_app_in_scope(
+            app, visible_codes, caller_code, caller_role=caller_role)
+        # Show if it's my committee, OR (fallback) it's referred and in my scope.
+        if not (in_my_committee or in_scope):
+            continue
+        prereads = app.get("committee_prereads", []) or []
+        cur_tier = committee.get("current_tier")
+        mine = next((r for r in prereads
+                     if str(r.get("by_code")) == caller_code and r.get("tier") == cur_tier), None)
+        out.append({
+            "id": app.get("id"),
+            "client_name": app.get("client_name"),
+            "product": app.get("product"),
+            "amount": app.get("amount"),
+            "current_tier": cur_tier,
+            "current_tier_name": committee.get("current_tier_name"),
+            "in_my_committee": in_my_committee,
+            "my_pre_read": mine,
+            "sla": app.get("sla"),
+        })
+    return {"cases": out, "count": len(out),
+            "pending": sum(1 for c in out if not c["my_pre_read"])}
+# === END C3b ===
+
+
+# === C4: MD CONVENING QUEUE ===
+@router.get("/committee/convening-queue")
+def lms_convening_queue(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Referred cases grouped by committee tier, for the MD to see what's awaiting
+    convening. Each case carries its pre-read tally + whether it's convened yet.
+    Manager-tier (the MD is a manager)."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403, detail="Manager authority required")
+    lam = _lam()
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    _PREREAD_V = ("leaning_approve", "leaning_decline", "questions")
+    tiers_map: Dict[Any, Dict[str, Any]] = {}
+    for app in lam.apps:
+        if str(app.get("status", "") or "") != "referred_to_committee":
+            continue
+        if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+            continue
+        committee = app.get("committee") or {}
+        tier = committee.get("current_tier")
+        tier_name = committee.get("current_tier_name")
+        prereads = [r for r in (app.get("committee_prereads") or []) if r.get("tier") == tier]
+        tally = {v: sum(1 for r in prereads if r.get("view") == v) for v in _PREREAD_V}
+        case = {
+            "id": app.get("id"),
+            "client_name": app.get("client_name"),
+            "product": app.get("product"),
+            "amount": app.get("amount"),
+            "pre_read_count": len(prereads),
+            "pre_read_tally": tally,
+            "convened": bool(committee.get("convened", False)),
+            "sla": app.get("sla"),
+        }
+        key = tier if tier is not None else 0
+        if key not in tiers_map:
+            tiers_map[key] = {"tier": tier, "name": tier_name, "count": 0, "cases": []}
+        tiers_map[key]["count"] += 1
+        tiers_map[key]["cases"].append(case)
+    tiers = [tiers_map[k] for k in sorted(tiers_map.keys(), key=lambda x: (x is None, x))]
+    return {"tiers": tiers,
+            "total": sum(t["count"] for t in tiers),
+            "awaiting": sum(1 for t in tiers for c in t["cases"] if not c["convened"])}
+
+
+@router.post("/applications/{app_id}/committee/convene",
+             response_model=LoanAppMutationResponse)
+def lms_committee_convene(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The MD convenes the committee for a case — stamps committee.convened, opening
+    the binding vote. Manager-tier."""
+    if not is_manager(user):
+        raise HTTPException(status_code=403, detail="Manager authority required to convene")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if str(app.get("status", "") or "") != "referred_to_committee":
+        raise HTTPException(status_code=400, detail="Case is not before a committee")
+    committee = dict(app.get("committee") or {})
+    from datetime import datetime as _dt
+    committee["convened"] = True
+    committee["convened_by"] = str(user.get('full_name', '') or user.get('username', '') or '')
+    committee["convened_at"] = _dt.now().isoformat(timespec="seconds")
+    lam.update(app_id, {"committee": committee})
+    audit_log("LMS_COMMITTEE_CONVENED", str(user.get('username', '') or ''), app_id)
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
+# === END C4 ===
+
