@@ -2023,3 +2023,21 @@ export async function troopsDisburse(caseId: string, glReference?: string): Prom
     `/credit-admin/cases/${encodeURIComponent(caseId)}/troops/disburse`, { gl_reference: glReference });
 }
 
+// CA2: submit-to-legal-for-charging + Legal Chief queue + officer pool
+export const submitForCharging = (id: string, note?: string) =>
+  caPost(id, 'legal/submit-for-charging', { note: note ?? '' });
+export interface ChargingQueueCase {
+  case_id: string; client_name?: string; amount?: number;
+  submitted_at?: string; submitted_by?: string;
+  assigned_officer_code?: string | null; assigned_officer_name?: string | null;
+}
+export interface ChargingQueueResponse { cases: ChargingQueueCase[]; count: number; }
+export async function fetchChargingQueue(): Promise<ChargingQueueResponse> {
+  return getJson<ChargingQueueResponse>('/credit-admin/legal/charging-queue');
+}
+export interface LegalOfficer { staff_code: string; name: string; role: string; unit: string; }
+export interface LegalOfficersResponse { officers: LegalOfficer[]; count: number; }
+export async function fetchMyLegalOfficers(): Promise<LegalOfficersResponse> {
+  return getJson<LegalOfficersResponse>('/credit-admin/my-legal-officers');
+}
+

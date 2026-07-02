@@ -9811,6 +9811,47 @@ def get_my_analysts(user: dict = Depends(get_current_user)):
     return {"analysts": analysts, "count": len(analysts)}
 # === END MY ANALYSTS DROPDOWN ===
 
+# === MY LEGAL OFFICERS DROPDOWN (CA2) ===
+def _is_legal_role(role: str) -> bool:
+    """A legal-officer role (for the charging-assignment dropdown)."""
+    r = str(role or "").lower()
+    return "legal" in r
+
+
+@app.get("/api/credit-admin/my-legal-officers", tags=["credit-admin"])
+def get_my_legal_officers(user: dict = Depends(get_current_user)):
+    """Assignable legal officers for the Legal Chief's charging-assignment dropdown.
+    Legal chiefs / managers see the full legal pool; others fall back to their scope.
+    Mirrors my-analysts."""
+    from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
+    roster = get_staff_roster()
+    role_l = str(user.get("role", "") or "").lower()
+    full = bool(user.get("is_admin")) or ("legal" in role_l and (
+        "chief" in role_l or "head" in role_l or "manager" in role_l)) or is_manager(user)
+    visible = set() if full else get_visible_staff_codes(user)
+    officers = []
+    try:
+        for _, row in roster.iterrows():
+            code = str(row.get("Staff Code", "") or "").strip()
+            role = str(row.get("Role", "") or "")
+            if not code:
+                continue
+            if not full and code not in visible:
+                continue
+            if _is_legal_role(role):
+                officers.append({
+                    "staff_code": code,
+                    "name": str(row.get("Staff Name", "") or ""),
+                    "role": role,
+                    "unit": str(row.get("Unit", "") or ""),
+                })
+    except Exception as exc:
+        logger.warning("my-legal-officers: roster scan failed: %s", exc)
+    officers.sort(key=lambda a: a["name"])
+    return {"officers": officers, "count": len(officers)}
+# === END MY LEGAL OFFICERS DROPDOWN ===
+
+
 
 # === C-SLA: APPLICATION SLA STATUS ===
 def _app_sla_status(app: dict) -> dict:

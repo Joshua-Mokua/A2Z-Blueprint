@@ -55,7 +55,7 @@ export interface LinkedCollateral {
 }
 
 export interface LegalReview {
-  status:                 'not_started' | 'in_review' | 'queries_raised' | 'cleared' | 'rejected';
+  status:                 'not_started' | 'in_review' | 'queries_raised' | 'cleared' | 'rejected' | 'submitted_for_charging';
   assigned_officer_code?: string | null;
   assigned_officer_name?: string | null;
   outcome?:               'approved' | 'approved_with_conditions' | 'rejected' | null;
@@ -63,6 +63,8 @@ export interface LegalReview {
   started_at?:            string | null;
   completed_at?:          string | null;
   completed_by?:          string;
+  submitted_for_charging_by?: string;
+  submitted_for_charging_at?: string;
 }
 
 export interface SecurityPerfection {

@@ -6218,6 +6218,25 @@ class CreditAdminManager:
             case["legal_review"] = lr
         return lr
 
+    def submit_to_legal(self, case_id: str, by: str = "", note: str = "") -> bool:
+        """CA2: Credit Admin submits the case to Legal FOR CHARGING. Sets the
+        legal_review status to 'submitted_for_charging' so it appears in the Legal
+        Chief's charging queue for officer assignment. Idempotent-ish: re-submitting
+        just refreshes the stamp."""
+        from datetime import datetime as _dt
+        for case in self.cases:
+            if case["id"] == case_id:
+                lr = self._ensure_legal_review(case)
+                lr["status"] = "submitted_for_charging"
+                lr["submitted_for_charging_by"] = by
+                lr["submitted_for_charging_at"] = _dt.now().isoformat(timespec="seconds")
+                if note:
+                    lr.setdefault("charging_notes", []).append(
+                        {"by": by, "note": note, "at": lr["submitted_for_charging_at"]})
+                self.save()
+                return True
+        return False
+
     def assign_legal_officer(self, case_id: str, officer_code: str,
                              officer_name: str = "") -> bool:
         for case in self.cases:

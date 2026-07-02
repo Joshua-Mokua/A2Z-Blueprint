@@ -1111,3 +1111,58 @@ def credit_admin_authorize(
     audit_log("CREDIT_ADMIN_AUTHORIZED",
               str(user.get('username', '') or ''), case_id)
     return {"case": cam.get(case_id), "status": "authorized"}
+
+
+# === CA2: LEGAL CHARGING ===
+class _SubmitForChargingRequest(BaseModel):
+    note: Optional[str] = ""
+    model_config = ConfigDict(extra="allow")
+
+
+@router.post("/cases/{case_id}/legal/submit-for-charging",
+             response_model=CreditAdminMutationResponse)
+def credit_admin_submit_for_charging(case_id: str, payload: _SubmitForChargingRequest,
+                                     user: Dict[str, Any] = Depends(get_current_user)):
+    """Credit Admin submits the case to Legal for charging — it enters the Legal
+    Chief's charging queue. Credit-admin scope (same gate as other CA actions)."""
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not (user.get("is_admin") or _ca_manager_in_scope(user, case) or is_manager(user)):
+        raise HTTPException(status_code=403, detail="Case not in your scope")
+    ok = cam.submit_to_legal(case_id, by=str(user.get('username', '') or ''),
+                             note=payload.note or "")
+    if not ok:
+        raise HTTPException(status_code=500, detail="submit-for-charging failed")
+    audit_log("CREDIT_ADMIN_LEGAL_SUBMITTED_FOR_CHARGING",
+              str(user.get('username', '') or ''), case_id)
+    return {"case": cam.get(case_id), "status": "submitted_for_charging"}
+
+
+@router.get("/legal/charging-queue")
+def credit_admin_legal_charging_queue(user: Dict[str, Any] = Depends(get_current_user)):
+    """Cases submitted to Legal for charging — the Legal Chief's queue. Visible to
+    admin / legal-role / manager-tier users."""
+    if not _can_perform_legal(user):
+        raise HTTPException(status_code=403,
+                            detail="Legal Officer or manager authority required")
+    cam = _cam()
+    out = []
+    for c in cam.cases:
+        lr = c.get("legal_review") or {}
+        if str(lr.get("status", "") or "") != "submitted_for_charging":
+            continue
+        out.append({
+            "case_id": c.get("id"),
+            "client_name": c.get("client_name") or c.get("borrower_name"),
+            "amount": c.get("amount") or c.get("facility_amount") or c.get("loan_amount"),
+            "submitted_at": lr.get("submitted_for_charging_at"),
+            "submitted_by": lr.get("submitted_for_charging_by"),
+            "assigned_officer_code": lr.get("assigned_officer_code"),
+            "assigned_officer_name": lr.get("assigned_officer_name"),
+        })
+    out.sort(key=lambda x: str(x.get("submitted_at") or ""))
+    return {"cases": out, "count": len(out)}
+# === END CA2 ===
+
