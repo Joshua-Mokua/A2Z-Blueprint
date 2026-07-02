@@ -46,7 +46,8 @@ export function Login() {
       <div className="login-left">
         <div className="login-brand">
           <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
-          <div className="login-brand-tag">MIS 360 Platform</div>
+          <div className="login-brand-name">A2Z MIS 360</div>
+          <div className="login-brand-tag">Intelligent Banking Platform</div>
         </div>
         <div className="login-tagline">
           One platform.<br />Total intelligence.
