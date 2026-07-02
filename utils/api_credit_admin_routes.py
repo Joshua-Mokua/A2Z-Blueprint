@@ -91,7 +91,7 @@ def credit_admin_cases_list(
     """
     cam = _cam()
     visible_codes = get_visible_staff_codes(user)
-    cases = filter_cases_by_visible_codes(cam.cases, visible_codes)
+    cases = filter_cases_by_visible_codes(cam.cases, visible_codes, user)
 
     return {
         "cases": cases,
@@ -180,7 +180,7 @@ def credit_admin_fulfill_condition(
 
     # Scope check
     visible_codes = get_visible_staff_codes(user)
-    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes, user):
         raise HTTPException(
             status_code=403,
             detail="Case not in your cascade scope",
@@ -720,7 +720,7 @@ def credit_admin_disburse(
 
     # Scope check
     visible_codes = get_visible_staff_codes(user)
-    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes, user):
         raise HTTPException(
             status_code=403,
             detail="Case not in your cascade scope",
@@ -1049,7 +1049,7 @@ def credit_admin_request_authorization(
     if not case:
         raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
     visible_codes = get_visible_staff_codes(user)
-    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes, user):
         raise HTTPException(status_code=403, detail="Case not in your cascade scope")
     if case.get('disbursed'):
         raise HTTPException(status_code=400, detail="Case already disbursed")
@@ -1094,7 +1094,7 @@ def credit_admin_authorize(
     if not case:
         raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
     visible_codes = get_visible_staff_codes(user)
-    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes):
+    if not user.get('is_admin') and not is_case_in_scope(case, visible_codes, user):
         raise HTTPException(status_code=403, detail="Case not in your cascade scope")
     if case.get('disbursed'):
         raise HTTPException(status_code=400, detail="Case already disbursed")
