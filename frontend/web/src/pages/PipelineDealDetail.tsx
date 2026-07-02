@@ -482,6 +482,8 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const [error,      setError]      = useState<string | null>(null);
   const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
   const [busyDoc,    setBusyDoc]    = useState<string | null>(null);
+  const [otherLabel, setOtherLabel] = useState('');
+  const OTHER_PREFIX = 'Other: ';
 
   const reloadDocs = () => {
     listDealDocuments(deal.id)
@@ -676,6 +678,41 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
               </div>
             );
           })}
+        </div>
+        {/* BO1: attached ad-hoc "Other" documents */}
+        {Object.keys(docFiles).filter((k) => k.startsWith(OTHER_PREFIX)).length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs font-medium text-gray-600">Other documents</p>
+            {Object.keys(docFiles).filter((k) => k.startsWith(OTHER_PREFIX)).map((k) => (
+              <div key={k} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+                <span className="text-green-700">✓ {k.slice(OTHER_PREFIX.length)}</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" className="text-brand-primary hover:underline text-xs"
+                    onClick={() => void viewDoc(k)}>View</button>
+                  <button type="button" className="text-red-600 hover:underline text-xs"
+                    onClick={() => void removeDoc(k)} disabled={busyDoc === k}>Remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* BO1: add an ad-hoc "Other" document */}
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            className="flex-1 rounded border px-2 py-1.5 text-sm"
+            placeholder="Other (describe) — e.g. board resolution, extra KYC…"
+            value={otherLabel}
+            onChange={(e) => setOtherLabel(e.target.value)}
+          />
+          <button
+            type="button"
+            className="rounded border px-3 py-1.5 text-sm text-brand-primary hover:bg-gray-50 disabled:opacity-50"
+            disabled={!otherLabel.trim() || busyDoc !== null}
+            onClick={() => { const label = otherLabel.trim(); if (label) { uploadFor(OTHER_PREFIX + label); setOtherLabel(''); } }}
+          >
+            Attach other
+          </button>
         </div>
         {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
         {!error && missing.length > 0 && (
