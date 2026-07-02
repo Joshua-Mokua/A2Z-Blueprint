@@ -5,7 +5,7 @@
     "value": 2.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.513673+00:00",
+    "submitted_at": "2026-07-02T12:29:35.693947+00:00",
     "actor": "william001",
     "idem_hash": "47cf1c038daa3fde",
     "metadata": {
@@ -19,7 +19,7 @@
     "value": 0.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.527704+00:00",
+    "submitted_at": "2026-07-02T12:29:38.695998+00:00",
     "actor": "william001",
     "idem_hash": "e9baeeaf4cb16d0c",
     "metadata": {
@@ -33,7 +33,7 @@
     "value": 100.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.541280+00:00",
+    "submitted_at": "2026-07-02T12:29:38.752537+00:00",
     "actor": "william001",
     "idem_hash": "0b58e9527793d196",
     "metadata": {
@@ -44,15 +44,15 @@
   {
     "staff_code": "300001",
     "kpi_id": "K043",
-    "value": 307.0,
+    "value": 0.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.566586+00:00",
+    "submitted_at": "2026-07-02T12:29:39.015036+00:00",
     "actor": "william001",
     "idem_hash": "fca0bbec2267c4a1",
     "metadata": {
       "original_source": "partnerships",
-      "detail": "307 MOU activations from 12 MOUs"
+      "detail": "0 MOU activations from 0 MOUs"
     }
   },
   {
@@ -61,7 +61,7 @@
     "value": 14900.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.584588+00:00",
+    "submitted_at": "2026-07-02T12:29:39.087058+00:00",
     "actor": "william001",
     "idem_hash": "18dd2bd09c6f7f98",
     "metadata": {
@@ -75,7 +75,7 @@
     "value": 0.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.600788+00:00",
+    "submitted_at": "2026-07-02T12:29:39.130985+00:00",
     "actor": "william001",
     "idem_hash": "2f98470f06317ebd",
     "metadata": {
@@ -89,7 +89,7 @@
     "value": 14.16,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.612370+00:00",
+    "submitted_at": "2026-07-02T12:29:39.193818+00:00",
     "actor": "william001",
     "idem_hash": "0f70ddde8ec942bf",
     "metadata": {
@@ -103,7 +103,7 @@
     "value": 417.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.629816+00:00",
+    "submitted_at": "2026-07-02T12:29:44.432662+00:00",
     "actor": "william001",
     "idem_hash": "8861434c71e8bbfb",
     "metadata": {
@@ -131,7 +131,7 @@
     "value": 0.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.642516+00:00",
+    "submitted_at": "2026-07-02T12:29:44.505933+00:00",
     "actor": "william001",
     "idem_hash": "84fc10c4a25979d5",
     "metadata": {
@@ -145,7 +145,7 @@
     "value": 40.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.650940+00:00",
+    "submitted_at": "2026-07-02T12:29:44.570207+00:00",
     "actor": "william001",
     "idem_hash": "a5540cfce1f7c07c",
     "metadata": {
@@ -159,7 +159,7 @@
     "value": 100.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.657141+00:00",
+    "submitted_at": "2026-07-02T12:29:44.631545+00:00",
     "actor": "william001",
     "idem_hash": "7a2eca78a197e702",
     "metadata": {
@@ -173,7 +173,7 @@
     "value": 0.0,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.663996+00:00",
+    "submitted_at": "2026-07-02T12:29:44.680961+00:00",
     "actor": "william001",
     "idem_hash": "aa903d8274cfe220",
     "metadata": {
@@ -184,10 +184,10 @@
   {
     "staff_code": "300001",
     "kpi_id": "K111",
-    "value": 25140.2,
+    "value": 97476.9,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.670801+00:00",
+    "submitted_at": "2026-07-02T12:29:44.728038+00:00",
     "actor": "william001",
     "idem_hash": "80ddd474b566e389",
     "metadata": {
@@ -201,7 +201,7 @@
     "value": 38.3,
     "period": "2026-02",
     "source_module": "operational_modules",
-    "submitted_at": "2026-05-13T06:52:53.622848+00:00",
+    "submitted_at": "2026-07-02T12:29:44.389359+00:00",
     "actor": "william001",
     "idem_hash": "a220adf4ad9fa416",
     "metadata": {

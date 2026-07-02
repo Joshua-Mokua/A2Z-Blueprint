@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "description": "LMS module configuration \u2014 editable via Admin \u2192 LMS Config tab",
+    "description": "LMS module configuration — editable via Admin → LMS Config tab",
     "last_updated": "2026-04-16",
     "updated_by": "admin"
   },
   "swim_lanes": {
     "express": {
       "label": "Express",
-      "description": "Repeat borrowers \u00b7 Clean history \u00b7 Auto-score",
+      "description": "Repeat borrowers · Clean history · Auto-score",
       "max_amount": 5000000,
       "requires_repeat": true,
       "requires_clean": true,
@@ -20,7 +20,7 @@
     },
     "standard": {
       "label": "Standard",
-      "description": "New borrowers \u00b7 Full appraisal",
+      "description": "New borrowers · Full appraisal",
       "min_amount": 0,
       "max_amount": 100000000,
       "requires_repeat": false,
@@ -34,7 +34,7 @@
     },
     "complex": {
       "label": "Complex",
-      "description": "Large corporate \u00b7 Trade Finance \u00b7 Committee required",
+      "description": "Large corporate · Trade Finance · Committee required",
       "min_amount": 100000000,
       "sla_days": 21,
       "color": "#7C3AED",
@@ -274,5 +274,56 @@
         }
       ]
     }
-  }
+  },
+  "pool_visibility": {
+    "roles": [
+      "credit analyst",
+      "credit administrator",
+      "chief credit officer",
+      "branch credit manager",
+      "head of credit",
+      "credit manager"
+    ],
+    "statuses": [
+      "submitted",
+      "assigned",
+      "info_requested",
+      "referred_to_committee",
+      "approved",
+      "offer_issued",
+      "offer_signed",
+      "offer_validated",
+      "analyst_confirmed"
+    ]
+  },
+  "committee_tiers": [
+    {
+      "tier": 1,
+      "key": "branch_cc",
+      "name": "Branch Credit Committee",
+      "authority_limit_kes": 5000000.0,
+      "can_be_entry": true
+    },
+    {
+      "tier": 2,
+      "key": "management_cc",
+      "name": "Management Credit Committee",
+      "authority_limit_kes": 100000000.0,
+      "can_be_entry": true
+    },
+    {
+      "tier": 3,
+      "key": "board_cc",
+      "name": "Board Credit Committee",
+      "authority_limit_kes": 500000000.0,
+      "can_be_entry": true
+    },
+    {
+      "tier": 4,
+      "key": "group_cc",
+      "name": "Group Credit Committee",
+      "authority_limit_kes": null,
+      "can_be_entry": true
+    }
+  ]
 }

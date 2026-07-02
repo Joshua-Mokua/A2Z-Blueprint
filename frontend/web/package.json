@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "description": "A2Z MIS 360 React SPA \u2014 Standard #37 (v10.495)",
+  "description": "A2Z MIS 360 React SPA — Standard #37 (v10.495)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -12,26 +12,26 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.51.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.0",
-    "@tanstack/react-query": "^5.51.0",
+    "react-router-dom": "^6.30.4",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.0",
-    "tailwindcss": "^3.4.10",
-    "postcss": "^8.4.41",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
-    "@typescript-eslint/parser": "^7.18.0",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.9",
-    "prettier": "^3.3.3"
+    "postcss": "^8.4.41",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.21"
   }
 }

@@ -164,7 +164,6 @@
       "description": "First-time facility for this client or new product",
       "stages": [
         "Prospecting",
-        "Needs Analysis",
         "Proposal",
         "Negotiation",
         "Term Sheet",
@@ -177,7 +176,8 @@
         "Valuation",
         "Disbursed",
         "Closed Won",
-        "Closed Lost"
+        "Closed Lost",
+        "Initiation"
       ],
       "avg_tap_days": 45,
       "docs_required": "Full KYC, financials, security docs",
@@ -266,7 +266,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -356,7 +356,7 @@
         "asset"
       ],
       "surface": "pipeline",
-      "description": "Asset-side pipeline \u2014 loans and credit facilities.",
+      "description": "Asset-side pipeline — loans and credit facilities.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -378,7 +378,7 @@
         "other"
       ],
       "surface": "pipeline",
-      "description": "Liability-side pipeline \u2014 deposits, accounts, transactional.",
+      "description": "Liability-side pipeline — deposits, accounts, transactional.",
       "stages": [
         "Lead",
         "Prospecting",

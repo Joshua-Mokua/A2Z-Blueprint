@@ -623,9 +623,13 @@
     "_v10341_normalized_from": "scalar"
   },
   "ACCOUNT_OPENING_TAT|2026": {
+    "kpi": "ACCOUNT_OPENING_TAT",
+    "period": "2026",
     "target": 3.5,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "buffer_pct": 0.0,
+    "stretch_target": 3.5,
+    "updated_at": "2026-06-12T15:00:25.352706",
+    "updated_by": "MD"
   },
   "COMPLAINT_RESOLUTION_RATE|2025": {
     "target": 90.0,

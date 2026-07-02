@@ -1,1 +1,1472 @@
-[]
+[
+  {
+    "deal_id": "D2900",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: next_action: None \u2192 auth-scope-18",
+    "outcome": "Updated",
+    "id": "A0001",
+    "recorded_at": "2026-06-29T15:09:17.286141"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:33.017533'}",
+    "outcome": "Updated",
+    "id": "A0002",
+    "recorded_at": "2026-06-29T15:13:33.017600"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0003",
+    "recorded_at": "2026-06-29T15:13:33.594977"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0004",
+    "recorded_at": "2026-06-29T15:13:33.682061"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0005",
+    "recorded_at": "2026-06-29T15:13:33.771220"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:33.017533'} \u2192 {'lead_qualification': '2026-06-29T15:13:33.017533', 'line_manager_validation': '2026-06-29T15:13:33.783069'}",
+    "outcome": "Updated",
+    "id": "A0006",
+    "recorded_at": "2026-06-29T15:13:33.783114"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0007",
+    "recorded_at": "2026-06-29T15:13:33.866801"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:33.017533', 'line_manager_validation': '2026-06-29T15:13:33.783069'} \u2192 {'lead_qualification': '2026-06-29T15:13:33.017533', 'line_manager_validation': '2026-06-29T15:13:33.783069', 'credit_assessment': '2026-06-29T15:13:33.878742'}",
+    "outcome": "Updated",
+    "id": "A0008",
+    "recorded_at": "2026-06-29T15:13:33.878806"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00721, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0009",
+    "recorded_at": "2026-06-29T15:13:35.095070"
+  },
+  {
+    "deal_id": "D2901",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00721).",
+    "outcome": "Offer / Proposal",
+    "id": "A0010",
+    "recorded_at": "2026-06-29T15:13:35.098585"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:39.384336'}",
+    "outcome": "Updated",
+    "id": "A0011",
+    "recorded_at": "2026-06-29T15:13:39.384386"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0012",
+    "recorded_at": "2026-06-29T15:13:39.446267"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0013",
+    "recorded_at": "2026-06-29T15:13:39.545444"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0014",
+    "recorded_at": "2026-06-29T15:13:39.615472"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:39.384336'} \u2192 {'lead_qualification': '2026-06-29T15:13:39.384336', 'line_manager_validation': '2026-06-29T15:13:39.628522'}",
+    "outcome": "Updated",
+    "id": "A0015",
+    "recorded_at": "2026-06-29T15:13:39.628571"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0016",
+    "recorded_at": "2026-06-29T15:13:39.745039"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:39.384336', 'line_manager_validation': '2026-06-29T15:13:39.628522'} \u2192 {'lead_qualification': '2026-06-29T15:13:39.384336', 'line_manager_validation': '2026-06-29T15:13:39.628522', 'credit_assessment': '2026-06-29T15:13:39.758304'}",
+    "outcome": "Updated",
+    "id": "A0017",
+    "recorded_at": "2026-06-29T15:13:39.758385"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements', 'Audited Accounts', 'Business Plan', 'Valuation Report'], lms_application_id: None \u2192 LMS00722, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0018",
+    "recorded_at": "2026-06-29T15:13:40.225121"
+  },
+  {
+    "deal_id": "D2902",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00722).",
+    "outcome": "Offer / Proposal",
+    "id": "A0019",
+    "recorded_at": "2026-06-29T15:13:40.229758"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:44.751923'}",
+    "outcome": "Updated",
+    "id": "A0020",
+    "recorded_at": "2026-06-29T15:13:44.751972"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0021",
+    "recorded_at": "2026-06-29T15:13:44.782179"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0022",
+    "recorded_at": "2026-06-29T15:13:44.871040"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0023",
+    "recorded_at": "2026-06-29T15:13:44.961895"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:44.751923'} \u2192 {'lead_qualification': '2026-06-29T15:13:44.751923', 'line_manager_validation': '2026-06-29T15:13:44.973763'}",
+    "outcome": "Updated",
+    "id": "A0024",
+    "recorded_at": "2026-06-29T15:13:44.973814"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0025",
+    "recorded_at": "2026-06-29T15:13:45.070041"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:44.751923', 'line_manager_validation': '2026-06-29T15:13:44.973763'} \u2192 {'lead_qualification': '2026-06-29T15:13:44.751923', 'line_manager_validation': '2026-06-29T15:13:44.973763', 'credit_assessment': '2026-06-29T15:13:45.082435'}",
+    "outcome": "Updated",
+    "id": "A0026",
+    "recorded_at": "2026-06-29T15:13:45.082488"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00723, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0027",
+    "recorded_at": "2026-06-29T15:13:45.402532"
+  },
+  {
+    "deal_id": "D2903",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00723).",
+    "outcome": "Offer / Proposal",
+    "id": "A0028",
+    "recorded_at": "2026-06-29T15:13:45.406069"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:51.278538'}",
+    "outcome": "Updated",
+    "id": "A0029",
+    "recorded_at": "2026-06-29T15:13:51.278606"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0030",
+    "recorded_at": "2026-06-29T15:13:51.312947"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0031",
+    "recorded_at": "2026-06-29T15:13:51.416470"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0032",
+    "recorded_at": "2026-06-29T15:13:51.521567"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:51.278538'} \u2192 {'lead_qualification': '2026-06-29T15:13:51.278538', 'line_manager_validation': '2026-06-29T15:13:51.534601'}",
+    "outcome": "Updated",
+    "id": "A0033",
+    "recorded_at": "2026-06-29T15:13:51.534669"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0034",
+    "recorded_at": "2026-06-29T15:13:51.636116"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:51.278538', 'line_manager_validation': '2026-06-29T15:13:51.534601'} \u2192 {'lead_qualification': '2026-06-29T15:13:51.278538', 'line_manager_validation': '2026-06-29T15:13:51.534601', 'credit_assessment': '2026-06-29T15:13:51.650971'}",
+    "outcome": "Updated",
+    "id": "A0035",
+    "recorded_at": "2026-06-29T15:13:51.651022"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00724, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0036",
+    "recorded_at": "2026-06-29T15:13:51.989580"
+  },
+  {
+    "deal_id": "D2904",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00724).",
+    "outcome": "Offer / Proposal",
+    "id": "A0037",
+    "recorded_at": "2026-06-29T15:13:51.993846"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:52.660213'}",
+    "outcome": "Updated",
+    "id": "A0038",
+    "recorded_at": "2026-06-29T15:13:52.660259"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0039",
+    "recorded_at": "2026-06-29T15:13:52.697316"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0040",
+    "recorded_at": "2026-06-29T15:13:52.798452"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0041",
+    "recorded_at": "2026-06-29T15:13:52.904626"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:52.660213'} \u2192 {'lead_qualification': '2026-06-29T15:13:52.660213', 'line_manager_validation': '2026-06-29T15:13:52.916516'}",
+    "outcome": "Updated",
+    "id": "A0042",
+    "recorded_at": "2026-06-29T15:13:52.916564"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0043",
+    "recorded_at": "2026-06-29T15:13:53.015193"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:52.660213', 'line_manager_validation': '2026-06-29T15:13:52.916516'} \u2192 {'lead_qualification': '2026-06-29T15:13:52.660213', 'line_manager_validation': '2026-06-29T15:13:52.916516', 'credit_assessment': '2026-06-29T15:13:53.026635'}",
+    "outcome": "Updated",
+    "id": "A0044",
+    "recorded_at": "2026-06-29T15:13:53.026950"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00725, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0045",
+    "recorded_at": "2026-06-29T15:13:53.396626"
+  },
+  {
+    "deal_id": "D2905",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00725).",
+    "outcome": "Offer / Proposal",
+    "id": "A0046",
+    "recorded_at": "2026-06-29T15:13:53.407234"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:54.289256'}",
+    "outcome": "Updated",
+    "id": "A0047",
+    "recorded_at": "2026-06-29T15:13:54.289299"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0048",
+    "recorded_at": "2026-06-29T15:13:54.312868"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0049",
+    "recorded_at": "2026-06-29T15:13:54.401183"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0050",
+    "recorded_at": "2026-06-29T15:13:54.484101"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:54.289256'} \u2192 {'lead_qualification': '2026-06-29T15:13:54.289256', 'line_manager_validation': '2026-06-29T15:13:54.493692'}",
+    "outcome": "Updated",
+    "id": "A0051",
+    "recorded_at": "2026-06-29T15:13:54.493743"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0052",
+    "recorded_at": "2026-06-29T15:13:54.578609"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:54.289256', 'line_manager_validation': '2026-06-29T15:13:54.493692'} \u2192 {'lead_qualification': '2026-06-29T15:13:54.289256', 'line_manager_validation': '2026-06-29T15:13:54.493692', 'credit_assessment': '2026-06-29T15:13:54.591892'}",
+    "outcome": "Updated",
+    "id": "A0053",
+    "recorded_at": "2026-06-29T15:13:54.591941"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00726, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0054",
+    "recorded_at": "2026-06-29T15:13:54.909405"
+  },
+  {
+    "deal_id": "D2906",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00726).",
+    "outcome": "Offer / Proposal",
+    "id": "A0055",
+    "recorded_at": "2026-06-29T15:13:54.912628"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:55.993742'}",
+    "outcome": "Updated",
+    "id": "A0056",
+    "recorded_at": "2026-06-29T15:13:55.993816"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0057",
+    "recorded_at": "2026-06-29T15:13:56.018001"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0058",
+    "recorded_at": "2026-06-29T15:13:56.116864"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0059",
+    "recorded_at": "2026-06-29T15:13:56.244744"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:55.993742'} \u2192 {'lead_qualification': '2026-06-29T15:13:55.993742', 'line_manager_validation': '2026-06-29T15:13:56.261262'}",
+    "outcome": "Updated",
+    "id": "A0060",
+    "recorded_at": "2026-06-29T15:13:56.261335"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0061",
+    "recorded_at": "2026-06-29T15:13:56.382273"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:55.993742', 'line_manager_validation': '2026-06-29T15:13:56.261262'} \u2192 {'lead_qualification': '2026-06-29T15:13:55.993742', 'line_manager_validation': '2026-06-29T15:13:56.261262', 'credit_assessment': '2026-06-29T15:13:56.395337'}",
+    "outcome": "Updated",
+    "id": "A0062",
+    "recorded_at": "2026-06-29T15:13:56.395393"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00727, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0063",
+    "recorded_at": "2026-06-29T15:13:56.765145"
+  },
+  {
+    "deal_id": "D2907",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00727).",
+    "outcome": "Offer / Proposal",
+    "id": "A0064",
+    "recorded_at": "2026-06-29T15:13:56.769133"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:57.762044'}",
+    "outcome": "Updated",
+    "id": "A0065",
+    "recorded_at": "2026-06-29T15:13:57.762092"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0066",
+    "recorded_at": "2026-06-29T15:13:57.802172"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0067",
+    "recorded_at": "2026-06-29T15:13:57.897195"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0068",
+    "recorded_at": "2026-06-29T15:13:57.994957"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:57.762044'} \u2192 {'lead_qualification': '2026-06-29T15:13:57.762044', 'line_manager_validation': '2026-06-29T15:13:58.007548'}",
+    "outcome": "Updated",
+    "id": "A0069",
+    "recorded_at": "2026-06-29T15:13:58.007595"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0070",
+    "recorded_at": "2026-06-29T15:13:58.099413"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:57.762044', 'line_manager_validation': '2026-06-29T15:13:58.007548'} \u2192 {'lead_qualification': '2026-06-29T15:13:57.762044', 'line_manager_validation': '2026-06-29T15:13:58.007548', 'credit_assessment': '2026-06-29T15:13:58.113044'}",
+    "outcome": "Updated",
+    "id": "A0071",
+    "recorded_at": "2026-06-29T15:13:58.113112"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements'], lms_application_id: None \u2192 LMS00728, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0072",
+    "recorded_at": "2026-06-29T15:13:58.353340"
+  },
+  {
+    "deal_id": "D2908",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00728).",
+    "outcome": "Offer / Proposal",
+    "id": "A0073",
+    "recorded_at": "2026-06-29T15:13:58.355322"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:13:59.048672'}",
+    "outcome": "Updated",
+    "id": "A0074",
+    "recorded_at": "2026-06-29T15:13:59.048720"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0075",
+    "recorded_at": "2026-06-29T15:13:59.084778"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0076",
+    "recorded_at": "2026-06-29T15:13:59.203768"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0077",
+    "recorded_at": "2026-06-29T15:13:59.325904"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:59.048672'} \u2192 {'lead_qualification': '2026-06-29T15:13:59.048672', 'line_manager_validation': '2026-06-29T15:13:59.339810'}",
+    "outcome": "Updated",
+    "id": "A0078",
+    "recorded_at": "2026-06-29T15:13:59.339861"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0079",
+    "recorded_at": "2026-06-29T15:13:59.457306"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:13:59.048672', 'line_manager_validation': '2026-06-29T15:13:59.339810'} \u2192 {'lead_qualification': '2026-06-29T15:13:59.048672', 'line_manager_validation': '2026-06-29T15:13:59.339810', 'credit_assessment': '2026-06-29T15:13:59.473857'}",
+    "outcome": "Updated",
+    "id": "A0080",
+    "recorded_at": "2026-06-29T15:13:59.473911"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements', 'Audited Accounts', 'Business Plan', 'Valuation Report'], lms_application_id: None \u2192 LMS00729, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0081",
+    "recorded_at": "2026-06-29T15:13:59.868699"
+  },
+  {
+    "deal_id": "D2909",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00729).",
+    "outcome": "Offer / Proposal",
+    "id": "A0082",
+    "recorded_at": "2026-06-29T15:13:59.873720"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:00.598790'}",
+    "outcome": "Updated",
+    "id": "A0083",
+    "recorded_at": "2026-06-29T15:14:00.598861"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0084",
+    "recorded_at": "2026-06-29T15:14:00.638552"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0085",
+    "recorded_at": "2026-06-29T15:14:00.753158"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0086",
+    "recorded_at": "2026-06-29T15:14:00.836691"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:00.598790'} \u2192 {'lead_qualification': '2026-06-29T15:14:00.598790', 'line_manager_validation': '2026-06-29T15:14:00.850977'}",
+    "outcome": "Updated",
+    "id": "A0087",
+    "recorded_at": "2026-06-29T15:14:00.851026"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0088",
+    "recorded_at": "2026-06-29T15:14:00.926607"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:00.598790', 'line_manager_validation': '2026-06-29T15:14:00.850977'} \u2192 {'lead_qualification': '2026-06-29T15:14:00.598790', 'line_manager_validation': '2026-06-29T15:14:00.850977', 'credit_assessment': '2026-06-29T15:14:00.937374'}",
+    "outcome": "Updated",
+    "id": "A0089",
+    "recorded_at": "2026-06-29T15:14:00.937422"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: documents_provided: None \u2192 ['CRB Report', 'Bank Statements (6 months)', 'Business Registration', 'ID/Passport', 'KRA PIN', 'Financial Statements', 'Audited Accounts', 'Business Plan', 'Valuation Report'], lms_application_id: None \u2192 LMS00730, submitted_to_credit: None \u2192 True",
+    "outcome": "Updated",
+    "id": "A0090",
+    "recorded_at": "2026-06-29T15:14:01.228678"
+  },
+  {
+    "deal_id": "D2910",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Credit Assessment \u2192 Offer / Proposal. Auto-advanced on submit to credit (app LMS00730).",
+    "outcome": "Offer / Proposal",
+    "id": "A0091",
+    "recorded_at": "2026-06-29T15:14:01.232877"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:03.743879'}",
+    "outcome": "Updated",
+    "id": "A0092",
+    "recorded_at": "2026-06-29T15:14:03.743917"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0093",
+    "recorded_at": "2026-06-29T15:14:03.763960"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0094",
+    "recorded_at": "2026-06-29T15:14:03.828165"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0095",
+    "recorded_at": "2026-06-29T15:14:03.899947"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:03.743879'} \u2192 {'lead_qualification': '2026-06-29T15:14:03.743879', 'line_manager_validation': '2026-06-29T15:14:03.908450'}",
+    "outcome": "Updated",
+    "id": "A0096",
+    "recorded_at": "2026-06-29T15:14:03.908495"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0097",
+    "recorded_at": "2026-06-29T15:14:03.974708"
+  },
+  {
+    "deal_id": "D2911",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:03.743879', 'line_manager_validation': '2026-06-29T15:14:03.908450'} \u2192 {'lead_qualification': '2026-06-29T15:14:03.743879', 'line_manager_validation': '2026-06-29T15:14:03.908450', 'credit_assessment': '2026-06-29T15:14:03.984010'}",
+    "outcome": "Updated",
+    "id": "A0098",
+    "recorded_at": "2026-06-29T15:14:03.984053"
+  },
+  {
+    "deal_id": "D2912",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:05.175114'}",
+    "outcome": "Updated",
+    "id": "A0099",
+    "recorded_at": "2026-06-29T15:14:05.175164"
+  },
+  {
+    "deal_id": "D2912",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0100",
+    "recorded_at": "2026-06-29T15:14:05.274575"
+  },
+  {
+    "deal_id": "D2912",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:05.175114'} \u2192 {'lead_qualification': '2026-06-29T15:14:05.175114', 'line_manager_validation': '2026-06-29T15:14:05.287508'}",
+    "outcome": "Updated",
+    "id": "A0101",
+    "recorded_at": "2026-06-29T15:14:05.287556"
+  },
+  {
+    "deal_id": "D2912",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0102",
+    "recorded_at": "2026-06-29T15:14:05.371678"
+  },
+  {
+    "deal_id": "D2912",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:05.175114', 'line_manager_validation': '2026-06-29T15:14:05.287508'} \u2192 {'lead_qualification': '2026-06-29T15:14:05.175114', 'line_manager_validation': '2026-06-29T15:14:05.287508', 'credit_assessment': '2026-06-29T15:14:05.384673'}",
+    "outcome": "Updated",
+    "id": "A0103",
+    "recorded_at": "2026-06-29T15:14:05.384728"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:05.623015'}",
+    "outcome": "Updated",
+    "id": "A0104",
+    "recorded_at": "2026-06-29T15:14:05.623065"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0105",
+    "recorded_at": "2026-06-29T15:14:05.661492"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0106",
+    "recorded_at": "2026-06-29T15:14:05.752394"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0107",
+    "recorded_at": "2026-06-29T15:14:05.864734"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:05.623015'} \u2192 {'lead_qualification': '2026-06-29T15:14:05.623015', 'line_manager_validation': '2026-06-29T15:14:05.880321'}",
+    "outcome": "Updated",
+    "id": "A0108",
+    "recorded_at": "2026-06-29T15:14:05.880371"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0109",
+    "recorded_at": "2026-06-29T15:14:05.973929"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:05.623015', 'line_manager_validation': '2026-06-29T15:14:05.880321'} \u2192 {'lead_qualification': '2026-06-29T15:14:05.623015', 'line_manager_validation': '2026-06-29T15:14:05.880321', 'credit_assessment': '2026-06-29T15:14:05.989783'}",
+    "outcome": "Updated",
+    "id": "A0110",
+    "recorded_at": "2026-06-29T15:14:05.989858"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_commitments: None \u2192 {'credit_assessment': {'reason': 'Awaiting client valuation report', 'committed_date': '2026-07-09', 'recorded_by': '300731', 'recorded_by_name': 'Frank Wanyama', 'recorded_at': '2026-06-29T15:14:06.127370'}}",
+    "outcome": "Updated",
+    "id": "A0111",
+    "recorded_at": "2026-06-29T15:14:06.127429"
+  },
+  {
+    "deal_id": "D2913",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_commitments: {'credit_assessment': {'reason': 'Awaiting client valuation report', 'recorded_at': '2026-06-29T15:14:06.127370', 'recorded_by': '300731', 'committed_date': '2026-07-09', 'recorded_by_name': 'Frank Wanyama'}} \u2192 {'credit_assessment': {'reason': 'Valuation delayed again', 'committed_date': '2026-06-27', 'recorded_by': '300731', 'recorded_by_name': 'Frank Wanyama', 'recorded_at': '2026-06-29T15:14:06.189540'}}",
+    "outcome": "Updated",
+    "id": "A0112",
+    "recorded_at": "2026-06-29T15:14:06.189619"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:08.149734'}",
+    "outcome": "Updated",
+    "id": "A0113",
+    "recorded_at": "2026-06-29T15:14:08.149788"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0114",
+    "recorded_at": "2026-06-29T15:14:08.203532"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0115",
+    "recorded_at": "2026-06-29T15:14:08.308651"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Qualified \u2192 Application. ",
+    "outcome": "Application",
+    "id": "A0116",
+    "recorded_at": "2026-06-29T15:14:08.405786"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:08.149734'} \u2192 {'lead_qualification': '2026-06-29T15:14:08.149734', 'line_manager_validation': '2026-06-29T15:14:08.418320'}",
+    "outcome": "Updated",
+    "id": "A0117",
+    "recorded_at": "2026-06-29T15:14:08.418370"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Application \u2192 Credit Assessment. ",
+    "outcome": "Credit Assessment",
+    "id": "A0118",
+    "recorded_at": "2026-06-29T15:14:08.518999"
+  },
+  {
+    "deal_id": "D2914",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:08.149734', 'line_manager_validation': '2026-06-29T15:14:08.418320'} \u2192 {'lead_qualification': '2026-06-29T15:14:08.149734', 'line_manager_validation': '2026-06-29T15:14:08.418320', 'credit_assessment': '2026-06-29T15:14:08.533190'}",
+    "outcome": "Updated",
+    "id": "A0119",
+    "recorded_at": "2026-06-29T15:14:08.533246"
+  },
+  {
+    "deal_id": "D2915",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:10.736585'}",
+    "outcome": "Updated",
+    "id": "A0120",
+    "recorded_at": "2026-06-29T15:14:10.736629"
+  },
+  {
+    "deal_id": "D2916",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:10.838019'}",
+    "outcome": "Updated",
+    "id": "A0121",
+    "recorded_at": "2026-06-29T15:14:10.838081"
+  },
+  {
+    "deal_id": "D2917",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:10.909895'}",
+    "outcome": "Updated",
+    "id": "A0122",
+    "recorded_at": "2026-06-29T15:14:10.909932"
+  },
+  {
+    "deal_id": "D2918",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:10.981043'}",
+    "outcome": "Updated",
+    "id": "A0123",
+    "recorded_at": "2026-06-29T15:14:10.981084"
+  },
+  {
+    "deal_id": "D2919",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:14.075199'}",
+    "outcome": "Updated",
+    "id": "A0124",
+    "recorded_at": "2026-06-29T15:14:14.075230"
+  },
+  {
+    "deal_id": "D2919",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Qualified. ",
+    "outcome": "Qualified",
+    "id": "A0125",
+    "recorded_at": "2026-06-29T15:14:14.172472"
+  },
+  {
+    "deal_id": "D2920",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:14.580173'}",
+    "outcome": "Updated",
+    "id": "A0126",
+    "recorded_at": "2026-06-29T15:14:14.580216"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:23.273499'}",
+    "outcome": "Updated",
+    "id": "A0127",
+    "recorded_at": "2026-06-29T15:14:23.273569"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: None \u2192 pending, referred_to_code: None \u2192 300716, referred_to: None \u2192 Immaculate, referred_by_code: None \u2192 300731, referred_by_name: None \u2192 Frank Wanyama, referral_note: None \u2192 Please pursue \u2014 your relationship., referred_at: None \u2192 2026-06-29T15:14:26.289671, decline_reason: None \u2192 ",
+    "outcome": "Updated",
+    "id": "A0128",
+    "recorded_at": "2026-06-29T15:14:26.289703"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300716",
+    "staff_name": "Immaculate",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: pending \u2192 accepted, accepted_at: None \u2192 2026-06-29T15:14:28.727078, accepted_by: None \u2192 300716, staff_code: 300731 \u2192 300716, staff_name: Frank Wanyama \u2192 Immaculate, portfolio_owner_code: None \u2192 300716, portfolio_owner_name: None \u2192 Immaculate",
+    "outcome": "Updated",
+    "id": "A0129",
+    "recorded_at": "2026-06-29T15:14:28.727139"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300716",
+    "staff_name": "Immaculate",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Contacted. ",
+    "outcome": "Contacted",
+    "id": "A0130",
+    "recorded_at": "2026-06-29T15:14:31.207623"
+  },
+  {
+    "deal_id": "D2922",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:31.330935'}",
+    "outcome": "Updated",
+    "id": "A0131",
+    "recorded_at": "2026-06-29T15:14:31.330991"
+  },
+  {
+    "deal_id": "D2922",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: None \u2192 pending, referred_to_code: None \u2192 300716, referred_to: None \u2192 Immaculate, referred_by_code: None \u2192 300731, referred_by_name: None \u2192 Frank Wanyama, referral_note: None \u2192 , referred_at: None \u2192 2026-06-29T15:14:31.365515, decline_reason: None \u2192 ",
+    "outcome": "Updated",
+    "id": "A0132",
+    "recorded_at": "2026-06-29T15:14:31.365575"
+  },
+  {
+    "deal_id": "D2922",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: pending \u2192 declined, decline_reason:  \u2192 Client outside my coverage area., declined_at: None \u2192 2026-06-29T15:14:31.418286, declined_by: None \u2192 300716",
+    "outcome": "Updated",
+    "id": "A0133",
+    "recorded_at": "2026-06-29T15:14:31.418350"
+  },
+  {
+    "deal_id": "D2922",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: declined \u2192 pending, referred_at: 2026-06-29T15:14:31.365515 \u2192 2026-06-29T15:14:32.910537, decline_reason: Client outside my coverage area. \u2192 ",
+    "outcome": "Updated",
+    "id": "A0134",
+    "recorded_at": "2026-06-29T15:14:32.910611"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300716",
+    "staff_name": "Immaculate",
+    "activity_type": "Stage Change",
+    "note": "Stage: Contacted \u2192 Closed Won. stress: materialize for BSC shadow credit",
+    "outcome": "Closed Won",
+    "id": "A0135",
+    "recorded_at": "2026-06-29T15:14:35.377911"
+  },
+  {
+    "deal_id": "D2921",
+    "staff_code": "300716",
+    "staff_name": "Immaculate",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: {'lead_qualification': '2026-06-29T15:14:23.273499'} \u2192 {'lead_qualification': '2026-06-29T15:14:23.273499', 'closure': '2026-06-29T15:14:35.391765'}",
+    "outcome": "Updated",
+    "id": "A0136",
+    "recorded_at": "2026-06-29T15:14:35.391826"
+  },
+  {
+    "deal_id": "D2923",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:42.075639'}",
+    "outcome": "Updated",
+    "id": "A0137",
+    "recorded_at": "2026-06-29T15:14:42.075693"
+  },
+  {
+    "deal_id": "D2924",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:42.230859'}",
+    "outcome": "Updated",
+    "id": "A0138",
+    "recorded_at": "2026-06-29T15:14:42.230913"
+  },
+  {
+    "deal_id": "D2925",
+    "staff_code": "300716",
+    "staff_name": "Immaculate",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: referral_status: pending \u2192 accepted, accepted_at: None \u2192 2026-06-29T15:14:43.162665, accepted_by: None \u2192 300716, staff_code: 300731 \u2192 300716, staff_name: Frank Wanyama \u2192 Immaculate",
+    "outcome": "Updated",
+    "id": "A0139",
+    "recorded_at": "2026-06-29T15:14:43.162725"
+  },
+  {
+    "deal_id": "D2926",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:59.320378'}",
+    "outcome": "Updated",
+    "id": "A0140",
+    "recorded_at": "2026-06-29T15:14:59.320431"
+  },
+  {
+    "deal_id": "D2927",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T15:14:59.422180'}",
+    "outcome": "Updated",
+    "id": "A0141",
+    "recorded_at": "2026-06-29T15:14:59.422234"
+  },
+  {
+    "deal_id": "D2928",
+    "staff_code": "0001",
+    "staff_name": "Test Chief Executive & Managing Director",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-06-29T17:05:09.661619'}",
+    "outcome": "Updated",
+    "id": "A0142",
+    "recorded_at": "2026-06-29T17:05:09.661661"
+  },
+  {
+    "deal_id": "D2929",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: sla_step_log: None \u2192 {'lead_qualification': '2026-07-01T07:04:00.074276'}",
+    "outcome": "Updated",
+    "id": "A0143",
+    "recorded_at": "2026-07-01T07:04:00.074370"
+  },
+  {
+    "deal_id": "D2929",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Stage Change",
+    "note": "Stage: Lead \u2192 Documentation. ",
+    "outcome": "Documentation",
+    "id": "A0144",
+    "recorded_at": "2026-07-01T07:06:16.620495"
+  },
+  {
+    "deal_id": "D2929",
+    "staff_code": "300731",
+    "staff_name": "Frank Wanyama",
+    "activity_type": "Deal Updated",
+    "note": "Fields updated: lms_application_id: None \u2192 LMS00731",
+    "outcome": "Updated",
+    "id": "A0145",
+    "recorded_at": "2026-07-01T07:06:16.848462"
+  },
+  {
+    "deal_id": "D2930",
+    "staff_code": "0001",
+    "staff_name": "Test Chief Executive & Managing Director",
+    "activity_type": "Stage Change",
+    "note": "Stage: Prospecting \u2192 Negotiation. ",
+    "outcome": "Negotiation",
+    "id": "A0146",
+    "recorded_at": "2026-07-02T08:24:17.438739"
+  },
+  {
+    "deal_id": "D2930",
+    "staff_code": "0001",
+    "staff_name": "Test Chief Executive & Managing Director",
+    "activity_type": "Stage Change",
+    "note": "Stage: Negotiation \u2192 Compliance. ",
+    "outcome": "Compliance",
+    "id": "A0147",
+    "recorded_at": "2026-07-02T08:24:17.620886"
+  }
+]
