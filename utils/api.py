@@ -9474,7 +9474,6 @@ def _read_committee_palette() -> list:
 
 
 def _write_committee_palette(palette: list):
-    from utils.core import _data_path  # noqa
     import json as _json
     p = ROOT / "data" / "lms_config.json"
     cfg = _load_json("lms_config.json") or {}
