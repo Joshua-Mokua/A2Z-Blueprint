@@ -9475,7 +9475,7 @@ def _read_committee_palette() -> list:
 
 def _write_committee_palette(palette: list):
     import json as _json
-    p = ROOT / "data" / "lms_config.json"
+    p = DATA_DIR / "lms_config.json"
     cfg = _load_json("lms_config.json") or {}
     cw = cfg.get("credit_workflow", {})
     if not isinstance(cw, dict):
@@ -9484,9 +9484,10 @@ def _write_committee_palette(palette: list):
     cfg["credit_workflow"] = cw
     # backup then write
     try:
+        import shutil as _shutil
         from datetime import datetime as _dt
         if p.exists():
-            shutil.copyfile(p, p.with_suffix(f".pre_cmtepalette_{_dt.now():%Y%m%d-%H%M%S}.json"))
+            _shutil.copyfile(p, p.with_suffix(f".pre_cmtepalette_{_dt.now():%Y%m%d-%H%M%S}.json"))
     except Exception:
         pass
     p.write_text(_json.dumps(cfg, indent=2), encoding="utf-8")
