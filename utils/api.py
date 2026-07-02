@@ -1699,58 +1699,53 @@ def set_auth_config(
 
 @app.get("/api/admin/staff", tags=["admin"])
 def get_admin_staff(user: dict = Depends(require_config_admin)):
-    """Full staff roster from the PostgreSQL `users` table (authoritative store).
-
-    Read-only. Returns every user row shaped for the React staff-admin table.
-    Deliberately reads the DB table directly — NOT via UserManager / users.json,
-    which is a stale 70-user shadow. Reporting lines and managed_* scope live in
-    the row's `metadata` JSONB and are surfaced here when present.
-    """
+    """Staff roster — PostgreSQL when available, users.json fallback otherwise."""
     from utils.db import db as _db
-    if not _db.table_uses_db("users"):
-        raise HTTPException(status_code=503,
-                            detail="users table not active in PostgreSQL")
-    try:
-        rows = _db.fetch_all(
-            "SELECT username, staff_code, full_name, role, department, unit, "
-            "       email, active, is_admin, can_view_all, "
-            "       must_change_password, last_login, accessible_modules, hidden_modules "
-            "FROM users ORDER BY full_name NULLS LAST, username"
-        ) or []
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"staff read failed: {exc}")
 
-    staff = []
-    for r in rows:
-        meta = {}  # users table has no metadata column
-        if isinstance(meta, str):
-            try:
-                import json as _json
-                meta = _json.loads(meta)
-            except Exception:
-                meta = {}
-        staff.append({
-            "username":        r.get("username"),
-            "staff_code":      r.get("staff_code"),
-            "full_name":       r.get("full_name"),
-            "role":            r.get("role"),
-            "department":      r.get("department"),
-            "unit":            r.get("unit"),
-            "email":           r.get("email") or "",
-            "active":          bool(r.get("active")),
-            "is_admin":        bool(r.get("is_admin")),
-            "can_view_all":    bool(r.get("can_view_all")),
-            "must_change_password": bool(r.get("must_change_password")),
-            "last_login":      str(r.get("last_login")) if r.get("last_login") else None,
-            # Reporting line + scope (from metadata JSONB, if populated):
-            "reports_to":          meta.get("reports_to"),
-            "managed_staff_codes": meta.get("managed_staff_codes", []),
-            "managed_units":       meta.get("managed_units", []),
-            "managed_roles":       meta.get("managed_roles", []),
-            "region":              meta.get("region"),
-        })
-    _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff")
-    return {"staff": staff, "count": len(staff)}
+    def _shape(r: dict, meta: dict = None) -> dict:
+        meta = meta or {}
+        return {
+            "username":             r.get("username"),
+            "staff_code":           r.get("staff_code"),
+            "full_name":            r.get("full_name"),
+            "role":                 r.get("role"),
+            "department":           r.get("department"),
+            "unit":                 r.get("unit"),
+            "email":                r.get("email") or "",
+            "active":               bool(r.get("active", True)),
+            "is_admin":             bool(r.get("is_admin", False)),
+            "can_view_all":         bool(r.get("can_view_all", False)),
+            "must_change_password": bool(r.get("must_change_password", False)),
+            "last_login":           str(r.get("last_login")) if r.get("last_login") else None,
+            "reports_to":           meta.get("reports_to"),
+            "managed_staff_codes":  meta.get("managed_staff_codes", []),
+            "managed_units":        meta.get("managed_units", []),
+            "managed_roles":        meta.get("managed_roles", []),
+            "region":               meta.get("region"),
+        }
+
+    # ── PostgreSQL path ──────────────────────────────────────────────────────
+    if _db.table_uses_db("users"):
+        try:
+            rows = _db.fetch_all(
+                "SELECT username, staff_code, full_name, role, department, unit, "
+                "       email, active, is_admin, can_view_all, "
+                "       must_change_password, last_login "
+                "FROM users ORDER BY full_name NULLS LAST, username"
+            ) or []
+            staff = [_shape(r) for r in rows]
+            _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (pg)")
+            return {"staff": staff, "count": len(staff), "source": "postgres"}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"staff read failed: {exc}")
+
+    # ── JSON fallback (users.json via UserManager) ───────────────────────────
+    from utils.core import UserManager
+    um = UserManager()
+    rows = sorted(um.users.values(), key=lambda u: (u.get("full_name") or u.get("username") or ""))
+    staff = [_shape(r) for r in rows]
+    _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (json)")
+    return {"staff": staff, "count": len(staff), "source": "json"}
 
 
 # ── Staff write endpoints (A-minimal Step 2 v2 — real-schema) ─────────────
