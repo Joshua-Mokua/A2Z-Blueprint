@@ -110,17 +110,18 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="sb-foot">
         <div className="sb-user">
           <div className="sb-av">{initials(user?.full_name ?? user?.username)}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="sb-user-info">
             <div className="sb-user-name">{user?.full_name ?? user?.username ?? '—'}</div>
             <div className="sb-user-role">{user?.role ?? ''}</div>
           </div>
-          <button
-            type="button"
-            className="sb-logout"
-            title="Sign out"
-            onClick={() => { logout(); onNavigate?.(); }}
-          >✕</button>
         </div>
+        <button
+          type="button"
+          className="sb-logout"
+          onClick={() => { logout(); onNavigate?.(); }}
+        >
+          Sign out
+        </button>
       </div>
     </aside>
   );
