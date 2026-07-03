@@ -2072,3 +2072,33 @@ export async function fetchMyLegalOfficers(): Promise<LegalOfficersResponse> {
   return getJson<LegalOfficersResponse>('/credit-admin/my-legal-officers');
 }
 
+
+// ── Credit Analyst Workbench (P1/P2/P3) ──────────────────────────────
+export interface WorkbenchPull { data_source: string; recorded?: boolean; decision?: string; }
+export interface WorkbenchSummary {
+  found: boolean; session_id?: string; state?: string;
+  customer_id?: string; loan_application_id?: string;
+  data_pulls_count?: number; sources_pulled?: string[]; sources_missing?: string[];
+  notes_count?: number; notes_by_category?: Record<string, number>;
+}
+export interface WorkbenchConflict { decision: string; sources: string[]; pull_count: number; }
+export interface WorkbenchConflictReport {
+  session_id: string; total_pulls: number; distinct_decisions: number;
+  conflict_count: number; conflicts: WorkbenchConflict[];
+}
+export interface WorkbenchView {
+  session_id: string; summary: WorkbenchSummary;
+  conflict_report: WorkbenchConflictReport; states: string[];
+}
+export async function getApplicationWorkbench(appId: string): Promise<WorkbenchView> {
+  return getJson<WorkbenchView>(`/lms/applications/${encodeURIComponent(appId)}/workbench`);
+}
+export async function refreshWorkbench(appId: string): Promise<{ refreshed: WorkbenchPull[]; summary: WorkbenchSummary; conflict_report: WorkbenchConflictReport; }> {
+  return postJson(`/lms/applications/${encodeURIComponent(appId)}/workbench/refresh`, {});
+}
+export async function addWorkbenchNote(appId: string, category: string, body: string): Promise<{ note_id: string; summary: WorkbenchSummary; }> {
+  return postJson(`/lms/applications/${encodeURIComponent(appId)}/workbench/note`, { category, body });
+}
+export async function transitionWorkbench(appId: string, new_state: string, reason?: string): Promise<{ summary: WorkbenchSummary; states: string[]; }> {
+  return postJson(`/lms/applications/${encodeURIComponent(appId)}/workbench/transition`, { new_state, reason });
+}

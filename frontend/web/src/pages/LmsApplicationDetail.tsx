@@ -16,6 +16,7 @@
 // is now 'assigned').
 
 import { useState, useEffect } from 'react';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
@@ -369,6 +370,8 @@ export function LmsApplicationDetail() {
           && (
           <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
+
+        <CreditWorkbenchPanel appId={application.id} toast={toast} />
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
@@ -1596,6 +1599,127 @@ function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
 
 // C2: correctness-check action set — mark ready for committee or return for rework,
 // with an optional opinion for the Chief.
+// ─────────── Credit Analyst Workbench panel (P3) ───────────
+const WB_NOTE_CATEGORIES = ['OBSERVATION', 'CONCERN', 'FOLLOW_UP', 'RECOMMENDATION', 'DECISION_RATIONALE'];
+
+function CreditWorkbenchPanel({ appId, toast }: {
+  appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [wb, setWb] = useState<WorkbenchView | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [noteCat, setNoteCat] = useState('OBSERVATION');
+  const [noteBody, setNoteBody] = useState('');
+
+  const load = async () => {
+    try { setWb(await getApplicationWorkbench(appId)); }
+    catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed to load workbench' }); }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [appId]);
+
+  const refresh = async () => {
+    setBusy(true);
+    try {
+      const r = await refreshWorkbench(appId);
+      setWb((prev) => prev ? { ...prev, summary: r.summary, conflict_report: r.conflict_report } : prev);
+      toast({ tone: 'success', message: 'Engines refreshed.' });
+      await load();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Refresh failed' }); }
+    finally { setBusy(false); }
+  };
+
+  const addNote = async () => {
+    if (!noteBody.trim()) return;
+    setBusy(true);
+    try {
+      await addWorkbenchNote(appId, noteCat, noteBody.trim());
+      setNoteBody('');
+      toast({ tone: 'success', message: 'Note recorded.' });
+      await load();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Note failed' }); }
+    finally { setBusy(false); }
+  };
+
+  if (!wb) return null;
+  const cr = wb.conflict_report;
+  const s = wb.summary;
+
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Credit Analyst Workbench</h3>
+          <span className="text-xs text-gray-500">Session {s.state ?? '—'}</span>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-3 text-xs text-gray-500">
+          What each credit engine currently says for this customer, and where they conflict.
+        </p>
+
+        {/* Conflict report — front and centre */}
+        <div className={`mb-3 rounded border p-3 text-sm ${cr.conflict_count > 0 ? 'border-amber-300 bg-amber-50' : 'border-green-200 bg-green-50'}`}>
+          {cr.conflict_count > 0 ? (
+            <div>
+              <span className="font-medium text-amber-800">{cr.conflict_count} conflict{cr.conflict_count === 1 ? '' : 's'} across engines</span>
+              <div className="mt-2 space-y-1">
+                {cr.conflicts.map((c, i) => (
+                  <div key={i} className="text-xs text-amber-900">
+                    <span className="font-medium">{c.decision}</span> — {c.sources.join(', ')}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <span className="text-green-800">No conflicts across the engines pulled ({cr.total_pulls} pull{cr.total_pulls === 1 ? '' : 's'}).</span>
+          )}
+        </div>
+
+        {/* Engine sources */}
+        <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <p className="font-medium text-gray-600">Engines pulled ({(s.sources_pulled ?? []).length})</p>
+            {(s.sources_pulled ?? []).map((src) => <div key={src} className="text-green-700">✓ {src}</div>)}
+          </div>
+          <div>
+            <p className="font-medium text-gray-600">Not yet pulled ({(s.sources_missing ?? []).length})</p>
+            {(s.sources_missing ?? []).map((src) => <div key={src} className="text-gray-400">• {src}</div>)}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <Button variant="primary" onClick={() => void refresh()} disabled={busy}>
+            {busy ? 'Refreshing…' : 'Refresh engines'}
+          </Button>
+        </div>
+
+        {/* Analyst notes */}
+        <div className="border-t pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-600">
+            Analyst notes {s.notes_count ? `(${s.notes_count})` : ''}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select value={noteCat} onChange={(e) => setNoteCat(e.target.value)}
+              className="rounded border border-gray-300 px-2 py-1.5 text-sm">
+              {WB_NOTE_CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
+            </select>
+            <input value={noteBody} onChange={(e) => setNoteBody(e.target.value)}
+              placeholder="Record an observation, concern, or rationale…"
+              className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            <Button variant="ghost" onClick={() => void addNote()} disabled={busy || !noteBody.trim()}>Add note</Button>
+          </div>
+          {s.notes_by_category && Object.keys(s.notes_by_category).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+              {Object.entries(s.notes_by_category).map(([cat, n]) => (
+                <span key={cat} className="rounded bg-gray-100 px-2 py-0.5">{cat.replace(/_/g, ' ')}: {n}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
 function CorrectnessPanel({ appId, onDone, toast }: {
   appId: string; onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
 }) {
