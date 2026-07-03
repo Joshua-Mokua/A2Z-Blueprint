@@ -47,6 +47,9 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
   const [busy, setBusy] = useState(false);
   const [scenarioName, setScenarioName] = useState('');
   const [scenarios, setScenarios] = useState<SavedScenario[]>([]);
+  // per-source anomaly exclusions {sourceIndex: [{month, reason}]}
+  const [excludedBySource, setExcludedBySource] = useState<Record<number, { month: string; reason: string }[]>>({});
+  const effectiveCif = (sources[0]?.cif && sources[0].cif.trim()) ? sources[0].cif.trim() : (defaultCif ?? '');
 
   // persistence: load saved appraisal on mount
   useEffect(() => {
@@ -113,7 +116,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
   const run = async (): Promise<MultiSourceResult | null> => {
     setBusy(true);
     try {
-      const payloadSources = sources.map((s) => {
+      const payloadSources = sources.map((s, i) => {
         const txns = s.raw_transactions ? parseTxns(s.raw_transactions) : undefined;
         return {
           label: s.label,
@@ -121,6 +124,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           ...(s.cif ? { cif: s.cif } : {}),
           ...(s.dsr_pct != null ? { dsr_pct: s.dsr_pct } : {}),
           ...(s.months_window != null ? { months_window: s.months_window } : {}),
+          ...(excludedBySource[i]?.length ? { excluded_months: excludedBySource[i] } : {}),
         };
       });
       const r = await analyzeMultiSource(payloadSources);
@@ -182,7 +186,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
   .sec{margin:6px 0} @media print{body{margin:12mm}}
 </style></head><body>
   <div class="head"><h1>${esc(bank)} — Credit Appraisal</h1><span class="muted">${new Date().toLocaleDateString()}</span></div>
-  <p><strong>Customer CIF:</strong> ${esc(defaultCif ?? '—')}</p>
+  <p><strong>Customer CIF:</strong> ${esc(effectiveCif || '—')}</p>
   <h2>Affordability — income sources</h2>
   <table><thead><tr><th>Source</th><th style="text-align:right">DSR %</th><th style="text-align:right">Months</th><th style="text-align:right">Avg net</th><th style="text-align:right">Affordable instalment</th></tr></thead>
   <tbody>${srcRows || '<tr><td colspan="5" class="muted">No sources analysed</td></tr>'}
@@ -213,7 +217,20 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           scenarios for the appraisal report. Deterministic (no AI required).
         </p>
 
+        {/* nav strip (anchor-scroll) */}
+        <div className="appraisal-nav sticky top-0 z-10 mb-3 flex flex-wrap gap-1 border-b-2 border-[#0082BB] bg-white/95 py-2 text-xs">
+          {[['sources','Sources'],['consolidation','Consolidation'],['qualifying','Qualifying'],['scenarios','Scenarios'],['sections','Sections'],['actions','Print']].map(([id,lbl]) => (
+            <button key={id} onClick={() => document.getElementById('appr-'+id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="rounded px-2 py-1 text-[#005B82] hover:bg-[#0082BB]/10">{lbl}</button>
+          ))}
+        </div>
+
+        {effectiveCif && (
+          <p className="mb-3 text-xs text-gray-600">Customer CIF: <span className="font-mono font-medium">{effectiveCif}</span></p>
+        )}
+
         {/* Sources */}
+        <div id="appr-sources" />
         <div className="space-y-3">
           {sources.map((s, i) => (
             <div key={i} className="rounded border border-gray-200 p-3">
@@ -250,6 +267,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           ))}
         </div>
 
+        <div id="appr-actions" />
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={addSource}>+ Add statement</Button>
           <Button variant="primary" onClick={() => void run()} disabled={busy}>{busy ? 'Analysing…' : 'Analyse & consolidate'}</Button>
@@ -258,6 +276,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
         </div>
 
         {/* Result */}
+        <div id="appr-consolidation" />
         {result && (
           <div className="mt-4 rounded border border-gray-200">
             <table className="w-full text-sm">
@@ -286,10 +305,30 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
                 </tr>
               </tbody>
             </table>
+            {/* anomaly-surface: prompt the analyst to exclude flagged months before printing */}
+            {result.sources.some((s) => (s.affordability?.anomaly_hints ?? []).length > 0) && (
+              <div className="border-t bg-amber-50 p-2 text-xs text-amber-900">
+                <span className="font-medium">Anomalous months detected — exclude before finalising:</span>
+                <div className="mt-1 space-y-1">
+                  {result.sources.map((s, i) => (s.affordability?.anomaly_hints ?? []).map((mo) => (
+                    <div key={`${i}-${mo}`} className="flex items-center gap-2">
+                      <span>{s.label}: {mo}</span>
+                      <button
+                        onClick={() => {
+                          setExcludedBySource((prev) => ({ ...prev, [i]: [...(prev[i] ?? []), { month: mo, reason: 'analyst-excluded anomaly' }] }));
+                          void run();
+                        }}
+                        className="rounded bg-amber-200 px-2 py-0.5 text-amber-900 hover:bg-amber-300">exclude {mo}</button>
+                    </div>
+                  )))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Scenarios */}
+        <div id="appr-scenarios" />
         <div className="mt-4 border-t pt-3">
           <p className="mb-2 text-xs font-medium text-gray-600">Scenarios (captured in the report)</p>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -313,11 +352,12 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
         </div>
 
         {/* Qualifying amount from cashflow */}
+        <div id="appr-qualifying" />
         <div className="mt-4 border-t pt-3">
           <p className="mb-2 text-xs font-medium text-gray-600">Qualifying amount from cashflow</p>
           <div className="flex flex-wrap items-end gap-2 text-xs">
             <span className="text-gray-500">Uses the consolidated capacity{result ? `: ${money(result.consolidation.total_affordable_installment)}/mo` : ' (analyse first)'}</span>
-            <label className="flex flex-col">Rate %/mo (blank=config)
+            <label className="flex flex-col">Rate (%/month, blank=config)
               <input type="number" value={qualRate} onChange={(e) => setQualRate(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
             <label className="flex flex-col">Tenor (months)
               <input type="number" value={qualTenor} onChange={(e) => setQualTenor(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
@@ -331,7 +371,8 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           )}
         </div>
 
-        {/* Custom sections (RM adds own headings/free text) */}
+        {/* Custom sections */}
+        <div id="appr-sections" />
         <div className="mt-4 border-t pt-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-medium text-gray-600">Additional sections</p>
@@ -356,7 +397,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           <div className="flex flex-wrap items-end gap-2 text-xs">
             <label className="flex flex-col">Amount (KES)
               <input type="number" value={amAmount} onChange={(e) => setAmAmount(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
-            <label className="flex flex-col">Rate %/mo (blank=config)
+            <label className="flex flex-col">Rate (%/month, blank=config)
               <input type="number" value={amRate} onChange={(e) => setAmRate(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
             <label className="flex flex-col">Tenor (months)
               <input type="number" value={amTenor} onChange={(e) => setAmTenor(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
