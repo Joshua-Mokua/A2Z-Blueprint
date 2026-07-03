@@ -38,6 +38,8 @@ from utils.cbs_manager import (
     get_accounts_for_cif,
     get_branches,
     get_aggregates,
+    get_account_by_number,
+    get_account_360,
 )
 
 
@@ -187,6 +189,60 @@ def fetch_customer_accounts(
         "cif":      cif,
         "source":   "cbs_manager",
     }
+
+
+# ── Account number lookup (live FlexCube or CSV fallback) ───────────────
+
+@router.get("/accounts/{account_number}")
+def fetch_account_by_number(
+    account_number: str,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Exact account-number lookup.
+
+    Live path: calls CUSTOMERACCOUNTDETAILS via FlexCube script API.
+    CSV fallback: used when FLEXCUBE_SCRIPTS_URL is not configured.
+    Audited (CBS_ACCOUNT_LOOKUP).
+    """
+    account = get_account_by_number(account_number)
+    if account is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Account {account_number} not found",
+        )
+    audit_log(
+        "CBS_ACCOUNT_LOOKUP",
+        user.get("username", "unknown"),
+        detail=f"account={account_number} cif={account.get('f12_cif') or account.get('cif')}",
+    )
+    return {"account": account, "source": "flexcube"}
+
+
+@router.get("/accounts/{account_number}/360")
+def fetch_account_360(
+    account_number: str,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Combined view: account record + active loan portfolio.
+
+    Returns account dict with active_loans[], active_loans_count,
+    and total_loan_outstanding embedded. One API call for the full
+    account + loans card. Audited (CBS_ACCOUNT_360_LOOKUP).
+    """
+    result = get_account_360(account_number)
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Account {account_number} not found",
+        )
+    audit_log(
+        "CBS_ACCOUNT_360_LOOKUP",
+        user.get("username", "unknown"),
+        detail=f"account={account_number} loans={result.get('active_loans_count', 0)}",
+    )
+    return {"account": result, "source": "flexcube"}
 
 
 # ── Branches reference (35 rows; not audited) ───────────────────────────

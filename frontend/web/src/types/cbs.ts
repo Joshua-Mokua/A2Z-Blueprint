@@ -128,6 +128,55 @@ export function riskRatingTone(risk: string): 'success' | 'warning' | 'danger' |
 }
 
 
+// ── Account-number lookup (live FlexCube or CSV fallback) ────────────────
+
+/**
+ * Fields added by the live FlexCube path (CUSTOMERACCOUNTDETAILS script).
+ * All optional so the shape stays valid when the CSV fallback is used.
+ */
+export interface CbsAccountFlexcubeFields {
+  f7_cif?:       string;  // ext_ref_no — key for CUSTOMERACTIVELOANS
+  f12_cif?:      string;  // internal customer_no
+  customer_name?: string;
+  segment?:       string;
+  kyc_status?:    string;
+  risk_rating?:   string;
+  aml_flag?:      boolean;
+  pep_flag?:      boolean;
+  rm_code?:       string;
+}
+
+export interface CbsActiveLoan {
+  account_number:    string;
+  loan_status_label: string;
+  total_outstanding: number | string;
+  currency?:         string;
+  product_name?:     string;
+  npl_days?:         number;
+  [key: string]:     unknown;
+}
+
+/** Account + customer summary from /api/cbs/accounts/{num} */
+export type CbsAccountDetail = CbsAccount & CbsAccountFlexcubeFields;
+
+/** Combined payload from /api/cbs/accounts/{num}/360 */
+export type CbsAccount360 = CbsAccountDetail & {
+  active_loans:           CbsActiveLoan[];
+  active_loans_count:     number;
+  total_loan_outstanding: number;
+};
+
+export interface CbsAccountDetailResponse {
+  account: CbsAccountDetail;
+  source:  string;
+}
+
+export interface CbsAccount360Response {
+  account: CbsAccount360;
+  source:  string;
+}
+
+
 /** Color tone for kyc_status badges. */
 export function kycStatusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
   const s = status.toUpperCase();

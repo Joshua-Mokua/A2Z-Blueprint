@@ -1454,6 +1454,8 @@ import type {
   CbsAccountsResponse,
   CbsBranchesResponse,
   CbsAggregatesResponse,
+  CbsAccountDetailResponse,
+  CbsAccount360Response,
 } from '@/types/cbs';
 
 
@@ -1499,6 +1501,35 @@ export async function fetchCbsBranches(): Promise<CbsBranchesResponse> {
 /** Bundled bank-level aggregates. Not audited. */
 export async function fetchCbsAggregates(): Promise<CbsAggregatesResponse> {
   return getJson<CbsAggregatesResponse>('/cbs/aggregates');
+}
+
+
+/**
+ * Exact account-number lookup.
+ * Live: CUSTOMERACCOUNTDETAILS via FlexCube script API.
+ * Fallback: CSV when FLEXCUBE_SCRIPTS_URL is not configured on the server.
+ * Audited (CBS_ACCOUNT_LOOKUP). 404 if not found.
+ */
+export async function fetchCbsAccountByNumber(
+  accountNumber: string,
+): Promise<CbsAccountDetailResponse> {
+  return getJson<CbsAccountDetailResponse>(
+    `/cbs/accounts/${encodeURIComponent(accountNumber)}`,
+  );
+}
+
+
+/**
+ * Combined account + active loans payload.
+ * Calls CUSTOMERACCOUNTDETAILS then CUSTOMERACTIVELOANS on the server.
+ * Audited (CBS_ACCOUNT_360_LOOKUP). 404 if account not found.
+ */
+export async function fetchCbsAccount360(
+  accountNumber: string,
+): Promise<CbsAccount360Response> {
+  return getJson<CbsAccount360Response>(
+    `/cbs/accounts/${encodeURIComponent(accountNumber)}/360`,
+  );
 }
 
 

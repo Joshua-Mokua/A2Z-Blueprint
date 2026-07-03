@@ -256,6 +256,124 @@ def get_aggregates() -> dict:
     return _load_aggregates()
 
 
+# ── FlexCube live lookups (active when FLEXCUBE_SCRIPTS_URL is set) ─────
+#
+# These replace the CSV path when the FlexCube script API is reachable.
+# Fall back to CSV silently so dev environments without the API still work.
+# Script names (CUSTOMERACCOUNTDETAILS, CUSTOMERACTIVELOANS) match the
+# confirmed-working scripts wired to 10.8.32.3 — change via env var only.
+
+from utils.flexcube_script_client import (
+    execute_script,
+    is_configured as _fc_configured,
+    FlexcubeScriptError,
+)
+
+
+def get_account_by_number(account_number: str) -> Optional[dict]:
+    """
+    Account lookup by exact account number.
+
+    Live path  — calls CUSTOMERACCOUNTDETAILS via the FlexCube script API
+                 (requires FLEXCUBE_SCRIPTS_URL env var).
+    Offline path — searches cbs_data/accounts.csv (used in dev / when
+                   FlexCube is unreachable).
+
+    Returned dict always contains the CbsAccount fields. The live path
+    additionally includes:
+      f7_cif    — FlexCube ext_ref_no (needed for CUSTOMERACTIVELOANS)
+      f12_cif   — FlexCube internal customer_no
+      customer_name, segment, kyc_status, risk_rating, aml_flag, pep_flag
+    """
+    num = str(account_number).strip()
+
+    if _fc_configured():
+        try:
+            rows = execute_script(
+                "CUSTOMERACCOUNTDETAILS",
+                {"ACCOUNT_NUMBER": num},
+            )
+            if not rows:
+                return None
+            return rows[0]
+        except FlexcubeScriptError:
+            pass  # fall through to CSV
+
+    # CSV fallback
+    df = _load_accounts()
+    matches = df[df["account_number"] == num]
+    if matches.empty:
+        return None
+    acct = _account_row_to_dict(matches.iloc[0])
+    # Embed basic customer summary from the CSV customer sheet
+    cif = acct.get("cif", "")
+    if cif:
+        customer = get_customer_by_cif(cif)
+        if customer:
+            acct["customer_name"]  = customer["full_name"]
+            acct["segment"]        = customer["segment"]
+            acct["kyc_status"]     = customer["kyc_status"]
+            acct["risk_rating"]    = customer["risk_rating"]
+            acct["aml_flag"]       = customer["aml_flag"]
+            acct["pep_flag"]       = customer["pep_flag"]
+            acct["rm_code"]        = customer["relationship_manager_code"]
+    return acct
+
+
+def get_customer_active_loans(
+    account_number: Optional[str] = None,
+    f7_cif: Optional[str] = None,
+) -> list[dict]:
+    """
+    Active loan accounts for a customer.
+
+    CUSTOMERACTIVELOANS is keyed by F7 CIF (ext_ref_no), not F12.
+    When called with account_number, the F7 CIF is resolved first via
+    CUSTOMERACCOUNTDETAILS (one extra round-trip avoided if the caller
+    already fetched the account and passes f7_cif directly).
+
+    Returns [] when FlexCube is unreachable or no loans exist.
+    """
+    if not _fc_configured():
+        return []
+
+    resolved_f7 = f7_cif
+    if not resolved_f7 and account_number:
+        acct = get_account_by_number(account_number)
+        if acct:
+            resolved_f7 = acct.get("f7_cif") or acct.get("ext_ref_no")
+
+    if not resolved_f7:
+        return []
+
+    try:
+        return execute_script("CUSTOMERACTIVELOANS", {"CIF": resolved_f7})
+    except FlexcubeScriptError:
+        return []
+
+
+def get_account_360(account_number: str) -> Optional[dict]:
+    """
+    Combined payload: account record + all active loans.
+
+    The loans are attached under active_loans[], active_loans_count,
+    and total_loan_outstanding so the frontend needs one API call.
+    """
+    account = get_account_by_number(account_number)
+    if not account:
+        return None
+
+    f7_cif = account.get("f7_cif") or account.get("ext_ref_no")
+    loans  = get_customer_active_loans(f7_cif=f7_cif) if f7_cif else []
+
+    account["active_loans"]           = loans
+    account["active_loans_count"]     = len(loans)
+    account["total_loan_outstanding"] = sum(
+        float(l.get("total_outstanding") or 0) for l in loans
+    )
+    return account
+
+
 # ── Diagnostics (not exposed via API; usable from Python shell) ─────────
 
 def cache_status() -> dict:
