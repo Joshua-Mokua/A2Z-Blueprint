@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { StaffPicker } from '@/components/StaffPicker';
+import type { StaffMember } from '@/lib/api';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -103,10 +105,15 @@ export default function CommitteeAdmin() {
     } finally { setSaving(false); }
   }
 
-  function setMember(i: number, field: 'name' | 'role' | 'staff_code', value: string) {
+  function setMemberFromStaff(i: number, sm: StaffMember | null) {
     if (!draft) return;
     const members = [...(draft.members ?? [])];
-    members[i] = { ...members[i], [field]: value };
+    members[i] = {
+      ...members[i],
+      name: sm?.name ?? '',
+      role: sm?.role ?? '',
+      staff_code: sm?.staff_code ?? '',
+    };
     setDraft({ ...draft, members });
   }
   function toggleFunnel(i: number, value: boolean) {
@@ -210,12 +217,20 @@ export default function CommitteeAdmin() {
               <div className="space-y-2">
                 {(draft.members ?? []).map((m, i) => (
                   <div key={i} className="flex gap-2">
-                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Name" value={m.name}
-                      onChange={(e) => setMember(i, 'name', e.target.value)} />
-                    <input className="w-1/3 rounded border px-2 py-1.5 text-sm" placeholder="Role" value={m.role}
-                      onChange={(e) => setMember(i, 'role', e.target.value)} />
-                    <input className="w-1/4 rounded border px-2 py-1.5 text-sm" placeholder="Staff code" value={m.staff_code ?? ''}
-                      onChange={(e) => setMember(i, 'staff_code', e.target.value)} />
+                    <div className="flex-1 min-w-0">
+                      {m.name ? (
+                        <div className="flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-sm">
+                          <span className="truncate">
+                            <span className="font-medium">{m.name}</span>
+                            <span className="text-gray-500">{m.staff_code ? ` · ${m.staff_code}` : ''}{m.role ? ` · ${m.role}` : ''}</span>
+                          </span>
+                          <button type="button" className="text-xs text-brand-primary hover:underline shrink-0"
+                            onClick={() => setMemberFromStaff(i, null)}>Change</button>
+                        </div>
+                      ) : (
+                        <StaffPicker value={null} onChange={(sm) => setMemberFromStaff(i, sm)} />
+                      )}
+                    </div>
                     <label className="flex items-center gap-1 text-xs text-gray-600 whitespace-nowrap" title="EXCO full-funnel visibility (planning view like the MD)">
                       <input type="checkbox" checked={!!m.full_funnel}
                         onChange={(e) => toggleFunnel(i, e.target.checked)} />

@@ -1,0 +1,358 @@
+// Staff Administration (admin) — Postgres users-table CRUD.
+//
+// Lists the authoritative staff roster from the PostgreSQL `users` table
+// (~1,438 staff) via GET /api/admin/staff — NOT the legacy users.json shadow.
+// Supports create / edit / deactivate / reactivate against the matching
+// write endpoints. Reporting-line (who-reports-to-whom) editing is a separate,
+// later surface — deliberately not here.
+//
+// NOTE: accounts created here live in PostgreSQL. Until the login path is
+// migrated off users.json, a newly-created account cannot authenticate yet;
+// existing logins are unaffected.
+import { useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { Badge } from '@/components/Badge';
+import { Input } from '@/components/Input';
+import { Table, type Column } from '@/components/Table';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useToast } from '@/components/Toast';
+import { useRole } from '@/hooks/useRole';
+import {
+  fetchAdminStaff,
+  createAdminStaff,
+  updateAdminStaff,
+  deactivateAdminStaff,
+  reactivateAdminStaff,
+  type StaffRow,
+  type StaffCreateInput,
+  type StaffPatchInput,
+} from '@/lib/api';
+
+function isConfigAdminRole(role: string | undefined, isAdmin: boolean): boolean {
+  if (isAdmin) return true;
+  const r = (role ?? '').toLowerCase();
+  return ['admin', 'director', 'chief', 'managing'].some((t) => r.includes(t));
+}
+
+type ModalMode = 'create' | 'edit' | null;
+
+interface FormState {
+  username: string;
+  staff_code: string;
+  password: string;
+  full_name: string;
+  email: string;
+  role: string;
+  department: string;
+  unit: string;
+  can_view_all: boolean;
+  is_admin: boolean;
+}
+
+const EMPTY_FORM: FormState = {
+  username: '', staff_code: '', password: '', full_name: '', email: '',
+  role: 'Staff', department: '', unit: '', can_view_all: false, is_admin: false,
+};
+
+export default function StaffAdmin() {
+  const { user, isAdmin } = useRole();
+  const { toast } = useToast();
+  const canAdmin = useMemo(() => isConfigAdminRole(user?.role, isAdmin), [user, isAdmin]);
+
+  const [rows, setRows] = useState<StaffRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [modal, setModal] = useState<ModalMode>(null);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [confirmTarget, setConfirmTarget] = useState<StaffRow | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAdminStaff();
+      setRows(res.staff);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load staff');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  function openCreate() {
+    setForm(EMPTY_FORM);
+    setEditingUser(null);
+    setModal('create');
+  }
+
+  function openEdit(row: StaffRow) {
+    setForm({
+      username: row.username,
+      staff_code: row.staff_code ?? '',
+      password: '',
+      full_name: row.full_name ?? '',
+      email: row.email ?? '',
+      role: row.role ?? 'Staff',
+      department: row.department ?? '',
+      unit: row.unit ?? '',
+      can_view_all: row.can_view_all,
+      is_admin: row.is_admin,
+    });
+    setEditingUser(row.username);
+    setModal('edit');
+  }
+
+  function closeModal() {
+    setModal(null);
+    setForm(EMPTY_FORM);
+    setEditingUser(null);
+  }
+
+  async function submitForm() {
+    if (modal === 'create') {
+      if (!form.password || !form.full_name.trim() || (!form.username.trim() && !form.staff_code.trim())) {
+        toast({ tone: 'danger', message: 'Username (or staff code), password and full name are required' });
+        return;
+      }
+    }
+    setSaving(true);
+    try {
+      if (modal === 'create') {
+        const input: StaffCreateInput = {
+          username: form.username.trim() || undefined,
+          staff_code: form.staff_code.trim() || undefined,
+          password: form.password,
+          full_name: form.full_name.trim(),
+          email: form.email.trim() || undefined,
+          role: form.role.trim() || 'Staff',
+          department: form.department.trim() || undefined,
+          unit: form.unit.trim() || undefined,
+          can_view_all: form.can_view_all,
+          is_admin: form.is_admin,
+        };
+        const res = await createAdminStaff(input);
+        toast({ tone: 'success', message: `Created ${res.username}` });
+      } else if (modal === 'edit' && editingUser) {
+        const patch: StaffPatchInput = {
+          full_name: form.full_name.trim(),
+          email: form.email.trim(),
+          role: form.role.trim(),
+          department: form.department.trim(),
+          unit: form.unit.trim(),
+          staff_code: form.staff_code.trim(),
+          can_view_all: form.can_view_all,
+          is_admin: form.is_admin,
+        };
+        await updateAdminStaff(editingUser, patch);
+        toast({ tone: 'success', message: `Updated ${editingUser}` });
+      }
+      closeModal();
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDeactivate() {
+    if (!confirmTarget) return;
+    const target = confirmTarget;
+    setConfirmTarget(null);
+    try {
+      if (target.active) {
+        await deactivateAdminStaff(target.username);
+        toast({ tone: 'success', message: `Deactivated ${target.username}` });
+      } else {
+        await reactivateAdminStaff(target.username);
+        toast({ tone: 'success', message: `Reactivated ${target.username}` });
+      }
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
+    }
+  }
+
+  const columns: Column<StaffRow>[] = [
+    { key: 'full_name', header: 'Name', render: (r) => r.full_name || r.username },
+    { key: 'staff_code', header: 'Staff code' },
+    { key: 'role', header: 'Role' },
+    { key: 'unit', header: 'Unit' },
+    {
+      key: 'active', header: 'Status',
+      render: (r) => (
+        <Badge tone={r.active ? 'success' : 'neutral'}>
+          {r.active ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+      exportValue: (r) => (r.active ? 'Active' : 'Inactive'),
+    },
+    {
+      key: 'is_admin', header: 'Admin',
+      render: (r) => (r.is_admin ? <Badge tone="info">Admin</Badge> : <span className="text-gray-400">—</span>),
+      exportValue: (r) => (r.is_admin ? 'Admin' : ''),
+    },
+    {
+      key: 'username', header: 'Actions',
+      render: (r) => (
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {canAdmin && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>Edit</Button>
+              <Button
+                variant="ghost" size="sm"
+                onClick={() => setConfirmTarget(r)}
+              >
+                {r.active ? 'Deactivate' : 'Reactivate'}
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+      exportValue: () => '',
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="Staff Administration"
+        subtitle="Manage staff accounts in the system of record (PostgreSQL)."
+        actions={
+          canAdmin ? <Button onClick={openCreate}>+ Add staff</Button> : undefined
+        }
+      />
+
+      {error && (
+        <Card><Card.Body>
+          <div className="text-sm text-red-600">{error}</div>
+          <Button variant="ghost" size="sm" onClick={() => void load()}>Retry</Button>
+        </Card.Body></Card>
+      )}
+
+      <Card><Card.Body>
+        <Table
+          columns={columns}
+          rows={rows}
+          rowKey="username"
+          searchable
+          paginated
+          pageSize={25}
+          exportable
+          exportFilename="staff.csv"
+          loading={loading}
+          empty="No staff found."
+        />
+      </Card.Body></Card>
+
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
+            <div className="border-b px-5 py-3 text-base font-semibold text-gray-900">
+              {modal === 'create' ? 'Add staff member' : `Edit ${editingUser}`}
+            </div>
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto px-5 py-4">
+              {modal === 'create' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Username"
+                    value={form.username}
+                    placeholder="Defaults to staff code"
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  />
+                  <Input
+                    label="Password *"
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Full name *"
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                />
+                <Input
+                  label="Staff code"
+                  value={form.staff_code}
+                  onChange={(e) => setForm({ ...form, staff_code: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Role"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                />
+                <Input
+                  label="Unit"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Department"
+                  value={form.department}
+                  onChange={(e) => setForm({ ...form, department: e.target.value })}
+                />
+                <Input
+                  label="Email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-6 pt-1">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={form.can_view_all}
+                    onChange={(e) => setForm({ ...form, can_view_all: e.target.checked })}
+                  />
+                  Can view all staff
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={form.is_admin}
+                    onChange={(e) => setForm({ ...form, is_admin: e.target.checked })}
+                  />
+                  Admin privileges
+                </label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t px-5 py-3">
+              <Button variant="ghost" onClick={closeModal} disabled={saving}>Cancel</Button>
+              <Button onClick={() => void submitForm()} disabled={saving}>
+                {saving ? 'Saving…' : modal === 'create' ? 'Create' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title={confirmTarget?.active ? 'Deactivate staff member?' : 'Reactivate staff member?'}
+        message={
+          confirmTarget?.active
+            ? `${confirmTarget?.full_name || confirmTarget?.username} will no longer be able to access the system.`
+            : `${confirmTarget?.full_name || confirmTarget?.username} will regain access.`
+        }
+        confirmLabel={confirmTarget?.active ? 'Deactivate' : 'Reactivate'}
+        onConfirm={() => void confirmDeactivate()}
+        onCancel={() => setConfirmTarget(null)}
+      />
+    </div>
+  );
+}

@@ -171,12 +171,8 @@
     "Head Of SME": [
       "Director Corporate & Investment Banking (CIB)"
     ],
-    "Regional Head": [
-      "Head Of Retail",
-      "Director Consumer & Commercial Banking (CCB)"
-    ],
     "Branch Manager": [
-      "Regional Head"
+      "Head Of Branches"
     ],
     "Branch Operations Manager": [
       "Branch Manager"
@@ -233,6 +229,9 @@
     ],
     "Chief Human Resources Officer": [
       "Managing Director"
+    ],
+    "Head Of Branches": [
+      "Director Consumer & Commercial Banking (CCB)"
     ]
   },
   "roles": [
@@ -242,7 +241,6 @@
     "Head Of Retail",
     "Head Of Corporate",
     "Head Of SME",
-    "Regional Head",
     "Branch Manager",
     "Branch Operations Manager",
     "Branch Credit Manager",
@@ -284,6 +282,7 @@
     "Procurement Officer",
     "Credit Analyst",
     "Credit Administrator",
-    "Debt Recovery Unit Manager"
+    "Debt Recovery Unit Manager",
+    "Head Of Branches"
   ]
 }

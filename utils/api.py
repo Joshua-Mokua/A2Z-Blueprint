@@ -9333,8 +9333,13 @@ def upload_deal_document(deal_id: str, body: _DocUploadBody,
     doc_name = str(body.doc_name or "").strip()
     if not doc_name:
         raise HTTPException(status_code=400, detail="doc_name is required")
+    # BO1: an ad-hoc "Other: <label>" document is ADDITIONAL — it bypasses the
+    # required-list check (it's not a substitute for a required doc, so the
+    # submit-to-credit gate is unchanged) but is still validated + stored.
+    OTHER_DOC_PREFIX = "Other: "
+    is_other = doc_name.startswith(OTHER_DOC_PREFIX)
     required = _get_required_documents_for_deal(deal)
-    if required and doc_name not in required:
+    if not is_other and required and doc_name not in required:
         raise HTTPException(status_code=400,
             detail=f"'{doc_name}' is not a required document for this deal")
     try:
@@ -9469,9 +9474,8 @@ def _read_committee_palette() -> list:
 
 
 def _write_committee_palette(palette: list):
-    from utils.core import _data_path  # noqa
     import json as _json
-    p = ROOT / "data" / "lms_config.json"
+    p = DATA_DIR / "lms_config.json"
     cfg = _load_json("lms_config.json") or {}
     cw = cfg.get("credit_workflow", {})
     if not isinstance(cw, dict):
@@ -9480,9 +9484,10 @@ def _write_committee_palette(palette: list):
     cfg["credit_workflow"] = cw
     # backup then write
     try:
+        import shutil as _shutil
         from datetime import datetime as _dt
         if p.exists():
-            shutil.copyfile(p, p.with_suffix(f".pre_cmtepalette_{_dt.now():%Y%m%d-%H%M%S}.json"))
+            _shutil.copyfile(p, p.with_suffix(f".pre_cmtepalette_{_dt.now():%Y%m%d-%H%M%S}.json"))
     except Exception:
         pass
     p.write_text(_json.dumps(cfg, indent=2), encoding="utf-8")
