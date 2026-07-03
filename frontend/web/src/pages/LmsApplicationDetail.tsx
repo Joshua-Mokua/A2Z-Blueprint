@@ -84,11 +84,11 @@ export function LmsApplicationDetail() {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-          <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="max-w-6xl mx-auto px-6 py-5">
             <Skeleton className="h-7 w-72 bg-white/20" />
           </div>
         </header>
-        <main className="max-w-5xl mx-auto px-6 py-6 space-y-4">
+        <main className="max-w-6xl mx-auto px-6 py-6 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-48 w-full" />
         </main>
@@ -178,6 +178,37 @@ export function LmsApplicationDetail() {
             ← Back to applications
           </Button>
           <Badge tone="brand" size="sm">β5</Badge>
+        </div>
+
+        {/* customer-summary-strip: key facts pinned at the top of the content */}
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-400">CIF</span>
+              <span className="font-mono font-medium text-gray-900">{application.client_cif || '—'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-400">Product</span>
+              <span className="text-gray-900">{application.product || '—'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-400">Amount</span>
+              <span className="font-medium text-gray-900">{formatAmount(application.amount, currencySymbol)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-400">RM</span>
+              <span className="text-gray-900">{application.rm_name || application.rm_code || '—'}</span>
+            </div>
+            {application.analyst?.name && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
+                <span className="text-gray-900">{application.analyst.name}</span>
+              </div>
+            )}
+            <div className="ml-auto">
+              <Badge tone={statusTone(application.status)} size="sm">{application.status}</Badge>
+            </div>
+          </div>
         </div>
 
 
