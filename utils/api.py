@@ -10144,6 +10144,37 @@ def workbench_refresh_pulls(app_id: str, user: dict = Depends(get_current_user))
             "conflict_report": eng.conflict_report(sid)}
 # === END CREDIT ANALYST WORKBENCH ===
 
+@app.post("/api/credit/amortization", tags=["credit"])
+def compute_amortization(payload: dict = Body(default_factory=dict),
+                         user: dict = Depends(get_current_user)):
+    """Reducing-balance instalment: amount*(r(1+r)^n)/((1+r)^n-1). RM/analyst keys amount,
+    rate (monthly or annual), tenor -> instalment + total. Pure calc, no LLM."""
+    try:
+        amount = float(payload.get("amount") or 0)
+        n = int(payload.get("tenor_months") or 0)
+        if payload.get("monthly_rate_pct") is not None:
+            r = float(payload.get("monthly_rate_pct")) / 100.0
+        elif payload.get("annual_rate_pct") is not None:
+            r = float(payload.get("annual_rate_pct")) / 100.0 / 12.0
+        else:
+            from utils.api_workbench_adapters import _monthly_rate_pct
+            r = _monthly_rate_pct() / 100.0
+        if amount <= 0 or n <= 0:
+            raise HTTPException(status_code=400, detail="amount and tenor_months must be > 0")
+        if r == 0:
+            instalment = amount / n
+        else:
+            instalment = amount * (r * (1 + r) ** n) / ((1 + r) ** n - 1)
+        total = instalment * n
+        return {"amount": round(amount, 2), "monthly_rate_pct": round(r * 100, 4),
+                "tenor_months": n, "monthly_instalment": round(instalment, 2),
+                "total_repayable": round(total, 2), "total_interest": round(total - amount, 2)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"amortization error: {str(e)[:100]}")
+# === END CREDIT AMORTIZATION ===
+
 
 
 # === MY ANALYSTS DROPDOWN (assignment) ===
