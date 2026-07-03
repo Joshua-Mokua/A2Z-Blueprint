@@ -9980,6 +9980,43 @@ def _wb_load_app_or_404(app_id: str, user: dict):
     return app_rec
 
 
+def _workbench_role_lens(app_rec: dict) -> dict:
+    """Read-side signals for the role-shaped workbench, composed from existing data:
+    the CR (RM appraisal completeness) + the linked credit-admin case (Admin conditions,
+    Trops disbursement readiness). Defensive — any missing source yields n/a."""
+    lens = {"cr": {"completed": None}, "credit_admin": {
+        "linked": False, "conditions_total": None, "conditions_met": None,
+        "all_conditions_met": None, "cleared": None, "disbursed": None}}
+    # CR completeness (RM lens)
+    try:
+        from utils.api_lms_cr import build_cr_view
+        crv = build_cr_view(app_rec) or {}
+        lens["cr"]["completed"] = bool(crv.get("completed"))
+    except Exception:
+        pass
+    # linked credit-admin case (Admin/Trops lens)
+    try:
+        from utils.core import CreditAdminManager
+        app_id = str(app_rec.get("application_id") or app_rec.get("id") or "")
+        cam = CreditAdminManager()
+        case = next((c for c in getattr(cam, "cases", [])
+                     if str(c.get("application_id") or "") == app_id), None)
+        if case:
+            conds = case.get("conditions", []) or []
+            met = [c for c in conds if c.get("fulfilled")]
+            lens["credit_admin"] = {
+                "linked": True,
+                "conditions_total": len(conds),
+                "conditions_met": len(met),
+                "all_conditions_met": bool(case.get("all_conditions_met")),
+                "cleared": bool(case.get("cleared")),
+                "disbursed": bool(case.get("disbursed")),
+            }
+    except Exception:
+        pass
+    return lens
+
+
 @app.get("/api/lms/applications/{app_id}/workbench", tags=["lms"])
 def get_application_workbench(app_id: str, user: dict = Depends(get_current_user)):
     """Open-or-return the credit analyst workbench session for this application,
@@ -10004,6 +10041,7 @@ def get_application_workbench(app_id: str, user: dict = Depends(get_current_user
         "summary": summary,
         "conflict_report": eng.conflict_report(sid),
         "states": list(_WB_SESSION_STATES),
+        "role_lens": _workbench_role_lens(app_rec),
     }
 
 

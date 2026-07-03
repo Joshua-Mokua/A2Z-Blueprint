@@ -1605,6 +1605,7 @@ const WB_NOTE_CATEGORIES = ['OBSERVATION', 'CONCERN', 'FOLLOW_UP', 'RECOMMENDATI
 function CreditWorkbenchPanel({ appId, toast }: {
   appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
 }) {
+  const { user } = useRole();
   const [wb, setWb] = useState<WorkbenchView | null>(null);
   const [busy, setBusy] = useState(false);
   const [noteCat, setNoteCat] = useState('OBSERVATION');
@@ -1673,6 +1674,33 @@ function CreditWorkbenchPanel({ appId, toast }: {
             <span className="text-green-800">No conflicts across the engines pulled ({cr.total_pulls} pull{cr.total_pulls === 1 ? '' : 's'}).</span>
           )}
         </div>
+
+        {/* WB role lens (P4): role-shaped read-side signals */}
+        {wb.role_lens && (() => {
+          const r = String(user?.role ?? '').toLowerCase();
+          const ca = wb.role_lens.credit_admin;
+          const isAdminOrTrops = r.includes('admin') || r.includes('trops') || r.includes('operations') || r.includes('disburs');
+          const isRm = r.includes('relationship') || r.includes('personal banker') || r.includes(' ro ') || r.includes('officer');
+          const roleLabel = isAdminOrTrops ? 'Credit Admin / Trops' : (r.includes('analyst') ? 'Analyst' : (isRm ? 'Relationship Manager' : 'Credit'));
+          return (
+            <div className="mb-3 rounded border border-gray-200 bg-gray-50 p-3 text-xs">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="font-medium text-gray-700">Your view: {roleLabel}</span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                <span>Appraisal (CR): {wb.role_lens.cr.completed === null ? 'n/a' : (wb.role_lens.cr.completed ? 'complete ✓' : 'incomplete')}</span>
+                {ca.linked ? (
+                  <>
+                    <span>Conditions: {ca.conditions_met}/{ca.conditions_total} met</span>
+                    <span>All met: {ca.all_conditions_met ? 'yes ✓' : 'no'}</span>
+                    <span>Cleared: {ca.cleared ? 'yes ✓' : 'no'}</span>
+                    <span>Disbursed: {ca.disbursed ? 'yes ✓' : 'no'}</span>
+                  </>
+                ) : <span className="text-gray-400">No credit-admin case yet</span>}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Engine sources */}
         <div className="mb-3 grid grid-cols-2 gap-2 text-xs">

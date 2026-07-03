@@ -2086,9 +2086,17 @@ export interface WorkbenchConflictReport {
   session_id: string; total_pulls: number; distinct_decisions: number;
   conflict_count: number; conflicts: WorkbenchConflict[];
 }
+export interface WorkbenchRoleLens {
+  cr: { completed: boolean | null };
+  credit_admin: {
+    linked: boolean; conditions_total: number | null; conditions_met: number | null;
+    all_conditions_met: boolean | null; cleared: boolean | null; disbursed: boolean | null;
+  };
+}
 export interface WorkbenchView {
   session_id: string; summary: WorkbenchSummary;
   conflict_report: WorkbenchConflictReport; states: string[];
+  role_lens?: WorkbenchRoleLens;
 }
 export async function getApplicationWorkbench(appId: string): Promise<WorkbenchView> {
   return getJson<WorkbenchView>(`/lms/applications/${encodeURIComponent(appId)}/workbench`);
