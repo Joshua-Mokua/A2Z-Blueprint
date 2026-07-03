@@ -2142,3 +2142,22 @@ export async function analyzeMultiSource(sources: MultiSourceInput[], scenarioNa
 export async function computeAmortization(body: { amount: number; monthly_rate_pct?: number; annual_rate_pct?: number; tenor_months: number }): Promise<AmortizationResult> {
   return postJson('/credit/amortization', body);
 }
+
+
+// ── Appraisal persistence ────────────────────────────────────────────
+export interface SavedAppraisal {
+  sources?: unknown[]; scenarios?: unknown[]; custom_sections?: unknown[];
+  updated_by?: string; updated_at?: string;
+}
+export async function getDealAppraisal(dealId: string): Promise<SavedAppraisal> {
+  return getJson(`/pipeline/deals/${encodeURIComponent(dealId)}/appraisal`);
+}
+export async function saveDealAppraisal(dealId: string, body: SavedAppraisal): Promise<SavedAppraisal> {
+  return postJson(`/pipeline/deals/${encodeURIComponent(dealId)}/appraisal`, body);
+}
+export async function getAppAppraisal(appId: string): Promise<SavedAppraisal> {
+  return getJson(`/lms/applications/${encodeURIComponent(appId)}/appraisal`);
+}
+export async function saveAppAppraisal(appId: string, body: SavedAppraisal): Promise<SavedAppraisal> {
+  return postJson(`/lms/applications/${encodeURIComponent(appId)}/appraisal`, body);
+}

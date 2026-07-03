@@ -374,7 +374,7 @@ export function LmsApplicationDetail() {
 
         <CreditWorkbenchPanel appId={application.id} toast={toast} />
 
-        <AffordabilityAppraisal defaultCif={application.client_cif} />
+        <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} />
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}

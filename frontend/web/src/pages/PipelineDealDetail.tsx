@@ -389,7 +389,7 @@ export function PipelineDealDetail() {
       <DealCreditReportCard dealId={deal.id} canEdit={true} />
       <CommitteeJourneyCard dealId={deal.id} canEdit={true} />
 
-      <AffordabilityAppraisal />
+      <AffordabilityAppraisal dealId={deal.id} />
       <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
 
       {/* Action: refer this deal to another person (A1). Hidden for drafts and

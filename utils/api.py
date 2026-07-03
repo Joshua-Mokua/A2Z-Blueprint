@@ -10212,6 +10212,71 @@ def analyze_multi_source_endpoint(payload: dict = Body(default_factory=dict),
 # === END MULTI SOURCE ===
 
 
+# === AFFORDABILITY APPRAISAL PERSISTENCE ===
+# Persists the appraisal (sources/scenarios/custom sections) on the deal + application,
+# mirroring the CR persistence pattern (same scope helpers, no drift).
+def _appraisal_stamp(payload: dict, user: dict) -> dict:
+    from datetime import datetime as _dt
+    appr = dict(payload or {})
+    appr["updated_by"] = str(user.get("username", "") or "")
+    appr["updated_at"] = _dt.utcnow().isoformat()
+    return appr
+
+
+@app.get("/api/pipeline/deals/{deal_id}/appraisal", tags=["pipeline"])
+def get_deal_appraisal(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's saved affordability appraisal (or an empty shell)."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    return deal.get("appraisal") or {"sources": [], "scenarios": [], "custom_sections": []}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/appraisal", tags=["pipeline"])
+def save_deal_appraisal(deal_id: str, payload: dict = Body(default_factory=dict),
+                        user: dict = Depends(get_current_user)):
+    """Save the deal's affordability appraisal."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    appr = _appraisal_stamp(payload, user)
+    pm.update_deal(deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
+    return appr
+
+
+@app.get("/api/lms/applications/{app_id}/appraisal", tags=["lms"])
+def get_app_appraisal(app_id: str, user: dict = Depends(get_current_user)):
+    """The application's saved affordability appraisal (or an empty shell)."""
+    app_rec = _wb_load_app_or_404(app_id, user)
+    return app_rec.get("appraisal") or {"sources": [], "scenarios": [], "custom_sections": []}
+
+
+@app.post("/api/lms/applications/{app_id}/appraisal", tags=["lms"])
+def save_app_appraisal(app_id: str, payload: dict = Body(default_factory=dict),
+                       user: dict = Depends(get_current_user)):
+    """Save the application's affordability appraisal."""
+    _wb_load_app_or_404(app_id, user)
+    from utils.core import LoanApplicationManager
+    appr = _appraisal_stamp(payload, user)
+    LoanApplicationManager().update(app_id, {"appraisal": appr})
+    return appr
+# === END AFFORDABILITY APPRAISAL PERSISTENCE ===
+
+
 
 # === MY ANALYSTS DROPDOWN (assignment) ===
 def _is_analyst_role(role: str) -> bool:

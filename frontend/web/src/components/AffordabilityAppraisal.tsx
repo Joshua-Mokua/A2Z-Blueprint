@@ -4,7 +4,8 @@
 // borrowing capacity. Named scenarios can be saved for the report. Amortization calc.
 // Placed on BOTH the LMS application detail and the pipeline deal detail.
 import { useState } from 'react';
-import { analyzeMultiSource, computeAmortization, type MultiSourceResult, type AmortizationResult } from '@/lib/api';
+import { analyzeMultiSource, computeAmortization, getDealAppraisal, saveDealAppraisal, getAppAppraisal, saveAppAppraisal, type MultiSourceResult, type AmortizationResult } from '@/lib/api';
+import { useEffect } from 'react';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -35,7 +36,7 @@ function parseTxns(raw: string): { txn_date: string; amount: number; dr_cr: stri
   return out;
 }
 
-export function AffordabilityAppraisal({ defaultCif }: { defaultCif?: string }) {
+export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultCif?: string; dealId?: string; appId?: string }) {
   const { toast } = useToast();
   const [sources, setSources] = useState<SourceInput[]>([
     { label: 'Bank statement 1', cif: defaultCif ?? '', dsr_pct: 40, months_window: 6 },
@@ -44,6 +45,33 @@ export function AffordabilityAppraisal({ defaultCif }: { defaultCif?: string }) 
   const [busy, setBusy] = useState(false);
   const [scenarioName, setScenarioName] = useState('');
   const [scenarios, setScenarios] = useState<SavedScenario[]>([]);
+
+  // persistence: load saved appraisal on mount
+  useEffect(() => {
+    const loadSaved = async () => {
+      try {
+        const saved = dealId ? await getDealAppraisal(dealId) : appId ? await getAppAppraisal(appId) : null;
+        if (saved && Array.isArray(saved.sources) && saved.sources.length) {
+          setSources(saved.sources as SourceInput[]);
+        }
+        if (saved && Array.isArray(saved.scenarios) && saved.scenarios.length) {
+          setScenarios(saved.scenarios as SavedScenario[]);
+        }
+      } catch { /* no saved appraisal yet */ }
+    };
+    void loadSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealId, appId]);
+
+  const saveAppraisal = async () => {
+    const body = { sources, scenarios };
+    try {
+      if (dealId) await saveDealAppraisal(dealId, body);
+      else if (appId) await saveAppAppraisal(appId, body);
+      else { toast({ tone: 'danger', message: 'No case to save to.' }); return; }
+      toast({ tone: 'success', message: 'Appraisal saved.' });
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' }); }
+  };
 
   // amortization
   const [amAmount, setAmAmount] = useState('');
@@ -158,6 +186,7 @@ export function AffordabilityAppraisal({ defaultCif }: { defaultCif?: string }) 
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={addSource}>+ Add statement</Button>
           <Button variant="primary" onClick={() => void run()} disabled={busy}>{busy ? 'Analysing…' : 'Analyse & consolidate'}</Button>
+          {(dealId || appId) && <Button variant="ghost" onClick={() => void saveAppraisal()}>Save appraisal</Button>}
         </div>
 
         {/* Result */}
