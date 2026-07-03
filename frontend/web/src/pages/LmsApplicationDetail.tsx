@@ -16,6 +16,7 @@
 // is now 'assigned').
 
 import { useState, useEffect } from 'react';
+import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -372,6 +373,8 @@ export function LmsApplicationDetail() {
         )}
 
         <CreditWorkbenchPanel appId={application.id} toast={toast} />
+
+        <AffordabilityAppraisal defaultCif={application.client_cif} />
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}

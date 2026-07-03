@@ -74,6 +74,8 @@ function formatDate(s: string | undefined): string {
 
 // ── Detail page component ───────────────────────────────────────────────
 
+import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
+
 export function PipelineDealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
@@ -386,6 +388,8 @@ export function PipelineDealDetail() {
           caller may submit, or when the deal is already submitted. */}
       <DealCreditReportCard dealId={deal.id} canEdit={true} />
       <CommitteeJourneyCard dealId={deal.id} canEdit={true} />
+
+      <AffordabilityAppraisal />
       <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
 
       {/* Action: refer this deal to another person (A1). Hidden for drafts and

@@ -2110,3 +2110,35 @@ export async function addWorkbenchNote(appId: string, category: string, body: st
 export async function transitionWorkbench(appId: string, new_state: string, reason?: string): Promise<{ summary: WorkbenchSummary; states: string[]; }> {
   return postJson(`/lms/applications/${encodeURIComponent(appId)}/workbench/transition`, { new_state, reason });
 }
+
+
+// ── Affordability appraisal (multi-source, deterministic, no AI) ──────
+export interface SourceAffordability {
+  dsr_limit_pct?: number; dsr_is_override?: boolean; dsr_default_pct?: number;
+  basis?: number; months_in_basis?: number; months_window?: number | null;
+  months_excluded?: { month: string; reason: string }[];
+  anomaly_hints?: string[]; affordable_installment?: number; verdict?: string;
+}
+export interface SourceLine {
+  label?: string; ok?: boolean; months?: number;
+  summary?: { avg_monthly_credit?: number; avg_monthly_debit?: number; avg_monthly_net?: number };
+  affordability?: SourceAffordability;
+}
+export interface MultiSourceResult {
+  sources: SourceLine[];
+  consolidation: { method: string; total_affordable_installment: number; source_count: number; source_labels: string[] };
+}
+export interface AmortizationResult {
+  amount: number; monthly_rate_pct: number; tenor_months: number;
+  monthly_instalment: number; total_repayable: number; total_interest: number;
+}
+export interface MultiSourceInput {
+  label: string; cif?: string; transactions?: { txn_date: string; amount: number; dr_cr: string }[];
+  dsr_pct?: number; months_window?: number; excluded_months?: { month: string; reason: string }[];
+}
+export async function analyzeMultiSource(sources: MultiSourceInput[], scenarioName?: string): Promise<MultiSourceResult> {
+  return postJson('/credit/analyze-multi-source', { sources, ...(scenarioName ? { scenario_name: scenarioName } : {}) });
+}
+export async function computeAmortization(body: { amount: number; monthly_rate_pct?: number; annual_rate_pct?: number; tenor_months: number }): Promise<AmortizationResult> {
+  return postJson('/credit/amortization', body);
+}
