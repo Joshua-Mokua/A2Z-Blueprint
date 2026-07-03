@@ -263,11 +263,17 @@ def get_aggregates() -> dict:
 # Script names (CUSTOMERACCOUNTDETAILS, CUSTOMERACTIVELOANS) match the
 # confirmed-working scripts wired to 10.8.32.3 — change via env var only.
 
-from utils.flexcube_script_client import (
-    execute_script,
-    is_configured as _fc_configured,
-    FlexcubeScriptError,
-)
+def _fc_configured() -> bool:
+    try:
+        from utils.flexcube_script_client import is_configured
+        return is_configured()
+    except Exception:
+        return False
+
+
+def _fc_execute(script_name: str, parameters: dict) -> list:
+    from utils.flexcube_script_client import execute_script, FlexcubeScriptError
+    return execute_script(script_name, parameters)
 
 
 def get_account_by_number(account_number: str) -> Optional[dict]:
@@ -289,14 +295,11 @@ def get_account_by_number(account_number: str) -> Optional[dict]:
 
     if _fc_configured():
         try:
-            rows = execute_script(
-                "CUSTOMERACCOUNTDETAILS",
-                {"ACCOUNT_NUMBER": num},
-            )
+            rows = _fc_execute("CUSTOMERACCOUNTDETAILS", {"ACCOUNT_NUMBER": num})
             if not rows:
                 return None
             return rows[0]
-        except FlexcubeScriptError:
+        except Exception:
             pass  # fall through to CSV
 
     # CSV fallback
@@ -347,8 +350,8 @@ def get_customer_active_loans(
         return []
 
     try:
-        return execute_script("CUSTOMERACTIVELOANS", {"CIF": resolved_f7})
-    except FlexcubeScriptError:
+        return _fc_execute("CUSTOMERACTIVELOANS", {"CIF": resolved_f7})
+    except Exception:
         return []
 
 
