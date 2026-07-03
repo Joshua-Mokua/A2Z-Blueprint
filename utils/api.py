@@ -10194,6 +10194,23 @@ def analyze_transactions_endpoint(payload: dict = Body(default_factory=dict),
     raise HTTPException(status_code=400, detail="provide cif or transactions[]")
 # === END STATEMENT ANALYZER TIER1 ===
 
+@app.post("/api/credit/analyze-multi-source", tags=["credit"])
+def analyze_multi_source_endpoint(payload: dict = Body(default_factory=dict),
+                                  user: dict = Depends(get_current_user)):
+    """Multi-source affordability: each source (Bank X, M-Pesa, ...) with its own DSR +
+    months + exclusions -> per-source lines + a consolidation line (sum of affordable
+    instalments). Pass {sources:[{label, cif|transactions, dsr_pct?, months_window?,
+    excluded_months?}]}. Optional {scenario_name} wraps it as a named scenario."""
+    from utils.statement_analysis import analyze_multi_source, build_scenario
+    sources = payload.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise HTTPException(status_code=400, detail="provide sources[]")
+    name = payload.get("scenario_name")
+    if name:
+        return build_scenario(str(name), sources)
+    return analyze_multi_source(sources)
+# === END MULTI SOURCE ===
+
 
 
 # === MY ANALYSTS DROPDOWN (assignment) ===

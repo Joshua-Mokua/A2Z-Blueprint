@@ -43,7 +43,8 @@ def _is_credit(dr_cr: str) -> bool:
 
 def analyze_transactions(transactions: List[Dict[str, Any]],
                          dsr_override_pct: Optional[float] = None,
-                         excluded_months: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+                         excluded_months: Optional[List[Dict[str, Any]]] = None,
+                         months_window: Optional[int] = None) -> Dict[str, Any]:
     """Deterministic turnover spread + cashflow affordability from structured txns.
     Each txn: {txn_date, amount, dr_cr}. Returns spread + summary + affordability."""
     cfg = _cfg()
@@ -72,6 +73,14 @@ def analyze_transactions(transactions: List[Dict[str, Any]],
     if not buckets:
         return {"ok": False, "reason": "no usable transactions",
                 "months": 0, "spread": [], "affordability": {}}
+
+    # months window: keep only the most recent N months if requested
+    if months_window and months_window > 0:
+        keep = sorted(buckets.keys())[-int(months_window):]
+        buckets = {k: v for k, v in buckets.items() if k in keep}
+        if not buckets:
+            return {"ok": False, "reason": "no transactions in window",
+                    "months": 0, "spread": [], "affordability": {}}
 
     spread = []
     for mk in sorted(buckets):
@@ -117,6 +126,7 @@ def analyze_transactions(transactions: List[Dict[str, Any]],
             "dsr_default_pct": _default_dsr,
             "basis": basis,
             "months_in_basis": len(incl),
+            "months_window": months_window,
             "months_excluded": [{"month": m, "reason": r} for m, r in _excluded.items()],
             "anomaly_hints": [r["month"] for r in spread if r.get("anomaly_hint")],
             "affordable_installment": affordable_installment,
@@ -167,3 +177,62 @@ def _load_cbs_transactions_for_cif(cif: str) -> List[Dict[str, Any]]:
         except Exception:
             continue
     return []
+
+
+def analyze_source(source: Dict[str, Any]) -> Dict[str, Any]:
+    """Analyze ONE income source with its own label/DSR/months/exclusions.
+    source: {label, transactions:[...] OR cif, dsr_pct?, months_window?, excluded_months?}"""
+    label = str(source.get("label", "") or "source")
+    dsr = source.get("dsr_pct")
+    dsr = float(dsr) if dsr is not None else None
+    mw = source.get("months_window")
+    mw = int(mw) if mw else None
+    excl = source.get("excluded_months") if isinstance(source.get("excluded_months"), list) else None
+    txns = source.get("transactions")
+    if not (isinstance(txns, list) and txns):
+        cif = str(source.get("cif", "") or "")
+        if cif:
+            txns = _load_cbs_transactions_for_cif(cif)
+        else:
+            txns = []
+    res = analyze_transactions(txns, dsr_override_pct=dsr, excluded_months=excl, months_window=mw)
+    res["label"] = label
+    return res
+
+
+def analyze_multi_source(sources: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Analyze several income sources independently, then CONSOLIDATE (sum affordable
+    instalments = total borrowing capacity across all income streams)."""
+    lines = [analyze_source(src) for src in (sources or [])]
+    total_affordable = 0.0
+    for ln in lines:
+        aff = ln.get("affordability", {}) or {}
+        try:
+            total_affordable += float(aff.get("affordable_installment", 0) or 0)
+        except Exception:
+            pass
+    return {
+        "sources": lines,
+        "consolidation": {
+            "method": "sum",
+            "total_affordable_installment": round(total_affordable, 2),
+            "source_count": len(lines),
+            "source_labels": [ln.get("label") for ln in lines],
+        },
+    }
+
+
+def build_scenario(name: str, sources: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Wrap a multi-source run as a NAMED scenario for the report (several can be saved)."""
+    ms = analyze_multi_source(sources)
+    return {
+        "scenario": str(name or "scenario"),
+        "consolidation": ms["consolidation"],
+        "sources": [{"label": s.get("label"),
+                     "dsr_limit_pct": (s.get("affordability", {}) or {}).get("dsr_limit_pct"),
+                     "months_in_basis": (s.get("affordability", {}) or {}).get("months_in_basis"),
+                     "months_window": (s.get("affordability", {}) or {}).get("months_window"),
+                     "affordable_installment": (s.get("affordability", {}) or {}).get("affordable_installment"),
+                     "months_excluded": (s.get("affordability", {}) or {}).get("months_excluded", [])}
+                    for s in ms["sources"]],
+    }
