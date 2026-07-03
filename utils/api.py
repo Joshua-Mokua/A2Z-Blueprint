@@ -10184,10 +10184,13 @@ def analyze_transactions_endpoint(payload: dict = Body(default_factory=dict),
     from utils.statement_analysis import analyze_transactions, analyze_customer_from_cbs
     cif = str(payload.get("cif", "") or "")
     txns = payload.get("transactions")
+    dsr = payload.get("dsr_override_pct")
+    dsr = float(dsr) if dsr is not None else None
+    excluded = payload.get("excluded_months") if isinstance(payload.get("excluded_months"), list) else None
     if isinstance(txns, list) and txns:
-        return analyze_transactions(txns)
+        return analyze_transactions(txns, dsr_override_pct=dsr, excluded_months=excluded)
     if cif:
-        return analyze_customer_from_cbs(cif)
+        return analyze_customer_from_cbs(cif, dsr_override_pct=dsr, excluded_months=excluded)
     raise HTTPException(status_code=400, detail="provide cif or transactions[]")
 # === END STATEMENT ANALYZER TIER1 ===
 

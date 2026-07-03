@@ -41,11 +41,16 @@ def _is_credit(dr_cr: str) -> bool:
     return v in ("C", "CR", "CREDIT", "CRD")
 
 
-def analyze_transactions(transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
+def analyze_transactions(transactions: List[Dict[str, Any]],
+                         dsr_override_pct: Optional[float] = None,
+                         excluded_months: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Deterministic turnover spread + cashflow affordability from structured txns.
     Each txn: {txn_date, amount, dr_cr}. Returns spread + summary + affordability."""
     cfg = _cfg()
-    dsr_limit = float(cfg.get("dsr_limit", 40)) / 100.0
+    _default_dsr = float(cfg.get("dsr_limit", 40))
+    _dsr_pct = float(dsr_override_pct) if dsr_override_pct is not None else _default_dsr
+    dsr_limit = _dsr_pct / 100.0
+    _excluded = {str(e.get("month")): str(e.get("reason", "")) for e in (excluded_months or []) if e.get("month")}
 
     buckets: Dict[str, Dict[str, float]] = defaultdict(lambda: {"credits": 0.0, "debits": 0.0})
     n_used = 0
@@ -72,13 +77,30 @@ def analyze_transactions(transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
     for mk in sorted(buckets):
         c = round(buckets[mk]["credits"], 2)
         d = round(buckets[mk]["debits"], 2)
-        spread.append({"month": mk, "credits": c, "debits": d, "net": round(c - d, 2)})
+        spread.append({"month": mk, "credits": c, "debits": d, "net": round(c - d, 2),
+                       "excluded": mk in _excluded,
+                       "exclusion_reason": _excluded.get(mk, "")})
 
     months = len(spread)
-    avg_credit = round(sum(r["credits"] for r in spread) / months, 2)
-    avg_debit = round(sum(r["debits"] for r in spread) / months, 2)
+    # auto anomaly hint (robust for small samples): leave-one-out — a month is flagged
+    # if its net deviates > k x the spread of the OTHER months from their median.
+    _k = float(cfg.get("anomaly_k", 2.0))
+    _nets = [r["net"] for r in spread]
+    for i, r in enumerate(spread):
+        others = [_nets[j] for j in range(len(_nets)) if j != i]
+        if others:
+            om = sorted(others)[len(others) // 2]
+            scale = max(max(others) - min(others), abs(om), 1.0)
+            r["anomaly_hint"] = bool(abs(r["net"] - om) > _k * scale)
+        else:
+            r["anomaly_hint"] = False
+
+    # affordability basis EXCLUDES analyst-flagged anomalous months
+    incl = [r for r in spread if not r["excluded"]]
+    n_incl = len(incl) or 1
+    avg_credit = round(sum(r["credits"] for r in incl) / n_incl, 2)
+    avg_debit = round(sum(r["debits"] for r in incl) / n_incl, 2)
     avg_net = round(avg_credit - avg_debit, 2)
-    # affordable instalment = DSR limit applied to average net inflow (proxy for surplus)
     basis = avg_net if avg_net > 0 else avg_credit
     affordable_installment = round(max(basis, 0.0) * dsr_limit, 2)
 
@@ -91,17 +113,24 @@ def analyze_transactions(transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
                     "avg_monthly_net": avg_net},
         "affordability": {
             "dsr_limit_pct": round(dsr_limit * 100, 2),
+            "dsr_is_override": dsr_override_pct is not None,
+            "dsr_default_pct": _default_dsr,
             "basis": basis,
+            "months_in_basis": len(incl),
+            "months_excluded": [{"month": m, "reason": r} for m, r in _excluded.items()],
+            "anomaly_hints": [r["month"] for r in spread if r.get("anomaly_hint")],
             "affordable_installment": affordable_installment,
             "verdict": "AFFORDABLE" if affordable_installment > 0 else "INSUFFICIENT",
         },
     }
 
 
-def analyze_customer_from_cbs(cif: str, months_back: int = 12) -> Dict[str, Any]:
+def analyze_customer_from_cbs(cif: str, months_back: int = 12,
+                              dsr_override_pct: Optional[float] = None,
+                              excluded_months: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Load a customer's structured transactions from CBS and analyze (no AI)."""
     txns = _load_cbs_transactions_for_cif(str(cif))
-    res = analyze_transactions(txns)
+    res = analyze_transactions(txns, dsr_override_pct=dsr_override_pct, excluded_months=excluded_months)
     res["cif"] = str(cif)
     res["source"] = "cbs_transactions"
     return res
