@@ -10070,6 +10070,40 @@ def workbench_transition(app_id: str, payload: dict = Body(default_factory=dict)
     if not res.get("transitioned", res.get("ok", False)):
         raise HTTPException(status_code=400, detail=res.get("error", "transition_failed"))
     return {"summary": eng.workbench_summary(sid), "states": list(_WB_SESSION_STATES)}
+
+
+@app.post("/api/lms/applications/{app_id}/workbench/refresh", tags=["lms"])
+def workbench_refresh_pulls(app_id: str, user: dict = Depends(get_current_user)):
+    """Phase 2: run the real credit engines against this application and record their
+    outputs as workbench data pulls. Returns the updated summary + conflict report."""
+    app_rec = _wb_load_app_or_404(app_id, user)
+    from utils.api_workbench_adapters import run_all_adapters
+    from datetime import datetime as _dt
+    eng = _wb_engine()
+    sid = _wb_session_id_for_app(app_id)
+    # ensure a session exists
+    if not eng.workbench_summary(sid).get("found"):
+        eng.register_workbench_session({
+            "session_id": sid,
+            "customer_id": str(app_rec.get("client_cif") or app_rec.get("customer_id") or app_id),
+            "loan_application_id": app_id,
+            "analyst_role": str(user.get("role", "") or "analyst"),
+            "purpose": "credit appraisal",
+        }, actor=str(user.get("username", "") or ""), reason="workbench refresh")
+    actor = str(user.get("username", "") or "")
+    recorded = []
+    for pull in run_all_adapters(app_rec):
+        pid = f"{sid}-{pull['data_source']}-{_dt.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        res = eng.record_data_pull({
+            "pull_id": pid, "session_id": sid,
+            "data_source": pull["data_source"],
+            "snapshot_decision": pull.get("snapshot_decision", ""),
+            "snapshot": pull.get("snapshot", {}),
+        }, actor=actor)
+        recorded.append({"data_source": pull["data_source"], "recorded": res.get("recorded", False),
+                         "decision": pull.get("snapshot_decision", "")})
+    return {"refreshed": recorded, "summary": eng.workbench_summary(sid),
+            "conflict_report": eng.conflict_report(sid)}
 # === END CREDIT ANALYST WORKBENCH ===
 
 
