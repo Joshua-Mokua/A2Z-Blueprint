@@ -9947,6 +9947,133 @@ def get_lms_committee_records(app_id: str, user: dict = Depends(get_current_user
 # === END ANALYST COMMITTEE VIEW ===
 
 
+# === CREDIT ANALYST WORKBENCH (Phase 1: bridge CreditWorkbenchEngine) ===
+# Surfaces the existing CreditWorkbenchEngine (utils/analytics_credit_workbench.py,
+# Standard #286, self-tests pass) over an LMS application. Reuses the same scope/
+# permission structures as the CR + LMS endpoints (no drift). Composer only; Phase 2
+# feeds real upstream-engine pulls.
+_WB_SESSION_STATES = ("OPEN", "IN_REVIEW", "ESCALATED", "COMPLETED", "CANCELLED")
+
+
+def _wb_engine():
+    from utils.analytics_credit_workbench import CreditWorkbenchEngine
+    return CreditWorkbenchEngine()
+
+
+def _wb_session_id_for_app(app_id: str) -> str:
+    return f"WB-{app_id}"
+
+
+def _wb_load_app_or_404(app_id: str, user: dict):
+    """Fetch the application + enforce can_view via the SAME helpers the LMS/CR
+    endpoints use. Returns the app record or raises 404."""
+    from utils.core import LoanApplicationManager
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_lms_permissions import resolve_application_permissions
+    lam = LoanApplicationManager()
+    app_rec = lam.get(app_id)
+    if not app_rec:
+        raise HTTPException(status_code=404, detail=f"Application {app_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_application_permissions(user, app_rec, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Application {app_id} not found")
+    return app_rec
+
+
+@app.get("/api/lms/applications/{app_id}/workbench", tags=["lms"])
+def get_application_workbench(app_id: str, user: dict = Depends(get_current_user)):
+    """Open-or-return the credit analyst workbench session for this application,
+    with its summary + conflict report. Read-side composition surface."""
+    app_rec = _wb_load_app_or_404(app_id, user)
+    eng = _wb_engine()
+    sid = _wb_session_id_for_app(app_id)
+    summary = eng.workbench_summary(sid)
+    if not summary.get("found"):
+        # lazily open a session for this application on first view
+        actor = str(user.get("username", "") or "")
+        eng.register_workbench_session({
+            "session_id": sid,
+            "customer_id": str(app_rec.get("client_cif") or app_rec.get("customer_id") or app_id),
+            "loan_application_id": app_id,
+            "analyst_role": str(user.get("role", "") or "analyst"),
+            "purpose": "credit appraisal",
+        }, actor=actor, reason="workbench opened from application")
+        summary = eng.workbench_summary(sid)
+    return {
+        "session_id": sid,
+        "summary": summary,
+        "conflict_report": eng.conflict_report(sid),
+        "states": list(_WB_SESSION_STATES),
+    }
+
+
+@app.post("/api/lms/applications/{app_id}/workbench/pull", tags=["lms"])
+def workbench_record_pull(app_id: str, payload: dict = Body(default_factory=dict),
+                          user: dict = Depends(get_current_user)):
+    """Record a data pull (a snapshot of what an upstream engine currently says)
+    into the workbench session. Phase 2 will populate these from the real engines."""
+    _wb_load_app_or_404(app_id, user)
+    eng = _wb_engine()
+    sid = _wb_session_id_for_app(app_id)
+    data_source = str(payload.get("data_source", "") or "")
+    if not data_source:
+        raise HTTPException(status_code=400, detail="data_source required")
+    from datetime import datetime as _dt
+    pull_id = f"{sid}-{data_source}-{_dt.utcnow().strftime('%Y%m%d%H%M%S')}"
+    res = eng.record_data_pull({
+        "pull_id": pull_id,
+        "session_id": sid,
+        "data_source": data_source,
+        "snapshot_decision": str(payload.get("snapshot_decision", "") or ""),
+        "snapshot": payload.get("snapshot", {}),
+    }, actor=str(user.get("username", "") or ""))
+    if not res.get("recorded"):
+        raise HTTPException(status_code=400, detail=res.get("error", "pull_failed"))
+    return {"summary": eng.workbench_summary(sid), "conflict_report": eng.conflict_report(sid)}
+
+
+@app.post("/api/lms/applications/{app_id}/workbench/note", tags=["lms"])
+def workbench_record_note(app_id: str, payload: dict = Body(default_factory=dict),
+                          user: dict = Depends(get_current_user)):
+    """Record an analyst note in the workbench session."""
+    _wb_load_app_or_404(app_id, user)
+    eng = _wb_engine()
+    sid = _wb_session_id_for_app(app_id)
+    category = str(payload.get("category", "") or "")
+    body = str(payload.get("body", "") or "")
+    if not category or not body:
+        raise HTTPException(status_code=400, detail="category and body required")
+    from datetime import datetime as _dt
+    note_id = f"{sid}-note-{_dt.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+    res = eng.record_analyst_note({
+        "note_id": note_id, "session_id": sid,
+        "category": category, "body": body,
+    }, actor=str(user.get("username", "") or ""))
+    if not res.get("recorded"):
+        raise HTTPException(status_code=400, detail=res.get("error", "note_failed"))
+    return {"note_id": note_id, "summary": eng.workbench_summary(sid)}
+
+
+@app.post("/api/lms/applications/{app_id}/workbench/transition", tags=["lms"])
+def workbench_transition(app_id: str, payload: dict = Body(default_factory=dict),
+                         user: dict = Depends(get_current_user)):
+    """Transition the workbench session state (OPEN/IN_REVIEW/ESCALATED/COMPLETED/CANCELLED)."""
+    _wb_load_app_or_404(app_id, user)
+    eng = _wb_engine()
+    sid = _wb_session_id_for_app(app_id)
+    new_state = str(payload.get("new_state", "") or "").upper()
+    if new_state not in _WB_SESSION_STATES:
+        raise HTTPException(status_code=400, detail=f"new_state must be one of {_WB_SESSION_STATES}")
+    res = eng.transition_session_state(sid, new_state,
+        actor=str(user.get("username", "") or ""),
+        reason=str(payload.get("reason", "") or "state change"))
+    if not res.get("transitioned", res.get("ok", False)):
+        raise HTTPException(status_code=400, detail=res.get("error", "transition_failed"))
+    return {"summary": eng.workbench_summary(sid), "states": list(_WB_SESSION_STATES)}
+# === END CREDIT ANALYST WORKBENCH ===
+
+
+
 # === MY ANALYSTS DROPDOWN (assignment) ===
 def _is_analyst_role(role: str) -> bool:
     """A credit-analyst role (excludes cyber/SOC/business analysts)."""
