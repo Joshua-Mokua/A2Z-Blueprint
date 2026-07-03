@@ -2161,3 +2161,11 @@ export async function getAppAppraisal(appId: string): Promise<SavedAppraisal> {
 export async function saveAppAppraisal(appId: string, body: SavedAppraisal): Promise<SavedAppraisal> {
   return postJson(`/lms/applications/${encodeURIComponent(appId)}/appraisal`, body);
 }
+
+
+export interface QualifyingResult {
+  affordable_installment: number; monthly_rate_pct: number; tenor_months: number; qualifying_amount: number;
+}
+export async function computeQualifyingAmount(body: { affordable_installment: number; monthly_rate_pct?: number; annual_rate_pct?: number; tenor_months: number }): Promise<QualifyingResult> {
+  return postJson('/credit/qualifying-amount', body);
+}

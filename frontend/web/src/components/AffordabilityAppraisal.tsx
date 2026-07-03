@@ -4,7 +4,7 @@
 // borrowing capacity. Named scenarios can be saved for the report. Amortization calc.
 // Placed on BOTH the LMS application detail and the pipeline deal detail.
 import { useState } from 'react';
-import { analyzeMultiSource, computeAmortization, getDealAppraisal, saveDealAppraisal, getAppAppraisal, saveAppAppraisal, type MultiSourceResult, type AmortizationResult } from '@/lib/api';
+import { analyzeMultiSource, computeAmortization, computeQualifyingAmount, getDealAppraisal, saveDealAppraisal, getAppAppraisal, saveAppAppraisal, type MultiSourceResult, type AmortizationResult, type QualifyingResult } from '@/lib/api';
 import { useEffect } from 'react';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
@@ -57,6 +57,9 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
         if (saved && Array.isArray(saved.scenarios) && saved.scenarios.length) {
           setScenarios(saved.scenarios as SavedScenario[]);
         }
+        if (saved && Array.isArray(saved.custom_sections) && saved.custom_sections.length) {
+          setCustomSections(saved.custom_sections as { heading: string; body: string }[]);
+        }
       } catch { /* no saved appraisal yet */ }
     };
     void loadSaved();
@@ -64,13 +67,34 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
   }, [dealId, appId]);
 
   const saveAppraisal = async () => {
-    const body = { sources, scenarios };
+    const body = { sources, scenarios, custom_sections: customSections };
     try {
       if (dealId) await saveDealAppraisal(dealId, body);
       else if (appId) await saveAppAppraisal(appId, body);
       else { toast({ tone: 'danger', message: 'No case to save to.' }); return; }
       toast({ tone: 'success', message: 'Appraisal saved.' });
     } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' }); }
+  };
+
+  // custom sections (RM headings/free text, not page-limited)
+  const [customSections, setCustomSections] = useState<{ heading: string; body: string }[]>([]);
+  const addSection = () => setCustomSections((s) => [...s, { heading: '', body: '' }]);
+  const removeSection = (i: number) => setCustomSections((s) => s.filter((_, idx) => idx !== i));
+  const updateSection = (i: number, patch: Partial<{ heading: string; body: string }>) =>
+    setCustomSections((s) => s.map((sec, idx) => (idx === i ? { ...sec, ...patch } : sec)));
+
+  // qualifying amount
+  const [qualRate, setQualRate] = useState('');
+  const [qualTenor, setQualTenor] = useState('');
+  const [qualResult, setQualResult] = useState<QualifyingResult | null>(null);
+  const runQualifying = async () => {
+    const instalment = result?.consolidation.total_affordable_installment ?? 0;
+    const tenor = Number(qualTenor);
+    if (!instalment || !tenor) { toast({ tone: 'danger', message: 'Analyse sources and enter a tenor first.' }); return; }
+    try {
+      const r = await computeQualifyingAmount({ affordable_installment: instalment, monthly_rate_pct: Number(qualRate) || undefined, tenor_months: tenor });
+      setQualResult(r);
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Calc failed' }); }
   };
 
   // amortization
@@ -242,6 +266,44 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
               ))}
             </div>
           )}
+        </div>
+
+        {/* Qualifying amount from cashflow */}
+        <div className="mt-4 border-t pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-600">Qualifying amount from cashflow</p>
+          <div className="flex flex-wrap items-end gap-2 text-xs">
+            <span className="text-gray-500">Uses the consolidated capacity{result ? `: ${money(result.consolidation.total_affordable_installment)}/mo` : ' (analyse first)'}</span>
+            <label className="flex flex-col">Rate %/mo (blank=config)
+              <input type="number" value={qualRate} onChange={(e) => setQualRate(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
+            <label className="flex flex-col">Tenor (months)
+              <input type="number" value={qualTenor} onChange={(e) => setQualTenor(e.target.value)} className="mt-1 rounded border border-gray-300 px-2 py-1" /></label>
+            <Button variant="ghost" onClick={() => void runQualifying()}>Compute qualifying amount</Button>
+          </div>
+          {qualResult && (
+            <div className="mt-2 text-sm">
+              Qualifies for <span className="font-semibold text-green-700">{money(qualResult.qualifying_amount)}</span>
+              <span className="text-xs text-gray-500"> (at {qualResult.monthly_rate_pct}%/mo x {qualResult.tenor_months}mo on {money(qualResult.affordable_installment)}/mo)</span>
+            </div>
+          )}
+        </div>
+
+        {/* Custom sections (RM adds own headings/free text) */}
+        <div className="mt-4 border-t pt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600">Additional sections</p>
+            <Button variant="ghost" onClick={addSection}>+ Add section</Button>
+          </div>
+          {customSections.map((sec, i) => (
+            <div key={i} className="mb-2 rounded border border-gray-200 p-2">
+              <div className="mb-1 flex items-center gap-2">
+                <input value={sec.heading} onChange={(e) => updateSection(i, { heading: e.target.value })}
+                  placeholder="Section heading" className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm font-medium" />
+                <Button variant="ghost" onClick={() => removeSection(i)}>Remove</Button>
+              </div>
+              <textarea value={sec.body} onChange={(e) => updateSection(i, { body: e.target.value })}
+                rows={3} placeholder="Free text — not page-limited" className="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
+            </div>
+          ))}
         </div>
 
         {/* Amortization calculator */}

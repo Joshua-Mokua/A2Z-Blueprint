@@ -10211,6 +10211,35 @@ def analyze_multi_source_endpoint(payload: dict = Body(default_factory=dict),
     return analyze_multi_source(sources)
 # === END MULTI SOURCE ===
 
+@app.post("/api/credit/qualifying-amount", tags=["credit"])
+def compute_qualifying_amount(payload: dict = Body(default_factory=dict),
+                              user: dict = Depends(get_current_user)):
+    """Inverse amortization: given an affordable instalment + rate + tenor, the MAX loan
+    the customer qualifies for. L = P*((1+r)^n - 1)/(r*(1+r)^n). Pure calc, no LLM."""
+    try:
+        instalment = float(payload.get("affordable_installment") or 0)
+        n = int(payload.get("tenor_months") or 0)
+        if payload.get("monthly_rate_pct") is not None:
+            r = float(payload.get("monthly_rate_pct")) / 100.0
+        elif payload.get("annual_rate_pct") is not None:
+            r = float(payload.get("annual_rate_pct")) / 100.0 / 12.0
+        else:
+            from utils.api_workbench_adapters import _monthly_rate_pct
+            r = _monthly_rate_pct() / 100.0
+        if instalment <= 0 or n <= 0:
+            raise HTTPException(status_code=400, detail="affordable_installment and tenor_months must be > 0")
+        if r == 0:
+            max_loan = instalment * n
+        else:
+            max_loan = instalment * ((1 + r) ** n - 1) / (r * (1 + r) ** n)
+        return {"affordable_installment": round(instalment, 2), "monthly_rate_pct": round(r * 100, 4),
+                "tenor_months": n, "qualifying_amount": round(max_loan, 2)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"qualifying-amount error: {str(e)[:100]}")
+# === END QUALIFYING AMOUNT ===
+
 
 # === AFFORDABILITY APPRAISAL PERSISTENCE ===
 # Persists the appraisal (sources/scenarios/custom sections) on the deal + application,
