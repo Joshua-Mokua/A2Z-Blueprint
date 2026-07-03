@@ -10175,6 +10175,22 @@ def compute_amortization(payload: dict = Body(default_factory=dict),
         raise HTTPException(status_code=400, detail=f"amortization error: {str(e)[:100]}")
 # === END CREDIT AMORTIZATION ===
 
+@app.post("/api/credit/analyze-transactions", tags=["credit"])
+def analyze_transactions_endpoint(payload: dict = Body(default_factory=dict),
+                                  user: dict = Depends(get_current_user)):
+    """Tier-1 DETERMINISTIC statement analysis (no AI): monthly turnover spread +
+    cashflow affordability from structured transactions. Pass {cif} to pull from CBS,
+    or {transactions:[{txn_date,amount,dr_cr}...]} directly."""
+    from utils.statement_analysis import analyze_transactions, analyze_customer_from_cbs
+    cif = str(payload.get("cif", "") or "")
+    txns = payload.get("transactions")
+    if isinstance(txns, list) and txns:
+        return analyze_transactions(txns)
+    if cif:
+        return analyze_customer_from_cbs(cif)
+    raise HTTPException(status_code=400, detail="provide cif or transactions[]")
+# === END STATEMENT ANALYZER TIER1 ===
+
 
 
 # === MY ANALYSTS DROPDOWN (assignment) ===

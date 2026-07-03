@@ -135,6 +135,30 @@ def pull_collateral(app: Dict[str, Any]) -> Dict[str, Any]:
                 "snapshot": {"reason": f"{type(e).__name__}: {str(e)[:100]}"}}
 
 
+def pull_statement_analyzer(app: Dict[str, Any]) -> Dict[str, Any]:
+    """STATEMENT_ANALYZER <- Tier-1 deterministic analysis of the applicant's CBS
+    transactions (no AI). Turnover spread + cashflow affordability."""
+    try:
+        from utils.statement_analysis import analyze_customer_from_cbs
+        cif = str(app.get("client_cif") or app.get("customer_id") or "")
+        if not cif:
+            return {"data_source": "STATEMENT_ANALYZER", "snapshot_decision": "NO_CIF",
+                    "snapshot": {"reason": "no client_cif on application"}}
+        res = analyze_customer_from_cbs(cif)
+        if not res.get("ok"):
+            return {"data_source": "STATEMENT_ANALYZER", "snapshot_decision": "INSUFFICIENT_DATA",
+                    "snapshot": {"reason": res.get("reason", "no transactions"), "cif": cif}}
+        aff = res.get("affordability", {})
+        return {"data_source": "STATEMENT_ANALYZER",
+                "snapshot_decision": aff.get("verdict", ""),
+                "snapshot": {"months": res.get("months"),
+                             "avg_monthly_net": res.get("summary", {}).get("avg_monthly_net"),
+                             "affordable_installment": aff.get("affordable_installment")}}
+    except Exception as e:
+        return {"data_source": "STATEMENT_ANALYZER", "snapshot_decision": "UNAVAILABLE",
+                "snapshot": {"reason": f"{type(e).__name__}: {str(e)[:100]}"}}
+
+
 def run_all_adapters(app: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Run every available adapter; return the list of pull dicts."""
-    return [pull_credit_decision(app), pull_affordability(app), pull_collateral(app)]
+    return [pull_credit_decision(app), pull_affordability(app), pull_collateral(app), pull_statement_analyzer(app)]
