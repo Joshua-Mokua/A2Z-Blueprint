@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { analyzeMultiSource, computeAmortization, computeQualifyingAmount, getDealAppraisal, saveDealAppraisal, getAppAppraisal, saveAppAppraisal, type MultiSourceResult, type AmortizationResult, type QualifyingResult } from '@/lib/api';
 import { useEffect } from 'react';
 import { useToast } from '@/components/Toast';
+import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 
@@ -38,6 +39,7 @@ function parseTxns(raw: string): { txn_date: string; amount: number; dr_cr: stri
 
 export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultCif?: string; dealId?: string; appId?: string }) {
   const { toast } = useToast();
+  const { branding } = useBranding();
   const [sources, setSources] = useState<SourceInput[]>([
     { label: 'Bank statement 1', cif: defaultCif ?? '', dsr_pct: 40, months_window: 6 },
   ]);
@@ -157,6 +159,47 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
     } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Calc failed' }); }
   };
 
+  const printAppraisal = () => {
+    const bank = branding?.app_name ?? 'A2Z MIS 360';
+    const esc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const fmt = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+    const srcRows = (result?.sources ?? []).map((s) =>
+      `<tr><td>${esc(s.label)}</td><td style="text-align:right">${s.affordability?.dsr_limit_pct ?? '—'}</td><td style="text-align:right">${s.affordability?.months_in_basis ?? '—'}</td><td style="text-align:right">${fmt(s.summary?.avg_monthly_net)}</td><td style="text-align:right">${fmt(s.affordability?.affordable_installment)}</td></tr>`).join('');
+    const total = result ? fmt(result.consolidation.total_affordable_installment) : '—';
+    const scenRows = scenarios.map((sc) =>
+      `<tr><td>${esc(sc.name)}</td><td style="text-align:right">${fmt(sc.total)}</td><td>${esc(sc.lines.map((l) => `${l.label} ${l.dsr ?? '—'}%`).join(', '))}</td></tr>`).join('');
+    const secBlocks = customSections.filter((x) => x.heading || x.body).map((x) =>
+      `<div class="sec"><h3>${esc(x.heading)}</h3><p>${esc(x.body).replace(/\n/g, '<br/>')}</p></div>`).join('');
+    const qual = qualResult ? `<p><strong>Qualifying amount (from cashflow):</strong> KES ${fmt(qualResult.qualifying_amount)} <span class="muted">(at ${qualResult.monthly_rate_pct}%/mo × ${qualResult.tenor_months}mo on ${fmt(qualResult.affordable_installment)}/mo)</span></p>` : '';
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Credit Appraisal</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;margin:32px;font-size:12px}
+  h1{font-size:18px;margin:0 0 2px} h2{font-size:13px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:2px}
+  h3{font-size:12px;margin:8px 0 2px} .muted{color:#666;font-weight:normal}
+  table{width:100%;border-collapse:collapse;margin:6px 0} th,td{border:1px solid #ddd;padding:4px 6px;text-align:left}
+  th{background:#f3f3f3} .total{font-weight:bold;background:#f8f8f8}
+  .head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #0082BB;padding-bottom:6px}
+  .sec{margin:6px 0} @media print{body{margin:12mm}}
+</style></head><body>
+  <div class="head"><h1>${esc(bank)} — Credit Appraisal</h1><span class="muted">${new Date().toLocaleDateString()}</span></div>
+  <p><strong>Customer CIF:</strong> ${esc(defaultCif ?? '—')}</p>
+  <h2>Affordability — income sources</h2>
+  <table><thead><tr><th>Source</th><th style="text-align:right">DSR %</th><th style="text-align:right">Months</th><th style="text-align:right">Avg net</th><th style="text-align:right">Affordable instalment</th></tr></thead>
+  <tbody>${srcRows || '<tr><td colspan="5" class="muted">No sources analysed</td></tr>'}
+  <tr class="total"><td colspan="4">Consolidated total borrowing capacity</td><td style="text-align:right">${total}</td></tr></tbody></table>
+  ${qual}
+  ${scenRows ? `<h2>Scenarios considered</h2><table><thead><tr><th>Scenario</th><th style="text-align:right">Total capacity</th><th>Detail</th></tr></thead><tbody>${scenRows}</tbody></table>` : ''}
+  ${secBlocks ? `<h2>Additional analysis</h2>${secBlocks}` : ''}
+  <h2>Sign-off</h2>
+  <table><tr><td style="height:48px">Prepared by (RM/Analyst): __________________</td><td>Date: __________</td></tr>
+  <tr><td style="height:48px">Reviewed by (Credit): __________________</td><td>Date: __________</td></tr></table>
+  <script>window.onload=function(){window.print();}</script>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { toast({ tone: 'danger', message: 'Allow pop-ups to print the appraisal.' }); return; }
+    w.document.write(html); w.document.close();
+  };
+
   const money = (n: number | null | undefined) =>
     n == null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
@@ -211,6 +254,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
           <Button variant="ghost" onClick={addSource}>+ Add statement</Button>
           <Button variant="primary" onClick={() => void run()} disabled={busy}>{busy ? 'Analysing…' : 'Analyse & consolidate'}</Button>
           {(dealId || appId) && <Button variant="ghost" onClick={() => void saveAppraisal()}>Save appraisal</Button>}
+          <Button variant="ghost" onClick={printAppraisal}>Print appraisal</Button>
         </div>
 
         {/* Result */}
