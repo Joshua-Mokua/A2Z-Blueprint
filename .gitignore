@@ -186,3 +186,4 @@ data/partnerships_mous.json
 data/fx_rates.json
 apply_*.py
 /(a
+data/credit_workbench_*.json
