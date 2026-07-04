@@ -215,6 +215,21 @@ export function LmsApplicationDetail() {
         </div>
 
 
+        {/* ─────────── Case Journey (prominent, newest-first) ─────────── */}
+        {(application.history?.length ?? 0) > 0 && (
+          <Card stripe="primary">
+            <Card.Header>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
+                <span className="text-xs text-gray-400">{application.history?.length} events · who did what, when</span>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <Timeline events={[...(application.history ?? [])].reverse()} emptyHint="No activity yet." />
+            </Card.Body>
+          </Card>
+        )}
+
         {/* ─────────── Application details card ─────────── */}
         <Card stripe="primary">
           <Card.Header>
@@ -519,16 +534,6 @@ export function LmsApplicationDetail() {
           <WfCommittee application={application} mutations={mutations} toast={toast} onDone={refetch}
             canVote={!!permissions.can_vote_committee} canResolve={!!permissions.can_resolve_committee} />
         )}
-
-        {/* ─────────── Workflow timeline ─────────── */}
-        <Card className="mt-6">
-          <Card.Header>
-            <h3 className="text-sm font-semibold text-gray-900">Workflow timeline</h3>
-          </Card.Header>
-          <Card.Body>
-            <Timeline events={application.history} emptyHint="No workflow activity yet." />
-          </Card.Body>
-        </Card>
 
         {/* If no actions available, show why */}
         {!permissions.can_assign && !permissions.can_update && !permissions.can_record_decision &&
