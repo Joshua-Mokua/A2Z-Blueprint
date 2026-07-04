@@ -184,3 +184,5 @@ data/bsc_actuals_*.json
 data/branch_actuals.json
 data/partnerships_mous.json
 data/fx_rates.json
+apply_*.py
+/(a
