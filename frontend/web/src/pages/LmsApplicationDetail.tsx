@@ -124,6 +124,8 @@ export function LmsApplicationDetail() {
   }
 
 
+  const _isAssignedAnalyst = Boolean(application.assignment_purpose && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')); const canOriginate = Boolean(permissions.can_view) && !_isAssignedAnalyst;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -351,7 +353,7 @@ export function LmsApplicationDetail() {
         </Card>
 
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
-        <AttachmentsBccCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
