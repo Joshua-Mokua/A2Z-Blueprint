@@ -66,6 +66,7 @@ export function LmsApplicationDetail() {
   const { branding } = useBranding();
   const { toast } = useToast();
   const { user } = useRole();
+  const [assessmentTab, setAssessmentTab] = useState<'cr' | 'engines' | 'affordability'>('cr');
 
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
@@ -352,8 +353,7 @@ export function LmsApplicationDetail() {
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
         <AttachmentsBccCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
 
-        {/* ─────────── Credit Report (CR) ─────────── */}
-        <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+        {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
         {application.status === 'referred_to_committee' && (
           <CommitteePreReadPanel appId={application.id} toast={toast} />
@@ -403,9 +403,34 @@ export function LmsApplicationDetail() {
           <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
-        <CreditWorkbenchPanel appId={application.id} toast={toast} />
-
-        <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} />
+        {/* ─────────── Assessment (tabbed: CR / Engines / Affordability) ─────────── */}
+        <Card stripe="accent">
+          <Card.Header>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
+              <div className="flex gap-1 text-xs">
+                {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const).map(([id,lbl]) => (
+                  <button key={id} onClick={() => setAssessmentTab(id)}
+                    className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                      assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Card.Header>
+          <Card.Body>
+            <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
+              <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+            </div>
+            <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
+              <CreditWorkbenchPanel appId={application.id} toast={toast} />
+            </div>
+            <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
+              <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} />
+            </div>
+          </Card.Body>
+        </Card>
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
