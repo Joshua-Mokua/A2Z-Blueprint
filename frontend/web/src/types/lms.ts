@@ -229,6 +229,11 @@ export interface LoanApplication {
 
   // Credit workflow (v10.584+)
   history?:               LoanAppHistoryEvent[];
+  // Computed, non-persisted (Phase C): application history merged with the
+  // linked pipeline deal's creation / committee / appeal / stage events,
+  // ordered oldest-first. Attached by the detail endpoint; falls back to
+  // `history` when absent.
+  journey?:               LoanAppHistoryEvent[];
   offer?:                 LoanAppOffer | null;
   info_request?:          LoanAppInfoRequest | null;
   escalation?:            {

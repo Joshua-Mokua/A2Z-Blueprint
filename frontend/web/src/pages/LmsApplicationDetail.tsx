@@ -221,11 +221,11 @@ export function LmsApplicationDetail() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
-                <span className="text-xs text-gray-400">{application.history?.length ?? 0} events · who did what, when</span>
+                <span className="text-xs text-gray-400">{(application.journey ?? application.history)?.length ?? 0} events · who did what, when</span>
               </div>
             </Card.Header>
             <Card.Body>
-              <Timeline events={[...(application.history ?? [])].reverse()} emptyHint="No activity recorded on this application yet. Actions taken here (assignment, decisions) will appear in this journey." />
+              <Timeline events={[...(application.journey ?? application.history ?? [])].reverse()} emptyHint="No activity recorded on this application yet. Actions taken here (assignment, decisions) will appear in this journey." />
             </Card.Body>
           </Card>
         )}

@@ -257,6 +257,18 @@ def lms_application_detail(
         app["sla"] = _app_sla(app) or None
     except Exception:
         pass
+
+    # Phase C part 1: compute the merged Case Journey (application history
+    # + the linked pipeline deal's creation / committee / appeal / stage
+    # events), normalised to the Timeline shape and ordered oldest-first.
+    # Non-persisted — attached to the in-memory record like `sla` above.
+    # Never fails the read: build_case_journey swallows deal-fetch errors.
+    try:
+        from utils.api_lms_journey import build_case_journey
+        app["journey"] = build_case_journey(app)
+    except Exception:
+        app["journey"] = list(app.get("history") or [])
+
     return {
         "application": app,
         "permissions": permissions,
