@@ -166,7 +166,7 @@ export function LmsApplicationDetail() {
       </Card.Header>
       <Card.Body>
         <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-          <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} embedded />
+          <CreditReportCard appId={application.id} canEdit={!_viewerIsAnalyst && !!permissions.can_view} toast={toast} embedded />
         </div>
         <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
           <CreditWorkbenchPanel appId={application.id} toast={toast} embedded />
