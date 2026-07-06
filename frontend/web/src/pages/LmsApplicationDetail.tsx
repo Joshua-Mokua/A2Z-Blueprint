@@ -287,44 +287,21 @@ export function LmsApplicationDetail() {
           </Card>
         )}
 
-        {/* ─────────── Application details card ─────────── */}
+        {/* ─────────── Reference (only facts NOT already in the hero +
+            customer strip above: currency, dates, pipeline deal, RM code/unit).
+            Client name/CIF/product/amount/RM/analyst live in the strip. ─────────── */}
         <Card stripe="primary">
           <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Application</h2>
+            <h2 className="text-base font-semibold text-gray-900">Reference</h2>
           </Card.Header>
           <Card.Body>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <Field label="Client name" value={application.client_name} />
-              <Field label="Client CIF" value={application.client_cif} mono />
-              <Field label="Product" value={application.product} />
-              <Field label="Amount" value={formatAmount(application.amount, currencySymbol)} mono />
               <Field label="Currency" value={application.currency || 'KES'} />
               <Field label="Application date" value={formatDate(application.application_date)} />
               <Field label="Last updated" value={formatDate(application.last_updated)} />
               <Field label="Pipeline deal" value={application.pipeline_deal_id} mono />
-            </div>
-          </Card.Body>
-        </Card>
-
-
-        {/* ─────────── Ownership card ─────────── */}
-        <Card>
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Ownership</h2>
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <Field label="RM code" value={application.rm_code} mono />
-              <Field label="RM name" value={application.rm_name} />
               <Field label="RM unit" value={application.rm_unit} />
-              <Field
-                label="Analyst"
-                value={
-                  application.analyst?.name
-                    ? `${application.analyst.name} (${application.analyst.code})`
-                    : 'unassigned'
-                }
-              />
             </div>
           </Card.Body>
         </Card>
