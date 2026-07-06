@@ -221,5 +221,33 @@ def build_case_journey(app: Dict[str, Any]) -> List[Dict[str, Any]]:
             # Fall back to app history alone — never fail the detail read.
             pass
 
+    # Backfill milestone facts from the current app record for cases whose
+    # events pre-date event-logging (Phase C part 2). Only synthesised when
+    # the event isn't already present, so new logged cases never double up.
+    # Nothing is fabricated: each entry reflects a fact already on the record.
+    present = {str(e.get("event", "")) for e in merged}
+    analyst = app.get("analyst") or {}
+    if analyst.get("code") and "assigned_to_analyst" not in present:
+        merged.append({
+            "event": "assigned_to_analyst",
+            "by": "",
+            "at": _iso(app.get("assigned_at") or app.get("last_updated")),
+            "note": f"Assigned to {analyst.get('name') or analyst.get('code')}",
+        })
+    decision = app.get("decision") or {}
+    _verdict = str(decision.get("verdict", "") or "").lower()
+    if _verdict:
+        _status = {
+            "approved": "approved", "decline": "declined", "declined": "declined",
+            "return": "returned", "returned": "returned",
+        }.get(_verdict, _verdict)
+        if f"decision_{_status}" not in present:
+            merged.append({
+                "event": f"decision_{_status}",
+                "by": str(decision.get("authority", "") or ""),
+                "at": _iso(decision.get("date") or app.get("last_updated")),
+                "note": str(decision.get("reason") or decision.get("comments") or ""),
+            })
+
     merged.sort(key=lambda e: _parse_ts(e.get("at")))
     return merged

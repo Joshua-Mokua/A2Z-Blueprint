@@ -226,7 +226,7 @@ export function LmsApplicationDetail() {
               </div>
             </Card.Header>
             <Card.Body>
-              <Timeline events={[...(application.journey ?? application.history ?? [])].reverse()} emptyHint="No activity recorded on this application yet. Actions taken here (assignment, decisions) will appear in this journey." />
+              <Timeline events={[...(application.journey ?? application.history ?? [])]} emptyHint="No activity recorded on this application yet. Actions taken here (assignment, decisions) will appear in this journey." />
             </Card.Body>
           </Card>
         )}
