@@ -8,7 +8,8 @@ import { analyzeMultiSource, computeAmortization, computeQualifyingAmount, getDe
 import { useEffect } from 'react';
 import { useToast } from '@/components/Toast';
 import { useBranding } from '@/hooks/useBranding';
-import { Card } from '@/components/Card';
+import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
+import type { ElementType } from 'react';
 import { Button } from '@/components/Button';
 
 interface SourceInput {
@@ -37,7 +38,7 @@ function parseTxns(raw: string): { txn_date: string; amount: number; dr_cr: stri
   return out;
 }
 
-export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultCif?: string; dealId?: string; appId?: string }) {
+export function AffordabilityAppraisal({ defaultCif, dealId, appId, embedded = false }: { defaultCif?: string; dealId?: string; appId?: string; embedded?: boolean }) {
   const { toast } = useToast();
   const { branding } = useBranding();
   const [sources, setSources] = useState<SourceInput[]>([
@@ -207,10 +208,14 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
   const money = (n: number | null | undefined) =>
     n == null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
+  const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
+  const SHeader: ElementType = embedded ? EmbeddedHeader : Card.Header;
+  const SBody:   ElementType = embedded ? EmbeddedBody   : Card.Body;
+
   return (
-    <Card className="mt-4" stripe="accent">
-      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Affordability Appraisal (multi-source)</h3></Card.Header>
-      <Card.Body>
+    <Shell className="mt-4" stripe="accent">
+      <SHeader><h3 className="text-sm font-semibold text-gray-900">Affordability Appraisal (multi-source)</h3></SHeader>
+      <SBody>
         <p className="mb-3 text-xs text-gray-500">
           Add each income source (Bank X, M-Pesa, …) with its own DSR and months. Remove a
           disqualified statement or add a requested one — the total recalculates. Save named
@@ -410,7 +415,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId }: { defaultC
             </div>
           )}
         </div>
-      </Card.Body>
-    </Card>
+      </SBody>
+    </Shell>
   );
 }

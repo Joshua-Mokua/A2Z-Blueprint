@@ -130,3 +130,37 @@ Card.Footer = function CardFooter({
     </div>
   );
 };
+
+// ─── Embedded (chrome-less) shells ────────────────
+//
+// When a card lives inside another card's body — e.g. the three panels
+// inside the Assessment tabs — it must NOT paint its own border/shadow/
+// stripe/header-rule/side-padding, or you get a visible card-in-card.
+// These are drop-in replacements for <Card>/<Card.Header>/<Card.Body>:
+// wire them behind an `embedded` prop and alias at the call site, e.g.
+//   const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
+//   const SHeader: ElementType = embedded ? EmbeddedHeader : Card.Header;
+//   const SBody:   ElementType = embedded ? EmbeddedBody   : Card.Body;
+// They accept (and ignore) Card's chrome props so the swap is transparent.
+
+export function EmbeddedShell(
+  { children }: { children: ReactNode } & Record<string, unknown>,
+) {
+  return <>{children}</>;
+}
+
+export function EmbeddedHeader({
+  className, children,
+}: { className?: string; children: ReactNode }) {
+  return (
+    <div className={cn('flex items-center justify-between gap-3 pb-3', className)}>
+      {children}
+    </div>
+  );
+}
+
+export function EmbeddedBody({
+  className, children,
+}: { className?: string; children: ReactNode }) {
+  return <div className={cn(className)}>{children}</div>;
+}

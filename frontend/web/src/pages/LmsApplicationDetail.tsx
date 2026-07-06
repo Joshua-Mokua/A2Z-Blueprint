@@ -16,6 +16,7 @@
 // is now 'assigned').
 
 import { useState, useEffect } from 'react';
+import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -29,7 +30,7 @@ import {
   getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
-import { Card } from '@/components/Card';
+import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -438,13 +439,13 @@ export function LmsApplicationDetail() {
           </Card.Header>
           <Card.Body>
             <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-              <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} />
+              <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} embedded />
             </div>
             <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
-              <CreditWorkbenchPanel appId={application.id} toast={toast} />
+              <CreditWorkbenchPanel appId={application.id} toast={toast} embedded />
             </div>
             <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
-              <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} />
+              <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded />
             </div>
           </Card.Body>
         </Card>
@@ -1508,8 +1509,9 @@ function AttachmentsBccCard({ appId, canEdit, toast }: {
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
-function CreditReportCard({ appId, canEdit, toast }: {
+function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
+  embedded?: boolean;
 }) {
   const [cr, setCr] = useState<CrView | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -1551,9 +1553,13 @@ function CreditReportCard({ appId, canEdit, toast }: {
     return '';
   };
 
+  const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
+  const SHeader: ElementType = embedded ? EmbeddedHeader : Card.Header;
+  const SBody:   ElementType = embedded ? EmbeddedBody   : Card.Body;
+
   return (
-    <Card className="mt-6">
-      <Card.Header>
+    <Shell className="mt-6">
+      <SHeader>
         <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
@@ -1562,9 +1568,9 @@ function CreditReportCard({ appId, canEdit, toast }: {
             {open ? 'Hide' : 'Open'}
           </button>
         </div>
-      </Card.Header>
+      </SHeader>
       {open && (
-        <Card.Body>
+        <SBody>
           <p className="text-xs text-gray-500 mb-4">
             Fields tinted blue come from CBS; grey from the application. Both are editable.
             Plain fields are for the relationship owner to complete.
@@ -1614,9 +1620,9 @@ function CreditReportCard({ appId, canEdit, toast }: {
           {cr.updated_by && (
             <div className="mt-2 text-xs text-gray-400">Last saved by {cr.updated_by}</div>
           )}
-        </Card.Body>
+        </SBody>
       )}
-    </Card>
+    </Shell>
   );
 }
 
@@ -1668,8 +1674,9 @@ function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
 // ─────────── Credit Analyst Workbench panel (P3) ───────────
 const WB_NOTE_CATEGORIES = ['OBSERVATION', 'CONCERN', 'FOLLOW_UP', 'RECOMMENDATION', 'DECISION_RATIONALE'];
 
-function CreditWorkbenchPanel({ appId, toast }: {
+function CreditWorkbenchPanel({ appId, toast, embedded = false }: {
   appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+  embedded?: boolean;
 }) {
   const { user } = useRole();
   const [wb, setWb] = useState<WorkbenchView | null>(null);
@@ -1710,15 +1717,19 @@ function CreditWorkbenchPanel({ appId, toast }: {
   const cr = wb.conflict_report;
   const s = wb.summary;
 
+  const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
+  const SHeader: ElementType = embedded ? EmbeddedHeader : Card.Header;
+  const SBody:   ElementType = embedded ? EmbeddedBody   : Card.Body;
+
   return (
-    <Card className="mt-4" stripe="accent">
-      <Card.Header>
+    <Shell className="mt-4" stripe="accent">
+      <SHeader>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">Credit Analyst Workbench</h3>
           <span className="text-xs text-gray-500">Session {s.state ?? '—'}</span>
         </div>
-      </Card.Header>
-      <Card.Body>
+      </SHeader>
+      <SBody>
         <p className="mb-3 text-xs text-gray-500">
           What each credit engine currently says for this customer, and where they conflict.
         </p>
@@ -1809,8 +1820,8 @@ function CreditWorkbenchPanel({ appId, toast }: {
             </div>
           )}
         </div>
-      </Card.Body>
-    </Card>
+      </SBody>
+    </Shell>
   );
 }
 
