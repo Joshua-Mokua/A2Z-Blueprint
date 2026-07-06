@@ -5449,7 +5449,8 @@ class LoanApplicationManager:
         return False
 
     def submit_to_credit(self, app_id: str, analyst_code: str = "",
-                          analyst_name: str = "") -> bool:
+                          analyst_name: str = "", by: str = "",
+                          by_name: str = "", by_role: str = "") -> bool:
         app = self.get(app_id)
         if not app:
             return False
@@ -5460,17 +5461,26 @@ class LoanApplicationManager:
             # C-SLA2: the analyst's stage clock starts now.
             updates["assigned_at"] = _now
             updates["stage_entered_at"] = _now
-        return self.update(app_id, updates)
+        ok = self.update(app_id, updates)
+        # Phase C: record the assignment on the journey (who assigned, to whom).
+        if ok and analyst_code:
+            self._log_event(
+                app_id, "assigned_to_analyst", by or "",
+                note=f"Assigned to {analyst_name or analyst_code}".strip(),
+                by_name=by_name, by_role=by_role,
+            )
+        return ok
 
     def record_decision(self, app_id: str, verdict: str, authority: str,
                         reason: str = "", conditions: list = None,
-                        comments: str = "") -> bool:
+                        comments: str = "", by: str = "",
+                        by_name: str = "", by_role: str = "") -> bool:
         new_status = {
             "approved": "approved", "decline": "declined",
             "declined": "declined", "return":  "returned",
             "returned": "returned",
         }.get(verdict.lower(), verdict)
-        return self.update(app_id, {
+        ok = self.update(app_id, {
             "status":   new_status,
             "decision": {
                 "verdict":    verdict.lower(),
@@ -5481,6 +5491,16 @@ class LoanApplicationManager:
                 "comments":   comments,
             },
         })
+        # Phase C: the decision is THE most important journey entry — it
+        # carries the verdict, the decider's name/role, and the reasoning
+        # the next reader of the travelling document needs.
+        if ok:
+            _note = reason or comments or ""
+            self._log_event(
+                app_id, f"decision_{new_status}", by or authority or "",
+                note=_note, by_name=by_name, by_role=by_role,
+            )
+        return ok
 
     # ── Credit workflow state machine (v10.584) ──────────────────────
     # Hardcoded transitions live in utils/api_lms_mutations.py; these are
@@ -5489,13 +5509,20 @@ class LoanApplicationManager:
     # the deal owner, and credit admin share one timeline (who's handling
     # it, when, time taken).
     def _log_event(self, app_id: str, event: str, by: str,
-                   note: str = "", extra: dict = None) -> None:
+                   note: str = "", extra: dict = None,
+                   by_name: str = "", by_role: str = "") -> None:
         app = self.get(app_id)
         if not app:
             return
         hist = list(app.get("history") or [])
         entry = {"event": event, "by": by,
                  "at": datetime.now().isoformat(), "note": note}
+        # Phase C: carry the actor's display name + role so the journey
+        # can read "Lilian Yego (Credit Analyst)" not just a bare code.
+        if by_name:
+            entry["by_name"] = by_name
+        if by_role:
+            entry["by_role"] = by_role
         if extra:
             entry.update(extra)
         hist.append(entry)
@@ -6031,6 +6058,19 @@ class LoanApplicationManager:
                 app["committee_appeals"] = deal_appeals
         except Exception:
             pass
+        # Phase C: seed the journey so every case has history from creation —
+        # the RM's origination is the first entry of the travelling document.
+        try:
+            _cur = str(app.get("currency", "") or "KES")
+            app["history"] = [{
+                "event": "application_created",
+                "by": str(app.get("rm_code", "") or ""),
+                "by_name": str(app.get("rm_name", "") or ""),
+                "at": datetime.now().isoformat(),
+                "note": f"{product or 'facility'} · {_cur} {amount:,.0f}",
+            }]
+        except Exception:
+            app.setdefault("history", [])
         self.apps.append(app)
         self.save()
         return new_id

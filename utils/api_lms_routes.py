@@ -350,6 +350,9 @@ def lms_application_assign(
         app_id,
         analyst_code=payload.analyst_code,
         analyst_name=payload.analyst_name,
+        by=str(user.get('staff_code', '') or user.get('username', '') or ''),
+        by_name=str(user.get('full_name', '') or ''),
+        by_role=str(user.get('role', '') or ''),
     )
     if not success:
         raise HTTPException(
@@ -552,6 +555,9 @@ def lms_application_decision(
         reason=payload.reason or "",
         conditions=payload.conditions or [],
         comments=payload.comments or "",
+        by=str(user.get('staff_code', '') or user.get('username', '') or ''),
+        by_name=str(user.get('full_name', '') or ''),
+        by_role=str(user.get('role', '') or ''),
     )
     if not success:
         raise HTTPException(

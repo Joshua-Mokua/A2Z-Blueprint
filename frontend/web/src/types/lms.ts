@@ -65,6 +65,8 @@ export interface LoanApplicationDecisionRecord {
 export interface LoanAppHistoryEvent {
   event:    string;
   by?:      string;
+  by_name?: string;
+  by_role?: string;
   at?:      string;
   note?:    string;
   [key: string]: unknown;

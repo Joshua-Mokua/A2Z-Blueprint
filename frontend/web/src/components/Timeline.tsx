@@ -7,6 +7,14 @@
 import type { LoanAppHistoryEvent } from '@/types/lms';
 
 const EVENT_LABELS: Record<string, string> = {
+  application_created: 'Application created',
+  deal_created: 'Deal created',
+  deal_stage_change: 'Pipeline stage changed',
+  assigned_to_analyst: 'Assigned to analyst',
+  decision_approved: 'Decision — approved',
+  decision_declined: 'Decision — declined',
+  decision_returned: 'Decision — returned for rework',
+  committee_appeal: 'Committee decision appealed',
   info_requested: 'Information requested',
   info_provided: 'Information provided',
   offer_issued: 'Letter of offer issued',
@@ -57,10 +65,16 @@ export function Timeline({ events, emptyHint }: TimelineProps) {
             <span className="text-sm font-medium text-gray-900">{label(e.event)}</span>
             <span className="text-xs text-gray-400">{fmtWhen(e.at)}</span>
           </div>
-          {(e.by || e.note) && (
+          {(e.by_name || e.by || e.note) && (
             <div className="text-xs text-gray-500 mt-0.5">
-              {e.by && <span className="font-mono">{e.by}</span>}
-              {e.by && e.note ? ' — ' : ''}
+              {e.by_name ? (
+                <span className="font-medium text-gray-700">
+                  {e.by_name}{e.by_role ? ` (${e.by_role})` : ''}
+                </span>
+              ) : (
+                e.by && <span className="font-mono">{e.by}</span>
+              )}
+              {(e.by_name || e.by) && e.note ? ' — ' : ''}
               {e.note}
             </div>
           )}
