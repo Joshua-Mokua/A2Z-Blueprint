@@ -282,29 +282,28 @@ export function LmsApplicationDetail() {
               </div>
             </Card.Header>
             <Card.Body>
+              {/* Executive summary — compact reference facts folded in from the
+                  former standalone Reference card, to reduce box count. Key
+                  facts (client/CIF/product/amount/RM/analyst) live in the strip. */}
+              <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1.5 border-b border-gray-100 pb-3 text-xs">
+                {([
+                  ['Currency', application.currency || 'KES', false],
+                  ['Applied', formatDate(application.application_date), false],
+                  ['Updated', formatDate(application.last_updated), false],
+                  ['Pipeline deal', application.pipeline_deal_id || '—', true],
+                  ['RM code', application.rm_code || '—', true],
+                  ['RM unit', application.rm_unit || '—', false],
+                ] as const).map(([label, value, mono]) => (
+                  <span key={label} className="flex items-center gap-1.5">
+                    <span className="uppercase tracking-wide text-gray-400">{label}</span>
+                    <span className={mono ? 'font-mono text-gray-800' : 'text-gray-800'}>{value}</span>
+                  </span>
+                ))}
+              </div>
               <Timeline events={[...(application.journey ?? application.history ?? [])]} emptyHint="No activity recorded on this application yet. Actions taken here (assignment, decisions) will appear in this journey." />
             </Card.Body>
           </Card>
         )}
-
-        {/* ─────────── Reference (only facts NOT already in the hero +
-            customer strip above: currency, dates, pipeline deal, RM code/unit).
-            Client name/CIF/product/amount/RM/analyst live in the strip. ─────────── */}
-        <Card stripe="primary">
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Reference</h2>
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <Field label="Currency" value={application.currency || 'KES'} />
-              <Field label="Application date" value={formatDate(application.application_date)} />
-              <Field label="Last updated" value={formatDate(application.last_updated)} />
-              <Field label="Pipeline deal" value={application.pipeline_deal_id} mono />
-              <Field label="RM code" value={application.rm_code} mono />
-              <Field label="RM unit" value={application.rm_unit} />
-            </div>
-          </Card.Body>
-        </Card>
 
 
         {/* ─────────── Decision card (only if recorded) ─────────── */}
