@@ -2817,6 +2817,70 @@ def pipeline_deals(
 # to avoid leaking the existence of deals outside their visibility.
 
 
+# === DEAL LOCK (Phase L) ============================================
+# Once a deal is submitted to credit (it carries `lms_application_id`),
+# origination is locked: owner / backup / manager can no longer edit the
+# deal or advance its stage. It re-opens only when the linked application
+# comes back to origination — returned for rework, or an open information
+# request. Terminal states (approved / declined) stay locked.
+# Admin may override on special grounds; every override is audit-logged.
+def _deal_submitted_to_credit(deal: dict) -> bool:
+    return bool(deal.get("lms_application_id"))
+
+
+def _linked_app_reopens_origination(deal: dict) -> bool:
+    """True when the deal's linked application has been handed back to the deal
+    owner — returned for rework, or has an unresolved information request."""
+    app_id = str(deal.get("lms_application_id") or "")
+    if not app_id:
+        return True  # not submitted -> nothing to unlock
+    try:
+        from utils.core import LoanApplicationManager
+        app = LoanApplicationManager().get(app_id) or {}
+    except Exception:
+        return False  # if we cannot tell, stay locked (fail safe)
+    status = str(app.get("status", "") or "").lower()
+    if status in ("returned", "info_requested"):
+        return True
+    ir = app.get("info_request") or {}
+    if isinstance(ir, dict) and ir and not ir.get("resolved", False):
+        return True
+    return False
+
+
+def _deal_locked(deal: dict) -> bool:
+    return _deal_submitted_to_credit(deal) and not _linked_app_reopens_origination(deal)
+
+
+def _user_is_admin(user: dict) -> bool:
+    return bool(user.get("is_admin")) or "admin" in str(user.get("role", "") or "").lower()
+
+
+_DEAL_LOCK_MSG = ("This deal is with Credit and is locked for editing. It re-opens "
+                  "only when the case is returned for rework or information is "
+                  "requested.")
+
+
+def _enforce_deal_lock(deal: dict, user: dict, action: str) -> None:
+    """Raise 423 when a locked deal is edited by a non-admin. Admin overrides
+    are permitted on special grounds and are audit-logged with a timestamp."""
+    if not _deal_locked(deal):
+        return
+    if _user_is_admin(user):
+        try:
+            from utils.core_audit import audit_log as _audit_override
+            _audit_override(
+                "PIPELINE_LOCK_OVERRIDE",
+                str(user.get("username", "") or ""),
+                f"deal={deal.get('id')} action={action} (locked deal; admin override)",
+            )
+        except Exception:
+            pass
+        return
+    raise HTTPException(status_code=423, detail=_DEAL_LOCK_MSG)
+# === END DEAL LOCK ==================================================
+
+
 @app.get("/api/pipeline/deals/{deal_id}")
 def pipeline_deal_detail(
     deal_id: str,
@@ -2851,6 +2915,16 @@ def pipeline_deal_detail(
     permissions = resolve_deal_permissions(deal, user, visible_codes)
     if not permissions.get("can_view"):
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Phase L: reflect the origination lock so the UI hides edit/advance and
+    # explains why. Admin retains edit (override is audit-logged at write time).
+    if _deal_locked(deal):
+        deal["locked"] = True
+        deal["lock_reason"] = _DEAL_LOCK_MSG
+        if not _user_is_admin(user):
+            permissions = {**permissions, "can_edit": False, "can_advance_stage": False}
+    else:
+        deal["locked"] = False
 
     # Derive win probability from the deal's current stage in its product flow.
     try:
@@ -5336,6 +5410,9 @@ def pipeline_deal_update(
             detail="No fields supplied for update",
         )
 
+    # Phase L: locked once submitted to credit (unless returned/info-requested).
+    _enforce_deal_lock(deal, user, "update")
+
     # State-machine integrity (stress-pass Phase 1): PUT is a field editor, NOT
     # a stage-transition path. Allowing `stage` here bypassed the /advance
     # guards (terminal freeze, backward-sanction, flow validation, SLA stamping,
@@ -5445,6 +5522,11 @@ def pipeline_deal_advance(
                     if _rstatus == "pending" else
                     "This referral was declined and is awaiting reassignment."),
         )
+
+    # Phase L: a deal submitted to credit is locked — no stage moves unless
+    # the case was returned / info-requested. Admin override is audit-logged.
+    _enforce_deal_lock(deal, user, "advance")
+
     # target must belong to THIS deal's flow — e.g. a deposit (liability) deal
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).
@@ -9330,6 +9412,7 @@ def upload_deal_document(deal_id: str, body: _DocUploadBody,
                          user: dict = Depends(get_current_user)):
     """Attach a file for one required document of a deal."""
     pm, deal = _deal_for_docs(deal_id, user)
+    _enforce_deal_lock(deal, user, "documents")  # Phase L
     doc_name = str(body.doc_name or "").strip()
     if not doc_name:
         raise HTTPException(status_code=400, detail="doc_name is required")
@@ -9708,6 +9791,7 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
     visible = get_visible_staff_codes(user)
     if not resolve_deal_permissions(deal, user, visible).get("can_view"):
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    _enforce_deal_lock(deal, user, "cr")  # Phase L
     values = payload.get("values")
     if not isinstance(values, dict):
         raise HTTPException(status_code=400, detail="values must be an object")
@@ -10282,6 +10366,7 @@ def save_deal_appraisal(deal_id: str, payload: dict = Body(default_factory=dict)
     visible = get_visible_staff_codes(user)
     if not resolve_deal_permissions(deal, user, visible).get("can_view"):
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    _enforce_deal_lock(deal, user, "appraisal")  # Phase L
     appr = _appraisal_stamp(payload, user)
     pm.update_deal(deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
     return appr

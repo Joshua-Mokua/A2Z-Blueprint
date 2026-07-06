@@ -209,6 +209,20 @@ export function PipelineDealDetail() {
         </Button>
       </div>
 
+      {/* Phase L: origination lock banner — the deal is with Credit and edits/
+          stage moves are disabled until it's returned or info is requested. */}
+      {deal.locked && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-600" aria-hidden>🔒</span>
+            <div className="text-sm text-amber-800">
+              <span className="font-semibold">Locked — with Credit.</span>{' '}
+              {deal.lock_reason || 'Editing and stage changes are disabled until the case is returned for rework or information is requested.'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Primary identity card */}
       <Card stripe="primary">
         <Card.Header>
@@ -217,6 +231,7 @@ export function PipelineDealDetail() {
               {deal.client_name || '—'}
             </h2>
             <Badge tone={stageTone(deal.stage)} size="md">{deal.stage}</Badge>
+            {deal.locked && <Badge tone="warning" size="sm">🔒 Locked</Badge>}
             {deal.draft && <Badge tone="warning" size="sm">Draft</Badge>}
             {deal.cancel_requested && !deal.cancel_approved && (
               <Badge tone="warning" size="sm">Cancel requested</Badge>

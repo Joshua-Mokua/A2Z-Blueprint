@@ -136,6 +136,9 @@ export interface PipelineDeal {
   // LMS handoff (α4)
   lms_application_id?:         string;
   loss_reason?:                string;
+  // Phase L — origination lock (submitted to credit; unless returned/info-requested)
+  locked?:                     boolean;
+  lock_reason?:                string;
 
   // α7 per-deal permissions — added by the API enrichment layer
   permissions?:         DealPermissions;
