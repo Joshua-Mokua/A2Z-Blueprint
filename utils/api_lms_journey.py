@@ -185,6 +185,23 @@ def _events_from_deal(deal: Dict[str, Any],
                 "note": str(a.get("note", "") or ""),
             })
 
+    # 5) Affordability appraisal completed by the deal owner (RM). Surfaced so
+    #    the journey shows the RM's appraisal alongside the analyst's concurrence
+    #    (logged app-side as `affordability_concurred`).
+    appr = deal.get("appraisal")
+    if isinstance(appr, dict) and (appr.get("updated_at") or appr.get("sources")):
+        _by = str(appr.get("updated_by", "") or "")
+        _byname = None
+        if _by and _by == str(deal.get("staff_code", "") or ""):
+            _byname = str(deal.get("staff_name", "") or "") or None
+        events.append({
+            "event": "affordability_completed",
+            "by": _by,
+            "by_name": _byname,
+            "at": _iso(appr.get("updated_at")),
+            "note": "Affordability appraisal completed by deal owner",
+        })
+
     return events
 
 

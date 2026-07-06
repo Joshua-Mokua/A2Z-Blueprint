@@ -10300,8 +10300,25 @@ def save_app_appraisal(app_id: str, payload: dict = Body(default_factory=dict),
     """Save the application's affordability appraisal."""
     _wb_load_app_or_404(app_id, user)
     from utils.core import LoanApplicationManager
+    lam = LoanApplicationManager()
     appr = _appraisal_stamp(payload, user)
-    LoanApplicationManager().update(app_id, {"appraisal": appr})
+    lam.update(app_id, {"appraisal": appr})
+    # Phase C: record the analyst's affordability concurrence on the journey —
+    # once (subsequent re-saves update the appraisal without re-logging).
+    try:
+        app_rec = lam.get(app_id) or {}
+        already = any(str(e.get("event", "")) == "affordability_concurred"
+                      for e in (app_rec.get("history") or []))
+        if not already:
+            lam._log_event(
+                app_id, "affordability_concurred",
+                str(user.get("staff_code", "") or user.get("username", "") or ""),
+                note="Affordability appraisal reviewed and concurred",
+                by_name=str(user.get("full_name", "") or ""),
+                by_role=str(user.get("role", "") or ""),
+            )
+    except Exception:
+        pass
     return appr
 # === END AFFORDABILITY APPRAISAL PERSISTENCE ===
 
