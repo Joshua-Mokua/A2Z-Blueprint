@@ -154,7 +154,12 @@ export function LmsApplicationDetail() {
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
           <div className="flex gap-1 text-xs">
-            {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const).map(([id,lbl]) => (
+            {/* Option A: the Engines & Conflicts (analyst workbench) tab is
+                credit-internal — hidden from non-credit viewers (RM etc.), who
+                still see CR + Affordability read-only and the Case Journey. */}
+            {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const)
+              .filter(([id]) => id !== 'engines' || permissions.can_update)
+              .map(([id,lbl]) => (
               <button key={id} onClick={() => setAssessmentTab(id)}
                 className={`rounded px-3 py-1.5 font-medium transition-colors ${
                   assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
@@ -166,11 +171,16 @@ export function LmsApplicationDetail() {
       </Card.Header>
       <Card.Body>
         <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-          <CreditReportCard appId={application.id} canEdit={!_viewerIsAnalyst && !!permissions.can_view} toast={toast} embedded />
+          {/* CR is completed by the RM during origination, then frozen once the
+              case is in credit — read-only for the RM and the analyst; only a
+              credit manager/admin may correct it. */}
+          <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
         </div>
+        {permissions.can_update && (
         <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
           <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
         </div>
+        )}
         <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
           <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
         </div>
