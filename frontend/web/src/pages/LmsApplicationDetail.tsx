@@ -15,7 +15,7 @@
 // flipped (e.g. after assign, can_assign becomes false because status
 // is now 'assigned').
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
@@ -73,6 +73,20 @@ export function LmsApplicationDetail() {
     useLmsApplication(appId);
   const mutations = useLmsMutations();
 
+  // IA Phase 3: role-aware default view. The assigned analyst lands on the
+  // Engines tab (their working surface); everyone else keeps Credit Report.
+  // Run-once (ref-guarded) so it never overrides a manual tab click.
+  const didInitTab = useRef(false);
+  useEffect(() => {
+    if (didInitTab.current || !application) return;
+    didInitTab.current = true;
+    const isAnalyst = Boolean(
+      application.assignment_purpose &&
+      String(application.analyst?.code ?? '') === String(user?.staff_code ?? ''),
+    );
+    if (isAnalyst) setAssessmentTab('engines');
+  }, [application, user]);
+
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
   const [updateOpen,   setUpdateOpen]   = useState(false);
@@ -126,6 +140,40 @@ export function LmsApplicationDetail() {
 
 
   const _isAssignedAnalyst = Boolean(application.assignment_purpose && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')); const canOriginate = Boolean(permissions.can_view) && !_isAssignedAnalyst;
+
+  // IA Phase 3: the Assessment card is rendered in one of two positions —
+  // directly under the customer strip for the assigned analyst, or in its
+  // regular place in the origination flow for everyone else. Defined once
+  // here and placed conditionally in the JSX below to avoid duplication.
+  const assessmentCard = (
+    <Card stripe="accent">
+      <Card.Header>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
+          <div className="flex gap-1 text-xs">
+            {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const).map(([id,lbl]) => (
+              <button key={id} onClick={() => setAssessmentTab(id)}
+                className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                  assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
+          <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} embedded />
+        </div>
+        <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
+          <CreditWorkbenchPanel appId={application.id} toast={toast} embedded />
+        </div>
+        <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
+          <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded />
+        </div>
+      </Card.Body>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -214,6 +262,11 @@ export function LmsApplicationDetail() {
             </div>
           </div>
         </div>
+
+        {/* IA Phase 3: for the assigned analyst, the Assessment card is hoisted
+            here — directly under the customer strip — so they land on their
+            working surface; Journey and origination drop below. */}
+        {_isAssignedAnalyst && assessmentCard}
 
 
         {/* ─────────── Case Journey (prominent, always shown) ─────────── */}
@@ -369,7 +422,7 @@ export function LmsApplicationDetail() {
         </Card>
 
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
-        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} />
+        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} defaultCollapsed={_isAssignedAnalyst} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -422,33 +475,10 @@ export function LmsApplicationDetail() {
         )}
 
         {/* ─────────── Assessment (tabbed: CR / Engines / Affordability) ─────────── */}
-        <Card stripe="accent">
-          <Card.Header>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
-              <div className="flex gap-1 text-xs">
-                {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const).map(([id,lbl]) => (
-                  <button key={id} onClick={() => setAssessmentTab(id)}
-                    className={`rounded px-3 py-1.5 font-medium transition-colors ${
-                      assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </Card.Header>
-          <Card.Body>
-            <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-              <CreditReportCard appId={application.id} canEdit={!!permissions.can_view} toast={toast} embedded />
-            </div>
-            <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
-              <CreditWorkbenchPanel appId={application.id} toast={toast} embedded />
-            </div>
-            <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
-              <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded />
-            </div>
-          </Card.Body>
-        </Card>
+        {/* IA Phase 3: for the assigned analyst this card is hoisted directly
+            under the customer strip (see above); here it renders for everyone
+            else in the normal origination flow. */}
+        {!_isAssignedAnalyst && assessmentCard}
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
@@ -1347,10 +1377,12 @@ const ATTACHMENT_KINDS = [
   'bank_statements', 'board_resolution', 'other',
 ];
 
-function AttachmentsBccCard({ appId, canEdit, toast }: {
+function AttachmentsBccCard({ appId, canEdit, toast, defaultCollapsed = false }: {
   appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
+  defaultCollapsed?: boolean;
 }) {
   const [atts, setAtts] = useState<LmsAttachment[]>([]);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [bcc, setBcc] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   // Add-attachment form
@@ -1410,8 +1442,14 @@ function AttachmentsBccCard({ appId, canEdit, toast }: {
   return (
     <Card className="mt-6">
       <Card.Header>
-        <h2 className="text-base font-semibold text-gray-900">Attachments &amp; Branch Credit Committee</h2>
+        <div className="flex items-center justify-between gap-2 w-full">
+          <h2 className="text-base font-semibold text-gray-900">Attachments &amp; Branch Credit Committee</h2>
+          <button className="text-sm text-brand-primary" onClick={() => setCollapsed((c) => !c)}>
+            {collapsed ? `Show${atts.length ? ` (${atts.length})` : ''}` : 'Hide'}
+          </button>
+        </div>
       </Card.Header>
+      {!collapsed && (
       <Card.Body>
         {/* BCC summary, if recorded */}
         {bcc ? (
@@ -1499,6 +1537,7 @@ function AttachmentsBccCard({ appId, canEdit, toast }: {
           </>
         )}
       </Card.Body>
+      )}
     </Card>
   );
 }
