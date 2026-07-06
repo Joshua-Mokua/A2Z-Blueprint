@@ -10064,6 +10064,22 @@ def _wb_load_app_or_404(app_id: str, user: dict):
     return app_rec
 
 
+def _wb_require_edit(app_rec: dict, user: dict) -> None:
+    """Workbench / appraisal mutations are a CREDIT-side action — require
+    can_update (assigned analyst / credit manager / admin), not mere can_view.
+    Stops the deal owner (RM) and other non-credit viewers from changing the
+    analysis; they retain read-only visibility of the case as it travels."""
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_lms_permissions import resolve_application_permissions
+    visible = get_visible_staff_codes(user)
+    if not resolve_application_permissions(user, app_rec, visible).get("can_update"):
+        raise HTTPException(
+            status_code=403,
+            detail=("This case is with Credit — you can view its progress but "
+                    "cannot edit the analysis."),
+        )
+
+
 def _workbench_role_lens(app_rec: dict) -> dict:
     """Read-side signals for the role-shaped workbench, composed from existing data:
     the CR (RM appraisal completeness) + the linked credit-admin case (Admin conditions,
@@ -10134,7 +10150,8 @@ def workbench_record_pull(app_id: str, payload: dict = Body(default_factory=dict
                           user: dict = Depends(get_current_user)):
     """Record a data pull (a snapshot of what an upstream engine currently says)
     into the workbench session. Phase 2 will populate these from the real engines."""
-    _wb_load_app_or_404(app_id, user)
+    app_rec = _wb_load_app_or_404(app_id, user)
+    _wb_require_edit(app_rec, user)  # credit-only; RM is read-only
     eng = _wb_engine()
     sid = _wb_session_id_for_app(app_id)
     data_source = str(payload.get("data_source", "") or "")
@@ -10158,7 +10175,8 @@ def workbench_record_pull(app_id: str, payload: dict = Body(default_factory=dict
 def workbench_record_note(app_id: str, payload: dict = Body(default_factory=dict),
                           user: dict = Depends(get_current_user)):
     """Record an analyst note in the workbench session."""
-    _wb_load_app_or_404(app_id, user)
+    app_rec = _wb_load_app_or_404(app_id, user)
+    _wb_require_edit(app_rec, user)  # credit-only; RM is read-only
     eng = _wb_engine()
     sid = _wb_session_id_for_app(app_id)
     category = str(payload.get("category", "") or "")
@@ -10180,7 +10198,8 @@ def workbench_record_note(app_id: str, payload: dict = Body(default_factory=dict
 def workbench_transition(app_id: str, payload: dict = Body(default_factory=dict),
                          user: dict = Depends(get_current_user)):
     """Transition the workbench session state (OPEN/IN_REVIEW/ESCALATED/COMPLETED/CANCELLED)."""
-    _wb_load_app_or_404(app_id, user)
+    app_rec = _wb_load_app_or_404(app_id, user)
+    _wb_require_edit(app_rec, user)  # credit-only; RM is read-only
     eng = _wb_engine()
     sid = _wb_session_id_for_app(app_id)
     new_state = str(payload.get("new_state", "") or "").upper()
@@ -10199,6 +10218,7 @@ def workbench_refresh_pulls(app_id: str, user: dict = Depends(get_current_user))
     """Phase 2: run the real credit engines against this application and record their
     outputs as workbench data pulls. Returns the updated summary + conflict report."""
     app_rec = _wb_load_app_or_404(app_id, user)
+    _wb_require_edit(app_rec, user)  # credit-only; RM is read-only
     from utils.api_workbench_adapters import run_all_adapters
     from datetime import datetime as _dt
     eng = _wb_engine()
@@ -10383,7 +10403,8 @@ def get_app_appraisal(app_id: str, user: dict = Depends(get_current_user)):
 def save_app_appraisal(app_id: str, payload: dict = Body(default_factory=dict),
                        user: dict = Depends(get_current_user)):
     """Save the application's affordability appraisal."""
-    _wb_load_app_or_404(app_id, user)
+    app_rec = _wb_load_app_or_404(app_id, user)
+    _wb_require_edit(app_rec, user)  # credit-only concurrence; RM is read-only
     from utils.core import LoanApplicationManager
     lam = LoanApplicationManager()
     appr = _appraisal_stamp(payload, user)

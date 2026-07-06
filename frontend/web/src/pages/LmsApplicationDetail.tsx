@@ -169,10 +169,10 @@ export function LmsApplicationDetail() {
           <CreditReportCard appId={application.id} canEdit={!_viewerIsAnalyst && !!permissions.can_view} toast={toast} embedded />
         </div>
         <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
-          <CreditWorkbenchPanel appId={application.id} toast={toast} embedded />
+          <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
         </div>
         <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
-          <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded />
+          <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
         </div>
       </Card.Body>
     </Card>
@@ -1692,9 +1692,9 @@ function BranchCommitteeDecisionsCard({ appId }: { appId: string }) {
 // ─────────── Credit Analyst Workbench panel (P3) ───────────
 const WB_NOTE_CATEGORIES = ['OBSERVATION', 'CONCERN', 'FOLLOW_UP', 'RECOMMENDATION', 'DECISION_RATIONALE'];
 
-function CreditWorkbenchPanel({ appId, toast, embedded = false }: {
+function CreditWorkbenchPanel({ appId, toast, embedded = false, canEdit = false }: {
   appId: string; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
-  embedded?: boolean;
+  embedded?: boolean; canEdit?: boolean;
 }) {
   const { user } = useRole();
   const [wb, setWb] = useState<WorkbenchView | null>(null);
@@ -1809,17 +1809,22 @@ function CreditWorkbenchPanel({ appId, toast, embedded = false }: {
           </div>
         </div>
 
+        {canEdit ? (
         <div className="mb-4">
           <Button variant="primary" onClick={() => void refresh()} disabled={busy}>
             {busy ? 'Refreshing…' : 'Refresh engines'}
           </Button>
         </div>
+        ) : (
+          <p className="mb-4 text-xs text-gray-400">Read-only — you can view the credit analysis but not change it.</p>
+        )}
 
         {/* Analyst notes */}
         <div className="border-t pt-3">
           <p className="mb-2 text-xs font-medium text-gray-600">
             Analyst notes {s.notes_count ? `(${s.notes_count})` : ''}
           </p>
+          {canEdit && (
           <div className="flex flex-col gap-2 sm:flex-row">
             <select value={noteCat} onChange={(e) => setNoteCat(e.target.value)}
               className="rounded border border-gray-300 px-2 py-1.5 text-sm">
@@ -1830,6 +1835,7 @@ function CreditWorkbenchPanel({ appId, toast, embedded = false }: {
               className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm" />
             <Button variant="ghost" onClick={() => void addNote()} disabled={busy || !noteBody.trim()}>Add note</Button>
           </div>
+          )}
           {s.notes_by_category && Object.keys(s.notes_by_category).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
               {Object.entries(s.notes_by_category).map(([cat, n]) => (

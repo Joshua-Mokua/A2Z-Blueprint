@@ -108,12 +108,15 @@ def resolve_application_permissions(
     # ── can_update ──
     # Status guardrail FIRST. Then either:
     #   - admin, OR
-    #   - owner RM, OR
     #   - assigned analyst, OR
     #   - manager-tier with the app in their cascade
+    # NOTE: the deal owner (RM) is deliberately NOT granted can_update. Once a
+    # case is in credit, the RM/owner can VIEW its progress but not edit the
+    # analysis (workbench, appraisal, completeness). Their own touchpoints —
+    # provide-info and sign-offer — are granted separately below.
     can_update = (
         status in STATUSES_PERMITTING_UPDATE
-        and (is_admin or is_owner or is_assigned_analyst or (is_mgr and in_scope))
+        and (is_admin or is_assigned_analyst or (is_mgr and in_scope))
     )
 
     # ── can_assign ──

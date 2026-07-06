@@ -38,7 +38,7 @@ function parseTxns(raw: string): { txn_date: string; amount: number; dr_cr: stri
   return out;
 }
 
-export function AffordabilityAppraisal({ defaultCif, dealId, appId, embedded = false }: { defaultCif?: string; dealId?: string; appId?: string; embedded?: boolean }) {
+export function AffordabilityAppraisal({ defaultCif, dealId, appId, embedded = false, canEdit = true }: { defaultCif?: string; dealId?: string; appId?: string; embedded?: boolean; canEdit?: boolean }) {
   const { toast } = useToast();
   const { branding } = useBranding();
   const [sources, setSources] = useState<SourceInput[]>([
@@ -276,7 +276,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId, embedded = f
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={addSource}>+ Add statement</Button>
           <Button variant="primary" onClick={() => void run()} disabled={busy}>{busy ? 'Analysing…' : 'Analyse & consolidate'}</Button>
-          {(dealId || appId) && <Button variant="ghost" onClick={() => void saveAppraisal()}>Save appraisal</Button>}
+          {canEdit && (dealId || appId) && <Button variant="ghost" onClick={() => void saveAppraisal()}>Save appraisal</Button>}
           <Button variant="ghost" onClick={printAppraisal}>Print appraisal</Button>
         </div>
 
