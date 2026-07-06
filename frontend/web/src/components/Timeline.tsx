@@ -31,10 +31,14 @@ const EVENT_LABELS: Record<string, string> = {
   committee_vote: 'Committee vote recorded',
 };
 
-function label(ev: string): string {
+export function eventLabel(ev: string): string {
   if (EVENT_LABELS[ev]) return EVENT_LABELS[ev];
   if (ev.startsWith('committee_')) return `Committee: ${ev.replace('committee_', '')}`;
   return ev.replace(/_/g, ' ');
+}
+
+function label(ev: string): string {
+  return eventLabel(ev);
 }
 
 function fmtWhen(at?: string): string {

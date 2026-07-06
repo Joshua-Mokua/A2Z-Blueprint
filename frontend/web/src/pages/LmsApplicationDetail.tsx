@@ -31,11 +31,12 @@ import {
   type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';
 import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
+import { printDocument, escapeHtml } from '@/lib/print';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
-import { Timeline } from '@/components/Timeline';
+import { Timeline, eventLabel } from '@/components/Timeline';
 import {
   statusTone,
   DECISION_VERDICTS,
@@ -188,6 +189,19 @@ export function LmsApplicationDetail() {
     </Card>
   );
 
+  const printJourney = () => {
+    const evs = [...(application.journey ?? application.history ?? [])];
+    const rows = evs.map((e) => {
+      const when = e.at ? new Date(e.at).toLocaleString() : '';
+      const who = e.by_name || e.by || '';
+      const role = e.by_role ? ` <span class="muted">(${escapeHtml(e.by_role)})</span>` : '';
+      return `<tr><td>${escapeHtml(when)}</td><td>${escapeHtml(eventLabel(e.event))}</td><td>${escapeHtml(who)}${role}</td><td>${escapeHtml(e.note || '')}</td></tr>`;
+    }).join('');
+    const head = `<div class="head"><h1>Case Journey — ${escapeHtml(application.id)}</h1><span class="muted">${escapeHtml(application.client_name || '')} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    const table = `<table><thead><tr><th style="width:20%">When</th><th style="width:22%">Event</th><th style="width:22%">By</th><th>Note</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="muted">No events recorded.</td></tr>'}</tbody></table>`;
+    printDocument(`Case Journey ${application.id}`, head + table);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -288,7 +302,10 @@ export function LmsApplicationDetail() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
-                <span className="text-xs text-gray-400">{(application.journey ?? application.history)?.length ?? 0} events · who did what, when</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400">{(application.journey ?? application.history)?.length ?? 0} events · who did what, when</span>
+                  <button onClick={printJourney} className="text-xs font-medium text-brand-primary hover:underline">Print</button>
+                </div>
               </div>
             </Card.Header>
             <Card.Body>
@@ -1581,6 +1598,16 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
     return '';
   };
 
+  const printCr = () => {
+    const secs = (cr.template?.sections ?? []).map((sec) => {
+      const rows = (sec.fields ?? []).map((f) =>
+        `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
+      return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
+    }).join('');
+    const head = `<div class="head"><h1>Credit Report — ${escapeHtml(appId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Credit Report ${appId}`, head + secs);
+  };
+
   const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
   const SHeader: ElementType = embedded ? EmbeddedHeader : Card.Header;
   const SBody:   ElementType = embedded ? EmbeddedBody   : Card.Body;
@@ -1592,6 +1619,7 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
+          <button className="text-sm text-brand-primary" onClick={printCr}>Print</button>
           <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
             {open ? 'Hide' : 'Open'}
           </button>
