@@ -11,6 +11,8 @@ const EVENT_LABELS: Record<string, string> = {
   deal_created: 'Deal created',
   deal_stage_change: 'Pipeline stage changed',
   assigned_to_analyst: 'Assigned to analyst',
+  ready_for_committee: 'Marked ready for committee',
+  returned_for_rework: 'Returned for rework',
   decision_approved: 'Decision — approved',
   decision_declined: 'Decision — declined',
   decision_returned: 'Decision — returned for rework',

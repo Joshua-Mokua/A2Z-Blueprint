@@ -1623,6 +1623,19 @@ def lms_committee_readiness(
         "reasons": p.get("reasons") if isinstance(p.get("reasons"), list) else [],
     }
     lam.update(app_id, {"committee_readiness": readiness})
+    # Phase C part 3: record the correctness reviewer's verdict on the journey
+    # (ready_for_committee | returned_for_rework) with their name/role + reason,
+    # so the travelling document shows the rework loop, not just the outcome.
+    try:
+        _rnote = readiness["opinion"] or (
+            "; ".join(str(r) for r in readiness["reasons"]) if readiness["reasons"] else ""
+        )
+        lam._log_event(
+            app_id, readiness["state"], caller_code,
+            note=_rnote, by_name=readiness["by_name"], by_role=caller_role,
+        )
+    except Exception:
+        pass
     audit_log("LMS_COMMITTEE_READINESS",
               str(user.get('username', '') or ''), f"{app_id}|{readiness['state']}")
     return {"application": lam.get(app_id), "status": readiness["state"]}
