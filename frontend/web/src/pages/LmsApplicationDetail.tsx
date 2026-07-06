@@ -80,10 +80,8 @@ export function LmsApplicationDetail() {
   useEffect(() => {
     if (didInitTab.current || !application) return;
     didInitTab.current = true;
-    const isAnalyst = Boolean(
-      application.assignment_purpose &&
-      String(application.analyst?.code ?? '') === String(user?.staff_code ?? ''),
-    );
+    const isAnalyst = Boolean(application.analyst?.code) &&
+      String(application.analyst?.code ?? '') === String(user?.staff_code ?? '');
     if (isAnalyst) setAssessmentTab('engines');
   }, [application, user]);
 
@@ -140,6 +138,11 @@ export function LmsApplicationDetail() {
 
 
   const _isAssignedAnalyst = Boolean(application.assignment_purpose && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')); const canOriginate = Boolean(permissions.can_view) && !_isAssignedAnalyst;
+  // IA Phase 3: the VIEW gate (which panel layout to show) keys purely on
+  // "is the viewer the assigned analyst" — independent of assignment_purpose,
+  // so legacy assignments (no purpose recorded) still get the analyst layout.
+  // The origination gate above (canOriginate) is left unchanged.
+  const _viewerIsAnalyst = Boolean(application.analyst?.code) && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '');
 
   // IA Phase 3: the Assessment card is rendered in one of two positions —
   // directly under the customer strip for the assigned analyst, or in its
@@ -266,7 +269,7 @@ export function LmsApplicationDetail() {
         {/* IA Phase 3: for the assigned analyst, the Assessment card is hoisted
             here — directly under the customer strip — so they land on their
             working surface; Journey and origination drop below. */}
-        {_isAssignedAnalyst && assessmentCard}
+        {_viewerIsAnalyst && assessmentCard}
 
 
         {/* ─────────── Case Journey (prominent, always shown) ─────────── */}
@@ -422,7 +425,7 @@ export function LmsApplicationDetail() {
         </Card>
 
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
-        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} defaultCollapsed={_isAssignedAnalyst} />
+        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} defaultCollapsed={_viewerIsAnalyst} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -478,7 +481,7 @@ export function LmsApplicationDetail() {
         {/* IA Phase 3: for the assigned analyst this card is hoisted directly
             under the customer strip (see above); here it renders for everyone
             else in the normal origination flow. */}
-        {!_isAssignedAnalyst && assessmentCard}
+        {!_viewerIsAnalyst && assessmentCard}
 
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
