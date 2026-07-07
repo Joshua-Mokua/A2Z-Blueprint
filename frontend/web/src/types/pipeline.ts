@@ -139,6 +139,10 @@ export interface PipelineDeal {
   // Phase L — origination lock (submitted to credit; unless returned/info-requested)
   locked?:                     boolean;
   lock_reason?:                string;
+  // Phase V — line-manager validation
+  validation_requests?:        import('@/lib/api').ValidationRequest[];
+  validator?:                  { code?: string | null; name?: string | null; role?: string | null; admin_fallback?: boolean } | null;
+  reopen_available?:           boolean;
 
   // α7 per-deal permissions — added by the API enrichment layer
   permissions?:         DealPermissions;

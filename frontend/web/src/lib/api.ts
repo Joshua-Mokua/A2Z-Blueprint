@@ -652,6 +652,40 @@ export async function declineReferral(dealId: string, reason: string): Promise<{
     `/pipeline/deals/${dealId}/referral/decline`, { reason });
 }
 
+// ── Phase V: line-manager validation requests (reopen / hold) ──────────
+export interface ValidationRequest {
+  id: string;
+  kind: 'reopen' | 'hold';
+  requested_by?: string;
+  requested_by_name?: string;
+  reason?: string;
+  at?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  validator_code?: string | null;
+  validator_name?: string | null;
+  validator_role?: string | null;
+  admin_fallback?: boolean;
+  validated_by?: string | null;
+  validated_by_name?: string | null;
+  validated_at?: string | null;
+  note?: string | null;
+}
+
+export async function createValidationRequest(
+  dealId: string, kind: 'reopen' | 'hold', reason: string,
+): Promise<ValidationRequest> {
+  return postJson<ValidationRequest, { kind: string; reason: string }>(
+    `/pipeline/deals/${dealId}/validation-requests`, { kind, reason });
+}
+
+export async function resolveValidationRequest(
+  dealId: string, reqId: string, decision: 'approved' | 'rejected', note: string,
+): Promise<ValidationRequest> {
+  return postJson<ValidationRequest, { decision: string; note: string }>(
+    `/pipeline/deals/${dealId}/validation-requests/${reqId}/resolve`, { decision, note });
+}
+
+
 export async function reassignReferral(
   dealId: string, code: string, name: string, note: string,
 ): Promise<{ status?: string }> {

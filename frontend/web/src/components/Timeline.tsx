@@ -13,6 +13,7 @@ const EVENT_LABELS: Record<string, string> = {
   assigned_to_analyst: 'Assigned to analyst',
   affordability_completed: 'Affordability appraisal completed',
   affordability_concurred: 'Affordability concurred',
+  reopened_after_decline: 'Reopened after decline',
   ready_for_committee: 'Marked ready for committee',
   returned_for_rework: 'Returned for rework',
   decision_approved: 'Decision — approved',

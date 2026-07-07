@@ -2881,6 +2881,145 @@ def _enforce_deal_lock(deal: dict, user: dict, action: str) -> None:
 # === END DEAL LOCK ==================================================
 
 
+# === VALIDATION REQUESTS (Phase V) + REOPEN-DECLINED (Phase R) =======
+# A line-manager validation workflow: the deal owner raises a request
+# (reopen a declined case, or put on hold), and ONLY the owner's line
+# manager — resolved via org_validator — or admin may approve/reject it.
+def _vr_list(deal: dict) -> list:
+    v = deal.get("validation_requests")
+    return list(v) if isinstance(v, list) else []
+
+
+def _new_vr_id() -> str:
+    return "VR" + datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+
+def _linked_app_status(deal: dict):
+    """(status_lower, LoanApplicationManager|None) for the linked app."""
+    app_id = str(deal.get("lms_application_id") or "")
+    if not app_id:
+        return "", None
+    try:
+        from utils.core import LoanApplicationManager
+        lam = LoanApplicationManager()
+        app = lam.get(app_id) or {}
+        return str(app.get("status", "") or "").lower(), lam
+    except Exception:
+        return "", None
+
+
+@app.post("/api/pipeline/deals/{deal_id}/validation-requests", tags=["pipeline"])
+def create_validation_request(deal_id: str, payload: dict = Body(default_factory=dict),
+                              user: dict = Depends(get_current_user)):
+    """Raise a line-manager validation request (kind: reopen | hold)."""
+    pm = PipelineManager()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not resolve_deal_permissions(deal, user, get_visible_staff_codes(user)).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    kind = str(payload.get("kind", "") or "").strip().lower()
+    if kind not in ("reopen", "hold"):
+        raise HTTPException(status_code=400, detail="kind must be 'reopen' or 'hold'")
+    reason = str(payload.get("reason", "") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="A reason is required.")
+    if kind == "reopen":
+        status, _ = _linked_app_status(deal)
+        if status != "declined":
+            raise HTTPException(status_code=400, detail="Only a declined case can be reopened.")
+    # one open request of a kind at a time
+    if any(str(r.get("kind")) == kind and str(r.get("status")) == "pending" for r in _vr_list(deal)):
+        raise HTTPException(status_code=409, detail=f"A {kind} request is already pending validation.")
+    from utils.org_validator import resolve_validator
+    v = resolve_validator(str(deal.get("staff_code", "") or ""))
+    req = {
+        "id": _new_vr_id(),
+        "kind": kind,
+        "requested_by": str(user.get("staff_code", "") or user.get("username", "") or ""),
+        "requested_by_name": str(user.get("full_name", "") or ""),
+        "reason": reason,
+        "at": datetime.now().isoformat(),
+        "status": "pending",
+        "validator_code": v.get("validator_code"),
+        "validator_name": v.get("validator_name"),
+        "validator_role": v.get("validator_role"),
+        "admin_fallback": bool(v.get("admin_fallback")),
+        "validated_by": None, "validated_by_name": None, "validated_at": None, "note": None,
+    }
+    reqs = _vr_list(deal) + [req]
+    pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
+    try:
+        from utils.core_audit import audit_log
+        audit_log("VALIDATION_REQUEST_CREATED", str(user.get("username", "") or ""),
+                  f"deal={deal_id} kind={kind} validator={req['validator_code']}")
+    except Exception:
+        pass
+    return req
+
+
+@app.post("/api/pipeline/deals/{deal_id}/validation-requests/{req_id}/resolve", tags=["pipeline"])
+def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(get_current_user)):
+    """Approve/reject a validation request. Only the resolved line manager
+    (or admin) may act. An approved reopen returns the declined case for rework."""
+    pm = PipelineManager()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not resolve_deal_permissions(deal, user, get_visible_staff_codes(user)).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    reqs = _vr_list(deal)
+    req = next((r for r in reqs if str(r.get("id")) == str(req_id)), None)
+    if not req:
+        raise HTTPException(status_code=404, detail="Validation request not found")
+    if str(req.get("status")) != "pending":
+        raise HTTPException(status_code=400, detail="This request has already been resolved.")
+    my_code = str(user.get("staff_code", "") or "")
+    is_validator = bool(my_code) and my_code == str(req.get("validator_code") or "")
+    if not (is_validator or _user_is_admin(user)):
+        raise HTTPException(status_code=403,
+                            detail="Only the deal owner's line manager (or admin) may validate this request.")
+    decision = str(payload.get("decision", "") or "").strip().lower()
+    if decision not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="decision must be 'approved' or 'rejected'")
+    req["status"] = decision
+    req["validated_by"] = my_code or str(user.get("username", "") or "")
+    req["validated_by_name"] = str(user.get("full_name", "") or "")
+    req["validated_at"] = datetime.now().isoformat()
+    req["note"] = str(payload.get("note", "") or "").strip()
+
+    # Phase R: an approved reopen returns the declined case for rework. Setting
+    # the app to 'returned' also unlocks the deal (Phase L treats returned as
+    # re-opened for origination).
+    if decision == "approved" and str(req.get("kind")) == "reopen":
+        status, lam = _linked_app_status(deal)
+        app_id = str(deal.get("lms_application_id") or "")
+        if lam and app_id and status == "declined":
+            lam.update(app_id, {"status": "returned"})
+            try:
+                lam._log_event(
+                    app_id, "reopened_after_decline",
+                    my_code or str(user.get("username", "") or ""),
+                    note=("Reopened for rework after decline — validated by line manager. "
+                          + str(req.get("reason", "") or "")).strip(),
+                    by_name=str(user.get("full_name", "") or ""),
+                    by_role=str(user.get("role", "") or ""),
+                )
+            except Exception:
+                pass
+
+    pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
+    try:
+        from utils.core_audit import audit_log
+        audit_log(f"VALIDATION_REQUEST_{decision.upper()}", str(user.get("username", "") or ""),
+                  f"deal={deal_id} req={req_id} kind={req.get('kind')}")
+    except Exception:
+        pass
+    return req
+# === END VALIDATION REQUESTS ========================================
+
+
 @app.get("/api/pipeline/deals/{deal_id}")
 def pipeline_deal_detail(
     deal_id: str,
@@ -2925,6 +3064,23 @@ def pipeline_deal_detail(
             permissions = {**permissions, "can_edit": False, "can_advance_stage": False}
     else:
         deal["locked"] = False
+
+    # Phase V: surface any validation requests + who would validate a new one,
+    # so the UI can show pending items and route approval to the line manager.
+    deal["validation_requests"] = _vr_list(deal)
+    _app_status, _ = _linked_app_status(deal)
+    _has_pending_reopen = any(str(r.get("kind")) == "reopen" and str(r.get("status")) == "pending"
+                              for r in deal["validation_requests"])
+    deal["reopen_available"] = (_app_status == "declined") and not _has_pending_reopen
+    try:
+        from utils.org_validator import resolve_validator
+        _v = resolve_validator(str(deal.get("staff_code", "") or ""))
+        deal["validator"] = {
+            "code": _v.get("validator_code"), "name": _v.get("validator_name"),
+            "role": _v.get("validator_role"), "admin_fallback": bool(_v.get("admin_fallback")),
+        }
+    except Exception:
+        deal["validator"] = None
 
     # Derive win probability from the deal's current stage in its product flow.
     try:
