@@ -121,6 +121,33 @@ def _resolve_role_in_unit(df: pd.DataFrame, want_role: str, unit: str,
     return None, "unresolved [" + " ; ".join(tried) + "]"
 
 
+def line_manager_of(staff_code: str) -> dict:
+    """Pure reporting-tree line manager: the holder of this person's own
+    'Reports To' role in their unit — with NO branch->Branch Manager override.
+    Used for daily-log validation, where each person's immediate supervisor
+    (Teller -> Branch Operations Supervisor, RO -> Branch RM, ...) validates.
+    Same return shape as resolve_validator; read-only, never raises.
+    """
+    df = _register()
+    if df.empty or "Staff Code" not in df.columns:
+        return _admin_fallback("staff register unavailable")
+    person = df[df["Staff Code"] == _s(staff_code)]
+    if person.empty:
+        return _admin_fallback(f"staff {staff_code} not in register")
+    p = person.iloc[0]
+    unit = _s(p.get("Unit", ""))
+    region = _s(p.get("Region", ""))
+    want = _s(p.get("Reports To", ""))
+    if not want or want.lower() == "nan":
+        return _admin_fallback("person is top-of-tree (no Reports To)")
+    row, how = _resolve_role_in_unit(df, want, unit or _HEAD_OFFICE, region)
+    if row is None:
+        return _admin_fallback(how + " -> admin fallback")
+    res = _found(row)
+    res["via"] = how
+    return res
+
+
 def resolve_validator(owner_code: str) -> dict:
     """Return the validator for a deal owner.
 

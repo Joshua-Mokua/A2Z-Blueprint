@@ -73,27 +73,51 @@ def branch_log_mine(days: int = 14, user: dict = Depends(get_current_user)):
     return {"logs": blm.get_history(staff_code=me["staff_code"], days=days), "identity": me}
 
 
+def _is_admin(user: dict) -> bool:
+    return bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
+
+
+def _reports_to_me(logs: list, my_code: str) -> list:
+    """Keep only logs whose submitter's direct line manager (pure reporting
+    tree) is this manager. Resolution is cached per submitter within the call."""
+    if not my_code:
+        return []
+    from utils.org_validator import line_manager_of
+    cache: dict = {}
+    out = []
+    for l in logs:
+        sc = str(l.get("staff_code", "") or "")
+        if sc not in cache:
+            cache[sc] = str(line_manager_of(sc).get("validator_code") or "")
+        if cache[sc] == my_code:
+            out.append(l)
+    return out
+
+
 @router.get("/pending")
 def branch_log_pending(user: dict = Depends(get_current_user)):
-    """Entries awaiting validation in the manager's unit."""
+    """Entries awaiting validation, routed by the reporting tree: a manager
+    sees logs from staff who report to them; admin sees all."""
     if not _is_manager(user):
         raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
     me = _identity(user)
     blm = BranchLogManager()
-    unit = me["unit"] or None
-    is_admin = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
-    return {"logs": blm.get_pending_validation(unit=None if is_admin else unit)}
+    all_pending = blm.get_pending_validation(unit=None)
+    if _is_admin(user):
+        return {"logs": all_pending}
+    return {"logs": _reports_to_me(all_pending, me["staff_code"])}
 
 
 @router.get("/history")
 def branch_log_history(unit: str = "", days: int = 7, user: dict = Depends(get_current_user)):
-    """Validated + submitted history. Managers see their unit; others their own."""
+    """History routed by the reporting tree: managers see their reports'
+    submitted logs; admin sees all; everyone else sees their own."""
     me = _identity(user)
     blm = BranchLogManager()
     if _is_manager(user):
-        scope_unit = unit or me["unit"] or None
-        is_admin = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
-        return {"logs": blm.get_history(unit=None if (is_admin and not unit) else scope_unit, days=days)}
+        if _is_admin(user):
+            return {"logs": blm.get_history(days=days)}
+        return {"logs": _reports_to_me(blm.get_history(days=days), me["staff_code"])}
     return {"logs": blm.get_history(staff_code=me["staff_code"], days=days)}
 
 
