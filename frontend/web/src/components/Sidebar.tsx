@@ -33,6 +33,7 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/analytics',       label: 'Sales Pro Analytics',  matchActive: (p) => p.startsWith('/analytics') },
       { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
       { path: '/referrals',       label: 'Sales Referral',       matchActive: (p) => p.startsWith('/referrals') },
+      { path: '/branch-log',      label: 'Daily Branch Log',     matchActive: (p) => p.startsWith('/branch-log') },
     ],
   },
   {

@@ -690,6 +690,31 @@ export async function liftDealHold(dealId: string, note: string): Promise<{ deal
     `/pipeline/deals/${dealId}/unhold`, { note });
 }
 
+// ── Daily Branch Log ───────────────────────────────────────────
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; }
+export interface BranchLogEntry {
+  id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
+  submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;
+  validated_by?: string; validated_at?: string; manager_note?: string; remarks?: string;
+  [metric: string]: unknown;
+}
+export async function fetchBranchLogFields(): Promise<{ fields: BranchLogField[] }> {
+  return getJson<{ fields: BranchLogField[] }>('/branch-log/fields');
+}
+export async function fetchMyBranchLogs(days = 14): Promise<{ logs: BranchLogEntry[]; identity: Record<string, string> }> {
+  return getJson<{ logs: BranchLogEntry[]; identity: Record<string, string> }>(`/branch-log/mine?days=${days}`);
+}
+export async function fetchPendingBranchLogs(): Promise<{ logs: BranchLogEntry[] }> {
+  return getJson<{ logs: BranchLogEntry[] }>('/branch-log/pending');
+}
+export async function submitBranchLog(values: Record<string, number | string>): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { values: Record<string, number | string> }>('/branch-log', { values });
+}
+export async function validateBranchLog(logId: string, approved: boolean, note: string): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { approved: boolean; note: string }>(
+    `/branch-log/${encodeURIComponent(logId)}/validate`, { approved, note });
+}
+
 
 export async function reassignReferral(
   dealId: string, code: string, name: string, note: string,
