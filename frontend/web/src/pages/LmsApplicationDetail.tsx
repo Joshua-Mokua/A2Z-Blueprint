@@ -1483,13 +1483,30 @@ function AttachmentsBccCard({ appId, canEdit, toast, defaultCollapsed = false }:
         </div>
         {atts.length > 0 ? (
           <ul className="text-sm text-gray-700 space-y-1 mb-4">
-            {atts.map((a) => (
-              <li key={a.id} className="flex items-center gap-2">
-                <span className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
-                <span className="font-medium">{a.filename || a.ref || '(reference)'}</span>
-                {a.added_by ? <span className="text-xs text-gray-400">· {a.added_by}</span> : null}
-              </li>
-            ))}
+            {atts.map((a) => {
+              const url = a.ref && /^https?:\/\//i.test(a.ref) ? a.ref : '';
+              return (
+                <li key={a.id} className="flex items-center gap-2">
+                  <span className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
+                  {url ? (
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                       className="font-medium text-brand-primary hover:underline">
+                      {a.filename || a.ref}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{a.filename || a.ref || '(reference)'}</span>
+                  )}
+                  {url && (
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                       className="text-xs text-brand-primary hover:underline">Open ↗</a>
+                  )}
+                  {!url && a.ref && a.filename ? (
+                    <span className="text-xs font-mono text-gray-400" title="Store reference">{a.ref}</span>
+                  ) : null}
+                  {a.added_by ? <span className="text-xs text-gray-400">· {a.added_by}</span> : null}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="text-xs text-gray-400 mb-4">No attachments yet.</div>
