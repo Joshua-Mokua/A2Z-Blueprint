@@ -95,7 +95,10 @@ export function PipelineDealDetail() {
   // Phase 2b: Case Journey is the default first tab (the travelling document's
   // spine), reusing the Phase C case-journey backend. Header / SLA / permissions
   // / action panels stay above the tabs.
-  const [activeTab, setActiveTab] = useState<'journey' | 'affordability' | 'cr' | 'documents' | 'committee'>('journey');
+  const [activeTab, setActiveTab] = useState<'journey' | 'affordability' | 'cr' | 'documents' | 'committee' | 'actions'>('journey');
+  // Phase 2b.2: clean top landing — the deal facts card / SLA / permissions
+  // collapse behind a coloured ribbon; the tabs are the primary surface.
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -230,8 +233,32 @@ export function PipelineDealDetail() {
         </div>
       )}
 
+      {/* Phase 2b.2: coloured ribbon — the clean top landing. Deal identity at a
+          glance; the full facts / SLA / permissions collapse behind "Details". */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-5 py-3 text-white shadow-sm">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-base font-semibold">{deal.client_name || '—'}</h2>
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{deal.stage}</span>
+          {deal.locked && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">🔒 Locked</span>}
+          {deal.manager_validated && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">✓ Validated</span>}
+          {deal.draft && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">Draft</span>}
+          {deal.lms_application_id && (
+            <button onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
+              className="text-xs font-medium text-white/90 underline hover:text-white">View Credit Analysis →</button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs text-white/70">{deal.id}</span>
+          <button onClick={() => setDetailsOpen((v) => !v)}
+            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
+            {detailsOpen ? 'Hide details ▴' : 'Details ▾'}
+          </button>
+        </div>
+      </div>
+
+      {detailsOpen && (<>
       {/* Primary identity card */}
-      <Card stripe="primary">
+      <Card stripe="primary" className="mt-4">
         <Card.Header>
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-lg font-semibold text-brand-secondary">
@@ -363,6 +390,7 @@ export function PipelineDealDetail() {
           </p>
         </Card.Body>
       </Card>
+      </>)}
 
       {/* Cancellation-pending notice */}
       {deal.cancel_requested && !deal.cancel_approved && (
@@ -389,25 +417,8 @@ export function PipelineDealDetail() {
         </Card>
       )}
 
-      {/* Action: advance — gated by α7 can_advance_stage */}
-      {permissions?.can_advance_stage && (
-        <AdvancePanel
-          deal={deal}
-          mutations={mutations}
-          stageFlow={stageFlow}
-          onSuccess={() => {
-            // Credit submission is now an explicit, document-gated action
-            // (the Submit to Credit Analysis panel), not a side-effect of
-            // advancing a stage — so advancing just reports the advance.
-            toast({ tone: 'success', message: 'Deal advanced.' });
-            void reloadDeal();
-          }}
-        />
-      )}
-
-      {/* ── Workbench tabs (Phase 2a) — the deal's working surfaces. Case
-          Journey (default) + others land in later phases; action panels
-          (Advance / Validate / Refer / Cancel) stay outside the tabs. ── */}
+      {/* ── Workbench tabs — the deal's working surfaces plus an Actions tab
+          that holds Advance / Validate / Refer / Cancel. Case Journey default. ── */}
       <div className="mt-6">
         <div className="flex flex-wrap gap-1 border-b border-gray-200 text-sm">
           {([
@@ -416,6 +427,7 @@ export function PipelineDealDetail() {
             ['cr', 'Credit Report'],
             ['documents', 'Documents'],
             ['committee', 'Branch Credit Committee'],
+            ['actions', 'Actions'],
           ] as [typeof activeTab, string][]).map(([id, label]) => (
             <button key={id} onClick={() => setActiveTab(id)}
               className={`-mb-px rounded-t px-3 py-2 font-medium transition-colors ${
@@ -433,31 +445,40 @@ export function PipelineDealDetail() {
           {activeTab === 'cr' && <DealCreditReportCard dealId={deal.id} canEdit={true} />}
           {activeTab === 'documents' && <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />}
           {activeTab === 'committee' && <CommitteeJourneyCard dealId={deal.id} canEdit={true} />}
+          {activeTab === 'actions' && (
+            <div className="space-y-6">
+              {permissions?.can_advance_stage && (
+                <AdvancePanel
+                  deal={deal}
+                  mutations={mutations}
+                  stageFlow={stageFlow}
+                  onSuccess={() => {
+                    toast({ tone: 'success', message: 'Deal advanced.' });
+                    void reloadDeal();
+                  }}
+                />
+              )}
+              <ValidationPanel deal={deal} onChanged={() => void reloadDeal()} />
+              {!deal.draft && deal.referral_status !== 'pending' && (
+                <ReferPanel deal={deal} onSuccess={() => void reloadDeal()} />
+              )}
+              {permissions?.can_request_cancel && (
+                <RequestCancelPanel
+                  deal={deal}
+                  mutations={mutations}
+                  onSuccess={() => {
+                    toast({
+                      tone: 'success',
+                      message: 'Cancellation requested. A manager will review it.',
+                    });
+                    void reloadDeal();
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      <ValidationPanel deal={deal} onChanged={() => void reloadDeal()} />
-
-      {/* Action: refer this deal to another person (A1). Hidden for drafts and
-          while a referral is already pending acceptance. */}
-      {!deal.draft && deal.referral_status !== 'pending' && (
-        <ReferPanel deal={deal} onSuccess={() => void reloadDeal()} />
-      )}
-
-      {/* Action: request cancellation — gated by α7 can_request_cancel */}
-      {permissions?.can_request_cancel && (
-        <RequestCancelPanel
-          deal={deal}
-          mutations={mutations}
-          onSuccess={() => {
-            toast({
-              tone: 'success',
-              message: 'Cancellation requested. A manager will review it.',
-            });
-            void reloadDeal();
-          }}
-        />
-      )}
 
       {/* Footer */}
       <footer className="mt-12 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
