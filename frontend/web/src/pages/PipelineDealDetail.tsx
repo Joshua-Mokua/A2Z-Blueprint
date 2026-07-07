@@ -428,7 +428,7 @@ export function PipelineDealDetail() {
         </div>
 
         <div className="pt-4">
-          {activeTab === 'journey' && <CaseJourneyTab dealId={deal.id} />}
+          {activeTab === 'journey' && <CaseJourneyTab deal={deal} />}
           {activeTab === 'affordability' && <AffordabilityAppraisal dealId={deal.id} />}
           {activeTab === 'cr' && <DealCreditReportCard dealId={deal.id} canEdit={true} />}
           {activeTab === 'documents' && <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />}
@@ -527,9 +527,19 @@ interface CreditPanelProps {
 // Phase V/R: line-manager validation. Shows validation requests; lets the deal
 // owner request a reopen of a declined case; lets the resolved line manager
 // (or admin) approve/reject. Approval of a reopen returns the case for rework.
-function CaseJourneyTab({ dealId }: { dealId: string }) {
+function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
   const [events, setEvents] = useState<LoanAppHistoryEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const dealId = deal.id;
+  const load = useCallback(() => {
+    setLoading(true);
+    return fetchDealJourney(dealId)
+      .then((r) => setEvents(r.journey || []))
+      .catch(() => setEvents([]))
+      .finally(() => setLoading(false));
+  }, [dealId]);
+  // Re-fetch on deal change (parent reloadDeal after any action) so the journey
+  // stays live as the case travels — validation, votes, stage moves, submission.
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -538,14 +548,40 @@ function CaseJourneyTab({ dealId }: { dealId: string }) {
       .catch(() => { if (alive) setEvents([]); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [dealId]);
+  }, [dealId, deal.updated_at]);
+
+  const facts: [string, string, boolean][] = [
+    ['Product', String(deal.product_type ?? deal.product ?? '\u2014'), false],
+    ['Category', String(deal.pipeline_category ?? deal.deal_category ?? '\u2014'), false],
+    ['Value', formatValue(deal.amount_kes ?? deal.deal_value, deal.currency ?? 'KES'), false],
+    ['Stage', String(deal.stage ?? '\u2014'), false],
+    ['Owner', String(deal.staff_name ?? '\u2014'), false],
+    ['Deal', String(deal.id), true],
+  ];
+
   return (
-    <Card>
+    <Card stripe="primary">
       <Card.Header>
-        <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
-        <span className="text-xs text-gray-400">{events.length} events \u00b7 who did what, when</span>
+        <div className="flex w-full items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">{events.length} events \u00b7 who did what, when</span>
+            <button onClick={() => void load()} className="text-xs font-medium text-brand-primary hover:underline">Refresh</button>
+          </div>
+        </div>
       </Card.Header>
       <Card.Body>
+        {/* Executive summary — key deal facts folded into the journey, mirroring
+            the LMS analysis Case Journey. One place to read the case: the facts,
+            then the travelling history. */}
+        <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1.5 border-b border-gray-100 pb-3 text-xs">
+          {facts.map(([label, value, mono]) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className="uppercase tracking-wide text-gray-400">{label}</span>
+              <span className={mono ? 'font-mono text-gray-800' : 'text-gray-800'}>{value}</span>
+            </span>
+          ))}
+        </div>
         {loading ? (
           <p className="text-sm text-gray-400">Loading\u2026</p>
         ) : (
