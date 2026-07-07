@@ -202,21 +202,6 @@ export function PipelineDealDetail() {
 
   return (
     <DetailFrame title={`Deal ${deal.id}`}>
-      {/* Top action bar */}
-      <div className="flex items-center justify-between mt-8 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
-          ← Back to pipeline
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void reloadDeal()}
-          loading={loading}
-        >
-          Refresh
-        </Button>
-      </div>
-
       {/* Phase L: origination lock banner — the deal is with Credit and edits/
           stage moves are disabled until it's returned or info is requested. */}
       {deal.locked && (
@@ -233,7 +218,7 @@ export function PipelineDealDetail() {
 
       {/* Phase 2b.2: coloured ribbon — the clean top landing. Deal identity at a
           glance; the full facts / SLA / permissions collapse behind "Details". */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <h2 className="text-base font-semibold">{deal.client_name || '—'}</h2>
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{deal.stage}</span>
@@ -247,6 +232,10 @@ export function PipelineDealDetail() {
         </div>
         <div className="flex items-center gap-3">
           <span className="font-mono text-xs text-white/70">{deal.id}</span>
+          <button onClick={() => void reloadDeal()}
+            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
+            Refresh
+          </button>
           <button onClick={() => setDetailsOpen((v) => !v)}
             className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
             {detailsOpen ? 'Hide details ▴' : 'Details ▾'}
@@ -347,23 +336,25 @@ export function PipelineDealDetail() {
       {/* ── Workbench tabs — the deal's working surfaces plus an Actions tab
           that holds Advance / Validate / Refer / Cancel. Case Journey default. ── */}
       <div className="mt-3">
-        <div className="flex flex-wrap gap-1 rounded-t-lg border-b-2 border-[#0082BB] bg-[#EAF4FA] px-2 pt-1.5 text-sm">
+        <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-[#EAF4FA] px-2 pt-1.5 text-sm">
           {([
-            ['journey', 'Case Journey'],
-            ['affordability', 'Affordability'],
-            ['cr', 'Credit Report'],
-            ['documents', 'Documents'],
-            ['committee', 'Branch Credit Committee'],
-            ['actions', 'Actions'],
-          ] as [typeof activeTab, string][]).map(([id, label]) => (
-            <button key={id} onClick={() => setActiveTab(id)}
-              className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
-                activeTab === id
-                  ? 'bg-white font-semibold text-[#005B82] shadow-sm'
-                  : 'text-[#0082BB]/80 hover:bg-white/60 hover:text-[#005B82]'}`}>
-              {label}
-            </button>
-          ))}
+            ['journey', 'Case Journey', '#0082BB'],
+            ['affordability', 'Affordability', '#00A65A'],
+            ['cr', 'Credit Report', '#7E57C2'],
+            ['documents', 'Documents', '#0097A7'],
+            ['committee', 'Branch Credit Committee', '#EF6C00'],
+            ['actions', 'Actions', '#C62828'],
+          ] as [typeof activeTab, string, string][]).map(([id, label, color]) => {
+            const active = activeTab === id;
+            return (
+              <button key={id} onClick={() => setActiveTab(id)}
+                style={active ? { color, borderTopColor: color, borderTopWidth: 2 } : { color }}
+                className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
+                  active ? 'bg-white font-semibold shadow-sm' : 'opacity-60 hover:bg-white/60 hover:opacity-100'}`}>
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="pt-4">
