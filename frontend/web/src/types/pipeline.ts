@@ -143,6 +143,12 @@ export interface PipelineDeal {
   validation_requests?:        import('@/lib/api').ValidationRequest[];
   validator?:                  { code?: string | null; name?: string | null; role?: string | null; admin_fallback?: boolean } | null;
   reopen_available?:           boolean;
+  // Phase H — on-hold (freezes SLA clocks)
+  on_hold?:                    boolean;
+  hold_available?:             boolean;
+  hold_reason?:                string;
+  hold_started_at?:            string | null;
+  held_intervals?:             { start?: string | null; end?: string | null; reason?: string }[];
 
   // α7 per-deal permissions — added by the API enrichment layer
   permissions?:         DealPermissions;

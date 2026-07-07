@@ -35,7 +35,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { useRole } from '@/hooks/useRole';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -503,12 +503,14 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
   const { user } = useRole();
   const [reason, setReason] = useState('');
+  const [holdReason, setHoldReason] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const requests = deal.validation_requests ?? [];
   const pending = requests.filter((r) => r.status === 'pending');
   const myCode = String(user?.staff_code ?? '');
   const isAdmin = Boolean(user?.role && /admin/i.test(user.role));
+  const iAmDealValidator = !!myCode && myCode === String(deal.validator?.code ?? '');
 
   const request = async () => {
     if (!reason.trim()) { toast({ tone: 'danger', message: 'A reason is required.' }); return; }
@@ -519,6 +521,29 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
       setReason(''); onChanged();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not send request.' });
+    } finally { setBusy(false); }
+  };
+
+  const requestHold = async () => {
+    if (!holdReason.trim()) { toast({ tone: 'danger', message: 'A reason is required.' }); return; }
+    setBusy(true);
+    try {
+      await createValidationRequest(deal.id, 'hold', holdReason.trim());
+      toast({ tone: 'success', message: 'Hold request sent to the line manager for validation.' });
+      setHoldReason(''); onChanged();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not send request.' });
+    } finally { setBusy(false); }
+  };
+
+  const liftHold = async () => {
+    setBusy(true);
+    try {
+      await liftDealHold(deal.id, 'Hold lifted; clocks resumed.');
+      toast({ tone: 'success', message: 'Hold lifted — clocks resumed.' });
+      onChanged();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not lift hold.' });
     } finally { setBusy(false); }
   };
 
@@ -533,8 +558,8 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
     } finally { setBusy(false); }
   };
 
-  // Nothing to show unless a reopen can be requested or there are requests.
-  if (!deal.reopen_available && requests.length === 0) return null;
+  // Nothing to show unless a reopen/hold can be requested, it's on hold, or there are requests.
+  if (!deal.reopen_available && !deal.hold_available && !deal.on_hold && requests.length === 0) return null;
 
   return (
     <Card>
@@ -542,6 +567,37 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
         <h2 className="text-base font-semibold text-gray-900">Line-manager validation</h2>
       </Card.Header>
       <Card.Body>
+        {deal.on_hold && (
+          <div className="mb-4 rounded-lg border border-orange-300 bg-orange-50 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-orange-900">⏸ On hold — SLA clocks frozen</span>
+              {(iAmDealValidator || isAdmin) && (
+                <Button variant="primary" onClick={() => void liftHold()} disabled={busy}>Lift hold</Button>
+              )}
+            </div>
+            {deal.hold_reason ? <p className="mt-1 text-sm text-gray-700">{deal.hold_reason}</p> : null}
+            {!(iAmDealValidator || isAdmin) && (
+              <p className="mt-1 text-xs text-orange-700">Only the line manager can lift this hold.</p>
+            )}
+          </div>
+        )}
+
+        {deal.hold_available && (
+          <div className="mb-4 rounded-lg border border-gray-200 p-3">
+            <p className="mb-2 text-sm text-gray-700">
+              Put this case on hold — this freezes all SLA clocks until lifted. Your line
+              manager{deal.validator?.name ? ` (${deal.validator.name})` : ''} must validate the request.
+            </p>
+            <Input value={holdReason} onChange={(e) => setHoldReason(e.target.value)}
+              placeholder="Reason for placing on hold (required)" />
+            <div className="mt-2">
+              <Button variant="ghost" onClick={() => void requestHold()} disabled={busy || !holdReason.trim()}>
+                Request hold
+              </Button>
+            </div>
+          </div>
+        )}
+
         {deal.reopen_available && (
           <div className="mb-4 rounded-lg border border-gray-200 p-3">
             <p className="mb-2 text-sm text-gray-700">

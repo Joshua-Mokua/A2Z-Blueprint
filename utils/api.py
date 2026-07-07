@@ -2404,7 +2404,7 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
         product = str(deal.get("product_type") or deal.get("product") or "")
         flow_target = _flow_stage_target(product, stage)
         target = flow_target or _sla_step_target(cfg, step_key)
-        elapsed = _business_days_since(step_entered)
+        elapsed = max(0, _business_days_since(step_entered) - _held_business_days(deal))
         clock, clock_step = "step", step_key
     else:
         product = str(deal.get("product_type") or deal.get("product") or "")
@@ -2413,7 +2413,7 @@ def _deal_sla_status(deal: dict, cfg: dict, promise: dict, smap: dict, credit_id
         except (TypeError, ValueError):
             per_prod = 0
         target = per_prod or _sla_step_target_sum(cfg)
-        elapsed = _business_days_since(base_ts)
+        elapsed = max(0, _business_days_since(base_ts) - _held_business_days(deal))
         clock, clock_step = "age", None
     if target <= 0:
         return {}
@@ -2992,6 +2992,8 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
     # Phase R: an approved reopen returns the declined case for rework. Setting
     # the app to 'returned' also unlocks the deal (Phase L treats returned as
     # re-opened for origination).
+    _deal_updates = {"validation_requests": reqs}
+
     if decision == "approved" and str(req.get("kind")) == "reopen":
         status, lam = _linked_app_status(deal)
         app_id = str(deal.get("lms_application_id") or "")
@@ -3009,7 +3011,33 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
             except Exception:
                 pass
 
-    pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
+    # Phase H — an approved HOLD freezes all clocks (pipeline + analyst) until
+    # lifted. Record the open interval on the deal and mirror it to the linked
+    # app so both SLA computations subtract the same held time.
+    if decision == "approved" and str(req.get("kind")) == "hold" and not deal.get("on_hold"):
+        now_iso = datetime.now().isoformat()
+        _deal_updates["on_hold"] = True
+        _deal_updates["hold_started_at"] = now_iso
+        _deal_updates["hold_reason"] = str(req.get("reason", "") or "")
+        _deal_updates["held_intervals"] = list(deal.get("held_intervals") or [])
+        status, lam = _linked_app_status(deal)
+        app_id = str(deal.get("lms_application_id") or "")
+        if lam and app_id:
+            try:
+                lam.update(app_id, {"on_hold": True, "hold_started_at": now_iso,
+                                    "held_intervals": list(deal.get("held_intervals") or [])})
+                lam._log_event(
+                    app_id, "placed_on_hold",
+                    my_code or str(user.get("username", "") or ""),
+                    note=("Placed on hold — validated by line manager. "
+                          + str(req.get("reason", "") or "")).strip(),
+                    by_name=str(user.get("full_name", "") or ""),
+                    by_role=str(user.get("role", "") or ""),
+                )
+            except Exception:
+                pass
+
+    pm.update_deal(deal_id, _deal_updates, str(user.get("username", "") or ""))
     try:
         from utils.core_audit import audit_log
         audit_log(f"VALIDATION_REQUEST_{decision.upper()}", str(user.get("username", "") or ""),
@@ -3017,6 +3045,52 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
     except Exception:
         pass
     return req
+
+
+@app.post("/api/pipeline/deals/{deal_id}/unhold", tags=["pipeline"])
+def lift_deal_hold(deal_id: str, payload: dict = Body(default_factory=dict),
+                   user: dict = Depends(get_current_user)):
+    """Lift an on-hold deal. Only the deal owner's line manager (or admin) may
+    do so — restarting all clocks. The held interval is recorded so elapsed SLA
+    excludes it permanently."""
+    pm = PipelineManager()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not resolve_deal_permissions(deal, user, get_visible_staff_codes(user)).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not deal.get("on_hold"):
+        raise HTTPException(status_code=400, detail="This deal is not on hold.")
+    from utils.org_validator import resolve_validator
+    v = resolve_validator(str(deal.get("staff_code", "") or ""))
+    my_code = str(user.get("staff_code", "") or "")
+    is_validator = bool(my_code) and my_code == str(v.get("validator_code") or "")
+    if not (is_validator or _user_is_admin(user)):
+        raise HTTPException(status_code=403,
+                            detail="Only the deal owner's line manager (or admin) may lift a hold.")
+    now_iso = datetime.now().isoformat()
+    intervals = list(deal.get("held_intervals") or [])
+    intervals.append({"start": deal.get("hold_started_at"), "end": now_iso,
+                      "reason": deal.get("hold_reason", "")})
+    updates = {"on_hold": False, "hold_started_at": None, "held_intervals": intervals}
+    status, lam = _linked_app_status(deal)
+    app_id = str(deal.get("lms_application_id") or "")
+    if lam and app_id:
+        try:
+            lam.update(app_id, {"on_hold": False, "hold_started_at": None, "held_intervals": intervals})
+            lam._log_event(app_id, "hold_lifted", my_code or str(user.get("username", "") or ""),
+                           note=str(payload.get("note", "") or "Hold lifted; clocks resumed."),
+                           by_name=str(user.get("full_name", "") or ""),
+                           by_role=str(user.get("role", "") or ""))
+        except Exception:
+            pass
+    pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    try:
+        from utils.core_audit import audit_log
+        audit_log("DEAL_HOLD_LIFTED", str(user.get("username", "") or ""), f"deal={deal_id}")
+    except Exception:
+        pass
+    return {"deal_id": deal_id, "on_hold": False, "held_intervals": intervals}
 # === END VALIDATION REQUESTS ========================================
 
 
@@ -3072,6 +3146,15 @@ def pipeline_deal_detail(
     _has_pending_reopen = any(str(r.get("kind")) == "reopen" and str(r.get("status")) == "pending"
                               for r in deal["validation_requests"])
     deal["reopen_available"] = (_app_status == "declined") and not _has_pending_reopen
+    # Phase H — a hold can be requested when the case is active (not terminal/
+    # on-hold) and no hold request is already pending.
+    _has_pending_hold = any(str(r.get("kind")) == "hold" and str(r.get("status")) == "pending"
+                            for r in deal["validation_requests"])
+    deal["on_hold"] = bool(deal.get("on_hold"))
+    deal["hold_available"] = (
+        not deal["on_hold"] and not _has_pending_hold
+        and _app_status not in ("declined", "disbursed", "closed")
+    )
     try:
         from utils.org_validator import resolve_validator
         _v = resolve_validator(str(deal.get("staff_code", "") or ""))
@@ -4978,6 +5061,42 @@ def _business_days_since(iso_ts) -> int:
         if d.weekday() < 5:
             days += 1
     return days
+
+
+def _business_days_between(start_iso, end_iso) -> int:
+    """Whole business days (Mon-Fri) in the half-open interval (start, end];
+    0 if either bound is missing/unparseable or end <= start."""
+    if not start_iso or not end_iso:
+        return 0
+    try:
+        start = datetime.fromisoformat(str(start_iso).replace("Z", "+00:00")).date()
+        end = datetime.fromisoformat(str(end_iso).replace("Z", "+00:00")).date()
+    except Exception:
+        return 0
+    if end <= start:
+        return 0
+    days, d = 0, start
+    while d < end:
+        d += timedelta(days=1)
+        if d.weekday() < 5:
+            days += 1
+    return days
+
+
+def _held_business_days(obj) -> int:
+    """Phase H — business days an app/deal has spent ON HOLD, so SLA clocks can
+    be frozen by subtracting this from elapsed. Sums closed held_intervals and,
+    if currently on hold, the open interval from hold_started_at to now.
+    Works on any dict carrying held_intervals / on_hold / hold_started_at."""
+    if not isinstance(obj, dict):
+        return 0
+    total = 0
+    for iv in (obj.get("held_intervals") or []):
+        if isinstance(iv, dict):
+            total += _business_days_between(iv.get("start"), iv.get("end"))
+    if obj.get("on_hold") and obj.get("hold_started_at"):
+        total += _business_days_between(obj.get("hold_started_at"), datetime.now().isoformat())
+    return total
 
 
 @app.get("/api/pipeline/referrals/outgoing/analytics")
@@ -10698,7 +10817,8 @@ def _app_sla_status(app: dict) -> dict:
         target = int(app.get("sla_target_days") or 10)
     except (TypeError, ValueError):
         target = 10
-    elapsed = _business_days_since(base_ts)
+    # Phase H — freeze the analyst clock while the case is/was on hold.
+    elapsed = max(0, _business_days_since(base_ts) - _held_business_days(app))
     overdue = max(0, elapsed - target)
     remaining = target - elapsed
     cfg = _sla_config()

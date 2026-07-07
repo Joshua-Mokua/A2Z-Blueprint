@@ -685,6 +685,11 @@ export async function resolveValidationRequest(
     `/pipeline/deals/${dealId}/validation-requests/${reqId}/resolve`, { decision, note });
 }
 
+export async function liftDealHold(dealId: string, note: string): Promise<{ deal_id: string; on_hold: boolean }> {
+  return postJson<{ deal_id: string; on_hold: boolean }, { note: string }>(
+    `/pipeline/deals/${dealId}/unhold`, { note });
+}
+
 
 export async function reassignReferral(
   dealId: string, code: string, name: string, note: string,
