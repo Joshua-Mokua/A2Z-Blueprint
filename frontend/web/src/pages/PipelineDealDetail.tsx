@@ -44,7 +44,6 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
-import { PermissionBadges } from '@/components/PermissionBadges';
 import { StaffPicker } from '@/components/StaffPicker';
 import {
   ADVANCE_TARGET_STAGES,
@@ -289,24 +288,6 @@ export function PipelineDealDetail() {
         </Card>
       )}
 
-      {/* Permissions panel — shows what server says you can do */}
-      <Card className="mt-6">
-        <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">
-            Your permissions on this deal
-          </h3>
-          <span className="text-xs text-gray-400">α7 server-resolved</span>
-        </Card.Header>
-        <Card.Body>
-          <PermissionBadges permissions={permissions ?? undefined} showAll />
-          <p className="text-xs text-gray-500 mt-3">
-            Each permission reflects your relationship to this deal
-            (owner / backup / manager-in-scope) combined with its state
-            (terminal stages, pending cancellation, validation status).
-            The buttons below appear only when the corresponding permission is true.
-          </p>
-        </Card.Body>
-      </Card>
       </>)}
 
       {/* Cancellation-pending notice */}
