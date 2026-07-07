@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS cbs_accounts (
     address             TEXT,
     cheque_book         BOOLEAN       NOT NULL DEFAULT FALSE,
     atm_facility        BOOLEAN       NOT NULL DEFAULT FALSE,
-    phone               VARCHAR(50),
-    email               VARCHAR(255),
+    phone               TEXT,
+    email               TEXT,
     introducer          VARCHAR(50),
     last_etl_at         TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     etl_source          VARCHAR(10)
@@ -204,8 +204,8 @@ def ensure_tables() -> None:
 
 def _upsert_record(rec: dict) -> None:
     """Upsert one account record, always updating last_etl_at."""
-    cols = list(rec.keys()) + ["last_etl_at"]
-    vals = [rec[c] for c in rec.keys()]
+    cols = list(rec.keys())
+    vals = [rec[c] for c in cols]
 
     placeholders = ", ".join(["%s"] * len(cols))
     update_parts = ", ".join(
@@ -219,6 +219,43 @@ def _upsert_record(rec: dict) -> None:
         f"ON CONFLICT (account_number) DO UPDATE SET {update_parts}, last_etl_at = NOW()"
     )
     _db().execute(sql, tuple(vals))
+
+
+def _upsert_batch(records: list) -> tuple[int, int]:
+    """Batch upsert via execute_values — one round trip + one commit per
+    batch instead of per row. Falls back to row-by-row (which isolates and
+    skips the bad row) if the batch statement itself fails."""
+    from psycopg2.extras import execute_values
+
+    cols = list(records[0].keys())
+    update_cols = [c for c in cols if c != "account_number"]
+    sql = (
+        f"INSERT INTO cbs_accounts ({', '.join(cols)}, last_etl_at) VALUES %s "
+        f"ON CONFLICT (account_number) DO UPDATE SET "
+        + ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
+        + ", last_etl_at = EXCLUDED.last_etl_at"
+    )
+    template = "(" + ", ".join(["%s"] * len(cols)) + ", NOW())"
+    values = [tuple(rec[c] for c in cols) for rec in records]
+
+    try:
+        with _db().transaction() as conn:
+            with conn.cursor() as cur:
+                execute_values(cur, sql, values, template=template, page_size=len(values))
+        return len(records), 0
+    except Exception as exc:
+        logger.warning("cbs_etl: batch of %d failed (%s) — retrying row by row",
+                        len(records), exc)
+        ok = err = 0
+        for rec in records:
+            try:
+                _upsert_record(rec)
+                ok += 1
+            except Exception as row_exc:
+                logger.warning("cbs_etl: upsert failed for %s: %s",
+                                rec.get("account_number"), row_exc)
+                err += 1
+        return ok, err
 
 
 def _log_run(corp_rows: int, indi_rows: int, errors: int,
@@ -247,7 +284,7 @@ class EtlDownloadError(Exception):
 
 def trigger_export() -> bool:
     """
-    POST /command/export:customers and wait for the synchronous response.
+    GET /command/export:customers and wait for the synchronous response.
 
     The Laravel command blocks for 5-10 min then returns dd("done").
     We wait up to FLEXCUBE_EOD_TRIGGER_TIMEOUT seconds (default 900).
@@ -256,7 +293,7 @@ def trigger_export() -> bool:
     url = f"{_base_url()}/command/export:customers"
     logger.info("cbs_etl: triggering export — this blocks until done (~5-10 min) …")
     try:
-        resp = requests.post(url, timeout=_TRIGGER_TIMEOUT)
+        resp = requests.get(url, timeout=_TRIGGER_TIMEOUT)
         resp.raise_for_status()
         body = resp.text.strip().strip('"').lower()
         if body != "done":
@@ -304,26 +341,50 @@ def download_csv(customer_type: str, dt: Optional[datetime] = None) -> str:
     raise last_exc or EtlDownloadError(f"Could not download {customer_type} CSV")
 
 
+_UPSERT_BATCH_SIZE = 1000
+
+
 def parse_and_upsert(csv_text: str, customer_type: str) -> tuple[int, int]:
     """
-    Parse CSV text and upsert into cbs_accounts.
+    Parse CSV text and upsert into cbs_accounts, in batches of
+    _UPSERT_BATCH_SIZE (one round trip + one commit per batch — large EOD
+    exports can be 100k+ rows, and per-row commits would take hours).
 
     Returns (rows_upserted, rows_skipped_due_to_error).
     """
     upserted = errors = 0
+    # The FlexCube export has a stray blank line before the real header row
+    # (and a UTF-8 BOM on the header itself) — strip both, else DictReader
+    # treats the blank line as the header and every row lands under the
+    # None restkey instead of its real column names.
+    csv_text = csv_text.lstrip("﻿\r\n \t")
     reader = csv.DictReader(io.StringIO(csv_text))
+    batch: list = []
+
+    def flush():
+        nonlocal upserted, errors
+        if not batch:
+            return
+        ok, err = _upsert_batch(batch)
+        upserted += ok
+        errors += err
+        batch.clear()
+
     for row in reader:
         acct = row.get("CUST_AC_NO", "").strip()
         if not acct:
             errors += 1
             continue
         try:
-            rec = _row_to_record(row, customer_type)
-            _upsert_record(rec)
-            upserted += 1
+            batch.append(_row_to_record(row, customer_type))
         except Exception as exc:
-            logger.warning("cbs_etl: upsert failed for %s: %s", acct, exc)
+            logger.warning("cbs_etl: map failed for %s: %s", acct, exc)
             errors += 1
+            continue
+        if len(batch) >= _UPSERT_BATCH_SIZE:
+            flush()
+            logger.info("cbs_etl: %s — %d upserted so far", customer_type, upserted)
+    flush()
     return upserted, errors
 
 
@@ -337,7 +398,7 @@ def run_etl(
     Full ETL run: trigger → download CORP + INDI → upsert → log.
 
     Args:
-        trigger: whether to POST /command/export:customers first
+        trigger: whether to GET /command/export:customers first
         dt:      override the month used for filenames (default: now)
 
     Returns a stats dict consumed by the API endpoint and cron script.

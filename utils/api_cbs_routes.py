@@ -285,7 +285,7 @@ def cbs_etl_status(user: dict = Depends(require_config_admin)):
 
 @router.post("/etl/run")
 def cbs_etl_run(
-    trigger: bool = Query(True, description="POST /command/export:customers first"),
+    trigger: bool = Query(True, description="GET /command/export:customers first"),
     user:    dict = Depends(require_config_admin),
 ):
     """

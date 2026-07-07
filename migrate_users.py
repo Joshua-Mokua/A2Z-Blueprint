@@ -73,14 +73,20 @@ cur      = conn.cursor()
 
 for username, ud in users.items():
     try:
+        metadata = {
+            "band": ud.get("band", ""),
+            "gender": ud.get("gender", ""),
+            "accessible_modules": ud.get("accessible_modules", []),
+            "hidden_modules": ud.get("hidden_modules", []),
+        }
         cur.execute("""
             INSERT INTO users (
                 username, password_hash, full_name, email, role,
-                department, unit, staff_code, band, gender,
+                department, unit, staff_code,
                 active, is_admin, can_view_all, is_dept_super_user,
                 dept_super_user_for, is_ict_admin, must_change_password,
-                accessible_modules, hidden_modules
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                metadata
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (username) DO UPDATE SET
                 password_hash        = EXCLUDED.password_hash,
                 full_name            = EXCLUDED.full_name,
@@ -88,7 +94,8 @@ for username, ud in users.items():
                 department           = EXCLUDED.department,
                 active               = EXCLUDED.active,
                 is_admin             = EXCLUDED.is_admin,
-                can_view_all         = EXCLUDED.can_view_all
+                can_view_all         = EXCLUDED.can_view_all,
+                metadata             = EXCLUDED.metadata
         """, (
             username,
             ud.get("password", ""),
@@ -98,8 +105,6 @@ for username, ud in users.items():
             ud.get("department", ""),
             ud.get("unit", ""),
             str(ud.get("staff_code", "")),
-            ud.get("band", ""),
-            ud.get("gender", ""),
             bool(ud.get("active", True)),
             bool(ud.get("is_admin", False)),
             bool(ud.get("can_view_all", False)),
@@ -107,8 +112,7 @@ for username, ud in users.items():
             ud.get("dept_super_user_for", ""),
             bool(ud.get("is_ict_admin", False)),
             bool(ud.get("must_change_password", False)),
-            json.dumps(ud.get("accessible_modules", [])),
-            json.dumps(ud.get("hidden_modules", [])),
+            json.dumps(metadata),
         ))
         inserted += 1
         if inserted % 200 == 0:
@@ -116,9 +120,9 @@ for username, ud in users.items():
     except Exception as e:
         errors += 1
         print(f"  SKIP {username}: {e}")
+        conn.rollback()
         if errors > 20:
-            print("Too many errors. Rolling back.")
-            conn.rollback()
+            print("Too many errors. Aborting.")
             sys.exit(1)
 
 conn.commit()
