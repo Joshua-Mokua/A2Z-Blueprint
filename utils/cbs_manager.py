@@ -302,27 +302,45 @@ def _fc_execute(script_name: str, parameters: dict) -> list:
     return execute_script(script_name, parameters)
 
 
+def _db_account(account_number: str) -> Optional[dict]:
+    """Read from cbs_accounts (ETL table) if Postgres is ready."""
+    try:
+        from utils.db import db
+        if not db.is_postgres_ready():
+            return None
+        row = db.fetch_one(
+            "SELECT * FROM cbs_accounts WHERE account_number = %s",
+            (str(account_number).strip(),),
+        )
+        if row:
+            row["_source"] = "db"
+        return row
+    except Exception:
+        return None
+
+
 def get_account_by_number(account_number: str) -> Optional[dict]:
     """
-    Account lookup by exact account number.
-
     Resolution order:
-      1. Postgres cache (cbs_account_cache) — instant if previously queried
-      2. FlexCube live (CUSTOMERACCOUNTDETAILS) — writes to cache on success
-      3. CSV fallback — when FlexCube is unreachable
-
-    Stale cache rows are returned immediately but flagged (_cache_stale=True)
-    so the cron refresh job picks them up on its next run.
+      1. cbs_accounts (Postgres ETL table) — always fastest
+      2. cbs_account_cache (on-demand cache) — previous FlexCube hits
+      3. FlexCube live script API — writes to cache on success
+      4. CSV fallback
     """
     from utils.cbs_cache import get_cached, store
     num = str(account_number).strip()
 
-    # 1. Cache hit
+    # 1. ETL table (full nightly download)
+    row = _db_account(num)
+    if row:
+        return row
+
+    # 2. On-demand cache
     cached = get_cached(num)
     if cached and not cached.get("_cache_stale"):
         return cached
 
-    # 2. FlexCube live
+    # 3. FlexCube live
     if _fc_configured():
         try:
             rows = _fc_execute("CUSTOMERACCOUNTDETAILS", {"ACCOUNT_NUMBER": num})
@@ -331,13 +349,13 @@ def get_account_by_number(account_number: str) -> Optional[dict]:
                 store(num, payload, source="flexcube")
                 return payload
         except Exception:
-            pass  # fall through
+            pass
 
-    # 3. Return stale cache rather than a slower CSV path if we have it
+    # 4. Stale cache beats cold CSV
     if cached:
         return cached
 
-    # 4. CSV fallback
+    # 5. CSV fallback
     df = _load_accounts()
     matches = df[df["account_number"] == num]
     if matches.empty:
@@ -347,13 +365,13 @@ def get_account_by_number(account_number: str) -> Optional[dict]:
     if cif:
         customer = get_customer_by_cif(cif)
         if customer:
-            acct["customer_name"]  = customer["full_name"]
-            acct["segment"]        = customer["segment"]
-            acct["kyc_status"]     = customer["kyc_status"]
-            acct["risk_rating"]    = customer["risk_rating"]
-            acct["aml_flag"]       = customer["aml_flag"]
-            acct["pep_flag"]       = customer["pep_flag"]
-            acct["rm_code"]        = customer["relationship_manager_code"]
+            acct["customer_name"] = customer["full_name"]
+            acct["segment"]       = customer["segment"]
+            acct["kyc_status"]    = customer["kyc_status"]
+            acct["risk_rating"]   = customer["risk_rating"]
+            acct["aml_flag"]      = customer["aml_flag"]
+            acct["pep_flag"]      = customer["pep_flag"]
+            acct["rm_code"]       = customer["relationship_manager_code"]
     return acct
 
 

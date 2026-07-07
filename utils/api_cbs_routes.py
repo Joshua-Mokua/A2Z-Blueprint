@@ -274,6 +274,30 @@ def fetch_aggregates(
     }
 
 
+# ── EOD ETL endpoints (config-admin only) ────────────────────────────────
+
+@router.get("/etl/status")
+def cbs_etl_status(user: dict = Depends(require_config_admin)):
+    """Last ETL run stats + total account counts in cbs_accounts table."""
+    from utils.cbs_etl import etl_status
+    return etl_status()
+
+
+@router.post("/etl/run")
+def cbs_etl_run(
+    trigger: bool = Query(True, description="POST /command/export:customers first"),
+    user:    dict = Depends(require_config_admin),
+):
+    """
+    Trigger a full EOD import: export → download CORP+INDI CSVs → upsert.
+    Same as running the cron script manually.
+    """
+    from utils.cbs_etl import run_etl
+    audit_log("CBS_ETL_RUN", user.get("username", "unknown"),
+              detail=f"trigger={trigger}")
+    return run_etl(trigger=trigger)
+
+
 # ── CBS account cache endpoints (config-admin only) ─────────────────────
 
 @router.get("/cache/status")

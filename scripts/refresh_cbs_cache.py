@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 """
-CBS cache refresh cron script.
+CBS nightly ETL + cache refresh cron script.
 
-Runs the stale-account refresh job directly (no HTTP round-trip needed).
-Designed to be called from crontab on the VM:
+Primary job: download CORP + INDI EOD CSVs from FlexCube and upsert into
+cbs_accounts (Postgres). Secondary: refresh any on-demand cache rows that
+went stale since the last run.
 
-  # Re-fetch stale CBS accounts every hour
-  0 * * * * /var/www/a2z-blueprint/A2Z-Blueprint/venv/bin/python \
-      /var/www/a2z-blueprint/A2Z-Blueprint/scripts/refresh_cbs_cache.py \
-      >> /var/log/a2z/cbs_cache_refresh.log 2>&1
+Crontab on the VM:
+  # Full ETL nightly at 01:00 (after EOD export generates)
+  0 1 * * * cd /var/www/a2z-blueprint/A2Z-Blueprint && \
+    set -a && source .env && set +a && \
+    venv/bin/python scripts/refresh_cbs_cache.py \
+    >> /var/log/a2z/cbs_etl.log 2>&1
 
-  # Or mark all stale at midnight, then let the 1am run do a full refresh:
-  0  0 * * * ... refresh_cbs_cache.py --mark-stale
-  0  1 * * * ... refresh_cbs_cache.py --limit 2000
+  # Or skip trigger if server auto-generates CSVs at midnight:
+  0 1 * * * ... refresh_cbs_cache.py --no-trigger
 
-Environment variables (same as the main app — source .env before running):
-  FLEXCUBE_SCRIPTS_URL   — required for live refresh
-  CBS_CACHE_TTL_HOURS    — rows older than this are auto-marked stale (default 24)
-  A2Z_USE_DB             — must be 'true' for Postgres cache to be active
-  A2Z_DB_HOST / _PORT / _NAME / _USER / _PASSWORD — Postgres connection
+Required env:
+  FLEXCUBE_EOD_BASE_URL   e.g. http://10.8.32.3:400
+  A2Z_USE_DB=true  +  A2Z_DB_* connection vars
 
 Usage:
-  python scripts/refresh_cbs_cache.py                  # refresh up to 200 stale rows
-  python scripts/refresh_cbs_cache.py --limit 500      # larger batch
-  python scripts/refresh_cbs_cache.py --mark-stale     # mark all stale, no refresh
-  python scripts/refresh_cbs_cache.py --status         # print cache stats and exit
+  python scripts/refresh_cbs_cache.py               # full ETL + cache refresh
+  python scripts/refresh_cbs_cache.py --no-trigger  # skip POST, just download
+  python scripts/refresh_cbs_cache.py --status       # print stats and exit
+  python scripts/refresh_cbs_cache.py --cache-only  # only refresh stale cache rows
 """
 
 import argparse
@@ -32,37 +32,41 @@ import json
 import sys
 from pathlib import Path
 
-# Allow running from the repo root or from scripts/
-repo_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(repo_root))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Refresh CBS account cache from FlexCube")
-    parser.add_argument("--limit",      type=int, default=200, help="Max accounts to refresh (default 200)")
-    parser.add_argument("--mark-stale", action="store_true",   help="Mark all cached accounts as stale without refreshing")
-    parser.add_argument("--status",     action="store_true",   help="Print cache stats and exit")
-    args = parser.parse_args()
-
-    from utils.cbs_cache import cache_stats, mark_all_stale, refresh_stale_accounts, ensure_table
-
-    ensure_table()
+    p = argparse.ArgumentParser()
+    p.add_argument("--no-trigger",  action="store_true", help="Skip POST /command/export:customers")
+    p.add_argument("--status",      action="store_true", help="Print ETL + cache stats and exit")
+    p.add_argument("--cache-only",  action="store_true", help="Only refresh stale on-demand cache rows")
+    p.add_argument("--cache-limit", type=int, default=200, help="Max stale cache rows to refresh")
+    args = p.parse_args()
 
     if args.status:
-        stats = cache_stats()
-        print(json.dumps(stats, indent=2, default=str))
+        from utils.cbs_etl import etl_status
+        from utils.cbs_cache import cache_stats
+        print(json.dumps({"etl": etl_status(), "cache": cache_stats()}, indent=2, default=str))
         return
 
-    if args.mark_stale:
-        count = mark_all_stale()
-        print(f"[cbs_cache] Marked {count} accounts as stale.")
+    if args.cache_only:
+        from utils.cbs_cache import refresh_stale_accounts
+        result = refresh_stale_accounts(limit=args.cache_limit)
+        print(json.dumps(result, indent=2, default=str))
         return
 
-    print(f"[cbs_cache] Starting refresh (limit={args.limit}) ...")
-    result = refresh_stale_accounts(limit=args.limit)
+    # Full ETL
+    from utils.cbs_etl import run_etl
+    print("[cbs_etl] Starting EOD import ...")
+    result = run_etl(trigger=not args.no_trigger)
     print(json.dumps(result, indent=2, default=str))
 
-    if result.get("error"):
+    # Also refresh any leftover stale on-demand cache entries
+    from utils.cbs_cache import refresh_stale_accounts
+    cache_result = refresh_stale_accounts(limit=args.cache_limit)
+    print(json.dumps({"cache_refresh": cache_result}, indent=2, default=str))
+
+    if result.get("status") == "error":
         sys.exit(1)
 
 
