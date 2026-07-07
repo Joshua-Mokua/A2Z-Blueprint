@@ -10073,18 +10073,54 @@ def get_deal_journey(deal_id: str, user: dict = Depends(get_current_user)):
 
     app_id = str(deal.get("lms_application_id", "") or "").strip()
     try:
+        from utils.api_lms_journey import (
+            build_case_journey, build_deal_journey, _parse_ts, _iso,
+        )
         if app_id:
             from utils.core import LoanApplicationManager
-            from utils.api_lms_journey import build_case_journey
             app = LoanApplicationManager().get(app_id)
-            if app:
-                return {"journey": build_case_journey(app), "linked_application_id": app_id}
-        from utils.api_lms_journey import build_deal_journey
+            journey = build_case_journey(app) if app else []
+        else:
+            try:
+                activities = pm.get_activities(deal_id=deal_id, limit=200)
+            except Exception:
+                activities = []
+            journey = build_deal_journey(deal, activities)
+
+        # Surface a CURRENT SLA breach in red even when the owner recorded no
+        # reason — a computed breach event. Skipped if a commitment already
+        # covers the breached step (that commitment event carries the reason,
+        # emitted by _events_from_deal), so the two never duplicate.
         try:
-            activities = pm.get_activities(deal_id=deal_id, limit=200)
+            cfg = _sla_config()
+            status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {},
+                                      _sla_stage_step_map(cfg), _credit_step_index())
+            if status and status.get("state") == "breached":
+                step_key = status.get("step")
+                commits = deal.get("sla_commitments") or {}
+                covered = isinstance(commits, dict) and step_key in commits
+                if not covered:
+                    step_label = str(step_key or deal.get("stage") or "current stage").replace("_", " ")
+                    overdue = status.get("overdue_business_days")
+                    esc = str(status.get("escalate_to") or "").replace("_", " ")
+                    step_log = deal.get("sla_step_log") or {}
+                    started = step_log.get(step_key) if isinstance(step_log, dict) else None
+                    note = ("SLA breached at stage '" + step_label + "'"
+                            + (f" — {overdue} business days overdue" if overdue is not None else "")
+                            + (f" · escalates to {esc}" if esc else "")
+                            + " · no reason recorded yet")
+                    journey.append({
+                        "event": "sla_breached",
+                        "by": str(deal.get("staff_code", "") or ""),
+                        "by_name": deal.get("staff_name") or None,
+                        "at": _iso(started or deal.get("updated_at") or deal.get("last_updated")),
+                        "note": note,
+                    })
+                    journey = sorted(journey, key=lambda e: _parse_ts(e.get("at")))
         except Exception:
-            activities = []
-        return {"journey": build_deal_journey(deal, activities), "linked_application_id": None}
+            pass
+
+        return {"journey": journey, "linked_application_id": app_id or None}
     except Exception:
         return {"journey": [], "linked_application_id": app_id or None}
 
