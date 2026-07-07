@@ -90,6 +90,10 @@ export function PipelineDealDetail() {
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Phase 2a: the deal working surfaces are consolidated into tabs. Case Journey
+  // (default) and are added in later phases; for now the tabs cover the
+  // existing surfaces. Header / SLA / permissions / action panels stay above.
+  const [activeTab, setActiveTab] = useState<'affordability' | 'cr' | 'documents' | 'committee'>('cr');
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -399,14 +403,34 @@ export function PipelineDealDetail() {
         />
       )}
 
-      {/* Action: submit to credit — gated by the document checklist (B10).
-          The panel fetches its own checklist and renders only when the
-          caller may submit, or when the deal is already submitted. */}
-      <DealCreditReportCard dealId={deal.id} canEdit={true} />
-      <CommitteeJourneyCard dealId={deal.id} canEdit={true} />
+      {/* ── Workbench tabs (Phase 2a) — the deal's working surfaces. Case
+          Journey (default) + others land in later phases; action panels
+          (Advance / Validate / Refer / Cancel) stay outside the tabs. ── */}
+      <div className="mt-6">
+        <div className="flex flex-wrap gap-1 border-b border-gray-200 text-sm">
+          {([
+            ['affordability', 'Affordability'],
+            ['cr', 'Credit Report'],
+            ['documents', 'Documents'],
+            ['committee', 'Branch Credit Committee'],
+          ] as [typeof activeTab, string][]).map(([id, label]) => (
+            <button key={id} onClick={() => setActiveTab(id)}
+              className={`-mb-px rounded-t px-3 py-2 font-medium transition-colors ${
+                activeTab === id
+                  ? 'border-b-2 border-[#0082BB] text-[#005B82]'
+                  : 'text-gray-500 hover:text-[#005B82]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
 
-      <AffordabilityAppraisal dealId={deal.id} />
-      <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
+        <div className="pt-4">
+          {activeTab === 'affordability' && <AffordabilityAppraisal dealId={deal.id} />}
+          {activeTab === 'cr' && <DealCreditReportCard dealId={deal.id} canEdit={true} />}
+          {activeTab === 'documents' && <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />}
+          {activeTab === 'committee' && <CommitteeJourneyCard dealId={deal.id} canEdit={true} />}
+        </div>
+      </div>
 
       <ValidationPanel deal={deal} onChanged={() => void reloadDeal()} />
 
