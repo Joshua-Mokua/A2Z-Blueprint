@@ -48,7 +48,6 @@ import { Skeleton } from '@/components/Skeleton';
 import { PermissionBadges } from '@/components/PermissionBadges';
 import { StaffPicker } from '@/components/StaffPicker';
 import {
-  stageTone,
   ADVANCE_TARGET_STAGES,
   type PipelineDeal,
   type DealPermissions,
@@ -200,7 +199,6 @@ export function PipelineDealDetail() {
 
   // ── Main render — deal + action panels ────────────────────────────────
 
-  const currency = branding?.currency_symbol ?? '';
 
   return (
     <DetailFrame title={`Deal ${deal.id}`}>
@@ -235,7 +233,7 @@ export function PipelineDealDetail() {
 
       {/* Phase 2b.2: coloured ribbon — the clean top landing. Deal identity at a
           glance; the full facts / SLA / permissions collapse behind "Details". */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-5 py-3 text-white shadow-sm">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <h2 className="text-base font-semibold">{deal.client_name || '—'}</h2>
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{deal.stage}</span>
@@ -257,77 +255,6 @@ export function PipelineDealDetail() {
       </div>
 
       {detailsOpen && (<>
-      {/* Primary identity card */}
-      <Card stripe="primary" className="mt-4">
-        <Card.Header>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-lg font-semibold text-brand-secondary">
-              {deal.client_name || '—'}
-            </h2>
-            <Badge tone={stageTone(deal.stage)} size="md">{deal.stage}</Badge>
-            {deal.locked && <Badge tone="warning" size="sm">🔒 Locked</Badge>}
-            {deal.draft && <Badge tone="warning" size="sm">Draft</Badge>}
-            {deal.cancel_requested && !deal.cancel_approved && (
-              <Badge tone="warning" size="sm">Cancel requested</Badge>
-            )}
-            {deal.manager_validated && (
-              <Badge tone="success" size="sm">Validated</Badge>
-            )}
-            {deal.referral_status && (
-              <Badge
-                tone={deal.referral_status === 'accepted' ? 'success'
-                  : deal.referral_status === 'declined' ? 'warning' : 'info'}
-                size="sm"
-              >
-                Referral: {deal.referral_status}
-              </Badge>
-            )}
-            {/* δ1 (2026-06-12): LMS cross-link when backend has created
-                a loan application from this deal (typically after advancing
-                to Compliance). Mirrors the Credit Admin → LMS cross-link
-                pattern from β6 so users can trace a deal's downstream lifecycle. */}
-            {deal.lms_application_id && (
-              <button
-                onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
-                className="text-xs text-brand-primary hover:underline font-medium"
-              >
-                View Credit Analysis →
-              </button>
-            )}
-          </div>
-          <span className="font-mono text-xs text-gray-500">{deal.id}</span>
-        </Card.Header>
-        <Card.Body>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <DetailField label="Product type" value={deal.product_type ?? deal.product} />
-            <DetailField label="Pipeline category" value={deal.pipeline_category ?? deal.deal_category} />
-            <DetailField label="Source" value={deal.source} />
-            <DetailField label="Client type" value={deal.client_type} />
-            <DetailField label="Deal value" value={formatValue(deal.amount_kes ?? deal.deal_value, currency)} />
-            <DetailField label="Probability" value={
-              typeof deal.probability === 'number'
-                ? `${Math.round(deal.probability * 100)}%`
-                : '—'
-            } />
-            {typeof deal.win_probability === 'number' && (
-              <DetailField
-                label="Win probability"
-                value={`${Math.round(deal.win_probability)}%`}
-                sub="from current stage"
-              />
-            )}
-            <DetailField label="Currency" value={deal.currency ?? currency} />
-            <DetailField label="Expected close" value={formatDate(deal.expected_close)} />
-            <DetailField label="Next action" value={deal.next_action} />
-            <DetailField label="Next action date" value={formatDate(deal.next_action_date)} />
-            <DetailField label="Owner" value={deal.staff_name} sub={deal.staff_code} />
-            {deal.backup_staff_codes && deal.backup_staff_codes.length > 0 && (
-              <DetailField label="Backup staff" value={deal.backup_staff_codes.join(', ')} />
-            )}
-          </div>
-        </Card.Body>
-      </Card>
-
       {/* SLA status panel (Phase 4 #81) — the deal's own clock, due-soon, breach */}
       {sla && sla.state && (
         <Card className="mt-6" stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
@@ -419,8 +346,8 @@ export function PipelineDealDetail() {
 
       {/* ── Workbench tabs — the deal's working surfaces plus an Actions tab
           that holds Advance / Validate / Refer / Cancel. Case Journey default. ── */}
-      <div className="mt-6">
-        <div className="flex flex-wrap gap-1 border-b border-gray-200 text-sm">
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-1 rounded-t-lg border-b-2 border-[#0082BB] bg-[#EAF4FA] px-2 pt-1.5 text-sm">
           {([
             ['journey', 'Case Journey'],
             ['affordability', 'Affordability'],
@@ -430,10 +357,10 @@ export function PipelineDealDetail() {
             ['actions', 'Actions'],
           ] as [typeof activeTab, string][]).map(([id, label]) => (
             <button key={id} onClick={() => setActiveTab(id)}
-              className={`-mb-px rounded-t px-3 py-2 font-medium transition-colors ${
+              className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
                 activeTab === id
-                  ? 'border-b-2 border-[#0082BB] text-[#005B82]'
-                  : 'text-gray-500 hover:text-[#005B82]'}`}>
+                  ? 'bg-white font-semibold text-[#005B82] shadow-sm'
+                  : 'text-[#0082BB]/80 hover:bg-white/60 hover:text-[#005B82]'}`}>
               {label}
             </button>
           ))}
@@ -572,11 +499,14 @@ function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
   }, [dealId, deal.updated_at]);
 
   const facts: [string, string, boolean][] = [
-    ['Product', String(deal.product_type ?? deal.product ?? '\u2014'), false],
-    ['Category', String(deal.pipeline_category ?? deal.deal_category ?? '\u2014'), false],
+    ['Product', String(deal.product_type ?? deal.product ?? '—'), false],
+    ['Category', String(deal.pipeline_category ?? deal.deal_category ?? '—'), false],
+    ['Client type', String(deal.client_type ?? '—'), false],
     ['Value', formatValue(deal.amount_kes ?? deal.deal_value, deal.currency ?? 'KES'), false],
-    ['Stage', String(deal.stage ?? '\u2014'), false],
-    ['Owner', String(deal.staff_name ?? '\u2014'), false],
+    ['Currency', String(deal.currency ?? 'KES'), false],
+    ['Stage', String(deal.stage ?? '—'), false],
+    ['Expected close', deal.expected_close ? formatDate(deal.expected_close) : '—', false],
+    ['Owner', String(deal.staff_name ?? '—'), false],
     ['Deal', String(deal.id), true],
   ];
 
