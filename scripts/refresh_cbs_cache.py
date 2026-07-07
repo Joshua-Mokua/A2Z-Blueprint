@@ -13,7 +13,8 @@ Crontab on the VM:
     venv/bin/python scripts/refresh_cbs_cache.py \
     >> /var/log/a2z/cbs_etl.log 2>&1
 
-  # Or skip trigger if server auto-generates CSVs at midnight:
+  # --no-trigger: skip the POST and just download the already-generated CSVs.
+  # Use this if you schedule the cron well after EOD (file already exists).
   0 1 * * * ... refresh_cbs_cache.py --no-trigger
 
 Required env:

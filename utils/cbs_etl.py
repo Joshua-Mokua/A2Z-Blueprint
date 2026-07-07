@@ -14,9 +14,9 @@ Required env vars:
                             (no trailing slash)
 
 Optional env vars:
-  FLEXCUBE_EOD_DELAY_SECONDS   — seconds to wait after triggering export
-                                  before downloading (default 10)
-  FLEXCUBE_EOD_TIMEOUT_SECONDS — per-request HTTP timeout (default 60)
+  FLEXCUBE_EOD_TRIGGER_TIMEOUT — timeout for the export trigger call in seconds
+                                  (default 900 = 15 min; command blocks until done)
+  FLEXCUBE_EOD_TIMEOUT_SECONDS — timeout for CSV download requests (default 60)
 
 CSV field → DB column mapping:
   CUST_AC_NO          → account_number  (PRIMARY KEY)
@@ -49,7 +49,6 @@ import csv
 import io
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -57,8 +56,10 @@ import requests
 
 logger = logging.getLogger("a2z.cbs_etl")
 
-_TIMEOUT = int(os.getenv("FLEXCUBE_EOD_TIMEOUT_SECONDS", "60"))
-_DELAY   = int(os.getenv("FLEXCUBE_EOD_DELAY_SECONDS",   "10"))
+_DOWNLOAD_TIMEOUT = int(os.getenv("FLEXCUBE_EOD_TIMEOUT_SECONDS",  "60"))
+# The export command is synchronous — Laravel blocks until done then returns "done".
+# 5-10 min observed; default 900s (15 min) gives headroom.
+_TRIGGER_TIMEOUT  = int(os.getenv("FLEXCUBE_EOD_TRIGGER_TIMEOUT",  "900"))
 
 
 # ── Table DDL ─────────────────────────────────────────────────────────────
@@ -246,18 +247,21 @@ class EtlDownloadError(Exception):
 
 def trigger_export() -> bool:
     """
-    POST /command/export:customers to ask FlexCube to regenerate the CSVs.
+    POST /command/export:customers and wait for the synchronous response.
 
-    Returns True on HTTP 2xx. Raises EtlDownloadError on failure.
-    Not strictly required if CSVs are auto-generated nightly — set
-    FLEXCUBE_EOD_DELAY_SECONDS=0 and skip calling this if the server
-    pre-generates them.
+    The Laravel command blocks for 5-10 min then returns dd("done").
+    We wait up to FLEXCUBE_EOD_TRIGGER_TIMEOUT seconds (default 900).
+    CSVs are ready to download immediately after this returns.
     """
     url = f"{_base_url()}/command/export:customers"
+    logger.info("cbs_etl: triggering export — this blocks until done (~5-10 min) …")
     try:
-        resp = requests.post(url, timeout=_TIMEOUT)
+        resp = requests.post(url, timeout=_TRIGGER_TIMEOUT)
         resp.raise_for_status()
-        logger.info("cbs_etl: export triggered (status=%s)", resp.status_code)
+        body = resp.text.strip().strip('"').lower()
+        if body != "done":
+            logger.warning("cbs_etl: unexpected trigger response body: %r", resp.text[:100])
+        logger.info("cbs_etl: export complete (response=%r)", body)
         return True
     except requests.RequestException as exc:
         raise EtlDownloadError(f"Export trigger failed: {exc}") from exc
@@ -285,7 +289,7 @@ def download_csv(customer_type: str, dt: Optional[datetime] = None) -> str:
         filename = _csv_filename(customer_type, attempt_dt)
         url = f"{base}/eod-download/{filename}"
         try:
-            resp = requests.get(url, timeout=_TIMEOUT)
+            resp = requests.get(url, timeout=_DOWNLOAD_TIMEOUT)
             if resp.status_code == 404:
                 logger.info("cbs_etl: %s not found at %s, trying previous month", filename, url)
                 last_exc = EtlDownloadError(f"404 for {filename}")
@@ -348,9 +352,8 @@ def run_etl(
     try:
         if trigger:
             trigger_export()
-            if _DELAY > 0:
-                logger.info("cbs_etl: waiting %ds for export to generate …", _DELAY)
-                time.sleep(_DELAY)
+            # No sleep needed — trigger_export() is synchronous; CSVs are
+            # ready the moment it returns "done".
     except EtlDownloadError as exc:
         # Trigger failure is non-fatal — CSV may already be present from nightly run
         logger.warning("cbs_etl: trigger failed (continuing with existing file): %s", exc)
