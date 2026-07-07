@@ -742,8 +742,14 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
 
   if (!checklist) return null;
 
-  // Already submitted — show the cross-link, no form.
-  if (checklist.already_submitted) {
+  // Credit can return a deal (returned / info_requested). Phase L unlocks the
+  // deal on those, so `already_submitted && !locked` means it's back with the
+  // RM for more documents. Keep the upload form available so they can supply
+  // documents until credit has everything, then resubmit.
+  const reopenedForDocs = Boolean(checklist.already_submitted) && !deal.locked;
+
+  // Already submitted and still locked — show the cross-link, no form.
+  if (checklist.already_submitted && !reopenedForDocs) {
     return (
       <Card className="mt-6" stripe="accent">
         <Card.Header>
@@ -835,6 +841,11 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
         <Badge tone="info" size="sm">document gate</Badge>
       </Card.Header>
       <Card.Body>
+        {reopenedForDocs && (
+          <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+            Credit returned this deal for more information. Supply the outstanding documents below, then resubmit.
+          </div>
+        )}
         <p className="text-xs text-gray-500 mb-3">
           Upload each required document. All required documents must be attached
           before the deal can be submitted to credit analysis.

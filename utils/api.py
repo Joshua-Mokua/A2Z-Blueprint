@@ -5798,6 +5798,22 @@ def pipeline_deal_advance(
                     "This referral was declined and is awaiting reassignment."),
         )
 
+    # C1 (manager-validation gate on ADVANCE): a deal must be validated by its
+    # manager before its FIRST stage movement. Once `manager_validated` is set
+    # (a deliberate manager action via POST /deals/{id}/validate), the deal
+    # advances freely. This is the control point that stops an RM moving an
+    # unqualified deal through the pipeline — and, downstream, into credit —
+    # without oversight. (Previously only enforced at submit-to-credit, which
+    # let a deal travel most of the pipeline unvalidated.)
+    if not bool(deal.get("manager_validated")):
+        _audit("API_PIPELINE_ADVANCE_UNVALIDATED", user,
+               f"deal_id={deal_id} not manager-validated")
+        raise HTTPException(
+            status_code=400,
+            detail=("This deal has not been validated by a manager. A manager "
+                    "must validate it before it can advance to the next stage."),
+        )
+
     # Phase L: a deal submitted to credit is locked — no stage moves unless
     # the case was returned / info-requested. Admin override is audit-logged.
     _enforce_deal_lock(deal, user, "advance")
