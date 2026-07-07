@@ -306,35 +306,43 @@ def get_account_by_number(account_number: str) -> Optional[dict]:
     """
     Account lookup by exact account number.
 
-    Live path  — calls CUSTOMERACCOUNTDETAILS via the FlexCube script API
-                 (requires FLEXCUBE_SCRIPTS_URL env var).
-    Offline path — searches cbs_data/accounts.csv (used in dev / when
-                   FlexCube is unreachable).
+    Resolution order:
+      1. Postgres cache (cbs_account_cache) — instant if previously queried
+      2. FlexCube live (CUSTOMERACCOUNTDETAILS) — writes to cache on success
+      3. CSV fallback — when FlexCube is unreachable
 
-    Returned dict always contains the CbsAccount fields. The live path
-    additionally includes:
-      f7_cif    — FlexCube ext_ref_no (needed for CUSTOMERACTIVELOANS)
-      f12_cif   — FlexCube internal customer_no
-      customer_name, segment, kyc_status, risk_rating, aml_flag, pep_flag
+    Stale cache rows are returned immediately but flagged (_cache_stale=True)
+    so the cron refresh job picks them up on its next run.
     """
+    from utils.cbs_cache import get_cached, store
     num = str(account_number).strip()
 
+    # 1. Cache hit
+    cached = get_cached(num)
+    if cached and not cached.get("_cache_stale"):
+        return cached
+
+    # 2. FlexCube live
     if _fc_configured():
         try:
             rows = _fc_execute("CUSTOMERACCOUNTDETAILS", {"ACCOUNT_NUMBER": num})
-            if not rows:
-                return None
-            return rows[0]
+            if rows:
+                payload = rows[0]
+                store(num, payload, source="flexcube")
+                return payload
         except Exception:
-            pass  # fall through to CSV
+            pass  # fall through
 
-    # CSV fallback
+    # 3. Return stale cache rather than a slower CSV path if we have it
+    if cached:
+        return cached
+
+    # 4. CSV fallback
     df = _load_accounts()
     matches = df[df["account_number"] == num]
     if matches.empty:
         return None
     acct = _account_row_to_dict(matches.iloc[0])
-    # Embed basic customer summary from the CSV customer sheet
     cif = acct.get("cif", "")
     if cif:
         customer = get_customer_by_cif(cif)
@@ -385,9 +393,18 @@ def get_account_360(account_number: str) -> Optional[dict]:
     """
     Combined payload: account record + all active loans.
 
-    The loans are attached under active_loans[], active_loans_count,
-    and total_loan_outstanding so the frontend needs one API call.
+    Caches the full combined payload (account + loans) so subsequent
+    calls within the TTL window return immediately from Postgres.
     """
+    from utils.cbs_cache import get_cached, store
+    num = str(account_number).strip()
+
+    # Cache hit — only serve if payload includes loans (a full 360 was stored)
+    cached = get_cached(num)
+    if cached and not cached.get("_cache_stale") and "active_loans" in cached:
+        return cached
+
+    # Build fresh from FlexCube or CSV
     account = get_account_by_number(account_number)
     if not account:
         return None
@@ -400,6 +417,11 @@ def get_account_360(account_number: str) -> Optional[dict]:
     account["total_loan_outstanding"] = sum(
         float(l.get("total_outstanding") or 0) for l in loans
     )
+
+    # Only cache FlexCube results (CSV data is already local)
+    if not account.get("_cache_hit") and _fc_configured():
+        store(num, account, source="flexcube")
+
     return account
 
 

@@ -274,6 +274,40 @@ def fetch_aggregates(
     }
 
 
+# ── CBS account cache endpoints (config-admin only) ─────────────────────
+
+@router.get("/cache/status")
+def cbs_cache_status(user: dict = Depends(require_config_admin)):
+    """Cache stats: total rows, stale count, oldest/newest entry, TTL."""
+    from utils.cbs_cache import cache_stats
+    return cache_stats()
+
+
+@router.post("/cache/refresh")
+def cbs_cache_refresh(
+    limit: int = Query(200, ge=1, le=2000),
+    user:  dict = Depends(require_config_admin),
+):
+    """
+    Trigger a cache refresh run (same as the cron job, on-demand).
+    Re-fetches up to `limit` stale accounts from FlexCube.
+    """
+    from utils.cbs_cache import refresh_stale_accounts
+    audit_log("CBS_CACHE_REFRESH", user.get("username", "unknown"),
+              detail=f"limit={limit} triggered_via=api")
+    return refresh_stale_accounts(limit=limit)
+
+
+@router.post("/cache/mark-stale")
+def cbs_cache_mark_stale(user: dict = Depends(require_config_admin)):
+    """Force-mark all cached accounts as stale (next cron run refreshes all)."""
+    from utils.cbs_cache import mark_all_stale
+    count = mark_all_stale()
+    audit_log("CBS_CACHE_MARK_STALE", user.get("username", "unknown"),
+              detail=f"marked={count}")
+    return {"marked_stale": count}
+
+
 # ── FlexCube connection debug (config-admin only) ────────────────────────
 
 PROBE_SCRIPTS = [
