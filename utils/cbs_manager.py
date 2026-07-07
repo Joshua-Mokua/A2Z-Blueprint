@@ -51,22 +51,35 @@ def _load_customers() -> pd.DataFrame:
     global _customers_df
     if _customers_df is None:
         path = _CBS_DIR / "customers.csv"
-        print(f"[cbs_manager] Loading customers.csv from {path} ...")
-        _customers_df = pd.read_csv(
-            path,
-            dtype={
-                "cif":                       str,
-                "relationship_manager_code": str,
-                "branch_code":               str,
-                "id_number":                 str,
-                "kra_pin":                   str,
-                "phone":                     str,
-            },
-            low_memory=False,
-        )
-        # cif → row in O(1). drop=False keeps the column accessible too.
-        _customers_df.set_index("cif", drop=False, inplace=True)
-        print(f"[cbs_manager] Loaded {len(_customers_df):,} customers.")
+        _cols = ["cif", "full_name", "segment", "kyc_status", "risk_rating",
+                 "aml_flag", "pep_flag", "relationship_manager_code",
+                 "branch_code", "id_number", "kra_pin", "phone"]
+        if not path.exists():
+            # Live-FlexCube env (or dev without generated data): no local CSV.
+            # Degrade to an empty set so lookups 404 cleanly instead of 500-ing.
+            print(f"[cbs_manager] customers.csv not found at {path} — using empty set.")
+            _customers_df = pd.DataFrame(columns=_cols).set_index("cif", drop=False)
+            return _customers_df
+        try:
+            print(f"[cbs_manager] Loading customers.csv from {path} ...")
+            _customers_df = pd.read_csv(
+                path,
+                dtype={
+                    "cif":                       str,
+                    "relationship_manager_code": str,
+                    "branch_code":               str,
+                    "id_number":                 str,
+                    "kra_pin":                   str,
+                    "phone":                     str,
+                },
+                low_memory=False,
+            )
+            # cif → row in O(1). drop=False keeps the column accessible too.
+            _customers_df.set_index("cif", drop=False, inplace=True)
+            print(f"[cbs_manager] Loaded {len(_customers_df):,} customers.")
+        except Exception as exc:
+            print(f"[cbs_manager] failed to load customers.csv: {exc} — using empty set.")
+            _customers_df = pd.DataFrame(columns=_cols).set_index("cif", drop=False)
     return _customers_df
 
 
@@ -74,18 +87,27 @@ def _load_accounts() -> pd.DataFrame:
     global _accounts_df
     if _accounts_df is None:
         path = _CBS_DIR / "accounts.csv"
-        print(f"[cbs_manager] Loading accounts.csv from {path} ...")
-        _accounts_df = pd.read_csv(
-            path,
-            dtype={
-                "cif":                       str,
-                "account_number":            str,
-                "relationship_manager_code": str,
-                "branch_code":               str,
-            },
-            low_memory=False,
-        )
-        print(f"[cbs_manager] Loaded {len(_accounts_df):,} accounts.")
+        _cols = ["cif", "account_number", "relationship_manager_code", "branch_code"]
+        if not path.exists():
+            print(f"[cbs_manager] accounts.csv not found at {path} — using empty set.")
+            _accounts_df = pd.DataFrame(columns=_cols)
+            return _accounts_df
+        try:
+            print(f"[cbs_manager] Loading accounts.csv from {path} ...")
+            _accounts_df = pd.read_csv(
+                path,
+                dtype={
+                    "cif":                       str,
+                    "account_number":            str,
+                    "relationship_manager_code": str,
+                    "branch_code":               str,
+                },
+                low_memory=False,
+            )
+            print(f"[cbs_manager] Loaded {len(_accounts_df):,} accounts.")
+        except Exception as exc:
+            print(f"[cbs_manager] failed to load accounts.csv: {exc} — using empty set.")
+            _accounts_df = pd.DataFrame(columns=_cols)
     return _accounts_df
 
 
@@ -93,7 +115,11 @@ def _load_branches() -> list:
     global _branches
     if _branches is None:
         path = _CBS_DIR / "branches.json"
-        _branches = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            _branches = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            print(f"[cbs_manager] branches.json unavailable ({exc}) — using empty list.")
+            _branches = []
     return _branches
 
 
