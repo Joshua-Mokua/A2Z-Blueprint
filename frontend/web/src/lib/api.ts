@@ -99,7 +99,7 @@ export class AuthExpiredError extends Error {
 // 401 callback before throwing so AuthProvider state flips synchronously
 // with the failure. Other non-OK responses throw a generic Error.
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
   const headers: Record<string, string> = {};
   if (_currentToken) {
     headers['Authorization'] = `Bearer ${_currentToken}`;
