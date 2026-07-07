@@ -44,6 +44,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
+import { WorkbenchShell } from '@/components/WorkbenchShell';
 import { StaffPicker } from '@/components/StaffPicker';
 import {
   ADVANCE_TARGET_STAGES,
@@ -89,13 +90,6 @@ export function PipelineDealDetail() {
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  // Phase 2b: Case Journey is the default first tab (the travelling document's
-  // spine), reusing the Phase C case-journey backend. Header / SLA / permissions
-  // / action panels stay above the tabs.
-  const [activeTab, setActiveTab] = useState<'journey' | 'affordability' | 'cr' | 'documents' | 'committee' | 'actions'>('journey');
-  // Phase 2b.2: clean top landing — the deal facts card / SLA / permissions
-  // collapse behind a coloured ribbon; the tabs are the primary surface.
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -214,85 +208,9 @@ export function PipelineDealDetail() {
         </div>
       )}
 
-      {/* Phase 2b.2: coloured ribbon — the clean top landing. Deal identity at a
-          glance; the full facts / SLA / permissions collapse behind "Details". */}
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button onClick={() => navigate('/pipeline')}
-            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">← Back</button>
-          <h2 className="text-base font-semibold">{deal.client_name || '—'}</h2>
-          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{deal.stage}</span>
-          {deal.locked && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">🔒 Locked</span>}
-          {deal.manager_validated && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">✓ Validated</span>}
-          {deal.draft && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">Draft</span>}
-          {deal.lms_application_id && (
-            <button onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
-              className="text-xs font-medium text-white/90 underline hover:text-white">View Credit Analysis →</button>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-white/70">{deal.id}</span>
-          <button onClick={() => void reloadDeal()}
-            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
-            Refresh
-          </button>
-          <button onClick={() => setDetailsOpen((v) => !v)}
-            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
-            {detailsOpen ? 'Hide details ▴' : 'Details ▾'}
-          </button>
-        </div>
-      </div>
-
-      {detailsOpen && (<>
-      {/* SLA status panel (Phase 4 #81) — the deal's own clock, due-soon, breach */}
-      {sla && sla.state && (
-        <Card className="mt-6" stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
-          <Card.Header>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-semibold text-gray-900">SLA status</h3>
-              <Badge
-                tone={sla.state === 'breached' ? 'danger' : sla.state === 'due_soon' ? 'warning' : 'success'}
-                size="sm"
-              >
-                {sla.state === 'breached' ? 'Breached' : sla.state === 'due_soon' ? 'Due soon' : 'On track'}
-              </Badge>
-              <Badge tone={sla.clock === 'step' ? 'info' : 'neutral'} size="sm">
-                {sla.clock === 'step' ? (sla.step || 'step').replace(/_/g, ' ') : 'age clock'}
-              </Badge>
-              {sla.commitment_status === 'active' && (
-                <Badge tone="info" size="sm">committed {sla.commitment?.committed_date}</Badge>
-              )}
-              {sla.commitment_status === 'unfulfilled' && (
-                <Badge tone="danger" size="sm">commitment overdue</Badge>
-              )}
-            </div>
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <DetailField label="Elapsed" value={`${sla.elapsed_business_days} bd`} />
-              <DetailField label="Target" value={`${sla.target_days} bd`} />
-              <DetailField
-                label={sla.breached ? 'Overdue' : 'Remaining'}
-                value={sla.breached ? `+${sla.overdue_business_days} bd` : `${sla.remaining_business_days ?? '—'} bd`}
-              />
-              <DetailField label="Escalation" value={(sla.escalate_to || '—').replace(/_/g, ' ')} />
-            </div>
-            {sla.commitment && (
-              <p className="text-xs text-gray-500 mt-3">
-                <span className="font-medium">Commitment:</span> {sla.commitment.reason}
-                {' · by '}{sla.commitment.committed_date}
-                {sla.commitment.recorded_by_name ? ` (${sla.commitment.recorded_by_name})` : ''}
-              </p>
-            )}
-          </Card.Body>
-        </Card>
-      )}
-
-      </>)}
-
       {/* Cancellation-pending notice */}
       {deal.cancel_requested && !deal.cancel_approved && (
-        <Card className="mt-6" stripe="accent">
+        <Card className="mb-4" stripe="accent">
           <Card.Body>
             <div className="flex items-start gap-3">
               <Badge tone="warning" size="md">Pending manager approval</Badge>
@@ -315,37 +233,71 @@ export function PipelineDealDetail() {
         </Card>
       )}
 
-      {/* ── Workbench tabs — the deal's working surfaces plus an Actions tab
-          that holds Advance / Validate / Refer / Cancel. Case Journey default. ── */}
-      <div className="mt-3">
-        <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-[#EAF4FA] px-2 pt-1.5 text-sm">
-          {([
-            ['journey', 'Case Journey', '#0082BB'],
-            ['affordability', 'Affordability', '#00A65A'],
-            ['cr', 'Credit Report', '#7E57C2'],
-            ['documents', 'Documents', '#0097A7'],
-            ['committee', 'Branch Credit Committee', '#EF6C00'],
-            ['actions', 'Actions', '#C62828'],
-          ] as [typeof activeTab, string, string][]).map(([id, label, color]) => {
-            const active = activeTab === id;
-            return (
-              <button key={id} onClick={() => setActiveTab(id)}
-                style={active ? { color, borderTopColor: color, borderTopWidth: 2 } : { color }}
-                className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
-                  active ? 'bg-white font-semibold shadow-sm' : 'opacity-60 hover:bg-white/60 hover:opacity-100'}`}>
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="pt-4">
-          {activeTab === 'journey' && <CaseJourneyTab deal={deal} />}
-          {activeTab === 'affordability' && <AffordabilityAppraisal dealId={deal.id} />}
-          {activeTab === 'cr' && <DealCreditReportCard dealId={deal.id} canEdit={true} />}
-          {activeTab === 'documents' && <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />}
-          {activeTab === 'committee' && <CommitteeJourneyCard dealId={deal.id} canEdit={true} />}
-          {activeTab === 'actions' && (
+      <WorkbenchShell
+        title={deal.client_name || '—'}
+        stage={deal.stage}
+        badges={[
+          ...(deal.locked ? [{ label: '🔒 Locked' }] : []),
+          ...(deal.manager_validated ? [{ label: '✓ Validated' }] : []),
+          ...(deal.draft ? [{ label: 'Draft' }] : []),
+        ]}
+        idLabel={deal.id}
+        onBack={() => navigate('/pipeline')}
+        onRefresh={() => void reloadDeal()}
+        crossLink={deal.lms_application_id ? {
+          label: 'View Credit Analysis →',
+          onClick: () => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`),
+        } : undefined}
+        details={sla && sla.state ? (
+          <Card stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
+            <Card.Header>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-semibold text-gray-900">SLA status</h3>
+                <Badge
+                  tone={sla.state === 'breached' ? 'danger' : sla.state === 'due_soon' ? 'warning' : 'success'}
+                  size="sm"
+                >
+                  {sla.state === 'breached' ? 'Breached' : sla.state === 'due_soon' ? 'Due soon' : 'On track'}
+                </Badge>
+                <Badge tone={sla.clock === 'step' ? 'info' : 'neutral'} size="sm">
+                  {sla.clock === 'step' ? (sla.step || 'step').replace(/_/g, ' ') : 'age clock'}
+                </Badge>
+                {sla.commitment_status === 'active' && (
+                  <Badge tone="info" size="sm">committed {sla.commitment?.committed_date}</Badge>
+                )}
+                {sla.commitment_status === 'unfulfilled' && (
+                  <Badge tone="danger" size="sm">commitment overdue</Badge>
+                )}
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <DetailField label="Elapsed" value={`${sla.elapsed_business_days} bd`} />
+                <DetailField label="Target" value={`${sla.target_days} bd`} />
+                <DetailField
+                  label={sla.breached ? 'Overdue' : 'Remaining'}
+                  value={sla.breached ? `+${sla.overdue_business_days} bd` : `${sla.remaining_business_days ?? '—'} bd`}
+                />
+                <DetailField label="Escalation" value={(sla.escalate_to || '—').replace(/_/g, ' ')} />
+              </div>
+              {sla.commitment && (
+                <p className="text-xs text-gray-500 mt-3">
+                  <span className="font-medium">Commitment:</span> {sla.commitment.reason}
+                  {' · by '}{sla.commitment.committed_date}
+                  {sla.commitment.recorded_by_name ? ` (${sla.commitment.recorded_by_name})` : ''}
+                </p>
+              )}
+            </Card.Body>
+          </Card>
+        ) : undefined}
+        defaultTabId="journey"
+        tabs={[
+          { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
+          { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
+          { id: 'cr', label: 'Credit Report', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
+          { id: 'documents', label: 'Documents', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} /> },
+          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
+          { id: 'actions', label: 'Actions', color: '#C62828', content: (
             <div className="space-y-6">
               {permissions?.can_advance_stage && (
                 <AdvancePanel
@@ -376,9 +328,9 @@ export function PipelineDealDetail() {
                 />
               )}
             </div>
-          )}
-        </div>
-      </div>
+          ) },
+        ]}
+      />
 
       {/* Footer */}
       <footer className="mt-12 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
@@ -480,7 +432,7 @@ function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
         <div className="flex w-full items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-400">{events.length} events \u00b7 who did what, when</span>
+            <span className="text-xs text-gray-400">{events.length} events · who did what, when</span>
             <button onClick={() => void load()} className="text-xs font-medium text-brand-primary hover:underline">Refresh</button>
           </div>
         </div>
@@ -498,7 +450,7 @@ function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
           ))}
         </div>
         {loading ? (
-          <p className="text-sm text-gray-400">Loading\u2026</p>
+          <p className="text-sm text-gray-400">Loading…</p>
         ) : (
           <Timeline events={events} emptyHint="No activity recorded yet. Creation, manager validation, stage moves, committee votes, and submission appear here as the case travels." />
         )}
