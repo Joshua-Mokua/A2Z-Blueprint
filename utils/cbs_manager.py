@@ -27,9 +27,12 @@ Cross-references:
 """
 
 import json
+import logging
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger("a2z.cbs_manager")
 
 
 # ── Paths ────────────────────────────────────────────────────────────────
@@ -267,11 +270,24 @@ def search_customers_by_name(query: str, limit: int = 10) -> list[dict]:
 
 
 def get_accounts_for_cif(cif: str) -> list[dict]:
-    """Return all accounts belonging to a CIF (typically 1–5 accounts)."""
-    df = _load_accounts()
-    cif = str(cif).strip()
-    matches = df[df["cif"] == cif]
-    return [_account_row_to_dict(row) for _, row in matches.iterrows()]
+    """Return all accounts belonging to a CIF (typically 1–5 accounts).
+
+    Returns [] (never raises) if accounts.csv is missing the expected
+    "cif" column or fails to load — a customer lookup should still
+    succeed with an empty accounts list rather than 500.
+    """
+    try:
+        df = _load_accounts()
+        if "cif" not in df.columns:
+            logger.warning("cbs_manager: accounts.csv has no 'cif' column — columns=%s",
+                            list(df.columns))
+            return []
+        cif = str(cif).strip()
+        matches = df[df["cif"] == cif]
+        return [_account_row_to_dict(row) for _, row in matches.iterrows()]
+    except Exception as exc:
+        logger.warning("cbs_manager: get_accounts_for_cif(%s) failed: %s", cif, exc)
+        return []
 
 
 def get_branches() -> list[dict]:
@@ -357,6 +373,10 @@ def get_account_by_number(account_number: str) -> Optional[dict]:
 
     # 5. CSV fallback
     df = _load_accounts()
+    if "account_number" not in df.columns:
+        logger.warning("cbs_manager: accounts.csv has no 'account_number' column — columns=%s",
+                        list(df.columns))
+        return None
     matches = df[df["account_number"] == num]
     if matches.empty:
         return None
