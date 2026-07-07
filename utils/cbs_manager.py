@@ -242,8 +242,62 @@ def _account_row_to_dict(row) -> dict:
 
 # ── Public accessors ─────────────────────────────────────────────────────
 
+def _db_accounts_for_cif(cif: str) -> Optional[list]:
+    """Raw cbs_accounts rows for this F12 CIF. None if Postgres isn't
+    ready (caller should fall back); [] if ready but no rows found."""
+    try:
+        from utils.db import db
+        if not db.is_postgres_ready():
+            return None
+        rows = db.fetch_all(
+            "SELECT * FROM cbs_accounts WHERE f12_cif = %s ORDER BY account_number",
+            (str(cif).strip(),),
+        )
+        for r in rows:
+            r["_source"] = "db"
+        return rows
+    except Exception:
+        return None
+
+
+def _db_customer_by_cif(cif: str) -> Optional[dict]:
+    """Build a customer record from cbs_accounts rows sharing this F12 CIF.
+
+    There is no separate customer-master table — the EOD export is
+    account-level, so this surfaces whatever customer-identifying fields
+    ride along on the account records (RM, branch, segment, contact
+    details). No full_name/kyc_status/risk_rating/aml_flag/pep_flag —
+    those aren't in the source data.
+    """
+    rows = _db_accounts_for_cif(cif)
+    if not rows:
+        return None
+    first = rows[0]
+    return {
+        "cif":                       first.get("f12_cif"),
+        "customer_type":             first.get("customer_type"),
+        "cust_category":             first.get("cust_category"),
+        "cif_class":                 first.get("cif_class"),
+        "sub_segment":               first.get("sub_segment"),
+        "branch_code":               first.get("branch_code"),
+        "relationship_manager_code": first.get("rm_code"),
+        "relationship_manager_name": first.get("rm_name"),
+        "phone":                     first.get("phone"),
+        "email":                     first.get("email"),
+        "address":                   first.get("address"),
+        "introducer":                first.get("introducer"),
+        "account_count":             len(rows),
+        "_source":                   "db",
+    }
+
+
 def get_customer_by_cif(cif: str) -> Optional[dict]:
-    """Lookup customer by exact CIF. Returns dict or None if not found."""
+    """Lookup customer by exact CIF. Checks cbs_accounts (Postgres, EOD
+    ETL) first, falls back to customers.csv. Returns dict or None."""
+    db_customer = _db_customer_by_cif(cif)
+    if db_customer:
+        return db_customer
+
     df = _load_customers()
     cif = str(cif).strip()
     if cif not in df.index:
@@ -272,10 +326,16 @@ def search_customers_by_name(query: str, limit: int = 10) -> list[dict]:
 def get_accounts_for_cif(cif: str) -> list[dict]:
     """Return all accounts belonging to a CIF (typically 1–5 accounts).
 
+    Checks cbs_accounts (Postgres, EOD ETL) first; falls back to
+    accounts.csv only if the DB has no rows for this CIF.
+
     Returns [] (never raises) if accounts.csv is missing the expected
     "cif" column or fails to load — a customer lookup should still
     succeed with an empty accounts list rather than 500.
     """
+    db_rows = _db_accounts_for_cif(cif)
+    if db_rows:
+        return db_rows
     try:
         df = _load_accounts()
         if "cif" not in df.columns:
