@@ -42,7 +42,6 @@ import { useRole } from '@/hooks/useRole';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { PermissionBadges } from '@/components/PermissionBadges';
@@ -220,6 +219,8 @@ export function PipelineDealDetail() {
           glance; the full facts / SLA / permissions collapse behind "Details". */}
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
+          <button onClick={() => navigate('/pipeline')}
+            className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">← Back</button>
           <h2 className="text-base font-semibold">{deal.client_name || '—'}</h2>
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{deal.stage}</span>
           {deal.locked && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">🔒 Locked</span>}
@@ -415,19 +416,10 @@ interface DetailFrameProps {
 }
 
 function DetailFrame({ title, children }: DetailFrameProps) {
-  const navigate = useNavigate();
+  useEffect(() => { document.title = title; }, [title]);
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title={title}
-        breadcrumbs={[{ label: 'A2Z Sales Pro', to: '/pipeline' }, { label: title }]}
-        actions={
-          <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
-            ← Back to pipeline
-          </Button>
-        }
-      />
-      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 pt-3 pb-6">
         {children}
       </main>
     </div>
