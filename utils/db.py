@@ -58,6 +58,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
+
 logger = logging.getLogger("a2z.db")
 
 # ── Configuration from environment ──────────────────────────────────────

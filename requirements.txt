@@ -59,6 +59,7 @@ pluggy==1.6.0
 protobuf==7.34.1
 psycopg2-binary==2.9.12
 py-serializable==2.1.0
+python-dotenv==1.2.2
 pyarrow==23.0.1
 pycparser==3.0
 pydantic==2.13.3
