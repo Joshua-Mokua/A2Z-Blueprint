@@ -35,7 +35,9 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { Timeline } from '@/components/Timeline';
+import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -90,10 +92,10 @@ export function PipelineDealDetail() {
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  // Phase 2a: the deal working surfaces are consolidated into tabs. Case Journey
-  // (default) and are added in later phases; for now the tabs cover the
-  // existing surfaces. Header / SLA / permissions / action panels stay above.
-  const [activeTab, setActiveTab] = useState<'affordability' | 'cr' | 'documents' | 'committee'>('cr');
+  // Phase 2b: Case Journey is the default first tab (the travelling document's
+  // spine), reusing the Phase C case-journey backend. Header / SLA / permissions
+  // / action panels stay above the tabs.
+  const [activeTab, setActiveTab] = useState<'journey' | 'affordability' | 'cr' | 'documents' | 'committee'>('journey');
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -409,6 +411,7 @@ export function PipelineDealDetail() {
       <div className="mt-6">
         <div className="flex flex-wrap gap-1 border-b border-gray-200 text-sm">
           {([
+            ['journey', 'Case Journey'],
             ['affordability', 'Affordability'],
             ['cr', 'Credit Report'],
             ['documents', 'Documents'],
@@ -425,6 +428,7 @@ export function PipelineDealDetail() {
         </div>
 
         <div className="pt-4">
+          {activeTab === 'journey' && <CaseJourneyTab dealId={deal.id} />}
           {activeTab === 'affordability' && <AffordabilityAppraisal dealId={deal.id} />}
           {activeTab === 'cr' && <DealCreditReportCard dealId={deal.id} canEdit={true} />}
           {activeTab === 'documents' && <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />}
@@ -523,6 +527,36 @@ interface CreditPanelProps {
 // Phase V/R: line-manager validation. Shows validation requests; lets the deal
 // owner request a reopen of a declined case; lets the resolved line manager
 // (or admin) approve/reject. Approval of a reopen returns the case for rework.
+function CaseJourneyTab({ dealId }: { dealId: string }) {
+  const [events, setEvents] = useState<LoanAppHistoryEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    fetchDealJourney(dealId)
+      .then((r) => { if (alive) setEvents(r.journey || []); })
+      .catch(() => { if (alive) setEvents([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [dealId]);
+  return (
+    <Card>
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
+        <span className="text-xs text-gray-400">{events.length} events \u00b7 who did what, when</span>
+      </Card.Header>
+      <Card.Body>
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading\u2026</p>
+        ) : (
+          <Timeline events={events} emptyHint="No activity recorded yet. Creation, manager validation, stage moves, committee votes, and submission appear here as the case travels." />
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
 function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
   const { user } = useRole();

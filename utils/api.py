@@ -10048,6 +10048,47 @@ def get_deal_committee_journey(deal_id: str, user: dict = Depends(get_current_us
 # === END COMMITTEE JOURNEY RESOLVER ===
 
 
+@app.get("/api/pipeline/deals/{deal_id}/journey", tags=["pipeline"])
+def get_deal_journey(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's Case Journey — the travelling document's full history.
+
+    Reuses the Phase C case-journey builders (no re-implementation):
+      - linked to a credit application  -> build_case_journey(app): the FULL
+        merged journey (deal origination events + application-side events).
+      - origination only (no linked app) -> build_deal_journey(deal): the
+        deal-side events (creation, committee votes, appeals, stage activities,
+        affordability), normalised to the same Timeline shape.
+    Read-only; scoped to can_view. Never fails the read — returns [] on error.
+    """
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    app_id = str(deal.get("lms_application_id", "") or "").strip()
+    try:
+        if app_id:
+            from utils.core import LoanApplicationManager
+            from utils.api_lms_journey import build_case_journey
+            app = LoanApplicationManager().get(app_id)
+            if app:
+                return {"journey": build_case_journey(app), "linked_application_id": app_id}
+        from utils.api_lms_journey import build_deal_journey
+        try:
+            activities = pm.get_activities(deal_id=deal_id, limit=200)
+        except Exception:
+            activities = []
+        return {"journey": build_deal_journey(deal, activities), "linked_application_id": None}
+    except Exception:
+        return {"journey": [], "linked_application_id": app_id or None}
+
+
 # === DEAL-LEVEL CR ENDPOINTS (4b-3) ===
 @app.get("/api/pipeline/deals/{deal_id}/cr", tags=["pipeline"])
 def get_deal_cr(deal_id: str, user: dict = Depends(get_current_user)):

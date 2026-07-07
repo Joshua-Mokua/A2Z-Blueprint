@@ -690,6 +690,11 @@ export async function liftDealHold(dealId: string, note: string): Promise<{ deal
     `/pipeline/deals/${dealId}/unhold`, { note });
 }
 
+export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanAppHistoryEvent[]; linked_application_id: string | null }> {
+  return getJson<{ journey: LoanAppHistoryEvent[]; linked_application_id: string | null }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/journey`);
+}
+
 // ── Daily Branch Log ───────────────────────────────────────────
 export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; }
 export interface BranchLogEntry {
@@ -1134,6 +1139,7 @@ import type {
   CommitteeVoteRequest,
   ResolveCommitteeRequest,
   AppSla,
+  LoanAppHistoryEvent,
 } from '@/types/lms';
 
 

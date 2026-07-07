@@ -268,3 +268,19 @@ def build_case_journey(app: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     merged.sort(key=lambda e: _parse_ts(e.get("at")))
     return merged
+
+
+def build_deal_journey(deal: Dict[str, Any],
+                       activities: Optional[List[Dict[str, Any]]] = None
+                       ) -> List[Dict[str, Any]]:
+    """Case Journey for a pipeline deal that is NOT yet linked to a credit
+    application (origination stages). Reuses the same deal->journey normalisation
+    as the merged application journey, so the two surfaces render identically.
+    Oldest-first; never raises.
+    """
+    try:
+        evs = _events_from_deal(deal, activities or [])
+        evs.sort(key=lambda e: _parse_ts(e.get("at")))
+        return evs
+    except Exception:
+        return []
