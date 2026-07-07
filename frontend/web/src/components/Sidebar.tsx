@@ -8,7 +8,7 @@ interface NavItem {
   path: string;
   label: string;
   matchActive: (pathname: string) => boolean;
-  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean) => boolean;
+  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean, isCreditStaff: boolean) => boolean;
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
@@ -39,11 +39,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Credit Intelligence (CIS)',
     items: [
-      { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
+      { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
       { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
-      { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops') },
-      { path: '/credit-analytics',    label: 'Credit Analytics',    matchActive: (p) => p.startsWith('/credit-analytics') },
+      { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+      { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+      { path: '/credit-analytics',    label: 'Credit Analytics',    matchActive: (p) => p.startsWith('/credit-analytics'), visibleFor: (_m, _a, _c, _md, credit) => credit },
     ],
   },
   {
@@ -78,6 +78,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const isCfgAdmin = isAdmin || ['admin', 'director', 'chief', 'managing'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
   // First-rollout gate: admin or the MD/CEO only.
   const isAdminOrMd = isAdmin || ['managing director', 'chief executive'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
+  // Credit Intelligence modules belong to credit staff (analysts, credit admin,
+  // treasury/disbursement, recovery) + admin/MD. Front-line RMs/branch see the
+  // pipeline instead, and track their own cases there.
+  const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
 
   return (
     <aside className="sidebar">
@@ -92,7 +96,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="sb-nav">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd)),
+            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
           );
           if (!items.length) return null;
           return (

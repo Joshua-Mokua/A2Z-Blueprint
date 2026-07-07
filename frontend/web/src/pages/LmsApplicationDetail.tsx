@@ -138,11 +138,11 @@ export function LmsApplicationDetail() {
   }
 
 
-  const _isAssignedAnalyst = Boolean(application.assignment_purpose && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')); const canOriginate = Boolean(permissions.can_view) && !_isAssignedAnalyst;
   // IA Phase 3: the VIEW gate (which panel layout to show) keys purely on
   // "is the viewer the assigned analyst" — independent of assignment_purpose,
   // so legacy assignments (no purpose recorded) still get the analyst layout.
-  // The origination gate above (canOriginate) is left unchanged.
+  // Editing on the credit page is credit-only (permissions.can_update), which
+  // excludes the RM/originator by design.
   const _viewerIsAnalyst = Boolean(application.analyst?.code) && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '');
 
   // IA Phase 3: the Assessment card is rendered in one of two positions —
@@ -428,7 +428,7 @@ export function LmsApplicationDetail() {
         </Card>
 
         {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
-        <AttachmentsBccCard appId={application.id} canEdit={canOriginate} toast={toast} defaultCollapsed={_viewerIsAnalyst} />
+        <AttachmentsBccCard appId={application.id} canEdit={!!permissions.can_update} toast={toast} defaultCollapsed={_viewerIsAnalyst} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
