@@ -8,7 +8,7 @@ interface NavItem {
   path: string;
   label: string;
   matchActive: (pathname: string) => boolean;
-  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean) => boolean;
+  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean) => boolean;
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
@@ -20,7 +20,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/',              label: 'Dashboard',        matchActive: (p) => p === '/' },
       { path: '/perform',       label: 'BSC Performance',  matchActive: (p) => p === '/perform' },
-      { path: '/cascade',       label: 'Target Cascade',   matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/') },
+      { path: '/cascade',       label: 'Target Cascade',   matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/initiatives',   label: 'Initiatives',      matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
       { path: '/profitability', label: 'Profitability',    matchActive: (p) => p === '/profitability' },
       { path: '/sla',           label: 'SLA Monitor',      matchActive: (p) => p.startsWith('/sla'), visibleFor: (m, a) => m || a },
@@ -40,7 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Credit Intelligence (CIS)',
     items: [
       { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/') },
-      { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening') },
+      { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/') },
       { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops') },
       { path: '/credit-analytics',    label: 'Credit Analytics',    matchActive: (p) => p.startsWith('/credit-analytics') },
@@ -49,13 +49,13 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Reference & Admin',
     items: [
-      { path: '/cbs',              label: 'Customer Lookup',     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/') },
-      { path: '/fx-rates',         label: 'FX Rates',            matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_m, a) => a },
-      { path: '/admin/config',     label: 'Configuration',       matchActive: (p) => p.startsWith('/admin/config'), visibleFor: (_m, _a, c) => c },
-      { path: '/admin/roles',      label: 'Role Registry',       matchActive: (p) => p.startsWith('/admin/roles') },
-      { path: '/admin/hierarchy',  label: 'Reporting Hierarchy', matchActive: (p) => p.startsWith('/admin/hierarchy'), visibleFor: (_m, _a, c) => c },
-      { path: '/admin/committees', label: 'Credit Committees',   matchActive: (p) => p.startsWith('/admin/committees'), visibleFor: (_m, _a, c) => c },
-      { path: '/admin/staff',      label: 'Staff Admin',         matchActive: (p) => p.startsWith('/admin/staff'), visibleFor: (_m, _a, c) => c },
+      { path: '/cbs',              label: 'Customer Lookup',     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/fx-rates',         label: 'FX Rates',            matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/config',     label: 'Configuration',       matchActive: (p) => p.startsWith('/admin/config'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/roles',      label: 'Role Registry',       matchActive: (p) => p.startsWith('/admin/roles'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/hierarchy',  label: 'Reporting Hierarchy', matchActive: (p) => p.startsWith('/admin/hierarchy'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/committees', label: 'Credit Committees',   matchActive: (p) => p.startsWith('/admin/committees'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/staff',      label: 'Staff Admin',         matchActive: (p) => p.startsWith('/admin/staff'), visibleFor: (_m, _a, _c, md) => md },
     ],
   },
 ];
@@ -75,6 +75,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const isMgr      = isManager(user);
   const isAdmin    = user?.is_admin ?? false;
   const isCfgAdmin = isAdmin || ['admin', 'director', 'chief', 'managing'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
+  // First-rollout gate: admin or the MD/CEO only.
+  const isAdminOrMd = isAdmin || ['managing director', 'chief executive'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
 
   return (
     <aside className="sidebar">
@@ -89,7 +91,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="sb-nav">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin)),
+            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd)),
           );
           if (!items.length) return null;
           return (
