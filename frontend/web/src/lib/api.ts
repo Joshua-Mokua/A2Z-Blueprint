@@ -1928,7 +1928,7 @@ export async function saveDealCr(
 }
 
 // committee decision capture on the deal (4b-4)
-export interface CommitteeVote { name: string; role: string; vote: string; }
+export interface CommitteeVote { name: string; role: string; vote: string; documents_validated?: boolean; comment?: string; }
 export interface CommitteeRecord {
   outcome: string; mode: string; votes: CommitteeVote[];
   note?: string; recorded_by?: string; recorded_at?: string;

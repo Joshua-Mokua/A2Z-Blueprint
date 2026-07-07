@@ -10184,8 +10184,18 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
             vote = str(v.get("vote", "")).upper()
             if vote not in ("YES", "NO", "ABSTAIN", "RECUSED"):
                 raise HTTPException(status_code=400, detail=f"invalid vote '{vote}'")
-            clean_votes.append({"name": str(v.get("name", "")).strip(),
-                                "role": str(v.get("role", "")).strip(), "vote": vote})
+            name = str(v.get("name", "")).strip()
+            docs_ok = bool(v.get("documents_validated"))
+            # Governance: a member may not vote YES without confirming they have
+            # checked & validated all documentation.
+            if vote == "YES" and not docs_ok:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{name or 'A member'} voted YES without confirming all documentation was checked & validated.")
+            clean_votes.append({"name": name,
+                                "role": str(v.get("role", "")).strip(), "vote": vote,
+                                "documents_validated": docs_ok,
+                                "comment": str(v.get("comment", "") or "").strip()})
         outcome = _derive_outcome_from_votes(clean_votes, committee.get("voting_rule"))
         record = {"outcome": outcome, "mode": "voting", "votes": clean_votes, "note": note}
     else:

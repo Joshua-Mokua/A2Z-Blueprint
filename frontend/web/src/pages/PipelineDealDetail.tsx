@@ -1353,21 +1353,26 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
 
   if (!data || data.cr_only) return null;
 
-  const setVote = (code: string, i: number, field: keyof CommitteeVote, value: string) => {
+  const setVote = (code: string, i: number, field: keyof CommitteeVote, value: string | boolean) => {
     setVoteDraft((p) => {
       const gate = data.gates.find((g) => g.code === code);
-      const base = p[code] ?? (gate?.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '' }));
+      const base = p[code] ?? (gate?.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '', documents_validated: false, comment: '' }));
       const arr = base.map((v, j) => (j === i ? { ...v, [field]: value } : v));
       return { ...p, [code]: arr };
     });
   };
 
   const votesFor = (gate: CommitteeGate): CommitteeVote[] =>
-    voteDraft[gate.code] ?? (gate.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '' }));
+    voteDraft[gate.code] ?? (gate.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '', documents_validated: false, comment: '' }));
 
   const recordVoting = async (gate: CommitteeGate) => {
     const votes = votesFor(gate).filter((v) => v.vote);
     if (votes.length === 0) { toast({ tone: 'danger', message: 'Record at least one vote.' }); return; }
+    const yesNoDocs = votes.find((v) => v.vote === 'YES' && !v.documents_validated);
+    if (yesNoDocs) {
+      toast({ tone: 'danger', message: `${yesNoDocs.name || 'A member'} must confirm all documentation was checked & validated to vote YES.` });
+      return;
+    }
     setBusy(gate.code);
     try {
       await recordDealCommitteeDecision(dealId, { code: gate.code, votes });
@@ -1419,7 +1424,11 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                   {gate.record.mode === 'voting' && gate.record.votes.length > 0 && (
                     <ul className="mt-1 list-disc pl-5">
                       {gate.record.votes.map((v, i) => (
-                        <li key={i}>{v.name} ({v.role}): {v.vote}</li>
+                        <li key={i}>
+                          {v.name} ({v.role}): {v.vote}
+                          {v.documents_validated ? ' · ✓ docs validated' : ''}
+                          {v.comment ? ` — ${v.comment}` : ''}
+                        </li>
                       ))}
                     </ul>
                   )}
@@ -1449,19 +1458,28 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                     )}
                     <div className="space-y-1">
                       {votesFor(gate).map((v, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Name" value={v.name}
-                            onChange={(e) => setVote(gate.code, i, 'name', e.target.value)} />
-                          <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Role" value={v.role}
-                            onChange={(e) => setVote(gate.code, i, 'role', e.target.value)} />
-                          <select className="w-1/3 rounded border px-2 py-1 text-xs" value={v.vote}
-                            onChange={(e) => setVote(gate.code, i, 'vote', e.target.value)}>
-                            <option value="">— vote —</option>
-                            <option value="YES">YES</option>
-                            <option value="NO">NO</option>
-                            <option value="ABSTAIN">ABSTAIN</option>
-                            <option value="RECUSED">RECUSED</option>
-                          </select>
+                        <div key={i} className="rounded border border-gray-100 p-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Name" value={v.name}
+                              onChange={(e) => setVote(gate.code, i, 'name', e.target.value)} />
+                            <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Role" value={v.role}
+                              onChange={(e) => setVote(gate.code, i, 'role', e.target.value)} />
+                            <select className="w-1/3 rounded border px-2 py-1 text-xs" value={v.vote}
+                              onChange={(e) => setVote(gate.code, i, 'vote', e.target.value)}>
+                              <option value="">— vote —</option>
+                              <option value="YES">YES</option>
+                              <option value="NO">NO</option>
+                              <option value="ABSTAIN">ABSTAIN</option>
+                              <option value="RECUSED">RECUSED</option>
+                            </select>
+                          </div>
+                          <label className="mt-1 flex items-center gap-2 text-xs text-gray-700">
+                            <input type="checkbox" checked={!!v.documents_validated}
+                              onChange={(e) => setVote(gate.code, i, 'documents_validated', e.target.checked)} />
+                            I have checked &amp; validated all documentation{v.vote === 'YES' ? ' (required for YES)' : ''}
+                          </label>
+                          <input className="mt-1 w-full rounded border px-2 py-1 text-xs" placeholder="Comment (optional)"
+                            value={v.comment ?? ''} onChange={(e) => setVote(gate.code, i, 'comment', e.target.value)} />
                         </div>
                       ))}
                     </div>
