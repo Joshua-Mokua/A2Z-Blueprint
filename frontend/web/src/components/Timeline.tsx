@@ -32,6 +32,8 @@ const EVENT_LABELS: Record<string, string> = {
   handoff_to_credit_admin: 'Handed off to Credit Admin',
   referred_to_committee: 'Referred to credit committee',
   committee_vote: 'Committee vote recorded',
+  sla_breached: 'SLA breached',
+  sla_commitment: 'SLA commitment recorded',
 };
 
 export function eventLabel(ev: string): string {
@@ -42,6 +44,19 @@ export function eventLabel(ev: string): string {
 
 function label(ev: string): string {
   return eventLabel(ev);
+}
+
+// Per-event colour: SLA breaches / declines are red, at-risk / holds / returns
+// amber, approvals green, everything else the brand blue.
+function eventTone(ev: string): { dot: string; text: string } {
+  if (ev === 'sla_breached' || ev === 'decision_declined' || ev === 'offer_validation_rejected'
+      || ev.includes('breach') || ev.includes('reject'))
+    return { dot: '#DC2626', text: 'text-red-700' };
+  if (ev === 'sla_commitment' || ev === 'placed_on_hold' || ev === 'returned_for_rework'
+      || ev === 'decision_returned' || ev === 'committee_appeal')
+    return { dot: '#D97706', text: 'text-amber-700' };
+  if (ev === 'decision_approved') return { dot: '#059669', text: 'text-emerald-700' };
+  return { dot: 'var(--brand-primary)', text: 'text-gray-900' };
 }
 
 function fmtWhen(at?: string): string {
@@ -66,14 +81,16 @@ export function Timeline({ events, emptyHint }: TimelineProps) {
   }
   return (
     <ol className="relative border-l border-gray-200 ml-3 space-y-4 py-1">
-      {events.map((e, i) => (
+      {events.map((e, i) => {
+        const tone = eventTone(e.event);
+        return (
         <li key={`${e.event}-${i}`} className="ml-4">
           <span
             className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full border-2 border-white"
-            style={{ background: 'var(--brand-primary)' }}
+            style={{ background: tone.dot }}
           />
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-900">{label(e.event)}</span>
+            <span className={`text-sm font-medium ${tone.text}`}>{label(e.event)}</span>
             <span className="text-xs text-gray-400">{fmtWhen(e.at)}</span>
           </div>
           {(e.by_name || e.by || e.note) && (
@@ -90,7 +107,8 @@ export function Timeline({ events, emptyHint }: TimelineProps) {
             </div>
           )}
         </li>
-      ))}
+        );
+      })}
     </ol>
   );
 }
