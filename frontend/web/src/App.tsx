@@ -92,6 +92,7 @@ import BranchLog from './pages/BranchLog';
 import CommitteeAdmin from './pages/CommitteeAdmin';
 import { CommitteeConvening } from './pages/CommitteeConvening';
 import StaffAdmin from './pages/StaffAdmin';
+import CbsDebug from './pages/CbsDebug';
 import Referrals from './pages/Referrals';
 import Sla from './pages/Sla';
 import { InitiativeDetail } from './pages/InitiativeDetail';
@@ -175,7 +176,8 @@ function App() {
                     <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
                     <Route path="/branch-log" element={<BranchLog />} />
                     <Route path="/admin/committees" element={<CommitteeAdmin />} />
-                    <Route path="/admin/staff" element={<StaffAdmin />} />
+                    <Route path="/admin/staff"      element={<StaffAdmin />} />
+                    <Route path="/admin/cbs-debug" element={<CbsDebug />} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/sla" element={<Sla />} />
 

@@ -26,11 +26,14 @@ Why no scope filter:
   Audit log captures every purposeful lookup for accountability.
 """
 
+import os
+import time as _time
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 import logging
 
-from utils.auth_jwt import get_current_user
+from utils.auth_jwt import get_current_user, require_config_admin
 from utils.core_audit import audit_log
 from utils.cbs_manager import (
     get_customer_by_cif,
@@ -269,3 +272,95 @@ def fetch_aggregates(
         "aggregates": get_aggregates(),
         "source":     "cbs_manager",
     }
+
+
+# ── FlexCube connection debug (config-admin only) ────────────────────────
+
+PROBE_SCRIPTS = [
+    {"name": "CUSTOMERACCOUNTDETAILS", "params": {"ACCOUNT_NUMBER": "__PROBE__"},
+     "description": "Account + customer summary by account number"},
+    {"name": "CUSTOMERACTIVELOANS",    "params": {"CIF": "__PROBE__"},
+     "description": "Active loan accounts by FlexCube F7 CIF"},
+]
+
+
+@router.get("/debug/flexcube")
+def flexcube_debug_status(
+    probe: bool = Query(False, description="Run a live probe call to FlexCube"),
+    user: dict  = Depends(require_config_admin),
+):
+    """
+    FlexCube connection status + optional live probe.
+
+    Config-admin only (CEO / MD / Director / Admin). Returns:
+      - configured: whether FLEXCUBE_SCRIPTS_URL is set
+      - url_hint:   first 25 chars of the URL (masked — never returns full URL)
+      - timeout_s:  configured timeout
+      - max_retries: configured retries
+      - scripts:    catalogue of available scripts
+      - probe:      when ?probe=true, runs CUSTOMERACCOUNTDETAILS with a dummy
+                    account number and returns status / response_ms / error
+    """
+    from utils.flexcube_script_client import is_configured
+
+    raw_url  = os.getenv("FLEXCUBE_SCRIPTS_URL", "")
+    timeout  = int(os.getenv("FLEXCUBE_TIMEOUT_SECONDS", "15"))
+    retries  = int(os.getenv("FLEXCUBE_MAX_RETRIES", "3"))
+    configured = bool(raw_url.strip())
+    url_hint   = (raw_url[:25] + "…") if len(raw_url) > 25 else raw_url
+
+    result: dict = {
+        "configured":  configured,
+        "url_hint":    url_hint if configured else None,
+        "timeout_s":   timeout,
+        "max_retries": retries,
+        "scripts":     PROBE_SCRIPTS,
+        "probe":       None,
+    }
+
+    if probe:
+        if not configured:
+            result["probe"] = {
+                "status":      "skipped",
+                "error":       "FLEXCUBE_SCRIPTS_URL is not set",
+                "response_ms": None,
+            }
+        else:
+            from utils.flexcube_script_client import execute_script, FlexcubeScriptError
+            t0 = _time.monotonic()
+            try:
+                rows = execute_script(
+                    "CUSTOMERACCOUNTDETAILS",
+                    {"ACCOUNT_NUMBER": "__PROBE__"},
+                )
+                ms = int((_time.monotonic() - t0) * 1000)
+                result["probe"] = {
+                    "status":      "ok",
+                    "rows_returned": len(rows),
+                    "response_ms": ms,
+                    "note": "0 rows is normal for a probe — FlexCube is reachable",
+                    "error": None,
+                }
+            except FlexcubeScriptError as exc:
+                ms = int((_time.monotonic() - t0) * 1000)
+                result["probe"] = {
+                    "status":      "error",
+                    "error":       str(exc),
+                    "response_ms": ms,
+                    "rows_returned": 0,
+                }
+            except Exception as exc:
+                ms = int((_time.monotonic() - t0) * 1000)
+                result["probe"] = {
+                    "status":      "error",
+                    "error":       f"Unexpected: {exc}",
+                    "response_ms": ms,
+                    "rows_returned": 0,
+                }
+
+    audit_log(
+        "CBS_FLEXCUBE_DEBUG",
+        user.get("username", "unknown"),
+        detail=f"probe={probe} configured={configured}",
+    )
+    return result

@@ -606,6 +606,21 @@ a { color: inherit; text-decoration: none; }
   .login-right { padding: 24px 16px; }
 }
 
+/* ── CBS Debug panel ─────────────────────────────── */
+.cbs-dl { display: flex; flex-direction: column; gap: 10px; }
+.cbs-dl-row { display: flex; align-items: baseline; gap: 12px; font-size: 13px; }
+.cbs-dl-row dt { width: 220px; flex-shrink: 0; color: var(--mgray); font-weight: 500; }
+.cbs-dl-row dd { flex: 1; color: var(--text); margin: 0; }
+.cbs-guide-box { background: var(--lgray, #EDEDED); border-radius: 10px; padding: 14px 16px; }
+@media (prefers-color-scheme: dark) { .cbs-guide-box { background: rgba(255,255,255,.05); } }
+.cbs-code { font-family: ui-monospace, monospace; font-size: 11.5px; white-space: pre; line-height: 1.7;
+  overflow-x: auto; display: block; }
+.cbs-guide-list { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.8; color: var(--gray); }
+.cbs-guide-list-ordered { list-style: decimal; }
+.cbs-probe-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── Scrollbar ───────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
