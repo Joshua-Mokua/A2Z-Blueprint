@@ -26,10 +26,9 @@ import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
-  listLmsAttachments, addLmsAttachment, recordLmsBcc,
   getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
-  type LmsAttachment, type CrView, type CrField, type CommitteeMember, type CommitteeTier,
-} from '@/lib/api';
+  type CrView, type CrField, type CommitteeMember, type CommitteeTier,
+} from '@/lib/api';  // attachment imports trimmed with AttachmentsBccCard
 import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
 import { printDocument, escapeHtml } from '@/lib/print';
 import { Badge } from '@/components/Badge';
@@ -427,8 +426,8 @@ export function LmsApplicationDetail() {
           </Card.Body>
         </Card>
 
-        {/* ─────────── Attachments & Branch Credit Committee ─────────── */}
-        <AttachmentsBccCard appId={application.id} canEdit={!!permissions.can_update} toast={toast} defaultCollapsed={_viewerIsAnalyst} />
+        {/* Documents live on the RM's pipeline workbench (single source);
+            the credit surface stays free of origination controls. */}
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -1374,197 +1373,9 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 }
 
 
-// ─── Attachments & Branch Credit Committee (BCC) ──────────────────────
-// Reference-mode attachments: the bank's document store holds the files;
-// we record filename + ref. The BCC card captures the branch committee's
-// signed outcome, which auto-files as a 'bcc_minutes' attachment.
-const ATTACHMENT_KINDS = [
-  'bcc_minutes', 'financials', 'kyc', 'valuation', 'collateral',
-  'bank_statements', 'board_resolution', 'other',
-];
 
-function AttachmentsBccCard({ appId, canEdit, toast, defaultCollapsed = false }: {
-  appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
-  defaultCollapsed?: boolean;
-}) {
-  const [atts, setAtts] = useState<LmsAttachment[]>([]);
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
-  const [bcc, setBcc] = useState<Record<string, unknown> | null>(null);
-  const [busy, setBusy] = useState(false);
-  // Add-attachment form
-  const [kind, setKind] = useState('financials');
-  const [filename, setFilename] = useState('');
-  const [ref, setRef] = useState('');
-  // BCC form
-  const [showBcc, setShowBcc] = useState(false);
-  const [bccVerdict, setBccVerdict] = useState('recommended');
-  const [bccBranch, setBccBranch] = useState('');
-  const [bccChair, setBccChair] = useState('');
-  const [bccAttendees, setBccAttendees] = useState('');
-  const [bccMinutes, setBccMinutes] = useState('');
-  const [bccFile, setBccFile] = useState('');
-
-  const load = async () => {
-    try {
-      const r = await listLmsAttachments(appId);
-      setAtts(r.attachments || []);
-      setBcc(r.bcc || null);
-    } catch { /* page-local, non-fatal */ }
-  };
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [appId]);
-
-  const onAdd = async () => {
-    if (!filename.trim() && !ref.trim()) {
-      toast({ tone: 'danger', message: 'Enter a filename or reference.' }); return;
-    }
-    setBusy(true);
-    try {
-      await addLmsAttachment(appId, { kind, filename: filename.trim(), ref: ref.trim() });
-      setFilename(''); setRef('');
-      toast({ tone: 'success', message: 'Attachment added.' });
-      await load();
-    } catch (e) {
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed.' });
-    } finally { setBusy(false); }
-  };
-
-  const onBcc = async () => {
-    if (!bccBranch.trim()) { toast({ tone: 'danger', message: 'Branch is required.' }); return; }
-    setBusy(true);
-    try {
-      await recordLmsBcc(appId, {
-        verdict: bccVerdict, branch: bccBranch.trim(), chaired_by: bccChair.trim(),
-        attendees: bccAttendees.split(',').map((s) => s.trim()).filter(Boolean),
-        minutes: bccMinutes.trim(), filename: bccFile.trim(),
-      });
-      setShowBcc(false);
-      toast({ tone: 'success', message: 'BCC outcome recorded.' });
-      await load();
-    } catch (e) {
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed.' });
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <Card className="mt-6">
-      <Card.Header>
-        <div className="flex items-center justify-between gap-2 w-full">
-          <h2 className="text-base font-semibold text-gray-900">Attachments &amp; Branch Credit Committee</h2>
-          <button className="text-sm text-brand-primary" onClick={() => setCollapsed((c) => !c)}>
-            {collapsed ? `Show${atts.length ? ` (${atts.length})` : ''}` : 'Hide'}
-          </button>
-        </div>
-      </Card.Header>
-      {!collapsed && (
-      <Card.Body>
-        {/* BCC summary, if recorded */}
-        {bcc ? (
-          <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Branch Credit Committee</div>
-            <div className="text-sm text-gray-800">
-              <span className="font-medium capitalize">{String(bcc.verdict)}</span>
-              {bcc.branch ? <> · {String(bcc.branch)}</> : null}
-              {bcc.chaired_by ? <> · chaired by {String(bcc.chaired_by)}</> : null}
-            </div>
-            {Array.isArray(bcc.attendees) && bcc.attendees.length > 0 && (
-              <div className="text-xs text-gray-500 mt-1">Signatories: {(bcc.attendees as string[]).join(', ')}</div>
-            )}
-            {bcc.minutes ? <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">{String(bcc.minutes)}</div> : null}
-          </div>
-        ) : (
-          <div className="mb-4 text-sm text-gray-500">
-            No Branch Credit Committee outcome recorded yet.
-          </div>
-        )}
-
-        {/* Attachments list */}
-        <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-          Attachments ({atts.length})
-        </div>
-        {atts.length > 0 ? (
-          <ul className="text-sm text-gray-700 space-y-1 mb-4">
-            {atts.map((a) => {
-              const url = a.ref && /^https?:\/\//i.test(a.ref) ? a.ref : '';
-              return (
-                <li key={a.id} className="flex items-center gap-2">
-                  <span className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
-                  {url ? (
-                    <a href={url} target="_blank" rel="noopener noreferrer"
-                       className="font-medium text-brand-primary hover:underline">
-                      {a.filename || a.ref}
-                    </a>
-                  ) : (
-                    <span className="font-medium">{a.filename || a.ref || '(reference)'}</span>
-                  )}
-                  {url && (
-                    <a href={url} target="_blank" rel="noopener noreferrer"
-                       className="text-xs text-brand-primary hover:underline">Open ↗</a>
-                  )}
-                  {!url && a.ref && a.filename ? (
-                    <span className="text-xs font-mono text-gray-400" title="Store reference">{a.ref}</span>
-                  ) : null}
-                  {a.added_by ? <span className="text-xs text-gray-400">· {a.added_by}</span> : null}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="text-xs text-gray-400 mb-4">No attachments yet.</div>
-        )}
-
-        {canEdit && (
-          <>
-            {/* Add attachment */}
-            <div className="rounded-lg border border-gray-100 p-3 mb-3">
-              <div className="text-xs font-medium text-gray-700 mb-2">Add attachment (reference)</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <select value={kind} onChange={(e) => setKind(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-                  {ATTACHMENT_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-                </select>
-                <Input label="" placeholder="Filename" value={filename}
-                  onChange={(e) => setFilename(e.target.value)} disabled={busy} />
-                <Input label="" placeholder="Store ref / URL" value={ref}
-                  onChange={(e) => setRef(e.target.value)} disabled={busy} />
-              </div>
-              <div className="mt-2">
-                <Button onClick={onAdd} disabled={busy}>{busy ? 'Working…' : 'Add attachment'}</Button>
-              </div>
-            </div>
-
-            {/* Record BCC */}
-            {!showBcc ? (
-              <Button variant="secondary" onClick={() => setShowBcc(true)}>Record Branch Credit Committee outcome</Button>
-            ) : (
-              <div className="rounded-lg border border-gray-100 p-3">
-                <div className="text-xs font-medium text-gray-700 mb-2">Branch Credit Committee outcome</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <select value={bccVerdict} onChange={(e) => setBccVerdict(e.target.value)}
-                    className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-                    {['recommended', 'approved', 'declined', 'deferred'].map((v) => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                  <Input label="" placeholder="Branch" value={bccBranch} onChange={(e) => setBccBranch(e.target.value)} disabled={busy} />
-                  <Input label="" placeholder="Chaired by (Branch Manager)" value={bccChair} onChange={(e) => setBccChair(e.target.value)} disabled={busy} />
-                  <Input label="" placeholder="Attendees (comma-separated)" value={bccAttendees} onChange={(e) => setBccAttendees(e.target.value)} disabled={busy} />
-                  <Input label="" placeholder="Signed minutes filename" value={bccFile} onChange={(e) => setBccFile(e.target.value)} disabled={busy} />
-                </div>
-                <textarea placeholder="Minutes / committee notes" value={bccMinutes}
-                  onChange={(e) => setBccMinutes(e.target.value)} disabled={busy}
-                  className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" rows={3} />
-                <div className="mt-2 flex gap-2">
-                  <Button onClick={onBcc} disabled={busy}>{busy ? 'Working…' : 'Record BCC outcome'}</Button>
-                  <Button variant="secondary" onClick={() => setShowBcc(false)} disabled={busy}>Cancel</Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </Card.Body>
-      )}
-    </Card>
-  );
-}
-
+// (Attachments & BCC card removed from the credit surface — the RM's documents
+// live on the pipeline workbench; committee outcomes on the deal's committee card.)
 
 // ─── Credit Report (CR) — hybrid auto-populated appraisal memo ─────────
 // Template-driven: renders sections/fields from the server. auto/cbs fields
