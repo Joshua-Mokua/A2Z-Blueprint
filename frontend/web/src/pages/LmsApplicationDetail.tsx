@@ -1297,7 +1297,6 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   const [cr, setCr] = useState<CrView | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -1356,13 +1355,9 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
           <button className="text-sm text-brand-primary" onClick={printCr}>Print</button>
-          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide' : 'Open'}
-          </button>
         </div>
       </SHeader>
-      {open && (
-        <SBody>
+      <SBody>
           <p className="text-xs text-gray-500 mb-4">
             Fields tinted blue come from CBS; grey from the application. Both are editable.
             Plain fields are for the relationship owner to complete.
@@ -1413,7 +1408,6 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
             <div className="mt-2 text-xs text-gray-400">Last saved by {cr.updated_by}</div>
           )}
         </SBody>
-      )}
     </Shell>
   );
 }

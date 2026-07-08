@@ -1171,7 +1171,6 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   const [cr, setCr] = useState<CrView | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const load = async () => {
     try { setCr(await getDealCr(dealId)); } catch { /* non-fatal */ }
@@ -1211,13 +1210,9 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
-          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide' : 'Open'}
-          </button>
         </div>
       </Card.Header>
-      {open && (
-        <Card.Body>
+      <Card.Body>
           <p className="text-xs text-gray-500 mb-4">
             Complete the CR at the branch (after documents). Blue = CBS, grey = deal;
             both editable. Plain fields are for the deal owner.
@@ -1265,7 +1260,6 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
             </div>
           )}
         </Card.Body>
-      )}
     </Card>
   );
 }
