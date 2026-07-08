@@ -9871,6 +9871,7 @@ def delete_deal_document(deal_id: str, doc_name: str,
                          user: dict = Depends(get_current_user)):
     """Remove an attached document (so it can be re-uploaded)."""
     pm, deal = _deal_for_docs(deal_id, user)
+    _enforce_deal_lock(deal, user, "documents")  # Phase L: no removals once the deal is locked (submitted — documents travel with the case)
     files = dict(deal.get("document_files", {}) or {})
     meta = files.pop(doc_name, None)
     if meta:
