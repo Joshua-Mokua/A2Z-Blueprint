@@ -291,29 +291,59 @@ def _db_customer_by_cif(cif: str) -> Optional[dict]:
     """Build a customer record from cbs_accounts rows sharing this F12 CIF.
 
     There is no separate customer-master table — the EOD export is
-    account-level, so this surfaces whatever customer-identifying fields
-    ride along on the account records (RM, branch, segment, contact
-    details). No full_name/kyc_status/risk_rating/aml_flag/pep_flag —
-    those aren't in the source data.
+    account-level. The frontend's CbsCustomer type (types/cbs.ts) requires
+    every field to be present (string/bool/number, never absent) because
+    the CSV-backed path (_customer_row_to_dict) always filled them in —
+    returning a partial dict here crashes the UI (e.g. kycStatusTone()
+    calling .toUpperCase() on an absent kyc_status). So every contract
+    field gets a safe default; fields genuinely unavailable in this
+    source (kyc_status, risk_rating, sector, region, ...) come back as
+    "" / False / 0, which the frontend already renders as "unknown" /
+    hidden badges / blank — never a crash.
+
+    full_name is populated from AC_DESC (account_type_name) — despite
+    the column name, this field holds the account holder's name on the
+    individual/corporate EOD export, not a true "description".
     """
     rows = _db_accounts_for_cif(cif)
     if not rows:
         return None
     first = rows[0]
+    full_name = next(
+        (r.get("account_type_name") for r in rows if r.get("account_type_name")), ""
+    )
     return {
-        "cif":                       first.get("f12_cif"),
-        "customer_type":             first.get("customer_type"),
-        "cust_category":             first.get("cust_category"),
-        "cif_class":                 first.get("cif_class"),
-        "sub_segment":               first.get("sub_segment"),
-        "branch_code":               first.get("branch_code"),
-        "relationship_manager_code": first.get("rm_code"),
-        "relationship_manager_name": first.get("rm_name"),
-        "phone":                     first.get("phone"),
-        "email":                     first.get("email"),
-        "address":                   first.get("address"),
-        "introducer":                first.get("introducer"),
-        "account_count":             len(rows),
+        "cif":                       first.get("f12_cif") or cif,
+        "full_name":                 full_name,
+        "customer_type":             first.get("customer_type") or "",
+        "segment":                   first.get("cust_category") or "",
+        "sub_segment":               first.get("sub_segment") or "",
+        "sector":                    "",
+        "phone":                     first.get("phone") or "",
+        "email":                     first.get("email") or "",
+        "date_onboarded":            "",
+        "branch_code":               first.get("branch_code") or "",
+        "branch_name":               "",
+        "region":                    "",
+        "county":                    "",
+        "relationship_manager_code": first.get("rm_code") or "",
+        "kyc_status":                "",
+        "risk_rating":               "",
+        "is_dormant_customer":       all(bool(r.get("is_dormant")) for r in rows),
+        "preferred_currency":        "",
+        "total_deposit_balance":     0,
+        "total_loan_balance":        0,
+        "total_accounts":            len(rows),
+        "aml_flag":                  False,
+        "fatf_flag":                 False,
+        "pep_flag":                  False,
+        # Extra DB-sourced fields beyond the CbsCustomer contract — bonus
+        # info the frontend can use but doesn't require.
+        "cust_category":             first.get("cust_category") or "",
+        "cif_class":                 first.get("cif_class") or "",
+        "relationship_manager_name": first.get("rm_name") or "",
+        "introducer":                first.get("introducer") or "",
+        "address":                   first.get("address") or "",
         "_source":                   "db",
     }
 

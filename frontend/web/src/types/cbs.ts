@@ -118,7 +118,8 @@ export function segmentToCustomerType(segment: string): 'Individual' | 'Business
 
 
 /** Color tone for risk_rating badges. */
-export function riskRatingTone(risk: string): 'success' | 'warning' | 'danger' | 'neutral' {
+export function riskRatingTone(risk: string | null | undefined): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (!risk) return 'neutral';
   const r = risk.toUpperCase();
   if (r === 'LOW')        return 'success';
   if (r === 'MEDIUM')     return 'warning';
@@ -178,7 +179,8 @@ export interface CbsAccount360Response {
 
 
 /** Color tone for kyc_status badges. */
-export function kycStatusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
+export function kycStatusTone(status: string | null | undefined): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (!status) return 'neutral';
   const s = status.toUpperCase();
   if (s === 'COMPLETE' || s === 'COMPLIANT' || s === 'OK') return 'success';
   if (s === 'PENDING' || s === 'EXPIRING')                  return 'warning';
