@@ -500,7 +500,11 @@ def lms_application_submit_to_dcc(
         "at": _dt.datetime.now().isoformat(timespec="seconds"),
     }
     try:
-        lam.update(app_id, {"dept_analyst_review": review})
+        # Mark the case as before the DEPARTMENT Credit Committee (distinct from
+        # an authority-tier committee). P4b/c key off committee_kind to validate
+        # votes against the DCC roster and route the resolution back to the
+        # Department Analyst instead of auto-issuing the offer.
+        lam.update(app_id, {"dept_analyst_review": review, "committee_kind": "dcc"})
     except Exception:
         pass
     lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""), note=opinion)
