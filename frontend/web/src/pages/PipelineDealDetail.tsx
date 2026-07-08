@@ -722,39 +722,28 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     );
   }
 
-  // Only the owner / admin sees the submission form. If the ONLY thing blocking
-  // submission is the stage gate, show an explanation instead of hiding.
-  if (!checklist.can_submit) {
-    const gateReasons: string[] = [];
-    if (checklist.stage_ok === false && checklist.stage_required) {
-      gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
-    }
-    if ((checklist.committee_rejected ?? []).length > 0) {
-      gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
-    }
-    if ((checklist.committee_pending ?? []).length > 0) {
-      gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
-    }
-    if (checklist.cr_required && checklist.cr_ok === false) {
-      gateReasons.push('The Credit Report (CR) must be completed first.');
-    }
-    if (gateReasons.length > 0) {
-      const rejected = (checklist.committee_rejected ?? []).length > 0;
-      return (
-        <Card className="mt-6" stripe="accent">
-          <Card.Header>
-            <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
-            <Badge tone={rejected ? 'danger' : 'warning'} size="sm">{rejected ? 'committee gate' : 'prerequisites'}</Badge>
-          </Card.Header>
-          <Card.Body>
-            <p className="mb-2 text-sm text-gray-700">Before this deal can be submitted to credit analysis:</p>
-            <ul className="list-disc pl-5 text-sm text-amber-700">
-              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
-            </ul>
-          </Card.Body>
-        </Card>
-      );
-    }
+  // Gate reasons that block the FINAL submit. Shown as a soft banner in the
+  // upload UI below — they no longer hide the document upload. The CR
+  // prerequisite is intentionally NOT listed here: the RM completes the CR on
+  // its own tab, so surfacing it on the Documents tab is noise.
+  const gateReasons: string[] = [];
+  if (checklist.stage_ok === false && checklist.stage_required) {
+    gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
+  }
+  if ((checklist.committee_rejected ?? []).length > 0) {
+    gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
+  }
+  if ((checklist.committee_pending ?? []).length > 0) {
+    gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
+  }
+
+  // Hide the panel only when there is genuinely nothing for this viewer to do:
+  // can't submit, no gates, no required documents and no CR path (e.g. a
+  // non-owner, or a deal with no credit journey). Otherwise fall through and
+  // show the upload UI so the owner can attach documents even before the deal
+  // is submit-ready.
+  if (!checklist.can_submit && gateReasons.length === 0
+      && checklist.required.length === 0 && !checklist.cr_required) {
     return null;
   }
 
@@ -789,6 +778,14 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
         {reopenedForDocs && (
           <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
             Credit returned this deal for more information. Supply the outstanding documents below, then resubmit.
+          </div>
+        )}
+        {gateReasons.length > 0 && (
+          <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+            <div className="font-medium">Submission is blocked until:</div>
+            <ul className="list-disc pl-5">
+              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
           </div>
         )}
         <p className="text-xs text-gray-500 mb-3">
@@ -867,11 +864,14 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
             {missing.length} document{missing.length === 1 ? '' : 's'} still required.
           </div>
         )}
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-end gap-3">
+          {!checklist.can_submit && (
+            <span className="text-xs text-gray-500">Submission opens once all prerequisites are complete.</span>
+          )}
           <Button
             onClick={() => void onSubmit()}
             loading={submitting}
-            disabled={missing.length > 0}
+            disabled={missing.length > 0 || !checklist.can_submit}
           >
             Submit to Credit Analysis
           </Button>
