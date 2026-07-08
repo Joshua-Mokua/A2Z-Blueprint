@@ -23,6 +23,11 @@ function nplStatus(pct: number): RagStatus {
   if (pct <= 10) return 'at_risk';
   return 'off_track';
 }
+// Guards against a null/undefined numeric field reaching .toLocaleString()
+// (e.g. a SQL SUM/AVG over zero matching rows returns NULL, not 0).
+function num(n: number | null | undefined): string {
+  return (n ?? 0).toLocaleString();
+}
 function abbrev(n: number): string {
   const a = Math.abs(n);
   if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
@@ -57,7 +62,7 @@ export function Dashboard() {
           <div className="dashboard-hero-meta">
             <span>LCY {show((x) => kes(x.pipeline.lcy_value ?? 0))}</span>
             <span>FCY {show((x) => kes(x.pipeline.fcy_value ?? 0))}</span>
-            <span>{show((x) => x.pipeline.total_deals.toLocaleString())} live deals</span>
+            <span>{show((x) => num(x.pipeline.total_deals))} live deals</span>
             <button type="button" className="sec-lnk" onClick={() => navigate('/analytics')}>Drill into pipeline →</button>
           </div>
         </div>
@@ -100,7 +105,7 @@ export function Dashboard() {
         </div>
         <div className="kpi">
           <div className="kpi-label">Total Accounts</div>
-          <div className="kpi-value">{show((x) => x.credit.total_accounts.toLocaleString())}</div>
+          <div className="kpi-value">{show((x) => num(x.credit.total_accounts))}</div>
         </div>
       </div>
 
@@ -121,7 +126,7 @@ export function Dashboard() {
         </div>
         <div className="kpi">
           <div className="kpi-label">Total Deals</div>
-          <div className="kpi-value">{show((x) => x.pipeline.total_deals.toLocaleString())}</div>
+          <div className="kpi-value">{show((x) => num(x.pipeline.total_deals))}</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">LCY — KES equiv.</div>
@@ -138,10 +143,10 @@ export function Dashboard() {
         <span className="sec-lbl">Compliance &amp; Organisation</span>
       </div>
       <div className="dash-kpi-row">
-        <div className="kpi"><div className="kpi-label">AML Open Alerts</div><div className="kpi-value">{show((x) => x.aml.open_alerts.toLocaleString())}</div></div>
-        <div className="kpi"><div className="kpi-label">High-Risk Flags</div><div className="kpi-value">{show((x) => x.aml.high_risk.toLocaleString())}</div></div>
-        <div className="kpi"><div className="kpi-label">Active Staff</div><div className="kpi-value">{show((x) => x.org.total_staff.toLocaleString())}</div></div>
-        <div className="kpi"><div className="kpi-label">Departments</div><div className="kpi-value">{show((x) => x.org.departments.toLocaleString())}</div></div>
+        <div className="kpi"><div className="kpi-label">AML Open Alerts</div><div className="kpi-value">{show((x) => num(x.aml.open_alerts))}</div></div>
+        <div className="kpi"><div className="kpi-label">High-Risk Flags</div><div className="kpi-value">{show((x) => num(x.aml.high_risk))}</div></div>
+        <div className="kpi"><div className="kpi-label">Active Staff</div><div className="kpi-value">{show((x) => num(x.org.total_staff))}</div></div>
+        <div className="kpi"><div className="kpi-label">Departments</div><div className="kpi-value">{show((x) => num(x.org.departments))}</div></div>
       </div>
 
       {/* Credit Risk charts */}
@@ -151,7 +156,7 @@ export function Dashboard() {
       <div className="dash-chart-row">
         <ChartCard title="IFRS9 Stage Distribution" subtitle="Loan book by impairment stage" loading={creditLoading} empty={!credit || credit.ifrs9_total === 0} emptyMessage="No IFRS9 loan records available.">
           <DonutChart
-            centerValue={credit ? credit.ifrs9_total.toLocaleString() : ''}
+            centerValue={credit ? num(credit.ifrs9_total) : ''}
             centerLabel="IFRS9 Loans"
             data={[
               { name: 'Stage 1 — Performing',   value: credit?.ifrs9_stage1 ?? 0, color: ragColor.on_track },

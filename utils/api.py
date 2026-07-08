@@ -6619,24 +6619,35 @@ def md_dashboard(user: dict = Depends(get_current_user)):
     aml   = aml_summary(user=user)
     users = users_summary(user=user)
 
+    # NOTE: .get(key, 0) only covers a MISSING key — a SQL SUM/AVG over
+    # zero matching rows returns NULL, so the key is present with value
+    # None and the "0" default never kicks in. That null then reaches
+    # the frontend, which calls .toLocaleString() on it unguarded and
+    # blanks the whole dashboard. _safe_int/_safe_float coerce None (and
+    # missing keys) to 0/0.0 the same way every other summary endpoint
+    # in this file already does.
+    pipe_t, credit_t, aml_t, users_t = (
+        pipe.get("totals") or {}, credit.get("totals") or {},
+        aml.get("totals") or {}, users.get("totals") or {},
+    )
     result = {
-        "bsc":     {"overall_avg":bsc.get("overall_avg",0),
-                    "total_staff":bsc.get("total_staff",0)},
-        "pipeline":{"total_deals":pipe.get("totals",{}).get("total_deals",0),
-                    "pipeline_value":pipe.get("totals",{}).get("pipeline_value",0),
-                    "validated_value":pipe.get("totals",{}).get("validated_value",0),
-                    "pending_value":pipe.get("totals",{}).get("pending_value",0),
-                    "pending_validation":pipe.get("totals",{}).get("pending_validation",0),
-                    "won_value":pipe.get("totals",{}).get("won_value",0),
-                    "lcy_value":pipe.get("totals",{}).get("lcy_value",0),
-                    "fcy_value":pipe.get("totals",{}).get("fcy_value",0)},
-        "credit":  {"total_accounts":credit.get("totals",{}).get("total_accounts",0),
-                    "outstanding_bn":credit.get("totals",{}).get("outstanding_bn",0),
-                    "npl_ratio_pct":credit.get("totals",{}).get("npl_ratio_pct",0)},
-        "aml":     {"open_alerts":aml.get("totals",{}).get("open_alerts",0),
-                    "high_risk":aml.get("totals",{}).get("high_risk",0)},
-        "org":     {"total_staff":users.get("totals",{}).get("total_users",0),
-                    "departments":users.get("totals",{}).get("departments",0)},
+        "bsc":     {"overall_avg":_safe_float(bsc.get("overall_avg")),
+                    "total_staff":_safe_int(bsc.get("total_staff"))},
+        "pipeline":{"total_deals":_safe_int(pipe_t.get("total_deals")),
+                    "pipeline_value":_safe_float(pipe_t.get("pipeline_value")),
+                    "validated_value":_safe_float(pipe_t.get("validated_value")),
+                    "pending_value":_safe_float(pipe_t.get("pending_value")),
+                    "pending_validation":_safe_int(pipe_t.get("pending_validation")),
+                    "won_value":_safe_float(pipe_t.get("won_value")),
+                    "lcy_value":_safe_float(pipe_t.get("lcy_value")),
+                    "fcy_value":_safe_float(pipe_t.get("fcy_value"))},
+        "credit":  {"total_accounts":_safe_int(credit_t.get("total_accounts")),
+                    "outstanding_bn":_safe_float(credit_t.get("outstanding_bn")),
+                    "npl_ratio_pct":_safe_float(credit_t.get("npl_ratio_pct"))},
+        "aml":     {"open_alerts":_safe_int(aml_t.get("open_alerts")),
+                    "high_risk":_safe_int(aml_t.get("high_risk"))},
+        "org":     {"total_staff":_safe_int(users_t.get("total_users")),
+                    "departments":_safe_int(users_t.get("departments"))},
         "generated_at": datetime.now().isoformat(),
     }
     _set_cache("md_dashboard",result)
