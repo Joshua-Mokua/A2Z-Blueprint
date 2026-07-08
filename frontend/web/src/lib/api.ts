@@ -1237,6 +1237,19 @@ export async function assignLmsAnalyst(
   );
 }
 
+/**
+ * Self-pick: an analyst pulls an unallocated case to themselves (no manager
+ * assignment). Gated server-side by can_self_pick.
+ */
+export async function pickLmsApplication(
+  appId: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/pick`,
+    {},
+  );
+}
+
 
 /**
  * Partial update to application fields.

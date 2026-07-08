@@ -380,6 +380,61 @@ def lms_application_assign(
     return {"application": updated, "status": "assigned"}
 
 
+@router.post(
+    "/applications/{app_id}/pick",
+    response_model=LoanAppMutationResponse,
+)
+def lms_application_pick(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Self-pick: an analyst pulls an UNALLOCATED case to themselves.
+
+    Unlike /assign (manager-tier, chooses who), /pick lets a credit analyst or a
+    segment-specific Department Analyst assign an unallocated case (submitted, no
+    analyst) to THEMSELVES — so work doesn't stall when the assigning manager
+    (e.g. the Chief Credit) is away. Gated by can_self_pick (config-driven via
+    credit_workflow.self_pick; segment analysts limited to their own segment).
+    Reuses submit_to_credit with the caller as the analyst.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    perms = resolve_application_permissions(user, app)
+    if not perms.get("can_self_pick"):
+        raise HTTPException(
+            status_code=403,
+            detail=("You cannot self-pick this case — it is not unallocated, "
+                    "not in your segment, or self-pick is disabled."),
+        )
+
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_name = str(user.get('full_name', '') or '')
+    if not caller_code:
+        raise HTTPException(status_code=400, detail="Caller has no staff code; cannot self-pick.")
+
+    success = lam.submit_to_credit(
+        app_id,
+        analyst_code=caller_code,
+        analyst_name=caller_name,
+        by=caller_code,
+        by_name=caller_name,
+        by_role=str(user.get('role', '') or ''),
+    )
+    if not success:
+        raise HTTPException(status_code=500, detail="Self-pick failed (manager method returned False)")
+
+    audit_log("LMS_ANALYST_SELF_PICKED", str(user.get('username', '') or ''), f"{app_id}|{caller_code}")
+    try:
+        lam.update(app_id, {"assignment_requests": [], "assignment_purpose": "decisioning"})
+    except Exception:
+        pass
+    updated = lam.get(app_id)
+    return {"application": updated, "status": "assigned"}
+
+
 # ─────────────────────────────────────────────────────────────────────
 # PUT /api/lms/applications/{app_id} — partial update
 # ─────────────────────────────────────────────────────────────────────

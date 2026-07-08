@@ -42,6 +42,7 @@ export interface LoanApplicationPermissions {
   can_refer_committee?:        boolean;
   can_vote_committee?:         boolean;
   can_resolve_committee?:      boolean;
+  can_self_pick?:              boolean;
 }
 
 

@@ -204,6 +204,33 @@ def resolve_application_permissions(
         status == "referred_to_committee" and (is_admin or (is_mgr and in_scope))
     )
 
+    # ── can_self_pick ──
+    # An analyst pulls an UNALLOCATED case to themselves without waiting for a
+    # manager to assign it — avoids stalls when the assigning manager (e.g. the
+    # Chief Credit) is away. Config-gated per role type via
+    # credit_workflow.self_pick. Segment-specific Department Analysts only pick
+    # their own segment (the case being in their filtered queue already implies
+    # a segment match; re-checked here defensively).
+    can_self_pick = False
+    try:
+        _role = str(user.get("role", "") or "")
+        _unallocated = (status in STATUSES_PERMITTING_ASSIGN) and not analyst_code
+        if _unallocated and not is_owner:
+            from utils.api_lms_scope import (
+                _role_sees_pool, _analyst_segment, _app_segment,
+                get_pool_visibility_config,
+            )
+            from utils.api_lms_mutations import get_credit_workflow_config
+            if _role_sees_pool(_role, get_pool_visibility_config()["roles"]):
+                _sp = (get_credit_workflow_config() or {}).get("self_pick") or {}
+                _seg = _analyst_segment(_role)
+                _allowed = (_sp.get("department_analyst", False) if _seg
+                            else _sp.get("credit_analyst", False))
+                _seg_ok = (not _seg) or (_app_segment(app) in ("", _seg))
+                can_self_pick = bool(_allowed and _seg_ok)
+    except Exception:
+        can_self_pick = False
+
     return {
         "can_view": bool(can_view),
         "can_update": bool(can_update),
@@ -218,6 +245,7 @@ def resolve_application_permissions(
         "can_refer_committee": bool(can_refer_committee),
         "can_vote_committee": bool(can_vote_committee),
         "can_resolve_committee": bool(can_resolve_committee),
+        "can_self_pick": bool(can_self_pick),
     }
 
 
