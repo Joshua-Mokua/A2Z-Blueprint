@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, type WorkbenchView } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, type WorkbenchView } from '@/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
@@ -365,6 +365,11 @@ export function LmsApplicationDetail() {
               }}>Pick this case</Button>
             </div>
           </div>
+        )}
+
+        {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
+        {permissions.can_submit_to_dcc && (
+          <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -1310,6 +1315,53 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
+function SubmitToDccPanel({ appId, onDone, toast }: {
+  appId: string;
+  onDone: () => Promise<void> | void;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [opinion, setOpinion] = useState('');
+  const [pep, setPep] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await submitLmsToDcc(appId, { opinion: opinion.trim(), pep_confirmed: pep });
+      toast({ tone: 'success', message: 'Submitted to the Department Credit Committee.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Submit failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="text-sm font-semibold text-amber-900">Submit to Department Credit Committee</div>
+      <p className="mt-1 text-xs text-amber-800">
+        Check completeness and voice your support. You do not make the credit decision —
+        this refers the case to the DCC. The Call-Back Memo must be attached (Documentation
+        tab), and PEP compliance must be confirmed below.
+      </p>
+      <label className="mt-3 block text-xs font-medium text-amber-900">Support opinion</label>
+      <textarea
+        value={opinion} disabled={busy} rows={3}
+        onChange={(e) => setOpinion(e.target.value)}
+        placeholder="Why you support this facility (completeness, key strengths)…"
+        className="mt-1 w-full rounded-md border border-amber-300 px-2 py-1.5 text-sm"
+      />
+      <label className="mt-3 flex items-center gap-2 text-sm text-amber-900">
+        <input type="checkbox" checked={pep} disabled={busy} onChange={(e) => setPep(e.target.checked)} />
+        I confirm the client is not a PEP and has no compliance issues.
+      </label>
+      <div className="mt-3">
+        <Button onClick={submit} disabled={busy || !pep}>
+          {busy ? 'Submitting…' : 'Submit to DCC'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
   embedded?: boolean;

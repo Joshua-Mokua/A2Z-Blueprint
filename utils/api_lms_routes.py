@@ -435,6 +435,79 @@ def lms_application_pick(
     return {"application": updated, "status": "assigned"}
 
 
+@router.post(
+    "/applications/{app_id}/submit-to-dcc",
+    response_model=LoanAppMutationResponse,
+)
+def lms_application_submit_to_dcc(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Department Analyst: voice support + submit the case to the Department
+    Credit Committee (DCC). The Department Analyst does NOT decide — this records
+    their support opinion + PEP confirmation and refers the case onward to the
+    committee. Completeness gate: the configured required attachments (e.g. the
+    Call-Back Memo) must be present, and PEP compliance must be confirmed.
+    Gated by can_submit_to_dcc.
+    """
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    perms = resolve_application_permissions(user, app)
+    if not perms.get("can_submit_to_dcc"):
+        raise HTTPException(status_code=403, detail="Not permitted to submit this case to the DCC.")
+
+    payload = payload if isinstance(payload, dict) else {}
+    opinion = str(payload.get("opinion", "") or "").strip()
+    pep_confirmed = bool(payload.get("pep_confirmed", False))
+
+    # ── Completeness gate ──
+    from utils.api_lms_mutations import get_credit_workflow_config
+    da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+    required_atts = [str(x).strip() for x in (da.get("required_attachments") or []) if str(x).strip()]
+    atts = lam.list_attachments(app_id) or []
+
+    def _att_present(name: str) -> bool:
+        toks = [t for t in name.lower().replace("-", " ").replace("_", " ").split() if t]
+        for a in atts:
+            hay = f"{a.get('filename', '')} {a.get('kind', '')} {a.get('label', '')}".lower().replace("-", " ").replace("_", " ")
+            if toks and all(t in hay for t in toks):
+                return True
+        return False
+
+    missing = [n for n in required_atts if not _att_present(n)]
+    if missing:
+        raise HTTPException(status_code=400,
+                            detail=f"Missing required attachment(s): {', '.join(missing)}")
+    pep_required = bool((da.get("compliance_confirmation") or {}).get("pep_check"))
+    if pep_required and not pep_confirmed:
+        raise HTTPException(status_code=400,
+                            detail="Confirm PEP compliance (client is not a PEP / has no issues) before submitting.")
+
+    # ── Record the Department Analyst's review, then refer to committee (DCC) ──
+    if not is_valid_lms_transition(str(app.get("status", "")), "referred_to_committee"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot submit to committee from status '{app.get('status')}'")
+    review = {
+        "opinion": opinion,
+        "pep_confirmed": pep_confirmed,
+        "by": str(user.get("staff_code", "") or ""),
+        "by_name": str(user.get("full_name", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+    }
+    try:
+        lam.update(app_id, {"dept_analyst_review": review})
+    except Exception:
+        pass
+    lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""), note=opinion)
+    audit_log("LMS_SUBMITTED_TO_DCC", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
 # ─────────────────────────────────────────────────────────────────────
 # PUT /api/lms/applications/{app_id} — partial update
 # ─────────────────────────────────────────────────────────────────────

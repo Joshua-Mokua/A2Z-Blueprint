@@ -1250,6 +1250,22 @@ export async function pickLmsApplication(
   );
 }
 
+/**
+ * Department Analyst: voice support + submit the case to the Department Credit
+ * Committee. Records opinion + PEP confirmation and refers onward. Gated
+ * server-side by can_submit_to_dcc; enforces the completeness gate (required
+ * attachments + PEP) with a 400 on failure.
+ */
+export async function submitLmsToDcc(
+  appId: string,
+  body: { opinion: string; pep_confirmed: boolean },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { opinion: string; pep_confirmed: boolean }>(
+    `/lms/applications/${encodeURIComponent(appId)}/submit-to-dcc`,
+    body,
+  );
+}
+
 
 /**
  * Partial update to application fields.

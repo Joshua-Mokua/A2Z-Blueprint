@@ -231,6 +231,24 @@ def resolve_application_permissions(
     except Exception:
         can_self_pick = False
 
+    # ── can_submit_to_dcc ──
+    # The assigned Department Analyst (segment-specific) voices support and
+    # submits the case to the Department Credit Committee. They CANNOT decide —
+    # this only refers the case onward. Gated: the Department Analyst layer must
+    # be enabled and the caller must be a segment-specific analyst assigned to an
+    # 'assigned' case. Completeness (Call-Back Memo + PEP) is enforced at the
+    # endpoint, not here.
+    can_submit_to_dcc = False
+    try:
+        if is_assigned_analyst and status == "assigned":
+            from utils.api_lms_scope import _analyst_segment
+            from utils.api_lms_mutations import get_credit_workflow_config
+            _da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+            if _da.get("enabled") and _analyst_segment(str(user.get("role", "") or "")):
+                can_submit_to_dcc = True
+    except Exception:
+        can_submit_to_dcc = False
+
     return {
         "can_view": bool(can_view),
         "can_update": bool(can_update),
@@ -246,6 +264,7 @@ def resolve_application_permissions(
         "can_vote_committee": bool(can_vote_committee),
         "can_resolve_committee": bool(can_resolve_committee),
         "can_self_pick": bool(can_self_pick),
+        "can_submit_to_dcc": bool(can_submit_to_dcc),
     }
 
 
