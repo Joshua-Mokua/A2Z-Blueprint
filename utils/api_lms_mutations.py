@@ -271,6 +271,25 @@ _CREDIT_WORKFLOW_DEFAULTS: Dict[str, Any] = {
         "credit_analyst": True,
         "department_analyst": True,
     },
+    # ── Department Credit Committee (DCC) — P4 scaffold ─────────────────────
+    # A DISTINCT committee from the authority-tier charter: its own roster votes
+    # on a case after the Department Analyst submits it. DISABLED by default =
+    # zero behaviour change (nothing reads this until P4 wires the vote/resolve).
+    # On resolve the case returns to the Department Analyst (who then hands to
+    # the Credit Analyst) rather than auto-issuing the offer — the DCC is
+    # ADVISORY; the Credit Analyst is the decision-maker.
+    "dcc": {
+        "enabled": False,
+        "name": "Department Credit Committee",
+        # Distinct roster — list of {id, name, role} the admin configures. Empty
+        # until set; the vote endpoint will validate against this (not the
+        # authority-tier charter) when the case is before the DCC.
+        "members": [],
+        "voting_rule": "SIMPLE_MAJORITY",
+        # After the DCC resolves, return the case to the Department Analyst
+        # instead of issuing the Letter of Offer.
+        "return_to_department_analyst_on_resolve": True,
+    },
 }
 
 
