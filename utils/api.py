@@ -1804,16 +1804,22 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_confi
     if _db.fetch_one("SELECT 1 FROM users WHERE username = %s", (final_user,)):
         raise HTTPException(status_code=409, detail=f"username '{final_user}' already exists")
     pw_hash = _hash_password(payload.password)
+    # band/gender aren't real columns on users (see utils/db.py schema) —
+    # they live in the metadata jsonb catch-all, same as migrate_users.py.
+    metadata = {}
+    if payload.band:   metadata["band"] = payload.band
+    if payload.gender: metadata["gender"] = payload.gender
     try:
         _db.execute(
             "INSERT INTO users (username, password_hash, full_name, email, role, "
-            "department, unit, staff_code, band, gender, active, is_admin, "
-            "can_view_all, must_change_password) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "department, unit, staff_code, active, is_admin, "
+            "can_view_all, must_change_password, metadata) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (final_user, pw_hash, payload.full_name.strip(), payload.email or "",
              payload.role or "Staff", payload.department or payload.unit or "",
-             payload.unit or "", final_sc, payload.band or "", payload.gender or "",
-             True, bool(payload.is_admin), bool(payload.can_view_all), False),
+             payload.unit or "", final_sc,
+             True, bool(payload.is_admin), bool(payload.can_view_all), False,
+             json.dumps(metadata)),
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"create failed: {exc}")
@@ -1829,23 +1835,31 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     if not _db.table_uses_db("users"):
         raise HTTPException(status_code=503, detail="users table not active")
     _staff_row_or_404(_db, username)
+    # Real columns on users (see utils/db.py schema) only — band/gender/
+    # accessible_modules aren't columns, they live in the metadata jsonb
+    # catch-all (same as migrate_users.py / create_admin_staff above).
     col_map = {"full_name": payload.full_name, "email": payload.email,
                "role": payload.role, "department": payload.department,
                "unit": payload.unit, "staff_code": payload.staff_code,
-               "band": payload.band, "gender": payload.gender,
                "can_view_all": payload.can_view_all, "is_admin": payload.is_admin,
                "active": payload.active}
     cols, vals = [], []
     for col, val in col_map.items():
         if val is not None:
             cols.append(f"{col} = %s"); vals.append(val)
-    # accessible_modules (jsonb) — module-level access grant. Stored as a JSON
-    # array of module keys. Empty list = explicit "no extra modules" (role
-    # default still applies at read time via MODULE_ACCESS).
+    # metadata (jsonb) — band/gender/accessible_modules patched in via ||
+    # so unrelated keys already stored in metadata aren't clobbered.
+    # accessible_modules: module-level access grant, a JSON array of module
+    # keys. Empty list = explicit "no extra modules" (role default still
+    # applies at read time via MODULE_ACCESS).
+    metadata_patch = {}
+    if payload.band is not None:   metadata_patch["band"] = payload.band
+    if payload.gender is not None: metadata_patch["gender"] = payload.gender
     if getattr(payload, "accessible_modules", None) is not None:
-        import json as _json_mod
-        cols.append("accessible_modules = %s")
-        vals.append(_json_mod.dumps(list(payload.accessible_modules)))
+        metadata_patch["accessible_modules"] = list(payload.accessible_modules)
+    if metadata_patch:
+        cols.append("metadata = COALESCE(metadata, '{}'::jsonb) || %s::jsonb")
+        vals.append(json.dumps(metadata_patch))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)
