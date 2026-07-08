@@ -259,6 +259,23 @@ def _credit_handoff_cutoff(product_type: str):
     """Return (handoff_stage, handoff_index, flow_stages). handoff_index is None if
     the product's flow has no credit-analysis handoff stage."""
     stages = _product_flow_stage_names(product_type)
+    # P2: Department Analyst layer. When enabled, the credit factory engages
+    # EARLIER — at the configured department handoff stage (e.g. "Department
+    # Credit Committee Review") rather than at Credit Analysis. Both the RM edit
+    # lock and the LMS-application creation key off this cutoff, so both shift
+    # earlier automatically. Gated: when disabled (default) this block is a
+    # no-op and the legacy Credit-Analysis cutoff below applies unchanged.
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+        if da.get("enabled"):
+            hs = str(da.get("handoff_stage", "") or "").strip().lower()
+            if hs:
+                for i, nm in enumerate(stages):
+                    if str(nm).strip().lower() == hs:
+                        return nm, i, stages
+    except Exception:
+        pass
     # explicit config override
     explicit = None
     try:
