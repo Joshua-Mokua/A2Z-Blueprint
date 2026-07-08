@@ -1301,6 +1301,12 @@ export async function resolveDcc(
     body,
   );
 }
+export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/hand-to-credit-analyst`,
+    {},
+  );
+}
 
 
 /**

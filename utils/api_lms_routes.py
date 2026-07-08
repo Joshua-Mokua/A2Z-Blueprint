@@ -1398,6 +1398,34 @@ def lms_dcc_resolve(
     return {"application": lam.get(app_id), "dcc_outcome": outcome}
 
 
+@router.post("/applications/{app_id}/hand-to-credit-analyst")
+def lms_hand_to_credit_analyst(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Department Analyst hands the case to the conventional Credit Analyst: the
+    case is released to the credit pool (status -> submitted, analyst cleared,
+    awaiting_credit_analyst set) so a Credit Analyst self-picks it and makes the
+    final decision (which triggers the offer). Gated by can_hand_to_credit_analyst."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_hand_to_credit_analyst"):
+        raise HTTPException(status_code=403,
+                            detail="Not permitted to hand this case to the Credit Analyst.")
+    if not is_valid_lms_transition(str(app.get("status", "")), "submitted"):
+        raise HTTPException(status_code=400, detail=f"Cannot release from '{app.get('status')}'")
+    lam.update(app_id, {
+        "status": "submitted",
+        "analyst": None,
+        "awaiting_credit_analyst": True,
+    })
+    audit_log("LMS_HANDED_TO_CREDIT_ANALYST", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "submitted"}
+
+
 @router.post("/applications/{app_id}/attachments")
 def lms_application_attachment_add(
     app_id: str,

@@ -227,6 +227,11 @@ def resolve_application_permissions(
                 _allowed = (_sp.get("department_analyst", False) if _seg
                             else _sp.get("credit_analyst", False))
                 _seg_ok = (not _seg) or (_app_segment(app) in ("", _seg))
+                # A case handed to the conventional Credit Analyst (awaiting_
+                # credit_analyst) is for them only — a segment Department Analyst
+                # must not re-grab it.
+                if app.get("awaiting_credit_analyst") and _seg:
+                    _seg_ok = False
                 can_self_pick = bool(_allowed and _seg_ok)
     except Exception:
         can_self_pick = False
@@ -249,6 +254,20 @@ def resolve_application_permissions(
     except Exception:
         can_submit_to_dcc = False
 
+    # ── can_hand_to_credit_analyst ──
+    # Once the DCC has advised (dcc_outcome present), the Department Analyst hands
+    # the case to the conventional Credit Analyst — the decision-maker — by
+    # releasing it to the credit pool for self-pick.
+    can_hand_to_credit_analyst = False
+    try:
+        if is_assigned_analyst and status == "assigned" and app.get("dcc_outcome"):
+            from utils.api_lms_mutations import get_credit_workflow_config
+            _da2 = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+            if _da2.get("enabled"):
+                can_hand_to_credit_analyst = True
+    except Exception:
+        can_hand_to_credit_analyst = False
+
     return {
         "can_view": bool(can_view),
         "can_update": bool(can_update),
@@ -265,6 +284,7 @@ def resolve_application_permissions(
         "can_resolve_committee": bool(can_resolve_committee),
         "can_self_pick": bool(can_self_pick),
         "can_submit_to_dcc": bool(can_submit_to_dcc),
+        "can_hand_to_credit_analyst": bool(can_hand_to_credit_analyst),
     }
 
 

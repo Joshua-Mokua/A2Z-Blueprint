@@ -317,7 +317,7 @@ def get_credit_workflow_config() -> Dict[str, Any]:
 LMS_WORKFLOW_TRANSITIONS: Dict[str, Tuple[str, ...]] = {
     "submitted":                  ("assigned", "declined"),
     "assigned":                   ("info_requested", "approved", "declined",
-                                   "referred_to_committee"),
+                                   "referred_to_committee", "submitted"),
     "info_requested":             ("assigned",),
     "referred_to_committee":      ("approved", "declined", "assigned"),
     "approved":                   ("offer_issued",),

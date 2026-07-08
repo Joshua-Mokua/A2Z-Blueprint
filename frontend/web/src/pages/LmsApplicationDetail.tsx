@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -375,6 +375,11 @@ export function LmsApplicationDetail() {
         {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
         {permissions.can_submit_to_dcc && (
           <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
+
+        {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
+        {permissions.can_hand_to_credit_analyst && (
+          <HandToCreditAnalystPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
@@ -1477,6 +1482,38 @@ function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownl
         />
       )}
     </Card>
+  );
+}
+
+
+function HandToCreditAnalystPanel({ appId, onDone, toast }: {
+  appId: string;
+  onDone: () => Promise<void> | void;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [busy, setBusy] = useState(false);
+  const hand = async () => {
+    setBusy(true);
+    try {
+      await handToCreditAnalyst(appId);
+      toast({ tone: 'success', message: 'Handed to the Credit Analyst pool for decisioning.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Handoff failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+      <div className="text-sm font-semibold text-blue-900">Hand to Credit Analyst</div>
+      <p className="mt-1 text-xs text-blue-800">
+        The DCC has advised. Release this case to the Credit Analyst pool — a Credit Analyst
+        picks it up and, seeing both the Branch Committee and DCC inputs, makes the final
+        credit decision that issues the offer. You do not decide the case.
+      </p>
+      <div className="mt-3">
+        <Button onClick={hand} disabled={busy}>{busy ? 'Handing over…' : 'Hand to Credit Analyst'}</Button>
+      </div>
+    </div>
   );
 }
 

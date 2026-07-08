@@ -44,6 +44,7 @@ export interface LoanApplicationPermissions {
   can_resolve_committee?:      boolean;
   can_self_pick?:              boolean;
   can_submit_to_dcc?:          boolean;
+  can_hand_to_credit_analyst?: boolean;
 }
 
 
