@@ -2156,6 +2156,8 @@ def _validate_product_flow(entry: dict) -> tuple:
                 wp = float(s.get("win_probability"))
             except (TypeError, ValueError):
                 return False, f"stage '{nm}': win_probability must be a number"
+            if wp < 0 or wp > 100:
+                return False, f"stage '{nm}': win_probability must be between 0 and 100"
     # Batch 1: optional per-product document config.
     rd = entry.get("required_documents")
     if rd is not None:
@@ -2177,8 +2179,6 @@ def _validate_product_flow(entry: dict) -> tuple:
         for code in journey:
             if palette_codes and code not in palette_codes:
                 return False, f"committee '{code}' is not in the committee palette"
-            if wp < 0 or wp > 100:
-                return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
     if not isinstance(cts, list):
         return False, "client_types must be a list"
