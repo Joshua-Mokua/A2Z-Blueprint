@@ -34,16 +34,21 @@ export interface WorkbenchShellProps {
   crossLink?: { label: string; onClick: () => void };
   /** Collapsible content revealed by the "Details" toggle. */
   details?: ReactNode;
-  tabs: WorkbenchTab[];
+  /** Colour-coded tabs. Omit to render `children` directly under the ribbon. */
+  tabs?: WorkbenchTab[];
   defaultTabId?: string;
+  /** Content rendered under the ribbon when `tabs` is not supplied (ribbon-only
+   *  adoption for pages not yet tab-converted). */
+  children?: ReactNode;
 }
 
 export function WorkbenchShell({
-  title, stage, badges, idLabel, onBack, onRefresh, crossLink, details, tabs, defaultTabId,
+  title, stage, badges, idLabel, onBack, onRefresh, crossLink, details, tabs, defaultTabId, children,
 }: WorkbenchShellProps) {
-  const [activeTab, setActiveTab] = useState(defaultTabId ?? (tabs[0]?.id ?? ''));
+  const tabList = tabs ?? [];
+  const [activeTab, setActiveTab] = useState(defaultTabId ?? (tabList[0]?.id ?? ''));
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const active = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+  const active = tabList.find((t) => t.id === activeTab) ?? tabList[0];
 
   return (
     <div>
@@ -81,23 +86,26 @@ export function WorkbenchShell({
 
       {details != null && detailsOpen && <div className="mt-4">{details}</div>}
 
-      {/* Colour-coded tab strip. */}
-      <div className="mt-3">
-        <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-[#EAF4FA] px-2 pt-1.5 text-sm">
-          {tabs.map((t) => {
-            const isActive = active?.id === t.id;
-            return (
-              <button key={t.id} onClick={() => setActiveTab(t.id)}
-                style={isActive ? { color: t.color, borderTopColor: t.color, borderTopWidth: 2 } : { color: t.color }}
-                className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
-                  isActive ? 'bg-white font-semibold shadow-sm' : 'opacity-60 hover:bg-white/60 hover:opacity-100'}`}>
-                {t.label}
-              </button>
-            );
-          })}
+      {tabList.length > 0 ? (
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-[#EAF4FA] px-2 pt-1.5 text-sm">
+            {tabList.map((t) => {
+              const isActive = active?.id === t.id;
+              return (
+                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                  style={isActive ? { color: t.color, borderTopColor: t.color, borderTopWidth: 2 } : { color: t.color }}
+                  className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
+                    isActive ? 'bg-white font-semibold shadow-sm' : 'opacity-60 hover:bg-white/60 hover:opacity-100'}`}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="pt-4">{active?.content}</div>
         </div>
-        <div className="pt-4">{active?.content}</div>
-      </div>
+      ) : (
+        <div className="mt-4 space-y-4">{children}</div>
+      )}
     </div>
   );
 }

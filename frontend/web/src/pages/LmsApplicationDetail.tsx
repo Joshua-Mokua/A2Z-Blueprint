@@ -25,6 +25,7 @@ import { useLmsApplication } from '@/hooks/useLmsApplication';
 import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
+import { WorkbenchShell } from '@/components/WorkbenchShell';
 import {
   getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type CrView, type CrField, type CommitteeMember, type CommitteeTier,
@@ -37,7 +38,6 @@ import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { Timeline, eventLabel } from '@/components/Timeline';
 import {
-  statusTone,
   DECISION_VERDICTS,
   COMMON_AUTHORITIES,
   type DecisionVerdict,
@@ -203,96 +203,45 @@ export function LmsApplicationDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-xs text-white/70 mb-1 font-mono">{application.id}</div>
-              <h1 className="text-xl font-semibold">{application.client_name}</h1>
-              <div className="text-xs text-white/80 mt-1">
-                {application.product || 'unknown product'} · {formatAmount(application.amount, currencySymbol)}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <Badge tone={statusTone(application.status)} size="md">
-                {application.status}
-              </Badge>
-              {application.sla && (
-                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
-                  application.sla.state === 'breached' ? 'bg-red-500/90 text-white'
-                  : application.sla.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
-                  : 'bg-green-500/90 text-white'}`}>
-                  {application.sla.state === 'breached'
-                    ? `SLA breached — ${application.sla.overdue_business_days}d over promise`
-                    : application.sla.state === 'due_soon'
-                    ? `SLA due soon — ${application.sla.remaining_business_days}d left`
-                    : `SLA on track — ${application.sla.remaining_business_days}d left`}
-                </span>
-              )}
-              {application.sla?.stage && (
-                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
-                  application.sla.stage.state === 'breached' ? 'bg-red-500/90 text-white'
-                  : application.sla.stage.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
-                  : 'bg-green-500/90 text-white'}`}>
-                  {application.sla.stage.state === 'breached'
-                    ? `My stage — ${application.sla.stage.overdue_business_days}d over`
-                    : `My stage — ${application.sla.stage.remaining_business_days}d left of ${application.sla.stage.target_days}`}
-                </span>
-              )}
-              {application.swim_lane && (
-                <span className="text-xs text-white/70">{application.swim_lane}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-
-        {/* Back to list */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/lms')}>
-            ← Back to applications
-          </Button>
-          <Badge tone="brand" size="sm">β5</Badge>
-        </div>
-
-        {/* customer-summary-strip: key facts pinned at the top of the content */}
-        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">CIF</span>
-              <span className="font-mono font-medium text-gray-900">{application.client_cif || '—'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">Product</span>
-              <span className="text-gray-900">{application.product || '—'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">Amount</span>
-              <span className="font-medium text-gray-900">{formatAmount(application.amount, currencySymbol)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">RM</span>
-              <span className="text-gray-900">{application.rm_name || application.rm_code || '—'}</span>
-            </div>
-            {application.analyst?.name && (
+      <main className="max-w-5xl mx-auto px-6 py-6">
+        <WorkbenchShell
+          title={application.client_name}
+          stage={application.status}
+          badges={[
+            ...(application.sla?.state === 'breached' ? [{ label: 'SLA breached' }] : []),
+            ...(application.sla?.state === 'due_soon' ? [{ label: 'SLA due soon' }] : []),
+          ]}
+          idLabel={application.id}
+          onBack={() => navigate('/lms')}
+          onRefresh={() => void refetch()}
+          details={(
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
-                <span className="text-gray-900">{application.analyst.name}</span>
+                <span className="text-xs uppercase tracking-wide text-gray-400">CIF</span>
+                <span className="font-mono font-medium text-gray-900">{application.client_cif || '—'}</span>
               </div>
-            )}
-            <div className="ml-auto">
-              <Badge tone={statusTone(application.status)} size="sm">{application.status}</Badge>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">Product</span>
+                <span className="text-gray-900">{application.product || '—'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">Amount</span>
+                <span className="font-medium text-gray-900">{formatAmount(application.amount, currencySymbol)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">RM</span>
+                <span className="text-gray-900">{application.rm_name || application.rm_code || '—'}</span>
+              </div>
+              {application.analyst?.name && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
+                  <span className="text-gray-900">{application.analyst.name}</span>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-
-        {/* IA Phase 3: for the assigned analyst, the Assessment card is hoisted
-            here — directly under the customer strip — so they land on their
-            working surface; Journey and origination drop below. */}
-        {_viewerIsAnalyst && assessmentCard}
+          )}
+        >
+                {_viewerIsAnalyst && assessmentCard}
 
 
         {/* ─────────── Case Journey (prominent, always shown) ─────────── */}
@@ -586,6 +535,7 @@ export function LmsApplicationDetail() {
           </Card>
         )}
 
+      </WorkbenchShell>
       </main>
     </div>
   );
