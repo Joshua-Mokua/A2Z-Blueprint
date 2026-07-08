@@ -241,6 +241,36 @@ _CREDIT_WORKFLOW_DEFAULTS: Dict[str, Any] = {
         "validity_days": 14,
         "sla_days": 5,
     },
+    # ── Department Analyst layer (P1 scaffold) ──────────────────────────────
+    # DISABLED by default = zero behaviour change. P2+ reads this to wire the
+    # earlier, segment-routed handoff, the RM edit-lock shift and auto stage
+    # travel. Per-institution: Ecobank runs the layer; others may leave it off.
+    "department_analyst": {
+        "enabled": False,
+        # The case routes to a Department Analyst on entering this stage (ahead
+        # of the DCC); then to the Credit Analyst at the credit-analysis stage.
+        "handoff_stage": "Department Credit Committee Review",
+        "credit_analyst_handoff_stage": "Credit Analysis",
+        # segment -> department-analyst role title (substring-matched like the
+        # rest of the role handling).
+        "segment_roles": {
+            "consumer":   "Consumer Credit Analyst",
+            "commercial": "Commercial Credit Analyst",
+            "cib":        "CIB Credit Analyst",
+        },
+        "routing": "queue",            # all segment analysts see + pick (no assign)
+        "can_decide": False,           # completeness + support only; no decision
+        "required_attachments": ["Call-Back Memo"],
+        "compliance_confirmation": {"pep_check": True},
+        "auto_stage_travel": True,     # advance stages on real actions
+    },
+    # ── Self-pick (P1 scaffold) ─────────────────────────────────────────────
+    # Credit analysts may pull unallocated cases so work never stalls when the
+    # Chief Credit is away; department analysts pick from the segment queue.
+    "self_pick": {
+        "credit_analyst": True,
+        "department_analyst": True,
+    },
 }
 
 

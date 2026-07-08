@@ -58,6 +58,13 @@ TARGETS = [
     ("Regional DSA Head",            ["regional dsa head"],         None),
     # Bank-wide roles — exact strings.
     ("Credit Analyst",               ["credit analyst"],            None),
+    # Department Analyst layer (P1) — segment-specific credit analysts. These
+    # are exact-matched first, so they don't collide with the plain "Credit
+    # Analyst" target above. Needs matching staff in the register; if a DRY-RUN
+    # shows "no register match", add staff carrying these roles first.
+    ("Consumer Credit Analyst",      ["consumer credit analyst"],   None),
+    ("Commercial Credit Analyst",    ["commercial credit analyst"], None),
+    ("CIB Credit Analyst",           ["cib credit analyst"],        None),
     ("Treasury desk",                ["treasury front office officer", "treasury dealer"], None),
     # Directors: per the Ecobank-structure adoption, Chief Retail Banking
     # Officer -> Director CCB and Chief Commercial Officer -> Director CIB.
