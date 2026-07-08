@@ -35,7 +35,7 @@ interface BrandingContextValue {
 // the backend is down.
 const FALLBACK_BRANDING: Branding = {
   bank_name: 'Ecobank Kenya',
-  app_name: 'A2Z Blueprint',
+  app_name: 'EKE Blueprint',
   currency: 'KES',
   currency_symbol: 'KES',
   country: 'Kenya',

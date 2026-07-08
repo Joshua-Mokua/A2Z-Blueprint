@@ -12,7 +12,7 @@ const ROUTES: RouteEntry[] = [
   { label: 'Target Cascade',        domain: 'Executive Intelligence',       path: '/cascade',          match: (p) => p.startsWith('/cascade') },
   { label: 'Strategic Initiatives', domain: 'Executive Intelligence',       path: '/initiatives',      match: (p) => p.startsWith('/initiatives') },
   { label: 'Profitability',         domain: 'Executive Intelligence',       path: '/profitability',    match: (p) => p === '/profitability' },
-  { label: 'A2Z Sales Pro',         domain: 'Pipeline Intelligence (PIS)', path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
+  { label: 'EKE Sales Pro',         domain: 'Pipeline Intelligence (PIS)', path: '/pipeline',         match: (p) => p.startsWith('/pipeline') && !p.startsWith('/pipeline/queues') },
   { label: 'Sales Pro Analytics',   domain: 'Pipeline Intelligence (PIS)', path: '/analytics',        match: (p) => p.startsWith('/analytics') },
   { label: 'Manager Queues',        domain: 'Pipeline Intelligence (PIS)', path: '/pipeline/queues',  match: (p) => p.startsWith('/pipeline/queues') },
   { label: 'Sales Referral',        domain: 'Pipeline Intelligence (PIS)', path: '/referrals',        match: (p) => p.startsWith('/referrals') },
@@ -54,7 +54,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const [notifyOpen, setNotify] = useState(false);
 
   const current = ROUTES.find((r) => r.match(pathname));
-  const title  = current?.label  ?? 'A2Z MIS 360';
+  const title  = current?.label  ?? 'EKE MIS 360';
   const domain = current?.domain ?? '';
 
   const query   = q.trim().toLowerCase();

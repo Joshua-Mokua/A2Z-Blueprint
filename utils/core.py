@@ -626,7 +626,7 @@ BRAND = {
     'dark':         '#004A2B',   # deep dark green
     'text_on_primary': '#FFFFFF',
     'text_on_secondary': '#3D2600',
-    'app_name':     'A2Z Blueprint',
+    'app_name':     'EKE Blueprint',
     'tagline':      'Perform · Execute · Integrate',
 }
 
@@ -1537,7 +1537,7 @@ def get_pillar_weights() -> dict:
 ORG_CONFIG_FILE = DATA_DIR / "org_config.json"
 
 DEFAULT_ORG_CONFIG = {
-    "bank_name":    "A2Z Blueprint",
+    "bank_name":    "EKE Blueprint",
     "bank_code":    "ECO",
     "country":      "Kenya",
     "currency":     "KES",

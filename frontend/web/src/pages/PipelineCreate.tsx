@@ -930,7 +930,7 @@ export function PipelineCreate() {
       <PageHeader
         title="New Deal"
         breadcrumbs={[
-          { label: 'A2Z Sales Pro', to: '/pipeline' },
+          { label: 'EKE Sales Pro', to: '/pipeline' },
           { label: 'New deal' },
         ]}
         subtitle="Capture a lead — customer, classification, value, and ownership."

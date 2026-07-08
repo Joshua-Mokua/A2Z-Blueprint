@@ -165,7 +165,7 @@ export function AffordabilityAppraisal({ defaultCif, dealId, appId, embedded = f
   };
 
   const printAppraisal = () => {
-    const bank = branding?.app_name ?? 'A2Z MIS 360';
+    const bank = branding?.app_name ?? 'EKE MIS 360';
     const esc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
     const fmt = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 }));
     const srcRows = (result?.sources ?? []).map((s) =>

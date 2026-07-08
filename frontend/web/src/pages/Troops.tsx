@@ -79,7 +79,7 @@ export function Troops() {
     return (
       <>
         <PageHeader
-          breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
+          breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
           title="Trops Disbursement"
           subtitle="Treasury Back Office disbursement desk."
         />
@@ -110,7 +110,7 @@ export function Troops() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
+        breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
         title="Trops Disbursement"
         subtitle="Treasury Back Office disbursement flow by stage — cleared facilities moving through booking, value-dating, and disbursement."
       />

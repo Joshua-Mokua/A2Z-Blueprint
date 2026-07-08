@@ -120,7 +120,7 @@ def bank_name() -> str:
 
 def app_name() -> str:
     """Return the configured platform/app display name."""
-    return load_org_config().get("app_name") or "A2Z MIS 360"
+    return load_org_config().get("app_name") or "EKE MIS 360"
 
 
 def bank_code() -> str:

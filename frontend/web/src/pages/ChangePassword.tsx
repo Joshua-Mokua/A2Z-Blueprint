@@ -126,10 +126,10 @@ export function ChangePassword() {
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] uppercase tracking-[2.5px]
                           font-bold opacity-70">
-            {branding?.bank_name || 'A2Z MIS 360'}
+            {branding?.bank_name || 'EKE MIS 360'}
           </div>
           <h1 className="text-xl font-bold mt-1">
-            {branding?.app_name || 'A2Z'} MIS 360 — Set a new password
+            {branding?.app_name || 'EKE'} MIS 360 — Set a new password
           </h1>
         </div>
       </header>

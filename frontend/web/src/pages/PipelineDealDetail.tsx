@@ -453,7 +453,7 @@ function DetailFrame({ title, children }: DetailFrameProps) {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={title}
-        breadcrumbs={[{ label: 'A2Z Sales Pro', to: '/pipeline' }, { label: title }]}
+        breadcrumbs={[{ label: 'EKE Sales Pro', to: '/pipeline' }, { label: title }]}
         actions={
           <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
             ← Back to pipeline

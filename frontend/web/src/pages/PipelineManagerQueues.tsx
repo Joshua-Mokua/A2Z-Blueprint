@@ -115,7 +115,7 @@ export function PipelineManagerQueues() {
       <div className="min-h-screen bg-gray-50">
         <PageHeader
           title="Manager Queues"
-          breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+          breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
         />
         <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <Card>
@@ -167,7 +167,7 @@ export function PipelineManagerQueues() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Manager Queues"
-        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
       />
       <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 

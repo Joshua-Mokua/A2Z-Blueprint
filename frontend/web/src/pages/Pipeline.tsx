@@ -322,8 +322,8 @@ export function Pipeline() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro' }]}
-        title="A2Z Sales Pro"
+        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro' }]}
+        title="EKE Sales Pro"
         subtitle="Deals across your scope — assured value, stage, and ownership."
         actions={
           <>
@@ -331,7 +331,7 @@ export function Pipeline() {
               variant="secondary"
               onClick={() => {
                 setExporting(true);
-                downloadFile('/pipeline/export/xlsx', 'A2Z_Pipeline.xlsx')
+                downloadFile('/pipeline/export/xlsx', 'EKE_Pipeline.xlsx')
                   .catch(() => { /* surfaced via button state only */ })
                   .finally(() => setExporting(false));
               }}
