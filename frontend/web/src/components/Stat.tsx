@@ -28,17 +28,21 @@ export interface StatProps {
   invertDelta?: boolean;
   loading?: boolean;
   stripe?: boolean | 'primary' | 'secondary' | 'accent';
-  /** Subtle tinted background (gentler than a stripe) — "not shouting". */
-  tone?: 'primary' | 'secondary' | 'accent' | 'neutral';
+  /** Subtle tinted background + coloured left accent — colour-codes the tile. */
+  tone?: 'primary' | 'secondary' | 'accent' | 'neutral' | 'success' | 'lime' | 'teal' | 'violet';
   /** When set, the tile becomes a clickable drill-through. */
   onClick?: () => void;
   className?: string;
 }
 
 const TONE_BG: Record<string, string> = {
-  primary:   'bg-sky-50/70',
-  secondary: 'bg-slate-50',
-  accent:    'bg-amber-50/60',
+  primary:   'bg-sky-50 border-l-[3px] border-l-[#0082BB]',
+  secondary: 'bg-slate-50 border-l-[3px] border-l-[#005B82]',
+  accent:    'bg-amber-50 border-l-[3px] border-l-amber-400',
+  success:   'bg-emerald-50 border-l-[3px] border-l-[#669438]',
+  lime:      'bg-lime-50 border-l-[3px] border-l-[#8ba700]',
+  teal:      'bg-teal-50 border-l-[3px] border-l-teal-500',
+  violet:    'bg-violet-50 border-l-[3px] border-l-violet-400',
   neutral:   '',
 };
 

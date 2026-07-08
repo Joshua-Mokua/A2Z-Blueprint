@@ -371,7 +371,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="secondary"
+            tone="success"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -382,7 +382,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="accent"
+            tone="lime"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -393,7 +393,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="neutral"
+            tone="violet"
             onClick={() => navigate('/analytics')}
           />
         </div>
@@ -406,7 +406,7 @@ export function Pipeline() {
             sub="In your cascade scope"
             loading={loading}
             stripe={false}
-            tone="primary"
+            tone="teal"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -428,7 +428,7 @@ export function Pipeline() {
               : 'All validated'}
             loading={loading}
             stripe={false}
-            tone="neutral"
+            tone="secondary"
             onClick={() => navigate('/analytics')}
           />
         </div>
