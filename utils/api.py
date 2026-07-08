@@ -538,6 +538,8 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "credit_deferred_to":       deal.get("credit_deferred_to"),
                 "credit_deferred_to_code":  deal.get("credit_deferred_to_code"),
                 "history":                  deal.get("history"),
+                "document_files":           deal.get("document_files"),
+                "documents_provided":       deal.get("documents_provided"),
             }),
         }
         if not row["id"]:
@@ -619,7 +621,8 @@ def _normalize_db_deal_row(row):
                    "declined_by", "declined_at", "disbursed", "disbursed_at",
                    "disbursed_under_override", "override_approved",
                    "override_approved_by", "win_probability",
-                   "credit_deferred_to", "credit_deferred_to_code", "history"):
+                   "credit_deferred_to", "credit_deferred_to_code", "history",
+                   "document_files", "documents_provided"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
