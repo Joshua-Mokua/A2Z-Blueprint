@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, type WorkbenchView, type LmsDocumentsResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -296,6 +296,8 @@ export function LmsApplicationDetail() {
         </Card>
 
         <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update} />
+
+        <DccVotePanel appId={application.id} toast={toast} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -1318,6 +1320,89 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
+function DccVotePanel({ appId, toast }: {
+  appId: string;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [roster, setRoster] = useState<DccRosterResponse | null>(null);
+  const [memberId, setMemberId] = useState('');
+  const [vote, setVote] = useState('YES');
+  const [rationale, setRationale] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
+  if (!roster || !roster.is_dcc_case || !roster.enabled) return null;
+  const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
+  const cast = async () => {
+    if (!memberId) return;
+    setBusy(true);
+    try {
+      await recordDccVote(appId, { member_id: memberId, vote, rationale: rationale.trim() });
+      toast({ tone: 'success', message: 'DCC vote recorded.' });
+      setRationale(''); load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Vote failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <Card className="mt-4" stripe="primary">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">{roster.name}</h3>
+        <span className="text-xs text-gray-500">{roster.votes.length}/{roster.members.length} voted</span>
+      </Card.Header>
+      <Card.Body>
+        {roster.members.length === 0 ? (
+          <p className="text-xs text-gray-400">No DCC members configured yet (set them in the credit-workflow config).</p>
+        ) : (
+          <>
+            <div className="mb-3 space-y-1">
+              {roster.members.map((m) => {
+                const id = m.id || m.member_id || '';
+                const v = votesByMember.get(id);
+                return (
+                  <div key={id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-800">
+                      {m.name || id}{m.role ? <span className="text-xs text-gray-500"> — {m.role}</span> : null}
+                    </span>
+                    <span className={v ? (v.vote === 'YES' ? 'text-green-700' : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500') : 'text-gray-300'}>
+                      {v ? v.vote : 'not voted'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-1 items-end gap-2 border-t pt-3 md:grid-cols-3">
+              <div>
+                <label className="text-xs font-medium text-gray-700">Member</label>
+                <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={busy}
+                  className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-sm">
+                  <option value="">Select…</option>
+                  {roster.members.map((m) => {
+                    const id = m.id || m.member_id || '';
+                    return <option key={id} value={id}>{m.name || id}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700">Vote</label>
+                <select value={vote} onChange={(e) => setVote(e.target.value)} disabled={busy}
+                  className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-sm">
+                  <option>YES</option><option>NO</option><option>ABSTAIN</option>
+                </select>
+              </div>
+              <Button onClick={cast} disabled={busy || !memberId}>Record vote</Button>
+            </div>
+            <input value={rationale} onChange={(e) => setRationale(e.target.value)} disabled={busy}
+              placeholder="Rationale (optional)"
+              className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
 function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownload: boolean }) {
   const [files, setFiles] = useState<LmsDocumentsResponse['files']>({});
   const [viewing, setViewing] = useState<{ docName: string; filename: string } | null>(null);

@@ -1279,6 +1279,74 @@ def lms_application_document_download(
         headers={"Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"'})
 
 
+@router.get("/applications/{app_id}/dcc/roster")
+def lms_dcc_roster(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The Department Credit Committee roster + recorded votes for a case.
+    Self-contained (distinct from the authority-tier charter). Visible to anyone
+    who can view the application."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    return {
+        "enabled": bool(dcc.get("enabled")),
+        "name": str(dcc.get("name", "Department Credit Committee")),
+        "is_dcc_case": str(app.get("committee_kind", "")) == "dcc",
+        "members": list(dcc.get("members") or []),
+        "votes": list(app.get("dcc_votes", []) or []),
+    }
+
+
+@router.post("/applications/{app_id}/dcc/vote")
+def lms_dcc_vote(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Record one DCC member's vote (YES/NO/ABSTAIN), validated against the DCC
+    roster (not the authority-tier charter). Gated: DCC enabled + case before the
+    DCC. One vote per member (re-voting replaces)."""
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    if not dcc.get("enabled"):
+        raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
+    if str(app.get("committee_kind", "")) != "dcc":
+        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    payload = payload if isinstance(payload, dict) else {}
+    member_id = str(payload.get("member_id", "") or "").strip()
+    vote = str(payload.get("vote", "") or "").strip().upper()
+    roster_ids = {str(m.get("id") or m.get("member_id") or "").strip()
+                  for m in (dcc.get("members") or []) if isinstance(m, dict)}
+    if not member_id or member_id not in roster_ids:
+        raise HTTPException(status_code=400, detail=f"'{member_id}' is not a DCC member")
+    if vote not in ("YES", "NO", "ABSTAIN"):
+        raise HTTPException(status_code=400, detail="vote must be YES, NO, or ABSTAIN")
+    votes = [v for v in (app.get("dcc_votes", []) or []) if v.get("member_id") != member_id]
+    votes.append({
+        "member_id": member_id, "vote": vote,
+        "rationale": str(payload.get("rationale", "") or ""),
+        "by": str(user.get("staff_code", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+    })
+    lam.update(app_id, {"dcc_votes": votes})
+    audit_log("LMS_DCC_VOTE", str(user.get("username", "") or ""), f"{app_id}|{member_id}:{vote}")
+    return {"dcc_votes": votes}
+
+
 @router.post("/applications/{app_id}/attachments")
 def lms_application_attachment_add(
     app_id: str,

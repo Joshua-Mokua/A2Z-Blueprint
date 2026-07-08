@@ -1266,6 +1266,28 @@ export async function submitLmsToDcc(
   );
 }
 
+// Department Credit Committee (P4b) — self-contained, distinct from the
+// authority-tier charter. Roster + votes live on the application.
+export interface DccMember { id?: string; member_id?: string; name?: string; role?: string }
+export interface DccVote { member_id: string; vote: string; rationale?: string; by?: string; at?: string }
+export interface DccRosterResponse {
+  enabled: boolean; name: string; is_dcc_case: boolean;
+  members: DccMember[]; votes: DccVote[];
+}
+export async function getDccRoster(appId: string): Promise<DccRosterResponse> {
+  return getJson<DccRosterResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/roster`);
+}
+export async function recordDccVote(
+  appId: string,
+  body: { member_id: string; vote: string; rationale: string },
+): Promise<{ dcc_votes: DccVote[] }> {
+  return postJson<{ dcc_votes: DccVote[] }, { member_id: string; vote: string; rationale: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/vote`,
+    body,
+  );
+}
+
 
 /**
  * Partial update to application fields.
