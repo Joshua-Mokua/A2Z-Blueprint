@@ -91,6 +91,10 @@ from utils.api_pipeline_models import (
 logger = logging.getLogger("a2z.api")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+# Project root — used to store deal-document paths RELATIVE to the repo root
+# (upload writes str(path.relative_to(ROOT)); download reads ROOT / stored_path).
+# Resolved to match _DOC_UPLOAD_ROOT, which is also resolved, so relative_to works.
+ROOT = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
     title="A2Z Blueprint MIS 360 API",
