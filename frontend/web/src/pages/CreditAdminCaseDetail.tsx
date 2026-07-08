@@ -21,6 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useCreditAdminCase } from '@/hooks/useCreditAdminCase';
+import { WorkbenchShell } from '@/components/WorkbenchShell';
 import { useCreditAdminMutations } from '@/hooks/useCreditAdminMutations';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
@@ -33,7 +34,6 @@ import {
   LegalReviewPanel, PerfectionPanel, InsurancePanel,
 } from '@/components/SecuredLendingPanels';
 import {
-  caseStatusTone,
   caseStatusLabel,
   COMMON_DISBURSE_AUTHORITIES,
   type CreditAdminCondition,
@@ -183,40 +183,15 @@ export function CreditAdminCaseDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-xs text-white/70 mb-1 font-mono">{caseRecord.id}</div>
-              <h1 className="text-xl font-semibold">{caseRecord.client_name}</h1>
-              <div className="text-xs text-white/80 mt-1">
-                {caseRecord.product || 'unknown product'} · {formatAmount(caseRecord.amount, currencySymbol)}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <Badge tone={caseStatusTone(caseRecord)} size="md">
-                {caseStatusLabel(caseRecord)}
-              </Badge>
-              <span className="text-xs text-white/70">
-                {fulfilledCount} / {conditions.length} conditions
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/credit-admin')}>
-            ← Back to cases
-          </Button>
-          <Badge tone="brand" size="sm">β6</Badge>
-        </div>
-
-
-        {/* Identity card */}
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+        <WorkbenchShell
+          title={caseRecord.client_name}
+          stage={caseStatusLabel(caseRecord)}
+          badges={[{ label: `${fulfilledCount} / ${conditions.length} conditions` }]}
+          idLabel={caseRecord.id}
+          onBack={() => navigate('/credit-admin')}
+          onRefresh={() => void refetch()}
+          details={(
         <Card stripe="primary">
           <Card.Header>
             <h2 className="text-base font-semibold text-gray-900">Case identity</h2>
@@ -244,8 +219,8 @@ export function CreditAdminCaseDetail() {
             </div>
           </Card.Body>
         </Card>
-
-
+          )}
+        >
         {/* Lifecycle gates card */}
         <Card>
           <Card.Header>
@@ -401,6 +376,7 @@ export function CreditAdminCaseDetail() {
           </Card>
         )}
 
+      </WorkbenchShell>
       </main>
     </div>
   );
