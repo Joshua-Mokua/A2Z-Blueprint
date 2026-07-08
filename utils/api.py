@@ -9845,7 +9845,7 @@ def list_deal_documents(deal_id: str, user: dict = Depends(get_current_user)):
             "provided": list(deal.get("documents_provided", []) or [])}
 
 
-@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
 def download_deal_document(deal_id: str, doc_name: str,
                            user: dict = Depends(get_current_user)):
     """Stream one attached document back."""
@@ -9866,7 +9866,7 @@ def download_deal_document(deal_id: str, doc_name: str,
         headers={"Content-Disposition": f'attachment; filename="{meta.get("filename","file")}"'})
 
 
-@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
 def delete_deal_document(deal_id: str, doc_name: str,
                          user: dict = Depends(get_current_user)):
     """Remove an attached document (so it can be re-uploaded)."""
