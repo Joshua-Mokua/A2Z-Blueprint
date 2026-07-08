@@ -244,10 +244,6 @@ export function PipelineDealDetail() {
         idLabel={deal.id}
         onBack={() => navigate('/pipeline')}
         onRefresh={() => void reloadDeal()}
-        crossLink={deal.lms_application_id ? {
-          label: 'View Credit Analysis →',
-          onClick: () => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`),
-        } : undefined}
         details={sla && sla.state ? (
           <Card stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
             <Card.Header>
@@ -628,7 +624,6 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
 
 function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
@@ -719,19 +714,8 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-700">
-            This deal has been submitted to credit analysis.
-            {checklist.lms_application_id && (
-              <>
-                {' '}
-                <button
-                  onClick={() =>
-                    navigate(`/lms/${encodeURIComponent(checklist.lms_application_id!)}`)}
-                  className="text-brand-primary hover:underline font-medium"
-                >
-                  View Credit Analysis →
-                </button>
-              </>
-            )}
+            This deal has been submitted to credit analysis. The case is now with
+            Credit; you can follow its progress in the Case Journey.
           </p>
         </Card.Body>
       </Card>

@@ -101,9 +101,15 @@ def resolve_application_permissions(
     status = str(app.get('status', '') or '').lower()
 
     # ── can_view ──
-    # Admin sees all. Manager sees their cascade. Owner sees their own.
-    # Assigned analyst sees their assignments.
-    can_view = is_admin or in_scope or (is_mgr and in_scope)
+    # Separation of duties: the deal owner (RM) is NOT a spectator on the
+    # analyst's workspace. They reach the credit page ONLY when they have an
+    # active touchpoint there — provide-info (status 'info_requested') or
+    # sign-offer (status 'offer_issued'). At every other status they follow
+    # progress through the deal's Case Journey, not the analyst's page.
+    # Admin, managers in scope, the assigned analyst, and other credit staff in
+    # scope keep full view (they are in scope and are not the owner).
+    owner_touchpoint_open = is_owner and status in ("info_requested", "offer_issued")
+    can_view = is_admin or (in_scope and (not is_owner or owner_touchpoint_open))
 
     # ── can_update ──
     # Status guardrail FIRST. Then either:
