@@ -101,7 +101,7 @@ export function DocumentViewerModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div className="relative flex h-[88vh] w-full max-w-6xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl">
+      <div className="relative flex h-[94vh] w-full max-w-[95vw] flex-col rounded-lg border border-gray-200 bg-white shadow-xl">
         <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-3">
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-gray-900">{docName}</div>
