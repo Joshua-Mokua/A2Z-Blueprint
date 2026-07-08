@@ -1396,6 +1396,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "stage_flows":       cfg.get("stage_flows", {}),
         "product_flows":     cfg.get("product_flows", {}),
         "stage_catalogue":   cfg.get("stage_catalogue", {}),
+        "document_catalogue": cfg.get("document_catalogue", {}),
         "customer_segments": _customer_segments(),
         "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
@@ -1408,6 +1409,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
     "stage_catalogue",
+    "document_catalogue",
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
@@ -2248,6 +2250,27 @@ def admin_upsert_product_flow(
             existing.add(nm0.lower())
     cat["stages"] = cat_stages
     settings["stage_catalogue"] = cat
+
+    # Auto-register any NEW required-document names into a governed
+    # document_catalogue — the same one-place-to-add pattern as the stage
+    # repository, so a document introduced on a product flow becomes a
+    # first-class governed document available to every flow.
+    dcat = settings.get("document_catalogue")
+    if not isinstance(dcat, dict):
+        dcat = {}
+    dcat_docs = list(dcat.get("documents", []) or [])
+    dexisting = set()
+    for d in dcat_docs:
+        dn = str(d.get("name", "") if isinstance(d, dict) else d).strip().lower()
+        if dn:
+            dexisting.add(dn)
+    for doc in (entry.get("required_documents") or []):
+        dn = str(doc or "").strip()
+        if dn and dn.lower() not in dexisting:
+            dcat_docs.append({"name": dn})
+            dexisting.add(dn.lower())
+    dcat["documents"] = dcat_docs
+    settings["document_catalogue"] = dcat
 
     ok, reason = _validate_product_flow(entry, catalogue_names=existing)
     if not ok:
@@ -3532,6 +3555,25 @@ def _stage_catalogue_names(include_retired: bool = True) -> list:
             nm = str(st.get("name", "") or "").strip()
         else:
             nm = str(st or "").strip()
+        if nm:
+            out.append(nm)
+    return out
+
+
+def _document_catalogue_names(include_retired: bool = True) -> list:
+    """Ordered document-catalogue names (for dropdowns). Mirrors the stage
+    repository: the governed vocabulary of required-document types, auto-grown
+    when a product flow introduces a new required document."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("document_catalogue", {}) if isinstance(cfg, dict) else {}
+    out = []
+    for d in (cat.get("documents", []) if isinstance(cat, dict) else []):
+        if isinstance(d, dict):
+            if not include_retired and d.get("retired"):
+                continue
+            nm = str(d.get("name", "") or "").strip()
+        else:
+            nm = str(d or "").strip()
         if nm:
             out.append(nm)
     return out
