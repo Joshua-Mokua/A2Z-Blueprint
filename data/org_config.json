@@ -232,6 +232,9 @@
     ],
     "Head Of Branches": [
       "Director Consumer & Commercial Banking (CCB)"
+    ],
+    "Consumer Credit Analyst": [
+      "Director Consumer & Commercial Banking (CCB)"
     ]
   },
   "roles": [
@@ -283,6 +286,7 @@
     "Credit Analyst",
     "Credit Administrator",
     "Debt Recovery Unit Manager",
-    "Head Of Branches"
+    "Head Of Branches",
+    "Consumer Credit Analyst"
   ]
 }

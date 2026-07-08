@@ -368,7 +368,8 @@
         "Documentation",
         "Disbursed",
         "Closed Won",
-        "Closed Lost"
+        "Closed Lost",
+        "Consumer Credit Analysis"
       ]
     },
     {
@@ -1703,32 +1704,42 @@
           "win_probability": 30
         },
         {
-          "stage": "Department Credit Committee Review",
+          "stage": "Consumer Credit Analysis",
           "target_days": 1,
           "win_probability": 40
         },
         {
-          "stage": "Credit Analysis",
+          "stage": "Department Credit Committee Review",
           "target_days": 1,
           "win_probability": 70
         },
         {
-          "stage": "Offer Letter",
+          "stage": "Credit Analysis",
           "target_days": 1,
           "win_probability": 80
         },
         {
-          "stage": "Credit Administration",
+          "stage": "Offer Letter",
           "target_days": 1,
           "win_probability": 90
         },
         {
-          "stage": "Trops",
+          "stage": "Credit Administration",
           "target_days": 3,
           "win_probability": 100
+        },
+        {
+          "stage": "Trops",
+          "target_days": 3
         }
       ],
-      "required_documents": [],
+      "required_documents": [
+        "Bank Statements (6 months)",
+        "Branch Committee Decision",
+        "ID/Passport",
+        "Credit Report",
+        "CRB Report"
+      ],
       "documents_required_at_stage": "",
       "committee_journey": []
     },
@@ -2310,6 +2321,9 @@
       {
         "name": "Trops",
         "retired": false
+      },
+      {
+        "name": "Consumer Credit Analysis"
       }
     ]
   },
