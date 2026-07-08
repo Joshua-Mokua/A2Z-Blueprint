@@ -35,13 +35,14 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
 import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { WorkbenchShell } from '@/components/WorkbenchShell';
@@ -630,6 +631,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
   const [busyDoc,    setBusyDoc]    = useState<string | null>(null);
   const [otherLabel, setOtherLabel] = useState('');
+  const [viewing,    setViewing]    = useState<{ docName: string; filename: string } | null>(null);
   const OTHER_PREFIX = 'Other: ';
 
   const reloadDocs = () => {
@@ -662,15 +664,9 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     inp.click();
   };
 
-  const viewDoc = async (doc: string) => {
-    try {
-      const blob = await downloadDealDocument(deal.id, doc);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not open document');
-    }
+  const viewDoc = (doc: string) => {
+    const meta = docFiles[doc];
+    setViewing({ docName: doc, filename: meta?.filename || doc });
   };
 
   const removeDoc = async (doc: string) => {
@@ -876,6 +872,15 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
             Submit to Credit Analysis
           </Button>
         </div>
+        {viewing && (
+          <DocumentViewerModal
+            dealId={deal.id}
+            docName={viewing.docName}
+            filename={viewing.filename}
+            canDownload
+            onClose={() => setViewing(null)}
+          />
+        )}
       </Card.Body>
     </Card>
   );
