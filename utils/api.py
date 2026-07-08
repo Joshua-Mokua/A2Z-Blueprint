@@ -2117,14 +2117,21 @@ def admin_upsert_mou(
 # back to the per-class stage_flows then the core category flow. This endpoint
 # authors one product's flow at a time (add or replace), validated.
 # ─────────────────────────────────────────────────────────────────────
-def _validate_product_flow(entry: dict) -> tuple:
+def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     """(ok, reason) for a single product-flow entry. stages must be a non-empty
-    list of {stage, target_days(>0 int)}; client_types a list of strings."""
+    list of {stage, target_days(>0 int)}; client_types a list of strings.
+
+    `catalogue_names` (a lower-cased set) lets the caller validate against an
+    in-memory catalogue — e.g. right after auto-registering new stages — instead
+    of the on-disk stage_catalogue. When None, the on-disk catalogue is used.
+    """
     if not isinstance(entry, dict):
         return False, "flow must be an object"
     stages = entry.get("stages")
     if not isinstance(stages, list) or not stages:
         return False, "stages must be a non-empty list"
+    cat_names = (catalogue_names if catalogue_names is not None
+                 else {n.strip().lower() for n in _stage_catalogue_names()})
     seen = set()
     for s in stages:
         if not isinstance(s, dict):
@@ -2138,7 +2145,7 @@ def _validate_product_flow(entry: dict) -> tuple:
         # SR1: every stage must exist in the admin stage_catalogue (governed
         # vocabulary). If the catalogue is empty (not yet seeded), skip this
         # check so nothing breaks pre-seed.
-        if _stage_catalogue_names() and not _is_stage_catalogued(nm):
+        if cat_names and nm.strip().lower() not in cat_names:
             return False, (
                 f"Stage '{nm}' is not in the stage repository. Add it to the stage "
                 "repository first, then use it in a product flow."
@@ -2221,7 +2228,28 @@ def admin_upsert_product_flow(
         "documents_required_at_stage": str(payload.get("documents_required_at_stage", "") or ""),
         "committee_journey": payload.get("committee_journey", []) or [],
     }
-    ok, reason = _validate_product_flow(entry)
+    # Auto-register any NEW stage names into the governed stage_catalogue, so
+    # that introducing a stage in a product flow also registers it in the stage
+    # repository — one place to add a stage, no chicken-and-egg. The catalogue
+    # stays authoritative: validation below runs against this combined set.
+    cat = settings.get("stage_catalogue")
+    if not isinstance(cat, dict):
+        cat = {}
+    cat_stages = list(cat.get("stages", []) or [])
+    existing = set()
+    for st in cat_stages:
+        nm0 = str(st.get("name", "") if isinstance(st, dict) else st).strip().lower()
+        if nm0:
+            existing.add(nm0)
+    for s in entry["stages"]:
+        nm0 = str(s.get("stage", "") or "").strip()
+        if nm0 and nm0.lower() not in existing:
+            cat_stages.append({"name": nm0})
+            existing.add(nm0.lower())
+    cat["stages"] = cat_stages
+    settings["stage_catalogue"] = cat
+
+    ok, reason = _validate_product_flow(entry, catalogue_names=existing)
     if not ok:
         raise HTTPException(status_code=400, detail=reason)
 
