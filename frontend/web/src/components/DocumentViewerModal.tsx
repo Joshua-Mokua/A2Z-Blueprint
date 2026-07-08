@@ -68,7 +68,13 @@ export function DocumentViewerModal({
             `<h3>${name}</h3>${XLSX.utils.sheet_to_html(wb.Sheets[name])}`);
           if (alive) setHtml(parts.join('\n') || '<p><em>Empty workbook.</em></p>');
         } else {
-          objUrl = URL.createObjectURL(blob);
+          // The download endpoint serves application/octet-stream, which a PDF
+          // <iframe> will not render — re-type PDFs so the browser renders them
+          // inline. Images render fine from any blob (the browser sniffs them).
+          const src = kind === 'pdf'
+            ? new Blob([await blob.arrayBuffer()], { type: 'application/pdf' })
+            : blob;
+          objUrl = URL.createObjectURL(src);
           setUrl(objUrl);
         }
       } catch (e) {
@@ -95,7 +101,7 @@ export function DocumentViewerModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div className="relative flex h-[85vh] w-full max-w-4xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl">
+      <div className="relative flex h-[88vh] w-full max-w-6xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl">
         <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-3">
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-gray-900">{docName}</div>
