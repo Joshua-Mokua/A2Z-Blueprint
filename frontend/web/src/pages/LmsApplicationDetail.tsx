@@ -18,7 +18,8 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, type WorkbenchView } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, type WorkbenchView, type LmsDocumentsResponse } from '@/lib/api';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
@@ -293,6 +294,8 @@ export function LmsApplicationDetail() {
             )}
           </Card.Body>
         </Card>
+
+        <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -1315,6 +1318,52 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
+function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownload: boolean }) {
+  const [files, setFiles] = useState<LmsDocumentsResponse['files']>({});
+  const [viewing, setViewing] = useState<{ docName: string; filename: string } | null>(null);
+  useEffect(() => {
+    listLmsDocuments(appId).then((d) => setFiles(d.files || {})).catch(() => { /* none on file */ });
+  }, [appId]);
+  const entries = Object.entries(files);
+  if (entries.length === 0) return null;
+  return (
+    <Card className="mt-4">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Documents on file</h2>
+        <span className="text-xs text-gray-500">
+          {entries.length} document{entries.length === 1 ? '' : 's'} travelled with the case
+        </span>
+      </Card.Header>
+      <Card.Body>
+        <div className="space-y-2">
+          {entries.map(([doc, meta]) => (
+            <div key={doc} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+              <span className="text-gray-800">
+                <span className="text-gray-400">📄</span> {doc}
+                {meta?.filename && <span className="ml-2 text-xs text-gray-500">{meta.filename}</span>}
+              </span>
+              <button type="button" className="text-brand-primary hover:underline text-xs"
+                onClick={() => setViewing({ docName: doc, filename: meta?.filename || doc })}>View</button>
+            </div>
+          ))}
+        </div>
+        {!canDownload && (
+          <p className="mt-2 text-xs text-gray-400">Read-only — download is not permitted for your role.</p>
+        )}
+      </Card.Body>
+      {viewing && (
+        <DocumentViewerModal
+          dealId="" docName={viewing.docName} filename={viewing.filename}
+          canDownload={canDownload}
+          fetchBlob={() => downloadLmsDocument(appId, viewing.docName)}
+          onClose={() => setViewing(null)}
+        />
+      )}
+    </Card>
+  );
+}
+
+
 function SubmitToDccPanel({ appId, onDone, toast }: {
   appId: string;
   onDone: () => Promise<void> | void;

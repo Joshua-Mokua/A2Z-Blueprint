@@ -30,13 +30,15 @@ function kindOf(filename: string): Kind {
 }
 
 export function DocumentViewerModal({
-  dealId, docName, filename, canDownload = true, onClose,
+  dealId, docName, filename, canDownload = true, onClose, fetchBlob,
 }: {
   dealId: string;
   docName: string;
   filename: string;
   canDownload?: boolean;
   onClose: () => void;
+  /** Optional custom fetcher (e.g. LMS-side download). Defaults to the deal document route. */
+  fetchBlob?: () => Promise<Blob>;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
@@ -44,13 +46,14 @@ export function DocumentViewerModal({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const kind = kindOf(filename);
+  const doFetch = fetchBlob ?? (() => downloadDealDocument(dealId, docName));
 
   useEffect(() => {
     let alive = true;
     let objUrl: string | null = null;
     (async () => {
       try {
-        const blob = await downloadDealDocument(dealId, docName);
+        const blob = await doFetch();
         if (!alive) return;
         if (kind === 'text') {
           setText(await blob.text());
@@ -88,7 +91,7 @@ export function DocumentViewerModal({
 
   const doDownload = async () => {
     try {
-      const blob = await downloadDealDocument(dealId, docName);
+      const blob = await doFetch();
       const href = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = href; a.download = filename; a.click();

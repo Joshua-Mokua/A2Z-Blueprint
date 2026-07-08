@@ -1944,6 +1944,28 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
   return res.blob();
 }
 
+// LMS-side document access: the documents that TRAVELLED with the case from the
+// pipeline deal, served under LMS view permission (the credit side has no deal
+// scope). Used by the analyst / DCC / BCC / Chief Credit to read every file.
+export interface LmsDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  provided: string[];
+}
+export async function listLmsDocuments(appId: string): Promise<LmsDocumentsResponse> {
+  return getJson<LmsDocumentsResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents`);
+}
+export async function downloadLmsDocument(appId: string, docName: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const tok = getCurrentTokenForBlob();
+  if (tok) headers['Authorization'] = `Bearer ${tok}`;
+  const res = await fetch(
+    `/api/lms/applications/${encodeURIComponent(appId)}/documents/${encodeURIComponent(docName)}`,
+    { headers });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  return res.blob();
+}
+
 // credit committee palette (4b-1)
 export interface CommitteeMemberDef { name: string; role: string; staff_code?: string; full_funnel?: boolean; }
 export interface CommitteeDef {

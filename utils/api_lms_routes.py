@@ -1227,6 +1227,54 @@ def lms_application_attachments_list(
     return {"attachments": lam.list_attachments(app_id), "bcc": app.get("bcc")}
 
 
+@router.get("/applications/{app_id}/documents")
+def lms_application_documents_list(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """List the documents that travelled with the case from the pipeline deal.
+    Visible to anyone who can view the application (analyst, DCC/BCC, Chief
+    Credit). The credit side has no deal scope, so these are the app's carried
+    files, not the deal document routes."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    return {"files": app.get("document_files", {}) or {},
+            "provided": list(app.get("documents_provided", []) or [])}
+
+
+@router.get("/applications/{app_id}/documents/{doc_name:path}")
+def lms_application_document_download(
+    app_id: str,
+    doc_name: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Stream one travelled document back, gated by LMS view permission."""
+    from pathlib import Path as _P
+    from fastapi.responses import StreamingResponse
+    import io as _io
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    meta = (app.get("document_files", {}) or {}).get(doc_name)
+    if not meta:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_name}' not found")
+    root = _P(__file__).resolve().parent.parent
+    fpath = root / str(meta.get("path", ""))
+    if not fpath.exists():
+        raise HTTPException(status_code=404, detail="Stored file missing")
+    data = fpath.read_bytes()
+    return StreamingResponse(
+        _io.BytesIO(data), media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"'})
+
+
 @router.post("/applications/{app_id}/attachments")
 def lms_application_attachment_add(
     app_id: str,

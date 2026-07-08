@@ -6057,6 +6057,15 @@ class LoanApplicationManager:
             deal_appeals = deal.get("appeals")
             if isinstance(deal_appeals, list) and deal_appeals:
                 app["committee_appeals"] = deal_appeals
+            # Carry the deal's uploaded documents onto the application so the
+            # credit side (analyst, DCC/BCC, Chief Credit) can READ every file as
+            # the case travels. Stored paths are repo-relative; the LMS document
+            # endpoints serve them under LMS permissions (the analyst has no deal
+            # scope, so we cannot rely on the deal document routes here).
+            deal_docs = deal.get("document_files")
+            if isinstance(deal_docs, dict) and deal_docs:
+                app["document_files"] = deal_docs
+                app["documents_provided"] = list(deal.get("documents_provided", []) or [])
         except Exception:
             pass
         # Phase C: seed the journey so every case has history from creation —
