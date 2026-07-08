@@ -78,6 +78,7 @@ export function CreditAnalytics() {
   return (
     <>
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Analytics' }]}
         title="Credit Analytics"
         subtitle="Pipeline-origin credit flow within your scope — live cases by workflow stage, so the team can prep workload. (Loan-book / NPL analytics arrive with the Credit Monitoring module.)"

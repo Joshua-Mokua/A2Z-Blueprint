@@ -79,7 +79,7 @@ export default function BranchLog() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <PageHeader title="Daily Branch Log" subtitle="Log your daily activity; supervisors validate." />
+      <PageHeader ribbon title="Daily Branch Log" subtitle="Log your daily activity; supervisors validate." />
 
       <div className="mb-4 flex gap-1 text-sm">
         {tabs.map(([id, lbl]) => (
