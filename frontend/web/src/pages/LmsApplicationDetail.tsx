@@ -15,7 +15,7 @@
 // flipped (e.g. after assign, can_assign becomes false because status
 // is now 'assigned').
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
@@ -67,23 +67,11 @@ export function LmsApplicationDetail() {
   const { branding } = useBranding();
   const { toast } = useToast();
   const { user } = useRole();
-  const [assessmentTab, setAssessmentTab] = useState<'cr' | 'engines' | 'affordability'>('cr');
 
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
 
-  // IA Phase 3: role-aware default view. The assigned analyst lands on the
-  // Engines tab (their working surface); everyone else keeps Credit Report.
-  // Run-once (ref-guarded) so it never overrides a manual tab click.
-  const didInitTab = useRef(false);
-  useEffect(() => {
-    if (didInitTab.current || !application) return;
-    didInitTab.current = true;
-    const isAnalyst = Boolean(application.analyst?.code) &&
-      String(application.analyst?.code ?? '') === String(user?.staff_code ?? '');
-    if (isAnalyst) setAssessmentTab('engines');
-  }, [application, user]);
 
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
@@ -148,46 +136,6 @@ export function LmsApplicationDetail() {
   // directly under the customer strip for the assigned analyst, or in its
   // regular place in the origination flow for everyone else. Defined once
   // here and placed conditionally in the JSX below to avoid duplication.
-  const assessmentCard = (
-    <Card stripe="accent">
-      <Card.Header>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
-          <div className="flex gap-1 text-xs">
-            {/* Option A: the Engines & Conflicts (analyst workbench) tab is
-                credit-internal — hidden from non-credit viewers (RM etc.), who
-                still see CR + Affordability read-only and the Case Journey. */}
-            {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const)
-              .filter(([id]) => id !== 'engines' || permissions.can_update)
-              .map(([id,lbl]) => (
-              <button key={id} onClick={() => setAssessmentTab(id)}
-                className={`rounded px-3 py-1.5 font-medium transition-colors ${
-                  assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
-                {lbl}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-          {/* CR is completed by the RM during origination, then frozen once the
-              case is in credit — read-only for the RM and the analyst; only a
-              credit manager/admin may correct it. */}
-          <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
-        </div>
-        {permissions.can_update && (
-        <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
-          <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
-        </div>
-        )}
-        <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
-          <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
-        </div>
-      </Card.Body>
-    </Card>
-  );
-
   const printJourney = () => {
     const evs = [...(application.journey ?? application.history ?? [])];
     const rows = evs.map((e) => {
@@ -203,7 +151,7 @@ export function LmsApplicationDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="max-w-5xl mx-auto px-6 py-6">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <WorkbenchShell
           title={application.client_name}
           stage={application.status}
@@ -240,10 +188,10 @@ export function LmsApplicationDetail() {
               )}
             </div>
           )}
-        >
-                {_viewerIsAnalyst && assessmentCard}
-
-
+        defaultTabId="journey"
+        tabs={[
+          { id: 'journey', label: 'Case Journey', color: '#0082BB', content: (
+            <>
         {/* ─────────── Case Journey (prominent, always shown) ─────────── */}
         {(
           <Card stripe="primary">
@@ -281,42 +229,13 @@ export function LmsApplicationDetail() {
         )}
 
 
-        {/* ─────────── Decision card (only if recorded) ─────────── */}
-        {application.decision?.verdict && (
-          <Card stripe="accent">
-            <Card.Header>
-              <h2 className="text-base font-semibold text-gray-900">
-                Decision: {application.decision.verdict}
-              </h2>
-            </Card.Header>
-            <Card.Body>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <Field label="Authority" value={application.decision.authority} />
-                <Field label="Date" value={formatDate(application.decision.date)} />
-                {application.decision.reason && (
-                  <Field label="Reason" value={application.decision.reason} fullWidth />
-                )}
-                {application.decision.comments && (
-                  <Field label="Comments" value={application.decision.comments} fullWidth />
-                )}
-                {application.decision.conditions && application.decision.conditions.length > 0 && (
-                  <div className="col-span-2">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Conditions
-                    </div>
-                    <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                      {application.decision.conditions.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </Card.Body>
-          </Card>
-        )}
-
-
+            </>
+          ) },
+          { id: 'cr', label: 'Credit Report', color: '#7E57C2', content: (
+            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
+          ) },
+          { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
+            <>
         {/* ─────────── Documentation card ─────────── */}
         <Card>
           <Card.Header>
@@ -375,13 +294,56 @@ export function LmsApplicationDetail() {
           </Card.Body>
         </Card>
 
-        {/* Documents live on the RM's pipeline workbench (single source);
-            the credit surface stays free of origination controls. */}
-
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
         {application.status === 'referred_to_committee' && (
           <CommitteePreReadPanel appId={application.id} toast={toast} />
+        )}
+
+
+            </>
+          ) },
+          { id: 'affordability', label: 'Affordability', color: '#00A65A', content: (
+            <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
+          ) },
+          ...(permissions.can_update ? [{ id: 'engines', label: 'Engines & Conflicts', color: '#C62828', content: (
+            <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
+          ) }] : []),
+          { id: 'actions', label: 'Actions', color: '#EF6C00', content: (
+            <div className="space-y-4">
+        {/* ─────────── Decision card (only if recorded) ─────────── */}
+        {application.decision?.verdict && (
+          <Card stripe="accent">
+            <Card.Header>
+              <h2 className="text-base font-semibold text-gray-900">
+                Decision: {application.decision.verdict}
+              </h2>
+            </Card.Header>
+            <Card.Body>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <Field label="Authority" value={application.decision.authority} />
+                <Field label="Date" value={formatDate(application.decision.date)} />
+                {application.decision.reason && (
+                  <Field label="Reason" value={application.decision.reason} fullWidth />
+                )}
+                {application.decision.comments && (
+                  <Field label="Comments" value={application.decision.comments} fullWidth />
+                )}
+                {application.decision.conditions && application.decision.conditions.length > 0 && (
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                      Conditions
+                    </div>
+                    <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+                      {application.decision.conditions.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
         )}
 
 
@@ -427,13 +389,6 @@ export function LmsApplicationDetail() {
           && (
           <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
-
-        {/* ─────────── Assessment (tabbed: CR / Engines / Affordability) ─────────── */}
-        {/* IA Phase 3: for the assigned analyst this card is hoisted directly
-            under the customer strip (see above); here it renders for everyone
-            else in the normal origination flow. */}
-        {!_viewerIsAnalyst && assessmentCard}
-
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
         {permissions.can_update && (
@@ -535,7 +490,10 @@ export function LmsApplicationDetail() {
           </Card>
         )}
 
-      </WorkbenchShell>
+            </div>
+          ) },
+        ]}
+      />
       </main>
     </div>
   );
