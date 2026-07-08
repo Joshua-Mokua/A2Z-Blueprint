@@ -242,6 +242,33 @@ def _account_row_to_dict(row) -> dict:
 
 # ── Public accessors ─────────────────────────────────────────────────────
 
+def _resolve_cif(identifier: str) -> str:
+    """Accept either a CIF or an account number.
+
+    Bank staff realistically know the account number, not the internal
+    CIF — the frontend's "Lookup by CIF" field was built against
+    synthetic data (CIF range 100000001-100700000) and doesn't
+    distinguish the two. If `identifier` matches an account_number in
+    cbs_accounts, resolve it to its owning F12 CIF; otherwise return it
+    unchanged (it's presumably already a CIF, or unresolvable — callers
+    look it up as-is and 404 naturally if it's neither).
+    """
+    identifier = str(identifier).strip()
+    try:
+        from utils.db import db
+        if not db.is_postgres_ready():
+            return identifier
+        row = db.fetch_one(
+            "SELECT f12_cif FROM cbs_accounts WHERE account_number = %s",
+            (identifier,),
+        )
+        if row and row.get("f12_cif"):
+            return str(row["f12_cif"])
+    except Exception:
+        pass
+    return identifier
+
+
 def _db_accounts_for_cif(cif: str) -> Optional[list]:
     """Raw cbs_accounts rows for this F12 CIF. None if Postgres isn't
     ready (caller should fall back); [] if ready but no rows found."""
@@ -292,8 +319,10 @@ def _db_customer_by_cif(cif: str) -> Optional[dict]:
 
 
 def get_customer_by_cif(cif: str) -> Optional[dict]:
-    """Lookup customer by exact CIF. Checks cbs_accounts (Postgres, EOD
+    """Lookup customer by CIF — or by account number, resolved to its
+    owning CIF (see _resolve_cif). Checks cbs_accounts (Postgres, EOD
     ETL) first, falls back to customers.csv. Returns dict or None."""
+    cif = _resolve_cif(cif)
     db_customer = _db_customer_by_cif(cif)
     if db_customer:
         return db_customer
@@ -333,6 +362,7 @@ def get_accounts_for_cif(cif: str) -> list[dict]:
     "cif" column or fails to load — a customer lookup should still
     succeed with an empty accounts list rather than 500.
     """
+    cif = _resolve_cif(cif)
     db_rows = _db_accounts_for_cif(cif)
     if db_rows:
         return db_rows
