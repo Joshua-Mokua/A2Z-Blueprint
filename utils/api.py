@@ -9823,6 +9823,7 @@ def upload_deal_document(deal_id: str, body: _DocUploadBody,
         provided.append(doc_name)
     pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # persist to PG (DB-first reads)
     # EDMS metadata registration (best-effort; governance, not blocking)
     try:
         from utils.document_management import compute_sha256  # noqa: F401
@@ -9879,6 +9880,7 @@ def delete_deal_document(deal_id: str, doc_name: str,
     provided = [d for d in (deal.get("documents_provided", []) or []) if d != doc_name]
     pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # persist to PG (DB-first reads)
     _audit("API_DEAL_DOC_DELETE", user, f"deal={deal_id}|doc={doc_name}")
     return {"status": "removed", "doc_name": doc_name}
 # === END DOCUMENT UPLOAD ENDPOINTS ===
