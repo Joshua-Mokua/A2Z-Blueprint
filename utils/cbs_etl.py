@@ -147,7 +147,11 @@ def _safe_date(v) -> Optional[str]:
     if not v or str(v).strip() in ("", "None", "nan"):
         return None
     s = str(v).strip()
-    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+    # %d-%b-%y first: FlexCube's actual export format is DD-MON-YY
+    # (e.g. "09-JUL-19"), a 2-digit year — %Y does NOT match that ("does
+    # not match format"), so every date silently came back NULL until
+    # this was added.
+    for fmt in ("%d-%b-%y", "%d-%b-%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
         try:
             return datetime.strptime(s, fmt).date().isoformat()
         except ValueError:
