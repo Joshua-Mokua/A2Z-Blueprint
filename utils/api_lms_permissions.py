@@ -240,7 +240,7 @@ def resolve_application_permissions(
     # endpoint, not here.
     can_submit_to_dcc = False
     try:
-        if is_assigned_analyst and status == "assigned":
+        if is_assigned_analyst and status == "assigned" and not app.get("dcc_outcome"):
             from utils.api_lms_scope import _analyst_segment
             from utils.api_lms_mutations import get_credit_workflow_config
             _da = (get_credit_workflow_config() or {}).get("department_analyst") or {}

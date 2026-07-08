@@ -319,7 +319,7 @@ LMS_WORKFLOW_TRANSITIONS: Dict[str, Tuple[str, ...]] = {
     "assigned":                   ("info_requested", "approved", "declined",
                                    "referred_to_committee"),
     "info_requested":             ("assigned",),
-    "referred_to_committee":      ("approved", "declined"),
+    "referred_to_committee":      ("approved", "declined", "assigned"),
     "approved":                   ("offer_issued",),
     "offer_issued":               ("offer_signed", "declined"),
     "offer_signed":               ("offer_validated", "analyst_confirmed",

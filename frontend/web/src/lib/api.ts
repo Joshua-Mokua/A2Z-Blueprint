@@ -1270,9 +1270,14 @@ export async function submitLmsToDcc(
 // authority-tier charter. Roster + votes live on the application.
 export interface DccMember { id?: string; member_id?: string; name?: string; role?: string }
 export interface DccVote { member_id: string; vote: string; rationale?: string; by?: string; at?: string }
+export interface DccOutcome {
+  recommendation: string;
+  tally: { yes: number; no: number; abstain: number };
+  by?: string; by_name?: string; at?: string; note?: string;
+}
 export interface DccRosterResponse {
   enabled: boolean; name: string; is_dcc_case: boolean;
-  members: DccMember[]; votes: DccVote[];
+  members: DccMember[]; votes: DccVote[]; outcome?: DccOutcome | null;
 }
 export async function getDccRoster(appId: string): Promise<DccRosterResponse> {
   return getJson<DccRosterResponse>(
@@ -1284,6 +1289,15 @@ export async function recordDccVote(
 ): Promise<{ dcc_votes: DccVote[] }> {
   return postJson<{ dcc_votes: DccVote[] }, { member_id: string; vote: string; rationale: string }>(
     `/lms/applications/${encodeURIComponent(appId)}/dcc/vote`,
+    body,
+  );
+}
+export async function resolveDcc(
+  appId: string,
+  body: { note?: string },
+): Promise<{ dcc_outcome: DccOutcome }> {
+  return postJson<{ dcc_outcome: DccOutcome }, { note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/resolve`,
     body,
   );
 }

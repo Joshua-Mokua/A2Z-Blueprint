@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -297,7 +297,7 @@ export function LmsApplicationDetail() {
 
         <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update} />
 
-        <DccVotePanel appId={application.id} toast={toast} />
+        <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -1320,9 +1320,10 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
-function DccVotePanel({ appId, toast }: {
+function DccVotePanel({ appId, toast, onDone }: {
   appId: string;
   toast: ReturnType<typeof useToast>['toast'];
+  onDone: () => Promise<void> | void;
 }) {
   const [roster, setRoster] = useState<DccRosterResponse | null>(null);
   const [memberId, setMemberId] = useState('');
@@ -1331,8 +1332,18 @@ function DccVotePanel({ appId, toast }: {
   const [busy, setBusy] = useState(false);
   const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
-  if (!roster || !roster.is_dcc_case || !roster.enabled) return null;
+  if (!roster || !roster.enabled || (!roster.is_dcc_case && !roster.outcome)) return null;
   const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
+  const resolve = async () => {
+    setBusy(true);
+    try {
+      await resolveDcc(appId, {});
+      toast({ tone: 'success', message: 'DCC closed — case returned to the Department Analyst.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not close the DCC.' });
+    } finally { setBusy(false); }
+  };
   const cast = async () => {
     if (!memberId) return;
     setBusy(true);
@@ -1351,7 +1362,22 @@ function DccVotePanel({ appId, toast }: {
         <span className="text-xs text-gray-500">{roster.votes.length}/{roster.members.length} voted</span>
       </Card.Header>
       <Card.Body>
-        {roster.members.length === 0 ? (
+        {roster.outcome ? (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+            <div>DCC recommendation:{' '}
+              <span className={roster.outcome.recommendation === 'support' ? 'font-semibold text-green-700'
+                : roster.outcome.recommendation === 'oppose' ? 'font-semibold text-red-600'
+                : 'font-semibold text-gray-600'}>
+                {roster.outcome.recommendation}
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Tally: {roster.outcome.tally.yes} yes · {roster.outcome.tally.no} no · {roster.outcome.tally.abstain} abstain
+              {roster.outcome.by_name ? ` · closed by ${roster.outcome.by_name}` : ''}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">Advisory only — the Credit Analyst makes the final decision.</p>
+          </div>
+        ) : roster.members.length === 0 ? (
           <p className="text-xs text-gray-400">No DCC members configured yet (set them in the credit-workflow config).</p>
         ) : (
           <>
@@ -1395,6 +1421,12 @@ function DccVotePanel({ appId, toast }: {
             <input value={rationale} onChange={(e) => setRationale(e.target.value)} disabled={busy}
               placeholder="Rationale (optional)"
               className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+            {roster.votes.length > 0 && (
+              <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
+                <span className="text-xs text-gray-500">Advisory — closing returns the case to the Department Analyst.</span>
+                <Button variant="ghost" onClick={resolve} disabled={busy}>Close &amp; return to analyst</Button>
+              </div>
+            )}
           </>
         )}
       </Card.Body>

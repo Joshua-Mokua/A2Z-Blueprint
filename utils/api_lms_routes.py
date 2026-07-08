@@ -1301,6 +1301,7 @@ def lms_dcc_roster(
         "is_dcc_case": str(app.get("committee_kind", "")) == "dcc",
         "members": list(dcc.get("members") or []),
         "votes": list(app.get("dcc_votes", []) or []),
+        "outcome": app.get("dcc_outcome"),
     }
 
 
@@ -1345,6 +1346,56 @@ def lms_dcc_vote(
     lam.update(app_id, {"dcc_votes": votes})
     audit_log("LMS_DCC_VOTE", str(user.get("username", "") or ""), f"{app_id}|{member_id}:{vote}")
     return {"dcc_votes": votes}
+
+
+@router.post("/applications/{app_id}/dcc/resolve")
+def lms_dcc_resolve(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Close the DCC: tally the votes into an ADVISORY recommendation, record it,
+    and route the case BACK to the Department Analyst (status -> assigned) so they
+    can hand it to the Credit Analyst. The DCC does NOT approve/decline the loan —
+    the Credit Analyst is the decision-maker. Gated: a manager or the assigned
+    analyst, DCC enabled, case before the DCC."""
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    caller = str(user.get("staff_code", "") or "")
+    analyst_code = str((app.get("analyst") or {}).get("code", "") or "")
+    if not (is_manager(user) or (caller and caller == analyst_code)):
+        raise HTTPException(status_code=403,
+                            detail="Only a manager or the assigned analyst can close the DCC.")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    if not dcc.get("enabled"):
+        raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
+    if str(app.get("committee_kind", "")) != "dcc":
+        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    votes = app.get("dcc_votes", []) or []
+    yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
+    no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
+    abstain = sum(1 for v in votes if str(v.get("vote", "")).upper() == "ABSTAIN")
+    recommendation = "support" if yes > no else "oppose" if no > yes else "split"
+    outcome = {
+        "recommendation": recommendation,
+        "tally": {"yes": yes, "no": no, "abstain": abstain},
+        "by": caller, "by_name": str(user.get("full_name", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+        "note": str((payload or {}).get("note", "") or "") if isinstance(payload, dict) else "",
+    }
+    if not is_valid_lms_transition(str(app.get("status", "")), "assigned"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot return to the analyst from '{app.get('status')}'")
+    # Return to the Department Analyst (status -> assigned); clear committee_kind
+    # so the case is no longer 'before the DCC'. dcc_outcome carries the advice.
+    lam.update(app_id, {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""})
+    audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
+              f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
+    return {"application": lam.get(app_id), "dcc_outcome": outcome}
 
 
 @router.post("/applications/{app_id}/attachments")
