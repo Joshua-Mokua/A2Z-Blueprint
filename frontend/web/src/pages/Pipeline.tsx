@@ -322,6 +322,7 @@ export function Pipeline() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro' }]}
         title="A2Z Sales Pro"
         subtitle="Deals across your scope — assured value, stage, and ownership."
