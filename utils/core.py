@@ -6007,6 +6007,7 @@ class LoanApplicationManager:
             "pipeline_deal_id": deal_id,
             "client_name":     deal.get("client_name", ""),
             "client_cif":      str(deal.get("client_cif", "") or ""),
+            "client_type":     str(deal.get("client_type", "") or ""),
             "product":         product,
             "amount":          amount,
             "currency":        str(deal.get("currency", "") or "KES"),
