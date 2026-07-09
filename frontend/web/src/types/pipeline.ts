@@ -460,6 +460,8 @@ export interface CreateDealRequest {
   source?:               string;
   unit?:                 string;
   account_number?:       string;
+  phone?:                string;
+  email?:                string;
 
   // Conflict resolution fields (β3)
   portfolio_owner_code?:    string;
