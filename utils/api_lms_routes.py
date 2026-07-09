@@ -469,7 +469,11 @@ def lms_application_submit_to_dcc(
     from utils.api_lms_mutations import get_credit_workflow_config
     da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
     required_atts = [str(x).strip() for x in (da.get("required_attachments") or []) if str(x).strip()]
-    atts = lam.list_attachments(app_id) or []
+    atts = list(lam.list_attachments(app_id) or [])
+    # The Department Analyst attaches the Call-Back Memo as a CASE DOCUMENT
+    # (document_files) so it travels + is readable; count those toward the gate.
+    for _k, _v in (app.get("document_files", {}) or {}).items():
+        atts.append({"filename": f"{_k} {(_v or {}).get('filename', '')}", "kind": "document"})
 
     def _att_present(name: str) -> bool:
         toks = [t for t in name.lower().replace("-", " ").replace("_", " ").split() if t]
@@ -1424,6 +1428,59 @@ def lms_hand_to_credit_analyst(
     })
     audit_log("LMS_HANDED_TO_CREDIT_ANALYST", str(user.get("username", "") or ""), app_id)
     return {"application": lam.get(app_id), "status": "submitted"}
+
+
+@router.post("/applications/{app_id}/callback-memo")
+def lms_callback_memo_upload(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The Department Analyst attaches the Call-Back Memo (their checker
+    confirmation). Stored as a CASE DOCUMENT so it travels + is readable in the
+    viewer, and satisfies the submit-to-DCC completeness gate. Gated: the
+    assigned analyst on the case."""
+    from pathlib import Path as _P
+    import base64 as _b64, datetime as _dt, re as _re
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    caller = str(user.get("staff_code", "") or "")
+    analyst_code = str((app.get("analyst") or {}).get("code", "") or "")
+    if not (caller and caller == analyst_code):
+        raise HTTPException(status_code=403,
+                            detail="Only the assigned analyst can attach the Call-Back Memo.")
+    payload = payload if isinstance(payload, dict) else {}
+    filename = str(payload.get("filename", "") or "").strip() or "call_back_memo.pdf"
+    try:
+        raw = _b64.b64decode(str(payload.get("content_b64", "") or ""))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file content.")
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file.")
+    if len(raw) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 15 MB).")
+    root = _P(__file__).resolve().parent.parent
+    safe = (_re.sub(r"[^A-Za-z0-9._-]", "_", filename)[:120]) or "memo"
+    ddir = root / "data" / "uploads" / "credit_docs" / ("lms_" + _re.sub(r"[^A-Za-z0-9._-]", "_", app_id))
+    ddir.mkdir(parents=True, exist_ok=True)
+    stored = ddir / f"CallBackMemo__{safe}"
+    stored.write_bytes(raw)
+    files = dict(app.get("document_files", {}) or {})
+    files["Call-Back Memo"] = {
+        "filename": filename,
+        "path": str(stored.relative_to(root)),
+        "size": len(raw),
+        "uploaded_by": caller,
+        "uploaded_at": _dt.datetime.now().isoformat(timespec="seconds"),
+    }
+    provided = list(app.get("documents_provided", []) or [])
+    if "Call-Back Memo" not in provided:
+        provided.append("Call-Back Memo")
+    lam.update(app_id, {"document_files": files, "documents_provided": provided})
+    audit_log("LMS_CALLBACK_MEMO", str(user.get("username", "") or ""), app_id)
+    return {"document_files": files}
 
 
 @router.post("/applications/{app_id}/attachments")

@@ -1307,6 +1307,15 @@ export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutatio
     {},
   );
 }
+export async function uploadCallbackMemo(
+  appId: string,
+  body: { filename: string; content_b64: string },
+): Promise<{ document_files: Record<string, unknown> }> {
+  return postJson<{ document_files: Record<string, unknown> }, { filename: string; content_b64: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/callback-memo`,
+    body,
+  );
+}
 
 
 /**

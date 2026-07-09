@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -1526,6 +1526,28 @@ function SubmitToDccPanel({ appId, onDone, toast }: {
   const [opinion, setOpinion] = useState('');
   const [pep, setPep] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [memoBusy, setMemoBusy] = useState(false);
+  const attachMemo = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setMemoBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadCallbackMemo(appId, { filename: f.name, content_b64: btoa(bin) });
+        toast({ tone: 'success', message: 'Call-Back Memo attached.' });
+        await onDone();
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setMemoBusy(false); }
+    };
+    inp.click();
+  };
   const submit = async () => {
     setBusy(true);
     try {
@@ -1541,9 +1563,15 @@ function SubmitToDccPanel({ appId, onDone, toast }: {
       <div className="text-sm font-semibold text-amber-900">Submit to Department Credit Committee</div>
       <p className="mt-1 text-xs text-amber-800">
         Check completeness and voice your support. You do not make the credit decision —
-        this refers the case to the DCC. The Call-Back Memo must be attached (Documentation
-        tab), and PEP compliance must be confirmed below.
+        this refers the case to the DCC. As the checker, complete the call-back and
+        <strong> attach the Call-Back Memo</strong> below, and confirm PEP compliance.
       </p>
+      <div className="mt-3 flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={attachMemo} disabled={memoBusy || busy}>
+          {memoBusy ? 'Attaching…' : 'Attach Call-Back Memo'}
+        </Button>
+        <span className="text-xs text-amber-700">Stored with the case + readable by the committee.</span>
+      </div>
       <label className="mt-3 block text-xs font-medium text-amber-900">Support opinion</label>
       <textarea
         value={opinion} disabled={busy} rows={3}
