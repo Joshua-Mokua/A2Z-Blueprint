@@ -895,16 +895,34 @@ export default function AdminConfig() {
                                 : x)),
                             }))}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setFlowDraft((d) => ({
-                              ...d, stages: d.stages.filter((_, j) => j !== i),
-                            }))}
-                            className="text-gray-400 hover:text-red-600 px-1"
-                            aria-label="Remove stage"
-                          >
-                            ×
-                          </button>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setFlowDraft((d) => ({
+                                ...d,
+                                stages: [
+                                  ...d.stages.slice(0, i),
+                                  { stage: '', target_days: 3, win_probability: null },
+                                  ...d.stages.slice(i),
+                                ],
+                              }))}
+                              className="px-1 text-sm text-gray-400 hover:text-[#0082BB]"
+                              aria-label="Insert a stage above this one"
+                              title="Insert a stage above this one"
+                            >
+                              +↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFlowDraft((d) => ({
+                                ...d, stages: d.stages.filter((_, j) => j !== i),
+                              }))}
+                              className="text-gray-400 hover:text-red-600 px-1"
+                              aria-label="Remove stage"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
                       ))}
                       <Button
@@ -919,6 +937,7 @@ export default function AdminConfig() {
                       <p className="text-[11px] text-gray-400">
                         Win&nbsp;% is the likelihood of closing a deal sitting at that stage. A deal
                         inherits its current stage&apos;s value automatically — leave blank for none.
+                        Use <span className="font-medium">+↑</span> on a row to insert a stage above it; <span className="font-medium">+ Add stage</span> appends to the end.
                       </p>
                     </div>
 
