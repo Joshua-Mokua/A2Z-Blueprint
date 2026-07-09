@@ -2336,5 +2336,48 @@
     "branch_only_codes": [
       "BCC1"
     ]
+  },
+  "document_catalogue": {
+    "documents": [
+      {
+        "name": "Duly Filled & Signed Loan Application Form"
+      },
+      {
+        "name": "3 Months' Payslips"
+      },
+      {
+        "name": "Letter of Introduction (Employer)"
+      },
+      {
+        "name": "Scheme / Check-off Letter"
+      },
+      {
+        "name": "CRB Report"
+      },
+      {
+        "name": "Bank Statements (6 Months)"
+      },
+      {
+        "name": "Copy of National ID / Passport"
+      },
+      {
+        "name": "KRA PIN Certificate"
+      },
+      {
+        "name": "Loan Repayment Schedule (Signed)"
+      },
+      {
+        "name": "Total Cost of Credit Disclosure (Signed)"
+      },
+      {
+        "name": "Letter of Offer (Executed)"
+      },
+      {
+        "name": "Call-Back Memo"
+      },
+      {
+        "name": "Transaction Memo"
+      }
+    ]
   }
 }
