@@ -29,6 +29,26 @@ const COLS: { key: keyof FacRow; label: string; num?: boolean }[] = [
   { key: 'pricing', label: 'Pricing' },
 ];
 
+export function facilitiesToPrintHtml(value: string): string {
+  let rows: FacRow[] = [];
+  try {
+    const p = JSON.parse(value || '[]');
+    if (Array.isArray(p)) rows = p.map((r) => ({ ...EMPTY, ...r }));
+  } catch { /* ignore */ }
+  if (rows.length === 0) return '<p class="muted">No facilities.</p>';
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
+  const th = COLS.map((c) => `<th>${esc(c.label)}</th>`).join('');
+  const body = rows.map((r) => `<tr>${COLS.map((c) => `<td>${esc(r[c.key])}</td>`).join('')}</tr>`).join('');
+  const sum = (k: keyof FacRow) =>
+    rows.reduce((a, r) => a + (parseFloat(String(r[k]).replace(/,/g, '')) || 0), 0);
+  const fmt = (n: number) => (n ? n.toLocaleString() : '');
+  const total = `<tr><td><b>TOTAL</b></td><td></td><td><b>${fmt(sum('current_limit'))}</b></td>`
+    + `<td><b>${fmt(sum('balance'))}</b></td><td><b>${fmt(sum('increase_decrease'))}</b></td>`
+    + `<td><b>${fmt(sum('proposed_limit'))}</b></td><td colspan="3"></td></tr>`;
+  return `<table><thead><tr>${th}</tr></thead><tbody>${body}${total}</tbody></table>`;
+}
+
 export function FacilitiesTable({ value, onChange, disabled }: {
   value: string;
   onChange: (v: string) => void;

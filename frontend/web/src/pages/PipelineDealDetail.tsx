@@ -31,7 +31,8 @@
 //   navigate back to /pipeline when they want.
 
 import { useCallback, useEffect, useState } from 'react';
-import { FacilitiesTable } from '@/components/FacilitiesTable';
+import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
+import { printDocument, escapeHtml } from '@/lib/print';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
@@ -1209,6 +1210,41 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
     return '';
   };
 
+  const printTm = () => {
+    const secs = (cr.template?.sections ?? []).map((sec) => {
+      const tableField = (sec.fields ?? []).find((f) => f.type === 'table');
+      if (tableField) {
+        return `<h2>${escapeHtml(sec.title)}</h2>${facilitiesToPrintHtml(valueFor(tableField.key))}`;
+      }
+      const rows = (sec.fields ?? []).map((f) =>
+        `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
+      return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
+    }).join('');
+    const head = `<div class="head"><h1>Transaction Memo — ${escapeHtml(dealId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Transaction Memo ${dealId}`, head + secs);
+  };
+
+  const uploadSignedTm = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(dealId, 'Transaction Memo', f.name, btoa(bin));
+        toast({ tone: 'success', message: 'Signed Transaction Memo uploaded.' });
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setBusy(false); }
+    };
+    inp.click();
+  };
+
   return (
     <Card className="mt-6">
       <Card.Header>
@@ -1216,6 +1252,10 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
+          <button className="text-sm text-brand-primary" onClick={printTm}>Print</button>
+          {canEdit && (
+            <button className="text-sm text-brand-primary disabled:opacity-50" onClick={uploadSignedTm} disabled={busy}>Upload signed</button>
+          )}
         </div>
       </Card.Header>
       <Card.Body>

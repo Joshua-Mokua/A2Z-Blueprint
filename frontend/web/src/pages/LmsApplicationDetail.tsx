@@ -15,7 +15,7 @@
 // flipped (e.g. after assign, can_assign becomes false because status
 // is now 'assigned').
 
-import { FacilitiesTable } from '@/components/FacilitiesTable';
+import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
@@ -1639,6 +1639,10 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
 
   const printCr = () => {
     const secs = (cr.template?.sections ?? []).map((sec) => {
+      const tableField = (sec.fields ?? []).find((f) => f.type === 'table');
+      if (tableField) {
+        return `<h2>${escapeHtml(sec.title)}</h2>${facilitiesToPrintHtml(valueFor(tableField.key))}`;
+      }
       const rows = (sec.fields ?? []).map((f) =>
         `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
       return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
