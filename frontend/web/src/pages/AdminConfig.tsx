@@ -760,11 +760,18 @@ export default function AdminConfig() {
                   className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
                 >
                   <option value="">Select a product to edit its flow…</option>
-                  {allProducts.map((p) => (
-                    <option key={p} value={p}>
-                      {p}{productFlows[p] ? '  • customised' : ''}
-                    </option>
-                  ))}
+                  {allProducts.some((p) => productFlows[p]) && (
+                    <optgroup label="Products with a custom flow">
+                      {allProducts.filter((p) => productFlows[p]).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Using their class default">
+                    {allProducts.filter((p) => !productFlows[p]).map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </optgroup>
                 </select>
 
                 {flowProduct && (
@@ -986,23 +993,6 @@ export default function AdminConfig() {
                 )}
               </div>
             </PanelShell>
-
-            {/* Currency pointer */}
-            <Card>
-              <Card.Header>
-                <h2 className="text-base font-semibold text-gray-900">Currency &amp; FX rates</h2>
-              </Card.Header>
-              <Card.Body>
-                <p className="text-sm text-gray-600">
-                  Exchange rates and currency books are managed on their own page.
-                </p>
-                <div className="mt-3">
-                  <Button variant="secondary" size="sm" onClick={() => navigate('/fx-rates')}>
-                    Open FX Rates →
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
 
             {/* Committee tiers — the multi-tier credit committee ladder. */}
             {subTab === 'org' && (
