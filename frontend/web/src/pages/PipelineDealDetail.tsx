@@ -291,7 +291,7 @@ export function PipelineDealDetail() {
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
-          { id: 'cr', label: 'Credit Report', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
           { id: 'documents', label: 'Documents', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} /> },
           { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
@@ -1193,7 +1193,7 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
     try {
       await saveDealCr(dealId, { values: edits, completed });
       setEdits({});
-      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      toast({ tone: 'success', message: completed ? 'Transaction Memo marked complete.' : 'Transaction Memo saved.' });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
@@ -1211,7 +1211,7 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   return (
     <Card className="mt-6">
       <Card.Header>
-        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <h2 className="text-base font-semibold text-gray-900">Transaction Memo (TM)</h2>
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
@@ -1219,7 +1219,7 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
       </Card.Header>
       <Card.Body>
           <p className="text-xs text-gray-500 mb-4">
-            Complete the CR at the branch (after documents). Blue = CBS, grey = deal;
+            Complete the Transaction Memo at the branch (after documents). Blue = CBS, grey = deal;
             both editable. Plain fields are for the deal owner.
           </p>
           <div className="space-y-6">
@@ -1231,7 +1231,7 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {sec.fields.map((f) => {
                     const val = valueFor(f.key);
-                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose', 'background', 'statements', 'crb_arrears', 'risk_summary', 'other_bank_facilities', 'other_bank_securities', 'dsr_computation', 'policy_exception', 'account_conduct', 'repayment_source'].includes(f.key);
                     return (
                       <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
                         <label className="block text-xs text-gray-600 mb-1">

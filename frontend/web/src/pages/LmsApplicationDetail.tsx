@@ -232,7 +232,7 @@ export function LmsApplicationDetail() {
 
             </>
           ) },
-          { id: 'cr', label: 'Credit Report', color: '#7E57C2', content: (
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
             <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
           { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
@@ -404,7 +404,7 @@ export function LmsApplicationDetail() {
             application.assignment_purpose === 'correctness'
               ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
             {application.assignment_purpose === 'correctness'
-              ? 'Assigned for correctness check — confirm the case is well-packaged (CR complete, docs attached) and mark it ready for committee, or return it for rework.'
+              ? 'Assigned for correctness check — confirm the case is well-packaged (Transaction Memo complete, docs attached) and mark it ready for committee, or return it for rework.'
               : 'Assigned for decisioning — analyse the case and record the credit decision.'}
           </div>
         )}
@@ -1621,7 +1621,7 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
       // Send only RM-edited fields; server re-derives auto/cbs on read.
       await saveLmsCr(appId, { values: edits, completed });
       setEdits({});
-      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      toast({ tone: 'success', message: completed ? 'Transaction Memo marked complete.' : 'Transaction Memo saved.' });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
@@ -1642,8 +1642,8 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
         `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
       return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
     }).join('');
-    const head = `<div class="head"><h1>Credit Report — ${escapeHtml(appId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
-    printDocument(`Credit Report ${appId}`, head + secs);
+    const head = `<div class="head"><h1>Transaction Memo — ${escapeHtml(appId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Transaction Memo ${appId}`, head + secs);
   };
 
   const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
@@ -1653,7 +1653,7 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   return (
     <Shell className="mt-6">
       <SHeader>
-        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <h2 className="text-base font-semibold text-gray-900">Transaction Memo (TM)</h2>
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
@@ -1674,7 +1674,7 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {sec.fields.map((f) => {
                     const val = valueFor(f.key);
-                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose', 'background', 'statements', 'crb_arrears', 'risk_summary', 'other_bank_facilities', 'other_bank_securities', 'dsr_computation', 'policy_exception', 'account_conduct', 'repayment_source'].includes(f.key);
                     return (
                       <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
                         <label className="block text-xs text-gray-600 mb-1">
