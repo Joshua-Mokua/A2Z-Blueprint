@@ -10,7 +10,7 @@
 // migrated off users.json, a newly-created account cannot authenticate yet;
 // existing logins are unaffected.
 import { useEffect, useMemo, useState } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
@@ -284,8 +284,7 @@ export default function StaffAdmin() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Staff Administration"
+      <AdminTabs
         subtitle="Manage staff accounts in the system of record (PostgreSQL)."
         actions={
           canAdmin ? (

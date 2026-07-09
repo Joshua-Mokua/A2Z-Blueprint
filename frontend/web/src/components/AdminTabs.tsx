@@ -8,6 +8,7 @@
 // in the ribbon. The active tab is derived from the route (NavLink).
 // ──────────────────────────────────────────────────────────────────────────
 import { NavLink } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 
 const TABS: { to: string; label: string }[] = [
@@ -19,7 +20,7 @@ const TABS: { to: string; label: string }[] = [
   { to: '/cascade',          label: 'Target Cascade' },
 ];
 
-export function AdminTabs({ subtitle }: { subtitle?: string }) {
+export function AdminTabs({ subtitle, actions }: { subtitle?: string; actions?: ReactNode }) {
   return (
     <>
       <PageHeader
@@ -27,6 +28,7 @@ export function AdminTabs({ subtitle }: { subtitle?: string }) {
         title="Administration"
         breadcrumbs={[{ label: 'A2Z MIS 360' }, { label: 'Administration' }]}
         subtitle={subtitle}
+        actions={actions}
       />
       <div className="border-b border-gray-200 bg-white">
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 2xl:max-w-[1680px]">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
@@ -137,10 +137,7 @@ export default function HierarchyAdmin() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Reporting Hierarchy"
-        subtitle="Configure who reports to whom (role → parent role). Drives the cascade and scope. Changes are live."
-      />
+      <AdminTabs subtitle="Configure who reports to whom (role → parent role). Drives the cascade and scope. Changes are live." />
 
       {error && (
         <Card><Card.Body>

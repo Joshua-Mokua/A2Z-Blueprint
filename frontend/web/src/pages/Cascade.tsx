@@ -16,7 +16,7 @@ import { useMyCascade } from '@/hooks/useMyCascade';
 import { setBankTarget, setCascadeAllocations, ApiValidationError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
-import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -71,9 +71,7 @@ export function Cascade() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        breadcrumbs={[{ label: 'Executive Intelligence' }, { label: 'Target Cascade' }]}
-        title="Target Cascade"
+      <AdminTabs
         subtitle={`Bank-level targets · incoming allocations · my cascade · period ${period}`}
         actions={
           <input
