@@ -296,6 +296,7 @@ export function PipelineDealDetail() {
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
           { id: 'documents', label: 'Documents', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} /> },
           { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
+          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
             <div className="space-y-6">
               {permissions?.can_advance_stage && (
@@ -1173,6 +1174,99 @@ function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => 
 }
 
 // ── Deal Credit Report (4b-3): CR originates at the branch, on the deal ──
+function ForwardingMemoCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
+  const { toast } = useToast();
+  const [to, setTo] = useState('Bank Credit Committee');
+  const [recommendation, setRecommendation] = useState('');
+  const [roName, setRoName] = useState('');
+  const [bmName, setBmName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const printMemo = () => {
+    const esc = escapeHtml;
+    const body = `
+      <table>
+        <tr><th style="width:32%">To</th><td>${esc(to)}</td></tr>
+        <tr><th>Re</th><td>Deal ${esc(dealId)}</td></tr>
+        <tr><th>Forwarding recommendation</th><td>${esc(recommendation) || '\u2014'}</td></tr>
+      </table>
+      <h2>Sign-off</h2>
+      <table>
+        <tr><th style="width:32%">Relationship Officer</th><td>${esc(roName) || '________________'}&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+        <tr><th>Branch Manager</th><td>${esc(bmName) || '________________'}&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+      </table>
+      <h2>Branch Credit Committee</h2>
+      <table>
+        <tr><td>Name: ________________&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+        <tr><td>Name: ________________&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+      </table>
+      <h2>Bank Credit Committee \u2014 Approver&apos;s Comments</h2>
+      <table><tr><td style="height:80px">&nbsp;</td></tr></table>
+    `;
+    const head = `<div class="head"><h1>Forwarding Memo \u2014 ${esc(dealId)}</h1><span class="muted">printed ${esc(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Forwarding Memo ${dealId}`, head + body);
+  };
+
+  const uploadSigned = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(dealId, 'Forwarding Memo', f.name, btoa(bin));
+        toast({ tone: 'success', message: 'Signed Forwarding Memo uploaded.' });
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setBusy(false); }
+    };
+    inp.click();
+  };
+
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Forwarding Memo</h2>
+        <div className="flex items-center gap-2">
+          <button className="text-sm text-brand-primary" onClick={printMemo}>Print</button>
+          {canEdit && (
+            <button className="text-sm text-brand-primary disabled:opacity-50" onClick={uploadSigned} disabled={busy}>Upload signed</button>
+          )}
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-4 text-xs text-gray-500">
+          Complete after the Branch Credit Committee gives its input, then Print for wet
+          signatures and Upload the signed copy. The signed copy travels with the case.
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">To</label>
+            <input value={to} onChange={(e) => setTo(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">Relationship Officer</label>
+            <input value={roName} onChange={(e) => setRoName(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-gray-600">Forwarding recommendation</label>
+            <textarea value={recommendation} onChange={(e) => setRecommendation(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">Branch Manager</label>
+            <input value={bmName} onChange={(e) => setBmName(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
 function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
   const { toast } = useToast();
   const [cr, setCr] = useState<CrView | null>(null);

@@ -3312,7 +3312,14 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     from utils.api_pipeline_permissions import resolve_deal_permissions
     required = _get_required_documents_for_deal(deal)
     provided = list(deal.get("documents_provided", []) or [])
-    missing = [d for d in required if d not in provided]
+    # Process artifacts produced LATER in the credit flow must not block the RM's
+    # document submission: the Call-Back Memo is attached by the Department Analyst
+    # (at submit-to-DCC), and the Transaction Memo is the CR (gated separately by
+    # cr_ok below). They are enforced at their own stages, not at RM submission.
+    _LATER_STAGE_DOCS = {"call-back memo", "call back memo", "transaction memo",
+                         "forwarding memo"}
+    missing = [d for d in required
+               if d not in provided and str(d).strip().lower() not in _LATER_STAGE_DOCS]
     already = bool(deal.get("lms_application_id"))
     perms = resolve_deal_permissions(deal, user, visible_codes)
     my_code = str(user.get("staff_code", "") or "").strip()
