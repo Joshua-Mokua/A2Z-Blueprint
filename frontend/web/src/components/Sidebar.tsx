@@ -50,12 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Reference & Admin',
     items: [
       { path: '/cbs',              label: 'Customer Lookup',     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/fx-rates',         label: 'FX Rates',            matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/config',     label: 'Configuration',       matchActive: (p) => p.startsWith('/admin/config'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/roles',      label: 'Role Registry',       matchActive: (p) => p.startsWith('/admin/roles'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/hierarchy',  label: 'Reporting Hierarchy', matchActive: (p) => p.startsWith('/admin/hierarchy'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/committees', label: 'Credit Committees',   matchActive: (p) => p.startsWith('/admin/committees'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/staff',      label: 'Staff Admin',         matchActive: (p) => p.startsWith('/admin/staff'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/config',     label: 'Administration',      matchActive: (p) => (p.startsWith('/admin/') && !p.startsWith('/admin/cbs-debug')) || p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/admin/cbs-debug', label: 'CBS / FlexCube Debug', matchActive: (p) => p.startsWith('/admin/cbs-debug'), visibleFor: (_m, isA) => isA },
     ],
   },

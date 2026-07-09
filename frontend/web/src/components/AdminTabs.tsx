@@ -18,6 +18,7 @@ const TABS: { to: string; label: string }[] = [
   { to: '/admin/hierarchy',  label: 'Hierarchy' },
   { to: '/admin/committees', label: 'Committees' },
   { to: '/cascade',          label: 'Target Cascade' },
+  { to: '/fx-rates',         label: 'FX Rates' },
 ];
 
 export function AdminTabs({ subtitle, actions }: { subtitle?: string; actions?: ReactNode }) {
