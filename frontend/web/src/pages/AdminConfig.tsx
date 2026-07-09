@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -451,11 +452,7 @@ export default function AdminConfig() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title="Configuration"
-        breadcrumbs={[{ label: 'Reference & Admin' }, { label: 'Configuration' }]}
-        subtitle="Reference data that drives the pipeline and credit factory. Changes apply on the next refresh."
-      />
+      <AdminTabs subtitle="Reference data that drives the pipeline and credit factory. Changes apply on the next refresh." />
 
       <main className="max-w-6xl mx-auto px-6 py-6">
         {loading ? (
