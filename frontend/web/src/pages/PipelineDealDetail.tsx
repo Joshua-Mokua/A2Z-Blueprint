@@ -31,6 +31,7 @@
 //   navigate back to /pipeline when they want.
 
 import { useCallback, useEffect, useState } from 'react';
+import { FacilitiesTable } from '@/components/FacilitiesTable';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
@@ -1231,6 +1232,14 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {sec.fields.map((f) => {
                     const val = valueFor(f.key);
+                    if (f.type === 'table') {
+                      return (
+                        <div key={f.key} className="md:col-span-2">
+                          <label className="mb-1 block text-xs text-gray-600">{f.label}</label>
+                          <FacilitiesTable value={val} onChange={(v) => setEdits((p) => ({ ...p, [f.key]: v }))} disabled={!canEdit || busy} />
+                        </div>
+                      );
+                    }
                     const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose', 'background', 'statements', 'crb_arrears', 'risk_summary', 'other_bank_facilities', 'other_bank_securities', 'dsr_computation', 'policy_exception', 'account_conduct', 'repayment_source'].includes(f.key);
                     return (
                       <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>

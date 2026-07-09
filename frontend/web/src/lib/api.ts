@@ -1391,7 +1391,7 @@ export async function addLmsAttachment(appId: string, body: { kind: string; file
 export async function recordLmsBcc(appId: string, body: { verdict: string; branch?: string; chaired_by?: string; attendees?: string[]; minutes?: string; filename?: string; ref?: string }): Promise<Record<string, unknown>> {
   return postJson<Record<string, unknown>, typeof body>(lmsAction(appId, 'bcc'), body);
 }
-export interface CrField { key: string; label: string; source: 'auto' | 'cbs' | 'rm'; required?: boolean; }
+export interface CrField { key: string; label: string; source: 'auto' | 'cbs' | 'rm'; required?: boolean; type?: 'table'; }
 export interface CrSection { key: string; title: string; fields: CrField[]; }
 export interface CrView {
   template: { sections: CrSection[] };

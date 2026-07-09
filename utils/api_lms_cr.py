@@ -81,6 +81,13 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
             ],
         },
         {
+            "key": "facilities",
+            "title": "Facilities",
+            "fields": [
+                {"key": "facilities_table", "label": "Facilities", "source": "rm", "required": False, "type": "table"},
+            ],
+        },
+        {
             "key": "financial_analysis",
             "title": "Financial Analysis",
             "fields": [
