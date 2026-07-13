@@ -267,6 +267,20 @@ export default function Referrals() {
               </div>
             </Card.Body></Card>
 
+            {analytics.by_stage && Object.keys(analytics.by_stage).length > 0 && (
+              <Card><Card.Body>
+                <div className="text-sm font-semibold text-gray-900 mb-2">Where they are now</div>
+                <div className="space-y-1">
+                  {Object.entries(analytics.by_stage).sort((a, b) => b[1] - a[1]).map(([stage, n]) => (
+                    <div key={stage} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{stage}</span>
+                      <span className="text-gray-500 tabular-nums">{n}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card.Body></Card>
+            )}
+
             {analytics.alerts.length > 0 && (
               <Card stripe="accent"><Card.Body>
                 <div className="text-sm font-semibold text-gray-900 mb-1">Needs attention</div>
@@ -342,6 +356,13 @@ export default function Referrals() {
                   {tab === 'returned' && d.decline_reason && (
                     <p className="mt-1 text-sm text-amber-700">
                       <span className="text-amber-500">Declined: </span>{d.decline_reason}
+                    </p>
+                  )}
+
+                  {(tab === 'following' || tab === 'team') && d.stage && (
+                    <p className="mt-2 text-sm">
+                      <span className="text-gray-400">Currently at: </span>
+                      <span className="font-medium text-gray-800">{d.stage}</span>
                     </p>
                   )}
 
