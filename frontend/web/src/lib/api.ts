@@ -2167,6 +2167,12 @@ export async function setCommitteeReadiness(
     { decision, opinion, reasons });
 }
 
+// C2: the configured rework reason codes (lms_config -> rework_reasons)
+export async function fetchReworkReasons(): Promise<string[]> {
+  const r = await getJson<{ rework_reasons: string[] }>('/lms/rework-reasons');
+  return r.rework_reasons ?? [];
+}
+
 // C3b: committee pre-read (member non-binding view)
 export interface CommitteePreRead {
   by_code: string; by_name: string; view: 'leaning_approve' | 'leaning_decline' | 'questions';

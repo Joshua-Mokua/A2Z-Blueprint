@@ -1969,6 +1969,27 @@ def lms_committee_set_require_mcc(
 
 
 # === C2: CORRECTNESS STAGING ===
+@router.get("/rework-reasons")
+def lms_rework_reasons(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The configured rework reason codes (lms_config -> rework_reasons), so the
+    correctness reviewer can pick specific reasons when returning a case for rework."""
+    from pathlib import Path as _Path
+    import json as _json
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    reasons = []
+    try:
+        if p.exists():
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+            r = cfg.get("rework_reasons")
+            if isinstance(r, list):
+                reasons = [str(x) for x in r if str(x).strip()]
+    except Exception:
+        reasons = []
+    return {"rework_reasons": reasons}
+
+
 @router.post("/applications/{app_id}/committee-readiness",
              response_model=LoanAppMutationResponse)
 def lms_committee_readiness(

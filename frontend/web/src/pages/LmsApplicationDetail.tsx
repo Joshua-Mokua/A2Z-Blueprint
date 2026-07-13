@@ -29,7 +29,7 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import { WorkbenchShell } from '@/components/WorkbenchShell';
 import {
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, fetchReworkReasons, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';  // attachment imports trimmed with AttachmentsBccCard
 import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
@@ -1937,11 +1937,23 @@ function CorrectnessPanel({ appId, onDone, toast }: {
   appId: string; onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
 }) {
   const [opinion, setOpinion] = useState('');
+  const [reasons, setReasons] = useState<string[]>([]);
+  const [reasonOptions, setReasonOptions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    fetchReworkReasons().then(setReasonOptions).catch(() => setReasonOptions([]));
+  }, []);
+  const toggleReason = (r: string) =>
+    setReasons((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]));
   const act = async (decision: 'ready' | 'rework') => {
+    if (decision === 'rework' && reasons.length === 0) {
+      toast({ tone: 'danger', message: 'Select at least one rework reason before returning the case.' });
+      return;
+    }
     setBusy(true);
     try {
-      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined);
+      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined,
+        decision === 'rework' ? reasons : undefined);
       toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
       await onDone();
     } catch (e) {
@@ -1952,7 +1964,20 @@ function CorrectnessPanel({ appId, onDone, toast }: {
     <Card className="mt-4" stripe="accent">
       <Card.Header><h3 className="text-sm font-semibold text-gray-900">Correctness check</h3></Card.Header>
       <Card.Body>
-        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. You may add an opinion for the Chief.</p>
+        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. When returning for rework, select the specific reason(s) so the branch knows exactly what to fix; you may also add an opinion for the Chief.</p>
+        {reasonOptions.length > 0 && (
+          <div className="mb-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+            <div className="mb-1.5 text-xs font-medium text-gray-600">Rework reasons <span className="text-gray-400">(required if returning for rework)</span></div>
+            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {reasonOptions.map((r) => (
+                <label key={r} className="flex items-center gap-2 text-xs text-gray-700">
+                  <input type="checkbox" checked={reasons.includes(r)} onChange={() => toggleReason(r)} disabled={busy} />
+                  {r}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <textarea
           value={opinion}
           onChange={(e) => setOpinion(e.target.value)}
