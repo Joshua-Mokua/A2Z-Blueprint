@@ -161,7 +161,7 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     if not _is_admin(user):
         mycode = me["staff_code"]
         if _is_manager(user):
-            logs = _reports_to_me(logs, mycode) + [l for l in logs if str(l.get("staff_code")) == mycode]
+            logs = _subtree_logs(logs, user, me)
         else:
             logs = [l for l in logs if str(l.get("staff_code")) == mycode]
     agg: dict = {}
@@ -217,6 +217,21 @@ def _reports_to_me(logs: list, my_code: str) -> list:
     return out
 
 
+def _subtree_logs(logs: list, user: dict, me: dict) -> list:
+    """Logs for the caller's full reporting subtree (line manager -> ... -> MD),
+    via the hierarchy visibility engine. Falls back to direct reports on error."""
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        codes = {str(c) for c in get_visible_staff_codes({
+            "staff_code": me.get("staff_code", ""),
+            "role": me.get("role", ""),
+            "is_admin": bool(user.get("is_admin")),
+        })}
+        return [l for l in logs if str(l.get("staff_code") or "") in codes]
+    except Exception:
+        return _reports_to_me(logs, me.get("staff_code", ""))
+
+
 @router.get("/pending")
 def branch_log_pending(user: dict = Depends(get_current_user)):
     """Entries awaiting validation, routed by the reporting tree: a manager
@@ -240,7 +255,7 @@ def branch_log_history(unit: str = "", days: int = 7, user: dict = Depends(get_c
     if _is_manager(user):
         if _is_admin(user):
             return {"logs": blm.get_history(days=days)}
-        return {"logs": _reports_to_me(blm.get_history(days=days), me["staff_code"])}
+        return {"logs": _subtree_logs(blm.get_history(days=days), user, me)}
     return {"logs": blm.get_history(staff_code=me["staff_code"], days=days)}
 
 
