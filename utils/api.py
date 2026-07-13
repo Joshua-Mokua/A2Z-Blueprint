@@ -516,6 +516,7 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "referred_by_code":     deal.get("referred_by_code"),
                 "referred_by_name":     deal.get("referred_by_name"),
                 "referral_note":        deal.get("referral_note"),
+                "referral_chain":       deal.get("referral_chain"),
                 "decline_reason":       deal.get("decline_reason"),
                 "sla_step_log":         deal.get("sla_step_log"),
                 "sla_commitments":      deal.get("sla_commitments"),
@@ -612,7 +613,7 @@ def _normalize_db_deal_row(row):
                    "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
-                   "decline_reason", "sla_step_log", "sla_commitments",
+                   "decline_reason", "sla_step_log", "sla_commitments", "referral_chain",
                    # Phase B0: lift the full field set back so DB-first reads
                    # reconstruct a complete deal (write side in _db_sync).
                    "portfolio_owner_code", "portfolio_owner_name", "is_ntb",
@@ -4612,6 +4613,23 @@ def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
 # the next GET reflects the mutation.
 
 
+def _referral_dept_for(code: str) -> str:
+    """Department for a staff_code from the roster (for referral chain hops)."""
+    code = str(code or "").strip()
+    if not code:
+        return ""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is not None and "Department" in getattr(roster, "columns", []):
+            m = roster[roster["Staff Code"].astype(str).str.strip() == code]
+            if len(m):
+                return str(m.iloc[0].get("Department") or "").strip()
+    except Exception:
+        pass
+    return ""
+
+
 @app.post("/api/pipeline/deals/refer", status_code=201)
 def pipeline_deal_refer(
     payload: "PipelineDealRefer",  # noqa: F821
@@ -4701,6 +4719,18 @@ def pipeline_deal_refer(
         "referred_by_code":     str(deal_dict.get("staff_code") or "").strip(),
         "referred_by_name":     str(deal_dict.get("staff_name") or "").strip(),
         "referred_at":          datetime.now().isoformat(),
+        "referral_chain":       [{
+            "seq": 1,
+            "from_code": str(deal_dict.get("staff_code") or "").strip(),
+            "from_name": str(deal_dict.get("staff_name") or "").strip(),
+            "from_dept": _referral_dept_for(str(deal_dict.get("staff_code") or "").strip()),
+            "to_code": str(payload.portfolio_owner_code or "").strip(),
+            "to_name": payload.referred_to,
+            "to_dept": _referral_dept_for(str(payload.portfolio_owner_code or "").strip()),
+            "note": payload.referral_note or "",
+            "at": datetime.now().isoformat(),
+            "status": "pending",
+        }],
         # BSC credit goes to whoever closes the referred deal — typically
         # the portfolio owner. Default to portfolio_owner_name; the
         # picking-up RM can override later.
@@ -4867,6 +4897,10 @@ def pipeline_referral_accept(
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can accept it.")
 
+    _chain = list(deal.get("referral_chain") or [])
+    if _chain:
+        _chain[-1] = {**_chain[-1], "status": "accepted",
+                      "resolved_at": datetime.now().isoformat()}
     pm.update_deal(deal_id, {
         "referral_status":      "accepted",
         "accepted_at":          datetime.now().isoformat(),
@@ -4876,6 +4910,7 @@ def pipeline_referral_accept(
         "portfolio_owner_code": rcode or actor_code,
         "portfolio_owner_name": str(deal.get("referred_to") or actor_name),
         "manager_validated":    False,
+        "referral_chain":       _chain,
     }, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("DEAL_REFERRAL_ACCEPTED", user, f"{deal_id} by {actor_code or rcode}")
@@ -4914,16 +4949,82 @@ def pipeline_referral_decline(
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can decline it.")
 
+    _chain = list(deal.get("referral_chain") or [])
+    if _chain:
+        _chain[-1] = {**_chain[-1], "status": "declined",
+                      "resolved_at": datetime.now().isoformat(), "decline_reason": reason}
     pm.update_deal(deal_id, {
         "referral_status": "declined",
         "decline_reason":  reason,
         "declined_at":     datetime.now().isoformat(),
         "declined_by":     actor_code or rcode,
+        "referral_chain":  _chain,
     }, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("DEAL_REFERRAL_DECLINED", user, f"{deal_id}: {reason[:60]}")
     invalidate_pipeline_caches()
     return {"deal_id": deal_id, "referral_status": "declined", "decline_reason": reason}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/referral/re-refer", status_code=200)
+def pipeline_referral_re_refer(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The current owner passes an ACCEPTED referral onward to another colleague/
+    department, appending a hop to referral_chain and re-entering the pending
+    lifecycle for the new recipient. This is how a referral flows across
+    departments; the journey (chain) is preserved end to end."""
+    _audit("API_PIPELINE_REFERRAL_REREFER_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not deal.get("is_referral"):
+        raise HTTPException(status_code=400, detail="This deal is not a referral.")
+    if str(deal.get("referral_status") or "") != "accepted":
+        raise HTTPException(status_code=400,
+            detail="Only an accepted referral can be re-referred onward.")
+    actor_code, actor_name, priv = _resolve_actor(user)
+    owner = str(deal.get("staff_code") or deal.get("accepted_by") or "")
+    if not priv and actor_code != owner:
+        raise HTTPException(status_code=403,
+            detail="Only the current owner can re-refer this deal.")
+    to_code = str(payload.get("referred_to_code") or "").strip()
+    to_name = str(payload.get("referred_to") or "").strip()
+    note = str(payload.get("note") or payload.get("referral_note") or "").strip()
+    if not to_code or not to_name:
+        raise HTTPException(status_code=400, detail="A recipient (code + name) is required.")
+    if to_code == (actor_code or owner):
+        raise HTTPException(status_code=400, detail="You cannot re-refer to yourself.")
+    _chain = list(deal.get("referral_chain") or [])
+    seq = max((h.get("seq", 0) for h in _chain), default=0) + 1
+    _chain.append({
+        "seq": seq,
+        "from_code": actor_code or owner,
+        "from_name": actor_name or str(deal.get("staff_name") or ""),
+        "from_dept": _referral_dept_for(actor_code or owner),
+        "to_code": to_code, "to_name": to_name,
+        "to_dept": _referral_dept_for(to_code),
+        "note": note, "at": datetime.now().isoformat(), "status": "pending",
+    })
+    pm.update_deal(deal_id, {
+        "referral_status":  "pending",
+        "referred_to_code": to_code,
+        "referred_to":      to_name,
+        "referred_by_code": actor_code or owner,
+        "referred_by_name": actor_name or str(deal.get("staff_name") or ""),
+        "referral_note":    note,
+        "referred_at":      datetime.now().isoformat(),
+        "referral_chain":   _chain,
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRAL_RE_REFERRED", user, f"{deal_id} {actor_code or owner}->{to_code}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "pending", "referral_chain": _chain}
 
 
 def _all_pipeline_deals() -> list:
