@@ -9746,6 +9746,58 @@ def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
 # === END REPORTING HIERARCHY ENDPOINTS ===
 
 
+# === B3: BRANCH GRANTS (per-branch viewing + acting-BM delegation) ===
+@app.get("/api/admin/branch-grants", tags=["admin"])
+def get_admin_branch_grants(user: dict = Depends(get_current_user)):
+    """Current per-branch viewing grants + acting-BM delegations from org_config."""
+    from utils.core import get_org_config
+    cfg = get_org_config() or {}
+    branches = [b.get("name") for b in (cfg.get("branches", []) or [])
+                if str(b.get("type", "")).upper() != "HO"]
+    return {"branch_viewers": cfg.get("branch_viewers", {}) or {},
+            "acting_bm": cfg.get("acting_bm", {}) or {},
+            "branches": branches}
+
+
+@app.post("/api/admin/branch-grants", tags=["admin"])
+def set_admin_branch_grants(payload: dict = Body(default_factory=dict),
+                            user: dict = Depends(require_config_admin)):
+    """Set branch grants. Actions:
+      set_viewer     {staff_code, branches:[...]}  -> per-branch viewing (empty clears)
+      set_acting_bm  {branch, staff_code}          -> acting BM for a branch (empty clears)
+    Visibility is additive; acting-BM also grants manager authority scoped by the grant."""
+    from utils.core import get_org_config, save_org_config
+    action = str(payload.get("action", "")).strip()
+    cfg = get_org_config() or {}
+    bv = dict(cfg.get("branch_viewers", {}) or {})
+    ab = dict(cfg.get("acting_bm", {}) or {})
+    if action == "set_viewer":
+        sc = str(payload.get("staff_code", "")).strip()
+        if not sc:
+            raise HTTPException(status_code=400, detail="staff_code required")
+        branches = [str(b).strip() for b in (payload.get("branches") or []) if str(b).strip()]
+        if branches:
+            bv[sc] = branches
+        else:
+            bv.pop(sc, None)
+    elif action == "set_acting_bm":
+        branch = str(payload.get("branch", "")).strip()
+        if not branch:
+            raise HTTPException(status_code=400, detail="branch required")
+        sc = str(payload.get("staff_code", "")).strip()
+        if sc:
+            ab[branch] = sc
+        else:
+            ab.pop(branch, None)
+    else:
+        raise HTTPException(status_code=400, detail=f"unknown action '{action}'")
+    cfg["branch_viewers"] = bv
+    cfg["acting_bm"] = ab
+    save_org_config(cfg)
+    _audit("API_BRANCH_GRANTS", user, f"{action}|{payload.get('staff_code') or payload.get('branch') or ''}")
+    return {"status": "saved", "branch_viewers": bv, "acting_bm": ab}
+
+
 # === DOCUMENT CATALOG ENDPOINT ===
 @app.get("/api/admin/document-catalog", tags=["admin"])
 def admin_document_catalog(user: dict = Depends(get_current_user)):

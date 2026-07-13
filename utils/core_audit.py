@@ -230,6 +230,29 @@ BRANCH_HEAD_ROLES = frozenset({
 })
 
 
+def _branch_grant_units_for(user_data: dict) -> set:
+    """B3: extra branch Units this user may see via admin grants —
+    per-branch viewing grants (org_config.branch_viewers: staff_code -> [branches])
+    and acting-BM delegation (org_config.acting_bm: branch -> staff_code). Since a
+    branch's Unit IS its name, the granted branch names are the extra Units. This
+    is additive visibility only — it never widens rollup or removes normal scope."""
+    sc = str(user_data.get("staff_code", "") or "").strip()
+    if not sc:
+        return set()
+    try:
+        from utils.core import get_org_config
+        cfg = get_org_config() or {}
+    except Exception:
+        return set()
+    units: set = set()
+    for b in (cfg.get("branch_viewers", {}) or {}).get(sc, []) or []:
+        units.add(str(b))
+    for branch, code in (cfg.get("acting_bm", {}) or {}).items():
+        if str(code) == sc:
+            units.add(str(branch))
+    return units
+
+
 @lru_cache(maxsize=1)
 def _register_staff_index() -> dict:
     """staff_code -> {'role','unit','region','name'} from the staff register.
@@ -361,6 +384,16 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
 
     elif role_l in _UNIT_SCOPED_ROLES and my_unit:
         visible = visible[visible["Unit"] == my_unit]
+
+    # B3: additive admin branch grants (per-branch viewing + acting-BM delegation).
+    try:
+        _extra_units = _branch_grant_units_for(user_data)
+    except Exception:
+        _extra_units = set()
+    if _extra_units and "Unit" in staff_scores.columns:
+        _extra_idx = staff_scores.index[staff_scores["Unit"].isin(_extra_units)]
+        if len(_extra_idx):
+            visible = staff_scores.loc[visible.index.union(_extra_idx)]
 
     return visible
 
