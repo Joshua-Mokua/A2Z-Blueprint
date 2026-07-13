@@ -5109,6 +5109,66 @@ def _classify_referral_tier(by_code, to_code, dept_of=None) -> dict:
     }
 
 
+_CREDIT_JOURNEY = [
+    ("intake", "Submitted"),
+    ("assessment", "Under assessment"),
+    ("decision", "Decisioned"),
+    ("offer", "Offer & acceptance"),
+    ("credit_admin", "Credit admin"),
+    ("disbursement", "Cleared for disbursement"),
+    ("disbursed", "Disbursed"),
+]
+_CREDIT_STATUS_TO_KEY = {
+    "submitted": "intake",
+    "assigned": "assessment", "updated": "assessment",
+    "decision_approved": "decision", "decision_returned": "decision",
+    "returned": "decision", "approved": "decision",
+    "offer_issued": "offer", "offer_signed": "offer", "offer_validated": "offer",
+    "credit_admin": "credit_admin",
+    "cleared_for_disbursement": "disbursement",
+    "disbursed": "disbursed", "declined": "declined",
+}
+_LMS_STATUS_CACHE = {"at": 0.0, "map": {}}
+
+def _lms_status_map() -> dict:
+    """app_id -> status from loan_applications.json (lightweight, 5s cache), for
+    enriching referral views with the referred deal's credit-journey position."""
+    import time as _t
+    now = _t.time()
+    if now - _LMS_STATUS_CACHE["at"] < 5.0 and _LMS_STATUS_CACHE["map"]:
+        return _LMS_STATUS_CACHE["map"]
+    m: dict = {}
+    try:
+        from pathlib import Path as _P
+        import json as _j
+        p = _P(__file__).resolve().parent.parent / "data" / "loan_applications.json"
+        if p.exists():
+            data = _j.loads(p.read_text(encoding="utf-8")) or {}
+            apps = data.values() if isinstance(data, dict) else data
+            for a in apps:
+                if isinstance(a, dict) and a.get("id"):
+                    m[str(a["id"])] = str(a.get("status") or "").lower().strip()
+    except Exception:
+        m = {}
+    _LMS_STATUS_CACHE["at"] = now
+    _LMS_STATUS_CACHE["map"] = m
+    return m
+
+
+def _referral_credit_stage(deal: dict):
+    """The referred deal's position in the credit journey once handed to credit,
+    so the referrer can track the full case (not just the pipeline stage)."""
+    app_id = str(deal.get("lms_application_id") or "").strip()
+    if not app_id:
+        return None
+    status = _lms_status_map().get(app_id, "")
+    if not status:
+        return None
+    key = _CREDIT_STATUS_TO_KEY.get(status, "intake")
+    label = dict(_CREDIT_JOURNEY).get(key, "Declined" if key == "declined" else "In credit")
+    return {"key": key, "label": label, "status": status, "declined": key == "declined"}
+
+
 def _referral_view(d: dict) -> dict:
     """Compact projection for referral list endpoints."""
     return {
@@ -5129,6 +5189,7 @@ def _referral_view(d: dict) -> dict:
         "accepted_at":      d.get("accepted_at"),
         "declined_at":      d.get("declined_at"),
         "referral_chain":   d.get("referral_chain") or [],
+        "credit_stage":     _referral_credit_stage(d),
         **_classify_referral_tier(d.get("referred_by_code"), d.get("referred_to_code")),
     }
 

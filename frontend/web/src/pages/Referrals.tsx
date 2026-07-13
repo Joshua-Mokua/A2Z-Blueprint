@@ -143,6 +143,41 @@ export default function Referrals() {
     : tab === 'team' ? team
     : outgoing;
 
+  function CreditJourney({ stage }: { stage?: ReferralView['credit_stage'] }) {
+    if (!stage) return null;
+    const steps = [
+      { key: 'intake', label: 'Submitted' },
+      { key: 'assessment', label: 'Assessment' },
+      { key: 'decision', label: 'Decision' },
+      { key: 'offer', label: 'Offer' },
+      { key: 'credit_admin', label: 'Credit admin' },
+      { key: 'disbursement', label: 'Cleared' },
+      { key: 'disbursed', label: 'Disbursed' },
+    ];
+    if (stage.declined) {
+      return (
+        <div className="mt-2 border-t border-gray-100 pt-2">
+          <div className="mb-1 text-xs font-medium text-gray-500">Credit journey</div>
+          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">Declined in credit</span>
+        </div>
+      );
+    }
+    const idx = steps.findIndex((s) => s.key === stage.key);
+    return (
+      <div className="mt-2 border-t border-gray-100 pt-2">
+        <div className="mb-1.5 text-xs font-medium text-gray-500">Credit journey</div>
+        <div className="flex flex-wrap items-center gap-1">
+          {steps.map((s, i) => (
+            <div key={s.key} className="flex items-center gap-1">
+              <span className={'rounded px-1.5 py-0.5 text-xs ' + (i < idx ? 'bg-emerald-50 text-emerald-700' : i === idx ? 'bg-brand-primary text-white' : 'bg-gray-50 text-gray-400')}>{s.label}</span>
+              {i < steps.length - 1 && <span className="text-gray-300 text-xs">→</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   function ReferralJourney({ chain }: { chain?: ReferralView['referral_chain'] }) {
     if (!chain || chain.length === 0) return null;
     return (
@@ -367,6 +402,7 @@ export default function Referrals() {
                   )}
 
                   <ReferralJourney chain={d.referral_chain} />
+                  <CreditJourney stage={d.credit_stage} />
 
                   {d.referral_status === 'accepted' && (
                     <div className="mt-3 border-t border-gray-100 pt-3">

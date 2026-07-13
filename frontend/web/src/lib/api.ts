@@ -504,6 +504,7 @@ export interface ReferralView {
     to_code?: string; to_name?: string; to_dept?: string; note?: string;
     at?: string; status?: string; resolved_at?: string; decline_reason?: string;
   }>;
+  credit_stage?: { key: string; label: string; status: string; declined: boolean } | null;
 }
 
 export interface ReferralListResponse {
