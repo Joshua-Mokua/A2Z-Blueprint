@@ -7081,6 +7081,58 @@ REPORTING_TREE = {
     },
 }
 
+
+# ── B1: derive the visibility tree from the admin-editable org_config hierarchy ──
+# tree_roles for a role = itself + every role reachable DOWN the hierarchy via a
+# solid (reports_to) OR dotted (functional_reports_to) link. Admin edits to the
+# hierarchy — including dotted functional lines — thus drive who sees whose
+# pipeline/performance. Branch heads stay own-unit-scoped (handled in
+# get_visible_staff); HO heads get their descendants with no unit filter, so a
+# dotted line (e.g. a Premier RO -> Head Premier) grants cross-branch visibility.
+# BSC rollup still follows the SOLID line only (see compute_actuals) — no
+# double-counting a matrixed role into two teams.
+def build_reporting_tree_from_hierarchy(cfg: dict = None) -> dict:
+    try:
+        cfg = cfg if cfg is not None else get_org_config()
+        hier = (cfg or {}).get("hierarchy", {}) or {}
+    except Exception:
+        return {}
+    if not isinstance(hier, dict) or not hier:
+        return {}
+    children: dict = {}
+    for role, info in hier.items():
+        if isinstance(info, dict):
+            parents = list(info.get("reports_to", []) or []) \
+                + list(info.get("functional_reports_to", []) or [])
+        else:
+            parents = list(info or [])
+        for p in parents:
+            children.setdefault(p, set()).add(role)
+    tree: dict = {}
+    for role in hier:
+        seen, stack = set(), [role]
+        while stack:
+            r = stack.pop()
+            if r in seen:
+                continue
+            seen.add(r)
+            stack.extend(children.get(r, ()))
+        tree[role] = {"tree_roles": sorted(seen), "units": None}
+    for top in ("Managing Director", "Chief Executive & Managing Director"):
+        if top in tree:
+            tree[top] = {"tree_roles": None, "units": None}
+    return tree
+
+
+# Merge derived tree over the hardcoded fallback: derived wins for any role in
+# the live hierarchy; hardcoded stays for roles not (yet) in it. Rebuilt on API
+# restart, so admin hierarchy edits take effect on restart.
+try:
+    REPORTING_TREE = {**REPORTING_TREE, **build_reporting_tree_from_hierarchy()}
+except Exception:
+    pass
+
+
 _UNIT_SCOPED_ROLES = {
     "branch manager","branch operations manager","branch credit manager",
     "branch operations supervisor","it manager","operations manager","hr business partner",
