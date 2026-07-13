@@ -707,7 +707,7 @@ export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanA
 }
 
 // ── Daily Branch Log ───────────────────────────────────────────
-export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; }
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; }
 export interface BranchLogEntry {
   id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
   submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;
@@ -721,6 +721,19 @@ export async function fetchBranchLogFields(): Promise<{ fields: BranchLogField[]
 export interface BranchLogActivity { at: string; time: string; kind: string; detail: string; }
 export async function fetchBranchLogAutoActivities(): Promise<{ activities: BranchLogActivity[]; date: string }> {
   return getJson<{ activities: BranchLogActivity[]; date: string }>('/branch-log/auto-activities');
+}
+
+export interface BranchLogConfig { activity_weights: Record<string, number>; daily_index_target: number; fields: BranchLogField[]; }
+export async function fetchBranchLogConfig(): Promise<BranchLogConfig> {
+  return getJson<BranchLogConfig>('/branch-log/config');
+}
+export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
+  return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
+    '/branch-log/config', { activity_weights, daily_index_target });
+}
+export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
+export async function fetchBranchLogRanking(days = 30): Promise<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }> {
+  return getJson<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }>(`/branch-log/ranking?days=${days}`);
 }
 export async function fetchMyBranchLogs(days = 14): Promise<{ logs: BranchLogEntry[]; identity: Record<string, string> }> {
   return getJson<{ logs: BranchLogEntry[]; identity: Record<string, string> }>(`/branch-log/mine?days=${days}`);

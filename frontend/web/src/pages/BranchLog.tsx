@@ -7,11 +7,11 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
-  submitBranchLog, validateBranchLog,
-  type BranchLogField, type BranchLogEntry, type BranchLogActivity,
+  submitBranchLog, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
+  type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow,
 } from '@/lib/api';
 
-type Tab = 'entry' | 'history' | 'review';
+type Tab = 'entry' | 'history' | 'review' | 'ranking' | 'setup';
 
 export default function BranchLog() {
   const { toast } = useToast();
@@ -24,6 +24,10 @@ export default function BranchLog() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [autoActs, setAutoActs] = useState<BranchLogActivity[]>([]);
+  const [indexTarget, setIndexTarget] = useState(0);
+  const [ranking, setRanking] = useState<BranchLogRankRow[]>([]);
+  const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
+  const [targetDraft, setTargetDraft] = useState('');
 
   const canReview = isAdmin || /manager|head|supervisor/i.test(String(user?.role ?? ''));
   const metricFields = fields.filter((f) => f.type !== 'text');
@@ -41,8 +45,22 @@ export default function BranchLog() {
   const loadAuto = useCallback(async () => {
     try { const r = await fetchBranchLogAutoActivities(); setAutoActs(r.activities); } catch { /* ignore */ }
   }, []);
+  const loadCfg = useCallback(async () => {
+    try {
+      const r = await fetchBranchLogConfig();
+      setIndexTarget(r.daily_index_target || 0);
+      setTargetDraft(String(r.daily_index_target || 0));
+      const wd: Record<string, string> = {};
+      for (const [k, v] of Object.entries(r.activity_weights || {})) wd[k] = String(v);
+      setWeightDraft(wd);
+    } catch { /* ignore */ }
+  }, []);
+  const loadRanking = useCallback(async () => {
+    try { const r = await fetchBranchLogRanking(30); setRanking(r.ranking); setIndexTarget(r.daily_index_target || 0); } catch { /* ignore */ }
+  }, []);
 
-  useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); }, [loadFields, loadMine, loadAuto]);
+  useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); void loadCfg(); }, [loadFields, loadMine, loadAuto, loadCfg]);
+  useEffect(() => { if (tab === 'ranking') void loadRanking(); }, [tab, loadRanking]);
   useEffect(() => { if (tab === 'review' && canReview) void loadPending(); }, [tab, canReview, loadPending]);
 
   const todaysLog = mine.find((l) => l.log_date === today);
@@ -79,7 +97,10 @@ export default function BranchLog() {
     ['entry', 'Daily Log Entry'],
     ['history', 'Log History'],
     ...(canReview ? ([['review', 'Supervisor Review']] as [Tab, string][]) : []),
+    ['ranking', 'Ranking'],
+    ...(isAdmin ? ([['setup', 'Index Setup']] as [Tab, string][]) : []),
   ];
+  const liveIndex = metricFields.reduce((s, f) => s + (Number(values[f.key]) || 0) * (Number(f.weight) || 0), 0);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -147,8 +168,80 @@ export default function BranchLog() {
                 </label>
               </div>
             </div>
-            <div className="mt-3 flex justify-end">
+            <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+              <div className="text-sm">
+                <span className="text-gray-500">Today&apos;s productivity index: </span>
+                <span className="font-semibold text-gray-900">{Math.round(liveIndex)}</span>
+                {indexTarget > 0 && (
+                  <span className={liveIndex >= indexTarget ? 'ml-1 text-emerald-600' : 'ml-1 text-gray-400'}>
+                    {' '}/ target {indexTarget} ({Math.round((liveIndex / indexTarget) * 100)}%)
+                  </span>
+                )}
+              </div>
               <Button onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      {tab === 'ranking' && (
+        <Card>
+          <Card.Header><h2 className="text-base font-semibold text-gray-900">Productivity ranking — last 30 days</h2></Card.Header>
+          <Card.Body>
+            {ranking.length === 0 ? <p className="text-sm text-gray-400">No logs in this period.</p> : (
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-xs text-gray-400">
+                  <th className="py-1">#</th><th>Staff</th><th>Unit</th><th className="text-right">Index</th><th className="text-right">Avg/day</th><th className="text-right">Days</th>
+                </tr></thead>
+                <tbody>
+                  {ranking.map((r) => (
+                    <tr key={r.staff_code} className="border-t border-gray-100">
+                      <td className="py-1.5 font-medium text-gray-500">{r.rank}</td>
+                      <td className="font-medium text-gray-900">{r.staff_name}</td>
+                      <td className="text-gray-500">{r.unit}</td>
+                      <td className="text-right font-semibold tabular-nums">{r.index}</td>
+                      <td className={'text-right tabular-nums ' + (r.target > 0 && r.avg_per_day >= r.target ? 'text-emerald-600' : 'text-gray-600')}>{r.avg_per_day}</td>
+                      <td className="text-right tabular-nums text-gray-500">{r.days}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Card.Body>
+        </Card>
+      )}
+
+      {tab === 'setup' && isAdmin && (
+        <Card>
+          <Card.Header><h2 className="text-base font-semibold text-gray-900">Activity weights &amp; daily index target</h2></Card.Header>
+          <Card.Body>
+            <label className="mb-4 block text-sm">
+              <span className="mb-1 block text-gray-700">Daily index target</span>
+              <input type="number" min={0} className="w-40 rounded border px-2 py-1.5 text-sm"
+                value={targetDraft} onChange={(e) => setTargetDraft(e.target.value)} />
+            </label>
+            <p className="mb-2 text-sm font-medium text-gray-700">Points per activity</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {metricFields.map((f) => (
+                <label key={f.key} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-gray-700">{f.label}</span>
+                  <input type="number" step="any" className="w-24 rounded border px-2 py-1 text-sm"
+                    value={weightDraft[f.key] ?? ''} onChange={(e) => setWeightDraft((p) => ({ ...p, [f.key]: e.target.value }))} />
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button disabled={busy} onClick={async () => {
+                setBusy(true);
+                try {
+                  const w: Record<string, number> = {};
+                  for (const [k, v] of Object.entries(weightDraft)) w[k] = Number(v) || 0;
+                  await saveBranchLogConfig(w, Number(targetDraft) || 0);
+                  toast({ tone: 'success', message: 'Weights & target saved.' });
+                  await loadFields(); await loadCfg();
+                } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' }); }
+                finally { setBusy(false); }
+              }}>Save weights &amp; target</Button>
             </div>
           </Card.Body>
         </Card>
