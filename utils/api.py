@@ -3340,6 +3340,7 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}
     cr_required = True  # CR is the baseline artifact (Josh: "a CR should suffice")
     cr_ok = bool(cr.get("completed"))
+    manager_validated = bool(deal.get("manager_validated"))
     records = deal.get("committee_records", {}) or {}
     committee_pending = []
     committee_rejected = []
@@ -3367,10 +3368,12 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
         "committee_ok": committee_ok,
         "committee_pending": committee_pending,
         "committee_rejected": committee_rejected,
+        "manager_validated": manager_validated,
         "can_submit": (is_owner or is_admin_like) and not already
                       and not terminal and stage_ok
                       and (cr_ok or not cr_required)
                       and committee_ok
+                      and manager_validated
                       and perms.get("can_view", False),
     }
 

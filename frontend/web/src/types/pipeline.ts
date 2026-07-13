@@ -584,6 +584,7 @@ export interface CreditChecklistResponse {
   cr_required?:        boolean;
   cr_ok?:              boolean;
   committee_ok?:       boolean;
+  manager_validated?:  boolean;
   committee_pending?:  string[];
   committee_rejected?: string[];
 }

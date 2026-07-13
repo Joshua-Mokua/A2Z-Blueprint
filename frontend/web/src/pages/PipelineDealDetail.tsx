@@ -726,6 +726,9 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   // prerequisite is intentionally NOT listed here: the RM completes the CR on
   // its own tab, so surfacing it on the Documents tab is noise.
   const gateReasons: string[] = [];
+  if (checklist.manager_validated === false) {
+    gateReasons.push('This deal has not been validated by a manager. A manager must validate it (from their Manager Queue) before it can be submitted to credit.');
+  }
   if (checklist.stage_ok === false && checklist.stage_required) {
     gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
   }
