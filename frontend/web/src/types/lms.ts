@@ -188,6 +188,8 @@ export interface LoanApplication {
 
   // Status / lifecycle
   status:                 string;
+  appeal_pending?:        boolean;
+  appeals?:               Array<{ reason: string; by_name?: string; at?: string; outcome?: string; reviewed_by_name?: string; reviewed_at?: string; review_note?: string }>;
   application_date?:      string;
   last_updated?:          string;
 

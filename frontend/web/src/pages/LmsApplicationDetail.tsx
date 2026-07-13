@@ -29,7 +29,7 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import { WorkbenchShell } from '@/components/WorkbenchShell';
 import {
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, fetchReworkReasons, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, fetchReworkReasons, appealDecline, decideAppeal, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';  // attachment imports trimmed with AttachmentsBccCard
 import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
@@ -461,6 +461,8 @@ export function LmsApplicationDetail() {
             toast={toast}
           />
         )}
+
+        <AppealPanel app={application} canReview={!!permissions.can_record_decision} onDone={refetch} toast={toast} />
 
 
         {/* ─────────── Credit workflow actions (v10.587) ─────────── */}
@@ -1930,6 +1932,80 @@ function CreditWorkbenchPanel({ appId, toast, embedded = false, canEdit = false 
         </div>
       </SBody>
     </Shell>
+  );
+}
+
+function AppealPanel({ app, canReview, onDone, toast }: {
+  app: LoanApplication; canReview: boolean;
+  onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const pending = !!app.appeal_pending;
+  const isDeclined = String(app.status).toLowerCase() === 'declined';
+  const appeals = app.appeals ?? [];
+  if (!isDeclined && !pending && appeals.length === 0) return null;
+
+  const file = async () => {
+    if (!reason.trim()) { toast({ tone: 'danger', message: 'An appeal reason is required.' }); return; }
+    setBusy(true);
+    try {
+      await appealDecline(app.id, reason.trim());
+      toast({ tone: 'success', message: 'Appeal filed — pending manager review.' });
+      await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' }); }
+    finally { setBusy(false); }
+  };
+  const review = async (outcome: 'grant' | 'uphold') => {
+    setBusy(true);
+    try {
+      const r = await decideAppeal(app.id, outcome, note.trim() || undefined);
+      toast({ tone: 'success', message: r.reopened ? 'Appeal granted — case reopened for a fresh decision.' : 'Appeal upheld — the decline stands.' });
+      await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' }); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Decline appeal</h3></Card.Header>
+      <Card.Body>
+        {appeals.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {appeals.map((a, i) => (
+              <div key={i} className="rounded border border-gray-200 bg-gray-50 p-2 text-xs">
+                <div><span className="font-medium">Reason:</span> {a.reason}</div>
+                <div className="text-gray-500">
+                  Filed{a.by_name ? ` by ${a.by_name}` : ''}{a.at ? ` · ${a.at}` : ''} — <span className="font-medium">{a.outcome}</span>{a.reviewed_by_name ? ` by ${a.reviewed_by_name}` : ''}
+                </div>
+                {a.review_note && <div className="italic text-gray-500">Note: {a.review_note}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {isDeclined && !pending && (
+          <div>
+            <p className="mb-2 text-xs text-gray-500">This application was declined. File an appeal for reconsideration — a manager will review it.</p>
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Grounds for appeal…" rows={3} className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <Button variant="primary" onClick={() => void file()} disabled={busy}>File appeal</Button>
+          </div>
+        )}
+        {pending && canReview && (
+          <div>
+            <p className="mb-2 text-xs text-gray-500">An appeal is pending. Grant it (reopens the case for a fresh decision) or uphold the decline.</p>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Review note (optional)…" rows={2} className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => void review('grant')} disabled={busy}>Grant (reopen)</Button>
+              <Button variant="ghost" onClick={() => void review('uphold')} disabled={busy}>Uphold decline</Button>
+            </div>
+          </div>
+        )}
+        {pending && !canReview && (
+          <p className="text-xs text-gray-500">Appeal filed — pending manager review.</p>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 

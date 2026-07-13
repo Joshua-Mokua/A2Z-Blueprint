@@ -2173,6 +2173,16 @@ export async function fetchReworkReasons(): Promise<string[]> {
   return r.rework_reasons ?? [];
 }
 
+// Decline appeal: file (originator) + review (manager grant/uphold)
+export async function appealDecline(appId: string, reason: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, { reason: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/appeal`, { reason });
+}
+export async function decideAppeal(appId: string, outcome: 'grant' | 'uphold', note?: string): Promise<{ status: string; reopened: boolean }> {
+  return postJson<{ status: string; reopened: boolean }, { outcome: string; note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/appeal-decision`, { outcome, note });
+}
+
 // C3b: committee pre-read (member non-binding view)
 export interface CommitteePreRead {
   by_code: string; by_name: string; view: 'leaning_approve' | 'leaning_decline' | 'questions';

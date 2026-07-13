@@ -1968,6 +1968,98 @@ def lms_committee_set_require_mcc(
     return {"status": "saved", "require_mcc_before_higher": enabled}
 
 
+# === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/appeal")
+def lms_application_appeal(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The originating side files an appeal against a DECLINED credit decision.
+    Records the appeal reason and flags it pending; a manager reviews it via
+    /appeal-decision (this does not itself reopen the case)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get('status', '') or '').lower() != 'declined':
+        raise HTTPException(status_code=400, detail="Only a declined application can be appealed")
+    if bool(app.get('appeal_pending')):
+        raise HTTPException(status_code=400, detail="An appeal is already pending on this application")
+    reason = str((payload or {}).get('reason', '') or '').strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="An appeal reason is required")
+    from datetime import datetime as _dt
+    appeals = list(app.get('appeals', []) or [])
+    appeals.append({
+        "reason": reason,
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "outcome": "PENDING",
+    })
+    lam.update(app_id, {"appeals": appeals, "appeal_pending": True})
+    try:
+        lam._log_event(app_id, "decline_appealed", caller_code, note=reason,
+                       by_name=str(user.get('full_name', '') or ''), by_role=caller_role)
+    except Exception:
+        pass
+    return {"status": "appealed", "appeals": appeals, "appeal_pending": True}
+
+
+@router.post("/applications/{app_id}/appeal-decision")
+def lms_application_appeal_decision(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """A manager reviews a pending decline appeal: 'uphold' (decline stands) or
+    'grant' (reopen the case for a fresh decision — status back to 'assigned')."""
+    if not is_manager(user) and not user.get('is_admin'):
+        raise HTTPException(status_code=403, detail="Manager authority required to decide appeals")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if not bool(app.get('appeal_pending')):
+        raise HTTPException(status_code=400, detail="No appeal is pending on this application")
+    outcome = str((payload or {}).get('outcome', '') or '').lower()  # "grant" | "uphold"
+    if outcome not in ("grant", "uphold"):
+        raise HTTPException(status_code=400, detail="outcome must be 'grant' or 'uphold'")
+    note = str((payload or {}).get('note', '') or '').strip()
+    from datetime import datetime as _dt
+    appeals = list(app.get('appeals', []) or [])
+    for a in reversed(appeals):
+        if str(a.get('outcome', '')).upper() == 'PENDING':
+            a["outcome"] = "GRANTED" if outcome == "grant" else "UPHELD"
+            a["reviewed_by_code"] = caller_code
+            a["reviewed_by_name"] = str(user.get('full_name', '') or user.get('username', '') or '')
+            a["reviewed_at"] = _dt.now().isoformat(timespec="seconds")
+            a["review_note"] = note
+            break
+    fields = {"appeals": appeals, "appeal_pending": False}
+    if outcome == "grant":
+        fields["status"] = "assigned"  # reopen for a fresh decision
+    lam.update(app_id, fields)
+    try:
+        lam._log_event(app_id, "appeal_granted" if outcome == "grant" else "appeal_upheld",
+                       caller_code, note=note, by_name=str(user.get('full_name', '') or ''), by_role=caller_role)
+    except Exception:
+        pass
+    return {"status": "appeal_" + ("granted" if outcome == "grant" else "upheld"),
+            "appeals": appeals, "reopened": outcome == "grant"}
+
+
 # === C2: CORRECTNESS STAGING ===
 @router.get("/rework-reasons")
 def lms_rework_reasons(
