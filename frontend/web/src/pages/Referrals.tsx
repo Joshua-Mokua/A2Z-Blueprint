@@ -14,7 +14,7 @@ import { useToast } from '@/components/Toast';
 import {
   fetchIncomingReferrals, fetchReturnedReferrals, fetchOutgoingReferrals,
   fetchOutgoingReferralAnalytics, fetchReferralsByDepartment, fetchTeamReferrals,
-  acceptReferral, declineReferral, reassignReferral,
+  acceptReferral, declineReferral, reReferReferral, reassignReferral,
   type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment,
   type TeamReferralsResponse,
 } from '@/lib/api';
@@ -51,6 +51,10 @@ export default function Referrals() {
   const [analytics, setAnalytics] = useState<OutgoingReferralAnalytics | null>(null);
   const [dept, setDept] = useState<ReferralsByDepartment | null>(null);
   const [team, setTeam] = useState<ReferralView[]>([]);
+  const [reReferFor, setReReferFor] = useState<string | null>(null);
+  const [rrCode, setRrCode] = useState('');
+  const [rrName, setRrName] = useState('');
+  const [rrNote, setRrNote] = useState('');
   const [teamSummary, setTeamSummary] = useState<TeamReferralsResponse['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -116,6 +120,18 @@ export default function Referrals() {
     } finally { setBusyId(null); }
   }
 
+  async function onReRefer(d: ReferralView) {
+    if (!rrCode.trim() || !rrName.trim()) { toast({ tone: 'danger', message: 'Recipient code and name are required.' }); return; }
+    setBusyId(d.id);
+    try {
+      await reReferReferral(d.id, rrCode.trim(), rrName.trim(), rrNote.trim() || undefined);
+      toast({ tone: 'success', message: 'Re-referred onward.' });
+      setReReferFor(null); setRrCode(''); setRrName(''); setRrNote('');
+      await loadAll();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Re-refer failed' }); }
+    finally { setBusyId(null); }
+  }
+
   const tabs: { key: Tab; label: string; count: number }[] = [
     { key: 'incoming', label: 'Incoming', count: incoming.length },
     { key: 'returned', label: 'Returned', count: returned.length },
@@ -126,6 +142,26 @@ export default function Referrals() {
     : tab === 'returned' ? returned
     : tab === 'team' ? team
     : outgoing;
+
+  function ReferralJourney({ chain }: { chain?: ReferralView['referral_chain'] }) {
+    if (!chain || chain.length === 0) return null;
+    return (
+      <div className="mt-2 border-t border-gray-100 pt-2">
+        <div className="mb-1 text-xs font-medium text-gray-500">Referral journey</div>
+        <ol className="space-y-1">
+          {chain.map((h, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-600">{h.seq}</span>
+              <span className="text-gray-700">{h.from_name || h.from_code}{h.from_dept ? ` · ${h.from_dept}` : ''}</span>
+              <span className="text-gray-400">→</span>
+              <span className="text-gray-700">{h.to_name || h.to_code}{h.to_dept ? ` · ${h.to_dept}` : ''}</span>
+              <span className={'rounded px-1.5 py-0.5 ' + (h.status === 'accepted' ? 'bg-emerald-50 text-emerald-700' : h.status === 'declined' ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-500')}>{h.status}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
 
   function DealMeta({ d }: { d: ReferralView }) {
     return (
@@ -307,6 +343,36 @@ export default function Referrals() {
                     <p className="mt-1 text-sm text-amber-700">
                       <span className="text-amber-500">Declined: </span>{d.decline_reason}
                     </p>
+                  )}
+
+                  <ReferralJourney chain={d.referral_chain} />
+
+                  {d.referral_status === 'accepted' && (
+                    <div className="mt-3 border-t border-gray-100 pt-3">
+                      {reReferFor === d.id ? (
+                        <div className="space-y-2">
+                          <div className="grid sm:grid-cols-2 gap-2">
+                            <input className={inputCls} placeholder="Onward recipient staff code"
+                              value={rrCode} onChange={(e) => setRrCode(e.target.value)} />
+                            <input className={inputCls} placeholder="Onward recipient name"
+                              value={rrName} onChange={(e) => setRrName(e.target.value)} />
+                          </div>
+                          <input className={inputCls} placeholder="Note (optional)"
+                            value={rrNote} onChange={(e) => setRrNote(e.target.value)} />
+                          <div className="flex gap-2">
+                            <Button variant="primary" size="sm" loading={busyId === d.id}
+                              onClick={() => onReRefer(d)}>Re-refer onward</Button>
+                            <Button variant="ghost" size="sm"
+                              onClick={() => { setReReferFor(null); setRrCode(''); setRrName(''); setRrNote(''); }}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button variant="ghost" size="sm"
+                          onClick={() => { setReReferFor(d.id); setRrCode(''); setRrName(''); setRrNote(''); }}>
+                          Re-refer to another department
+                        </Button>
+                      )}
+                    </div>
                   )}
 
                   {/* ── Incoming actions ── */}

@@ -499,6 +499,11 @@ export interface ReferralView {
   cross_unit?: boolean;
   referrer_department?: string | null;
   recipient_department?: string | null;
+  referral_chain?: Array<{
+    seq: number; from_code?: string; from_name?: string; from_dept?: string;
+    to_code?: string; to_name?: string; to_dept?: string; note?: string;
+    at?: string; status?: string; resolved_at?: string; decline_reason?: string;
+  }>;
 }
 
 export interface ReferralListResponse {
@@ -647,6 +652,11 @@ export async function acceptReferral(dealId: string): Promise<{ status?: string 
     `/pipeline/deals/${dealId}/referral/accept`, {});
 }
 
+export async function reReferReferral(dealId: string, referredToCode: string, referredTo: string, note?: string): Promise<{ referral_status?: string }> {
+  return postJson<{ referral_status?: string }, { referred_to_code: string; referred_to: string; note?: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/referral/re-refer`,
+    { referred_to_code: referredToCode, referred_to: referredTo, note });
+}
 export async function declineReferral(dealId: string, reason: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, { reason: string }>(
     `/pipeline/deals/${dealId}/referral/decline`, { reason });

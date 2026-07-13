@@ -5128,6 +5128,7 @@ def _referral_view(d: dict) -> dict:
         "referred_at":      d.get("referred_at"),
         "accepted_at":      d.get("accepted_at"),
         "declined_at":      d.get("declined_at"),
+        "referral_chain":   d.get("referral_chain") or [],
         **_classify_referral_tier(d.get("referred_by_code"), d.get("referred_to_code")),
     }
 
