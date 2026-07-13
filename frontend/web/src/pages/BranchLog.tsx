@@ -79,7 +79,7 @@ export default function BranchLog() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <PageHeader ribbon title="Daily Branch Log" subtitle="Log your daily activity; supervisors validate." />
+      <PageHeader ribbon title="Daily Log" subtitle="Log your daily activity; supervisors validate." />
 
       <div className="mb-4 flex gap-1 text-sm">
         {tabs.map(([id, lbl]) => (
@@ -102,20 +102,32 @@ export default function BranchLog() {
                 {' '}Re-submitting updates it.
               </div>
             )}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {metricFields.map((f) => (
-                <label key={f.key} className="text-sm">
-                  <span className="mb-1 block text-gray-700">{f.label}{f.unit ? ` (${f.unit})` : ''}</span>
-                  <input type="number" min={0} className="w-full rounded border px-2 py-1.5 text-sm"
-                    value={values[f.key] ?? ''} onChange={(e) => setValues((p) => ({ ...p, [f.key]: e.target.value }))} />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Quantitative — counts & amounts */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-gray-800">Quantitative</h3>
+                <p className="mb-3 text-xs text-gray-400">Counts and amounts for the day.</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {metricFields.map((f) => (
+                    <label key={f.key} className="text-sm">
+                      <span className="mb-1 block text-gray-700">{f.label}{f.unit ? ` (${f.unit})` : ''}</span>
+                      <input type="number" min={0} className="w-full rounded border px-2 py-1.5 text-sm"
+                        value={values[f.key] ?? ''} onChange={(e) => setValues((p) => ({ ...p, [f.key]: e.target.value }))} />
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Qualitative — notes & remarks */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-gray-800">Qualitative</h3>
+                <p className="mb-3 text-xs text-gray-400">Notes, challenges, and context.</p>
+                <label className="block text-sm">
+                  <span className="mb-1 block text-gray-700">Remarks / challenges</span>
+                  <textarea rows={12} className="w-full rounded border px-2 py-1.5 text-sm"
+                    value={values.remarks ?? ''} onChange={(e) => setValues((p) => ({ ...p, remarks: e.target.value }))} />
                 </label>
-              ))}
+              </div>
             </div>
-            <label className="mt-3 block text-sm">
-              <span className="mb-1 block text-gray-700">Remarks / challenges</span>
-              <textarea rows={3} className="w-full rounded border px-2 py-1.5 text-sm"
-                value={values.remarks ?? ''} onChange={(e) => setValues((p) => ({ ...p, remarks: e.target.value }))} />
-            </label>
             <div className="mt-3 flex justify-end">
               <Button onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
             </div>
