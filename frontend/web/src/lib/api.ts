@@ -1939,6 +1939,7 @@ export async function applyStaffUpload(contentB64: string, keep: string[]): Prom
 export interface HierarchyResponse {
   roles: string[];
   hierarchy: Record<string, string[]>;
+  functional_hierarchy?: Record<string, string[]>;
   top: string[];
 }
 export async function fetchHierarchy(): Promise<HierarchyResponse> {

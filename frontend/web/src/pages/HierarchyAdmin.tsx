@@ -14,6 +14,7 @@ import {
 interface HierRow {
   role: string;
   reportsTo: string;
+  functional: string;
 }
 
 export default function HierarchyAdmin() {
@@ -33,6 +34,7 @@ export default function HierarchyAdmin() {
   // edit-reporting-line form
   const [selRole, setSelRole] = useState<string>('');
   const [selParents, setSelParents] = useState<string[]>([]);
+  const [selFunctional, setSelFunctional] = useState<string[]>([]);
 
   // add-role form
   const [newRole, setNewRole] = useState('');
@@ -47,6 +49,7 @@ export default function HierarchyAdmin() {
       if (d.roles.length && !selRole) {
         setSelRole(d.roles[0]);
         setSelParents(d.hierarchy[d.roles[0]] ?? []);
+        setSelFunctional(d.functional_hierarchy?.[d.roles[0]] ?? []);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load hierarchy');
@@ -65,18 +68,21 @@ export default function HierarchyAdmin() {
       .map(([r, parents]) => ({
         role: r,
         reportsTo: parents && parents.length ? parents.join(', ') : '— (top of hierarchy)',
+        functional: (data.functional_hierarchy?.[r] ?? []).join(', ') || '—',
       }))
       .sort((a, b) => a.role.localeCompare(b.role));
   }, [data]);
 
   const columns: Column<HierRow>[] = [
     { key: 'role', header: 'Role' },
-    { key: 'reportsTo', header: 'Reports to' },
+    { key: 'reportsTo', header: 'Reports to (solid)' },
+    { key: 'functional', header: 'Dotted (visibility)' },
   ];
 
   function onSelectRole(r: string) {
     setSelRole(r);
     setSelParents(data?.hierarchy[r] ?? []);
+    setSelFunctional(data?.functional_hierarchy?.[r] ?? []);
   }
 
   function toggleParent(list: string[], setter: (v: string[]) => void, p: string) {
@@ -89,6 +95,20 @@ export default function HierarchyAdmin() {
     try {
       await saveHierarchy({ action: 'set_parents', role: selRole, parents: selParents });
       toast({ tone: 'success', message: `${selRole} now reports to: ${selParents.join(', ') || 'nobody (top)'}` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveFunctionalLine() {
+    if (!selRole) return;
+    setSaving(true);
+    try {
+      await saveHierarchy({ action: 'set_functional', role: selRole, parents: selFunctional });
+      toast({ tone: 'success', message: `${selRole} dotted (visibility) lines: ${selFunctional.join(', ') || 'none'}` });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' });
@@ -181,6 +201,27 @@ export default function HierarchyAdmin() {
             <Button onClick={() => void saveReportingLine()} disabled={saving || !selRole}>
               {saving ? 'Saving…' : 'Save reporting line'}
             </Button>
+
+            <div className="mt-4 border-t pt-3">
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Functional (dotted) lines — visibility only, no rollup (e.g. Premier RO ⇢ Head Premier)
+              </label>
+              <div className="mb-3 grid max-h-56 grid-cols-1 gap-1 overflow-auto rounded border p-2">
+                {data.roles.filter((r) => r !== selRole).map((r) => (
+                  <label key={r} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selFunctional.includes(r)}
+                      onChange={() => toggleParent(selFunctional, setSelFunctional, r)}
+                    />
+                    {r}
+                  </label>
+                ))}
+              </div>
+              <Button onClick={() => void saveFunctionalLine()} disabled={saving || !selRole}>
+                {saving ? 'Saving…' : 'Save dotted lines'}
+              </Button>
+            </div>
           </Card.Body></Card>
 
           {/* Add / remove role */}
