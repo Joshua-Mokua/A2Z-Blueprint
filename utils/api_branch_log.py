@@ -112,6 +112,80 @@ def branch_log_auto_activities(user: dict = Depends(get_current_user)):
     return {"activities": feed, "date": today}
 
 
+@router.get("/config")
+def branch_log_config_get(user: dict = Depends(get_current_user)):
+    """Per-activity weights + daily index target (admin-configured), with fields."""
+    from utils.branch_log import load_log_config
+    cfg = load_log_config()
+    return {"activity_weights": cfg.get("activity_weights", {}) or {},
+            "daily_index_target": cfg.get("daily_index_target", 0) or 0,
+            "fields": fields_schema()}
+
+
+@router.post("/config")
+def branch_log_config_set(payload: dict = Body(default_factory=dict),
+                          user: dict = Depends(get_current_user)):
+    """Set activity weights (points) + daily index target. Admin only."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log import load_log_config, save_log_config
+    cfg = load_log_config()
+    if isinstance(payload.get("activity_weights"), dict):
+        weights = {}
+        for k, v in payload["activity_weights"].items():
+            try:
+                weights[str(k)] = float(v or 0)
+            except (TypeError, ValueError):
+                weights[str(k)] = 0.0
+        cfg["activity_weights"] = weights
+    if "daily_index_target" in payload:
+        try:
+            cfg["daily_index_target"] = float(payload.get("daily_index_target") or 0)
+        except (TypeError, ValueError):
+            cfg["daily_index_target"] = 0.0
+    save_log_config(cfg)
+    audit_log("BRANCH_LOG_CONFIG", str(user.get("username", "") or ""), "weights/target updated")
+    return {"status": "saved",
+            "activity_weights": cfg.get("activity_weights", {}),
+            "daily_index_target": cfg.get("daily_index_target", 0)}
+
+
+@router.get("/ranking")
+def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
+    """Staff ranked by cumulative productivity index over the period. Admin sees
+    all; a manager sees their reporting team; others see themselves."""
+    from utils.branch_log import daily_index_target, compute_index, _METRIC_KEYS
+    me = _identity(user)
+    blm = BranchLogManager()
+    logs = blm.get_history(days=days)
+    if not _is_admin(user):
+        mycode = me["staff_code"]
+        if _is_manager(user):
+            logs = _reports_to_me(logs, mycode) + [l for l in logs if str(l.get("staff_code")) == mycode]
+        else:
+            logs = [l for l in logs if str(l.get("staff_code")) == mycode]
+    agg: dict = {}
+    for l in logs:
+        sc = str(l.get("staff_code") or "")
+        if not sc:
+            continue
+        idx = l.get("index")
+        if idx is None:
+            idx = compute_index({k: l.get(k, 0) for k in _METRIC_KEYS})
+        r = agg.setdefault(sc, {"staff_code": sc, "staff_name": l.get("staff_name"),
+                                "unit": l.get("unit"), "index": 0.0, "days": 0})
+        r["index"] += float(idx or 0)
+        r["days"] += 1
+    target = daily_index_target()
+    rows = sorted(agg.values(), key=lambda x: x["index"], reverse=True)
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+        r["index"] = round(r["index"], 2)
+        r["avg_per_day"] = round(r["index"] / r["days"], 2) if r["days"] else 0
+        r["target"] = target
+    return {"ranking": rows, "days": days, "daily_index_target": target}
+
+
 @router.get("/mine")
 def branch_log_mine(days: int = 14, user: dict = Depends(get_current_user)):
     """The caller's own recent log entries."""

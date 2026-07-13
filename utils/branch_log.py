@@ -40,8 +40,50 @@ LOG_FIELDS = [
 _METRIC_KEYS = [k for k, _, t, _, _ in LOG_FIELDS if t != "text"]
 
 
+_CONFIG_FILE = Path(DATA_DIR) / "branch_log_config.json"
+
+
+def load_log_config() -> dict:
+    """Admin-set daily-log config: per-activity weights + daily index target."""
+    try:
+        if _CONFIG_FILE.exists():
+            return json.loads(_CONFIG_FILE.read_text(encoding="utf-8")) or {}
+    except Exception:
+        pass
+    return {}
+
+
+def save_log_config(cfg: dict) -> None:
+    _CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+
+def activity_weights() -> dict:
+    return load_log_config().get("activity_weights", {}) or {}
+
+
+def daily_index_target() -> float:
+    try:
+        return float(load_log_config().get("daily_index_target", 0) or 0)
+    except Exception:
+        return 0.0
+
+
+def compute_index(metrics: dict) -> float:
+    """Productivity index for a log = sum(activity count x admin weight)."""
+    w = activity_weights()
+    total = 0.0
+    for k, v in (metrics or {}).items():
+        try:
+            total += float(v or 0) * float(w.get(k, 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
+
+
 def fields_schema() -> list:
-    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi}
+    w = activity_weights()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0)}
             for k, lbl, t, u, kpi in LOG_FIELDS]
 
 
@@ -97,6 +139,7 @@ class BranchLogManager:
         if existing:
             existing.update(metrics)
             existing["remarks"] = remarks
+            existing["index"] = compute_index(metrics)
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
             existing["rejected"] = False
@@ -117,6 +160,7 @@ class BranchLogManager:
             "manager_note": "",
             "rejected": False,
             **metrics,
+            "index": compute_index(metrics),
             "remarks": remarks,
         }
         self.logs.append(rec)
