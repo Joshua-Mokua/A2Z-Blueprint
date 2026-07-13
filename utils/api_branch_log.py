@@ -122,32 +122,58 @@ def branch_log_auto_activities(user: dict = Depends(get_current_user)):
         return s[11:16] if len(s) >= 16 else ""
 
     feed = []
+    deal_map = {}
+    try:
+        deal_map = {str(d.get("id")): d for d in pm.get_deals()}
+    except Exception:
+        deal_map = {}
+
+    def _client_of(deal_id) -> str:
+        return str((deal_map.get(str(deal_id)) or {}).get("client_name") or "")
+
+    # 1. deal-level events derived from the deal record (clear labels)
+    for d in deal_map.values():
+        if str(d.get("staff_code") or "") != code:
+            continue
+        client = str(d.get("client_name") or "a client")
+        product = str(d.get("product") or "")
+        ca = str(d.get("created_at") or "")
+        if ca.startswith(today):
+            feed.append({"at": ca, "time": hhmm(ca), "kind": "Deal created",
+                         "detail": f"{client}{(' — ' + product) if product else ''}"})
+        for h in (d.get("referral_chain") or []):
+            if str(h.get("from_code") or "") != code:
+                continue
+            ts = str(h.get("at") or "")
+            if not ts.startswith(today):
+                continue
+            to = str(h.get("to_name") or h.get("to_code") or "")
+            to_dept = str(h.get("to_dept") or "")
+            suffix = f" ({to_dept})" if to_dept else ""
+            feed.append({"at": ts, "time": hhmm(ts), "kind": "Referral made",
+                         "detail": f"{client} \u2192 {to}{suffix}"})
+
+    # 2. activity stream — relabel stage changes by their outcome (target stage)
     try:
         for a in pm.get_activities(staff_code=code, limit=300):
             ts = str(a.get("recorded_at") or "")
             if not ts.startswith(today):
                 continue
-            feed.append({"at": ts, "time": hhmm(ts),
-                         "kind": str(a.get("activity_type") or "Activity"),
-                         "detail": str(a.get("note") or a.get("outcome") or "")})
+            outcome = str(a.get("outcome") or "").strip()
+            kind = str(a.get("activity_type") or "Activity")
+            if outcome == "Closed Won":
+                kind = "Deal won"
+            elif outcome == "Closed Lost":
+                kind = "Deal lost"
+            elif kind == "Stage Change" and outcome:
+                kind = f"Advanced to {outcome}"
+            client = _client_of(a.get("deal_id"))
+            note = str(a.get("note") or "")
+            detail = (f"{client} \u2014 " if client else "") + (note or outcome)
+            feed.append({"at": ts, "time": hhmm(ts), "kind": kind, "detail": detail})
     except Exception:
         pass
-    try:
-        for d in pm.get_deals():
-            for h in (d.get("referral_chain") or []):
-                if str(h.get("from_code") or "") != code:
-                    continue
-                ts = str(h.get("at") or "")
-                if not ts.startswith(today):
-                    continue
-                client = str(d.get("client_name") or "a client")
-                to = str(h.get("to_name") or h.get("to_code") or "")
-                to_dept = str(h.get("to_dept") or "")
-                suffix = f" ({to_dept})" if to_dept else ""
-                feed.append({"at": ts, "time": hhmm(ts), "kind": "Referral made",
-                             "detail": f"{client} \u2192 {to}{suffix}"})
-    except Exception:
-        pass
+
     feed.sort(key=lambda e: e.get("at") or "")
     return {"activities": feed, "date": today}
 
