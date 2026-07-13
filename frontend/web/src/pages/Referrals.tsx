@@ -15,11 +15,13 @@ import {
   fetchIncomingReferrals, fetchReturnedReferrals, fetchOutgoingReferrals,
   fetchOutgoingReferralAnalytics, fetchReferralsByDepartment, fetchTeamReferrals,
   acceptReferral, declineReferral, reReferReferral, reassignReferral,
-  type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment,
+  type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment, type StaffMember,
   type TeamReferralsResponse,
 } from '@/lib/api';
 
 type Tab = 'incoming' | 'returned' | 'following' | 'team';
+
+import { StaffPicker } from '@/components/StaffPicker';
 
 const inputCls =
   'w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none ' +
@@ -52,8 +54,7 @@ export default function Referrals() {
   const [dept, setDept] = useState<ReferralsByDepartment | null>(null);
   const [team, setTeam] = useState<ReferralView[]>([]);
   const [reReferFor, setReReferFor] = useState<string | null>(null);
-  const [rrCode, setRrCode] = useState('');
-  const [rrName, setRrName] = useState('');
+  const [rrMember, setRrMember] = useState<StaffMember | null>(null);
   const [rrNote, setRrNote] = useState('');
   const [teamSummary, setTeamSummary] = useState<TeamReferralsResponse['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,8 +63,7 @@ export default function Referrals() {
   const [declineFor, setDeclineFor] = useState<string | null>(null);
   const [declineReason, setDeclineReason] = useState('');
   const [reassignFor, setReassignFor] = useState<string | null>(null);
-  const [reCode, setReCode] = useState('');
-  const [reName, setReName] = useState('');
+  const [reMember, setReMember] = useState<StaffMember | null>(null);
   const [reNote, setReNote] = useState('');
 
   function loadAll() {
@@ -106,27 +106,27 @@ export default function Referrals() {
   }
 
   async function onReassign(d: ReferralView) {
-    if (!reCode.trim() || !reName.trim()) {
-      toast({ tone: 'warning', message: 'Recipient code and name are required.' });
+    if (!reMember) {
+      toast({ tone: 'warning', message: 'Pick a recipient from the list.' });
       return;
     }
     setBusyId(d.id);
     try {
-      await reassignReferral(d.id, reCode.trim(), reName.trim(), reNote.trim());
-      toast({ tone: 'success', message: `Reassigned to ${reName.trim()}.` });
-      setReassignFor(null); setReCode(''); setReName(''); setReNote(''); loadAll();
+      await reassignReferral(d.id, reMember.staff_code, reMember.name, reNote.trim());
+      toast({ tone: 'success', message: `Reassigned to ${reMember.name}.` });
+      setReassignFor(null); setReMember(null); setReNote(''); loadAll();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Reassign failed.' });
     } finally { setBusyId(null); }
   }
 
   async function onReRefer(d: ReferralView) {
-    if (!rrCode.trim() || !rrName.trim()) { toast({ tone: 'danger', message: 'Recipient code and name are required.' }); return; }
+    if (!rrMember) { toast({ tone: 'danger', message: 'Pick a recipient from the list.' }); return; }
     setBusyId(d.id);
     try {
-      await reReferReferral(d.id, rrCode.trim(), rrName.trim(), rrNote.trim() || undefined);
+      await reReferReferral(d.id, rrMember.staff_code, rrMember.name, rrNote.trim() || undefined);
       toast({ tone: 'success', message: 'Re-referred onward.' });
-      setReReferFor(null); setRrCode(''); setRrName(''); setRrNote('');
+      setReReferFor(null); setRrMember(null); setRrNote('');
       await loadAll();
     } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Re-refer failed' }); }
     finally { setBusyId(null); }
@@ -408,24 +408,19 @@ export default function Referrals() {
                     <div className="mt-3 border-t border-gray-100 pt-3">
                       {reReferFor === d.id ? (
                         <div className="space-y-2">
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            <input className={inputCls} placeholder="Onward recipient staff code"
-                              value={rrCode} onChange={(e) => setRrCode(e.target.value)} />
-                            <input className={inputCls} placeholder="Onward recipient name"
-                              value={rrName} onChange={(e) => setRrName(e.target.value)} />
-                          </div>
+                          <StaffPicker value={rrMember} onChange={setRrMember} />
                           <input className={inputCls} placeholder="Note (optional)"
                             value={rrNote} onChange={(e) => setRrNote(e.target.value)} />
                           <div className="flex gap-2">
                             <Button variant="primary" size="sm" loading={busyId === d.id}
                               onClick={() => onReRefer(d)}>Re-refer onward</Button>
                             <Button variant="ghost" size="sm"
-                              onClick={() => { setReReferFor(null); setRrCode(''); setRrName(''); setRrNote(''); }}>Cancel</Button>
+                              onClick={() => { setReReferFor(null); setRrMember(null); setRrNote(''); }}>Cancel</Button>
                           </div>
                         </div>
                       ) : (
                         <Button variant="ghost" size="sm"
-                          onClick={() => { setReReferFor(d.id); setRrCode(''); setRrName(''); setRrNote(''); }}>
+                          onClick={() => { setReReferFor(d.id); setRrMember(null); setRrNote(''); }}>
                           Re-refer to another department
                         </Button>
                       )}
@@ -464,19 +459,14 @@ export default function Referrals() {
                     <div className="mt-3 border-t border-gray-100 pt-3">
                       {reassignFor === d.id ? (
                         <div className="space-y-2">
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            <input className={inputCls} placeholder="New recipient staff code"
-                              value={reCode} onChange={(e) => setReCode(e.target.value)} />
-                            <input className={inputCls} placeholder="New recipient name"
-                              value={reName} onChange={(e) => setReName(e.target.value)} />
-                          </div>
+                          <StaffPicker value={reMember} onChange={setReMember} />
                           <input className={inputCls} placeholder="Note (optional)"
                             value={reNote} onChange={(e) => setReNote(e.target.value)} />
                           <div className="flex gap-2">
                             <Button variant="primary" size="sm" loading={busyId === d.id}
                               onClick={() => onReassign(d)}>Reassign</Button>
                             <Button variant="ghost" size="sm"
-                              onClick={() => { setReassignFor(null); setReCode(''); setReName(''); setReNote(''); }}>
+                              onClick={() => { setReassignFor(null); setReMember(null); setReNote(''); }}>
                               Cancel</Button>
                           </div>
                         </div>
