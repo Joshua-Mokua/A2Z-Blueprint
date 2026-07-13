@@ -9624,7 +9624,9 @@ def get_admin_hierarchy(user: dict = Depends(get_current_user)):
     roles = cfg.get("roles", []) or sorted(hierarchy.keys())
     top = [r for r, parents in hierarchy.items() if not parents]
     return {"roles": sorted(set(roles) | set(hierarchy.keys())),
-            "hierarchy": hierarchy, "top": top}
+            "hierarchy": hierarchy,
+            "functional_hierarchy": cfg.get("functional_hierarchy", {}) or {},
+            "top": top}
 
 
 @app.post("/api/admin/hierarchy", tags=["admin"])
@@ -9641,6 +9643,27 @@ def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
     cfg = get_org_config() or {}
     hierarchy = dict(cfg.get("hierarchy", {}) or {})
     roles = list(cfg.get("roles", []) or sorted(hierarchy.keys()))
+    functional = dict(cfg.get("functional_hierarchy", {}) or {})
+
+    if action == "set_functional":
+        # Dotted (functional) reporting lines — visibility only, no rollup.
+        if role not in hierarchy and role not in roles:
+            raise HTTPException(status_code=404, detail=f"role '{role}' not found")
+        parents = [str(p).strip() for p in (payload.get("parents") or []) if str(p).strip()]
+        for p in parents:
+            if p not in hierarchy and p not in roles:
+                raise HTTPException(status_code=400, detail=f"functional parent role '{p}' not found")
+        if role in parents:
+            raise HTTPException(status_code=400, detail="a role cannot have a functional line to itself")
+        if parents:
+            functional[role] = parents
+        else:
+            functional.pop(role, None)
+        cfg["functional_hierarchy"] = functional
+        save_org_config(cfg)
+        _audit("API_HIERARCHY_FUNCTIONAL", user, f"{role}|{','.join(parents)}")
+        return {"status": "saved", "action": action, "role": role,
+                "functional_hierarchy": functional}
 
     if action == "set_parents":
         if role not in hierarchy and role not in roles:

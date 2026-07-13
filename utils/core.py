@@ -7099,6 +7099,9 @@ def build_reporting_tree_from_hierarchy(cfg: dict = None) -> dict:
         return {}
     if not isinstance(hier, dict) or not hier:
         return {}
+    # Dotted (functional) lines live in a separate key so `hierarchy` stays a
+    # plain solid list; a role can also carry inline functional_reports_to.
+    functional = (cfg or {}).get("functional_hierarchy", {}) or {}
     children: dict = {}
     for role, info in hier.items():
         if isinstance(info, dict):
@@ -7106,6 +7109,8 @@ def build_reporting_tree_from_hierarchy(cfg: dict = None) -> dict:
                 + list(info.get("functional_reports_to", []) or [])
         else:
             parents = list(info or [])
+        if isinstance(functional, dict):
+            parents = parents + list(functional.get(role, []) or [])
         for p in parents:
             children.setdefault(p, set()).add(role)
     tree: dict = {}

@@ -689,5 +689,25 @@
     "Team Leader-Payments RPC & Remittances",
     "Team Leader-Trade & Trops",
     "Trade Middle Office Officer"
-  ]
+  ],
+  "functional_hierarchy": {
+    "Relationship Officer": [
+      "Head of Consumer"
+    ],
+    "Relationship Manager, Premier Banking": [
+      "Head Premier Banking"
+    ],
+    "Relationship Officer, Premier Banking": [
+      "Head Premier Banking"
+    ],
+    "Relationship Manager, Employee Schemes": [
+      "Head of Consumer"
+    ],
+    "Relationship Manager, SME": [
+      "Head, SME"
+    ],
+    "Relationship Manager, Local Corporate": [
+      "Head, Local Corporates"
+    ]
+  }
 }
