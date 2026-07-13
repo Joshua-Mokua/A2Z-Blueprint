@@ -6,9 +6,9 @@ import { Badge } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
-  fetchBranchLogFields, fetchMyBranchLogs, fetchPendingBranchLogs,
+  fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
   submitBranchLog, validateBranchLog,
-  type BranchLogField, type BranchLogEntry,
+  type BranchLogField, type BranchLogEntry, type BranchLogActivity,
 } from '@/lib/api';
 
 type Tab = 'entry' | 'history' | 'review';
@@ -23,6 +23,7 @@ export default function BranchLog() {
   const [pending, setPending] = useState<BranchLogEntry[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [autoActs, setAutoActs] = useState<BranchLogActivity[]>([]);
 
   const canReview = isAdmin || /manager|head|supervisor/i.test(String(user?.role ?? ''));
   const metricFields = fields.filter((f) => f.type !== 'text');
@@ -37,8 +38,11 @@ export default function BranchLog() {
   const loadPending = useCallback(async () => {
     try { const r = await fetchPendingBranchLogs(); setPending(r.logs); } catch { /* ignore */ }
   }, []);
+  const loadAuto = useCallback(async () => {
+    try { const r = await fetchBranchLogAutoActivities(); setAutoActs(r.activities); } catch { /* ignore */ }
+  }, []);
 
-  useEffect(() => { void loadFields(); void loadMine(); }, [loadFields, loadMine]);
+  useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); }, [loadFields, loadMine, loadAuto]);
   useEffect(() => { if (tab === 'review' && canReview) void loadPending(); }, [tab, canReview, loadPending]);
 
   const todaysLog = mine.find((l) => l.log_date === today);
@@ -100,6 +104,21 @@ export default function BranchLog() {
                 You already submitted today
                 {todaysLog.validated ? ' (validated)' : todaysLog.rejected ? ' (returned — please correct)' : ' (awaiting validation)'}.
                 {' '}Re-submitting updates it.
+              </div>
+            )}
+            {autoActs.length > 0 && (
+              <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3">
+                <div className="text-sm font-semibold text-gray-800">Tracked automatically today</div>
+                <p className="mb-2 text-xs text-gray-400">Pulled from your pipeline actions — no need to key these.</p>
+                <ol className="space-y-1">
+                  {autoActs.map((a, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <span className="tabular-nums text-gray-400">{a.time}</span>
+                      <span className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
+                      <span className="text-gray-700">{a.detail}</span>
+                    </li>
+                  ))}
+                </ol>
               </div>
             )}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

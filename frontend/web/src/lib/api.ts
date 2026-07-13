@@ -717,6 +717,11 @@ export interface BranchLogEntry {
 export async function fetchBranchLogFields(): Promise<{ fields: BranchLogField[] }> {
   return getJson<{ fields: BranchLogField[] }>('/branch-log/fields');
 }
+
+export interface BranchLogActivity { at: string; time: string; kind: string; detail: string; }
+export async function fetchBranchLogAutoActivities(): Promise<{ activities: BranchLogActivity[]; date: string }> {
+  return getJson<{ activities: BranchLogActivity[]; date: string }>('/branch-log/auto-activities');
+}
 export async function fetchMyBranchLogs(days = 14): Promise<{ logs: BranchLogEntry[]; identity: Record<string, string> }> {
   return getJson<{ logs: BranchLogEntry[]; identity: Record<string, string> }>(`/branch-log/mine?days=${days}`);
 }

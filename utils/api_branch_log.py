@@ -63,6 +63,55 @@ def branch_log_fields(user: dict = Depends(get_current_user)):
     return {"fields": fields_schema()}
 
 
+@router.get("/auto-activities")
+def branch_log_auto_activities(user: dict = Depends(get_current_user)):
+    """Today's system-tracked activities for the current user, to pre-fill the
+    daily-log feed (read-only) so they only key untracked items. Derived from the
+    activity stream (stage changes / updates) and referral hops they made."""
+    me = _identity(user)
+    code = str(me.get("staff_code") or "")
+    if not code:
+        return {"activities": [], "date": ""}
+    from utils.core import PipelineManager
+    from datetime import date
+    pm = PipelineManager()
+    today = date.today().isoformat()
+
+    def hhmm(ts: str) -> str:
+        s = str(ts or "")
+        return s[11:16] if len(s) >= 16 else ""
+
+    feed = []
+    try:
+        for a in pm.get_activities(staff_code=code, limit=300):
+            ts = str(a.get("recorded_at") or "")
+            if not ts.startswith(today):
+                continue
+            feed.append({"at": ts, "time": hhmm(ts),
+                         "kind": str(a.get("activity_type") or "Activity"),
+                         "detail": str(a.get("note") or a.get("outcome") or "")})
+    except Exception:
+        pass
+    try:
+        for d in pm.get_deals():
+            for h in (d.get("referral_chain") or []):
+                if str(h.get("from_code") or "") != code:
+                    continue
+                ts = str(h.get("at") or "")
+                if not ts.startswith(today):
+                    continue
+                client = str(d.get("client_name") or "a client")
+                to = str(h.get("to_name") or h.get("to_code") or "")
+                to_dept = str(h.get("to_dept") or "")
+                suffix = f" ({to_dept})" if to_dept else ""
+                feed.append({"at": ts, "time": hhmm(ts), "kind": "Referral made",
+                             "detail": f"{client} \u2192 {to}{suffix}"})
+    except Exception:
+        pass
+    feed.sort(key=lambda e: e.get("at") or "")
+    return {"activities": feed, "date": today}
+
+
 @router.get("/mine")
 def branch_log_mine(days: int = 14, user: dict = Depends(get_current_user)):
     """The caller's own recent log entries."""
