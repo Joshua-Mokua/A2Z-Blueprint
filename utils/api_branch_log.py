@@ -59,8 +59,48 @@ def _is_manager(user: dict) -> bool:
 
 @router.get("/fields")
 def branch_log_fields(user: dict = Depends(get_current_user)):
-    """The daily-log metric schema (key, label, type, unit, BSC KPI link)."""
-    return {"fields": fields_schema()}
+    """Role-aware daily-log schema: common base fields + this role's extras."""
+    from utils.branch_log import fields_for_role
+    return {"fields": fields_for_role(_identity(user).get("role", ""))}
+
+
+@router.get("/activities")
+def branch_log_activities(user: dict = Depends(get_current_user)):
+    """The admin-added extra activities catalogue (head-office / role specific)."""
+    from utils.branch_log import load_log_config, fields_schema as _fs
+    return {"base": _fs(), "extra": load_log_config().get("extra_activities", []) or []}
+
+
+@router.post("/activities")
+def branch_log_activities_set(payload: dict = Body(default_factory=dict),
+                              user: dict = Depends(get_current_user)):
+    """Admin: replace the extra-activities catalogue. Each item:
+    {key, label, type, unit, weight, roles:[...]}."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log import load_log_config, save_log_config
+    items = payload.get("extra_activities")
+    if not isinstance(items, list):
+        raise HTTPException(status_code=400, detail="extra_activities must be a list")
+    clean = []
+    for a in items:
+        if not isinstance(a, dict):
+            continue
+        k = str(a.get("key") or "").strip()
+        if not k:
+            continue
+        clean.append({
+            "key": k, "label": str(a.get("label") or k),
+            "type": str(a.get("type") or "int"),
+            "unit": str(a.get("unit") or ""),
+            "weight": float(a.get("weight") or 0),
+            "roles": [str(x).strip() for x in (a.get("roles") or []) if str(x).strip()],
+        })
+    cfg = load_log_config()
+    cfg["extra_activities"] = clean
+    save_log_config(cfg)
+    audit_log("BRANCH_LOG_ACTIVITIES", str(user.get("username", "") or ""), f"{len(clean)} extra activities")
+    return {"status": "saved", "extra_activities": clean}
 
 
 @router.get("/auto-activities")
@@ -154,7 +194,7 @@ def branch_log_config_set(payload: dict = Body(default_factory=dict),
 def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     """Staff ranked by cumulative productivity index over the period. Admin sees
     all; a manager sees their reporting team; others see themselves."""
-    from utils.branch_log import daily_index_target, compute_index, _METRIC_KEYS
+    from utils.branch_log import daily_index_target, compute_index, metric_keys
     me = _identity(user)
     blm = BranchLogManager()
     logs = blm.get_history(days=days)
@@ -171,7 +211,7 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
             continue
         idx = l.get("index")
         if idx is None:
-            idx = compute_index({k: l.get(k, 0) for k in _METRIC_KEYS})
+            idx = compute_index({k: l.get(k, 0) for k in metric_keys()})
         r = agg.setdefault(sc, {"staff_code": sc, "staff_name": l.get("staff_name"),
                                 "unit": l.get("unit"), "index": 0.0, "days": 0})
         r["index"] += float(idx or 0)

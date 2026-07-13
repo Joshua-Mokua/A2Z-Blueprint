@@ -8,7 +8,8 @@ import { useRole } from '@/hooks/useRole';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
   submitBranchLog, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
-  type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow,
+  fetchBranchLogActivities, saveBranchLogActivities,
+  type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
 } from '@/lib/api';
 
 type Tab = 'entry' | 'history' | 'review' | 'ranking' | 'setup';
@@ -28,6 +29,8 @@ export default function BranchLog() {
   const [ranking, setRanking] = useState<BranchLogRankRow[]>([]);
   const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
   const [targetDraft, setTargetDraft] = useState('');
+  const [extraActs, setExtraActs] = useState<ExtraActivity[]>([]);
+  const [newAct, setNewAct] = useState<{ key: string; label: string; unit: string; weight: string; roles: string }>({ key: '', label: '', unit: '', weight: '', roles: '' });
 
   const canReview = isAdmin || /manager|head|supervisor/i.test(String(user?.role ?? ''));
   const metricFields = fields.filter((f) => f.type !== 'text');
@@ -58,9 +61,13 @@ export default function BranchLog() {
   const loadRanking = useCallback(async () => {
     try { const r = await fetchBranchLogRanking(30); setRanking(r.ranking); setIndexTarget(r.daily_index_target || 0); } catch { /* ignore */ }
   }, []);
+  const loadActs = useCallback(async () => {
+    try { const r = await fetchBranchLogActivities(); setExtraActs(r.extra); } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); void loadCfg(); }, [loadFields, loadMine, loadAuto, loadCfg]);
   useEffect(() => { if (tab === 'ranking') void loadRanking(); }, [tab, loadRanking]);
+  useEffect(() => { if (tab === 'setup') void loadActs(); }, [tab, loadActs]);
   useEffect(() => { if (tab === 'review' && canReview) void loadPending(); }, [tab, canReview, loadPending]);
 
   const todaysLog = mine.find((l) => l.log_date === today);
@@ -242,6 +249,45 @@ export default function BranchLog() {
                 } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' }); }
                 finally { setBusy(false); }
               }}>Save weights &amp; target</Button>
+            </div>
+
+            <div className="mt-6 border-t border-gray-100 pt-4">
+              <h3 className="mb-1 text-sm font-semibold text-gray-800">Extra activities (head office / role-specific)</h3>
+              <p className="mb-3 text-xs text-gray-400">These appear only for the roles you list (comma-separated). Leave roles blank to show for everyone.</p>
+              {extraActs.length > 0 && (
+                <div className="mb-3 space-y-1">
+                  {extraActs.map((a, i) => (
+                    <div key={a.key} className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-800">{a.label}</span>
+                        <span className="ml-2 text-xs text-gray-500">{a.unit || 'count'} · wt {a.weight}{a.roles.length ? ` · ${a.roles.join(', ')}` : ' · all roles'}</span>
+                      </div>
+                      <button className="text-xs text-gray-400 hover:text-red-600"
+                        onClick={() => setExtraActs((p) => p.filter((_, j) => j !== i))}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+                <input className={'rounded border px-2 py-1 text-sm'} placeholder="key (e.g. credit_apps)" value={newAct.key} onChange={(e) => setNewAct((p) => ({ ...p, key: e.target.value }))} />
+                <input className={'rounded border px-2 py-1 text-sm'} placeholder="Label" value={newAct.label} onChange={(e) => setNewAct((p) => ({ ...p, label: e.target.value }))} />
+                <input className={'rounded border px-2 py-1 text-sm'} placeholder="unit" value={newAct.unit} onChange={(e) => setNewAct((p) => ({ ...p, unit: e.target.value }))} />
+                <input className={'rounded border px-2 py-1 text-sm'} type="number" step="any" placeholder="weight" value={newAct.weight} onChange={(e) => setNewAct((p) => ({ ...p, weight: e.target.value }))} />
+                <input className={'rounded border px-2 py-1 text-sm'} placeholder="roles (comma-sep)" value={newAct.roles} onChange={(e) => setNewAct((p) => ({ ...p, roles: e.target.value }))} />
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Button variant="ghost" onClick={() => {
+                  const k = newAct.key.trim(); if (!k || !newAct.label.trim()) { toast({ tone: 'danger', message: 'Key and label required.' }); return; }
+                  setExtraActs((p) => [...p.filter((x) => x.key !== k), { key: k, label: newAct.label.trim(), type: 'int', unit: newAct.unit.trim(), weight: Number(newAct.weight) || 0, roles: newAct.roles.split(',').map((s) => s.trim()).filter(Boolean) }]);
+                  setNewAct({ key: '', label: '', unit: '', weight: '', roles: '' });
+                }}>Add activity</Button>
+                <Button disabled={busy} onClick={async () => {
+                  setBusy(true);
+                  try { await saveBranchLogActivities(extraActs); toast({ tone: 'success', message: 'Activities saved.' }); await loadFields(); await loadActs(); }
+                  catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed' }); }
+                  finally { setBusy(false); }
+                }}>Save activities</Button>
+              </div>
             </div>
           </Card.Body>
         </Card>

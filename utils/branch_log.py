@@ -80,11 +80,47 @@ def compute_index(metrics: dict) -> float:
     return round(total, 2)
 
 
+def _extra_activities() -> list:
+    """Admin-added activities beyond the common base (e.g. head-office / role
+    specific), each: {key, label, type, unit, weight, roles:[...]}."""
+    return load_log_config().get("extra_activities", []) or []
+
+
+def metric_keys() -> list:
+    """All numeric activity keys — common base (LOG_FIELDS) + admin extras."""
+    keys = list(_METRIC_KEYS)
+    for a in _extra_activities():
+        k = str(a.get("key") or "").strip()
+        if k and str(a.get("type", "int")) != "text" and k not in keys:
+            keys.append(k)
+    return keys
+
+
 def fields_schema() -> list:
     w = activity_weights()
     return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
              "weight": float(w.get(k, 0) or 0)}
             for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+def fields_for_role(role: str) -> list:
+    """Activity fields for a role: the common base + admin extras whose 'roles'
+    is empty (common) or includes this role."""
+    out = fields_schema()
+    w = activity_weights()
+    rl = str(role or "").strip().lower()
+    for a in _extra_activities():
+        k = str(a.get("key") or "").strip()
+        if not k:
+            continue
+        roles = [str(x).strip().lower() for x in (a.get("roles") or [])]
+        if roles and rl and rl not in roles:
+            continue
+        out.append({"key": k, "label": a.get("label", k), "type": a.get("type", "int"),
+                    "unit": a.get("unit", ""), "bsc_kpi": None,
+                    "weight": float(w.get(k, a.get("weight", 0)) or 0),
+                    "roles": a.get("roles") or []})
+    return out
 
 
 class BranchLogManager:
@@ -131,7 +167,7 @@ class BranchLogManager:
             except (TypeError, ValueError):
                 return 0
 
-        metrics = {k: _num(values.get(k, 0)) for k in _METRIC_KEYS}
+        metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
         remarks = str(values.get("remarks", "") or "")
 
         existing = next((l for l in self.logs

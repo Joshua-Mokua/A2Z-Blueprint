@@ -731,6 +731,13 @@ export async function saveBranchLogConfig(activity_weights: Record<string, numbe
   return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
     '/branch-log/config', { activity_weights, daily_index_target });
 }
+export interface ExtraActivity { key: string; label: string; type: string; unit: string; weight: number; roles: string[]; }
+export async function fetchBranchLogActivities(): Promise<{ base: BranchLogField[]; extra: ExtraActivity[] }> {
+  return getJson<{ base: BranchLogField[]; extra: ExtraActivity[] }>('/branch-log/activities');
+}
+export async function saveBranchLogActivities(extra_activities: ExtraActivity[]): Promise<{ status: string }> {
+  return postJson<{ status: string }, { extra_activities: ExtraActivity[] }>('/branch-log/activities', { extra_activities });
+}
 export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
 export async function fetchBranchLogRanking(days = 30): Promise<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }> {
   return getJson<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }>(`/branch-log/ranking?days=${days}`);
