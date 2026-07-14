@@ -265,19 +265,58 @@ def fetch_branches(
 # ── Aggregates (bank-level rollups; not audited) ────────────────────────
 
 @router.get("/portfolio")
-def fetch_my_portfolio(user: dict = Depends(get_current_user)):
-    """The logged-in person's CBS book: accounts tagged to them (by
-    relationship_manager_code) plus portfolio analytics."""
-    code = str(user.get("staff_code") or "").strip()
-    if not code:
+def fetch_my_portfolio(
+    staff_code: str = Query(default=""),
+    user: dict = Depends(get_current_user),
+):
+    """The logged-in person's CBS book, or — for a manager — the consolidated book
+    of their whole reporting subtree, with an optional per-staff drill-down.
+    Managers get a `team` list (staff in scope) for the selector."""
+    my_code = str(user.get("staff_code") or "").strip()
+    my_role = str(user.get("role") or "")
+    if not my_code:
         try:
             from utils.core import UserManager
             u = UserManager().users.get(str(user.get("username") or ""))
-            code = str((u or {}).get("staff_code") or "").strip()
+            my_code = str((u or {}).get("staff_code") or "").strip()
+            my_role = my_role or str((u or {}).get("role") or "")
         except Exception:
-            code = ""
-    from utils.cbs_manager import get_portfolio_for_rm
-    return get_portfolio_for_rm(code)
+            pass
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        scope = {str(x) for x in get_visible_staff_codes(
+            {"staff_code": my_code, "role": my_role, "is_admin": bool(user.get("is_admin"))})}
+    except Exception:
+        scope = set()
+    scope = scope or ({my_code} if my_code else set())
+    # team roster for the selector (names)
+    team = []
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        seen = set()
+        for _, r in roster.iterrows():
+            sc = str(r.get("Staff Code") or "").strip()
+            if sc in scope and sc not in seen:
+                seen.add(sc)
+                team.append({"staff_code": sc, "name": str(r.get("Staff Name") or sc)})
+        team.sort(key=lambda x: x["name"])
+    except Exception:
+        team = []
+    sel = str(staff_code or "").strip()
+    if sel and sel in scope:
+        codes, view, selected = {sel}, "individual", sel
+    else:
+        codes = scope
+        view = "consolidated" if len(scope) > 1 else "individual"
+        selected = ""
+    from utils.cbs_manager import get_portfolio_for_codes
+    pf = get_portfolio_for_codes(codes)
+    pf["team"] = team
+    pf["view"] = view
+    pf["selected"] = selected
+    pf["is_manager"] = len(scope) > 1
+    return pf
 
 
 @router.get("/aggregates")

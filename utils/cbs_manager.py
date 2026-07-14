@@ -279,18 +279,24 @@ def get_branches() -> list[dict]:
 
 
 def get_portfolio_for_rm(rm_code: str) -> dict:
-    """All CBS accounts tagged to an RM (relationship_manager_code) plus portfolio
-    analytics: balances, deposit/loan split, dormancy, NPL, type mix, and deposit
-    movement vs the 31-Dec baseline (lights up once per_rm baseline is populated)."""
-    rm = str(rm_code or "").strip()
+    """Convenience wrapper: portfolio for a single RM code."""
+    return get_portfolio_for_codes({str(rm_code or "").strip()})
+
+
+def get_portfolio_for_codes(codes) -> dict:
+    """All CBS accounts tagged to any of a set of RM codes (a person or a whole
+    team/branch) plus portfolio analytics: balances, deposit/loan split, dormancy,
+    NPL, type mix, and deposit movement vs the 31-Dec baseline (per-RM, summed)."""
+    code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
+    rm = next(iter(code_set), "") if len(code_set) == 1 else ""
     empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
                      "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
                      "dormant_pct": 0.0, "npl_accounts": 0, "by_type": [],
                      "deposit_movement": None, "baseline_date": None}
     df = _load_accounts()
-    if df is None or df.empty or not rm or "relationship_manager_code" not in df.columns:
+    if df is None or df.empty or not code_set or "relationship_manager_code" not in df.columns:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-    mine = df[df["relationship_manager_code"].astype(str).str.strip() == rm]
+    mine = df[df["relationship_manager_code"].astype(str).str.strip().isin(code_set)]
     if mine.empty:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
     accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
@@ -325,8 +331,12 @@ def get_portfolio_for_rm(rm_code: str) -> dict:
         if base_path.exists():
             bl = json.loads(base_path.read_text(encoding="utf-8"))
             baseline_date = bl.get("snapshot_date")
-            base_rm = (bl.get("per_rm") or {}).get(rm) or {}
-            base_dep = base_rm.get("deposits")
+            per_rm = bl.get("per_rm") or {}
+            base_dep = None
+            for _c in code_set:
+                bd = (per_rm.get(_c) or {}).get("deposits")
+                if bd is not None:
+                    base_dep = (base_dep or 0) + float(bd)
             if base_dep is not None:
                 movement = {"baseline": round(float(base_dep), 2), "current": round(deposits, 2),
                             "delta": round(deposits - float(base_dep), 2),
