@@ -189,6 +189,19 @@ def submit_for_approval(item: dict, data_path) -> str:
 
 
 @lru_cache(maxsize=1)
+def _data_custodian_roles() -> "frozenset[str]":
+    """Roles granted full data-custodian visibility (all pipeline / activity log /
+    referrals / portfolio), independent of the reporting tree — e.g. Finance (the
+    CFO and her team) and Ag Head HR, who are custodians of the data. Admin-editable
+    via org_config.data_custodian_roles; empty on any error so nothing over-scopes."""
+    try:
+        from utils.core import get_org_config
+        roles = (get_org_config() or {}).get("data_custodian_roles", []) or []
+        return frozenset(str(r).strip().lower() for r in roles if str(r).strip())
+    except Exception:
+        return frozenset()
+
+
 def _register_root_roles() -> "frozenset[str]":
     """Roles that are ROOTS in the staff register (blank 'Reports To') — the
     top of the org, which therefore sees everyone.
@@ -306,7 +319,8 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     # can_view_all is a legacy flag; tree_access is now role-based
     if (is_admin or "admin" in role_l
             or role_l in _ALL_VIEW_ROLES
-            or role_l in _register_root_roles()):   # B1: data-driven top role
+            or role_l in _register_root_roles()      # B1: data-driven top role
+            or role_l in _data_custodian_roles()):   # data custodians (Finance/HR)
         return staff_scores.copy()
 
     # B2: register-driven branch-head scope. A branch head sees everyone in

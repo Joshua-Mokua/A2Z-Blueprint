@@ -709,5 +709,12 @@
     "Relationship Manager, Local Corporate": [
       "Head, Local Corporates"
     ]
-  }
+  },
+  "data_custodian_roles": [
+    "Chief Finance Officer",
+    "Finance Officer",
+    "Manager, Business Finance & Performance Management",
+    "Manager, Financial Control & Regulatory Reporting",
+    "Ag. Head Human Resources & Senior HR Business Partner"
+  ]
 }
