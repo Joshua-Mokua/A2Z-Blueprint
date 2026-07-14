@@ -34,6 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
       { path: '/referrals',       label: 'Sales Referral',       matchActive: (p) => p.startsWith('/referrals') },
       { path: '/branch-log',      label: 'Daily Log',     matchActive: (p) => p.startsWith('/branch-log') },
+      { path: '/portfolio',       label: 'Portfolio',            matchActive: (p) => p.startsWith('/portfolio') },
     ],
   },
   {

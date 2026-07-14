@@ -278,6 +278,76 @@ def get_branches() -> list[dict]:
     return _load_branches()
 
 
+def get_portfolio_for_rm(rm_code: str) -> dict:
+    """All CBS accounts tagged to an RM (relationship_manager_code) plus portfolio
+    analytics: balances, deposit/loan split, dormancy, NPL, type mix, and deposit
+    movement vs the 31-Dec baseline (lights up once per_rm baseline is populated)."""
+    rm = str(rm_code or "").strip()
+    empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
+                     "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
+                     "dormant_pct": 0.0, "npl_accounts": 0, "by_type": [],
+                     "deposit_movement": None, "baseline_date": None}
+    df = _load_accounts()
+    if df is None or df.empty or not rm or "relationship_manager_code" not in df.columns:
+        return {"rm_code": rm, "accounts": [], "summary": empty_summary}
+    mine = df[df["relationship_manager_code"].astype(str).str.strip() == rm]
+    if mine.empty:
+        return {"rm_code": rm, "accounts": [], "summary": empty_summary}
+    accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
+
+    def _is_loan(a: dict) -> bool:
+        t = str(a.get("account_type_name") or "").lower()
+        return "loan" in t or "facility" in t or "advance" in t or "mortgage" in t
+
+    def _is_dormant(a: dict) -> bool:
+        s = str(a.get("dormancy_status") or "").lower().strip()
+        return bool(s) and s not in ("active", "regular", "none")
+
+    def _is_npl(a: dict) -> bool:
+        s = str(a.get("npl_status") or "").lower().strip()
+        return s in ("npl", "non-performing", "substandard", "doubtful", "loss")
+
+    deposits = sum(a["current_balance"] for a in accts if not _is_loan(a))
+    loans = sum(a["current_balance"] for a in accts if _is_loan(a))
+    dormant = sum(1 for a in accts if _is_dormant(a))
+    npl = sum(1 for a in accts if _is_npl(a))
+    by_type: dict = {}
+    for a in accts:
+        t = a.get("account_type_name") or "Other"
+        e = by_type.setdefault(t, {"type": t, "count": 0, "balance": 0.0})
+        e["count"] += 1
+        e["balance"] += a["current_balance"]
+
+    movement = None
+    baseline_date = None
+    try:
+        base_path = Path(__file__).resolve().parent.parent / "data" / "cbs_baseline_2025_Dec_31.json"
+        if base_path.exists():
+            bl = json.loads(base_path.read_text(encoding="utf-8"))
+            baseline_date = bl.get("snapshot_date")
+            base_rm = (bl.get("per_rm") or {}).get(rm) or {}
+            base_dep = base_rm.get("deposits")
+            if base_dep is not None:
+                movement = {"baseline": round(float(base_dep), 2), "current": round(deposits, 2),
+                            "delta": round(deposits - float(base_dep), 2),
+                            "pct": round((deposits - float(base_dep)) / float(base_dep) * 100, 1) if float(base_dep) else None}
+    except Exception:
+        movement = None
+
+    summary = {
+        "accounts": len(accts), "customers": len({a["cif"] for a in accts}),
+        "total_balance": round(deposits + loans, 2),
+        "deposits": round(deposits, 2), "loans": round(loans, 2),
+        "dormant_accounts": dormant,
+        "dormant_pct": round(dormant / len(accts) * 100, 1) if accts else 0.0,
+        "npl_accounts": npl,
+        "by_type": sorted(({"type": k, "count": v["count"], "balance": round(v["balance"], 2)}
+                           for k, v in by_type.items()), key=lambda x: -x["balance"]),
+        "deposit_movement": movement, "baseline_date": baseline_date,
+    }
+    return {"rm_code": rm, "accounts": accts, "summary": summary}
+
+
 def get_aggregates() -> dict:
     return _load_aggregates()
 

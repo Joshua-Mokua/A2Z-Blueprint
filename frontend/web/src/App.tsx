@@ -89,6 +89,7 @@ import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
 import HierarchyAdmin from './pages/HierarchyAdmin';
 import BranchLog from './pages/BranchLog';
+import Portfolio from './pages/Portfolio';
 import CommitteeAdmin from './pages/CommitteeAdmin';
 import { CommitteeConvening } from './pages/CommitteeConvening';
 import StaffAdmin from './pages/StaffAdmin';
@@ -175,6 +176,7 @@ function App() {
                     <Route path="/admin/roles" element={<RolesAdmin />} />
                     <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
                     <Route path="/branch-log" element={<BranchLog />} />
+                    <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/admin/committees" element={<CommitteeAdmin />} />
                     <Route path="/admin/staff"      element={<StaffAdmin />} />
                     <Route path="/admin/cbs-debug" element={<CbsDebug />} />

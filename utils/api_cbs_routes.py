@@ -264,6 +264,22 @@ def fetch_branches(
 
 # ── Aggregates (bank-level rollups; not audited) ────────────────────────
 
+@router.get("/portfolio")
+def fetch_my_portfolio(user: dict = Depends(get_current_user)):
+    """The logged-in person's CBS book: accounts tagged to them (by
+    relationship_manager_code) plus portfolio analytics."""
+    code = str(user.get("staff_code") or "").strip()
+    if not code:
+        try:
+            from utils.core import UserManager
+            u = UserManager().users.get(str(user.get("username") or ""))
+            code = str((u or {}).get("staff_code") or "").strip()
+        except Exception:
+            code = ""
+    from utils.cbs_manager import get_portfolio_for_rm
+    return get_portfolio_for_rm(code)
+
+
 @router.get("/aggregates")
 def fetch_aggregates(
     user: dict = Depends(get_current_user),
