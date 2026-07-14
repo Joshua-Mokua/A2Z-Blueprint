@@ -8,12 +8,14 @@ import {
 import type { CbsCustomer, CbsAccount } from '@/types/cbs';
 
 const kes = (n: number) => new Intl.NumberFormat('en-KE', { maximumFractionDigits: 0 }).format(n || 0);
+type Tab = 'overview' | 'bytype' | 'accounts';
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'warn' }) {
+function Metric({ label, value, sub, subTone, tone }: { label: string; value: string; sub?: string; subTone?: 'good' | 'warn'; tone?: 'good' | 'warn' }) {
   return (
     <Card><Card.Body>
       <div className="text-xs text-gray-400">{label}</div>
       <div className={'mt-1 text-lg font-semibold ' + (tone === 'good' ? 'text-emerald-600' : tone === 'warn' ? 'text-amber-600' : 'text-gray-900')}>{value}</div>
+      {sub && <div className={'mt-0.5 text-xs ' + (subTone === 'good' ? 'text-emerald-600' : subTone === 'warn' ? 'text-amber-600' : 'text-gray-400')}>{sub}</div>}
     </Card.Body></Card>
   );
 }
@@ -23,6 +25,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [staff, setStaff] = useState('');
+  const [tab, setTab] = useState<Tab>('overview');
   const [c360, setC360] = useState<{ cif: string; customer: CbsCustomer | null; accounts: CbsAccount[] } | null>(null);
   const [c360Loading, setC360Loading] = useState(false);
 
@@ -32,7 +35,6 @@ export default function Portfolio() {
     catch (e) { setErr(e instanceof Error ? e.message : 'Failed to load portfolio'); }
     finally { setLoading(false); }
   }, []);
-
   useEffect(() => { void load(staff); }, [staff, load]);
 
   async function openCustomer360(cif: string) {
@@ -42,13 +44,13 @@ export default function Portfolio() {
     try {
       const [cust, accs] = await Promise.all([fetchCbsCustomer(cif), fetchCbsCustomerAccounts(cif)]);
       setC360({ cif, customer: cust.customer, accounts: accs.accounts });
-    } catch {
-      setC360({ cif, customer: null, accounts: [] });
-    } finally { setC360Loading(false); }
+    } catch { setC360({ cif, customer: null, accounts: [] }); }
+    finally { setC360Loading(false); }
   }
 
   const s = data?.summary;
   const mv = s?.deposit_movement;
+  const tabs: [Tab, string][] = [['overview', 'Overview'], ['bytype', 'By account type'], ['accounts', 'Accounts']];
 
   return (
     <>
@@ -75,27 +77,35 @@ export default function Portfolio() {
         <Card><Card.Body><p className="text-sm text-gray-400">No CBS accounts are currently tagged here.</p></Card.Body></Card>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Deposits (KES)" value={kes(s.deposits)} />
-            <Stat label="Loans (KES)" value={kes(s.loans)} />
-            <Stat label="Customers" value={String(s.customers)} />
-            <Stat label="Accounts" value={String(s.accounts)} />
-            <Stat label="Dormant accounts" value={`${s.dormant_accounts} (${s.dormant_pct}%)`} tone={s.dormant_pct > 20 ? 'warn' : undefined} />
-            <Stat label="NPL accounts" value={String(s.npl_accounts)} tone={s.npl_accounts > 0 ? 'warn' : undefined} />
-            <Stat label="Total book (KES)" value={kes(s.total_balance)} />
-            <Stat label="Deposit movement" value={mv ? `${mv.delta >= 0 ? '+' : ''}${kes(mv.delta)}` : 'baseline pending'} tone={mv ? (mv.delta >= 0 ? 'good' : 'warn') : undefined} />
+          <div className="flex gap-1 border-b border-gray-200">
+            {tabs.map(([id, lbl]) => (
+              <button key={id} onClick={() => setTab(id)}
+                className={'px-3 py-2 text-sm font-medium ' + (tab === id ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-gray-500 hover:text-gray-700')}>
+                {lbl}
+              </button>
+            ))}
           </div>
 
-          {mv && (
-            <Card><Card.Body>
-              <div className="mb-1 text-sm font-semibold text-gray-900">Deposit movement vs {s.baseline_date ?? 'baseline'}</div>
-              <p className="text-sm text-gray-600">Baseline {kes(mv.baseline)} → current {kes(mv.current)} ({mv.pct != null ? `${mv.pct}%` : '—'})</p>
-            </Card.Body></Card>
+          {tab === 'overview' && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Metric label="Deposits (KES)" value={kes(s.deposits)} sub={s.pipeline_deposits > 0 ? `+ ${kes(s.pipeline_deposits)} in pipeline` : undefined} subTone="good" />
+              <Metric label="Loans (KES)" value={kes(s.loans)} sub={s.pipeline_loans > 0 ? `+ ${kes(s.pipeline_loans)} in pipeline` : undefined} subTone="good" />
+              <Metric label="Customers" value={String(s.customers)} sub={`${s.accounts} accounts`} />
+              <Metric label="Pipeline value (KES)" value={kes(s.pipeline_value)} sub="open deals" />
+              <Metric label="Dormant accounts" value={`${s.dormant_accounts}`} sub={`${s.dormant_pct}% of book`} subTone={s.dormant_pct > 20 ? 'warn' : undefined} tone={s.dormant_pct > 20 ? 'warn' : undefined} />
+              <Metric label="NPL accounts" value={String(s.npl_accounts)} tone={s.npl_accounts > 0 ? 'warn' : undefined} />
+              <Metric
+                label="Deposit growth (YTD)"
+                value={mv ? `${mv.delta >= 0 ? '+' : ''}${kes(mv.delta)}` : 'baseline pending'}
+                sub={mv && mv.pct != null ? `${mv.pct >= 0 ? '+' : ''}${mv.pct}% vs ${s.baseline_date ?? 'baseline'}` : (mv ? undefined : 'set 31-Dec baseline')}
+                tone={mv ? (mv.delta >= 0 ? 'good' : 'warn') : undefined}
+                subTone={mv ? (mv.delta >= 0 ? 'good' : 'warn') : undefined}
+              />
+            </div>
           )}
 
-          <Card>
-            <Card.Header><h2 className="text-base font-semibold text-gray-900">Book by account type</h2></Card.Header>
-            <Card.Body>
+          {tab === 'bytype' && (
+            <Card><Card.Body>
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-xs text-gray-400"><th className="py-1">Type</th><th className="text-right">Accounts</th><th className="text-right">Balance (KES)</th></tr></thead>
                 <tbody>{s.by_type.map((t) => (
@@ -105,12 +115,12 @@ export default function Portfolio() {
                     <td className="text-right tabular-nums">{kes(t.balance)}</td>
                   </tr>))}</tbody>
               </table>
-            </Card.Body>
-          </Card>
+            </Card.Body></Card>
+          )}
 
-          <Card>
-            <Card.Header><h2 className="text-base font-semibold text-gray-900">Accounts ({s.accounts}) — click a row for the customer 360</h2></Card.Header>
-            <Card.Body>
+          {tab === 'accounts' && (
+            <Card><Card.Body>
+              <p className="mb-2 text-xs text-gray-400">Click a row for the customer 360.</p>
               <div className="overflow-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs text-gray-400"><th className="py-1">Account</th><th>CIF</th><th>Type</th><th className="text-right">Balance</th><th>Status</th><th>Dormancy</th></tr></thead>
@@ -125,8 +135,8 @@ export default function Portfolio() {
                     </tr>))}</tbody>
                 </table>
               </div>
-            </Card.Body>
-          </Card>
+            </Card.Body></Card>
+          )}
         </div>
       )}
 

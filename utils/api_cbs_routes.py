@@ -312,6 +312,27 @@ def fetch_my_portfolio(
         selected = ""
     from utils.cbs_manager import get_portfolio_for_codes
     pf = get_portfolio_for_codes(codes)
+    # pipeline value for the scope, split deposits vs loans by product
+    try:
+        from utils.core import PipelineManager
+        pm = PipelineManager()
+        pipe_dep = pipe_loan = 0.0
+        loan_words = ("loan", "facility", "lpo", "mortgage", "advance", "overdraft", "credit")
+        for c in codes:
+            for dl in pm.get_deals(staff_code=c, active_only=True):
+                v = float(dl.get("deal_value") or 0)
+                prod = str(dl.get("product") or "").lower()
+                if any(w in prod for w in loan_words):
+                    pipe_loan += v
+                else:
+                    pipe_dep += v
+        pf["summary"]["pipeline_deposits"] = round(pipe_dep, 2)
+        pf["summary"]["pipeline_loans"] = round(pipe_loan, 2)
+        pf["summary"]["pipeline_value"] = round(pipe_dep + pipe_loan, 2)
+    except Exception:
+        pf["summary"]["pipeline_deposits"] = 0.0
+        pf["summary"]["pipeline_loans"] = 0.0
+        pf["summary"]["pipeline_value"] = 0.0
     pf["team"] = team
     pf["view"] = view
     pf["selected"] = selected
