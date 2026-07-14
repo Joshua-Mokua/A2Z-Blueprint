@@ -274,7 +274,10 @@ export default function Referrals() {
             </Card.Body></Card>
             {dept && dept.departments.length > 0 && (
               <Card><Card.Body>
-                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">By department</span>
+                  {dept.scope && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{dept.scope === 'branch' ? 'Your branch' : 'Bank-wide'}</span>}
+                </div>
                 <div className="space-y-1">
                   {dept.departments.map((row) => (
                     <div key={row.department} className="flex items-center justify-between text-sm">
@@ -332,7 +335,10 @@ export default function Referrals() {
 
             {dept && dept.departments.length > 0 && (
               <Card><Card.Body>
-                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">By department</span>
+                  {dept.scope && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{dept.scope === 'branch' ? 'Your branch' : 'Bank-wide'}</span>}
+                </div>
                 <div className="space-y-1">
                   {dept.departments.map((row) => (
                     <div key={row.department} className="flex items-center justify-between text-sm">

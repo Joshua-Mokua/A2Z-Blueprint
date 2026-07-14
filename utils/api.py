@@ -5406,10 +5406,17 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
     This is the basis for a department-level referral BSC KPI that flows to Head /
     Chief scorecards, mirroring the individual-level KPI. Management roles only."""
     _c, _n, priv = _resolve_actor(user)
+    # Execs (chief/director/MD/admin) see bank-wide; a manager sees the breakdown
+    # for their own branch/reporting subtree; everyone else is denied.
+    scope_codes = None
     if not priv:
-        raise HTTPException(
-            status_code=403,
-            detail="Department referral analytics require a management role.")
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        _codes = {str(x) for x in (get_visible_staff_codes(user) or [])}
+        if len(_codes) <= 1:
+            raise HTTPException(
+                status_code=403,
+                detail="Department referral analytics require a management role.")
+        scope_codes = _codes
 
     # referrer staff_code -> normalized department, from the roster
     dept_of: dict = {}
@@ -5430,6 +5437,8 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
         st = str(d.get("referral_status") or "")
         if not rbc or not st:
             continue
+        if scope_codes is not None and rbc not in scope_codes:
+            continue  # branch-scoped: only referrals made by my subtree
         dept = dept_of.get(rbc) or "Unassigned"
         a = agg.setdefault(dept, {
             "department": dept, "total": 0,
@@ -5450,6 +5459,7 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
         "departments": departments,
         "total": sum(a["total"] for a in departments),
         "department_count": len(departments),
+        "scope": "bank" if priv else "branch",
     }
 
 

@@ -569,6 +569,7 @@ export interface ReferralsByDepartment {
   departments: ReferralDepartmentRow[];
   total: number;
   department_count: number;
+  scope?: string;
 }
 
 export async function fetchReferralsByDepartment(): Promise<ReferralsByDepartment> {
