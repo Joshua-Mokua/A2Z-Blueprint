@@ -309,7 +309,7 @@ def branch_log_pending(user: dict = Depends(get_current_user)):
     all_pending = blm.get_pending_validation(unit=None)
     if _is_admin(user):
         return {"logs": all_pending}
-    return {"logs": _reports_to_me(all_pending, me["staff_code"])}
+    return {"logs": _subtree_logs(all_pending, user, me)}
 
 
 @router.get("/history")
