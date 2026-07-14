@@ -87,6 +87,7 @@ export default function Portfolio() {
           </div>
 
           {tab === 'overview' && (
+            <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Metric label="Deposits (KES)" value={kes(s.deposits)} sub={s.pipeline_deposits > 0 ? `+ ${kes(s.pipeline_deposits)} in pipeline` : undefined} subTone="good" />
               <Metric label="Loans (KES)" value={kes(s.loans)} sub={s.pipeline_loans > 0 ? `+ ${kes(s.pipeline_loans)} in pipeline` : undefined} subTone="good" />
@@ -102,6 +103,17 @@ export default function Portfolio() {
                 subTone={mv ? (mv.delta >= 0 ? 'good' : 'warn') : undefined}
               />
             </div>
+            {data.branch_unallocated && data.branch_unallocated.accounts > 0 && (
+              <Card><Card.Body>
+                <div className="mb-1 text-sm font-semibold text-gray-900">Unallocated in branch</div>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-amber-600">{data.branch_unallocated.accounts.toLocaleString()}</span> accounts in the branch are not assigned to an RM —
+                  deposits <span className="font-medium">{kes(data.branch_unallocated.deposits)}</span>, loans <span className="font-medium">{kes(data.branch_unallocated.loans)}</span>.
+                  Their value still counts to the branch.
+                </p>
+              </Card.Body></Card>
+            )}
+            </>
           )}
 
           {tab === 'bytype' && (

@@ -278,6 +278,55 @@ def get_branches() -> list[dict]:
     return _load_branches()
 
 
+def branch_code_for_name(name: str) -> list:
+    """CBS branch_code(s) whose branch_name matches a (register) branch name.
+    Matches on contains / stripped-'Branch' so 'Westlands' -> 'Westlands Branch'."""
+    nm = str(name or "").strip().lower()
+    if not nm:
+        return []
+    out = []
+    for b in _load_branches():
+        if not isinstance(b, dict):
+            continue
+        bn = str(b.get("branch_name") or "").strip().lower()
+        if not bn:
+            continue
+        if nm == bn or nm == bn.replace(" branch", "").strip() or nm in bn:
+            code = str(b.get("branch_code") or "").strip()
+            if code:
+                out.append(code)
+    return out
+
+
+def get_branch_unallocated(branch_codes, roster_codes) -> dict:
+    """Accounts physically in the given branch_code(s) that are NOT owned by a real
+    register RM (orphaned to a non-staff rm_code) — their value counts to the branch
+    even though unallocated. Returns {accounts, deposits, loans}."""
+    codes = {str(c).strip() for c in (branch_codes or []) if str(c).strip()}
+    empty = {"accounts": 0, "deposits": 0.0, "loans": 0.0}
+    if not codes:
+        return empty
+    df = _load_accounts()
+    if df is None or df.empty or "branch_code" not in df.columns:
+        return empty
+    inb = df[df["branch_code"].astype(str).str.strip().isin(codes)]
+    if inb.empty:
+        return empty
+    reg = {str(x).strip() for x in (roster_codes or set())}
+    orphan = inb[~inb["relationship_manager_code"].astype(str).str.strip().isin(reg)]
+    if orphan.empty:
+        return {"accounts": 0, "deposits": 0.0, "loans": 0.0}
+    accts = [_account_row_to_dict(r) for _, r in orphan.iterrows()]
+
+    def _is_loan(a):
+        t = str(a.get("account_type_name") or "").lower()
+        return any(w in t for w in ("loan", "facility", "lpo", "mortgage", "advance"))
+
+    dep = sum(a["current_balance"] for a in accts if not _is_loan(a))
+    loan = sum(a["current_balance"] for a in accts if _is_loan(a))
+    return {"accounts": len(accts), "deposits": round(dep, 2), "loans": round(loan, 2)}
+
+
 def get_portfolio_for_rm(rm_code: str) -> dict:
     """Convenience wrapper: portfolio for a single RM code."""
     return get_portfolio_for_codes({str(rm_code or "").strip()})

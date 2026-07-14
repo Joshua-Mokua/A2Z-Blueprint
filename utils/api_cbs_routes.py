@@ -337,6 +337,27 @@ def fetch_my_portfolio(
     pf["view"] = view
     pf["selected"] = selected
     pf["is_manager"] = len(scope) > 1
+    # branch-unallocated (orphaned accounts in the manager's branch) — consolidated view only
+    pf["branch_unallocated"] = None
+    if view == "consolidated" and len(scope) > 1:
+        try:
+            from utils.cbs_manager import branch_code_for_name, get_branch_unallocated
+            from utils.api_pipeline_scope import get_staff_roster
+            roster = get_staff_roster()
+            reg_codes = set(roster["Staff Code"].astype(str).str.strip())
+            hit = roster[roster["Staff Code"].astype(str).str.strip() == my_code]
+            units = set()
+            if not hit.empty:
+                units.add(str(hit.iloc[0].get("Unit") or "").strip())
+            bcodes = []
+            for u in units:
+                bcodes += branch_code_for_name(u)
+            if bcodes:
+                bu = get_branch_unallocated(bcodes, reg_codes)
+                bu["branch_codes"] = bcodes
+                pf["branch_unallocated"] = bu
+        except Exception:
+            pf["branch_unallocated"] = None
     return pf
 
 
