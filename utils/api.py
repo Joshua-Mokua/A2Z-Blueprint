@@ -9751,6 +9751,7 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
     else:
         _db.execute("DELETE FROM users", ())
     inserted = 0
+    _staffup_failed = []
     for r in rows:
         if r["code"] in keep:
             continue
@@ -9761,17 +9762,20 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
             "region": r.get("region") or "",
             "date_of_employment": r.get("doe") or "",
         })
-        _db.execute(
-            "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
-            "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true,false,true) "
-            "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
-            "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
-            "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
-            "metadata=EXCLUDED.metadata, active=true",
-            (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
-             r["band"], r["gender"], r.get("email") or "", _meta))
-        inserted += 1
+        try:
+            _db.execute(
+                "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
+                "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
+                "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
+                "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
+                "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
+                "metadata=EXCLUDED.metadata, active=true",
+                (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
+                 r["band"], r["gender"], r.get("email") or "", _meta))
+            inserted += 1
+        except Exception as _e:
+            _staffup_failed.append(f"{r['code']} {r.get('name','')}: {type(_e).__name__}: {_e}")
     after = len(_db.fetch_all("SELECT username FROM users") or [])
     try:
         from utils.api_pipeline_scope import invalidate_staff_roster_cache
@@ -9782,7 +9786,8 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
     from utils.staff_projection import project_quietly
     project_quietly()
     return {"ok": True, "applied": inserted, "before": before, "after": after,
-            "preserved": sorted(keep)}
+            "preserved": sorted(keep),
+            "failed": _staffup_failed[:50], "failed_count": len(_staffup_failed)}
 
 
 @app.post("/api/admin/staff/project", tags=["admin"])
