@@ -611,6 +611,9 @@
     "Teller": [
       "Assistant Branch Service & Operations Manager",
       "Branch Manager"
+    ],
+    "Head of Direct": [
+      "Head of Consumer"
     ]
   },
   "roles": [
@@ -677,6 +680,7 @@
     "Head of Branches",
     "Head of Consumer",
     "Head of Customer Experience Kenya & CESA 1",
+    "Head of Direct",
     "Head of Operations",
     "Head of Reconciliations & Balance Sheet Assurance",
     "Head of Sales",
@@ -790,6 +794,9 @@
     ],
     "Business Development Officer, Bancassurance": [
       "Manager, Bancassurance"
+    ],
+    "Relationship Manager": [
+      "Head of Direct"
     ]
   },
   "data_custodian_roles": [
