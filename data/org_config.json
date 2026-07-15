@@ -184,10 +184,10 @@
       "Branch Manager"
     ],
     "Branch Operations Officer": [
-      "Branch Manager"
+      "Assistant Branch Service & Operations Manager"
     ],
     "Customer Service Manager": [
-      "Branch Manager"
+      "Assistant Branch Service & Operations Manager"
     ],
     "Relationship Manager, SME": [
       "Branch Manager"
@@ -553,6 +553,28 @@
     "Direct Sales Agent": [
       "Branch DSA Team Lead",
       "Branch Manager"
+    ],
+    "Card Officer": [],
+    "Cards Operations Officer": [],
+    "Cheque Validation Officer": [],
+    "Digital sales Officer": [],
+    "Head Contact Centre & Complaints Management": [],
+    "Head EFS": [],
+    "Head of Customer Experience Kenya & CESA 1": [],
+    "Officer Operations": [],
+    "Operations Assistant Officer": [],
+    "Operations Officer": [],
+    "Payments Operations Officer": [],
+    "Relationship Manager": [
+      "Branch Manager"
+    ],
+    "Service Officer, TROPS": [],
+    "Service Officer- Payments": [],
+    "Social Media Officer": [],
+    "Trade Sales Manager": [],
+    "Value Chain Manager": [],
+    "Teller": [
+      "Assistant Branch Service & Operations Manager"
     ]
   },
   "roles": [
@@ -575,9 +597,12 @@
     "Business Development Officer, Bancassurance",
     "Business Manager",
     "CAD Officer",
+    "Card Officer",
+    "Cards Operations Officer",
     "Channels Implementation Manager",
     "Channels Implementation Officer",
     "Chauffeur",
+    "Cheque Validation Officer",
     "Chief Finance Officer",
     "Client Engagement Manager, Corporate Banking",
     "Compliance Officer",
@@ -590,6 +615,7 @@
     "Credit Risk Manager",
     "Customer Insights & Analytics Manager",
     "Customer Service Manager",
+    "Digital sales Officer",
     "Direct Sales Agent",
     "Director Compliance- CESA 1",
     "Director Consumer & Commercial Banking (CCB)",
@@ -607,11 +633,14 @@
     "Financial Crime Compliance Manager",
     "HR Officer",
     "HR Services Manager",
+    "Head Contact Centre & Complaints Management",
+    "Head EFS",
     "Head Information & Techonolgy",
     "Head Informations Security & BCP",
     "Head Premier Banking",
     "Head of Branches",
     "Head of Consumer",
+    "Head of Customer Experience Kenya & CESA 1",
     "Head of Operations",
     "Head of Reconciliations & Balance Sheet Assurance",
     "Head of Sales",
@@ -641,11 +670,15 @@
     "Managing Director",
     "Market Risk Manager",
     "Marketing Officer",
+    "Officer Operations",
+    "Operations Assistant Officer",
     "Operations Controls Officer",
     "Operations Manager- Treasury & Trade Operations",
     "Operations Manager-Branch Operations & Retail Support",
     "Operations Manager-Cards, Mobile & Digital Products",
     "Operations Manager-Payments, RPC & Remittances",
+    "Operations Officer",
+    "Payments Operations Officer",
     "Personal Assistant",
     "Physical Security, Logistics & Transport",
     "Portfololio Analysis & Reporting Manager",
@@ -656,6 +689,7 @@
     "Regional Business Manager-CESA",
     "Regional DSA Head",
     "Regional Head Remedial CESA",
+    "Relationship Manager",
     "Relationship Manager, Chinese Desk",
     "Relationship Manager, Employee Schemes",
     "Relationship Manager, FI & IO",
@@ -683,12 +717,18 @@
     "Senior Treasury Sales Officer",
     "Service Assistant, Operations Officer",
     "Service Availability Officer",
+    "Service Officer, TROPS",
+    "Service Officer- Payments",
+    "Social Media Officer",
     "Software Developer",
     "Tax Advisor, EAC",
     "Team Leader-Cards, Mobile and Digital Products",
     "Team Leader-Payments RPC & Remittances",
     "Team Leader-Trade & Trops",
-    "Trade Middle Office Officer"
+    "Teller",
+    "Trade Middle Office Officer",
+    "Trade Sales Manager",
+    "Value Chain Manager"
   ],
   "functional_hierarchy": {
     "Relationship Officer": [
