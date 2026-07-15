@@ -160,19 +160,19 @@
       "Director Consumer & Commercial Banking (CCB)"
     ],
     "Head, SME": [
-      "Ag. Head Commercial Banking & Head EFS"
+      "Head EFS"
     ],
     "Head, Local Corporates": [
-      "Ag. Head Commercial Banking & Head EFS"
+      "Head EFS"
     ],
     "Senior Relationship Manager, Local Corporates": [
-      "Ag. Head Commercial Banking & Head EFS"
+      "Head EFS"
     ],
     "Relationship Manager, Public Sector": [
-      "Ag. Head Commercial Banking & Head EFS"
+      "Head EFS"
     ],
     "Relationship Officer, Ellevate Desk": [
-      "Ag. Head Commercial Banking & Head EFS"
+      "Head EFS"
     ],
     "Credit Analyst": [
       "Head of Consumer"
@@ -235,7 +235,7 @@
       "Head of Consumer"
     ],
     "Service Assistant, Operations Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Relationship Manager, Employee Schemes": [
       "Branch Manager"
@@ -445,76 +445,76 @@
       "Managing Director"
     ],
     "Customer Insights & Analytics Manager": [
-      "Ag. Head Customer Experience & Head Contact Centre & Complaints Management"
+      "Head Contact Centre & Complaints Management"
     ],
     "Quality Analyst": [
-      "Ag. Head Customer Experience & Head Contact Centre & Complaints Management"
+      "Head Contact Centre & Complaints Management"
     ],
     "Contact Center Agent": [
-      "Ag. Head Customer Experience & Head Contact Centre & Complaints Management"
+      "Head Contact Centre & Complaints Management"
     ],
     "Head of Operations": [
-      "Director Operations & Technology"
+      "Managing Director"
     ],
     "Head Information & Techonolgy": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Head, EBS": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Operations Manager-Payments, RPC & Remittances": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Operations Manager- Treasury & Trade Operations": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Operations Manager-Branch Operations & Retail Support": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Operations Manager-Cards, Mobile & Digital Products": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Team Leader-Cards, Mobile and Digital Products": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Team Leader-Trade & Trops": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Team Leader-Payments RPC & Remittances": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Senior Service Officer, Technology (Applications)": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Senior Service Officer, Technology (Networks & Telcoms)": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Software Developer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "IT Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Service Availability Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Product Manager": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Operations Controls Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "EBS Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Chauffeur": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Physical Security, Logistics & Transport": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Procurement & vendor Management Officer": [
-      "Director Operations & Technology"
+      "Head of Operations"
     ],
     "Business Manager": [
       "Managing Director"
@@ -538,10 +538,10 @@
       "Managing Director"
     ],
     "Head of Consumer": [
-      "Director Consumer & Commercial Banking (CCB)"
+      "Managing Director"
     ],
     "Head of Branches": [
-      "Director Consumer & Commercial Banking (CCB)"
+      "Head EFS"
     ],
     "Regional DSA Head": [
       "Head of Sales"
@@ -558,8 +558,12 @@
     "Cards Operations Officer": [],
     "Cheque Validation Officer": [],
     "Digital sales Officer": [],
-    "Head Contact Centre & Complaints Management": [],
-    "Head EFS": [],
+    "Head Contact Centre & Complaints Management": [
+      "Managing Director"
+    ],
+    "Head EFS": [
+      "Managing Director"
+    ],
     "Head of Customer Experience Kenya & CESA 1": [],
     "Officer Operations": [],
     "Operations Assistant Officer": [],
