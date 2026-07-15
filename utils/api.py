@@ -1828,6 +1828,9 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_confi
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"create failed: {exc}")
     _audit("API_ADMIN_STAFF_CREATE_V2", user, f"{final_user}|sc:{final_sc}")
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "created", "username": final_user, "staff_code": final_sc}
 
 
@@ -1864,6 +1867,9 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"update failed: {exc}")
     _audit("API_ADMIN_STAFF_UPDATE", user, f"{username}|{','.join(c.split(' = ')[0] for c in cols)}")
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "updated", "username": username}
 
 
@@ -1881,6 +1887,9 @@ def deactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"deactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_DEACTIVATE", user, username)
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "deactivated", "username": username}
 
 
@@ -1896,6 +1905,9 @@ def reactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"reactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_REACTIVATE", user, username)
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "reactivated", "username": username}
 
 
