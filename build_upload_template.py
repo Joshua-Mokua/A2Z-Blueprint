@@ -44,6 +44,7 @@ def main():
     df = pd.read_excel(reg, dtype=str).fillna("")
     oc = json.load(open(ocp, encoding="utf-8"))
     hier = oc.get("hierarchy", {}) or {}
+    acting_bm = {str(k): str(v) for k, v in (oc.get("acting_bm", {}) or {}).items()}
     branch_names = {norm(b["name"]) for b in oc.get("branches", [])}
     print(f"register {len(df)} rows | hierarchy roles {len(hier)} | branches {len(branch_names)}")
 
@@ -108,6 +109,15 @@ def main():
                 if len(same) > 1:
                     # genuinely ambiguous — two managers of the same role in one branch
                     return "", f"{len(same)} {pr} in {p['branch']}"
+                # Branch recruiting a BM? Whoever acts as BM fills the slot. This keeps
+                # the real chain intact — a DSA still reports to their Team Lead, who
+                # reports to the acting BM — instead of flattening the whole branch onto
+                # one person. BSC rollup is transitive, so the (acting) BM still gets
+                # every DSA's numbers through the team lead.
+                if pr == "Branch Manager" and acting_bm.get(p["branch"]):
+                    a = acting_bm[p["branch"]]
+                    if a != p["code"]:
+                        return a, ""
                 # Nobody of that role in this branch. If the role has exactly one holder
                 # bank-wide it is a head-office manager (e.g. a Branch Manager reports to
                 # the single Head of Branches, who sits at HO) — unambiguous, take it.
