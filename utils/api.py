@@ -9653,6 +9653,7 @@ def _staffup_read_rows(content_b64: str):
             "reports_to": g(r, "Reports To Code"),
             "dotted1": g(r, "Dotted Line Code 1"), "dotted2": g(r, "Dotted Line Code 2"),
             "band": g(r, "Band"), "gender": g(r, "Gender"), "email": g(r, "Email"),
+            "dept": g(r, "Department"), "doe": g(r, "Date of Employment"),
         })
     wb.close()
     return rows
@@ -9742,14 +9743,22 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
         if r["code"] in keep:
             continue
         pw = _hash_password(f"EcoStaff{r['code'][-4:]}")
+        _meta = json.dumps({
+            "reports_to": r.get("reports_to") or "",
+            "dotted": [d for d in (r.get("dotted1"), r.get("dotted2")) if d],
+            "region": r.get("region") or "",
+            "date_of_employment": r.get("doe") or "",
+        })
         _db.execute(
-            "INSERT INTO users (username, password_hash, full_name, role, unit, "
-            "staff_code, band, gender, active, is_admin, must_change_password) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,true,false,true) "
+            "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
+            "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true,false,true) "
             "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
-            "role=EXCLUDED.role, unit=EXCLUDED.unit, staff_code=EXCLUDED.staff_code, active=true",
-            (r["code"], pw, r["name"], r["role"], r["branch"], r["code"],
-             r["band"], r["gender"]))
+            "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
+            "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
+            "metadata=EXCLUDED.metadata, active=true",
+            (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
+             r["band"], r["gender"], r.get("email") or "", _meta))
         inserted += 1
     after = len(_db.fetch_all("SELECT username FROM users") or [])
     try:
@@ -9757,8 +9766,26 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
         invalidate_staff_roster_cache()
     except Exception:
         pass
+    # PostgreSQL is the system of record; rebuild the generated register from it.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"ok": True, "applied": inserted, "before": before, "after": after,
             "preserved": sorted(keep)}
+
+
+@app.post("/api/admin/staff/project", tags=["admin"])
+def staff_project_register(user: dict = Depends(require_config_admin)):
+    """Rebuild data/staff_register.xlsx from the users table on demand.
+
+    The register is a GENERATED PROJECTION of PostgreSQL — never a source. Use this
+    after any out-of-band DB change, or to verify the two agree.
+    """
+    from utils.staff_projection import export_register_from_db
+    try:
+        n = export_register_from_db()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"projection failed: {e}")
+    return {"ok": True, "rows": n}
 # === END STAFF EXCEL UPLOAD ENDPOINTS ===
 
 
