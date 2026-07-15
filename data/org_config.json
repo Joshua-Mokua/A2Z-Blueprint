@@ -219,25 +219,26 @@
       "Head of Consumer"
     ],
     "Agency Manager": [
-      "Head of Consumer"
+      "Head, Digital Channels & Agency Network"
     ],
     "Asset Product Manager": [
-      "Head of Consumer"
+      "Head, Consumer Products"
     ],
     "Bancassurance Officer": [
-      "Head of Consumer"
+      "Branch Manager",
+      "Manager, Bancassurance"
     ],
     "Business Development Officer, Bancassurance": [
-      "Head of Consumer"
+      "Manager, Bancassurance"
     ],
     "Scheme Administrator Officer": [
-      "Head of Consumer"
+      "Relationship Manager, Employee Schemes"
     ],
     "Senior Officer, Payments & Digital Channels": [
-      "Head of Consumer"
+      "Head, Digital Channels & Agency Network"
     ],
     "Service Assistant, Operations Officer": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "Relationship Manager, Employee Schemes": [
       "Branch Manager"
@@ -477,37 +478,37 @@
       "Head of Operations"
     ],
     "Team Leader-Cards, Mobile and Digital Products": [
-      "Head of Operations"
+      "Operations Manager-Cards, Mobile & Digital Products"
     ],
     "Team Leader-Trade & Trops": [
-      "Head of Operations"
+      "Operations Manager- Treasury & Trade Operations"
     ],
     "Team Leader-Payments RPC & Remittances": [
-      "Head of Operations"
+      "Operations Manager-Payments, RPC & Remittances"
     ],
     "Senior Service Officer, Technology (Applications)": [
-      "Head of Operations"
+      "Head Information & Techonolgy"
     ],
     "Senior Service Officer, Technology (Networks & Telcoms)": [
-      "Head of Operations"
+      "Head Information & Techonolgy"
     ],
     "Software Developer": [
-      "Head of Operations"
+      "Head Information & Techonolgy"
     ],
     "IT Officer": [
-      "Head of Operations"
+      "Head Information & Techonolgy"
     ],
     "Service Availability Officer": [
-      "Head of Operations"
+      "Head Information & Techonolgy"
     ],
     "Product Manager": [
       "Head of Operations"
     ],
     "Operations Controls Officer": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "EBS Officer": [
-      "Head of Operations"
+      "Head, EBS"
     ],
     "Chauffeur": [
       "Head of Operations"
@@ -557,13 +558,14 @@
       "Branch Manager"
     ],
     "Card Officer": [
-      "Head of Consumer"
+      "Head, Consumer Products"
     ],
     "Cards Operations Officer": [
-      "Head of Operations"
+      "Team Leader-Cards, Mobile and Digital Products",
+      "Operations Manager-Cards, Mobile & Digital Products"
     ],
     "Cheque Validation Officer": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "Digital sales Officer": [
       "Head, Cash Management"
@@ -576,25 +578,26 @@
     ],
     "Head of Customer Experience Kenya & CESA 1": [],
     "Officer Operations": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "Operations Assistant Officer": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "Operations Officer": [
-      "Head of Operations"
+      "Operations Manager-Branch Operations & Retail Support"
     ],
     "Payments Operations Officer": [
-      "Head of Operations"
+      "Operations Manager-Payments, RPC & Remittances"
     ],
     "Relationship Manager": [
       "Branch Manager"
     ],
     "Service Officer, TROPS": [
-      "Head of Operations"
+      "Team Leader-Trade & Trops",
+      "Operations Manager- Treasury & Trade Operations"
     ],
     "Service Officer- Payments": [
-      "Head of Operations"
+      "Operations Manager-Payments, RPC & Remittances"
     ],
     "Social Media Officer": [
       "Corporate Communications Manager"
@@ -781,6 +784,12 @@
     ],
     "Relationship Manager, Local Corporate": [
       "Head, Local Corporates"
+    ],
+    "Bancassurance Officer": [
+      "Manager, Bancassurance"
+    ],
+    "Business Development Officer, Bancassurance": [
+      "Manager, Bancassurance"
     ]
   },
   "data_custodian_roles": [
