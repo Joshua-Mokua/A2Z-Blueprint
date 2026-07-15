@@ -614,6 +614,9 @@
     ],
     "Head of Direct": [
       "Head of Consumer"
+    ],
+    "Relationship Manager, Chinese Banking": [
+      "Head, Chinese Desk"
     ]
   },
   "roles": [
@@ -730,6 +733,7 @@
     "Regional DSA Head",
     "Regional Head Remedial CESA",
     "Relationship Manager",
+    "Relationship Manager, Chinese Banking",
     "Relationship Manager, Chinese Desk",
     "Relationship Manager, Employee Schemes",
     "Relationship Manager, FI & IO",

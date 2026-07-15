@@ -26,6 +26,13 @@ ROLE = "Head of Direct"
 HOLDER = "KE1223"          # Josphat Nyaberi Gichana — interim
 SEGMENT_DOTTED = {"Relationship Manager": [ROLE]}
 
+# The Chinese Desk RM carried the plain "Relationship Manager" title, which would have
+# dotted him to Direct. He belongs to the Chinese Desk: retitle him and point him at
+# Wang (Head, Chinese Desk), who already reports to Cyprian.
+CHINESE_ROLE = "Relationship Manager, Chinese Banking"
+CHINESE_PARENT = "Head, Chinese Desk"
+CHINESE_HOLDER = "KE1230"          # Shen Xue PEI
+
 def main():
     import pandas as pd
     apply = "--apply" in sys.argv
@@ -60,6 +67,16 @@ def main():
         for _, r in ho_rms.iterrows():
             print(f"      {r['Staff Code']:8} {r['Staff Name'][:26]:26} {r['Department']}")
 
+    ch = df[df["Staff Code"] == CHINESE_HOLDER]
+    if not ch.empty:
+        print(f"\n4) CHINESE DESK")
+        print(f"   ROLE  {CHINESE_ROLE!r} -> [{CHINESE_PARENT!r}]"
+              + ("   (new)" if CHINESE_ROLE not in roles else "   (exists)"))
+        print(f"   {CHINESE_HOLDER} {ch.iloc[0]['Staff Name']}: "
+              f"{ch.iloc[0]['Role']!r} -> {CHINESE_ROLE!r}")
+        print(f"   -> drops out of the Direct dotted view; solid line becomes "
+              f"{CHINESE_PARENT} -> Director, Corporate Banking")
+
     if not apply:
         print("\n[DRY-RUN] re-run with --apply")
         return
@@ -67,6 +84,9 @@ def main():
     shutil.copyfile(OCP, OCP + f".pre_direct_{datetime.now():%Y%m%d-%H%M%S}")
     roles.add(ROLE)
     hier[ROLE] = ["Head of Consumer"]
+    if not ch.empty and CHINESE_PARENT in hier:
+        roles.add(CHINESE_ROLE)
+        hier[CHINESE_ROLE] = [CHINESE_PARENT]
     for r, parents in SEGMENT_DOTTED.items():
         func[r] = parents
     oc["roles"] = sorted(roles); oc["hierarchy"] = hier; oc["functional_hierarchy"] = func
@@ -75,6 +95,9 @@ def main():
 
     shutil.copyfile(STAGING, STAGING + f".pre_direct_{datetime.now():%Y%m%d-%H%M%S}")
     df.loc[df["Staff Code"] == HOLDER, "Role"] = ROLE
+    if not ch.empty and CHINESE_PARENT in hier:
+        df.loc[df["Staff Code"] == CHINESE_HOLDER, "Role"] = CHINESE_ROLE
+        df.loc[df["Staff Code"] == CHINESE_HOLDER, "Reports To Code"] = ""   # derive it
     df.to_excel(STAGING, index=False)
     print(f"wrote {STAGING}")
     print("\nNEXT: python build_upload_template.py && python scripts\\test_hierarchy.py")
