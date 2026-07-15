@@ -36,7 +36,7 @@ def norm(s):
 def main():
     apply_roles = "--apply-roles" in sys.argv
     import pandas as pd
-    reg = "data/staff_register.xlsx"
+    reg = "data/staff_register_staging.xlsx"   # staging: the live register is projected from PostgreSQL
     ocp = "data/org_config.json"
     for p in (reg, ocp):
         if not os.path.exists(p):
@@ -54,6 +54,8 @@ def main():
             "role": norm(r.get("Role")), "branch": norm(r.get("Branch")),
             "dept": norm(r.get("Department")), "unit": norm(r.get("Unit")),
             "grade": norm(r.get("Grade")), "status": norm(r.get("Status")),
+            "explicit": norm(r.get("Reports To Code")),   # manual override wins over derivation
+            "dotted1": norm(r.get("Dotted Line 1")),
         })
 
     # ---- roles missing from the hierarchy (upload validates Role against hierarchy keys)
@@ -79,26 +81,48 @@ def main():
             by_role[p["role"]].append(p)
 
     def resolve_manager(p):
-        """Find this person's manager's staff code via role -> parent role."""
+        """Find this person's manager's staff code.
+
+        The hierarchy lists parent roles in PREFERENCE order — a DSA reports to the
+        Branch DSA Team Lead, falling back to the Branch Manager only where that
+        branch has no team lead. So we try each parent role in turn rather than
+        pooling them (pooling made every DSA look 'ambiguous' between their team
+        lead and their BM).
+
+        Branch staff are matched INSIDE their own branch: a Westlands teller reports
+        to a Westlands manager, never to one in Kisumu. Head-office staff are matched
+        by department, then bank-wide when there is exactly one holder.
+        """
         parents = hier.get(p["role"]) or []
-        cands = []
-        for pr in parents:
-            cands.extend(by_role.get(pr, []))
-        if not cands:
+        if not parents:
             return "", "no-parent-role"
-        same_branch = [c for c in cands if c["branch"] and c["branch"] == p["branch"]]
-        if len(same_branch) == 1:
-            return same_branch[0]["code"], ""
-        if len(same_branch) > 1:
-            return "", "ambiguous-in-branch"
-        same_dept = [c for c in cands if c["dept"] and c["dept"] == p["dept"]]
-        if len(same_dept) == 1:
-            return same_dept[0]["code"], ""
-        if len(same_dept) > 1:
-            return "", "ambiguous-in-dept"
-        if len(cands) == 1:
-            return cands[0]["code"], ""
-        return "", f"ambiguous-{len(cands)}-candidates"
+        reasons = []
+        for pr in parents:                       # hierarchy order = preference order
+            cands = by_role.get(pr, [])
+            if not cands:
+                continue                          # nobody holds this parent role: try the next
+            if p["branch"]:
+                same = [c for c in cands if c["branch"] == p["branch"]]
+                if len(same) == 1:
+                    return same[0]["code"], ""
+                if len(same) > 1:
+                    # genuinely ambiguous — two managers of the same role in one branch
+                    return "", f"{len(same)} {pr} in {p['branch']}"
+                # Nobody of that role in this branch. If the role has exactly one holder
+                # bank-wide it is a head-office manager (e.g. a Branch Manager reports to
+                # the single Head of Branches, who sits at HO) — unambiguous, take it.
+                if len(cands) == 1:
+                    return cands[0]["code"], ""
+                continue                          # otherwise try the next parent role
+            same_dept = [c for c in cands if c["dept"] and c["dept"] == p["dept"]]
+            if len(same_dept) == 1:
+                return same_dept[0]["code"], ""
+            if len(same_dept) > 1:
+                return "", f"{len(same_dept)} {pr} in {p['dept']}"
+            if len(cands) == 1:
+                return cands[0]["code"], ""
+            reasons.append(f"{len(cands)} {pr} bank-wide")
+        return "", (reasons[0] if reasons else f"nobody holds {', '.join(parents)}")
 
     # ---- build rows
     rows, why = [], collections.Counter()
@@ -113,6 +137,8 @@ def main():
         if is_root:
             mgr, reason = "", ""
             root_code = p["code"]
+        elif p.get("explicit"):
+            mgr, reason = p["explicit"], ""      # someone decided this by hand — respect it
         else:
             mgr, reason = resolve_manager(p)
             if reason:
@@ -120,7 +146,8 @@ def main():
         rows.append({
             "Staff Code": p["code"], "Staff Name": p["name"], "Role": p["role"],
             "Department": p["dept"], "Branch": branch, "Region (DSA only)": "",
-            "Reports To Code": mgr, "Dotted Line Code 1": "", "Dotted Line Code 2": "",
+            "Reports To Code": mgr, "Dotted Line Code 1": p.get("dotted1", ""),
+            "Dotted Line Code 2": "",
             "Band": "", "Gender": "", "Email": "", "Date of Employment": "",
         })
 

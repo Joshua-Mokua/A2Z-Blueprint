@@ -184,10 +184,12 @@
       "Branch Manager"
     ],
     "Branch Operations Officer": [
-      "Assistant Branch Service & Operations Manager"
+      "Assistant Branch Service & Operations Manager",
+      "Branch Manager"
     ],
     "Customer Service Manager": [
-      "Assistant Branch Service & Operations Manager"
+      "Assistant Branch Service & Operations Manager",
+      "Branch Manager"
     ],
     "Relationship Manager, SME": [
       "Branch Manager"
@@ -554,10 +556,18 @@
       "Branch DSA Team Lead",
       "Branch Manager"
     ],
-    "Card Officer": [],
-    "Cards Operations Officer": [],
-    "Cheque Validation Officer": [],
-    "Digital sales Officer": [],
+    "Card Officer": [
+      "Head of Consumer"
+    ],
+    "Cards Operations Officer": [
+      "Head of Operations"
+    ],
+    "Cheque Validation Officer": [
+      "Head of Operations"
+    ],
+    "Digital sales Officer": [
+      "Head, Cash Management"
+    ],
     "Head Contact Centre & Complaints Management": [
       "Managing Director"
     ],
@@ -565,20 +575,39 @@
       "Managing Director"
     ],
     "Head of Customer Experience Kenya & CESA 1": [],
-    "Officer Operations": [],
-    "Operations Assistant Officer": [],
-    "Operations Officer": [],
-    "Payments Operations Officer": [],
+    "Officer Operations": [
+      "Head of Operations"
+    ],
+    "Operations Assistant Officer": [
+      "Head of Operations"
+    ],
+    "Operations Officer": [
+      "Head of Operations"
+    ],
+    "Payments Operations Officer": [
+      "Head of Operations"
+    ],
     "Relationship Manager": [
       "Branch Manager"
     ],
-    "Service Officer, TROPS": [],
-    "Service Officer- Payments": [],
-    "Social Media Officer": [],
-    "Trade Sales Manager": [],
-    "Value Chain Manager": [],
+    "Service Officer, TROPS": [
+      "Head of Operations"
+    ],
+    "Service Officer- Payments": [
+      "Head of Operations"
+    ],
+    "Social Media Officer": [
+      "Corporate Communications Manager"
+    ],
+    "Trade Sales Manager": [
+      "Director, Corporate Banking Kenya & EAC"
+    ],
+    "Value Chain Manager": [
+      "Head EFS"
+    ],
     "Teller": [
-      "Assistant Branch Service & Operations Manager"
+      "Assistant Branch Service & Operations Manager",
+      "Branch Manager"
     ]
   },
   "roles": [
@@ -760,5 +789,12 @@
     "Manager, Business Finance & Performance Management",
     "Manager, Financial Control & Regulatory Reporting",
     "Ag. Head Human Resources & Senior HR Business Partner"
-  ]
+  ],
+  "acting_bm": {
+    "Mombasa Moi": "KE807",
+    "Eldoret": "KE439",
+    "Thika": "KE637",
+    "Karatina": "KE546",
+    "Nyeri": "KE461"
+  }
 }
