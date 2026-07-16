@@ -20,7 +20,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Executive Intelligence',
     items: [
       { path: '/',              label: 'Dashboard',        matchActive: (p) => p === '/' },
-      { path: '/perform',       label: 'BSC Performance',  matchActive: (p) => p === '/perform' },
+      { path: '/perform',       label: 'Balanced Scorecard', matchActive: (p) => p === '/perform' },
       { path: '/cascade',       label: 'Target Cascade',   matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/initiatives',   label: 'Initiatives',      matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
       { path: '/profitability', label: 'Profitability',    matchActive: (p) => p === '/profitability' },
