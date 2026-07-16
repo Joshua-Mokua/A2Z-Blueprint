@@ -348,13 +348,26 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
         self_rows = staff_scores[staff_scores["Staff Name"] == my_name].copy()
         return self_rows
 
-    # A self_only role (no descendants in the hierarchy) sees only itself — scope to
-    # the caller's own staff_code, robust to duplicate names.
+    # A self_only role (no descendants in the hierarchy) sees only itself — UNLESS an
+    # admin grant widens it (an acting BM, or a per-branch viewing grant). So we start
+    # from the individual, then let the B3 branch-grant block below add any granted
+    # branch Units. This is what lets a Customer Service Manager who is acting BM see
+    # their whole branch, while a plain CSM/BOO/Teller sees only themselves.
     if tree_cfg.get("self_only"):
         my_code = str(user_data.get("staff_code", "") or "")
         if my_code and "Staff Code" in staff_scores.columns:
-            return staff_scores[staff_scores["Staff Code"].astype(str) == my_code].copy()
-        return staff_scores[staff_scores["Staff Name"] == my_name].copy()
+            visible = staff_scores[staff_scores["Staff Code"].astype(str) == my_code].copy()
+        else:
+            visible = staff_scores[staff_scores["Staff Name"] == my_name].copy()
+        try:
+            _extra_units = _branch_grant_units_for(user_data)
+        except Exception:
+            _extra_units = set()
+        if _extra_units and "Unit" in staff_scores.columns:
+            _extra_idx = staff_scores.index[staff_scores["Unit"].isin(_extra_units)]
+            if len(_extra_idx):
+                visible = staff_scores.loc[visible.index.union(_extra_idx)]
+        return visible
 
     tree_roles = tree_cfg["tree_roles"]
     tree_units = tree_cfg["units"]
