@@ -337,12 +337,16 @@ def resolve_role_kpis(role: str) -> List[KpiResolution]:
 
     out: List[KpiResolution] = []
     for ref in role_kpi_ids:
-        canonical = KPI_ID_ALIASES.get(ref, ref)
-        defn = all_defs.get(canonical)
+        # A ref that is itself a real KPI id always wins. Aliases exist only to
+        # rescue legacy refs that have no definition, so consulting them first let a
+        # stale alias shadow a live KPI: DEP_GROWTH is the id of "Total Deposit
+        # Growth", but the alias redirected it to "Retail & MSME Deposit Growth",
+        # scoring the MD's whole-bank deposit KPI as retail-only deposits.
+        defn = all_defs.get(ref)
+        canonical = ref
         if not defn:
-            # Try the ref directly (in case it IS already canonical)
-            defn = all_defs.get(ref)
-            canonical = ref if defn else canonical
+            canonical = KPI_ID_ALIASES.get(ref, ref)
+            defn = all_defs.get(canonical)
         if defn:
             out.append(KpiResolution(
                 role_kpi_ref=ref,
