@@ -7122,7 +7122,15 @@ def build_reporting_tree_from_hierarchy(cfg: dict = None) -> dict:
                 continue
             seen.add(r)
             stack.extend(children.get(r, ()))
-        tree[role] = {"tree_roles": sorted(seen), "units": None}
+        # A role with NO descendants is not a manager — it must resolve to the
+        # individual, not to everyone who shares the role. Without this, a leaf role
+        # like "Branch Operations Officer" got tree_roles=[itself] + units=None, which
+        # get_visible_staff read as "every BOO bank-wide" (the 53-staff bug). Mark it
+        # self_only so the caller scopes to this person's staff_code.
+        if seen == {role}:
+            tree[role] = {"tree_roles": [role], "units": None, "self_only": True}
+        else:
+            tree[role] = {"tree_roles": sorted(seen), "units": None}
     for top in ("Managing Director", "Chief Executive & Managing Director"):
         if top in tree:
             tree[top] = {"tree_roles": None, "units": None}

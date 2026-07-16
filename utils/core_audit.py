@@ -348,6 +348,14 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
         self_rows = staff_scores[staff_scores["Staff Name"] == my_name].copy()
         return self_rows
 
+    # A self_only role (no descendants in the hierarchy) sees only itself — scope to
+    # the caller's own staff_code, robust to duplicate names.
+    if tree_cfg.get("self_only"):
+        my_code = str(user_data.get("staff_code", "") or "")
+        if my_code and "Staff Code" in staff_scores.columns:
+            return staff_scores[staff_scores["Staff Code"].astype(str) == my_code].copy()
+        return staff_scores[staff_scores["Staff Name"] == my_name].copy()
+
     tree_roles = tree_cfg["tree_roles"]
     tree_units = tree_cfg["units"]
 
