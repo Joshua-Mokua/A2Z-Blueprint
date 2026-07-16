@@ -134,6 +134,7 @@ function AreaSection({
   pillars?: BscPillars; complete: boolean; basis: string;
 }) {
   const { color, label } = areaMeta(area, pillars);
+  const areaLabelShort = label;
   // The scale is stated once in the header rather than abbreviated onto each figure.
   const scale = scaleLabel(rows.filter((r): r is { kind: 'kpi'; kpi: BscKpi } =>
     r.kind === 'kpi').map((r) => r.kpi));
@@ -151,6 +152,7 @@ function AreaSection({
           <span className="text-xs text-gray-500">
             {rows.length} measure{rows.length === 1 ? '' : 's'}
             {scored.length > 0 && ` · ${scored.length} scored`}
+            {complete && ' · weights total 100% within this pillar'}
           </span>
         </div>
         <div className="flex items-center gap-5">
@@ -170,7 +172,10 @@ function AreaSection({
         <thead>
           <tr className="text-[10px] uppercase tracking-wide text-gray-400 bg-gray-50/70">
             <th className="text-left   font-medium pl-5 pr-2 py-2 w-[36%]">Measure</th>
-            <th className="text-right  font-medium px-2 py-2 w-[8%]">Weight</th>
+            <th className="text-right  font-medium px-2 py-2 w-[8%]"
+                title="Share of this pillar; the pillar weight above applies it to the scorecard">
+              Weight
+            </th>
             <th className="text-right  font-medium px-2 py-2 w-[15%]">
               Target{scale && <span className="normal-case text-gray-300"> · KES {scale}</span>}
             </th>
@@ -182,7 +187,9 @@ function AreaSection({
         <tbody>
           {rows.map((r, i) => {
             const isKpi = r.kind === 'kpi';
-            const weight = isKpi ? r.kpi.weight : r.obj.weight;
+            const weight = isKpi ? r.kpi.weight : r.obj.weight;            // effective
+            const within = isKpi ? r.kpi.within_area_weight
+                                 : r.obj.within_area_weight;               // of the pillar
             return (
               <tr key={i} className="border-t border-gray-100 hover:bg-gray-50/60">
                 <td className="pl-5 pr-2 py-2">
@@ -209,8 +216,16 @@ function AreaSection({
                     ) : null;
                   })()}
                 </td>
-                <td className="px-2 py-2 text-right text-xs tabular-nums font-medium text-gray-700">
-                  {weight === null || weight === undefined || !complete ? '—' : pct(weight)}
+                {/* The within-pillar weight, exactly as their own scorecard states it:
+                    each pillar's lines total 100%, and the pillar weight in the header
+                    applies that to the whole. Scoring still uses the effective weight
+                    (within x area), shown on hover — the arithmetic is unchanged, only
+                    which of the two numbers is on the page. */}
+                <td className="px-2 py-2 text-right text-xs tabular-nums font-medium text-gray-700"
+                    title={within !== null && within !== undefined && weight
+                      ? `${pct(within)} of ${areaLabelShort} = ${pct(weight)} of the scorecard`
+                      : undefined}>
+                  {within === null || within === undefined || !complete ? '—' : pct(within)}
                 </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-700">
                   {isKpi ? <TargetCell kpi={r.kpi} basis={basis} />

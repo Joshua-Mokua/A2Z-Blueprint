@@ -163,6 +163,11 @@ export function money(m: Money | null | undefined, cur: 'kes' | 'usd'): string {
   if (!m) return '—';
   const v = cur === 'kes' ? m.kes : m.usd;
   if (v === null || v === undefined) return '—';
+  // Whole numbers, except small USD figures: rounding 39.53 to 40 turns the Group
+  // reference line into a different number.
+  if (cur === 'usd' && Math.abs(v) < 100) {
+    return v.toLocaleString('en-KE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
   return Math.round(v).toLocaleString('en-KE');
 }
 
