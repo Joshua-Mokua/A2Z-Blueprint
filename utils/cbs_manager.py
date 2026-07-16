@@ -334,6 +334,30 @@ def get_portfolio_for_rm(rm_code: str) -> dict:
     return get_portfolio_for_codes({str(rm_code or "").strip()})
 
 
+def _staff_name_index() -> dict:
+    """staff_code -> Staff Name, from the register. Cached; empty on any error."""
+    global _staff_name_idx
+    try:
+        return _staff_name_idx  # type: ignore[name-defined]
+    except NameError:
+        pass
+    idx = {}
+    try:
+        import pandas as _pd
+        from pathlib import Path as _P
+        p = _P(__file__).resolve().parent.parent / "data" / "staff_register.xlsx"
+        if p.exists():
+            dfr = _pd.read_excel(p, dtype=str).fillna("")
+            for _, r in dfr.iterrows():
+                cc = str(r.get("Staff Code") or "").strip()
+                if cc:
+                    idx[cc] = str(r.get("Staff Name") or cc).strip()
+    except Exception:
+        idx = {}
+    globals()["_staff_name_idx"] = idx
+    return idx
+
+
 def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     """CBS accounts tagged to a set of staff codes, plus portfolio analytics.
 
@@ -350,6 +374,11 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     """
     col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
     code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
+    # For the introduced lens we want ONLY accounts this scope introduced that are now
+    # managed by SOMEONE ELSE — origination that sits elsewhere. Accounts they both
+    # introduced and manage belong in the managed book, not here, so the two lenses
+    # never overlap.
+    exclude_self_managed = (attribution == "introduced")
     rm = next(iter(code_set), "") if len(code_set) == 1 else ""
     empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
                      "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
@@ -360,9 +389,24 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     if df is None or df.empty or not code_set or col not in df.columns:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
     mine = df[df[col].astype(str).str.strip().isin(code_set)]
+    if exclude_self_managed and "relationship_manager_code" in mine.columns:
+        # drop the ones this scope also manages
+        mgr = mine["relationship_manager_code"].astype(str).str.strip()
+        mine = mine[~mgr.isin(code_set)]
     if mine.empty:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
     accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
+    if attribution == "introduced" and accts:
+        # annotate each introduced account with WHO manages it now (name + code), so the
+        # UI can show the current owner alongside status / balance / loan.
+        try:
+            name_by_code = _staff_name_index()
+        except Exception:
+            name_by_code = {}
+        for a in accts:
+            mc = str(a.get("relationship_manager_code") or "").strip()
+            a["managed_by_code"] = mc
+            a["managed_by_name"] = name_by_code.get(mc, mc)
 
     def _is_loan(a: dict) -> bool:
         t = str(a.get("account_type_name") or "").lower()
