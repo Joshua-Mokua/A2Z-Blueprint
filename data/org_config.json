@@ -156,23 +156,23 @@
   ],
   "hierarchy": {
     "Managing Director": [],
-    "Ag. Head Commercial Banking & Head EFS": [
+    "Head of Commercial Banking": [
       "Director Consumer & Commercial Banking (CCB)"
     ],
     "Head, SME": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Head, Local Corporates": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Senior Relationship Manager, Local Corporates": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Relationship Manager, Public Sector": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Relationship Officer, Ellevate Desk": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Credit Analyst": [
       "Head of Consumer"
@@ -542,7 +542,7 @@
       "Managing Director"
     ],
     "Head of Branches": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Regional DSA Head": [
       "Head of Sales"
@@ -572,7 +572,7 @@
       "Director Operations & Technology"
     ],
     "Head EFS": [
-      "Director Consumer & Commercial Banking (CCB)"
+      "Head of Commercial Banking"
     ],
     "Head of Customer Experience Kenya & CESA 1": [],
     "Officer Operations": [
@@ -604,7 +604,7 @@
       "Director, Corporate Banking Kenya & EAC"
     ],
     "Value Chain Manager": [
-      "Head EFS"
+      "Head of Commercial Banking"
     ],
     "Teller": [
       "Assistant Branch Service & Operations Manager",
@@ -621,7 +621,6 @@
     "ALM Officer",
     "Acquiring Manager, EAC & Cash Product Manager Kenya",
     "Acquiring Officer",
-    "Ag. Head Commercial Banking & Head EFS",
     "Ag. Head Customer Experience & Head Contact Centre & Complaints Management",
     "Ag. Head Human Resources & Senior HR Business Partner",
     "Agency Manager",
@@ -679,6 +678,7 @@
     "Head Informations Security & BCP",
     "Head Premier Banking",
     "Head of Branches",
+    "Head of Commercial Banking",
     "Head of Consumer",
     "Head of Customer Experience Kenya & CESA 1",
     "Head of Direct",
