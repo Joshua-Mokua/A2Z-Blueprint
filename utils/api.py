@@ -1712,6 +1712,12 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
     """Staff roster — PostgreSQL when available, users.json fallback otherwise."""
     from utils.db import db as _db
 
+    from utils.staff_names import names_for as _names_impl
+    def _names_for(r, meta):
+        rec = dict(r or {})
+        if (meta or {}).get("preferred_name"):
+            rec["preferred_name"] = meta["preferred_name"]
+        return _names_impl(rec)
     def _shape(r: dict, meta: dict = None) -> dict:
         meta = meta or {}
         return {
@@ -1727,6 +1733,9 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
             "can_view_all":         bool(r.get("can_view_all", False)),
             "must_change_password": bool(r.get("must_change_password", False)),
             "last_login":           str(r.get("last_login")) if r.get("last_login") else None,
+            "preferred_name":       meta.get("preferred_name") or "",
+            "display_name":         _names_for(r, meta)["display_name"],
+            "analytics_name":       _names_for(r, meta)["analytics_name"],
             "reports_to":           meta.get("reports_to"),
             "managed_staff_codes":  meta.get("managed_staff_codes", []),
             "managed_units":        meta.get("managed_units", []),
@@ -1740,10 +1749,16 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
             rows = _db.fetch_all(
                 "SELECT username, staff_code, full_name, role, department, unit, "
                 "       email, active, is_admin, can_view_all, "
-                "       must_change_password, last_login "
+                "       must_change_password, last_login, metadata "
                 "FROM users ORDER BY full_name NULLS LAST, username"
             ) or []
-            staff = [_shape(r) for r in rows]
+            def _meta_of(r):
+                m = r.get("metadata")
+                if isinstance(m, str):
+                    try: return json.loads(m or "{}")
+                    except Exception: return {}
+                return m or {}
+            staff = [_shape(r, _meta_of(r)) for r in rows]
             _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (pg)")
             return {"staff": staff, "count": len(staff), "source": "postgres"}
         except Exception as exc:
@@ -1790,6 +1805,7 @@ class _StaffPatch(BaseModel):
     is_admin: Optional[bool] = None
     active: Optional[bool] = None
     accessible_modules: Optional[list] = None
+    preferred_name: Optional[str] = None   # the name this person actually goes by
 
 
 def _staff_row_or_404(_db, username: str):
@@ -1859,6 +1875,13 @@ def update_admin_staff(username: str, payload: _StaffPatch,
         import json as _json_mod
         cols.append("accessible_modules = %s")
         vals.append(_json_mod.dumps(list(payload.accessible_modules)))
+    # preferred_name lives inside the metadata JSONB — merge it in so we never clobber
+    # other metadata keys. jsonb_set builds the object if metadata is null.
+    if getattr(payload, "preferred_name", None) is not None:
+        import json as _json_mod
+        cols.append("metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), "
+                    "'{preferred_name}', %s::jsonb, true)")
+        vals.append(_json_mod.dumps(str(payload.preferred_name)))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)

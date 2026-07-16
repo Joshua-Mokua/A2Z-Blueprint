@@ -245,6 +245,18 @@ def _enrich_identity_from_store(user: dict) -> None:
                     "department"):
             if key in rec and (key not in user or user.get(key) in (None, "")):
                 user[key] = rec[key]
+        # Derived display/analytics names (first-name for UI, first+last for analytics,
+        # a preferred name from metadata winning over both). One helper so every surface
+        # agrees. Always refreshed — these are computed, not authoritative claims.
+        try:
+            from utils.staff_names import names_for
+            nm = names_for(rec)
+            user["display_name"] = nm["display_name"]
+            user["analytics_name"] = nm["analytics_name"]
+            if nm["preferred_name"]:
+                user["preferred_name"] = nm["preferred_name"]
+        except Exception:
+            pass
     except Exception:
         pass
 
