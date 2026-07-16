@@ -206,3 +206,13 @@ data/reporting_lines.json
 data/unit_map.json
 # Stray build artifact.
 frontend/web/main
+
+# one-shot delivery scaffolding (untracked; kept locally)
+/patch_*.py
+scripts/*_diag.py
+scripts/*_probe.py
+scripts/whoami_check.py
+scripts/check_login.py
+scripts/check_pg_state.py
+scripts/check_persistence_mode.py
+scripts/inspect_byte.py
