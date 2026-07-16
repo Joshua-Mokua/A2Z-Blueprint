@@ -167,28 +167,39 @@
   "_v10324_design_note": "True bank-uniform scale KPIs only (CX, Audit, Staff Productivity, CASA Ratio, PAR, Account Dormancy, Channel Dormancy). Aggregate financial outcomes (PBT, Total NFI, NPL Ratio, NIM, ROE, CIR) removed in v10.324 because they need per-staff cascaded or role-default targets, not bank-aggregate (a RM's 150K NFI vs 130bn bank target = 0% achievement).",
   "2026": {
     "kpis": [
-      "Account Dormancy",
-      "Audit Score",
-      "CASA Ratio",
-      "Compliance Score",
+      "AU_DEPOSIT_CONC",
+      "BRANCH_TURNAROUND",
+      "CAPABILITY_READINESS",
+      "CCB_REV_CONTRIB",
+      "CIR",
+      "CRITICAL_VACANCIES",
+      "CUST_ACTIVE_RATE",
       "CX Score",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "PAR",
-      "Staff Productivity"
+      "DIGITAL_ACTIVE_PCT",
+      "DISTRIBUTION_STRATEGY",
+      "ECAP_CLOSURE",
+      "ENGAGEMENT_SCORE",
+      "GRADUATE_PROGRAMME",
+      "GROUP_BUDGET_AUDIT",
+      "LCY_FCY_SPLIT",
+      "LDR",
+      "NET_LOANS",
+      "NPL_RATIO",
+      "NTB_CUSTOMERS",
+      "OP_LOSS_PCT_PBT",
+      "OTR",
+      "PBT",
+      "PERF_CYCLE_ADHERENCE",
+      "REGRETTABLE_TURNOVER",
+      "REG_FINES_PCT_PBT",
+      "REV_PER_STAFF",
+      "ROE",
+      "SUCCESSION_COVERAGE",
+      "TOTAL_DEPOSITS",
+      "TOTAL_OPEX",
+      "TOTAL_REVENUE"
     ],
-    "_doc": "Annual fixed KPI list — promoted from quarters by v10.401_seed",
-    "_promoted_from_quarters": [
-      "2026-Q1",
-      "2026-Q2"
-    ],
-    "_promoted_at": "2026-05-13T19:18:11.168453"
+    "_note": "Bank-fixed for 2026: one target for everyone, taken from the MD's scorecard. A KPI listed here ignores per-staff cascade entries."
   },
   "_v10401_period_meta": {
     "last_modified": "2026-05-13T19:18:11.169025",
@@ -213,7 +224,7 @@
       "PAR",
       "Staff Productivity"
     ],
-    "_doc": "Annual fixed KPI list — promoted from quarters by v10.401_seed",
+    "_doc": "Annual fixed KPI list \u2014 promoted from quarters by v10.401_seed",
     "_promoted_from_quarters": [
       "2025-Q3",
       "2025-Q4"
@@ -221,7 +232,7 @@
     "_promoted_at": "2026-05-13T19:18:11.169020"
   },
   "_v10402_migration_note": {
-    "_doc": "v10.402: migrated NPL_RATIO→NPL Ratio, COMPLIANCE_SCORE→Compliance Score (and other uppercase aliases) to human-readable canonical form per Joshua deep review. Cascade now correctly excludes the human form when MD has reserved these KPIs.",
+    "_doc": "v10.402: migrated NPL_RATIO\u2192NPL Ratio, COMPLIANCE_SCORE\u2192Compliance Score (and other uppercase aliases) to human-readable canonical form per Joshua deep review. Cascade now correctly excludes the human form when MD has reserved these KPIs.",
     "migrated_at": "2026-05-13T19:32:02.892141",
     "replacements": {
       "NPL_RATIO": "NPL Ratio",
@@ -229,6 +240,6 @@
       "NET_INTEREST_MARGIN": "Net Interest Margin",
       "COMPLIANCE_SCORE": "Compliance Score"
     },
-    "_npl_correction": "v10.402 refinement: removed 'NPL Ratio' from all fixed_kpis periods per Joshua A2 — NPL is cascadable (varies per branch), should not be MD-reserved. The original NPL_RATIO uppercase entry was a v10.329 mistake; v10.402 fully cleans it up."
+    "_npl_correction": "v10.402 refinement: removed 'NPL Ratio' from all fixed_kpis periods per Joshua A2 \u2014 NPL is cascadable (varies per branch), should not be MD-reserved. The original NPL_RATIO uppercase entry was a v10.329 mistake; v10.402 fully cleans it up."
   }
 }

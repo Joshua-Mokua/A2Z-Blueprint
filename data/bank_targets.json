@@ -1,720 +1,255 @@
 {
+  "_meta": {
+    "source": "EKE 2026 scorecard \u2014 Affiliate MD (Rabecca Mueni Mbithi)",
+    "note": "Replaces the generated 2026 targets, which were not real (PBT read 650,000,000,000 against a true 1.3B). The MD's scorecard is the affiliate's scorecard, so these are the bank-wide numbers every other scorecard inherits.",
+    "seeded": "2026-07-16"
+  },
+  "TOTAL_REVENUE|2026": {
+    "target": 39.53,
+    "currency": "USD_MM",
+    "baseline_2025": 39.79,
+    "buffer_pct": 0,
+    "note": "Total affiliate revenue",
+    "source": "EKE 2026 MD scorecard"
+  },
+  "TOTAL_OPEX|2026": {
+    "target": 28.83,
+    "currency": "USD_MM",
+    "baseline_2025": 29.35,
+    "buffer_pct": 0,
+    "note": "Lower is better",
+    "source": "EKE 2026 MD scorecard"
+  },
   "PBT|2026": {
-    "target": 650000000000.0,
-    "buffer_pct": 0
+    "target": 8.06,
+    "currency": "USD_MM",
+    "baseline_2025": 5.52,
+    "buffer_pct": 0,
+    "note": "Profit before tax",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Total NFI|2026": {
-    "target": 130000000000.0,
-    "buffer_pct": 0
+  "NET_LOANS|2026": {
+    "target": 209.74,
+    "currency": "USD_MM",
+    "baseline_2025": 138.15,
+    "buffer_pct": 0,
+    "note": "Net loans and advances",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Retail & MSME Deposit Growth|2026": {
-    "target": 400000000000.0,
-    "buffer_pct": 0
+  "TOTAL_DEPOSITS|2026": {
+    "target": 751.55,
+    "currency": "USD_MM",
+    "baseline_2025": 590.85,
+    "buffer_pct": 0,
+    "note": "Total customer deposits",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Commercial Deposit Growth|2026": {
-    "target": 5000000000000.0,
-    "buffer_pct": 0
+  "LDR|2026": {
+    "target": 29.1,
+    "currency": null,
+    "baseline_2025": 23.3,
+    "buffer_pct": 0,
+    "note": "%",
+    "source": "EKE 2026 MD scorecard"
   },
-  "CASA Ratio|2026": {
-    "target": 60.0,
-    "buffer_pct": 0
+  "ROE|2026": {
+    "target": 9.4,
+    "currency": null,
+    "baseline_2025": 5.33,
+    "buffer_pct": 0,
+    "note": "% RoE / RoTE",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Top 100 Customers Deposit|2026": {
-    "target": 10000000000.0,
-    "buffer_pct": 0
+  "CIR|2026": {
+    "target": 72.9,
+    "currency": null,
+    "baseline_2025": 73.7,
+    "buffer_pct": 0,
+    "note": "% \u2014 lower is better",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Collection Throughput|2026": {
-    "target": 11.0,
-    "buffer_pct": 0
+  "NPL_RATIO|2026": {
+    "target": 6.8,
+    "currency": null,
+    "baseline_2025": 14.4,
+    "buffer_pct": 0,
+    "note": "% \u2014 lower is better",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Number of Business Borrowers|2026": {
-    "target": 5000.0,
-    "buffer_pct": 0
+  "NTB_CUSTOMERS|2026": {
+    "target": 103231.0,
+    "currency": null,
+    "baseline_2025": 82707,
+    "buffer_pct": 0,
+    "note": "80K -> 103K customers",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Disbursements Retail Loans|2026": {
-    "target": 230000000000.0,
-    "buffer_pct": 0
+  "CUST_ACTIVE_RATE|2026": {
+    "target": 75.0,
+    "currency": null,
+    "baseline_2025": 69,
+    "buffer_pct": 0,
+    "note": "% minimum active rate",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Disbursements MSME Loans|2026": {
-    "target": 2300000000000.0,
-    "buffer_pct": 0
-  },
-  "Disbursements Corporate Loans|2026": {
-    "target": 12000000000.0,
-    "buffer_pct": 0
-  },
-  "Loan Book Growth|2026": {
-    "target": 2500000000000.0,
-    "buffer_pct": 0
-  },
-  "NPL Ratio|2026": {
-    "target": 3.0,
-    "buffer_pct": 0
-  },
-  "PAR|2026": {
-    "target": 5.0,
-    "buffer_pct": 0
-  },
-  "Account Dormancy|2026": {
-    "target": 15.0,
-    "buffer_pct": 0
-  },
-  "Channel Dormancy|2026": {
-    "target": 20.0,
-    "buffer_pct": 0
-  },
-  "New Accounts|2026": {
-    "target": 229000.0,
-    "buffer_pct": 0
+  "DIGITAL_ACTIVE_PCT|2026": {
+    "target": 55.0,
+    "currency": null,
+    "baseline_2025": 49,
+    "buffer_pct": 0,
+    "note": "% active on digital",
+    "source": "EKE 2026 MD scorecard"
   },
   "CX Score|2026": {
-    "target": 4.0,
-    "buffer_pct": 0
-  },
-  "Compliance Score|2026": {
-    "target": 95.0,
-    "buffer_pct": 0
-  },
-  "Audit Score|2026": {
-    "target": 90.0,
-    "buffer_pct": 0
-  },
-  "Staff Productivity|2026": {
     "target": 85.0,
+    "currency": null,
+    "baseline_2025": 85,
     "buffer_pct": 0,
-    "_v10320_fix": "0-100 productivity index target should be ~85 (matches v10.317 generator config). Was 3.0 (looks like score-target confusion).",
-    "_v10433_note": "Bank target uses 0-100 productivity index (85=target); MD BSC uses 1-5 BSC grading scale (3.0=Met). Different scales, both valid."
+    "note": "% \u2014 CSAT 70% tracked separately",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Credit Approval Rate|2026": {
-    "target": 70.0,
-    "buffer_pct": 0
-  },
-  "Credit Rework Rate|2026": {
-    "target": 15.0,
-    "buffer_pct": 0
-  },
-  "Credit TAT \u2014 Express Lane|2026": {
-    "target": 3.0,
-    "buffer_pct": 0
-  },
-  "Credit TAT \u2014 Standard Lane|2026": {
-    "target": 10.0,
-    "buffer_pct": 0
-  },
-  "Credit TAT \u2014 Complex Lane|2026": {
-    "target": 21.0,
-    "buffer_pct": 0
-  },
-  "Credit Decline Rate|2026": {
-    "target": 20.0,
-    "buffer_pct": 0
-  },
-  "Loan Disbursement TAT|2026": {
+  "REGRETTABLE_TURNOVER|2026": {
     "target": 5.0,
-    "buffer_pct": 0
+    "currency": null,
+    "baseline_2025": null,
+    "buffer_pct": 0,
+    "note": "% \u2014 lower is better; total <15%",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Legal TAT \u2014 Security Perfection|2026": {
-    "target": 80.0,
-    "buffer_pct": 0
-  },
-  "Legal TAT \u2014 Loan Documentation|2026": {
-    "target": 85.0,
-    "buffer_pct": 0
-  },
-  "Legal TAT \u2014 External Counsel|2026": {
-    "target": 75.0,
-    "buffer_pct": 0
-  },
-  "Legal TAT \u2014 Valuation|2026": {
-    "target": 80.0,
-    "buffer_pct": 0
-  },
-  "Legal TAT \u2014 Title Deed Custody|2026": {
-    "target": 90.0,
-    "buffer_pct": 0
-  },
-  "Legal TAT \u2014 Legal Opinion|2026": {
-    "target": 85.0,
-    "buffer_pct": 0
-  },
-  "Legal Overdue Rate|2026": {
-    "target": 10.0,
-    "buffer_pct": 0
-  },
-  "FD Ratification Volume|2026": {
-    "target": 10000000000.0,
-    "buffer_pct": 0
-  },
-  "FD Ratification TAT|2026": {
-    "target": 2.0,
-    "buffer_pct": 0
-  },
-  "FD Approval Rate|2026": {
+  "SUCCESSION_COVERAGE|2026": {
     "target": 70.0,
-    "buffer_pct": 0
-  },
-  "FD Rate Variance vs Market|2026": {
-    "target": 0.5,
-    "buffer_pct": 0
-  },
-  "Net Interest Margin|2026": {
-    "target": 7.5,
-    "buffer_pct": 0
-  },
-  "Compliance Case Clearance Rate|2026": {
-    "target": 75.0,
-    "buffer_pct": 0
-  },
-  "Compliance SLA \u2014 Critical Cases|2026": {
-    "target": 95.0,
-    "buffer_pct": 0
-  },
-  "Compliance SLA \u2014 High Risk Cases|2026": {
-    "target": 85.0,
-    "buffer_pct": 0
-  },
-  "Open Compliance Cases|2026": {
-    "target": 20.0,
-    "buffer_pct": 0
-  },
-  "Compliance Escalation Rate|2026": {
-    "target": 10.0,
-    "buffer_pct": 0
-  },
-  "PBT|2025": {
-    "target": 650000000000.0,
+    "currency": null,
+    "baseline_2025": 20,
     "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
+    "note": "% leadership & critical roles",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Total NFI|2025": {
-    "target": 130000000000.0,
+  "ENGAGEMENT_SCORE|2026": {
+    "target": 73.0,
+    "currency": null,
+    "baseline_2025": 71,
     "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
+    "note": "% \u2014 eNPS 21 tracked separately",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Retail & MSME Deposit Growth|2025": {
-    "target": 400000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Commercial Deposit Growth|2025": {
-    "target": 5000000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "CASA Ratio|2025": {
-    "target": 60.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Top 100 Customers Deposit|2025": {
-    "target": 10000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Collection Throughput|2025": {
-    "target": 11.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Number of Business Borrowers|2025": {
-    "target": 5000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Disbursements Retail Loans|2025": {
-    "target": 230000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Disbursements MSME Loans|2025": {
-    "target": 2300000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Disbursements Corporate Loans|2025": {
-    "target": 12000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Loan Book Growth|2025": {
-    "target": 2500000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "NPL Ratio|2025": {
-    "target": 3.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "PAR|2025": {
-    "target": 5.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Account Dormancy|2025": {
-    "target": 15.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Channel Dormancy|2025": {
-    "target": 20.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "New Accounts|2025": {
-    "target": 229000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "CX Score|2025": {
-    "target": 4.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Compliance Score|2025": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Audit Score|2025": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Staff Productivity|2025": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10320_fix": "0-100 productivity index target should be ~85 (matches v10.317 generator config). Was 3.0 (looks like score-target confusion).",
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit Approval Rate|2025": {
-    "target": 70.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit Rework Rate|2025": {
-    "target": 15.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit TAT \u2014 Express Lane|2025": {
-    "target": 3.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit TAT \u2014 Standard Lane|2025": {
-    "target": 10.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit TAT \u2014 Complex Lane|2025": {
-    "target": 21.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Credit Decline Rate|2025": {
-    "target": 20.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Loan Disbursement TAT|2025": {
-    "target": 5.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal TAT \u2014 Security Perfection|2025": {
+  "CAPABILITY_READINESS|2026": {
     "target": 80.0,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
+    "note": "% capability gaps closed",
+    "source": "EKE 2026 MD scorecard"
   },
-  "Legal TAT \u2014 Loan Documentation|2025": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal TAT \u2014 External Counsel|2025": {
-    "target": 75.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal TAT \u2014 Valuation|2025": {
-    "target": 80.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal TAT \u2014 Title Deed Custody|2025": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal TAT \u2014 Legal Opinion|2025": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Legal Overdue Rate|2025": {
-    "target": 10.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "FD Ratification Volume|2025": {
-    "target": 10000000000.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "FD Ratification TAT|2025": {
-    "target": 2.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "FD Approval Rate|2025": {
-    "target": 70.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "FD Rate Variance vs Market|2025": {
-    "target": 0.5,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Net Interest Margin|2025": {
-    "target": 7.5,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Compliance Case Clearance Rate|2025": {
-    "target": 75.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Compliance SLA \u2014 Critical Cases|2025": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Compliance SLA \u2014 High Risk Cases|2025": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Open Compliance Cases|2025": {
-    "target": 20.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "Compliance Escalation Rate|2025": {
-    "target": 10.0,
-    "buffer_pct": 0,
-    "_v10322_mirrored_from": "2026"
-  },
-  "K010|2026": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K010|2025": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K014|2026": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K014|2025": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K016|2026": {
-    "target": 40.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K016|2025": {
-    "target": 40.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K121|2026": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K121|2025": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K129|2026": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K129|2025": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K132|2026": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K132|2025": {
-    "target": 85.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K134|2026": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "K134|2025": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "PRODUCT_BOOK_ACHIEVEMENT|2025": {
-    "target": 100,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_BOOK_ACHIEVEMENT|2026": {
-    "target": 100,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_REVENUE_ACHIEVEMENT|2025": {
-    "target": 100,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_REVENUE_ACHIEVEMENT|2026": {
-    "target": 100,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_NPL_RATE|2025": {
-    "target": 7.0,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_NPL_RATE|2026": {
-    "target": 6.5,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_GROWTH_RATE|2025": {
-    "target": 8,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "PRODUCT_GROWTH_RATE|2026": {
-    "target": 8,
-    "buffer_pct": 0,
-    "_v10335_added": true
-  },
-  "LIQUIDITY_COVERAGE_RATIO|2025": {
-    "target": 130.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "LIQUIDITY_COVERAGE_RATIO|2026": {
-    "target": 135.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "NET_STABLE_FUNDING_RATIO|2025": {
-    "target": 115.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "NET_STABLE_FUNDING_RATIO|2026": {
+  "REV_PER_STAFF|2026": {
     "target": 120.0,
+    "currency": "USD_K",
+    "baseline_2025": 106,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "Revenue per staff",
+    "source": "EKE 2026 MD scorecard"
   },
-  "FX_TRADING_INCOME|2025": {
-    "target": 800.0,
+  "PERF_CYCLE_ADHERENCE|2026": {
+    "target": 100.0,
+    "currency": null,
+    "baseline_2025": 100,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "%",
+    "source": "EKE 2026 MD scorecard"
   },
-  "FX_TRADING_INCOME|2026": {
-    "target": 950.0,
+  "CRITICAL_VACANCIES|2026": {
+    "target": 100.0,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% filled by Q2",
+    "source": "EKE 2026 MD scorecard"
   },
-  "TRADE_FINANCE_REVENUE|2025": {
-    "target": 1400.0,
+  "GRADUATE_PROGRAMME|2026": {
+    "target": 100.0,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% implemented by year end",
+    "source": "EKE 2026 MD scorecard"
   },
-  "TRADE_FINANCE_REVENUE|2026": {
-    "target": 1650.0,
+  "OP_LOSS_PCT_PBT|2026": {
+    "target": 1.0,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% of budgeted PBT \u2014 lower is better",
+    "source": "EKE 2026 MD scorecard"
   },
-  "TRADE_DOC_TAT|2025": {
-    "target": 36.0,
+  "REG_FINES_PCT_PBT|2026": {
+    "target": 0.2,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% of PBT \u2014 lower is better",
+    "source": "EKE 2026 MD scorecard"
   },
-  "TRADE_DOC_TAT|2026": {
-    "target": 30.0,
+  "OTR|2026": {
+    "target": 97.0,
+    "currency": null,
+    "baseline_2025": 100,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% minimum, nil overdue",
+    "source": "EKE 2026 MD scorecard"
   },
-  "LC_VOLUME|2025": {
-    "target": 850.0,
+  "GROUP_BUDGET_AUDIT|2026": {
+    "target": 100.0,
+    "currency": null,
+    "baseline_2025": 100,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% closed within Group timelines",
+    "source": "EKE 2026 MD scorecard"
   },
-  "LC_VOLUME|2026": {
-    "target": 1000.0,
+  "ECAP_CLOSURE|2026": {
+    "target": 100.0,
+    "currency": null,
+    "baseline_2025": null,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% \u2014 nil overdue at month end",
+    "source": "EKE 2026 MD scorecard"
   },
-  "CAMPAIGN_ROI|2025": {
-    "target": 220.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "CAMPAIGN_ROI|2026": {
-    "target": 250.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "BRAND_AWARENESS|2025": {
-    "target": 70.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "BRAND_AWARENESS|2026": {
-    "target": 75.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "MARKETING_QUALIFIED_LEADS|2025": {
-    "target": 6500.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "MARKETING_QUALIFIED_LEADS|2026": {
-    "target": 8000.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "MARKETING_DRIVEN_REVENUE|2025": {
-    "target": 1100.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "MARKETING_DRIVEN_REVENUE|2026": {
-    "target": 1400.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "ACCOUNT_OPENING_TAT|2025": {
-    "target": 4.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "ACCOUNT_OPENING_TAT|2026": {
-    "kpi": "ACCOUNT_OPENING_TAT",
-    "period": "2026",
-    "target": 3.5,
-    "buffer_pct": 0.0,
-    "stretch_target": 3.5,
-    "updated_at": "2026-06-12T15:00:25.352706",
-    "updated_by": "MD"
-  },
-  "COMPLAINT_RESOLUTION_RATE|2025": {
-    "target": 90.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "COMPLAINT_RESOLUTION_RATE|2026": {
-    "target": 95.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "PIPELINE_DEALS_WON|2025": {
-    "target": 8.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "PIPELINE_DEALS_WON|2026": {
-    "target": 10.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "PIPELINE_CONVERSION_RATE|2025": {
-    "target": 35.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "PIPELINE_CONVERSION_RATE|2026": {
+  "LCY_FCY_SPLIT|2026": {
     "target": 40.0,
+    "currency": null,
+    "baseline_2025": 30,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% LCY \u2014 30:70 -> 40:60",
+    "source": "EKE 2026 MD scorecard"
   },
-  "NEW_CUSTOMERS_ACQUIRED|2025": {
-    "target": 25.0,
-    "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
-  },
-  "NEW_CUSTOMERS_ACQUIRED|2026": {
+  "AU_DEPOSIT_CONC|2026": {
     "target": 30.0,
+    "currency": null,
+    "baseline_2025": 40,
     "buffer_pct": 0,
-    "_v10341_normalized_from": "scalar"
+    "note": "% of FCY \u2014 lower is better",
+    "source": "EKE 2026 MD scorecard"
   },
-  "_v10402_archived_uppercase_aliases": {
-    "_doc": "v10.402 migration: removed uppercase alias entries with conflicting values. Canonical form is human-readable per Joshua deep review. Old entries preserved here for audit; cascade no longer generates them.",
-    "archived_at": "2026-05-13T19:32:02.890276",
-    "entries": {
-      "NPL_RATIO|2025": {
-        "target": 8.0,
-        "buffer_pct": 0,
-        "_v10329_added": true
-      },
-      "NPL_RATIO|2026": {
-        "target": 7.5,
-        "buffer_pct": 0,
-        "_v10329_added": true
-      },
-      "NEW_ACCOUNTS|2025": {
-        "target": 450,
-        "buffer_pct": 0,
-        "_v10329_added": true
-      },
-      "NEW_ACCOUNTS|2026": {
-        "target": 500,
-        "buffer_pct": 0,
-        "_v10329_added": true
-      },
-      "NET_INTEREST_MARGIN|2025": {
-        "target": 5.2,
-        "buffer_pct": 0,
-        "_v10341_normalized_from": "scalar"
-      },
-      "NET_INTEREST_MARGIN|2026": {
-        "target": 5.5,
-        "buffer_pct": 0,
-        "_v10341_normalized_from": "scalar"
-      },
-      "COMPLIANCE_SCORE|2026": {
-        "target": 4.5,
-        "buffer_pct": 0,
-        "_v10341_normalized_from": "scalar"
-      },
-      "COMPLIANCE_SCORE|2025": {
-        "target": 4.5,
-        "buffer_pct": 0,
-        "_v10341_normalized_from": "scalar"
-      }
-    }
+  "CCB_REV_CONTRIB|2026": {
+    "target": 50.0,
+    "currency": null,
+    "baseline_2025": 45,
+    "buffer_pct": 0,
+    "note": "% of total revenue",
+    "source": "EKE 2026 MD scorecard"
+  },
+  "BRANCH_TURNAROUND|2026": {
+    "target": 50.0,
+    "currency": null,
+    "baseline_2025": null,
+    "buffer_pct": 0,
+    "note": "% of loss-making branches, 10 -> 5",
+    "source": "EKE 2026 MD scorecard"
+  },
+  "DISTRIBUTION_STRATEGY|2026": {
+    "target": 50.0,
+    "currency": null,
+    "baseline_2025": null,
+    "buffer_pct": 0,
+    "note": "% of action plan by year end",
+    "source": "EKE 2026 MD scorecard"
   }
 }
