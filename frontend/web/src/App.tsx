@@ -63,6 +63,7 @@ import { PipelineProvider } from './providers/PipelineProvider';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppShell } from './components/AppShell';
+import About from './pages/About';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
@@ -132,6 +133,7 @@ function App() {
 
                     {/* BSC + Profitability */}
                     <Route path="/perform" element={<Perform />} />
+                    <Route path="/about" element={<About />} />
                     <Route path="/profitability" element={<Profitability />} />
 
                     {/* Pipeline list — wrapped in PipelineProvider for the

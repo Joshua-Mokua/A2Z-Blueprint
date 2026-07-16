@@ -132,6 +132,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         >
           Sign out
         </button>
+        <Link to="/about" onClick={() => onNavigate?.()}
+          className="mt-2 block text-center text-[11px] text-white/40 hover:text-white/70">
+          © 2026 Joshua Mokua · About
+        </Link>
       </div>
     </aside>
   );
