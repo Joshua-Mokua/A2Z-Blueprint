@@ -100,6 +100,7 @@ def _load_accounts() -> pd.DataFrame:
                     "cif":                       str,
                     "account_number":            str,
                     "relationship_manager_code": str,
+                    "introducer_code":           str,
                     "branch_code":               str,
                 },
                 low_memory=False,
@@ -222,6 +223,7 @@ def _account_row_to_dict(row) -> dict:
         "cif":                _safe_str(row.get("cif")),
         "branch_code":        _safe_str(row.get("branch_code")),
         "branch_name":        _safe_str(row.get("branch_name")),
+        "introducer_code":    _safe_str(row.get("introducer_code")),
         "account_type_name":  _safe_str(row.get("account_type_name")),
         "category":           _safe_str(row.get("category")),
         "currency":           _safe_str(row.get("currency")),
@@ -332,20 +334,32 @@ def get_portfolio_for_rm(rm_code: str) -> dict:
     return get_portfolio_for_codes({str(rm_code or "").strip()})
 
 
-def get_portfolio_for_codes(codes) -> dict:
-    """All CBS accounts tagged to any of a set of RM codes (a person or a whole
-    team/branch) plus portfolio analytics: balances, deposit/loan split, dormancy,
-    NPL, type mix, and deposit movement vs the 31-Dec baseline (per-RM, summed)."""
+def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
+    """CBS accounts tagged to a set of staff codes, plus portfolio analytics.
+
+    attribution selects the lens, and the two are kept strictly separate — never
+    summed, because they answer different questions:
+      "managed"    -> accounts this person is the relationship manager for (their book:
+                      deposits, loans, NPL, the P&L they own)
+      "introduced" -> accounts this person introduced/originated (their production),
+                      which may now be managed by someone else in another segment.
+
+    A person can appear under both, for different accounts. Deposit-movement vs the
+    31-Dec baseline is only meaningful for the managed book, so it's suppressed for
+    the introduced lens.
+    """
+    col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
     code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
     rm = next(iter(code_set), "") if len(code_set) == 1 else ""
     empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
                      "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
                      "dormant_pct": 0.0, "npl_accounts": 0, "by_type": [],
-                     "deposit_movement": None, "baseline_date": None}
+                     "deposit_movement": None, "baseline_date": None,
+                     "attribution": attribution}
     df = _load_accounts()
-    if df is None or df.empty or not code_set or "relationship_manager_code" not in df.columns:
+    if df is None or df.empty or not code_set or col not in df.columns:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-    mine = df[df["relationship_manager_code"].astype(str).str.strip().isin(code_set)]
+    mine = df[df[col].astype(str).str.strip().isin(code_set)]
     if mine.empty:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
     accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
@@ -377,6 +391,8 @@ def get_portfolio_for_codes(codes) -> dict:
     baseline_date = None
     try:
         base_path = Path(__file__).resolve().parent.parent / "data" / "cbs_baseline_2025_Dec_31.json"
+        if attribution == "introduced":
+            raise StopIteration  # movement is a managed-book metric only
         if base_path.exists():
             bl = json.loads(base_path.read_text(encoding="utf-8"))
             baseline_date = bl.get("snapshot_date")
@@ -390,7 +406,7 @@ def get_portfolio_for_codes(codes) -> dict:
                 movement = {"baseline": round(float(base_dep), 2), "current": round(deposits, 2),
                             "delta": round(deposits - float(base_dep), 2),
                             "pct": round((deposits - float(base_dep)) / float(base_dep) * 100, 1) if float(base_dep) else None}
-    except Exception:
+    except (Exception, StopIteration):
         movement = None
 
     summary = {
@@ -403,6 +419,7 @@ def get_portfolio_for_codes(codes) -> dict:
         "by_type": sorted(({"type": k, "count": v["count"], "balance": round(v["balance"], 2)}
                            for k, v in by_type.items()), key=lambda x: -x["balance"]),
         "deposit_movement": movement, "baseline_date": baseline_date,
+        "attribution": attribution,
     }
     return {"rm_code": rm, "accounts": accts, "summary": summary}
 

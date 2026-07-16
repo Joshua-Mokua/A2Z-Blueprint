@@ -311,7 +311,12 @@ def fetch_my_portfolio(
         view = "consolidated" if len(scope) > 1 else "individual"
         selected = ""
     from utils.cbs_manager import get_portfolio_for_codes
-    pf = get_portfolio_for_codes(codes)
+    # Two independent lenses, never summed: the managed book (accounts this scope is RM
+    # for) and introduced production (accounts this scope originated, possibly now
+    # managed elsewhere). pf stays the managed book for back-compat; introduced rides
+    # alongside so the UI can offer a "Managing / Introduced" toggle.
+    pf = get_portfolio_for_codes(codes, attribution="managed")
+    introduced = get_portfolio_for_codes(codes, attribution="introduced")
     # pipeline value for the scope, split deposits vs loans by product
     try:
         from utils.core import PipelineManager
@@ -333,6 +338,8 @@ def fetch_my_portfolio(
         pf["summary"]["pipeline_deposits"] = 0.0
         pf["summary"]["pipeline_loans"] = 0.0
         pf["summary"]["pipeline_value"] = 0.0
+    pf["introduced"] = {"accounts": introduced.get("accounts", []),
+                        "summary": introduced.get("summary", {})}
     pf["team"] = team
     pf["view"] = view
     pf["selected"] = selected
