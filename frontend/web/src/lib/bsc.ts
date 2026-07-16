@@ -24,6 +24,21 @@ export interface BscKpi {
   target_source:      string;   // bank_fixed | cascaded | role_default | missing
   achievement_pct:    number | null;
   score:              number | null;   // 1-5
+  /** Currency of the stored target: USD_MM | USD_K | KES_MM | null when not money. */
+  currency:           string | null;
+  target_money:       Money | null;
+  actual_money:       Money | null;
+  baseline_2025:      number | null;
+  /** Both null unless the viewer's role may switch basis — withheld, not hidden. */
+  stretch:            number | null;
+  stretch_money:      Money | null;
+}
+
+/** A monetary figure both ways: Group reports in USD, the affiliate runs in KES. */
+export interface Money {
+  kes:   number | null;
+  usd:   number | null;
+  scale: string | null;   // MM | K
 }
 
 export interface BscObjective {
@@ -59,6 +74,9 @@ export interface BscScorecard {
   period:                  string;
   final_score:             number | null;
   scored_count:            number;
+  basis:                   string;    // stretch | target
+  can_switch_basis:        boolean;
+  fx_kes_per_usd:          number;
 }
 
 export interface BscTeamMember extends BscStaff {
@@ -102,8 +120,9 @@ export interface BscPillars {
 export const fetchBscTeam    = () => getJson<BscTeam>('/v1/bsc/team');
 export const fetchBscDepartments = () => getJson<BscDepartments>('/v1/bsc/departments');
 export const fetchBscPillars = () => getJson<BscPillars>('/v1/bsc/pillars');
-export const fetchBscScorecard = (staffCode: string) =>
-  getJson<BscScorecard>(`/v1/bsc/scorecard/${encodeURIComponent(staffCode)}`);
+export const fetchBscScorecard = (staffCode: string, basis = '') =>
+  getJson<BscScorecard>(
+    `/v1/bsc/scorecard/${encodeURIComponent(staffCode)}${basis ? `?basis=${basis}` : ''}`);
 
 /** Percent for display. Weights are stored as fractions of the whole scorecard. */
 export const pct = (w: number | null | undefined, dp = 1): string =>
@@ -129,3 +148,16 @@ export const fmtNum = (v: number | null | undefined): string => {
   if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 };
+
+/** Money for display. Scale is already applied by the API (MM / K). */
+export function money(m: Money | null | undefined, cur: 'kes' | 'usd'): string {
+  if (!m) return '—';
+  const v = cur === 'kes' ? m.kes : m.usd;
+  if (v === null || v === undefined) return '—';
+  const sym = cur === 'kes' ? 'KES' : 'USD';
+  if (m.scale === 'MM') {
+    return v >= 1000 ? `${sym} ${(v / 1000).toFixed(2)}B` : `${sym} ${v.toFixed(1)}M`;
+  }
+  if (m.scale === 'K') return `${sym} ${v.toFixed(0)}K`;
+  return `${sym} ${v.toFixed(1)}`;
+}

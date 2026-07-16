@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { fetchWhoamiDetailed } from '@/lib/api';
 import {
   fetchBscDepartments, fetchBscPillars, fetchBscScorecard,
-  pct, scoreTone, achBar, fmtNum,
+  pct, scoreTone, achBar, fmtNum, money,
   type BscKpi, type BscObjective, type BscScorecard, type BscPillars,
 } from '@/lib/bsc';
 
@@ -75,6 +75,24 @@ function Ribbon({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The target in one currency, with the other basis beneath it where the viewer is
+ *  allowed to see it. stretch is absent from the payload entirely for everyone else,
+ *  so there is nothing to leak here. */
+function TargetCell({ kpi, cur }: { kpi: BscKpi; cur: 'kes' | 'usd' }) {
+  const shown = kpi.stretch_money ?? kpi.target_money;   // basis already applied server-side
+  const other = kpi.stretch_money ? kpi.target_money : null;
+  return (
+    <div className="leading-tight">
+      <div>{money(shown, cur)}</div>
+      {other && (
+        <div className="text-[10px] text-gray-400" title="plain target">
+          {money(other, cur)}
+        </div>
+      )}
     </div>
   );
 }
@@ -138,12 +156,12 @@ function AreaSection({
       <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="text-[10px] uppercase tracking-wide text-gray-400 bg-gray-50/70">
-            <th className="text-left   font-medium pl-5 pr-2 py-2 w-[38%]">Measure</th>
-            <th className="text-left   font-medium px-2 py-2 w-[9%]">Unit</th>
-            <th className="text-right  font-medium px-2 py-2 w-[8%]">Weight</th>
-            <th className="text-right  font-medium px-2 py-2 w-[10%]">Target</th>
-            <th className="text-right  font-medium px-2 py-2 w-[10%]">Actual</th>
-            <th className="text-right  font-medium px-2 py-2 w-[17%]">Achievement</th>
+            <th className="text-left   font-medium pl-5 pr-2 py-2 w-[30%]">Measure</th>
+            <th className="text-right  font-medium px-2 py-2 w-[7%]">Weight</th>
+            <th className="text-right  font-medium px-2 py-2 w-[13%]">Target (KES)</th>
+            <th className="text-right  font-medium px-2 py-2 w-[12%]">Target (USD)</th>
+            <th className="text-right  font-medium px-2 py-2 w-[11%]">Actual</th>
+            <th className="text-right  font-medium px-2 py-2 w-[19%]">Achievement</th>
             <th className="text-center font-medium pr-5 pl-2 py-2 w-[8%]">Score</th>
           </tr>
         </thead>
@@ -177,17 +195,29 @@ function AreaSection({
                     ) : null;
                   })()}
                 </td>
-                <td className="px-2 py-2 text-gray-400 text-xs truncate">
-                  {isKpi ? r.kpi.unit || '—' : '—'}
-                </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums font-medium text-gray-700">
                   {weight === null || weight === undefined || !complete ? '—' : pct(weight)}
                 </td>
+                {/* Money rows carry both currencies; a percentage or a count converts
+                    to nothing, so it shows its plain value under Target (KES) and
+                    leaves the USD column empty rather than inventing a conversion. */}
+                <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-700">
+                  {!isKpi ? '—'
+                    : r.kpi.currency
+                      ? <TargetCell kpi={r.kpi} cur="kes" />
+                      : <span>{fmtNum(r.kpi.target)}
+                          {r.kpi.unit ? <span className="text-gray-400"> {r.kpi.unit}</span> : null}
+                        </span>}
+                </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-600">
-                  {isKpi ? fmtNum(r.kpi.target) : '—'}
+                  {isKpi && r.kpi.currency ? <TargetCell kpi={r.kpi} cur="usd" />
+                                            : <span className="text-gray-300">—</span>}
                 </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-800 font-medium">
-                  {isKpi ? fmtNum(r.kpi.actual) : '—'}
+                  {!isKpi ? '—'
+                    : r.kpi.currency && r.kpi.actual_money
+                      ? money(r.kpi.actual_money, 'kes')
+                      : fmtNum(r.kpi.actual)}
                 </td>
                 <td className="px-2 py-2">
                   {isKpi ? <AchievementCell kpi={r.kpi} />
@@ -209,10 +239,13 @@ function AreaSection({
   );
 }
 
-function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPillars }) {
+function Scorecard({ staffCode, pillars, basis, onBasis }: {
+  staffCode: string; pillars?: BscPillars;
+  basis: string; onBasis: (b: string) => void;
+}) {
   const { data, isLoading, error } = useQuery<BscScorecard>({
-    queryKey: ['bsc-scorecard', staffCode],
-    queryFn: () => fetchBscScorecard(staffCode),
+    queryKey: ['bsc-scorecard', staffCode, basis],
+    queryFn: () => fetchBscScorecard(staffCode, basis),
     enabled: !!staffCode,
     placeholderData: (prev) => prev,   // keep the last card while switching tabs
   });
@@ -265,6 +298,27 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
       />
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        {data.can_switch_basis && (
+          <div className="flex items-center gap-1 mr-2">
+            {(['stretch', 'target'] as const).map((b) => (
+              <button
+                key={b}
+                onClick={() => onBasis(b)}
+                className={[
+                  'px-2.5 py-1 rounded text-[11px] border transition-colors',
+                  data.basis === b
+                    ? 'bg-brand-primary text-white border-brand-primary'
+                    : 'bg-white text-gray-500 border-gray-200 hover:text-gray-800',
+                ].join(' ')}
+              >
+                {b === 'stretch' ? 'Stretch' : 'Target'}
+              </button>
+            ))}
+            <span className="text-[10px] text-gray-400 ml-1">
+              scoring basis · FX {data.fx_kes_per_usd}
+            </span>
+          </div>
+        )}
         <span>{data.kpis.length} measures</span>
         {data.objectives.length > 0 && <><span>·</span><span>{data.objectives.length} objectives</span></>}
         <span>·</span>
@@ -313,6 +367,8 @@ export function Perform() {
 
   const [tab, setTab] = useState<string>(MY_TAB);
   const [picked, setPicked] = useState<Record<string, string>>({});
+  // '' lets the server apply the admin default; only the permitted roles can move it.
+  const [basis, setBasis] = useState<string>('');
 
   const activeDept = useMemo(
     () => depts?.departments.find((d) => d.department === tab),
@@ -400,7 +456,8 @@ export function Perform() {
       )}
 
       {active
-        ? <Scorecard staffCode={active} pillars={pillars} />
+        ? <Scorecard staffCode={active} pillars={pillars}
+                     basis={basis} onBasis={setBasis} />
         : <Skeleton />}
     </div>
   );
