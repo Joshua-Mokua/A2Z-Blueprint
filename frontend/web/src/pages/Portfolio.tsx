@@ -27,6 +27,7 @@ export default function Portfolio() {
   const [err, setErr] = useState('');
   const [staff, setStaff] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
+  const [lens, setLens] = useState<'managing' | 'introduced'>('managing');
   const [c360, setC360] = useState<{ cif: string; customer: CbsCustomer | null; accounts: CbsAccount[] } | null>(null);
   const [c360Loading, setC360Loading] = useState(false);
 
@@ -49,7 +50,11 @@ export default function Portfolio() {
     finally { setC360Loading(false); }
   }
 
-  const s = data?.summary;
+  // Two mutually-exclusive lenses. Managing = your book (you are RM). Introduced =
+  // ONLY accounts you introduced that someone else now manages — never your own book.
+  const introduced = data?.introduced ?? null;
+  const s = lens === 'introduced' ? introduced?.summary : data?.summary;
+  const activeAccounts = lens === 'introduced' ? (introduced?.accounts ?? []) : (data?.accounts ?? []);
   const mv = s?.deposit_movement;
   const tabs: [Tab, string][] = [['overview', 'Overview'], ['bytype', 'By account type'], ['accounts', 'Accounts']];
 
@@ -68,6 +73,22 @@ export default function Portfolio() {
             {data.view === 'consolidated' && <span className="text-xs text-gray-400">Whole team / branch book</span>}
           </label>
         </Card.Body></Card>
+      )}
+
+      {data && (data.accounts.length > 0 || (introduced?.accounts?.length ?? 0) > 0) && (
+        <div className="mt-3 inline-flex rounded-lg border border-gray-200 p-0.5 text-sm">
+          <button onClick={() => { setLens('managing'); }}
+            className={'rounded-md px-3 py-1.5 font-medium ' + (lens === 'managing' ? 'bg-brand-primary text-white' : 'text-gray-600 hover:text-gray-900')}>
+            Managing
+          </button>
+          <button onClick={() => { setLens('introduced'); }}
+            className={'rounded-md px-3 py-1.5 font-medium ' + (lens === 'introduced' ? 'bg-brand-primary text-white' : 'text-gray-600 hover:text-gray-900')}>
+            Introduced
+          </button>
+        </div>
+      )}
+      {lens === 'introduced' && (
+        <p className="mt-1 text-xs text-gray-400">Business you introduced that is now managed by another RM. Your own book is under “Managing”.</p>
       )}
 
       {loading ? (
@@ -104,7 +125,7 @@ export default function Portfolio() {
                 subTone={mv ? (mv.delta >= 0 ? 'good' : 'warn') : undefined}
               />
             </div>
-            {data.branch_unallocated && data.branch_unallocated.accounts > 0 && (
+            {data?.branch_unallocated && data.branch_unallocated.accounts > 0 && (
               <Card><Card.Body>
                 <div className="mb-1 text-sm font-semibold text-gray-900">Unallocated in branch</div>
                 <p className="text-sm text-gray-600">
@@ -136,8 +157,13 @@ export default function Portfolio() {
               <p className="mb-2 text-xs text-gray-400">Click a row for the customer 360.</p>
               <div className="overflow-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs text-gray-400"><th className="py-1">Account</th><th>CIF</th><th>Type</th><th className="text-right">Balance</th><th>Status</th><th>Dormancy</th></tr></thead>
-                  <tbody>{data!.accounts.slice(0, 300).map((a) => (
+                  <thead><tr className="text-left text-xs text-gray-400">
+                    <th className="py-1">Account</th><th>CIF</th><th>Type</th>
+                    <th className="text-right">Balance</th><th>Status</th><th>Dormancy</th>
+                    {lens === 'introduced' && <th>Managed by</th>}
+                    {lens === 'introduced' && <th>Loan</th>}
+                  </tr></thead>
+                  <tbody>{activeAccounts.slice(0, 300).map((a) => (
                     <tr key={a.account_number} className="cursor-pointer border-t border-gray-100 hover:bg-gray-50" onClick={() => void openCustomer360(a.cif)}>
                       <td className="py-1.5 tabular-nums">{a.account_number}</td>
                       <td className="text-gray-500">{a.cif}</td>
@@ -145,6 +171,8 @@ export default function Portfolio() {
                       <td className="text-right tabular-nums">{kes(a.current_balance)}</td>
                       <td className="text-gray-600">{a.account_status}</td>
                       <td className={/active|regular/i.test(a.dormancy_status) ? 'text-gray-500' : 'text-amber-600'}>{a.dormancy_status || '—'}</td>
+                      {lens === 'introduced' && <td className="text-gray-700">{a.managed_by_name || a.managed_by_code || '—'}</td>}
+                      {lens === 'introduced' && <td className={/loan|facility|advance|mortgage/i.test(a.account_type_name) ? 'text-brand-primary' : 'text-gray-400'}>{/loan|facility|advance|mortgage/i.test(a.account_type_name) ? 'Yes' : '—'}</td>}
                     </tr>))}</tbody>
                 </table>
               </div>

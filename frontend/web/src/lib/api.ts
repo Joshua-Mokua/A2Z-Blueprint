@@ -99,10 +99,10 @@ export class AuthExpiredError extends Error {
 // 401 callback before throwing so AuthProvider state flips synchronously
 // with the failure. Other non-OK responses throw a generic Error.
 
-export interface PortfolioAccount { account_number: string; cif: string; account_type_name: string; current_balance: number; available_balance: number; account_status: string; dormancy_status: string; npl_status: string; branch_code: string; }
+export interface PortfolioAccount { account_number: string; cif: string; account_type_name: string; current_balance: number; available_balance: number; account_status: string; dormancy_status: string; npl_status: string; branch_code: string; introducer_code?: string; relationship_manager_code?: string; managed_by_code?: string; managed_by_name?: string; }
 export interface PortfolioSummary { accounts: number; customers: number; total_balance: number; deposits: number; loans: number; dormant_accounts: number; dormant_pct: number; npl_accounts: number; by_type: { type: string; count: number; balance: number }[]; deposit_movement: { baseline: number; current: number; delta: number; pct: number | null } | null; baseline_date: string | null; pipeline_deposits: number; pipeline_loans: number; pipeline_value: number; }
 export interface PortfolioTeamMember { staff_code: string; name: string; }
-export interface PortfolioResponse { rm_code: string; accounts: PortfolioAccount[]; summary: PortfolioSummary; team: PortfolioTeamMember[]; view: string; selected: string; is_manager: boolean; branch_unallocated?: { accounts: number; deposits: number; loans: number; branch_codes: string[] } | null; }
+export interface PortfolioResponse { rm_code: string; accounts: PortfolioAccount[]; summary: PortfolioSummary; introduced?: { accounts: PortfolioAccount[]; summary: PortfolioSummary } | null; team: PortfolioTeamMember[]; view: string; selected: string; is_manager: boolean; branch_unallocated?: { accounts: number; deposits: number; loans: number; branch_codes: string[] } | null; }
 export async function fetchMyPortfolio(staffCode = ''): Promise<PortfolioResponse> {
   const q = staffCode ? `?staff_code=${encodeURIComponent(staffCode)}` : '';
   return getJson<PortfolioResponse>(`/cbs/portfolio${q}`);
