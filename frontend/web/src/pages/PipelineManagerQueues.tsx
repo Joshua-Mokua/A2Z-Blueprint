@@ -23,6 +23,7 @@
 //   - Same Toast pattern for success / error
 //   - Same mutation hook pattern
 
+import { displayName } from "../lib/names";
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -344,7 +345,7 @@ function QueueCard({ deal, onNavigate, children }: QueueCardCommonProps) {
       </Card.Header>
       <Card.Body>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-3">
-          <Field label="Owner" value={deal.staff_name} sub={deal.staff_code} />
+          <Field label="Owner" value={deal.staff_name ? displayName(deal.staff_name) : undefined} sub={deal.staff_code} />
           <Field label="Probability" value={
             typeof deal.probability === 'number'
               ? `${Math.round(deal.probability * 100)}%`

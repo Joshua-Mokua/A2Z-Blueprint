@@ -4,6 +4,7 @@
 //   • Incoming  — pending referrals addressed to me; Accept or Decline (reason).
 //   • Returned  — referrals I made that were declined; Reassign to someone new.
 //   • Following — referrals I made that are live (pending/accepted); read-only.
+import { displayName } from "../lib/names";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
@@ -113,7 +114,7 @@ export default function Referrals() {
     setBusyId(d.id);
     try {
       await reassignReferral(d.id, reMember.staff_code, reMember.name, reNote.trim());
-      toast({ tone: 'success', message: `Reassigned to ${reMember.name}.` });
+      toast({ tone: 'success', message: `Reassigned to ${displayName(reMember.name)}.` });
       setReassignFor(null); setReMember(null); setReNote(''); loadAll();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Reassign failed.' });
@@ -326,7 +327,7 @@ export default function Referrals() {
                   {analytics.alerts.map((al, i) => (
                     <li key={al.id || i} className="text-sm text-gray-700">
                       <span className="font-medium">{al.client_name || al.id}</span>
-                      {al.referred_to ? ` → ${al.referred_to}` : ''} — {al.message}
+                      {al.referred_to ? ` → ${displayName(al.referred_to)}` : ''} — {al.message}
                     </li>
                   ))}
                 </ul>
@@ -374,15 +375,15 @@ export default function Referrals() {
                     <DealMeta d={d} />
                     <div className="shrink-0 text-right text-xs text-gray-400">
                       {tab === 'incoming' && d.referred_by_name && (
-                        <div>from <span className="text-gray-600">{d.referred_by_name}</span></div>
+                        <div>from <span className="text-gray-600">{displayName(d.referred_by_name)}</span></div>
                       )}
                       {tab === 'following' && d.referred_to && (
-                        <div>to <span className="text-gray-600">{d.referred_to}</span></div>
+                        <div>to <span className="text-gray-600">{displayName(d.referred_to)}</span></div>
                       )}
                       {tab === 'team' && (
                         <div>
-                          {d.referred_by_name && <div><span className="text-gray-600">{d.referred_by_name}</span></div>}
-                          {d.referred_to && <div className="mt-0.5">→ <span className="text-gray-600">{d.referred_to}</span></div>}
+                          {d.referred_by_name && <div><span className="text-gray-600">{displayName(d.referred_by_name)}</span></div>}
+                          {d.referred_to && <div className="mt-0.5">→ <span className="text-gray-600">{displayName(d.referred_to)}</span></div>}
                         </div>
                       )}
                       {formatDate(d.referred_at) && <div className="mt-0.5">{formatDate(d.referred_at)}</div>}

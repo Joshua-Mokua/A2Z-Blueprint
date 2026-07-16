@@ -30,6 +30,7 @@
 //   after request_cancel, can_request_cancel becomes false). They
 //   navigate back to /pipeline when they want.
 
+import { displayName } from "../lib/names";
 import { useCallback, useEffect, useState } from 'react';
 import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
 import { printDocument, escapeHtml } from '@/lib/print';
@@ -422,7 +423,7 @@ function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
     ['Currency', String(deal.currency ?? 'KES'), false],
     ['Stage', String(deal.stage ?? '—'), false],
     ['Expected close', deal.expected_close ? formatDate(deal.expected_close) : '—', false],
-    ['Owner', String(deal.staff_name ?? '—'), false],
+    ['Owner', deal.staff_name ? displayName(deal.staff_name) : '—', false],
     ['Deal', String(deal.id), true],
   ];
 
@@ -547,7 +548,7 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
           <div className="mb-4 rounded-lg border border-gray-200 p-3">
             <p className="mb-2 text-sm text-gray-700">
               Put this case on hold — this freezes all SLA clocks until lifted. Your line
-              manager{deal.validator?.name ? ` (${deal.validator.name})` : ''} must validate the request.
+              manager{deal.validator?.name ? ` (${displayName(deal.validator.name)})` : ''} must validate the request.
             </p>
             <Input value={holdReason} onChange={(e) => setHoldReason(e.target.value)}
               placeholder="Reason for placing on hold (required)" />
@@ -563,7 +564,7 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
           <div className="mb-4 rounded-lg border border-gray-200 p-3">
             <p className="mb-2 text-sm text-gray-700">
               This case was declined. You can request to reopen it for rework — your{' '}
-              line manager{deal.validator?.name ? ` (${deal.validator.name})` : ''} must validate the request.
+              line manager{deal.validator?.name ? ` (${displayName(deal.validator.name)})` : ''} must validate the request.
             </p>
             <Input value={reason} onChange={(e) => setReason(e.target.value)}
               placeholder="Reason for reopening (required)" />
@@ -1120,7 +1121,7 @@ function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => 
         referred_to_name: picked.name,
         referral_note: note.trim(),
       });
-      toast({ tone: 'success', message: `Referred to ${picked.name}. They'll need to accept it.` });
+      toast({ tone: 'success', message: `Referred to ${displayName(picked.name)}. They'll need to accept it.` });
       setOpen(false); setPicked(null); setNote('');
       onSuccess();
     } catch (e) {

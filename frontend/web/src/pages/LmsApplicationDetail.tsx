@@ -15,6 +15,7 @@
 // flipped (e.g. after assign, can_assign becomes false because status
 // is now 'assigned').
 
+import { displayName } from "../lib/names";
 import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
@@ -185,7 +186,7 @@ export function LmsApplicationDetail() {
               {application.analyst?.name && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
-                  <span className="text-gray-900">{application.analyst.name}</span>
+                  <span className="text-gray-900">{displayName(application.analyst.name)}</span>
                 </div>
               )}
             </div>
