@@ -134,7 +134,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </button>
         <Link to="/about" onClick={() => onNavigate?.()}
           className="mt-2 block text-center text-[11px] text-white/40 hover:text-white/70">
-          © 2026 Joshua Mokua · About
+          © 2026 A2Z · About
         </Link>
       </div>
     </aside>

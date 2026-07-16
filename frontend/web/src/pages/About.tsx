@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 
 const YEAR = 2026;
-const AUTHOR = 'Joshua Onyancha Mokua';
+const AUTHOR = 'A2Z';
 
 export default function About() {
   return (
@@ -20,7 +20,7 @@ export default function About() {
             <span className="text-gray-500">Copyright</span> © {YEAR} {AUTHOR}. All rights reserved.
           </div>
           <div>
-            <span className="text-gray-500">Author &amp; copyright holder:</span> {AUTHOR}
+            <span className="text-gray-500">Author &amp; copyright holder:</span> A2Z
           </div>
         </div>
       </Card.Body></Card>
