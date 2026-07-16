@@ -221,3 +221,30 @@ scripts/inspect_byte.py
 /fix_*.py
 /migrate_*.py
 /check_credit*.py
+
+# ── Local dev tools, probes, and cleanup scripts (kept locally, never shipped) ──
+/check_login.py
+/check_names.py
+/check_persistence_mode.py
+/db_probe.py
+/scope_probe.py
+/inspect_branches.py
+/inspect_byte.py
+/cleanup_oneshots.py
+/cleanup_scaffolding.py
+/test_a2z_smoke.py
+/make_staff_upload_template.py
+/make_test_filled_template.py
+# root-level duplicates of tools that live canonically in scripts/
+/close_gaps.py
+/wire_branch_hierarchy.py
+/apply_*.py
+
+# ── Staff-migration staging data — contains REAL staff PII, must NOT be committed ──
+# (the live register is generated from PostgreSQL; these are working files only)
+data/BRANCH_FILL.xlsx
+data/STAFF_UPLOAD_FILLED.xlsx
+data/staff_register_staging.xlsx
+data/staff_source_dsa.xlsx
+data/staff_source_permanent.xlsx
+data/*.xlsx.bak*
