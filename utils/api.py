@@ -297,15 +297,6 @@ try:
 except Exception as _exc:  # noqa: BLE001
     logger.warning(f"Cascade router not loaded: {_exc}")
 
-# Balanced Scorecard — serves the scorecard *definition* (areas, KPIs, weights,
-# objectives). The older /api/bsc/staff/{username} returns computed scores only.
-try:
-    from utils.api_bsc_scorecard import router as _bsc_scorecard_router
-    app.include_router(_bsc_scorecard_router)
-    logger.info("A2Z API — BSC scorecard router mounted at /api/v1/bsc")
-except Exception as _exc:  # noqa: BLE001
-    logger.warning(f"BSC scorecard router not loaded: {_exc}")
-
 try:
     from utils.api_capacity_feedback import router as _capacity_router
     app.include_router(_capacity_router)
@@ -9627,6 +9618,20 @@ app.include_router(cascade_api_router)
 # v10.540 Phase 8 Batch gamma4a -- Strategic Initiatives read-only routes
 from utils.api_initiatives_routes import router as initiatives_api_router
 app.include_router(initiatives_api_router)
+
+# Balanced Scorecard — the scorecard *definition* (performance areas, KPIs with their
+# effective weights, and dated objectives). /api/bsc/staff/{username} returns computed
+# scores only, so the React page had no source for the scorecard itself.
+#
+# Mounted here, alongside the routers known to serve, rather than in the early block at
+# the top of this module: mounted there, include_router logged success and the routes
+# still answered 404, while every router mounted at this point in the file works.
+# Deliberately NOT wrapped in try/except — the surrounding mounts swallow failures into
+# a warning, which is how a router can look mounted while serving nothing. An API
+# missing an endpoint should fail at startup, not at the first request.
+from utils.api_bsc_scorecard import router as _bsc_scorecard_router
+app.include_router(_bsc_scorecard_router)
+logger.info("A2Z API — BSC scorecard router mounted at /api/v1/bsc")
 
 
 # === MODULE ACCESS LIST ENDPOINT ===
