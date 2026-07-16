@@ -567,6 +567,213 @@
       "K053",
       "K117",
       "K116"
+    ],
+    "Director, Legal Services & Company Secretary": [
+      "TOTAL_REVENUE",
+      "PBT",
+      "COST_SAVING",
+      "DEBT_RECOVERY",
+      "DEPT_SLA",
+      "CX Score",
+      "QUERY_TAT",
+      "REGRETTABLE_TURNOVER",
+      "PERF_CYCLE_ADHERENCE",
+      "LEAVE_UTILISATION",
+      "MANDATORY_TRAINING",
+      "ENGAGEMENT_SCORE",
+      "AUDIT_RATING_ARR",
+      "RCSA_QA",
+      "OP_LOSS_PCT_PBT",
+      "OVERDUE_ISSUES",
+      "REG_APPROVALS",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS"
+    ],
+    "Director, Internal Audit": [
+      "OP_LOSS_PCT_PBT",
+      "REPEAT_ISSUES",
+      "TOTAL_REVENUE",
+      "PBT",
+      "COST_SAVING",
+      "CX Score",
+      "AUDIT_REPORT_TIMELINESS",
+      "DEPT_MEETINGS",
+      "PERF_CYCLE_ADHERENCE",
+      "MANDATORY_TRAINING",
+      "OTR",
+      "FRAUD_INVESTIGATION_TAT",
+      "AUDIT_PLAN_COMPLETION",
+      "COMBINED_ASSURANCE",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS"
+    ],
+    "Director Compliance- CESA 1": [
+      "TOTAL_REVENUE",
+      "PBT",
+      "UNCLAIMED_ASSETS",
+      "KYC_TAT",
+      "CX Score",
+      "REG_APPROVALS",
+      "REGRETTABLE_TURNOVER",
+      "PDP_COVERAGE",
+      "MANDATORY_TRAINING",
+      "ENGAGEMENT_SCORE",
+      "CAPABILITY_READINESS",
+      "REV_PER_STAFF",
+      "PIP_PROCESS",
+      "AUDIT_RATING_ARR",
+      "REG_FINES_PCT_PBT",
+      "OTR",
+      "COMPLIANCE_MONITORING",
+      "HORIZON_SCANNING",
+      "AML_FRAMEWORK",
+      "REG_RETURNS",
+      "RCSA_QA",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS",
+      "KYC_REMEDIATION",
+      "CORRESPONDENT_BANKS"
+    ],
+    "Director, Internal Control": [
+      "TOTAL_REVENUE",
+      "PBT",
+      "OP_LOSS_PCT_PBT",
+      "REVENUE_ASSURANCE",
+      "DEPT_SLA",
+      "CX Score",
+      "REG_RETURNS",
+      "SUCCESSION_COVERAGE",
+      "PDP_COVERAGE",
+      "ENGAGEMENT_SCORE",
+      "MANDATORY_TRAINING",
+      "REGRETTABLE_TURNOVER",
+      "CONTROL_PLAN",
+      "AUDIT_RATING_ARR",
+      "PROOFS_RECON",
+      "RCSA_QA",
+      "REPEAT_ISSUES",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS",
+      "ICOFR"
+    ],
+    "Director, Credit Risk Management- Kenya & EAC": [
+      "PORTFOLIO_RISK_RATING",
+      "NPL_RATIO",
+      "STAGE3_EXPOSURE",
+      "STAGE2_EXPOSURE",
+      "TOTAL_REVENUE",
+      "PBT",
+      "COST_OF_RISK",
+      "CREDIT_FILE_TAT",
+      "CREDIT_FILE_TAT_EAC",
+      "CX Score",
+      "PDP_COVERAGE",
+      "MANDATORY_TRAINING",
+      "DEPT_MEETINGS",
+      "PERF_CYCLE_ADHERENCE",
+      "AUDIT_RATING_ARR",
+      "RCSA_QA",
+      "REPEAT_ISSUES",
+      "REG_FINES_PCT_PBT",
+      "EXPIRED_TICKLERS",
+      "DEPOSIT_MOBILISATION"
+    ],
+    "Director, Corporate Banking Kenya & EAC": [
+      "TOTAL_REVENUE",
+      "PBT",
+      "DIVISION_REVENUE",
+      "DIVISION_PBT",
+      "PERFORMING_LOANS",
+      "LCY_DEPOSITS",
+      "FCY_DEPOSITS",
+      "NPL_RATIO",
+      "NTB_CUSTOMERS",
+      "CROSS_SELL_RATIO",
+      "CX Score",
+      "CSAT",
+      "CUSTOMER_VISITS",
+      "CALL_MEMOS",
+      "DIGITAL_ACTIVE_PCT",
+      "MANDATORY_TRAINING",
+      "SUCCESSION_COVERAGE",
+      "REGRETTABLE_TURNOVER",
+      "PDP_COVERAGE",
+      "PERF_CYCLE_ADHERENCE",
+      "DEPT_MEETINGS",
+      "HR_ACTIVITY_ATTENDANCE",
+      "ACCOUNT_PLANS",
+      "AUDIT_RATING_ARR",
+      "RCSA_QA",
+      "EXPIRED_TICKLERS",
+      "OTR",
+      "PDO_MANAGEMENT",
+      "VALUE_CHAIN_ALIGNMENT",
+      "DIGITAL_SALES_ACTIVATION",
+      "AU_DEPOSIT_CONC",
+      "LCY_FCY_SPLIT",
+      "FINTECH_PARTNERS"
+    ],
+    "Chief Finance Officer": [
+      "TOTAL_REVENUE",
+      "PBT",
+      "COST_SAVING",
+      "ROE",
+      "CAPITAL_OPTIMISATION",
+      "MONTHLY_GROUP_REPORTING",
+      "AUDIT_REPORT_TIMELINESS",
+      "REG_APPROVALS",
+      "MANDATORY_TRAINING",
+      "PERF_CYCLE_ADHERENCE",
+      "LEAVE_UTILISATION",
+      "DEPT_MEETINGS",
+      "HR_ACTIVITY_ATTENDANCE",
+      "AUDIT_RATING_ARR",
+      "RCSA_QA",
+      "REPEAT_ISSUES",
+      "COMPETITOR_ANALYSIS",
+      "BUDGET_PROCESS",
+      "REG_FINES_PCT_PBT",
+      "DEPOSIT_MOBILISATION",
+      "REVENUE_ASSURANCE"
+    ],
+    "Ag. Head Human Resources & Senior HR Business Partner": [
+      "STAFF_COST_BUDGET",
+      "EMPLOYEE_COST_RATIO",
+      "TOTAL_REVENUE",
+      "PBT",
+      "Staff Productivity",
+      "RECRUITMENT_TAT",
+      "ENGAGEMENT_SCORE",
+      "REGRETTABLE_TURNOVER",
+      "TOTAL_TURNOVER",
+      "GRADUATE_PROGRAMME",
+      "TALENT_MANAGEMENT",
+      "DIVERSITY_INCLUSION",
+      "CAPABILITY_READINESS",
+      "PERF_CYCLE_ADHERENCE",
+      "AUDIT_RATING_ARR",
+      "RCSA_QA",
+      "PIP_PROCESS",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS"
+    ],
+    "Head of Consumer": [
+      "DIVISION_REVENUE",
+      "NTB_CUSTOMERS",
+      "TOTAL_REVENUE",
+      "PBT",
+      "NET_LOANS",
+      "TOTAL_DEPOSITS",
+      "CX Score",
+      "DIGITAL_ACTIVE_PCT",
+      "DORMANCY_RATIO",
+      "PERF_CYCLE_ADHERENCE",
+      "MANDATORY_TRAINING",
+      "ENGAGEMENT_SCORE",
+      "OTR",
+      "PDO_MANAGEMENT",
+      "EXPIRED_TICKLERS",
+      "CROSS_SELL_RATIO"
     ]
   },
   "pillar_weights": {
@@ -4945,6 +5152,594 @@
       "active": true,
       "description": "Group budget and financial audit process closed within Group timelines.",
       "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "DIVISION_REVENUE",
+      "name": "Division Revenue",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Revenue of the division or business unit the holder runs.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "DIVISION_PBT",
+      "name": "Division PBT",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Profit before tax of the division or business unit the holder runs.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "PERFORMING_LOANS",
+      "name": "Total Performing Loans",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Performing loan book.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "LCY_DEPOSITS",
+      "name": "LCY Deposits",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Local-currency deposits.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "FCY_DEPOSITS",
+      "name": "FCY Deposits",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Foreign-currency deposits.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "DEBT_RECOVERY",
+      "name": "Debt Recovery",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Recovery against named impaired exposures.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "COST_SAVING",
+      "name": "Cost Saving vs Budget",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Savings delivered against the approved budget line.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "STAFF_COST_BUDGET",
+      "name": "Staff Costs within Budget",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Staff costs against the approved staff-cost budget.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "EMPLOYEE_COST_RATIO",
+      "name": "Employee Cost to Total Cost",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Employee costs as a share of total costs.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CAPITAL_OPTIMISATION",
+      "name": "Capital Optimisation",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Balance-sheet optimisation of capital-consuming assets.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "PORTFOLIO_RISK_RATING",
+      "name": "Aggregate Portfolio Risk Rating",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "rating",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Aggregate risk rating of the portfolio.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "STAGE2_EXPOSURE",
+      "name": "Stage 2 Exposure Reduction",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "KES M",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Reduction in IFRS 9 stage 2 exposures.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "STAGE3_EXPOSURE",
+      "name": "Stage 3 & Written-Off Exposure Reduction",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "KES M",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Reduction in stage 3 and written-off exposures.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "COST_OF_RISK",
+      "name": "Cost of Risk",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Impairment charge as a share of the loan book.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "UNCLAIMED_ASSETS",
+      "name": "Reportable Unclaimed Financial Assets",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Unclaimed financial assets reportable to the regulator.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "DEPT_SLA",
+      "name": "Departmental SLA Compliance",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Service-level compliance across the department's service lines.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "QUERY_TAT",
+      "name": "Query Resolution TAT",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Queries resolved within the agreed turnaround.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CUSTOMER_VISITS",
+      "name": "Customer Visits per RM",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Relationship visits completed per RM per week.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CALL_MEMOS",
+      "name": "Call Memo Submission",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Call memos submitted within 24 hours of the call.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CREDIT_FILE_TAT",
+      "name": "Credit File TAT",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Turnaround on credit files by segment.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CREDIT_FILE_TAT_EAC",
+      "name": "Credit File TAT \u2014 EAC Affiliates",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Turnaround on credit files referred from other EAC affiliates.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "AUDIT_REPORT_TIMELINESS",
+      "name": "Audit Report Timeliness",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Audit reports issued within the agreed window after the exit meeting.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "KYC_TAT",
+      "name": "Client Onboarding KYC TAT",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Onboarding completed within KYC turnaround with control integrity.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "DEPT_MEETINGS",
+      "name": "Departmental Meetings & Minutes",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Monthly departmental meetings held and minutes filed with HR.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "HR_ACTIVITY_ATTENDANCE",
+      "name": "HR Engagement Activity Attendance",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Attendance at HR staff-engagement activities.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "PIP_PROCESS",
+      "name": "PIP Process Implementation",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Performance-improvement plans run and repeat 1/2 ratings closed.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "TALENT_MANAGEMENT",
+      "name": "Talent Management Programme",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Talent programme and talent-day actions delivered to plan.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "DIVERSITY_INCLUSION",
+      "name": "Diversity & Inclusion",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "D&I strategy operationalised, including women in management roles.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "RECRUITMENT_TAT",
+      "name": "Recruitment TAT",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Average time to fill an approved vacancy.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CONTROL_PLAN",
+      "name": "Control Plan Implementation",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Implementation of the approved annual control plan.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "ICOFR",
+      "name": "ICoFR Control Reviews",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Internal Controls over Financial Reporting reviews completed and reported.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "PROOFS_RECON",
+      "name": "Proofs & Reconciliation Oversight",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "USD",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Losses attributable to inadequate proofing and reconciliation.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "REVENUE_ASSURANCE",
+      "name": "Revenue Assurance Reviews",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Revenue-assurance reviews completed and leakage reported.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "REPEAT_ISSUES",
+      "name": "Repeat / Reopened Issues",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Control issues reopened or repeating.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "AUDIT_PLAN_COMPLETION",
+      "name": "Audit Plan Completion",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Completion of the approved annual audit plan.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "FRAUD_INVESTIGATION_TAT",
+      "name": "Fraud Investigation Completion",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Suspected fraud investigated and resolved within the agreed timeline.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "COMBINED_ASSURANCE",
+      "name": "Combined Assurance Meetings",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Quarterly combined-assurance meetings harmonising review plans.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "REG_APPROVALS",
+      "name": "Regulatory Approvals & Governance Compliance",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Regulatory applications submitted on time with no material breaches.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "ACCOUNT_PLANS",
+      "name": "Account Plans & Annual Reviews",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Account plans and annual reviews completed on time for key clients.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "PDO_MANAGEMENT",
+      "name": "Past Due Obligations (PDO)",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Past-due obligations outstanding on the portfolio.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "COMPLIANCE_MONITORING",
+      "name": "Compliance Monitoring Plan Adherence",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Adherence to the annual compliance monitoring plan.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "HORIZON_SCANNING",
+      "name": "Regulatory Horizon Scanning",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Systematic scanning and briefing on regulatory developments.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "REG_RETURNS",
+      "name": "Regulatory Returns & Breach Reporting",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Regulatory returns tracked and breaches reported.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "AML_FRAMEWORK",
+      "name": "AML/CFT/CPF Framework Effectiveness",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Screening effectiveness, alert quality, false-positive optimisation and STR quality.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "KYC_REMEDIATION",
+      "name": "KYC Periodic Review & Remediation",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Periodic customer review and KYC data remediation.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CORRESPONDENT_BANKS",
+      "name": "Correspondent Bank Relationship Management",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Correspondent bank assessments answered and ratings maintained.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "MONTHLY_GROUP_REPORTING",
+      "name": "Monthly Group Reporting",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "days",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Monthly Group/SAP reporting delivered within the reporting window.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "BUDGET_PROCESS",
+      "name": "Budget Process Timeliness",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Budget process concluded within Group timelines.",
+      "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "COMPETITOR_ANALYSIS",
+      "name": "Competitor Analysis to EXCO",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Quarterly competitor analysis delivered to EXCO.",
+      "source": "EKE 2026 EXCO scorecards"
     }
   ],
   "_v10324_role_kpi_updates": {
@@ -6418,6 +7213,1128 @@
       },
       "source": "EKE 2026 scorecard \u2014 Affiliate MD",
       "weights_complete": true
+    },
+    "Director, Legal Services & Company Secretary": {
+      "areas": {
+        "Financial": 0.2,
+        "Customer Focus": 0.15,
+        "People & Learning": 0.1,
+        "Operational Excellence": 0.4,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "COST_SAVING": {
+          "area": "Financial",
+          "weight": 0.4
+        },
+        "DEBT_RECOVERY": {
+          "area": "Financial",
+          "weight": 0.4
+        },
+        "DEPT_SLA": {
+          "area": "Customer Focus",
+          "weight": 0.4
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.15
+        },
+        "QUERY_TAT": {
+          "area": "Customer Focus",
+          "weight": 0.15
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "LEAVE_UTILISATION": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": 0.05
+        },
+        "OP_LOSS_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": 0.15
+        },
+        "OVERDUE_ISSUES": {
+          "area": "Operational Excellence",
+          "weight": 0.05
+        },
+        "REG_APPROVALS": {
+          "area": "Operational Excellence",
+          "weight": 0.15
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": 0.3
+        },
+        "ACCOUNT_REFERRALS": {
+          "area": "Must Win Battles",
+          "weight": 0.3
+        }
+      },
+      "objectives": [
+        {
+          "text": "Deliver a minimum of 8 trainings to internal stakeholders",
+          "area": "Customer Focus",
+          "weight": 0.3,
+          "due": "2026-11-30"
+        },
+        {
+          "text": "Facilitate appointment of the Board Chairman",
+          "area": "Operational Excellence",
+          "weight": 0.05,
+          "due": "2026-09-30"
+        },
+        {
+          "text": "Deliver 100% of the Board Training Calendar",
+          "area": "Operational Excellence",
+          "weight": 0.05,
+          "due": "2026-11-30"
+        },
+        {
+          "text": "Company secretarial & legal support to EDC Asset Management (Kenya) Ltd",
+          "area": "Operational Excellence",
+          "weight": 0.25,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Semi-annual governance support to CESA Anglophone Chairmen (2 engagements)",
+          "area": "Operational Excellence",
+          "weight": 0.15,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Conclude the Skytop Mccarfix case (agreement or final determination)",
+          "area": "Must Win Battles",
+          "weight": 0.4,
+          "due": "2026-11-30"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Caroline Mbenge Wambua (KE443)",
+      "weights_complete": true
+    },
+    "Director, Internal Audit": {
+      "areas": {
+        "Financial": 0.2,
+        "Customer Focus": 0.1,
+        "People & Learning": 0.15,
+        "Operational Excellence": 0.4,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "OP_LOSS_PCT_PBT": {
+          "area": "Financial",
+          "weight": 0.25
+        },
+        "REPEAT_ISSUES": {
+          "area": "Financial",
+          "weight": 0.25
+        },
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.125
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.125
+        },
+        "COST_SAVING": {
+          "area": "Financial",
+          "weight": 0.25
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.5
+        },
+        "AUDIT_REPORT_TIMELINESS": {
+          "area": "Customer Focus",
+          "weight": 0.5
+        },
+        "DEPT_MEETINGS": {
+          "area": "People & Learning",
+          "weight": 0.33
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": 0.33
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.34
+        },
+        "OTR": {
+          "area": "Operational Excellence",
+          "weight": 0.125
+        },
+        "FRAUD_INVESTIGATION_TAT": {
+          "area": "Operational Excellence",
+          "weight": 0.125
+        },
+        "AUDIT_PLAN_COMPLETION": {
+          "area": "Operational Excellence",
+          "weight": 0.625
+        },
+        "COMBINED_ASSURANCE": {
+          "area": "Operational Excellence",
+          "weight": 0.125
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": 0.17
+        },
+        "ACCOUNT_REFERRALS": {
+          "area": "Must Win Battles",
+          "weight": 0.16
+        }
+      },
+      "objectives": [
+        {
+          "text": "On-time implementation of the audit QAIP",
+          "area": "Must Win Battles",
+          "weight": 0.13,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Adopt audit management software and automate audit tests (ACL)",
+          "area": "Must Win Battles",
+          "weight": 0.13,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Pilot AI/automation in the audit process (3 initiatives)",
+          "area": "Must Win Battles",
+          "weight": 0.13,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Conform with the new Global Internal Audit Standards (GIAS)",
+          "area": "Must Win Battles",
+          "weight": 0.13,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Cross-affiliate & Group collaboration assignments",
+          "area": "Must Win Battles",
+          "weight": 0.15,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Latifa Achieng Outa (KE754)",
+      "weights_complete": true
+    },
+    "Director Compliance- CESA 1": {
+      "areas": {
+        "Financial": 0.2,
+        "Customer Focus": 0.15,
+        "People & Learning": 0.1,
+        "Operational Excellence": 0.4,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.4
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.4
+        },
+        "UNCLAIMED_ASSETS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "KYC_TAT": {
+          "area": "Customer Focus",
+          "weight": 0.3
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.3
+        },
+        "REG_APPROVALS": {
+          "area": "Customer Focus",
+          "weight": 0.4
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "PDP_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "CAPABILITY_READINESS": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "REV_PER_STAFF": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "PIP_PROCESS": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "REG_FINES_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "OTR": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "COMPLIANCE_MONITORING": {
+          "area": "Operational Excellence",
+          "weight": 0.25
+        },
+        "HORIZON_SCANNING": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "AML_FRAMEWORK": {
+          "area": "Operational Excellence",
+          "weight": 0.15
+        },
+        "REG_RETURNS": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": 0.3
+        },
+        "ACCOUNT_REFERRALS": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "KYC_REMEDIATION": {
+          "area": "Must Win Battles",
+          "weight": 0.3
+        },
+        "CORRESPONDENT_BANKS": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        }
+      },
+      "objectives": [],
+      "source": "EKE 2026 scorecard \u2014 Compliance",
+      "weights_complete": true
+    },
+    "Director, Internal Control": {
+      "areas": {
+        "Financial": 0.3,
+        "Customer Focus": 0.1,
+        "People & Learning": 0.1,
+        "Operational Excellence": 0.35,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.167
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.167
+        },
+        "OP_LOSS_PCT_PBT": {
+          "area": "Financial",
+          "weight": 0.333
+        },
+        "REVENUE_ASSURANCE": {
+          "area": "Financial",
+          "weight": 0.333
+        },
+        "DEPT_SLA": {
+          "area": "Customer Focus",
+          "weight": 0.3
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.4
+        },
+        "REG_RETURNS": {
+          "area": "Customer Focus",
+          "weight": 0.3
+        },
+        "SUCCESSION_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "PDP_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "CONTROL_PLAN": {
+          "area": "Operational Excellence",
+          "weight": 0.286
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.143
+        },
+        "PROOFS_RECON": {
+          "area": "Operational Excellence",
+          "weight": 0.229
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": 0.2
+        },
+        "REPEAT_ISSUES": {
+          "area": "Operational Excellence",
+          "weight": 0.142
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": 0.333
+        },
+        "ACCOUNT_REFERRALS": {
+          "area": "Must Win Battles",
+          "weight": 0.0
+        },
+        "ICOFR": {
+          "area": "Must Win Battles",
+          "weight": 0.333
+        }
+      },
+      "objectives": [
+        {
+          "text": "Automate all manually reconciled GLs with IT / local developers",
+          "area": "Must Win Battles",
+          "weight": 0.334,
+          "due": "2026-07-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Affiliate Internal Control Head",
+      "weights_complete": true
+    },
+    "Director, Credit Risk Management- Kenya & EAC": {
+      "areas": {
+        "Financial": 0.3,
+        "Customer Focus": 0.15,
+        "People & Learning": 0.1,
+        "Operational Excellence": 0.3,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "PORTFOLIO_RISK_RATING": {
+          "area": "Financial",
+          "weight": 0.067
+        },
+        "NPL_RATIO": {
+          "area": "Financial",
+          "weight": 0.167
+        },
+        "STAGE3_EXPOSURE": {
+          "area": "Financial",
+          "weight": 0.133
+        },
+        "STAGE2_EXPOSURE": {
+          "area": "Financial",
+          "weight": 0.133
+        },
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "COST_OF_RISK": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "CREDIT_FILE_TAT": {
+          "area": "Customer Focus",
+          "weight": 0.533
+        },
+        "CREDIT_FILE_TAT_EAC": {
+          "area": "Customer Focus",
+          "weight": 0.2
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.134
+        },
+        "PDP_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "DEPT_MEETINGS": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.241
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": 0.103
+        },
+        "REPEAT_ISSUES": {
+          "area": "Operational Excellence",
+          "weight": 0.138
+        },
+        "REG_FINES_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": 0.103
+        },
+        "EXPIRED_TICKLERS": {
+          "area": "Operational Excellence",
+          "weight": 0.172
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        }
+      },
+      "objectives": [
+        {
+          "text": "Participate in deal origination calls for exposures >= USD 1m",
+          "area": "Customer Focus",
+          "weight": 0.133,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Annual credit calls for CMB local corporates and CIB names >= USD 1m",
+          "area": "Operational Excellence",
+          "weight": 0.069,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Management of the risk-based pricing framework (monthly)",
+          "area": "Operational Excellence",
+          "weight": 0.174,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Roll out a credit workflow solution in EAC",
+          "area": "Must Win Battles",
+          "weight": 0.4,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Lead the CBK Granular Data Integration (GDI) project",
+          "area": "Must Win Battles",
+          "weight": 0.2,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Roll out new credit policies",
+          "area": "Must Win Battles",
+          "weight": 0.2,
+          "due": "2026-08-31"
+        },
+        {
+          "text": "Attend business departmental meetings to clarify credit risk appetite",
+          "area": "People & Learning",
+          "weight": 0.2,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Thomas Okumu (KE820)",
+      "weights_complete": true
+    },
+    "Director, Corporate Banking Kenya & EAC": {
+      "areas": {
+        "Financial": 0.5,
+        "Customer Focus": 0.15,
+        "People & Learning": 0.15,
+        "Operational Excellence": 0.1,
+        "Must Win Battles": 0.1
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "DIVISION_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "DIVISION_PBT": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "PERFORMING_LOANS": {
+          "area": "Financial",
+          "weight": 0.15
+        },
+        "LCY_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.15
+        },
+        "FCY_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NPL_RATIO": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NTB_CUSTOMERS": {
+          "area": "Customer Focus",
+          "weight": 0.25
+        },
+        "CROSS_SELL_RATIO": {
+          "area": "Customer Focus",
+          "weight": 0.15
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.1
+        },
+        "CSAT": {
+          "area": "Customer Focus",
+          "weight": 0.05
+        },
+        "CUSTOMER_VISITS": {
+          "area": "Customer Focus",
+          "weight": 0.1
+        },
+        "CALL_MEMOS": {
+          "area": "Customer Focus",
+          "weight": 0.1
+        },
+        "DIGITAL_ACTIVE_PCT": {
+          "area": "Customer Focus",
+          "weight": 0.15
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "SUCCESSION_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.2
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "PDP_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": 0.25
+        },
+        "DEPT_MEETINGS": {
+          "area": "People & Learning",
+          "weight": 0.05
+        },
+        "HR_ACTIVITY_ATTENDANCE": {
+          "area": "People & Learning",
+          "weight": 0.05
+        },
+        "ACCOUNT_PLANS": {
+          "area": "Operational Excellence",
+          "weight": 0.2
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.2
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": 0.15
+        },
+        "EXPIRED_TICKLERS": {
+          "area": "Operational Excellence",
+          "weight": 0.25
+        },
+        "OTR": {
+          "area": "Operational Excellence",
+          "weight": 0.05
+        },
+        "PDO_MANAGEMENT": {
+          "area": "Operational Excellence",
+          "weight": 0.15
+        },
+        "VALUE_CHAIN_ALIGNMENT": {
+          "area": "Must Win Battles",
+          "weight": 0.25
+        },
+        "DIGITAL_SALES_ACTIVATION": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "AU_DEPOSIT_CONC": {
+          "area": "Must Win Battles",
+          "weight": 0.25
+        },
+        "LCY_FCY_SPLIT": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "FINTECH_PARTNERS": {
+          "area": "Must Win Battles",
+          "weight": 0.1
+        }
+      },
+      "objectives": [
+        {
+          "text": "Onboard 10 new regional customers",
+          "area": "Customer Focus",
+          "weight": 0.1,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Cyprian Kiprotich Rono (KE1265)",
+      "weights_complete": true,
+      "source_ambiguous": true
+    },
+    "Chief Finance Officer": {
+      "areas": {
+        "Financial": 0.4,
+        "Customer Focus": 0.2,
+        "People & Learning": 0.1,
+        "Operational Excellence": 0.15,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": null
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": null
+        },
+        "COST_SAVING": {
+          "area": "Financial",
+          "weight": null
+        },
+        "ROE": {
+          "area": "Financial",
+          "weight": null
+        },
+        "CAPITAL_OPTIMISATION": {
+          "area": "Financial",
+          "weight": null
+        },
+        "MONTHLY_GROUP_REPORTING": {
+          "area": "Financial",
+          "weight": null
+        },
+        "AUDIT_REPORT_TIMELINESS": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "REG_APPROVALS": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "LEAVE_UTILISATION": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "DEPT_MEETINGS": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "HR_ACTIVITY_ATTENDANCE": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "REPEAT_ISSUES": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "COMPETITOR_ANALYSIS": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "BUDGET_PROCESS": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "REG_FINES_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": null
+        },
+        "REVENUE_ASSURANCE": {
+          "area": "Must Win Battles",
+          "weight": null
+        }
+      },
+      "objectives": [
+        {
+          "text": "Optimise the daily performance dashboard to RM level",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Quarterly visits to the sponsored branch",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Strategy milestone tracking and deviation reports",
+          "area": "Financial",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Weekly performance reports for business review",
+          "area": "Financial",
+          "weight": null,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Mary Wangari Wanjiru (KE555)",
+      "weights_complete": false,
+      "weights_pending_reason": "KPI weight column is #REF! throughout the source sheet."
+    },
+    "Ag. Head Human Resources & Senior HR Business Partner": {
+      "areas": null,
+      "kpis": {
+        "STAFF_COST_BUDGET": {
+          "area": "Financial",
+          "weight": null
+        },
+        "EMPLOYEE_COST_RATIO": {
+          "area": "Financial",
+          "weight": null
+        },
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": null
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": null
+        },
+        "Staff Productivity": {
+          "area": "Financial",
+          "weight": null
+        },
+        "RECRUITMENT_TAT": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "TOTAL_TURNOVER": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "GRADUATE_PROGRAMME": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "TALENT_MANAGEMENT": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "DIVERSITY_INCLUSION": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "CAPABILITY_READINESS": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "RCSA_QA": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "PIP_PROCESS": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "DEPOSIT_MOBILISATION": {
+          "area": "Must Win Battles",
+          "weight": null
+        },
+        "ACCOUNT_REFERRALS": {
+          "area": "Must Win Battles",
+          "weight": null
+        }
+      },
+      "objectives": [
+        {
+          "text": "Run one Culture & Values programme to strengthen values",
+          "area": "Customer Focus",
+          "weight": null,
+          "due": "2026-09-30"
+        },
+        {
+          "text": "Execute the Recognition Framework to timelines",
+          "area": "Customer Focus",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Implement year-end compensation (salary reviews & bonus)",
+          "area": "Customer Focus",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Design the training plan by 30 April and roll out 80% by year end",
+          "area": "People & Learning",
+          "weight": null,
+          "due": "2026-11-30"
+        },
+        {
+          "text": "Operationalise the Employee Wellbeing initiative (2 activities)",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Two targeted O&D interventions (CCB participation model, CIB structures)",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-06-30"
+        },
+        {
+          "text": "One staff redeployment / exchange with another affiliate (STA)",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "99.9% employee data accuracy in MY-HR",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Ensure 100% accurate monthly headcount reporting by the 26th",
+          "area": "Operational Excellence",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Manage the disciplinary process to a 90-day TAT",
+          "area": "Operational Excellence",
+          "weight": null,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Christine Achieng Kiche (KE317)",
+      "weights_complete": false,
+      "weights_pending_reason": "Area weights total 105% in the source sheet (20+15+40+15+15)."
+    },
+    "Head of Consumer": {
+      "areas": {
+        "Financial": 0.6,
+        "Customer Focus": 0.1,
+        "People & Learning": 0.05,
+        "Operational Excellence": 0.1,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "DIVISION_REVENUE": {
+          "area": "Financial",
+          "weight": null
+        },
+        "NTB_CUSTOMERS": {
+          "area": "Financial",
+          "weight": null
+        },
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": null
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": null
+        },
+        "NET_LOANS": {
+          "area": "Financial",
+          "weight": null
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": null
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "DIGITAL_ACTIVE_PCT": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer Focus",
+          "weight": null
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "MANDATORY_TRAINING": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "People & Learning",
+          "weight": null
+        },
+        "OTR": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "PDO_MANAGEMENT": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "EXPIRED_TICKLERS": {
+          "area": "Operational Excellence",
+          "weight": null
+        },
+        "CROSS_SELL_RATIO": {
+          "area": "Must Win Battles",
+          "weight": null
+        }
+      },
+      "objectives": [
+        {
+          "text": "MOU & partnership signups (100) with attributable growth",
+          "area": "Financial",
+          "weight": null,
+          "due": "2026-12-31"
+        },
+        {
+          "text": "Implement SME digital onboarding",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-05-31"
+        },
+        {
+          "text": "Complete full DSA sales coverage",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-05-31"
+        },
+        {
+          "text": "Implement M-Pesa solutions on the mobile app (LCY collection)",
+          "area": "Must Win Battles",
+          "weight": null,
+          "due": "2026-04-30"
+        },
+        {
+          "text": "PAR ratio \u2014 NPL reduction in stage 2",
+          "area": "Operational Excellence",
+          "weight": null,
+          "due": "2026-12-31"
+        }
+      ],
+      "source": "EKE 2026 scorecard \u2014 Jane Jelagat Atugah (KE1158)",
+      "weights_complete": false,
+      "weights_pending_reason": "Business area KPI weights total 105% (7 x 15%) in the source sheet."
     }
   }
 }
