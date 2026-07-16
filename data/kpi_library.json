@@ -19,61 +19,327 @@
       "id": "People & Learning",
       "name": "People & Learning",
       "color": "#3C3489"
+    },
+    {
+      "id": "Must Win Battles",
+      "name": "Ecobank Must Win Battles",
+      "color": "#B0335B"
     }
   ],
   "active_kpis": [
-    "DEP_GROWTH",
-    "LOAN_GROWTH",
-    "LOAN_DISB",
-    "FEES_COMM",
-    "DFS_REV",
-    "BANCASSURANCE",
-    "PBT",
-    "NPL_RATIO",
-    "PAR",
-    "CIR",
-    "NIM",
-    "ROE",
-    "TRADE_FIN",
-    "TREASURY",
-    "NEW_CUST",
-    "ACTIVE_ACCTS",
-    "DORMANCY_REACT",
-    "DIGITAL_ACT",
-    "NPS",
-    "CX_SCORE",
-    "COMPLAINT_RES",
-    "CUST_RETENTION",
-    "TRANSACTIONS",
-    "COMPLIANCE",
-    "AUDIT_SCORE",
-    "SLA_SCORE",
-    "REG_TIMELINESS",
-    "DIGITAL_MIG",
-    "CREDIT_TAT",
-    "RECONCILIATION",
-    "AML_SAR",
+    "ACCOUNT_OPENING_TAT",
+    "ACCOUNT_REFERRALS",
+    "ACTIVE_AGENCY_AGENTS",
+    "ACTIVE_INITIATIVES_COUNT",
+    "ACTIVE_TF_CLIENTS",
+    "AGRI_CUSTOMERS_ACQUIRED",
+    "AGRI_LOAN_BOOK",
+    "AGRI_NPL_RATIO",
+    "AUDIT_RATING_ARR",
+    "AUDIT_RATING_FCR",
+    "AU_DEPOSIT_CONC",
+    "Account Dormancy",
+    "Audit Score",
+    "BNC_PENETRATION_RATE",
+    "BRANCH_TURNAROUND",
+    "BRAND_AWARENESS",
+    "BREAK_RESOLUTION_TAT",
+    "CAMPAIGN_ROI",
+    "CAPABILITY_READINESS",
+    "CASA Ratio",
+    "CCB_REV_CONTRIB",
+    "CLAIMS_RATIO",
+    "COMPLAINT_RESOLUTION_RATE",
+    "COMPLIANCE_CASE_CLEARANCE_RATE",
+    "COMPLIANCE_ESCALATION_RATE",
+    "COMPLIANCE_SCORE",
+    "COMPLIANCE_SLA_CRITICAL_CASES",
+    "COMPLIANCE_SLA_HIGH_RISK_CASES",
+    "CREDIT_APPROVAL_RATE",
+    "CREDIT_DECLINE_RATE",
+    "CREDIT_REWORK_RATE",
+    "CREDIT_TAT_COMPLEX",
+    "CREDIT_TAT_EXPRESS",
+    "CREDIT_TAT_STANDARD",
+    "CROSS_SELL_RATIO",
+    "CSAT",
+    "CUST_ACTIVE_RATE",
+    "CX Score",
+    "Channel Dormancy",
+    "Collection Throughput",
+    "Commercial Deposit Growth",
+    "DEPOSIT_MOBILISATION",
+    "DIASPORA_ACCOUNT_ACTIVATION",
+    "DIASPORA_CUSTOMERS_ACQUIRED",
+    "DIASPORA_DIGITAL_ADOPTION",
+    "DIASPORA_LOAN_BOOK",
+    "DIASPORA_REMITTANCES_VOLUME",
+    "DIGITAL_ACTIVE_PCT",
+    "DIGITAL_SALES_ACTIVATION",
+    "DIGITAL_TXN_MIGRATION",
     "DILIGENCE",
-    "TRAINING",
-    "STAFF_SAT",
-    "SUCCESSION",
-    "CASA_RATIO",
-    "ECOSYSTEM_BANKING",
-    "TOP100_CUSTOMERS",
-    "COLLECTION_THROUGHPUT",
-    "BUSINESS_BORROWERS",
-    "DISB_RETAIL",
-    "DISB_MSME",
-    "DISB_CORPORATE",
-    "RETAIL_MSME_DEPOSIT",
-    "COMMERCIAL_DEPOSIT",
-    "TOTAL_NFI",
-    "ACCOUNT_DORMANCY",
-    "CHANNEL_DORMANCY",
-    "NEW_ACCOUNTS",
-    "STAFF_PROD",
+    "DILIGENCE_SCORE",
+    "DISTRIBUTION_STRATEGY",
+    "DOCUMENT_COMPLIANCE_RATE",
+    "DORMANCY_RATIO",
+    "Disbursements Corporate Loans",
+    "Disbursements MSME Loans",
+    "Disbursements Retail Loans",
+    "ECAP_CLOSURE",
+    "ECL_COVERAGE_RATIO",
+    "ENGAGEMENT_SCORE",
+    "EXPIRED_DOCUMENTS_COUNT",
+    "EXPIRED_TICKLERS",
+    "FD_APPROVAL_RATE",
+    "FD_RATE_VARIANCE_VS_MARKET",
+    "FD_RATIFICATION_TAT",
+    "FD_RATIFICATION_VOLUME",
+    "FINTECH_PARTNERS",
+    "FX_DEALING_VOLUME",
+    "FX_INCOME_MARGIN",
+    "FX_TRADING_INCOME",
+    "GOVTPSI_CLIENTS",
+    "GOVT_DEPOSITS",
+    "GOVT_LOAN_BOOK",
+    "GOV_SECURITIES_PORTFOLIO",
+    "IFRS9_STAGE_3_RATIO",
+    "INITIATIVE_IMPLEMENTATION_SCORE",
+    "INIT_COUNT",
     "INIT_STATUS",
-    "INIT_COUNT"
+    "K001",
+    "K002",
+    "K003",
+    "K004",
+    "K005",
+    "K006",
+    "K007",
+    "K008",
+    "K009",
+    "K010",
+    "K011",
+    "K012",
+    "K013",
+    "K014",
+    "K015",
+    "K016",
+    "K017",
+    "K018",
+    "K019",
+    "K020",
+    "K021",
+    "K022",
+    "K023",
+    "K024",
+    "K025",
+    "K026",
+    "K027",
+    "K028",
+    "K029",
+    "K030",
+    "K031",
+    "K032",
+    "K033",
+    "K034",
+    "K035",
+    "K036",
+    "K037",
+    "K038",
+    "K039",
+    "K040",
+    "K041",
+    "K042",
+    "K043",
+    "K044",
+    "K045",
+    "K046",
+    "K047",
+    "K049",
+    "K050",
+    "K051",
+    "K052",
+    "K053",
+    "K054",
+    "K055",
+    "K056",
+    "K057",
+    "K058",
+    "K059",
+    "K060",
+    "K061",
+    "K062",
+    "K063",
+    "K064",
+    "K065",
+    "K066",
+    "K067",
+    "K068",
+    "K070",
+    "K071",
+    "K072",
+    "K073",
+    "K074",
+    "K075",
+    "K076",
+    "K077",
+    "K078",
+    "K079",
+    "K080",
+    "K081",
+    "K082",
+    "K083",
+    "K084",
+    "K085",
+    "K086",
+    "K087",
+    "K088",
+    "K089",
+    "K090",
+    "K091",
+    "K092",
+    "K093",
+    "K094",
+    "K095",
+    "K096",
+    "K097",
+    "K098",
+    "K099",
+    "K100",
+    "K101",
+    "K102",
+    "K103",
+    "K104",
+    "K105",
+    "K106",
+    "K107",
+    "K108",
+    "K109",
+    "K110",
+    "K111",
+    "K112",
+    "K113",
+    "K114",
+    "K115",
+    "K116",
+    "K117",
+    "K118",
+    "K119",
+    "K120",
+    "K121",
+    "K122",
+    "K123",
+    "K124",
+    "K125",
+    "K126",
+    "K127",
+    "K128",
+    "K129",
+    "K130",
+    "K131",
+    "K132",
+    "K133",
+    "K134",
+    "K215",
+    "K216",
+    "K230",
+    "K231",
+    "K232",
+    "K233",
+    "K234",
+    "K235",
+    "K236",
+    "K237",
+    "K238",
+    "K239",
+    "KYC_COMPLETENESS_RATE",
+    "K_AUDIT_FINDINGS",
+    "K_CX_SATISFACTION",
+    "K_OPS_TAT",
+    "K_OPS_THROUGHPUT",
+    "K_SYS_UPTIME",
+    "K_TRAINING_HOURS_GEN",
+    "LCLG_PROCESSING_TAT",
+    "LCR",
+    "LCY_FCY_SPLIT",
+    "LC_VOLUME",
+    "LDR",
+    "LEAKAGE_RECOVERY_RATE",
+    "LEAVE_UTILISATION",
+    "LEGAL_OVERDUE_RATE",
+    "LEGAL_TAT_EXTERNAL_COUNSEL",
+    "LEGAL_TAT_LEGAL_OPINION",
+    "LEGAL_TAT_LOAN_DOCUMENTATION",
+    "LEGAL_TAT_SECURITY_PERFECTION",
+    "LEGAL_TAT_TITLE_DEED_CUSTODY",
+    "LEGAL_TAT_VALUATION",
+    "LIQUIDITY_COVERAGE_RATIO",
+    "LOAN_DISBURSEMENT_TAT",
+    "Loan Book Growth",
+    "MANDATORY_TRAINING",
+    "MARKETING_DRIVEN_REVENUE",
+    "MARKETING_QUALIFIED_LEADS",
+    "MM_PLACEMENT_BOOK",
+    "MOBILE_BANKING_ACTIVE_USERS",
+    "MOBILE_LOAN_UPTAKE",
+    "NET_INTEREST_MARGIN",
+    "NET_STABLE_FUNDING_RATIO",
+    "NEW_CUSTOMERS_ACQUIRED",
+    "NOSTRO_RECONCILIATION_RATE",
+    "NPL_RATIO",
+    "NSFR",
+    "NTB_CUSTOMERS",
+    "Number of Business Borrowers",
+    "OPEN_COMPLIANCE_CASES",
+    "OP_LOSS_PCT_PBT",
+    "OTR",
+    "OUTSTANDING_BREAKS",
+    "OVERDUE_ISSUES",
+    "PAR",
+    "PBT",
+    "PDP_COVERAGE",
+    "PERF_CYCLE_ADHERENCE",
+    "PIPELINE_CONVERSION_RATE",
+    "PIPELINE_DEALS_WON",
+    "PLATFORM_UPTIME",
+    "POLICIES_SOLD",
+    "PRODUCT_BOOK_ACHIEVEMENT",
+    "PRODUCT_GROWTH_RATE",
+    "PRODUCT_NPL_RATE",
+    "PRODUCT_REVENUE_ACHIEVEMENT",
+    "RCSA_QA",
+    "RECONCILIATION_RATE",
+    "REGRETTABLE_TURNOVER",
+    "REG_FINES_PCT_PBT",
+    "REVENUE_LEAKAGE_AMOUNT",
+    "REV_PER_STAFF",
+    "Retail & MSME Deposit Growth",
+    "SEASONAL_LOAN_RECOVERY",
+    "SLA_CREDIT_TAT",
+    "SME_CROSSSELL",
+    "SME_CUSTOMERS_ACQUIRED",
+    "SME_LOAN_BOOK",
+    "SME_NPL_RATIO",
+    "SME_REPAYMENT_RATE",
+    "SME_TRAINING_EVENTS",
+    "SUCCESSION_COVERAGE",
+    "SUSPENSE_CLEARANCE_RATE",
+    "Staff Productivity",
+    "TENDER_BONDS_ISSUED",
+    "TF_FEE_INCOME",
+    "TOTAL_TURNOVER",
+    "TRADE_DOC_TAT",
+    "TRADE_FINANCE_REVENUE",
+    "TRADE_FINANCE_VOLUME",
+    "Top 100 Customers Deposit",
+    "Total NFI",
+    "VALUE_CHAIN_ALIGNMENT",
+    "WAIVER_RECOVERY_RATE",
+    "WB_ACTIVE_CUSTOMERS",
+    "WB_CROSSSELL_SCORE",
+    "WB_CUSTOMERS_ACQUIRED",
+    "WB_DEPOSIT_WALLET_SHARE",
+    "WB_EVENTS_HELD",
+    "WB_LOAN_PENETRATION",
+    "WB_NPS_SCORE"
   ],
   "role_kpis": {
     "Managing Director": [
@@ -96,7 +362,6 @@
       "K003",
       "NPL_RATIO",
       "NEW_CUSTOMERS_ACQUIRED",
-      "K012",
       "K012",
       "COMPLIANCE_SCORE",
       "DILIGENCE",
@@ -285,9 +550,10 @@
   },
   "pillar_weights": {
     "Financial": 0.4,
-    "Customer Focus": 0.25,
-    "Operational Excellence": 0.25,
-    "People & Learning": 0.1
+    "Customer Focus": 0.2,
+    "Operational Excellence": 0.15,
+    "People & Learning": 0.1,
+    "Must Win Battles": 0.15
   },
   "kpi_weights": {
     "DEP_GROWTH": 0.15,
@@ -351,7 +617,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Loans Disbursed (KES M) — tracked monthly vs target",
+      "description": "Loans Disbursed (KES M) \u2014 tracked monthly vs target",
       "source": "cbs_loans",
       "aliases": [
         "LOAN_DISB",
@@ -367,7 +633,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Deposits Mobilised (KES M) — tracked monthly vs target",
+      "description": "Deposits Mobilised (KES M) \u2014 tracked monthly vs target",
       "source": "cbs_deposits",
       "aliases": [
         "DEP_GROWTH"
@@ -382,7 +648,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Fee Income (KES M) — tracked monthly vs target",
+      "description": "Fee Income (KES M) \u2014 tracked monthly vs target",
       "source": "cbs_fees",
       "aliases": [
         "FEES_COMM"
@@ -397,7 +663,7 @@
       "direction": "lower",
       "cbk_ref": "CBK Prudential",
       "active": true,
-      "description": "NPL Ratio (%) — tracked monthly vs target",
+      "description": "NPL Ratio (%) \u2014 tracked monthly vs target",
       "source": "cbs_loans",
       "aliases": [
         "NPL Ratio",
@@ -413,7 +679,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Revenue vs Budget (%) — tracked monthly vs target",
+      "description": "Revenue vs Budget (%) \u2014 tracked monthly vs target",
       "source": "management_accounts"
     },
     {
@@ -425,7 +691,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "New Accounts Opened — tracked monthly vs target",
+      "description": "New Accounts Opened \u2014 tracked monthly vs target",
       "source": "cbs_accounts",
       "aliases": [
         "New Accounts",
@@ -441,7 +707,7 @@
       "direction": "higher",
       "cbk_ref": "NPS",
       "active": true,
-      "description": "Customer Satisfaction Score — tracked monthly vs target",
+      "description": "Customer Satisfaction Score \u2014 tracked monthly vs target",
       "source": "nps"
     },
     {
@@ -453,7 +719,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Customer Complaints Resolved (%) — tracked monthly vs target",
+      "description": "Customer Complaints Resolved (%) \u2014 tracked monthly vs target",
       "source": "cims"
     },
     {
@@ -465,7 +731,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Product Deepening Ratio — tracked monthly vs target",
+      "description": "Product Deepening Ratio \u2014 tracked monthly vs target",
       "source": "cbs_accounts"
     },
     {
@@ -477,19 +743,19 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "SLA Adherence (%) — tracked monthly vs target",
+      "description": "SLA Adherence (%) \u2014 tracked monthly vs target",
       "source": "sla_tickets"
     },
     {
       "id": "K011",
-      "name": "TAT — Loan Processing (days)",
+      "name": "TAT \u2014 Loan Processing (days)",
       "pillar": "Operational Excellence",
       "weight": 0.06,
       "unit": "days",
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "TAT — Loan Processing (days) — tracked monthly vs target",
+      "description": "TAT \u2014 Loan Processing (days) \u2014 tracked monthly vs target",
       "source": "loan_applications"
     },
     {
@@ -501,7 +767,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Digital Transactions (%) — tracked monthly vs target",
+      "description": "Digital Transactions (%) \u2014 tracked monthly vs target",
       "source": "digital_channels",
       "aliases": [
         "DIGITAL_ACT",
@@ -517,7 +783,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Branch Daily Log Completion — tracked monthly vs target",
+      "description": "Branch Daily Log Completion \u2014 tracked monthly vs target",
       "source": "branch_log"
     },
     {
@@ -529,7 +795,7 @@
       "direction": "higher",
       "cbk_ref": "CBK AML",
       "active": true,
-      "description": "AML/CFT Compliance Score — tracked monthly vs target",
+      "description": "AML/CFT Compliance Score \u2014 tracked monthly vs target",
       "source": "aml_alerts",
       "aliases": [
         "Compliance Score"
@@ -544,7 +810,7 @@
       "direction": "higher",
       "cbk_ref": "CBK",
       "active": true,
-      "description": "CBK Returns Filed on Time — tracked monthly vs target",
+      "description": "CBK Returns Filed on Time \u2014 tracked monthly vs target",
       "source": "compliance"
     },
     {
@@ -556,7 +822,7 @@
       "direction": "higher",
       "cbk_ref": "CBK MANDATORY",
       "active": true,
-      "description": "Training Hours Completed — tracked monthly vs target",
+      "description": "Training Hours Completed \u2014 tracked monthly vs target",
       "source": "lms"
     },
     {
@@ -568,7 +834,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "BSC Score Previous Quarter — tracked monthly vs target",
+      "description": "BSC Score Previous Quarter \u2014 tracked monthly vs target",
       "source": "bsc_scores"
     },
     {
@@ -580,7 +846,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Staff Retention Rate (%) — tracked monthly vs target",
+      "description": "Staff Retention Rate (%) \u2014 tracked monthly vs target",
       "source": "hr"
     },
     {
@@ -592,7 +858,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "360 Feedback Score — tracked monthly vs target",
+      "description": "360 Feedback Score \u2014 tracked monthly vs target",
       "source": "360_feedback"
     },
     {
@@ -604,7 +870,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Pipeline Conversion Rate (%) — tracked monthly vs target",
+      "description": "Pipeline Conversion Rate (%) \u2014 tracked monthly vs target",
       "source": "pipeline"
     },
     {
@@ -616,7 +882,7 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Cost-to-Income Ratio (%) — tracked monthly vs target",
+      "description": "Cost-to-Income Ratio (%) \u2014 tracked monthly vs target",
       "source": "management_accounts"
     },
     {
@@ -628,7 +894,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Trade Finance Revenue (KES M) — tracked monthly vs target",
+      "description": "Trade Finance Revenue (KES M) \u2014 tracked monthly vs target",
       "source": "trade_finance"
     },
     {
@@ -640,7 +906,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Bancassurance Premium (KES M) — tracked monthly vs target",
+      "description": "Bancassurance Premium (KES M) \u2014 tracked monthly vs target",
       "source": "bancassurance",
       "aliases": [
         "Bancassurance Premium"
@@ -655,7 +921,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Digital Channel Adoption (%) — tracked monthly vs target",
+      "description": "Digital Channel Adoption (%) \u2014 tracked monthly vs target",
       "source": "digital_channels"
     },
     {
@@ -667,7 +933,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Agent Network Uptime (%) — tracked monthly vs target",
+      "description": "Agent Network Uptime (%) \u2014 tracked monthly vs target",
       "source": "agency_banking"
     },
     {
@@ -679,19 +945,19 @@
       "direction": "higher",
       "cbk_ref": "CBK ICT",
       "active": true,
-      "description": "Patch Compliance (%) — tracked monthly vs target",
+      "description": "Patch Compliance (%) \u2014 tracked monthly vs target",
       "source": "cybersecurity"
     },
     {
       "id": "K027",
-      "name": "Recovery Rate — Collections (%)",
+      "name": "Recovery Rate \u2014 Collections (%)",
       "pillar": "Financial",
       "weight": 0.04,
       "unit": "%",
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Recovery Rate — Collections (%) — tracked monthly vs target",
+      "description": "Recovery Rate \u2014 Collections (%) \u2014 tracked monthly vs target",
       "source": "debt_recovery"
     },
     {
@@ -703,7 +969,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Collateral Review Completion (%) — tracked monthly vs target",
+      "description": "Collateral Review Completion (%) \u2014 tracked monthly vs target",
       "source": "collateral"
     },
     {
@@ -715,7 +981,7 @@
       "direction": "higher",
       "cbk_ref": "IFRS 9",
       "active": true,
-      "description": "IFRS 9 Provision Accuracy (%) — tracked monthly vs target",
+      "description": "IFRS 9 Provision Accuracy (%) \u2014 tracked monthly vs target",
       "source": "ifrs9"
     },
     {
@@ -727,19 +993,19 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Headcount vs Budget — tracked monthly vs target",
+      "description": "Headcount vs Budget \u2014 tracked monthly vs target",
       "source": "hr"
     },
     {
       "id": "K031",
-      "name": "Average Handle Time — CC (sec)",
+      "name": "Average Handle Time \u2014 CC (sec)",
       "pillar": "Operational Excellence",
       "weight": 0.02,
       "unit": "sec",
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Average Handle Time — CC (sec) — tracked monthly vs target",
+      "description": "Average Handle Time \u2014 CC (sec) \u2014 tracked monthly vs target",
       "source": "contact_centre"
     },
     {
@@ -751,7 +1017,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "First Call Resolution Rate (%) — tracked monthly vs target",
+      "description": "First Call Resolution Rate (%) \u2014 tracked monthly vs target",
       "source": "contact_centre"
     },
     {
@@ -763,19 +1029,19 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "EWS Case Resolution Rate (%) — tracked monthly vs target",
+      "description": "EWS Case Resolution Rate (%) \u2014 tracked monthly vs target",
       "source": "ews_cases"
     },
     {
       "id": "K034",
-      "name": "Budget Achievement — OpEx (%)",
+      "name": "Budget Achievement \u2014 OpEx (%)",
       "pillar": "Financial",
       "weight": 0.03,
       "unit": "%",
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Budget Achievement — OpEx (%) — tracked monthly vs target",
+      "description": "Budget Achievement \u2014 OpEx (%) \u2014 tracked monthly vs target",
       "source": "budget"
     },
     {
@@ -787,7 +1053,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Employee Net Promoter Score — tracked monthly vs target",
+      "description": "Employee Net Promoter Score \u2014 tracked monthly vs target",
       "source": "hr",
       "aliases": [
         "NPS"
@@ -1617,7 +1883,7 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Percentage of accounts dormant — lower is better",
+      "description": "Percentage of accounts dormant \u2014 lower is better",
       "source": "cbs_accounts",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -1634,7 +1900,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Internal audit rating (0-100 scale (percentage)) — higher is better",
+      "description": "Internal audit rating (0-100 scale (percentage)) \u2014 higher is better",
       "source": "audit_reviews",
       "_origin": "v10.107_cascade_reconciliation",
       "_v10320_fix": "Description corrected from 1-5 to 0-100 to match actuals data",
@@ -1669,7 +1935,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Customer experience score (NPS / CSAT) — higher is better",
+      "description": "Customer experience score (NPS / CSAT) \u2014 higher is better",
       "source": "nps",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -1686,7 +1952,7 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Percentage of digital channels dormant — lower is better",
+      "description": "Percentage of digital channels dormant \u2014 lower is better",
       "source": "digital_channels",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -1703,7 +1969,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Collections recovered as % of NPL portfolio — higher is better",
+      "description": "Collections recovered as % of NPL portfolio \u2014 higher is better",
       "source": "debt_recovery",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -1822,7 +2088,7 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Portfolio at Risk (PAR) ratio — lower is better",
+      "description": "Portfolio at Risk (PAR) ratio \u2014 lower is better",
       "source": "cbs_loans",
       "_origin": "v10.107_cascade_reconciliation"
     },
@@ -1836,7 +2102,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Profit Before Tax (KES M) — strategic profitability metric",
+      "description": "Profit Before Tax (KES M) \u2014 strategic profitability metric",
       "source": "management_accounts",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -1904,7 +2170,7 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Non-Funded Income — fees + commissions + FX + trade (KES M)",
+      "description": "Non-Funded Income \u2014 fees + commissions + FX + trade (KES M)",
       "source": "cbs_fees",
       "_origin": "v10.107_cascade_reconciliation",
       "aliases": [
@@ -2084,7 +2350,7 @@
       "unit": "days",
       "direction": "higher",
       "active": true,
-      "description": "Total approved leave days per staff (utilization indicator; informational only — neither high nor low is intrinsically good)",
+      "description": "Total approved leave days per staff (utilization indicator; informational only \u2014 neither high nor low is intrinsically good)",
       "source": "leave_requests",
       "_origin": "v10.112_hr_rules_pillar_corrected_v10.113"
     },
@@ -2113,7 +2379,7 @@
       "_origin": "v10.112_hr_rules_pillar_corrected_v10.113",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K128",
@@ -2128,7 +2394,7 @@
       "_origin": "v10.112_hr_rules",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K129",
@@ -2155,7 +2421,7 @@
       "_origin": "v10.113_incidents_wiring",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K131",
@@ -2170,7 +2436,7 @@
       "_origin": "v10.113_agent_alerts",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K132",
@@ -2197,7 +2463,7 @@
       "_origin": "v10.114_audit_rules",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K134",
@@ -2231,7 +2497,7 @@
       "unit": "%",
       "direction": "lower",
       "active": true,
-      "description": "% of credit applications declined — quality filter. Too low signals weak underwriting; too high signals weak origination.",
+      "description": "% of credit applications declined \u2014 quality filter. Too low signals weak underwriting; too high signals weak origination.",
       "source": "credit_engine",
       "_origin": "v10.326_credit_kpi_seed"
     },
@@ -2255,11 +2521,11 @@
       "unit": "days",
       "direction": "lower",
       "active": true,
-      "description": "Turnaround time in days for standard credit applications from submission to decision. Lower is better. Target: ≤7 days.",
+      "description": "Turnaround time in days for standard credit applications from submission to decision. Lower is better. Target: \u22647 days.",
       "source": "credit_engine",
       "_origin": "v10.326_credit_kpi_seed",
       "aliases": [
-        "Credit TAT — Standard Lane"
+        "Credit TAT \u2014 Standard Lane"
       ]
     },
     {
@@ -2270,11 +2536,11 @@
       "unit": "days",
       "direction": "lower",
       "active": true,
-      "description": "Turnaround time in days for complex credit applications (corporate, structured). Target: ≤21 days.",
+      "description": "Turnaround time in days for complex credit applications (corporate, structured). Target: \u226421 days.",
       "source": "credit_engine",
       "_origin": "v10.326_credit_kpi_seed",
       "aliases": [
-        "Credit TAT — Complex Lane"
+        "Credit TAT \u2014 Complex Lane"
       ]
     },
     {
@@ -2285,11 +2551,11 @@
       "unit": "days",
       "direction": "lower",
       "active": true,
-      "description": "Turnaround time in days for express/personal loans. Target: ≤24hrs (1 day).",
+      "description": "Turnaround time in days for express/personal loans. Target: \u226424hrs (1 day).",
       "source": "credit_engine",
       "_origin": "v10.326_credit_kpi_seed",
       "aliases": [
-        "Credit TAT — Express Lane"
+        "Credit TAT \u2014 Express Lane"
       ]
     },
     {
@@ -2312,7 +2578,7 @@
       "unit": "score",
       "direction": "higher",
       "active": true,
-      "description": "Status score (1-5) of strategic credit initiatives — process improvement, portfolio diversification.",
+      "description": "Status score (1-5) of strategic credit initiatives \u2014 process improvement, portfolio diversification.",
       "source": "credit_engine",
       "_origin": "v10.326_credit_kpi_seed"
     },
@@ -2336,7 +2602,7 @@
       "unit": "score",
       "direction": "higher",
       "active": true,
-      "description": "Compliance assessment score (1-5) — adherence to internal credit policy and CBK Prudential Guidelines.",
+      "description": "Compliance assessment score (1-5) \u2014 adherence to internal credit policy and CBK Prudential Guidelines.",
       "source": "compliance_module",
       "_origin": "v10.326_credit_kpi_seed",
       "aliases": [
@@ -2368,7 +2634,7 @@
       "direction": "lower",
       "cbk_ref": "CBK PG/04",
       "active": true,
-      "description": "Non-Performing Loans Ratio — gross NPLs ÷ gross loans (lower is better)",
+      "description": "Non-Performing Loans Ratio \u2014 gross NPLs \u00f7 gross loans (lower is better)",
       "source": "credit_monitoring",
       "_origin": "v10.329_branch_manager"
     },
@@ -2381,7 +2647,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "Product category actual book vs target book — sum of actual_book / sum of target_book across products in category",
+      "description": "Product category actual book vs target book \u2014 sum of actual_book / sum of target_book across products in category",
       "_origin": "v10.335_products_bridge"
     },
     {
@@ -2393,7 +2659,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "Product category actual revenue vs target revenue — same aggregation as book",
+      "description": "Product category actual revenue vs target revenue \u2014 same aggregation as book",
       "_origin": "v10.335_products_bridge"
     },
     {
@@ -2405,7 +2671,7 @@
       "unit": "%",
       "direction": "lower",
       "active": true,
-      "description": "Product category weighted-avg NPL rate — book-weighted across products in category. CBK PG/04 aligned.",
+      "description": "Product category weighted-avg NPL rate \u2014 book-weighted across products in category. CBK PG/04 aligned.",
       "_origin": "v10.335_products_bridge"
     },
     {
@@ -2417,7 +2683,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "Product category book growth quarter-over-quarter — book-weighted avg",
+      "description": "Product category book growth quarter-over-quarter \u2014 book-weighted avg",
       "_origin": "v10.335_products_bridge"
     },
     {
@@ -2429,7 +2695,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "BCBS d295 LCR — HQLA / 30-day net cash outflows. Regulatory minimum 100%. Treasury-owned.",
+      "description": "BCBS d295 LCR \u2014 HQLA / 30-day net cash outflows. Regulatory minimum 100%. Treasury-owned.",
       "_origin": "v10.336_specialist_canonical"
     },
     {
@@ -2441,7 +2707,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "BCBS d295 NSFR — Available stable funding / required stable funding. Regulatory minimum 100%.",
+      "description": "BCBS d295 NSFR \u2014 Available stable funding / required stable funding. Regulatory minimum 100%.",
       "_origin": "v10.336_specialist_canonical"
     },
     {
@@ -2468,7 +2734,7 @@
       "unit": "CCY_M",
       "direction": "higher",
       "active": true,
-      "description": "Foreign exchange trading revenue — dealer P&L plus corporate FX spread. Treasury-owned.",
+      "description": "Foreign exchange trading revenue \u2014 dealer P&L plus corporate FX spread. Treasury-owned.",
       "_origin": "v10.336_specialist_canonical"
     },
     {
@@ -2495,13 +2761,13 @@
       "unit": "hours",
       "direction": "lower",
       "active": true,
-      "description": "Average hours from document receipt to discrepancy decision. ICC UCP 600 §14 mandates within 5 banking days; operational target far tighter.",
+      "description": "Average hours from document receipt to discrepancy decision. ICC UCP 600 \u00a714 mandates within 5 banking days; operational target far tighter.",
       "_origin": "v10.336_specialist_canonical"
     },
     {
       "id": "LC_VOLUME",
       "code": "LC_VOLUME",
-      "name": "Letters of Credit — Volume",
+      "name": "Letters of Credit \u2014 Volume",
       "pillar": "Financial",
       "weight": 0.05,
       "unit": "count",
@@ -2603,7 +2869,7 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "Won / (won + lost + active) × 100. Sales effectiveness. Replaces K020.",
+      "description": "Won / (won + lost + active) \u00d7 100. Sales effectiveness. Replaces K020.",
       "_origin": "v10.337_branch_staff_canonical"
     },
     {
@@ -2631,7 +2897,7 @@
       "source": "management_accounts",
       "active": false,
       "cbk_ref": "CBK Bank Supervision Annual Report",
-      "description": "Cost-to-Income Ratio = Total Operating Costs / Total Operating Income × 100. Tier-1 benchmark; lower is better. Tracks whether income growth outpaces cost growth. Computed by utils/financial_ratios_engine.py (v10.390). Awaiting MD target.",
+      "description": "Cost-to-Income Ratio = Total Operating Costs / Total Operating Income \u00d7 100. Tier-1 benchmark; lower is better. Tracks whether income growth outpaces cost growth. Computed by utils/financial_ratios_engine.py (v10.390). Awaiting MD target.",
       "_added": "v10.390",
       "_tier": "Class B Tier 1"
     },
@@ -2645,7 +2911,7 @@
       "source": "management_accounts",
       "active": false,
       "cbk_ref": "CBK Bank Supervision Annual Report",
-      "description": "Return on Equity = Net Income / Average Shareholders' Equity × 100. NOTE: v10.390 engine uses PBT (not net income) since mgmt_accounts has no tax field. Engine reports the caveat in result.note. Awaiting tax field addition + MD target.",
+      "description": "Return on Equity = Net Income / Average Shareholders' Equity \u00d7 100. NOTE: v10.390 engine uses PBT (not net income) since mgmt_accounts has no tax field. Engine reports the caveat in result.note. Awaiting tax field addition + MD target.",
       "_added": "v10.390",
       "_tier": "Class B Tier 1",
       "_caveat": "Engine uses PBT until tax field added to mgmt_accounts",
@@ -2663,7 +2929,7 @@
       "source": "management_accounts",
       "active": false,
       "cbk_ref": "CBK Liquidity reporting",
-      "description": "Total Deposit Growth = (Deposits EoP - Deposits BoP) / Deposits BoP × 100. Bank-wide deposit growth aggregating Retail+Commercial. Computed by utils/financial_ratios_engine.py (v10.390). Awaiting MD target.",
+      "description": "Total Deposit Growth = (Deposits EoP - Deposits BoP) / Deposits BoP \u00d7 100. Bank-wide deposit growth aggregating Retail+Commercial. Computed by utils/financial_ratios_engine.py (v10.390). Awaiting MD target.",
       "_added": "v10.390",
       "_tier": "Class B Tier 1"
     },
@@ -2675,12 +2941,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Active Agency Agents — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Active Agency Agents \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "ACTIVE_INITIATIVES_COUNT",
@@ -2690,12 +2956,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Active Initiatives Count — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Active Initiatives Count \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "ACTIVE_TF_CLIENTS",
@@ -2705,12 +2971,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Active TF Clients — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Active TF Clients \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "AGRI_CUSTOMERS_ACQUIRED",
@@ -2720,12 +2986,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Agri Customers Acquired — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Agri Customers Acquired \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "AGRI_LOAN_BOOK",
@@ -2735,12 +3001,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Agri Loan Book — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Agri Loan Book \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "AGRI_NPL_RATIO",
@@ -2750,12 +3016,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Agri NPL Ratio — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Agri NPL Ratio \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "BNC_PENETRATION_RATE",
@@ -2765,12 +3031,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "BNC Penetration Rate — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "BNC Penetration Rate \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "BREAK_RESOLUTION_TAT",
@@ -2780,12 +3046,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Break Resolution TAT — registered v10.426 from BSC actuals (observed in 11 staff rows)",
+      "description": "Break Resolution TAT \u2014 registered v10.426 from BSC actuals (observed in 11 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "CLAIMS_RATIO",
@@ -2795,12 +3061,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Claims Ratio — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Claims Ratio \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "COMPLIANCE_CASE_CLEARANCE_RATE",
@@ -2810,12 +3076,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Compliance Case Clearance Rate — registered v10.426 from BSC actuals (observed in 5 staff rows)",
+      "description": "Compliance Case Clearance Rate \u2014 registered v10.426 from BSC actuals (observed in 5 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "COMPLIANCE_ESCALATION_RATE",
@@ -2825,42 +3091,42 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Compliance Escalation Rate — registered v10.426 from BSC actuals (observed in 5 staff rows)",
+      "description": "Compliance Escalation Rate \u2014 registered v10.426 from BSC actuals (observed in 5 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "COMPLIANCE_SLA_CRITICAL_CASES",
-      "name": "Compliance SLA — Critical Cases",
+      "name": "Compliance SLA \u2014 Critical Cases",
       "pillar": "Operational Excellence",
       "weight": 0.25,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Compliance SLA — Critical Cases — registered v10.426 from BSC actuals (observed in 5 staff rows)",
+      "description": "Compliance SLA \u2014 Critical Cases \u2014 registered v10.426 from BSC actuals (observed in 5 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "COMPLIANCE_SLA_HIGH_RISK_CASES",
-      "name": "Compliance SLA — High Risk Cases",
+      "name": "Compliance SLA \u2014 High Risk Cases",
       "pillar": "Operational Excellence",
       "weight": 0.2,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Compliance SLA — High Risk Cases — registered v10.426 from BSC actuals (observed in 5 staff rows)",
+      "description": "Compliance SLA \u2014 High Risk Cases \u2014 registered v10.426 from BSC actuals (observed in 5 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIASPORA_ACCOUNT_ACTIVATION",
@@ -2870,12 +3136,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diaspora Account Activation — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Diaspora Account Activation \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIASPORA_CUSTOMERS_ACQUIRED",
@@ -2885,12 +3151,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diaspora Customers Acquired — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Diaspora Customers Acquired \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIASPORA_DIGITAL_ADOPTION",
@@ -2900,12 +3166,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diaspora Digital Adoption — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Diaspora Digital Adoption \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIASPORA_LOAN_BOOK",
@@ -2915,12 +3181,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diaspora Loan Book — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Diaspora Loan Book \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIASPORA_REMITTANCES_VOLUME",
@@ -2930,12 +3196,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diaspora Remittances Volume — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Diaspora Remittances Volume \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DIGITAL_TXN_MIGRATION",
@@ -2945,12 +3211,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Digital Txn Migration — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Digital Txn Migration \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DILIGENCE_SCORE",
@@ -2960,12 +3226,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Diligence Score — registered v10.426 from BSC actuals (observed in 209 staff rows)",
+      "description": "Diligence Score \u2014 registered v10.426 from BSC actuals (observed in 209 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "DOCUMENT_COMPLIANCE_RATE",
@@ -2975,12 +3241,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Document Compliance Rate — registered v10.426 from BSC actuals (observed in 4 staff rows)",
+      "description": "Document Compliance Rate \u2014 registered v10.426 from BSC actuals (observed in 4 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "ECL_COVERAGE_RATIO",
@@ -2990,12 +3256,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "ECL Coverage Ratio — registered v10.426 from BSC actuals (observed in 9 staff rows)",
+      "description": "ECL Coverage Ratio \u2014 registered v10.426 from BSC actuals (observed in 9 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "EXPIRED_DOCUMENTS_COUNT",
@@ -3005,12 +3271,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Expired Documents Count — registered v10.426 from BSC actuals (observed in 4 staff rows)",
+      "description": "Expired Documents Count \u2014 registered v10.426 from BSC actuals (observed in 4 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FD_APPROVAL_RATE",
@@ -3020,12 +3286,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FD Approval Rate — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FD Approval Rate \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FD_RATE_VARIANCE_VS_MARKET",
@@ -3035,12 +3301,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FD Rate Variance vs Market — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FD Rate Variance vs Market \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FD_RATIFICATION_TAT",
@@ -3050,12 +3316,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FD Ratification TAT — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FD Ratification TAT \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FD_RATIFICATION_VOLUME",
@@ -3065,12 +3331,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FD Ratification Volume — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FD Ratification Volume \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FX_DEALING_VOLUME",
@@ -3080,12 +3346,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FX Dealing Volume — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FX Dealing Volume \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "FX_INCOME_MARGIN",
@@ -3095,12 +3361,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "FX Income (Margin) — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "FX Income (Margin) \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "GOV_SECURITIES_PORTFOLIO",
@@ -3110,12 +3376,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Gov Securities Portfolio — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "Gov Securities Portfolio \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "GOVT_DEPOSITS",
@@ -3125,12 +3391,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Govt Deposits — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Govt Deposits \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "GOVT_LOAN_BOOK",
@@ -3140,12 +3406,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Govt Loan Book — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Govt Loan Book \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "GOVTPSI_CLIENTS",
@@ -3155,12 +3421,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Govt/PSI Clients — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Govt/PSI Clients \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "IFRS9_STAGE_3_RATIO",
@@ -3170,12 +3436,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "IFRS9 Stage 3 Ratio — registered v10.426 from BSC actuals (observed in 9 staff rows)",
+      "description": "IFRS9 Stage 3 Ratio \u2014 registered v10.426 from BSC actuals (observed in 9 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "INITIATIVE_IMPLEMENTATION_SCORE",
@@ -3185,12 +3451,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Initiative Implementation Score — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Initiative Implementation Score \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "KYC_COMPLETENESS_RATE",
@@ -3200,12 +3466,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "KYC Completeness Rate — registered v10.426 from BSC actuals (observed in 4 staff rows)",
+      "description": "KYC Completeness Rate \u2014 registered v10.426 from BSC actuals (observed in 4 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LCLG_PROCESSING_TAT",
@@ -3215,12 +3481,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "LC/LG Processing TAT — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "LC/LG Processing TAT \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LCR",
@@ -3230,12 +3496,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "LCR — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "LCR \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LEAKAGE_RECOVERY_RATE",
@@ -3245,12 +3511,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Leakage Recovery Rate — registered v10.426 from BSC actuals (observed in 9 staff rows)",
+      "description": "Leakage Recovery Rate \u2014 registered v10.426 from BSC actuals (observed in 9 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LEGAL_OVERDUE_RATE",
@@ -3260,19 +3526,19 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal Overdue Rate — registered v10.426 from BSC actuals (observed in 8 staff rows)",
+      "description": "Legal Overdue Rate \u2014 registered v10.426 from BSC actuals (observed in 8 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register"
     },
     {
       "id": "LEGAL_TAT_EXTERNAL_COUNSEL",
-      "name": "Legal TAT — External Counsel",
+      "name": "Legal TAT \u2014 External Counsel",
       "pillar": "Operational Excellence",
       "weight": 0.15,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — External Counsel — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 External Counsel \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "aliases": [
@@ -3281,28 +3547,28 @@
     },
     {
       "id": "LEGAL_TAT_LEGAL_OPINION",
-      "name": "Legal TAT — Legal Opinion",
+      "name": "Legal TAT \u2014 Legal Opinion",
       "pillar": "Operational Excellence",
       "weight": 0.15,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — Legal Opinion — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 Legal Opinion \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LEGAL_TAT_LOAN_DOCUMENTATION",
-      "name": "Legal TAT — Loan Documentation",
+      "name": "Legal TAT \u2014 Loan Documentation",
       "pillar": "Operational Excellence",
       "weight": 0.1833,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — Loan Documentation — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 Loan Documentation \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "aliases": [
@@ -3311,13 +3577,13 @@
     },
     {
       "id": "LEGAL_TAT_SECURITY_PERFECTION",
-      "name": "Legal TAT — Security Perfection",
+      "name": "Legal TAT \u2014 Security Perfection",
       "pillar": "Operational Excellence",
       "weight": 0.1667,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — Security Perfection — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 Security Perfection \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "aliases": [
@@ -3326,28 +3592,28 @@
     },
     {
       "id": "LEGAL_TAT_TITLE_DEED_CUSTODY",
-      "name": "Legal TAT — Title Deed Custody",
+      "name": "Legal TAT \u2014 Title Deed Custody",
       "pillar": "Operational Excellence",
       "weight": 0.1083,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — Title Deed Custody — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 Title Deed Custody \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "LEGAL_TAT_VALUATION",
-      "name": "Legal TAT — Valuation",
+      "name": "Legal TAT \u2014 Valuation",
       "pillar": "Operational Excellence",
       "weight": 0.15,
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Legal TAT — Valuation — registered v10.426 from BSC actuals (observed in 6 staff rows)",
+      "description": "Legal TAT \u2014 Valuation \u2014 registered v10.426 from BSC actuals (observed in 6 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "aliases": [
@@ -3362,12 +3628,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "MM Placement Book — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "MM Placement Book \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "MOBILE_BANKING_ACTIVE_USERS",
@@ -3377,12 +3643,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Mobile Banking Active Users — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Mobile Banking Active Users \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "MOBILE_LOAN_UPTAKE",
@@ -3392,12 +3658,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Mobile Loan Uptake — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Mobile Loan Uptake \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "NSFR",
@@ -3407,12 +3673,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "NSFR — registered v10.426 from BSC actuals (observed in 7 staff rows)",
+      "description": "NSFR \u2014 registered v10.426 from BSC actuals (observed in 7 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "NOSTRO_RECONCILIATION_RATE",
@@ -3422,12 +3688,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Nostro Reconciliation Rate — registered v10.426 from BSC actuals (observed in 11 staff rows)",
+      "description": "Nostro Reconciliation Rate \u2014 registered v10.426 from BSC actuals (observed in 11 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "OPEN_COMPLIANCE_CASES",
@@ -3437,12 +3703,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Open Compliance Cases — registered v10.426 from BSC actuals (observed in 5 staff rows)",
+      "description": "Open Compliance Cases \u2014 registered v10.426 from BSC actuals (observed in 5 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "OUTSTANDING_BREAKS",
@@ -3452,12 +3718,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Outstanding Breaks — registered v10.426 from BSC actuals (observed in 11 staff rows)",
+      "description": "Outstanding Breaks \u2014 registered v10.426 from BSC actuals (observed in 11 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "PLATFORM_UPTIME",
@@ -3467,12 +3733,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Platform Uptime — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Platform Uptime \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "POLICIES_SOLD",
@@ -3482,12 +3748,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Policies Sold — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Policies Sold \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "RECONCILIATION_RATE",
@@ -3497,12 +3763,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Reconciliation Rate — registered v10.426 from BSC actuals (observed in 11 staff rows)",
+      "description": "Reconciliation Rate \u2014 registered v10.426 from BSC actuals (observed in 11 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "REVENUE_LEAKAGE_AMOUNT",
@@ -3512,12 +3778,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Revenue Leakage Amount — registered v10.426 from BSC actuals (observed in 9 staff rows)",
+      "description": "Revenue Leakage Amount \u2014 registered v10.426 from BSC actuals (observed in 9 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_CROSSSELL",
@@ -3527,12 +3793,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME Cross-sell — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME Cross-sell \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_CUSTOMERS_ACQUIRED",
@@ -3542,12 +3808,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME Customers Acquired — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME Customers Acquired \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_LOAN_BOOK",
@@ -3557,12 +3823,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME Loan Book — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME Loan Book \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_NPL_RATIO",
@@ -3572,12 +3838,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME NPL Ratio — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME NPL Ratio \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_REPAYMENT_RATE",
@@ -3587,12 +3853,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME Repayment Rate — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME Repayment Rate \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SME_TRAINING_EVENTS",
@@ -3602,12 +3868,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "SME Training Events — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "SME Training Events \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SEASONAL_LOAN_RECOVERY",
@@ -3617,12 +3883,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Seasonal Loan Recovery — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Seasonal Loan Recovery \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "SUSPENSE_CLEARANCE_RATE",
@@ -3632,12 +3898,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Suspense Clearance Rate — registered v10.426 from BSC actuals (observed in 11 staff rows)",
+      "description": "Suspense Clearance Rate \u2014 registered v10.426 from BSC actuals (observed in 11 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "TF_FEE_INCOME",
@@ -3647,12 +3913,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "TF Fee Income — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "TF Fee Income \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "TENDER_BONDS_ISSUED",
@@ -3662,12 +3928,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Tender Bonds Issued — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Tender Bonds Issued \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "TRADE_FINANCE_VOLUME",
@@ -3677,12 +3943,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Trade Finance Volume — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "Trade Finance Volume \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_ACTIVE_CUSTOMERS",
@@ -3692,12 +3958,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Active Customers — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Active Customers \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_CROSSSELL_SCORE",
@@ -3707,12 +3973,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Cross-sell Score — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Cross-sell Score \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_CUSTOMERS_ACQUIRED",
@@ -3722,12 +3988,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Customers Acquired — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Customers Acquired \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_DEPOSIT_WALLET_SHARE",
@@ -3737,12 +4003,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Deposit Wallet Share — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Deposit Wallet Share \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_EVENTS_HELD",
@@ -3752,12 +4018,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Events Held — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Events Held \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_LOAN_PENETRATION",
@@ -3767,12 +4033,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB Loan Penetration — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB Loan Penetration \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "WB_NPS_SCORE",
@@ -3782,7 +4048,7 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "WB NPS Score — registered v10.426 from BSC actuals (observed in 1 staff rows)",
+      "description": "WB NPS Score \u2014 registered v10.426 from BSC actuals (observed in 1 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "aliases": [
@@ -3797,12 +4063,12 @@
       "unit": "value",
       "direction": "higher",
       "active": true,
-      "description": "Waiver Recovery Rate — registered v10.426 from BSC actuals (observed in 9 staff rows)",
+      "description": "Waiver Recovery Rate \u2014 registered v10.426 from BSC actuals (observed in 9 staff rows)",
       "source": "bsc_actuals",
       "_origin": "v10.426_bsc_library_register",
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K230",
@@ -3813,14 +4079,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Daily reports/analytics output published by Reporting & Analytics team — tracked daily vs target",
+      "description": "Daily reports/analytics output published by Reporting & Analytics team \u2014 tracked daily vs target",
       "source": "analytics_workbench",
       "aliases": [
         "REPORT_DAILY"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K231",
@@ -3838,7 +4104,7 @@
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K232",
@@ -3849,14 +4115,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Branch ranking refresh completeness — % of 35 branches with live rank",
+      "description": "Branch ranking refresh completeness \u2014 % of 35 branches with live rank",
       "source": "branch_rank_engine",
       "aliases": [
         "BR_RANK_PCT"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K233",
@@ -3867,14 +4133,14 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Number of KPI threshold breaches detected per period — analytics-derived",
+      "description": "Number of KPI threshold breaches detected per period \u2014 analytics-derived",
       "source": "analytics_alerts",
       "aliases": [
         "KPI_BREACH"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K234",
@@ -3885,14 +4151,14 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Time since last dashboard refresh — diagnostic system freshness measure",
+      "description": "Time since last dashboard refresh \u2014 diagnostic system freshness measure",
       "source": "dashboard_pipeline",
       "aliases": [
         "DASH_FRESH"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K235",
@@ -3903,14 +4169,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Natural-Language Query system query resolution rate — analytics self-service",
+      "description": "Natural-Language Query system query resolution rate \u2014 analytics self-service",
       "source": "nlq_engine",
       "aliases": [
         "NLQ_RESOLVE"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K236",
@@ -3921,14 +4187,14 @@
       "direction": "lower",
       "cbk_ref": "",
       "active": true,
-      "description": "Variance vs Tier-1 peer benchmark — analytics-derived diagnostic indicator",
+      "description": "Variance vs Tier-1 peer benchmark \u2014 analytics-derived diagnostic indicator",
       "source": "tier1_benchmark",
       "aliases": [
         "T1_VAR"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K237",
@@ -3946,7 +4212,7 @@
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K215",
@@ -3957,14 +4223,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Average leads created per staff per period — every staff can create leads per Joshua doctrine",
+      "description": "Average leads created per staff per period \u2014 every staff can create leads per Joshua doctrine",
       "source": "pipeline_engine",
       "aliases": [
         "LEADS_PER_STAFF"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K216",
@@ -3982,7 +4248,7 @@
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_OPS_THROUGHPUT",
@@ -3993,14 +4259,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Operational throughput per period — units processed (universal KPI for officers/analysts)",
+      "description": "Operational throughput per period \u2014 units processed (universal KPI for officers/analysts)",
       "source": "v10468_cascade_filler",
       "aliases": [
         "THROUGHPUT"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_OPS_TAT",
@@ -4011,14 +4277,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Operational turn-around time achievement — % of items within SLA",
+      "description": "Operational turn-around time achievement \u2014 % of items within SLA",
       "source": "v10468_cascade_filler",
       "aliases": [
         "OPS_TAT"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_CX_SATISFACTION",
@@ -4029,14 +4295,14 @@
       "direction": "higher",
       "cbk_ref": "",
       "active": true,
-      "description": "Customer satisfaction score 1-5 — universal CX KPI",
+      "description": "Customer satisfaction score 1-5 \u2014 universal CX KPI",
       "source": "v10468_cascade_filler",
       "aliases": [
         "CX_SAT"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_SYS_UPTIME",
@@ -4046,14 +4312,14 @@
       "unit": "%",
       "direction": "higher",
       "active": true,
-      "description": "System uptime / availability — operational excellence indicator",
+      "description": "System uptime / availability \u2014 operational excellence indicator",
       "source": "observability",
       "aliases": [
         "SYS_UPTIME"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_AUDIT_FINDINGS",
@@ -4063,14 +4329,14 @@
       "unit": "count",
       "direction": "higher",
       "active": true,
-      "description": "Audit findings closed within SLA — internal controls metric",
+      "description": "Audit findings closed within SLA \u2014 internal controls metric",
       "source": "audit_log",
       "aliases": [
         "AUD_FIND_CLOSED"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K_TRAINING_HOURS_GEN",
@@ -4080,14 +4346,14 @@
       "unit": "hours",
       "direction": "higher",
       "active": true,
-      "description": "Generic training hours KPI — universal People & Learning indicator",
+      "description": "Generic training hours KPI \u2014 universal People & Learning indicator",
       "source": "lms",
       "aliases": [
         "TRAIN_HRS"
       ],
       "deprecated": true,
       "deprecated_v": "v10.473",
-      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation — no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
+      "deprecation_note": "Marked deprecated in v10.473 KPI rationalisation \u2014 no role currently references this KPI. Retained for historical data integrity (existing BSC entries against this KPI continue to work). To reactivate: add to role_kpis[role] and remove 'deprecated' field."
     },
     {
       "id": "K238",
@@ -4099,7 +4365,7 @@
       "cbk_ref": "",
       "active": true,
       "shadow": true,
-      "description": "Value of asset (lending) deals the staff referred that materialized. Shadow / recognition only — credited to the referrer; does NOT feed consolidated P&L.",
+      "description": "Value of asset (lending) deals the staff referred that materialized. Shadow / recognition only \u2014 credited to the referrer; does NOT feed consolidated P&L.",
       "source": "referral_shadow",
       "_origin": "v10.5xx_referral_shadow_credit"
     },
@@ -4113,7 +4379,7 @@
       "cbk_ref": "",
       "active": true,
       "shadow": true,
-      "description": "Value of liability (deposit) deals the staff referred that materialized. Shadow / recognition only — credited to the referrer; does NOT feed consolidated P&L.",
+      "description": "Value of liability (deposit) deals the staff referred that materialized. Shadow / recognition only \u2014 credited to the referrer; does NOT feed consolidated P&L.",
       "source": "referral_shadow",
       "_origin": "v10.5xx_referral_shadow_credit"
     },
@@ -4127,9 +4393,441 @@
       "cbk_ref": "",
       "active": true,
       "shadow": true,
-      "description": "Mean business-day credit turnaround per staff, derived from the pipeline SLA clocks (credit_assessment -> disbursement/security_perfection on deal.sla_step_log). Shadow / validation only — weight 0, does not affect appraisal scores. Source for the eventual promotion of K011 / the credit lane TATs.",
+      "description": "Mean business-day credit turnaround per staff, derived from the pipeline SLA clocks (credit_assessment -> disbursement/security_perfection on deal.sla_step_log). Shadow / validation only \u2014 weight 0, does not affect appraisal scores. Source for the eventual promotion of K011 / the credit lane TATs.",
       "source": "sla_clock",
       "_origin": "S4a_sla_tat_shadow"
+    },
+    {
+      "id": "LDR",
+      "name": "Loan-to-Deposit Ratio",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Net loans as a percentage of deposits.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "CUST_ACTIVE_RATE",
+      "name": "Customer Active Rate",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Share of customers transacting in the period.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "DIGITAL_ACTIVE_PCT",
+      "name": "Active Customers on Digital Platforms",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Active customers using card, mobile or online channels.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "CSAT",
+      "name": "Customer Satisfaction Score (CSAT)",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Customer satisfaction survey score.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "CROSS_SELL_RATIO",
+      "name": "Cross-Sell Ratio",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "products/customer",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Average number of products held per customer.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "NTB_CUSTOMERS",
+      "name": "New-to-Bank Customers",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Net new customers onboarded in the period.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "DORMANCY_RATIO",
+      "name": "Dormancy Ratio",
+      "pillar": "Customer Focus",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Share of accounts dormant.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "REGRETTABLE_TURNOVER",
+      "name": "Regrettable Staff Turnover",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Voluntary exits of staff the bank wished to retain.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "TOTAL_TURNOVER",
+      "name": "Total Staff Turnover",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "All staff exits as a share of headcount.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "SUCCESSION_COVERAGE",
+      "name": "Succession Coverage \u2014 Critical Roles",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Critical and leadership roles with at least one identified successor.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "ENGAGEMENT_SCORE",
+      "name": "Employee Engagement Score",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Engagement survey score.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "REV_PER_STAFF",
+      "name": "Revenue per Staff",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "USD K",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Total revenue divided by headcount.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "MANDATORY_TRAINING",
+      "name": "Mandatory Training Completion",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Group-assigned mandatory training completed before deadline.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "PDP_COVERAGE",
+      "name": "Personal Development Plans in Place",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Staff with a documented development plan.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "CAPABILITY_READINESS",
+      "name": "Critical Skills Coverage",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Coverage of critical skills in priority areas.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "PERF_CYCLE_ADHERENCE",
+      "name": "Performance Management Cycle Adherence",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Goal setting, half-year review and year-end appraisal completed on time.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "LEAVE_UTILISATION",
+      "name": "Leave Utilisation & Block Leave",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Mandatory block leave taken and annual leave utilised.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "AUDIT_RATING_ARR",
+      "name": "ARR Audit Rating",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "rating",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Annual Risk Review rating \u2014 minimum Room For Improvement.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "AUDIT_RATING_FCR",
+      "name": "FCR Issue Assurance Rating",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "rating",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Financial Crime Review issue-assurance outcome \u2014 minimum Pass.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "RCSA_QA",
+      "name": "RCSA Quality Assurance",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Satisfaction rating on RCSA quality assurance.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "OTR",
+      "name": "On-Time Issue Remediation (OTR)",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Audit and regulatory issues remediated within agreed timelines.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "OVERDUE_ISSUES",
+      "name": "Overdue Audit Issues",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Issues past their remediation date at month end.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "OP_LOSS_PCT_PBT",
+      "name": "Operational Loss as % of PBT",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Operational risk losses as a share of budgeted PBT.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "REG_FINES_PCT_PBT",
+      "name": "Regulatory Fines as % of PBT",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Losses from regulatory fines as a share of PBT.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "ECAP_CLOSURE",
+      "name": "eCAP Issues Closed On Time",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Outstanding eCAP items closed with no overdue items at month end.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "EXPIRED_TICKLERS",
+      "name": "Expired CAs / Deferrals / Ticklers",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Expired credit approvals, TODs, deferrals, call memos or insurance ticklers.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "LCY_FCY_SPLIT",
+      "name": "LCY:FCY Balance Sheet Split",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Local-currency share of the balance sheet.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "AU_DEPOSIT_CONC",
+      "name": "AU Deposit Concentration",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "AU deposits as a percentage of total FCY balance sheet.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "CCB_REV_CONTRIB",
+      "name": "CCB Contribution to Total Revenue",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Consumer & Commercial Banking share of total revenue.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "BRANCH_TURNAROUND",
+      "name": "Loss-Making Branches Turned Around",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Share of loss-making branches returned to profit.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "DEPOSIT_MOBILISATION",
+      "name": "Deposit Mobilisation (Sales as a Service)",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "KES M",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "New deposits mobilised by non-sales functions.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "ACCOUNT_REFERRALS",
+      "name": "Account Referrals",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Customer account referrals introduced.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "DISTRIBUTION_STRATEGY",
+      "name": "Distribution Strategy Implementation",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Completion of the distribution strategy action plan.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "VALUE_CHAIN_ALIGNMENT",
+      "name": "Value Chain Alignment",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Value chains identified and activated with CCB.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "FINTECH_PARTNERS",
+      "name": "Fintech Partners Onboarded",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "#",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "New fintech partnerships signed.",
+      "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "DIGITAL_SALES_ACTIVATION",
+      "name": "Digital Sales Onboarding & Activation",
+      "pillar": "Must Win Battles",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Digital onboarding rate and subsequent active usage.",
+      "source": "EKE 2026 scorecards"
     }
   ],
   "_v10324_role_kpi_updates": {
@@ -4578,7 +5276,7 @@
       "NEW_ACCOUNTS"
     ],
     "ts": "2026-05-11",
-    "rationale": "Branch ranking report KPIs — NPL ratio and new accounts at branch level"
+    "rationale": "Branch ranking report KPIs \u2014 NPL ratio and new accounts at branch level"
   },
   "_v10334_role_kpi_canonical_migration": {
     "shipped": "v10.334",
@@ -4641,7 +5339,7 @@
       "PRODUCT_GROWTH_RATE"
     ],
     "ts": "2026-05-12",
-    "rationale": "Products → BSC bridge canonical KPIs for category-level product performance attribution"
+    "rationale": "Products \u2192 BSC bridge canonical KPIs for category-level product performance attribution"
   },
   "_v10335_role_kpi_product_additions": {
     "shipped": "v10.335",
@@ -4891,7 +5589,7 @@
       "MARKETING_DRIVEN_REVENUE"
     ],
     "ts": "2026-05-12T08:20:22.459871+00:00",
-    "rationale": "Specialist department canonical KPIs — capital/liquidity ratios, FX trading, trade finance revenue + doc TAT + LC volume, and marketing campaign ROI + brand + lead generation."
+    "rationale": "Specialist department canonical KPIs \u2014 capital/liquidity ratios, FX trading, trade finance revenue + doc TAT + LC volume, and marketing campaign ROI + brand + lead generation."
   },
   "_v10337_branch_staff_canonical_migration": {
     "shipped": "v10.337",
@@ -5359,5 +6057,103 @@
     "_doc": "v10.469 resolved role_kpis short-code references to canonical library KPI IDs",
     "_resolved": 1469,
     "_unresolved": 0
+  },
+  "_2026_active_kpis_reconciliation": {
+    "_doc": "active_kpis held pre-v10.420 short codes that the id migrations never updated; rebuilt from each KPI's active flag.",
+    "previous_entries": 52,
+    "orphaned_entries_dropped": 43,
+    "orphans": [
+      "LOAN_GROWTH",
+      "LOAN_DISB",
+      "FEES_COMM",
+      "DFS_REV",
+      "BANCASSURANCE",
+      "NIM",
+      "TRADE_FIN",
+      "TREASURY",
+      "NEW_CUST",
+      "ACTIVE_ACCTS",
+      "DORMANCY_REACT",
+      "DIGITAL_ACT",
+      "NPS",
+      "CX_SCORE",
+      "COMPLAINT_RES",
+      "CUST_RETENTION",
+      "TRANSACTIONS",
+      "COMPLIANCE",
+      "AUDIT_SCORE",
+      "SLA_SCORE",
+      "REG_TIMELINESS",
+      "DIGITAL_MIG",
+      "CREDIT_TAT",
+      "RECONCILIATION",
+      "AML_SAR",
+      "TRAINING",
+      "STAFF_SAT",
+      "SUCCESSION",
+      "CASA_RATIO",
+      "ECOSYSTEM_BANKING",
+      "TOP100_CUSTOMERS",
+      "COLLECTION_THROUGHPUT",
+      "BUSINESS_BORROWERS",
+      "DISB_RETAIL",
+      "DISB_MSME",
+      "DISB_CORPORATE",
+      "RETAIL_MSME_DEPOSIT",
+      "COMMERCIAL_DEPOSIT",
+      "TOTAL_NFI",
+      "ACCOUNT_DORMANCY",
+      "CHANNEL_DORMANCY",
+      "NEW_ACCOUNTS",
+      "STAFF_PROD"
+    ],
+    "rebuilt_entries": 313,
+    "date": "2026-07-16"
+  },
+  "_2026_bsc_alignment": {
+    "aligned_to": "EKE 2026 scorecards (MD + EXCO direct reports)",
+    "added_pillar": "Must Win Battles",
+    "added_kpis": [
+      "LDR",
+      "CUST_ACTIVE_RATE",
+      "DIGITAL_ACTIVE_PCT",
+      "CSAT",
+      "CROSS_SELL_RATIO",
+      "NTB_CUSTOMERS",
+      "DORMANCY_RATIO",
+      "REGRETTABLE_TURNOVER",
+      "TOTAL_TURNOVER",
+      "SUCCESSION_COVERAGE",
+      "ENGAGEMENT_SCORE",
+      "REV_PER_STAFF",
+      "MANDATORY_TRAINING",
+      "PDP_COVERAGE",
+      "CAPABILITY_READINESS",
+      "PERF_CYCLE_ADHERENCE",
+      "LEAVE_UTILISATION",
+      "AUDIT_RATING_ARR",
+      "AUDIT_RATING_FCR",
+      "RCSA_QA",
+      "OTR",
+      "OVERDUE_ISSUES",
+      "OP_LOSS_PCT_PBT",
+      "REG_FINES_PCT_PBT",
+      "ECAP_CLOSURE",
+      "EXPIRED_TICKLERS",
+      "LCY_FCY_SPLIT",
+      "AU_DEPOSIT_CONC",
+      "CCB_REV_CONTRIB",
+      "BRANCH_TURNAROUND",
+      "DEPOSIT_MOBILISATION",
+      "ACCOUNT_REFERRALS",
+      "DISTRIBUTION_STRATEGY",
+      "VALUE_CHAIN_ALIGNMENT",
+      "FINTECH_PARTNERS",
+      "DIGITAL_SALES_ACTIVATION"
+    ],
+    "deduped_roles": [
+      "Director Consumer & Commercial Banking (CCB)"
+    ],
+    "date": "2026-07-16"
   }
 }

@@ -1507,14 +1507,39 @@ def save_kpi_library(library: dict):
     KPI_LIBRARY_FILE.write_text(json.dumps(library, indent=2), encoding="utf-8")
 
 def get_active_kpis() -> list:
-    """Return only the KPIs the bank has activated."""
+    """Return the KPIs the bank has activated.
+
+    Two things were wrong here and both are load-bearing:
+
+    1. Shape. The live library keeps a flat ``kpis`` list, each entry carrying its own
+       ``pillar``; ``pillars`` is display metadata (id/name/colour). This function
+       iterated ``pillars`` as a {pillar: [kpi]} dict, so it raised AttributeError
+       against the real file and took the KPI Library admin down with it.
+
+    2. Source of truth. Each KPI carries its own ``active`` flag. A parallel
+       ``active_kpis`` allowlist also existed, but the v10.420/v10.469 migrations
+       renamed KPI ids and updated ``kpis`` and ``role_kpis`` without updating that
+       list, leaving most of its entries pointing at ids that no longer exist. Honouring
+       it would silently drop most of the library. The per-KPI flag is authoritative;
+       the allowlist is legacy and is no longer consulted.
+
+    The legacy nested shape is still read if a library ever presents it.
+    """
     lib = get_kpi_library()
-    active_ids = set(lib.get("active_kpis", []))
     result = []
-    for pillar, kpis in lib.get("pillars", DEFAULT_KPI_LIBRARY).items():
-        for k in kpis:
-            if not active_ids or k["id"] in active_ids:
-                result.append({**k, "pillar": pillar})
+
+    flat = lib.get("kpis")
+    if isinstance(flat, list) and flat:
+        return [dict(k) for k in flat
+                if isinstance(k, dict) and k.get("active") is not False]
+
+    pillars = lib.get("pillars", DEFAULT_KPI_LIBRARY)
+    if isinstance(pillars, dict):
+        active_ids = set(lib.get("active_kpis", []))
+        for pillar, kpis in pillars.items():
+            for k in kpis:
+                if not active_ids or k["id"] in active_ids:
+                    result.append({**k, "pillar": pillar})
     return result
 
 def get_role_kpis(role: str) -> list:
@@ -1527,9 +1552,10 @@ def get_pillar_weights() -> dict:
     lib = get_kpi_library()
     return lib.get("pillar_weights", {
         "Financial": 0.40,
-        "Customer Focus": 0.25,
-        "Operational Excellence": 0.25,
+        "Customer Focus": 0.20,
+        "Operational Excellence": 0.15,
         "People & Learning": 0.10,
+        "Must Win Battles": 0.15,
     })
 
 
