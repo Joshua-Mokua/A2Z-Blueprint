@@ -1,3 +1,4 @@
+import { displayName } from "../lib/names";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -62,7 +63,7 @@ export default function Portfolio() {
             <span className="text-gray-600">Viewing:</span>
             <select className="rounded border px-2 py-1.5 text-sm" value={staff} onChange={(e) => setStaff(e.target.value)}>
               <option value="">All — consolidated ({data.team.length} staff)</option>
-              {data.team.map((m) => <option key={m.staff_code} value={m.staff_code}>{m.name}</option>)}
+              {data.team.map((m) => <option key={m.staff_code} value={m.staff_code}>{displayName(m.name, (m as any).display_name)}</option>)}
             </select>
             {data.view === 'consolidated' && <span className="text-xs text-gray-400">Whole team / branch book</span>}
           </label>

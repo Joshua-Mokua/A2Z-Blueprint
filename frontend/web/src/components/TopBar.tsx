@@ -1,3 +1,4 @@
+import { displayName } from "../lib/names";
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRole } from '@/hooks/useRole';
@@ -113,7 +114,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
 
         {user && (
-          <div className="tb-avatar" title={user.full_name ?? user.username}>
+          <div className="tb-avatar" title={user.full_name ? displayName(user.full_name, (user as any).display_name) : user.username}>
             {initials(user.full_name)}
           </div>
         )}

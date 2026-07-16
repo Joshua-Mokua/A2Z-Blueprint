@@ -1,3 +1,4 @@
+import { displayName } from "../lib/names";
 import { Link, useLocation } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useAuth } from '@/hooks/useAuth';
@@ -120,7 +121,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <div className="sb-user">
           <div className="sb-av">{initials(user?.full_name ?? user?.username)}</div>
           <div className="sb-user-info">
-            <div className="sb-user-name">{user?.full_name ?? user?.username ?? '—'}</div>
+            <div className="sb-user-name">{user?.full_name ? displayName(user.full_name, (user as any).display_name) : (user?.username ?? '—')}</div>
             <div className="sb-user-role">{user?.role ?? ''}</div>
           </div>
         </div>
