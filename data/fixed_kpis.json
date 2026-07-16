@@ -183,9 +183,6 @@
       "GROUP_BUDGET_AUDIT",
       "LCY_FCY_SPLIT",
       "LDR",
-      "NET_LOANS",
-      "NPL_RATIO",
-      "NTB_CUSTOMERS",
       "OP_LOSS_PCT_PBT",
       "OTR",
       "PBT",
@@ -195,11 +192,10 @@
       "REV_PER_STAFF",
       "ROE",
       "SUCCESSION_COVERAGE",
-      "TOTAL_DEPOSITS",
       "TOTAL_OPEX",
       "TOTAL_REVENUE"
     ],
-    "_note": "Bank-fixed for 2026: one target for everyone, from the MD's scorecard. A KPI listed here ignores per-staff cascade entries."
+    "_note": "Bank-fixed for 2026: one target for everyone, from the MD's scorecard. Collective measures only. Volume and portfolio KPIs (net loans, deposits, customer numbers, NPL) are deliberately NOT here: they vary by unit, and a fixed volume KPI scores an individual against the bank aggregate, which always produces 1.0 (see is_fixed_kpi, v10.323)."
   },
   "_v10401_period_meta": {
     "last_modified": "2026-05-13T19:18:11.169025",
