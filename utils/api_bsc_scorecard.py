@@ -60,6 +60,7 @@ def _staff_index() -> Dict[str, dict]:
                 "full_name": str(r.get("Staff Name") or "").strip(),
                 "role": str(r.get("Role") or "").strip(),
                 "unit": str(r.get("Branch") or r.get("Unit") or "").strip(),
+                "department": str(r.get("Department") or "").strip(),
             }
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"staff register unavailable: {exc}")
@@ -74,17 +75,33 @@ def _display(full_name: str, preferred: str = "") -> str:
         return (full_name or "").split(" ")[0] or full_name
 
 
-def _scorecard_for_role(role: str) -> Dict[str, Any]:
+def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026") -> Dict[str, Any]:
     from utils.bsc_score_computation import resolve_role_kpis
 
     lib = _library()
     rw = (lib.get("role_kpi_weights") or {}).get(role) or {}
     defs = {k.get("id"): k for k in lib.get("kpis", []) if isinstance(k, dict)}
 
+    # Actuals, targets, achievement and the 1-5 score all come from
+    # compute_staff_scorecard — the engine that already resolves bank_fixed ->
+    # cascaded -> role_default targets and reads bsc_actuals. Recomputing any of
+    # that here would be a second answer to the same question.
+    scored: Dict[str, Any] = {}
+    final_score = None
+    if staff_code:
+        try:
+            from utils.bsc_score_computation import compute_staff_scorecard
+            sc = compute_staff_scorecard(staff_code, role, period)
+            final_score = sc.final_score
+            scored = {k.canonical_id: k for k in sc.kpi_scores}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"scorecard computation failed for {staff_code}: {exc}")
+
     kpis: List[Dict[str, Any]] = []
     for r in resolve_role_kpis(role):
         d = defs.get(r.canonical_id) or {}
         meta = (rw.get("kpis") or {}).get(r.canonical_id) or {}
+        s = scored.get(r.canonical_id)
         kpis.append({
             "id": r.canonical_id,
             "name": d.get("name") or r.canonical_id,
@@ -96,6 +113,11 @@ def _scorecard_for_role(role: str) -> Dict[str, Any]:
             "within_area_weight": meta.get("weight"),
             "defined": r.defined,
             "description": d.get("description") or "",
+            "actual": getattr(s, "actual", None),
+            "target": getattr(s, "target", None),
+            "target_source": getattr(s, "target_source", "missing"),
+            "achievement_pct": getattr(s, "achievement_pct", None),
+            "score": getattr(s, "score", None),
         })
 
     objectives = [
@@ -118,6 +140,9 @@ def _scorecard_for_role(role: str) -> Dict[str, Any]:
         "source": rw.get("source"),
         "total_weight": round(total, 6),
         "has_scorecard": bool(kpis),
+        "period": period,
+        "final_score": final_score,
+        "scored_count": sum(1 for k in kpis if k["score"] is not None),
     }
 
 
@@ -173,7 +198,8 @@ def bsc_team(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
 
 
 @router.get("/scorecard/{staff_code}")
-def bsc_scorecard(staff_code: str, user: dict = Depends(get_current_user)) -> Dict[str, Any]:
+def bsc_scorecard(staff_code: str, period: str = "2026",
+                  user: dict = Depends(get_current_user)) -> Dict[str, Any]:
     """The scorecard definition for one person, scoped by the reporting tree."""
     from utils.api_pipeline_scope import get_visible_staff_codes
 
@@ -192,9 +218,83 @@ def bsc_scorecard(staff_code: str, user: dict = Depends(get_current_user)) -> Di
     if not person:
         raise HTTPException(status_code=404, detail=f"Unknown staff code {staff_code}")
 
-    card = _scorecard_for_role(person.get("role") or "")
+    card = _scorecard_for_role(person.get("role") or "", staff_code, period)
     card["staff"] = {**person, "display_name": _display(person.get("full_name", ""))}
     return card
+
+
+@router.get("/departments")
+def bsc_departments(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
+    """The caller's reports grouped by department — the tab structure.
+
+    A tab per department rather than per person: the MD opens "Commercial" and
+    chooses among the people in it, instead of reading fifteen first names. The
+    grouping is the register's Department column, so it stays true as the bank
+    reorganises. Departments containing a direct report are marked, and everyone in
+    scope is listed so a department opens onto its whole team, not just its head.
+    """
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.core import get_org_config
+
+    idx = _staff_index()
+    me_code = str(user.get("staff_code") or "").strip()
+    me = idx.get(me_code) or {
+        "staff_code": me_code,
+        "full_name": user.get("full_name") or user.get("username") or "",
+        "role": user.get("role") or "", "unit": "", "department": "",
+    }
+
+    try:
+        visible = {str(c) for c in get_visible_staff_codes(user)}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"scope lookup failed: {exc}")
+        visible = {me_code}
+    visible.discard(me_code)
+
+    hierarchy = (get_org_config() or {}).get("hierarchy", {}) or {}
+    my_role = (me.get("role") or "").strip()
+    direct_roles = {
+        r for r, parents in hierarchy.items()
+        if isinstance(parents, list) and my_role and my_role in parents
+    }
+    lib_roles = set((_library().get("role_kpi_weights") or {}).keys())
+
+    groups: Dict[str, List[dict]] = {}
+    for code in sorted(visible):
+        p = idx.get(code)
+        if not p:
+            continue
+        dept = p.get("department") or p.get("unit") or "Unassigned"
+        groups.setdefault(dept, []).append({
+            **p,
+            "display_name": _display(p.get("full_name", "")),
+            "is_direct_report": p.get("role") in direct_roles,
+            "has_scorecard": p.get("role") in lib_roles,
+        })
+
+    departments = []
+    for dept, people in groups.items():
+        people.sort(key=lambda x: (not x["is_direct_report"],
+                                   not x["has_scorecard"], x["full_name"]))
+        departments.append({
+            "department": dept,
+            "people": people,
+            "head": next((x for x in people if x["is_direct_report"]), None),
+            "direct_report_count": sum(1 for x in people if x["is_direct_report"]),
+            "scorecard_count": sum(1 for x in people if x["has_scorecard"]),
+            "total": len(people),
+        })
+    # Departments the caller line-manages first, then the rest alphabetically.
+    departments.sort(key=lambda d: (not d["direct_report_count"], d["department"]))
+
+    return {
+        "me": {**me, "display_name": _display(me.get("full_name", "")),
+               "is_direct_report": False,
+               "has_scorecard": me.get("role") in lib_roles},
+        "departments": departments,
+        "department_count": len(departments),
+        "total_visible": len(visible),
+    }
 
 
 @router.get("/pillars")

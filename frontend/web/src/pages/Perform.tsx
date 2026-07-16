@@ -1,22 +1,24 @@
-// Balanced Scorecard — the real 2026 scorecards, per role.
+// Balanced Scorecard — the real 2026 scorecards.
 //
-// Tabs across the people whose scorecards the viewer may open: the API scopes that
-// through the reporting tree, so this replicates down the hierarchy without any
-// role-specific code here — a Branch Manager sees their branch, the MD sees EXCO.
+// Tabs are DEPARTMENTS, not people: the MD opens "Commercial" and picks from the team
+// in it, rather than reading fifteen first names. The grouping is the register's own
+// Department column, and scope comes from the reporting tree, so the same page serves
+// every level — a Branch Manager sees their branch, a leaf sees only themselves.
 //
-// A scorecard whose source weights were unusable is shown as incomplete rather than
-// filled with invented numbers: the structure is real, the weights are pending admin.
+// Actuals, targets, achievement and the 1-5 score come from compute_staff_scorecard
+// via the API. A scorecard whose source weights were unusable shows its real structure
+// with blank weights rather than invented ones.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { fetchWhoamiDetailed } from '@/lib/api';
 import {
-  fetchBscTeam, fetchBscPillars, fetchBscScorecard, pct,
+  fetchBscDepartments, fetchBscPillars, fetchBscScorecard,
+  pct, scoreTone, achBar, fmtNum,
   type BscKpi, type BscObjective, type BscScorecard, type BscPillars,
 } from '@/lib/bsc';
 
@@ -25,18 +27,77 @@ const AREA_ORDER = [
   'Operational Excellence', 'Must Win Battles',
 ];
 
-function areaColor(area: string, pillars?: BscPillars): string {
-  return pillars?.pillars.find((p) => p.id === area)?.color ?? '#464646';
+const MY_TAB = '__me__';
+
+const areaMeta = (area: string, pillars?: BscPillars) => {
+  const p = pillars?.pillars.find((x) => x.id === area);
+  return { color: p?.color ?? '#464646', label: p?.name ?? area };
+};
+
+type Row = { kind: 'kpi'; kpi: BscKpi } | { kind: 'objective'; obj: BscObjective };
+
+// ── the coloured ribbon, matching the credit workbenches ────────────────────
+function Ribbon({
+  title, subtitle, score, period, complete,
+}: {
+  title: string; subtitle: string; score: number | null;
+  period: string; complete: boolean;
+}) {
+  const tone = scoreTone(score);
+  const toneBg = tone === 'success' ? 'var(--brand-accent)'
+    : tone === 'warning' ? '#E8A33D'
+    : tone === 'danger' ? '#C0392B' : 'rgba(255,255,255,.18)';
+  return (
+    <div className="rounded-lg px-6 py-5 text-white"
+         style={{ background: 'linear-gradient(100deg, var(--brand-secondary) 0%, var(--brand-primary) 100%)' }}>
+      <div className="flex items-start justify-between gap-6 flex-wrap">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.14em] opacity-70">
+            {period} Scorecard
+          </div>
+          <h1 className="text-2xl font-semibold mt-1">{title}</h1>
+          <p className="text-sm opacity-80 mt-0.5">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {!complete && (
+            <span className="text-[11px] px-2 py-1 rounded"
+                  style={{ background: 'rgba(255,255,255,.15)' }}>
+              weights pending
+            </span>
+          )}
+          <div className="text-right rounded-lg px-4 py-2" style={{ background: toneBg }}>
+            <div className="text-2xl font-bold leading-none">
+              {score === null ? '—' : score.toFixed(2)}
+            </div>
+            <div className="text-[10px] uppercase tracking-wide opacity-90 mt-1">
+              overall / 5
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function areaLabel(area: string, pillars?: BscPillars): string {
-  return pillars?.pillars.find((p) => p.id === area)?.name ?? area;
+function AchievementCell({ kpi }: { kpi: BscKpi }) {
+  if (kpi.achievement_pct === null) {
+    return <span className="text-xs text-gray-300">—</span>;
+  }
+  const tone = scoreTone(kpi.score);
+  const bar = tone === 'success' ? 'var(--brand-accent)'
+    : tone === 'warning' ? '#E8A33D' : '#C0392B';
+  return (
+    <div className="flex items-center gap-2 justify-end">
+      <div className="h-1.5 w-16 rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-full rounded-full transition-all"
+             style={{ width: `${achBar(kpi.achievement_pct)}%`, background: bar }} />
+      </div>
+      <span className="text-xs tabular-nums text-gray-700 w-11 text-right">
+        {kpi.achievement_pct.toFixed(0)}%
+      </span>
+    </div>
+  );
 }
-
-/** KPIs and objectives share the area weighting, so they render as one list. */
-type Row =
-  | { kind: 'kpi'; kpi: BscKpi }
-  | { kind: 'objective'; obj: BscObjective };
 
 function AreaSection({
   area, rows, areaWeight, pillars, complete,
@@ -44,72 +105,100 @@ function AreaSection({
   area: string; rows: Row[]; areaWeight: number | null;
   pillars?: BscPillars; complete: boolean;
 }) {
-  const color = areaColor(area, pillars);
-  const measured = rows.reduce(
-    (s, r) => s + (r.kind === 'kpi' ? r.kpi.weight : r.obj.weight ?? 0), 0,
-  );
+  const { color, label } = areaMeta(area, pillars);
+  const scored = rows.filter((r) => r.kind === 'kpi' && r.kpi.score !== null);
+  const avg = scored.length
+    ? scored.reduce((s, r) => s + ((r as { kpi: BscKpi }).kpi.score ?? 0), 0) / scored.length
+    : null;
+
   return (
     <Card padding="none" className="overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200"
-           style={{ borderLeft: `4px solid ${color}` }}>
-        <div>
-          <h3 className="text-sm font-semibold" style={{ color }}>
-            {areaLabel(area, pillars)}
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
+      <div className="flex items-center justify-between px-5 py-3"
+           style={{ background: `${color}0F`, borderLeft: `4px solid ${color}` }}>
+        <div className="flex items-baseline gap-3">
+          <h3 className="text-sm font-semibold" style={{ color }}>{label}</h3>
+          <span className="text-xs text-gray-500">
             {rows.length} measure{rows.length === 1 ? '' : 's'}
-            {complete && ` · ${pct(measured)} of the scorecard`}
-          </p>
+            {scored.length > 0 && ` · ${scored.length} scored`}
+          </span>
         </div>
-        <div className="text-right">
-          <div className="text-lg font-semibold text-gray-800">
-            {areaWeight === null ? '—' : pct(areaWeight, 0)}
+        <div className="flex items-center gap-5">
+          {avg !== null && (
+            <Badge tone={scoreTone(avg)} size="sm">avg {avg.toFixed(2)}</Badge>
+          )}
+          <div className="text-right">
+            <div className="text-base font-semibold" style={{ color }}>
+              {areaWeight === null ? '—' : pct(areaWeight, 0)}
+            </div>
+            <div className="text-[9px] uppercase tracking-wide text-gray-400">weight</div>
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-gray-400">area weight</div>
         </div>
       </div>
 
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-fixed">
         <thead>
-          <tr className="text-[11px] uppercase tracking-wide text-gray-400 bg-gray-50">
-            <th className="text-left font-medium px-5 py-2">Measure</th>
-            <th className="text-left font-medium px-3 py-2 w-24">Unit</th>
-            <th className="text-right font-medium px-3 py-2 w-28">Within area</th>
-            <th className="text-right font-medium px-5 py-2 w-28">Weight</th>
+          <tr className="text-[10px] uppercase tracking-wide text-gray-400 bg-gray-50/70">
+            <th className="text-left   font-medium pl-5 pr-2 py-2 w-[38%]">Measure</th>
+            <th className="text-left   font-medium px-2 py-2 w-[9%]">Unit</th>
+            <th className="text-right  font-medium px-2 py-2 w-[8%]">Weight</th>
+            <th className="text-right  font-medium px-2 py-2 w-[10%]">Target</th>
+            <th className="text-right  font-medium px-2 py-2 w-[10%]">Actual</th>
+            <th className="text-right  font-medium px-2 py-2 w-[17%]">Achievement</th>
+            <th className="text-center font-medium pr-5 pl-2 py-2 w-[8%]">Score</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => {
             const isKpi = r.kind === 'kpi';
-            const name = isKpi ? r.kpi.name : r.obj.text;
-            const within = isKpi ? r.kpi.within_area_weight : r.obj.within_area_weight;
             const weight = isKpi ? r.kpi.weight : r.obj.weight;
             return (
-              <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
-                <td className="px-5 py-2.5">
+              <tr key={i} className="border-t border-gray-100 hover:bg-gray-50/60">
+                <td className="pl-5 pr-2 py-2">
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-800">{name}</span>
+                    <span className="text-gray-800 leading-snug">
+                      {isKpi ? r.kpi.name : r.obj.text}
+                    </span>
                     {!isKpi && (
                       <Badge tone="info" size="sm">
                         {r.obj.due ? `due ${r.obj.due}` : 'objective'}
                       </Badge>
                     )}
-                    {isKpi && !r.kpi.defined && (
-                      <Badge tone="danger" size="sm">undefined</Badge>
-                    )}
                   </div>
-                  {isKpi && r.kpi.direction === 'lower' && (
-                    <span className="text-[10px] text-gray-400">lower is better</span>
-                  )}
+                  {isKpi && (() => {
+                    // Both hints are inline spans; without a separator they rendered
+                    // as "lower is betterno target set".
+                    const hints = [
+                      r.kpi.direction === 'lower' ? 'lower is better' : null,
+                      r.kpi.target_source === 'missing' && r.kpi.actual === null
+                        ? 'no target set' : null,
+                    ].filter(Boolean);
+                    return hints.length ? (
+                      <span className="text-[10px] text-gray-400">{hints.join(' · ')}</span>
+                    ) : null;
+                  })()}
                 </td>
-                <td className="px-3 py-2.5 text-gray-500 text-xs">
+                <td className="px-2 py-2 text-gray-400 text-xs truncate">
                   {isKpi ? r.kpi.unit || '—' : '—'}
                 </td>
-                <td className="px-3 py-2.5 text-right text-gray-500 text-xs">
-                  {within === null || within === undefined ? '—' : pct(within, 0)}
-                </td>
-                <td className="px-5 py-2.5 text-right font-medium text-gray-800">
+                <td className="px-2 py-2 text-right text-xs tabular-nums font-medium text-gray-700">
                   {weight === null || weight === undefined || !complete ? '—' : pct(weight)}
+                </td>
+                <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-600">
+                  {isKpi ? fmtNum(r.kpi.target) : '—'}
+                </td>
+                <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-800 font-medium">
+                  {isKpi ? fmtNum(r.kpi.actual) : '—'}
+                </td>
+                <td className="px-2 py-2">
+                  {isKpi ? <AchievementCell kpi={r.kpi} />
+                         : <span className="text-xs text-gray-300 block text-right">—</span>}
+                </td>
+                <td className="pr-5 pl-2 py-2 text-center">
+                  {isKpi && r.kpi.score !== null ? (
+                    <Badge tone={scoreTone(r.kpi.score)} size="sm">
+                      {r.kpi.score.toFixed(1)}
+                    </Badge>
+                  ) : <span className="text-xs text-gray-300">—</span>}
                 </td>
               </tr>
             );
@@ -125,9 +214,9 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
     queryKey: ['bsc-scorecard', staffCode],
     queryFn: () => fetchBscScorecard(staffCode),
     enabled: !!staffCode,
+    placeholderData: (prev) => prev,   // keep the last card while switching tabs
   });
 
-  // Every hook runs before any early return — hooks must not sit behind a branch.
   const grouped = useMemo(() => {
     const m = new Map<string, Row[]>();
     (data?.kpis ?? []).forEach((k) => {
@@ -141,7 +230,6 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
     return m;
   }, [data]);
 
-  // Canonical area order first, anything unrecognised after it, alphabetically.
   const areas = useMemo(() => {
     const rank = (a: string) => {
       const i = AREA_ORDER.indexOf(a);
@@ -150,7 +238,7 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
     return [...grouped.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   }, [grouped]);
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} />)}</div>;
   }
   if (error) {
@@ -161,26 +249,30 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
     return (
       <EmptyState
         title="No scorecard for this role yet"
-        message={`No KPIs are assigned to "${data?.role || 'this role'}". An administrator can build one in the KPI Library.`}
+        message={`No KPIs are assigned to "${data?.staff?.role || data?.role || 'this role'}". An administrator can build one in the KPI Library.`}
       />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-gray-500">{data.staff?.role || data.role}</span>
-        <span className="text-gray-300">·</span>
-        <span className="text-sm text-gray-500">
-          {data.kpis.length} measures
-          {data.objectives.length > 0 && ` · ${data.objectives.length} objectives`}
-        </span>
-        {data.weights_complete ? (
+      <Ribbon
+        title={data.staff?.display_name || data.staff?.full_name || 'Scorecard'}
+        subtitle={`${data.staff?.role || data.role}${data.staff?.department ? ` · ${data.staff.department}` : ''}`}
+        score={data.final_score}
+        period={data.period}
+        complete={data.weights_complete}
+      />
+
+      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        <span>{data.kpis.length} measures</span>
+        {data.objectives.length > 0 && <><span>·</span><span>{data.objectives.length} objectives</span></>}
+        <span>·</span>
+        <span>{data.scored_count} scored</span>
+        {data.weights_complete && (
           <Badge tone={Math.abs(data.total_weight - 1) < 0.02 ? 'success' : 'warning'} size="sm">
-            weights total {pct(data.total_weight, 0)}
+            weights {pct(data.total_weight, 0)}
           </Badge>
-        ) : (
-          <Badge tone="warning" size="sm">weights pending</Badge>
         )}
         {data.source_ambiguous && <Badge tone="warning" size="sm">source ambiguous</Badge>}
       </div>
@@ -191,8 +283,8 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
             <span className="font-semibold">Weights not yet set.</span>{' '}
             {data.weights_pending_reason ||
               'The source scorecard did not provide usable weights.'}{' '}
-            The measures below are correct; the weights are left blank rather than
-            estimated, and can be entered in admin once confirmed.
+            The measures are correct; the weights are left blank rather than estimated,
+            and can be entered in admin once confirmed.
           </p>
         </Card>
       )}
@@ -209,61 +301,67 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
 }
 
 export function Perform() {
-  const { data: team, isLoading: teamLoading, error: teamError } = useQuery({
-    queryKey: ['bsc-team'], queryFn: fetchBscTeam,
+  const { data: me } = useQuery({
+    queryKey: ['whoami-detailed'], queryFn: fetchWhoamiDetailed,
+  });
+  const { data: depts, error: deptError } = useQuery({
+    queryKey: ['bsc-departments'], queryFn: fetchBscDepartments,
   });
   const { data: pillars } = useQuery({
     queryKey: ['bsc-pillars'], queryFn: fetchBscPillars,
   });
-  // Own identity, so a failing /team still leaves the viewer their own scorecard.
-  // Deriving the active tab solely from /team meant one failed request blanked the
-  // whole page — including the scorecard the error message promised was below.
-  const { data: me } = useQuery({
-    queryKey: ['whoami-detailed'], queryFn: fetchWhoamiDetailed,
-  });
-  const [selected, setSelected] = useState<string>('');
 
-  const tabs = useMemo(() => {
-    if (!team) return [];
-    return [{ ...team.me, label: 'My scorecard' },
-            ...team.reports.map((r) => ({ ...r, label: r.display_name }))];
-  }, [team]);
+  const [tab, setTab] = useState<string>(MY_TAB);
+  const [picked, setPicked] = useState<Record<string, string>>({});
 
-  const active = selected || team?.me.staff_code || me?.staff_code || '';
+  const activeDept = useMemo(
+    () => depts?.departments.find((d) => d.department === tab),
+    [depts, tab],
+  );
+
+  // Default each department to its head (or first person) the first time it opens.
+  useEffect(() => {
+    if (activeDept && !picked[activeDept.department]) {
+      const first = activeDept.head?.staff_code || activeDept.people[0]?.staff_code;
+      if (first) setPicked((p) => ({ ...p, [activeDept.department]: first }));
+    }
+  }, [activeDept, picked]);
+
+  const meCode = depts?.me.staff_code || me?.staff_code || '';
+  const active = tab === MY_TAB ? meCode : (picked[activeDept?.department ?? ''] ?? '');
 
   return (
-    <div className="p-6 space-y-5">
-      <PageHeader
-        title="Balanced Scorecard"
-        subtitle={
-          team && team.reports.length > 0
-            ? `Your scorecard, and your ${team.direct_report_count} direct report${team.direct_report_count === 1 ? '' : 's'}`
-            : 'Your scorecard'
-        }
-      />
-
-      {teamError && (
+    <div className="p-6 space-y-4">
+      {deptError && (
         <Card padding="sm" className="border-red-200 bg-red-50">
           <p className="text-xs text-red-800">
-            <span className="font-semibold">Could not load your team.</span>{' '}
-            {(teamError as Error).message}
-            {me?.staff_code
-              ? ' — your own scorecard is shown below; reportee tabs are unavailable.'
-              : ' — no scorecard can be shown until this is resolved.'}
+            <span className="font-semibold">Could not load departments.</span>{' '}
+            {(deptError as Error).message}
+            {meCode ? ' — your own scorecard is shown below.' : ''}
           </p>
         </Card>
       )}
 
-      {teamLoading ? (
-        <Skeleton />
-      ) : tabs.length > 1 ? (
+      {depts && depts.departments.length > 0 && (
         <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
-          {tabs.map((t) => {
-            const on = t.staff_code === active;
+          <button
+            onClick={() => setTab(MY_TAB)}
+            className={[
+              'px-4 py-2 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors',
+              tab === MY_TAB
+                ? 'border-brand-primary text-brand-primary font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-800',
+            ].join(' ')}
+          >
+            My scorecard
+          </button>
+          {depts.departments.map((d) => {
+            const on = tab === d.department;
             return (
               <button
-                key={t.staff_code}
-                onClick={() => setSelected(t.staff_code)}
+                key={d.department}
+                onClick={() => setTab(d.department)}
+                title={`${d.total} people · ${d.scorecard_count} with a scorecard`}
                 className={[
                   'px-4 py-2 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors',
                   on
@@ -271,18 +369,39 @@ export function Perform() {
                     : 'border-transparent text-gray-500 hover:text-gray-800',
                 ].join(' ')}
               >
-                {t.label}
-                {!t.has_scorecard && (
-                  <span className="ml-1.5 text-[10px] text-gray-400"
-                        title="No scorecard for this role yet">○</span>
-                )}
+                {d.department}
+                <span className="ml-1.5 text-[10px] text-gray-400">{d.total}</span>
               </button>
             );
           })}
         </div>
-      ) : null}
+      )}
 
-      {active && <Scorecard staffCode={active} pillars={pillars} />}
+      {activeDept && (
+        <div className="flex items-center gap-3">
+          <label className="text-xs text-gray-500">{activeDept.department}</label>
+          <select
+            value={picked[activeDept.department] ?? ''}
+            onChange={(e) => setPicked((p) => ({ ...p, [activeDept.department]: e.target.value }))}
+            className="text-sm border border-gray-200 rounded-md px-3 py-1.5 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+          >
+            {activeDept.people.map((p) => (
+              <option key={p.staff_code} value={p.staff_code}>
+                {p.display_name} — {p.role}
+                {p.has_scorecard ? '' : ' (no scorecard)'}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">
+            {activeDept.scorecard_count} of {activeDept.total} have a 2026 scorecard
+          </span>
+        </div>
+      )}
+
+      {active
+        ? <Scorecard staffCode={active} pillars={pillars} />
+        : <Skeleton />}
     </div>
   );
 }
