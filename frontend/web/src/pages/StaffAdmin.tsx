@@ -9,6 +9,7 @@
 // NOTE: accounts created here live in PostgreSQL. Until the login path is
 // migrated off users.json, a newly-created account cannot authenticate yet;
 // existing logins are unaffected.
+import { displayName } from "../lib/names";
 import { useEffect, useMemo, useState } from 'react';
 import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
@@ -48,6 +49,7 @@ interface FormState {
   staff_code: string;
   password: string;
   full_name: string;
+  preferred_name: string;
   email: string;
   role: string;
   department: string;
@@ -58,7 +60,7 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  username: '', staff_code: '', password: '', full_name: '', email: '',
+  username: '', staff_code: '', password: '', full_name: '', preferred_name: '', email: '',
   role: 'Staff', department: '', unit: '', can_view_all: false, is_admin: false, accessible_modules: [],
 };
 
@@ -158,6 +160,7 @@ export default function StaffAdmin() {
       staff_code: row.staff_code ?? '',
       password: '',
       full_name: row.full_name ?? '',
+      preferred_name: (row as any).preferred_name ?? '',
       email: row.email ?? '',
       role: row.role ?? 'Staff',
       department: row.department ?? '',
@@ -203,6 +206,7 @@ export default function StaffAdmin() {
       } else if (modal === 'edit' && editingUser) {
         const patch: StaffPatchInput = {
           full_name: form.full_name.trim(),
+          preferred_name: form.preferred_name.trim(),
           email: form.email.trim(),
           role: form.role.trim(),
           department: form.department.trim(),
@@ -243,7 +247,7 @@ export default function StaffAdmin() {
   }
 
   const columns: Column<StaffRow>[] = [
-    { key: 'full_name', header: 'Name', render: (r) => r.full_name || r.username },
+    { key: 'full_name', header: 'Name', render: (r) => (r.full_name ? displayName(r.full_name, (r as any).display_name) : r.username) },
     { key: 'staff_code', header: 'Staff code' },
     { key: 'role', header: 'Role' },
     { key: 'unit', header: 'Unit' },
@@ -346,6 +350,12 @@ export default function StaffAdmin() {
                   label="Full name *"
                   value={form.full_name}
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                />
+                <Input
+                  label="Preferred name"
+                  placeholder="e.g. Rabecca Mbithi — the name they go by"
+                  value={form.preferred_name}
+                  onChange={(e) => setForm({ ...form, preferred_name: e.target.value })}
                 />
                 <Input
                   label="Staff code"

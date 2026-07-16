@@ -1891,6 +1891,7 @@ export async function upsertFxRate(
 
 // ── Staff administration (Postgres users table) ──────────────────────────
 export interface StaffRow {
+  display_name?: string; analytics_name?: string; preferred_name?: string;
   accessible_modules?: string[];
   username: string;
   staff_code: string | null;
@@ -1921,9 +1922,9 @@ export interface StaffCreateInput {
 
 export interface StaffPatchInput {
   accessible_modules?: string[];
-  full_name?: string; email?: string; role?: string; department?: string;
-  unit?: string; staff_code?: string; band?: string; gender?: string;
-  can_view_all?: boolean; is_admin?: boolean; active?: boolean;
+  full_name?: string; preferred_name?: string; email?: string; role?: string;
+  department?: string; unit?: string; staff_code?: string; band?: string;
+  gender?: string; can_view_all?: boolean; is_admin?: boolean; active?: boolean;
 }
 
 export async function fetchAdminStaff(): Promise<StaffListResponse> {

@@ -9,6 +9,7 @@
 // 224B allocated). This is the read-only γ3 surface — γ5 will add
 // edit affordances for MD bank-target setting and leader allocation.
 
+import { displayName } from "../lib/names";
 import { useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
@@ -89,7 +90,7 @@ export function Cascade() {
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">
             {user?.full_name && (
-              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})</>
+              <>Viewing as <span className="font-medium text-gray-700">{displayName(user.full_name, (user as any).display_name)}</span> (staff {user.staff_code})</>
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
