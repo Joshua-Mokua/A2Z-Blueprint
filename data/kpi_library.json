@@ -343,18 +343,39 @@
   ],
   "role_kpis": {
     "Managing Director": [
-      "DEP_GROWTH",
-      "Loan Book Growth",
-      "K003",
+      "TOTAL_REVENUE",
+      "TOTAL_OPEX",
       "PBT",
-      "NPL_RATIO",
-      "CIR",
-      "NET_INTEREST_MARGIN",
+      "NET_LOANS",
+      "TOTAL_DEPOSITS",
+      "LDR",
       "ROE",
-      "NEW_CUSTOMERS_ACQUIRED",
-      "K012",
-      "WB_NPS_SCORE",
-      "DILIGENCE"
+      "CIR",
+      "NPL_RATIO",
+      "NTB_CUSTOMERS",
+      "CUST_ACTIVE_RATE",
+      "DIGITAL_ACTIVE_PCT",
+      "CX Score",
+      "REGRETTABLE_TURNOVER",
+      "SUCCESSION_COVERAGE",
+      "ENGAGEMENT_SCORE",
+      "CAPABILITY_READINESS",
+      "CRITICAL_VACANCIES",
+      "REV_PER_STAFF",
+      "GRADUATE_PROGRAMME",
+      "PERF_CYCLE_ADHERENCE",
+      "AUDIT_RATING_ARR",
+      "ECAP_CLOSURE",
+      "OP_LOSS_PCT_PBT",
+      "REGULATORY_RELATIONSHIP",
+      "REG_FINES_PCT_PBT",
+      "OTR",
+      "GROUP_BUDGET_AUDIT",
+      "LCY_FCY_SPLIT",
+      "AU_DEPOSIT_CONC",
+      "CCB_REV_CONTRIB",
+      "BRANCH_TURNAROUND",
+      "DISTRIBUTION_STRATEGY"
     ],
     "Director Consumer & Commercial Banking (CCB)": [
       "DEP_GROWTH",
@@ -4828,6 +4849,102 @@
       "active": true,
       "description": "Digital onboarding rate and subsequent active usage.",
       "source": "EKE 2026 scorecards"
+    },
+    {
+      "id": "TOTAL_REVENUE",
+      "name": "Total Revenue",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Total affiliate revenue.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "TOTAL_OPEX",
+      "name": "Total Operating Expenses",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "lower",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Total operating expenses.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "NET_LOANS",
+      "name": "Net Loans",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Net loans and advances outstanding.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "TOTAL_DEPOSITS",
+      "name": "Total Deposits",
+      "pillar": "Financial",
+      "weight": 0.0,
+      "unit": "USD MM",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Total customer deposits.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "CRITICAL_VACANCIES",
+      "name": "Critical Vacancies Filled",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Critical vacant roles, including Branch Managers, filled to plan.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "GRADUATE_PROGRAMME",
+      "name": "Graduate Programme Implementation",
+      "pillar": "People & Learning",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Graduate programme run and cohort onboarded.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "REGULATORY_RELATIONSHIP",
+      "name": "Regulatory Relationship Management",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "rating",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Proactive engagement with and participation before the regulator.",
+      "source": "EKE 2026 MD scorecard"
+    },
+    {
+      "id": "GROUP_BUDGET_AUDIT",
+      "name": "Group Budget & Financial Audit Closure",
+      "pillar": "Operational Excellence",
+      "weight": 0.0,
+      "unit": "%",
+      "direction": "higher",
+      "cbk_ref": "",
+      "active": true,
+      "description": "Group budget and financial audit process closed within Group timelines.",
+      "source": "EKE 2026 MD scorecard"
     }
   ],
   "_v10324_role_kpi_updates": {
@@ -6155,5 +6272,152 @@
       "Director Consumer & Commercial Banking (CCB)"
     ],
     "date": "2026-07-16"
+  },
+  "role_kpi_weights": {
+    "Managing Director": {
+      "areas": {
+        "Financial": 0.4,
+        "Customer Focus": 0.15,
+        "People & Learning": 0.15,
+        "Operational Excellence": 0.15,
+        "Must Win Battles": 0.15
+      },
+      "kpis": {
+        "TOTAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "TOTAL_OPEX": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "PBT": {
+          "area": "Financial",
+          "weight": 0.15
+        },
+        "NET_LOANS": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "LDR": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "ROE": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "CIR": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NPL_RATIO": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NTB_CUSTOMERS": {
+          "area": "Customer Focus",
+          "weight": 0.25
+        },
+        "CUST_ACTIVE_RATE": {
+          "area": "Customer Focus",
+          "weight": 0.25
+        },
+        "DIGITAL_ACTIVE_PCT": {
+          "area": "Customer Focus",
+          "weight": 0.25
+        },
+        "CX Score": {
+          "area": "Customer Focus",
+          "weight": 0.25
+        },
+        "REGRETTABLE_TURNOVER": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "SUCCESSION_COVERAGE": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "ENGAGEMENT_SCORE": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "CAPABILITY_READINESS": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "CRITICAL_VACANCIES": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "REV_PER_STAFF": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "GRADUATE_PROGRAMME": {
+          "area": "People & Learning",
+          "weight": 0.1
+        },
+        "PERF_CYCLE_ADHERENCE": {
+          "area": "People & Learning",
+          "weight": 0.15
+        },
+        "AUDIT_RATING_ARR": {
+          "area": "Operational Excellence",
+          "weight": 0.2
+        },
+        "ECAP_CLOSURE": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "OP_LOSS_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "REGULATORY_RELATIONSHIP": {
+          "area": "Operational Excellence",
+          "weight": 0.05
+        },
+        "REG_FINES_PCT_PBT": {
+          "area": "Operational Excellence",
+          "weight": 0.1
+        },
+        "OTR": {
+          "area": "Operational Excellence",
+          "weight": 0.2
+        },
+        "GROUP_BUDGET_AUDIT": {
+          "area": "Operational Excellence",
+          "weight": 0.25
+        },
+        "LCY_FCY_SPLIT": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "AU_DEPOSIT_CONC": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "CCB_REV_CONTRIB": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "BRANCH_TURNAROUND": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        },
+        "DISTRIBUTION_STRATEGY": {
+          "area": "Must Win Battles",
+          "weight": 0.2
+        }
+      },
+      "source": "EKE 2026 scorecard \u2014 Affiliate MD",
+      "weights_complete": true
+    }
   }
 }
