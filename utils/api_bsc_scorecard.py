@@ -33,6 +33,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/bsc", tags=["bsc"])
 
 
+def _money_fields(entry, actual, rate: float, show_both: bool) -> Dict[str, Any]:
+    """KES/USD equivalents for one KPI row, and the stretch line where allowed."""
+    if not isinstance(entry, dict):
+        return {"currency": None, "target_money": None, "stretch": None,
+                "stretch_money": None, "actual_money": None, "baseline_2025": None}
+    cur = entry.get("currency")
+    stretch = entry.get("stretch_target")
+    out = {
+        "currency": cur,
+        "target_money": _money(entry.get("target"), cur, rate),
+        "actual_money": _money(actual, cur, rate),
+        "baseline_2025": entry.get("baseline_2025"),
+        "stretch": stretch if show_both else None,
+        "stretch_money": _money(stretch, cur, rate) if show_both else None,
+    }
+    return out
+
+
 def _library() -> dict:
     from utils.core import get_kpi_library
     return get_kpi_library() or {}
@@ -75,7 +93,40 @@ def _display(full_name: str, preferred: str = "") -> str:
         return (full_name or "").split(" ")[0] or full_name
 
 
-def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026") -> Dict[str, Any]:
+def _may_switch_basis(user: dict, person: Optional[dict] = None) -> bool:
+    """Only the roles named in bsc_view_config may see both lines and switch basis.
+
+    Everyone else sees a single Target column carrying the stretch — the figure their
+    own scorecard gave them. Keyed by role rather than staff code so it survives
+    people changing seats.
+    """
+    from utils.bsc_score_computation import _view_config
+    cfg = _view_config() or {}
+    roles = {str(r).strip().lower() for r in (cfg.get("basis_switch_roles") or [])}
+    codes = {str(s).strip() for s in (cfg.get("basis_switch_staff_codes") or [])}
+    my_role = str((person or {}).get("role") or user.get("role") or "").strip().lower()
+    my_code = str(user.get("staff_code") or "").strip()
+    return my_role in roles or (my_code and my_code in codes)
+
+
+def _money(value, currency: Optional[str], rate: float) -> Dict[str, Any]:
+    """A monetary figure in both currencies. Group reports in USD, the affiliate runs
+    in KES, so both are shown rather than one being the truth and the other lost.
+    Non-monetary measures (percentages, counts, ratings) convert to nothing and say so.
+    """
+    if value is None or not currency or not rate:
+        return {"kes": None, "usd": None, "scale": None}
+    if currency == "USD_MM":
+        return {"kes": round(value * rate, 2), "usd": round(value, 2), "scale": "MM"}
+    if currency == "USD_K":
+        return {"kes": round(value * rate, 2), "usd": round(value, 2), "scale": "K"}
+    if currency == "KES_MM":
+        return {"kes": round(value, 2), "usd": round(value / rate, 2), "scale": "MM"}
+    return {"kes": None, "usd": None, "scale": None}
+
+
+def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026",
+                        basis: str = "", show_both: bool = False) -> Dict[str, Any]:
     from utils.bsc_score_computation import resolve_role_kpis
 
     lib = _library()
@@ -86,12 +137,18 @@ def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026") -
     # compute_staff_scorecard — the engine that already resolves bank_fixed ->
     # cascaded -> role_default targets and reads bsc_actuals. Recomputing any of
     # that here would be a second answer to the same question.
+    from utils.bsc_score_computation import (
+        compute_staff_scorecard, default_scoring_basis, fx_kes_per_usd, _bank_targets,
+    )
+    basis = (basis or default_scoring_basis()).lower()
+    rate = fx_kes_per_usd()
+    bank = _bank_targets() or {}
+
     scored: Dict[str, Any] = {}
     final_score = None
     if staff_code:
         try:
-            from utils.bsc_score_computation import compute_staff_scorecard
-            sc = compute_staff_scorecard(staff_code, role, period)
+            sc = compute_staff_scorecard(staff_code, role, period, basis)
             final_score = sc.final_score
             scored = {k.canonical_id: k for k in sc.kpi_scores}
         except Exception as exc:  # noqa: BLE001
@@ -118,6 +175,8 @@ def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026") -
             "target_source": getattr(s, "target_source", "missing"),
             "achievement_pct": getattr(s, "achievement_pct", None),
             "score": getattr(s, "score", None),
+            **_money_fields(bank.get(f"{r.canonical_id}|{period}"),
+                            getattr(s, "actual", None), rate, show_both),
         })
 
     objectives = [
@@ -143,6 +202,9 @@ def _scorecard_for_role(role: str, staff_code: str = "", period: str = "2026") -
         "period": period,
         "final_score": final_score,
         "scored_count": sum(1 for k in kpis if k["score"] is not None),
+        "basis": basis,
+        "can_switch_basis": show_both,
+        "fx_kes_per_usd": rate,
     }
 
 
@@ -198,9 +260,14 @@ def bsc_team(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
 
 
 @router.get("/scorecard/{staff_code}")
-def bsc_scorecard(staff_code: str, period: str = "2026",
+def bsc_scorecard(staff_code: str, period: str = "2026", basis: str = "",
                   user: dict = Depends(get_current_user)) -> Dict[str, Any]:
-    """The scorecard definition for one person, scoped by the reporting tree."""
+    """The scorecard for one person, scoped by the reporting tree.
+
+    ``basis`` is honoured only for the roles allowed to switch it; anyone else gets
+    the admin default whatever they ask for, so the parameter cannot be used to see
+    a view they are not meant to.
+    """
     from utils.api_pipeline_scope import get_visible_staff_codes
 
     staff_code = str(staff_code).strip()
@@ -218,7 +285,11 @@ def bsc_scorecard(staff_code: str, period: str = "2026",
     if not person:
         raise HTTPException(status_code=404, detail=f"Unknown staff code {staff_code}")
 
-    card = _scorecard_for_role(person.get("role") or "", staff_code, period)
+    show_both = _may_switch_basis(user)
+    if not show_both:
+        basis = ""      # ignore what was asked for; the default governs
+    card = _scorecard_for_role(person.get("role") or "", staff_code, period,
+                               basis, show_both)
     card["staff"] = {**person, "display_name": _display(person.get("full_name", ""))}
     return card
 

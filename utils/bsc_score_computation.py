@@ -84,6 +84,42 @@ def _target_cascade() -> Dict[str, Any]:
     return _CACHE["target_cascade"]
 
 
+def _view_config() -> Dict[str, Any]:
+    """data/bsc_view_config.json — which basis scoring runs on, and who may switch."""
+    if "view_config" not in _CACHE:
+        from utils.db import db
+        _CACHE["view_config"] = (
+            db.load_json(DATA_DIR / "bsc_view_config.json",
+                          default={}) or {}
+        )
+    return _CACHE["view_config"]
+
+
+def default_scoring_basis() -> str:
+    """'stretch' or 'target'. Admin owns this; there is no hardcoded fallback
+    beyond 'target', which is the safe reading of a target with no stretch."""
+    b = str(_view_config().get("scoring_basis_default", "target")).lower()
+    return b if b in ("stretch", "target") else "target"
+
+
+def fx_kes_per_usd() -> float:
+    """data/fx_config.json — rate for showing the KES/USD equivalent.
+
+    Group reports in USD, the affiliate runs in KES, so a monetary target is shown
+    both ways. Only the equivalent is derived: the stored target keeps the currency
+    its source scorecard stated, so changing the rate never rewrites a target.
+    """
+    if "fx_config" not in _CACHE:
+        from utils.db import db
+        _CACHE["fx_config"] = (
+            db.load_json(DATA_DIR / "fx_config.json", default={}) or {}
+        )
+    try:
+        return float(_CACHE["fx_config"].get("kes_per_usd") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _fixed_kpis_config() -> Dict[str, Any]:
     """data/fixed_kpis.json — admin-marks which KPIs are bank-fixed
     per period. Format: {period: [kpi_id, kpi_id, ...]} or
@@ -155,22 +191,44 @@ def _staff_role_for_target(staff_code: str) -> Optional[str]:
         return None
 
 
+def _pick(entry: Dict[str, Any], basis: str) -> Optional[Tuple[float, str]]:
+    """Choose the stretch or the plain target from a bank_targets entry.
+
+    A KPI without a stretch scores on its target regardless of basis: only Revenue
+    and PBT carry a reach figure, and the rest would otherwise silently score
+    against nothing.
+    """
+    if basis == "stretch" and entry.get("stretch_target") is not None:
+        return (float(entry["stretch_target"]), "bank_fixed_stretch")
+    if entry.get("target") is not None:
+        return (float(entry["target"]), "bank_fixed")
+    return None
+
+
 def get_target_for_staff(
     staff_code: str,
     kpi_id: str,
     period: str,
+    basis: Optional[str] = None,
 ) -> Optional[Tuple[float, str]]:
     """Get the target value for a staff member on a KPI for a period.
 
     Returns (target, source) tuple where source is one of:
+      - 'bank_fixed_stretch' — bank-level stretch (the reach figure)
       - 'bank_fixed' — bank-level target (KPI is fixed for period)
       - 'cascaded' — per-staff target from target_cascade
       - 'role_default' — per-role quarterly default (v10.323 fallback)
       - None — no target configured
 
     Order: fixed → cascaded → role_default → missing.
+
+    ``basis`` is 'stretch' or 'target'; None takes the admin default from
+    bsc_view_config. The MD's sheet states the target, while the EXCO sheets quote
+    the stretch, and both reconcile at the configured FX rate — they are two real
+    figures, not a discrepancy.
     """
     year = period.split("-")[0] if "-" in period else period
+    basis = (basis or default_scoring_basis()).lower()
 
     # 1. Fixed (bank-wide target — same for everyone)
     if is_fixed_kpi(kpi_id, period):
@@ -179,8 +237,10 @@ def get_target_for_staff(
                             f"{kpi_id}|{period}"):
             if key_format in bt:
                 entry = bt[key_format]
-                if isinstance(entry, dict) and "target" in entry:
-                    return (float(entry["target"]), "bank_fixed")
+                if isinstance(entry, dict):
+                    got = _pick(entry, basis)
+                    if got:
+                        return got
                 if isinstance(entry, (int, float)):
                     return (float(entry), "bank_fixed")
         # Fixed but no explicit bank target — fall through
@@ -504,12 +564,18 @@ def compute_staff_scorecard(
     staff_code: str,
     role: str,
     period: str,
+    basis: Optional[str] = None,
 ) -> StaffScorecard:
     """Compute one staff's BSC scorecard for a period.
 
     Returns a StaffScorecard with per-KPI breakdown and final
     weighted-average score.
+
+    ``basis`` is 'stretch' or 'target'; None takes the admin default. Scoring on the
+    stretch is the bank's rule, so the same actual scores lower than it would against
+    the plain target — that is the intent, not a defect.
     """
+    basis = (basis or default_scoring_basis()).lower()
     resolutions = resolve_role_kpis(role)
     weight_val = validate_role_weights(role)
 
@@ -525,10 +591,10 @@ def compute_staff_scorecard(
                 staff_code, res.role_kpi_ref, period)
 
         target_info = get_target_for_staff(
-            staff_code, res.canonical_id, period)
+            staff_code, res.canonical_id, period, basis)
         if target_info is None and res.role_kpi_ref != res.canonical_id:
             target_info = get_target_for_staff(
-                staff_code, res.role_kpi_ref, period)
+                staff_code, res.role_kpi_ref, period, basis)
 
         if target_info:
             target_value, target_source = target_info
