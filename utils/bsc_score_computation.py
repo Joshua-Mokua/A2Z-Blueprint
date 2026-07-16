@@ -325,8 +325,22 @@ KPI_ID_ALIASES: Dict[str, str] = _build_alias_map_from_library()
 
 
 def resolve_role_kpis(role: str) -> List[KpiResolution]:
-    """Resolve a role's KPI set with weights, directions, and
-    canonical IDs (handling B-010 alias mappings)."""
+    """Resolve a role's KPI set with weights, directions, and canonical IDs.
+
+    Weight resolution, in order:
+
+    1. ``role_kpi_weights[role]`` — the real scorecard. Each KPI carries the area it
+       sits in and its share WITHIN that area, so the effective weight is
+       ``areas[area] * weight``. This is per-role by nature: PBT is 15% of the MD's
+       scorecard and 20% of the CFO's, which a single library-level weight cannot say.
+       A null weight means the source scorecard gave no usable number — it resolves to
+       0.0 and shows up in validate_role_weights rather than being invented.
+    2. The KPI definition's own ``weight`` — the original library-level default, kept
+       for every role that has no scorecard loaded yet.
+
+    The KPI's ``pillar`` is its library-level home; the role's ``area`` is where that
+    role's scorecard files it. They normally agree, but the scorecard wins when set.
+    """
     lib = _kpi_library()
     role_kpi_ids = lib.get("role_kpis", {}).get(role, []) or []
     if not role_kpi_ids:
@@ -334,6 +348,22 @@ def resolve_role_kpis(role: str) -> List[KpiResolution]:
 
     all_defs = {k.get("id"): k for k in lib.get("kpis", [])
                 if isinstance(k, dict) and k.get("id")}
+
+    _rw = (lib.get("role_kpi_weights", {}) or {}).get(role) or {}
+    _areas = _rw.get("areas") or {}
+    _kpi_meta = _rw.get("kpis") or {}
+
+    def _weight_and_area(ref_, canonical_, defn_):
+        meta = _kpi_meta.get(canonical_) or _kpi_meta.get(ref_) or {}
+        if meta:
+            area = meta.get("area") or (defn_.get("pillar", "") if defn_ else "")
+            w = meta.get("weight")
+            if w is None:
+                return 0.0, area          # scorecard says "weight not yet known"
+            return float(_areas.get(area, 0.0)) * float(w), area
+        if defn_:
+            return float(defn_.get("weight", 0.0)), str(defn_.get("pillar", ""))
+        return 0.0, ""
 
     out: List[KpiResolution] = []
     for ref in role_kpi_ids:
@@ -348,12 +378,13 @@ def resolve_role_kpis(role: str) -> List[KpiResolution]:
             canonical = KPI_ID_ALIASES.get(ref, ref)
             defn = all_defs.get(canonical)
         if defn:
+            _w, _area = _weight_and_area(ref, canonical, defn)
             out.append(KpiResolution(
                 role_kpi_ref=ref,
                 canonical_id=defn.get("id", canonical),
-                weight=float(defn.get("weight", 0.0)),
+                weight=_w,
                 direction=str(defn.get("direction", "higher")),
-                pillar=str(defn.get("pillar", "")),
+                pillar=_area or str(defn.get("pillar", "")),
                 defined=True,
             ))
         else:
