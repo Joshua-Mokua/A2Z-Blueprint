@@ -208,7 +208,7 @@ function Scorecard({ staffCode, pillars }: { staffCode: string; pillars?: BscPil
 }
 
 export function Perform() {
-  const { data: team, isLoading: teamLoading } = useQuery({
+  const { data: team, isLoading: teamLoading, error: teamError } = useQuery({
     queryKey: ['bsc-team'], queryFn: fetchBscTeam,
   });
   const { data: pillars } = useQuery({
@@ -230,10 +230,19 @@ export function Perform() {
         title="Balanced Scorecard"
         subtitle={
           team && team.reports.length > 0
-            ? `Your scorecard, and the ${team.direct_report_count} direct report${team.direct_report_count === 1 ? '' : 's'} you can view`
+            ? `Your scorecard, and your ${team.direct_report_count} direct report${team.direct_report_count === 1 ? '' : 's'}`
             : 'Your scorecard'
         }
       />
+
+      {teamError && (
+        <Card padding="sm" className="border-red-200 bg-red-50">
+          <p className="text-xs text-red-800">
+            <span className="font-semibold">Could not load your team.</span>{' '}
+            {(teamError as Error).message} — your own scorecard is shown below.
+          </p>
+        </Card>
+      )}
 
       {teamLoading ? (
         <Skeleton />
@@ -254,7 +263,8 @@ export function Perform() {
               >
                 {t.label}
                 {!t.has_scorecard && (
-                  <span className="ml-1.5 text-[10px] text-gray-400">·</span>
+                  <span className="ml-1.5 text-[10px] text-gray-400"
+                        title="No scorecard for this role yet">○</span>
                 )}
               </button>
             );

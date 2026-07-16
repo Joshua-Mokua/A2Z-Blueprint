@@ -158,13 +158,18 @@ def bsc_team(user: dict = Depends(get_current_user)) -> Dict[str, Any]:
                 "is_direct_report": direct,
                 "has_scorecard": p.get("role") in lib_roles}
 
-    reports = [_row(idx[c], idx[c].get("role") in direct_roles)
-               for c in sorted(visible) if c in idx]
-    reports.sort(key=lambda p: (not p["is_direct_report"], p["full_name"]))
+    # Tabs are the people who report DIRECTLY to the caller, not everyone in scope.
+    # get_visible_staff_codes returns the whole bank for the MD (364 people), which is
+    # a scope for permission checks, not a tab bar. Direct reports are what a manager
+    # actually reviews, and the same rule reproduces itself at every level down the
+    # tree: a Branch Manager sees their branch team, a leaf sees only themselves.
+    reports = [_row(idx[c], True) for c in sorted(visible)
+               if c in idx and idx[c].get("role") in direct_roles]
+    reports.sort(key=lambda p: (not p["has_scorecard"], p["role"], p["full_name"]))
 
     return {"me": _row(me, False), "reports": reports,
-            "direct_report_count": sum(1 for r in reports if r["is_direct_report"]),
-            "total_visible": len(reports)}
+            "direct_report_count": len(reports),
+            "total_visible": len(visible)}
 
 
 @router.get("/scorecard/{staff_code}")
