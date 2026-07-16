@@ -297,6 +297,15 @@ try:
 except Exception as _exc:  # noqa: BLE001
     logger.warning(f"Cascade router not loaded: {_exc}")
 
+# Balanced Scorecard — serves the scorecard *definition* (areas, KPIs, weights,
+# objectives). The older /api/bsc/staff/{username} returns computed scores only.
+try:
+    from utils.api_bsc_scorecard import router as _bsc_scorecard_router
+    app.include_router(_bsc_scorecard_router)
+    logger.info("A2Z API — BSC scorecard router mounted at /api/v1/bsc")
+except Exception as _exc:  # noqa: BLE001
+    logger.warning(f"BSC scorecard router not loaded: {_exc}")
+
 try:
     from utils.api_capacity_feedback import router as _capacity_router
     app.include_router(_capacity_router)
