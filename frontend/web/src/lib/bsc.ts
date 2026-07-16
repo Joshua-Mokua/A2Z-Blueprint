@@ -70,10 +70,13 @@ export interface BscPillars {
   pillar_weights: Record<string, number>;
 }
 
-export const fetchBscTeam    = () => getJson<BscTeam>('/api/v1/bsc/team');
-export const fetchBscPillars = () => getJson<BscPillars>('/api/v1/bsc/pillars');
+// getJson prepends API_BASE ('/api'), so paths here start AFTER it: '/v1/bsc/...'
+// produces /api/v1/bsc/... . Passing the full '/api/v1/bsc/...' yields
+// /api/api/v1/bsc/... and a 404 that names the path argument, not the URL fetched.
+export const fetchBscTeam    = () => getJson<BscTeam>('/v1/bsc/team');
+export const fetchBscPillars = () => getJson<BscPillars>('/v1/bsc/pillars');
 export const fetchBscScorecard = (staffCode: string) =>
-  getJson<BscScorecard>(`/api/v1/bsc/scorecard/${encodeURIComponent(staffCode)}`);
+  getJson<BscScorecard>(`/v1/bsc/scorecard/${encodeURIComponent(staffCode)}`);
 
 /** Percent for display. Weights are stored as fractions of the whole scorecard. */
 export const pct = (w: number | null | undefined, dp = 1): string =>
