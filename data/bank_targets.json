@@ -1,19 +1,21 @@
 {
   "_meta": {
     "source": "EKE 2026 scorecard \u2014 Affiliate MD (Rabecca Mueni Mbithi)",
-    "note": "Replaces the generated 2026 targets, which were not real (PBT read 650,000,000,000 against a true 1.3B). The MD's scorecard is the affiliate's scorecard, so these are the bank-wide numbers every other scorecard inherits.",
+    "note": "Replaces the generated 2026/2025 targets, which were not real (PBT|2026 read 650,000,000,000). The MD's scorecard is the affiliate's scorecard, so these are the bank-wide numbers every other scorecard inherits. target = her sheet; stretch = the figure quoted on the EXCO sheets. Both reconcile at 129 KES/USD.",
     "seeded": "2026-07-16"
   },
   "TOTAL_REVENUE|2026": {
     "target": 39.53,
+    "stretch_target": 42.64,
     "currency": "USD_MM",
     "baseline_2025": 39.79,
     "buffer_pct": 0,
-    "note": "Total affiliate revenue",
+    "note": "Total affiliate revenue; stretch = KES 5.5B",
     "source": "EKE 2026 MD scorecard"
   },
   "TOTAL_OPEX|2026": {
     "target": 28.83,
+    "stretch_target": null,
     "currency": "USD_MM",
     "baseline_2025": 29.35,
     "buffer_pct": 0,
@@ -22,14 +24,16 @@
   },
   "PBT|2026": {
     "target": 8.06,
+    "stretch_target": 10.08,
     "currency": "USD_MM",
     "baseline_2025": 5.52,
     "buffer_pct": 0,
-    "note": "Profit before tax",
+    "note": "Profit before tax; stretch = KES 1.3B",
     "source": "EKE 2026 MD scorecard"
   },
   "NET_LOANS|2026": {
     "target": 209.74,
+    "stretch_target": null,
     "currency": "USD_MM",
     "baseline_2025": 138.15,
     "buffer_pct": 0,
@@ -38,6 +42,7 @@
   },
   "TOTAL_DEPOSITS|2026": {
     "target": 751.55,
+    "stretch_target": null,
     "currency": "USD_MM",
     "baseline_2025": 590.85,
     "buffer_pct": 0,
@@ -46,6 +51,7 @@
   },
   "LDR|2026": {
     "target": 29.1,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 23.3,
     "buffer_pct": 0,
@@ -54,6 +60,7 @@
   },
   "ROE|2026": {
     "target": 9.4,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 5.33,
     "buffer_pct": 0,
@@ -62,6 +69,7 @@
   },
   "CIR|2026": {
     "target": 72.9,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 73.7,
     "buffer_pct": 0,
@@ -70,6 +78,7 @@
   },
   "NPL_RATIO|2026": {
     "target": 6.8,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 14.4,
     "buffer_pct": 0,
@@ -78,6 +87,7 @@
   },
   "NTB_CUSTOMERS|2026": {
     "target": 103231.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 82707,
     "buffer_pct": 0,
@@ -86,6 +96,7 @@
   },
   "CUST_ACTIVE_RATE|2026": {
     "target": 75.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 69,
     "buffer_pct": 0,
@@ -94,6 +105,7 @@
   },
   "DIGITAL_ACTIVE_PCT|2026": {
     "target": 55.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 49,
     "buffer_pct": 0,
@@ -102,6 +114,7 @@
   },
   "CX Score|2026": {
     "target": 85.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 85,
     "buffer_pct": 0,
@@ -110,6 +123,7 @@
   },
   "REGRETTABLE_TURNOVER|2026": {
     "target": 5.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -118,6 +132,7 @@
   },
   "SUCCESSION_COVERAGE|2026": {
     "target": 70.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 20,
     "buffer_pct": 0,
@@ -126,6 +141,7 @@
   },
   "ENGAGEMENT_SCORE|2026": {
     "target": 73.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 71,
     "buffer_pct": 0,
@@ -134,6 +150,7 @@
   },
   "CAPABILITY_READINESS|2026": {
     "target": 80.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -142,6 +159,7 @@
   },
   "REV_PER_STAFF|2026": {
     "target": 120.0,
+    "stretch_target": null,
     "currency": "USD_K",
     "baseline_2025": 106,
     "buffer_pct": 0,
@@ -150,6 +168,7 @@
   },
   "PERF_CYCLE_ADHERENCE|2026": {
     "target": 100.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 100,
     "buffer_pct": 0,
@@ -158,6 +177,7 @@
   },
   "CRITICAL_VACANCIES|2026": {
     "target": 100.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -166,6 +186,7 @@
   },
   "GRADUATE_PROGRAMME|2026": {
     "target": 100.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -174,6 +195,7 @@
   },
   "OP_LOSS_PCT_PBT|2026": {
     "target": 1.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -182,6 +204,7 @@
   },
   "REG_FINES_PCT_PBT|2026": {
     "target": 0.2,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -190,6 +213,7 @@
   },
   "OTR|2026": {
     "target": 97.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 100,
     "buffer_pct": 0,
@@ -198,6 +222,7 @@
   },
   "GROUP_BUDGET_AUDIT|2026": {
     "target": 100.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 100,
     "buffer_pct": 0,
@@ -206,6 +231,7 @@
   },
   "ECAP_CLOSURE|2026": {
     "target": 100.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -214,6 +240,7 @@
   },
   "LCY_FCY_SPLIT|2026": {
     "target": 40.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 30,
     "buffer_pct": 0,
@@ -222,6 +249,7 @@
   },
   "AU_DEPOSIT_CONC|2026": {
     "target": 30.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 40,
     "buffer_pct": 0,
@@ -230,6 +258,7 @@
   },
   "CCB_REV_CONTRIB|2026": {
     "target": 50.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": 45,
     "buffer_pct": 0,
@@ -238,6 +267,7 @@
   },
   "BRANCH_TURNAROUND|2026": {
     "target": 50.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
@@ -246,6 +276,7 @@
   },
   "DISTRIBUTION_STRATEGY|2026": {
     "target": 50.0,
+    "stretch_target": null,
     "currency": null,
     "baseline_2025": null,
     "buffer_pct": 0,
