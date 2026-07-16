@@ -122,6 +122,10 @@ def _money(value, currency: Optional[str], rate: float) -> Dict[str, Any]:
         return {"kes": round(value * rate, 2), "usd": round(value, 2), "scale": "K"}
     if currency == "KES_MM":
         return {"kes": round(value, 2), "usd": round(value / rate, 2), "scale": "MM"}
+    if currency == "KES_K":
+        return {"kes": round(value, 2), "usd": round(value / rate, 2), "scale": "K"}
+    # An unrecognised currency returns nothing rather than guessing a scale: a wrong
+    # scale is a wrong number by a factor of a thousand, and silently.
     return {"kes": None, "usd": None, "scale": None}
 
 

@@ -141,23 +141,35 @@ export function scoreTone(score: number | null | undefined):
 export const achBar = (a: number | null | undefined): number =>
   a === null || a === undefined ? 0 : Math.max(0, Math.min(100, a / 1.2));
 
+/** Whole numbers with thousand separators — no K/M abbreviation.
+ *  "103.2K" hid whether it meant 103,200 or 103,231; the scale belongs in the column
+ *  header, stated once, not folded into every value. */
 export const fmtNum = (v: number | null | undefined): string => {
   if (v === null || v === undefined) return '—';
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  return Math.abs(v) >= 1 || v === 0
+    ? Math.round(v).toLocaleString('en-KE')
+    : v.toFixed(2);
 };
 
-/** Money for display. Scale is already applied by the API (MM / K). */
+/** A percentage or ratio keeps one decimal — rounding 29.1 to 29 loses the target. */
+export const fmtPctVal = (v: number | null | undefined): string =>
+  v === null || v === undefined ? '—' : v.toLocaleString('en-KE',
+    { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Money as a whole number. The scale (millions / thousands) is stated once in the
+ *  column header rather than abbreviated onto each figure, so 5,500 always means
+ *  5,500 and never 5.5 of something. */
 export function money(m: Money | null | undefined, cur: 'kes' | 'usd'): string {
   if (!m) return '—';
   const v = cur === 'kes' ? m.kes : m.usd;
   if (v === null || v === undefined) return '—';
-  const sym = cur === 'kes' ? 'KES' : 'USD';
-  if (m.scale === 'MM') {
-    return v >= 1000 ? `${sym} ${(v / 1000).toFixed(2)}B` : `${sym} ${v.toFixed(1)}M`;
-  }
-  if (m.scale === 'K') return `${sym} ${v.toFixed(0)}K`;
-  return `${sym} ${v.toFixed(1)}`;
+  return Math.round(v).toLocaleString('en-KE');
+}
+
+/** The scale label for a set of KPIs, for the column header. */
+export function scaleLabel(kpis: { currency: string | null }[]): string {
+  const cur = kpis.map((k) => k.currency).filter(Boolean) as string[];
+  if (cur.some((c) => c.endsWith('_MM'))) return 'millions';
+  if (cur.some((c) => c.endsWith('_K'))) return 'thousands';
+  return '';
 }

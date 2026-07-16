@@ -2,52 +2,65 @@
   "_meta": {
     "source": "EKE 2026 scorecard \u2014 Affiliate MD (Rabecca Mueni Mbithi)",
     "note": "Replaces the generated 2026/2025 targets, which were not real (PBT|2026 read 650,000,000,000). The MD's scorecard is the affiliate's scorecard, so these are the bank-wide numbers every other scorecard inherits. target = her sheet; stretch = the figure quoted on the EXCO sheets. Both reconcile at 129 KES/USD.",
-    "seeded": "2026-07-16"
+    "seeded": "2026-07-16",
+    "currency_note": "Monetary targets are stored in KES \u2014 the currency the books, CBS and the actuals use \u2014 so scoring never depends on the FX rate. The USD equivalent is derived for display only. target_usd_source keeps the figure the MD's sheet stated. Stretch figures for revenue and PBT are the KES numbers the EXCO sheets state, used verbatim rather than derived."
   },
   "TOTAL_REVENUE|2026": {
-    "target": 39.53,
-    "stretch_target": 42.64,
-    "currency": "USD_MM",
+    "target": 5099.37,
+    "stretch_target": 5500.0,
+    "currency": "KES_MM",
     "baseline_2025": 39.79,
     "buffer_pct": 0,
     "note": "Total affiliate revenue; stretch = KES 5.5B",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 39.53,
+    "stretch_source": "stated on the EXCO sheets in KES",
+    "converted_at_rate": 129.0
   },
   "TOTAL_OPEX|2026": {
-    "target": 28.83,
+    "target": 3719.07,
     "stretch_target": null,
-    "currency": "USD_MM",
+    "currency": "KES_MM",
     "baseline_2025": 29.35,
     "buffer_pct": 0,
     "note": "Lower is better",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 28.83,
+    "converted_at_rate": 129.0
   },
   "PBT|2026": {
-    "target": 8.06,
-    "stretch_target": 10.08,
-    "currency": "USD_MM",
+    "target": 1039.74,
+    "stretch_target": 1300.0,
+    "currency": "KES_MM",
     "baseline_2025": 5.52,
     "buffer_pct": 0,
     "note": "Profit before tax; stretch = KES 1.3B",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 8.06,
+    "stretch_source": "stated on the EXCO sheets in KES",
+    "converted_at_rate": 129.0
   },
   "NET_LOANS|2026": {
-    "target": 209.74,
+    "target": 27056.46,
     "stretch_target": null,
-    "currency": "USD_MM",
+    "currency": "KES_MM",
     "baseline_2025": 138.15,
     "buffer_pct": 0,
     "note": "Net loans and advances",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 209.74,
+    "converted_at_rate": 129.0
   },
   "TOTAL_DEPOSITS|2026": {
-    "target": 751.55,
+    "target": 96949.95,
     "stretch_target": null,
-    "currency": "USD_MM",
+    "currency": "KES_MM",
     "baseline_2025": 590.85,
     "buffer_pct": 0,
     "note": "Total customer deposits",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 751.55,
+    "converted_at_rate": 129.0
   },
   "LDR|2026": {
     "target": 29.1,
@@ -158,13 +171,15 @@
     "source": "EKE 2026 MD scorecard"
   },
   "REV_PER_STAFF|2026": {
-    "target": 120.0,
+    "target": 15480.0,
     "stretch_target": null,
-    "currency": "USD_K",
+    "currency": "KES_K",
     "baseline_2025": 106,
     "buffer_pct": 0,
     "note": "Revenue per staff",
-    "source": "EKE 2026 MD scorecard"
+    "source": "EKE 2026 MD scorecard",
+    "target_usd_source": 120.0,
+    "converted_at_rate": 129.0
   },
   "PERF_CYCLE_ADHERENCE|2026": {
     "target": 100.0,

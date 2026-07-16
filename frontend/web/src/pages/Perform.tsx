@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { fetchWhoamiDetailed } from '@/lib/api';
 import {
   fetchBscDepartments, fetchBscPillars, fetchBscScorecard,
-  pct, scoreTone, achBar, fmtNum, money,
+  pct, scoreTone, achBar, fmtNum, fmtPctVal, money, scaleLabel,
   type BscKpi, type BscObjective, type BscScorecard, type BscPillars,
 } from '@/lib/bsc';
 
@@ -79,20 +79,30 @@ function Ribbon({
   );
 }
 
-/** The target in one currency, with the other basis beneath it where the viewer is
- *  allowed to see it. stretch is absent from the payload entirely for everyone else,
- *  so there is nothing to leak here. */
-function TargetCell({ kpi, cur }: { kpi: BscKpi; cur: 'kes' | 'usd' }) {
-  const shown = kpi.stretch_money ?? kpi.target_money;   // basis already applied server-side
-  const other = kpi.stretch_money ? kpi.target_money : null;
+/** The target in KES, with the USD equivalent beneath it.
+ *
+ *  Two currencies in one column rather than two: the MD should not scroll sideways to
+ *  read her own scorecard. Which figure appears is the basis in force — the switch
+ *  decides that — so the second line is free for the USD the Group reports in.
+ *  Non-monetary rows show their plain value and no second line; a percentage has no
+ *  dollar equivalent. */
+function TargetCell({ kpi, basis }: { kpi: BscKpi; basis: string }) {
+  if (!kpi.currency) {
+    const pctish = (kpi.unit || '').includes('%');
+    return (
+      <div className="leading-tight">
+        <div>{pctish ? fmtPctVal(kpi.target) : fmtNum(kpi.target)}
+          {kpi.unit ? <span className="text-gray-400 ml-1 text-[10px]">{kpi.unit}</span> : null}
+        </div>
+      </div>
+    );
+  }
+  const useStretch = basis !== 'target' && kpi.stretch_money;
+  const shown = useStretch ? kpi.stretch_money : kpi.target_money;
   return (
     <div className="leading-tight">
-      <div>{money(shown, cur)}</div>
-      {other && (
-        <div className="text-[10px] text-gray-400" title="plain target">
-          {money(other, cur)}
-        </div>
-      )}
+      <div className="font-medium text-gray-800">{money(shown, 'kes')}</div>
+      <div className="text-[10px] text-gray-400">{money(shown, 'usd')}</div>
     </div>
   );
 }
@@ -118,12 +128,15 @@ function AchievementCell({ kpi }: { kpi: BscKpi }) {
 }
 
 function AreaSection({
-  area, rows, areaWeight, pillars, complete,
+  area, rows, areaWeight, pillars, complete, basis,
 }: {
   area: string; rows: Row[]; areaWeight: number | null;
-  pillars?: BscPillars; complete: boolean;
+  pillars?: BscPillars; complete: boolean; basis: string;
 }) {
   const { color, label } = areaMeta(area, pillars);
+  // The scale is stated once in the header rather than abbreviated onto each figure.
+  const scale = scaleLabel(rows.filter((r): r is { kind: 'kpi'; kpi: BscKpi } =>
+    r.kind === 'kpi').map((r) => r.kpi));
   const scored = rows.filter((r) => r.kind === 'kpi' && r.kpi.score !== null);
   const avg = scored.length
     ? scored.reduce((s, r) => s + ((r as { kpi: BscKpi }).kpi.score ?? 0), 0) / scored.length
@@ -156,12 +169,13 @@ function AreaSection({
       <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="text-[10px] uppercase tracking-wide text-gray-400 bg-gray-50/70">
-            <th className="text-left   font-medium pl-5 pr-2 py-2 w-[30%]">Measure</th>
-            <th className="text-right  font-medium px-2 py-2 w-[7%]">Weight</th>
-            <th className="text-right  font-medium px-2 py-2 w-[13%]">Target (KES)</th>
-            <th className="text-right  font-medium px-2 py-2 w-[12%]">Target (USD)</th>
-            <th className="text-right  font-medium px-2 py-2 w-[11%]">Actual</th>
-            <th className="text-right  font-medium px-2 py-2 w-[19%]">Achievement</th>
+            <th className="text-left   font-medium pl-5 pr-2 py-2 w-[36%]">Measure</th>
+            <th className="text-right  font-medium px-2 py-2 w-[8%]">Weight</th>
+            <th className="text-right  font-medium px-2 py-2 w-[15%]">
+              Target{scale && <span className="normal-case text-gray-300"> · KES {scale}</span>}
+            </th>
+            <th className="text-right  font-medium px-2 py-2 w-[13%]">Actual</th>
+            <th className="text-right  font-medium px-2 py-2 w-[20%]">Achievement</th>
             <th className="text-center font-medium pr-5 pl-2 py-2 w-[8%]">Score</th>
           </tr>
         </thead>
@@ -198,20 +212,9 @@ function AreaSection({
                 <td className="px-2 py-2 text-right text-xs tabular-nums font-medium text-gray-700">
                   {weight === null || weight === undefined || !complete ? '—' : pct(weight)}
                 </td>
-                {/* Money rows carry both currencies; a percentage or a count converts
-                    to nothing, so it shows its plain value under Target (KES) and
-                    leaves the USD column empty rather than inventing a conversion. */}
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-700">
-                  {!isKpi ? '—'
-                    : r.kpi.currency
-                      ? <TargetCell kpi={r.kpi} cur="kes" />
-                      : <span>{fmtNum(r.kpi.target)}
-                          {r.kpi.unit ? <span className="text-gray-400"> {r.kpi.unit}</span> : null}
-                        </span>}
-                </td>
-                <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-600">
-                  {isKpi && r.kpi.currency ? <TargetCell kpi={r.kpi} cur="usd" />
-                                            : <span className="text-gray-300">—</span>}
+                  {isKpi ? <TargetCell kpi={r.kpi} basis={basis} />
+                         : <span className="text-gray-300">—</span>}
                 </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-gray-800 font-medium">
                   {!isKpi ? '—'
@@ -348,6 +351,7 @@ function Scorecard({ staffCode, pillars, basis, onBasis }: {
           key={a} area={a} rows={grouped.get(a)!}
           areaWeight={data.areas?.[a] ?? null}
           pillars={pillars} complete={data.weights_complete}
+          basis={data.basis}
         />
       ))}
     </div>
