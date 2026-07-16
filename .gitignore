@@ -216,3 +216,8 @@ scripts/check_login.py
 scripts/check_pg_state.py
 scripts/check_persistence_mode.py
 scripts/inspect_byte.py
+
+# one-shot fixers / migrations / diagnostics (untracked; kept locally)
+/fix_*.py
+/migrate_*.py
+/check_credit*.py
