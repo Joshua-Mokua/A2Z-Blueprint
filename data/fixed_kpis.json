@@ -4,165 +4,69 @@
     "description": "Marks which KPIs are FIXED at bank level (everyone scores against the same bank-wide target). Non-fixed KPIs use cascaded individual targets or role-default targets. Per Joshua's v10.318 reminder: CX Score, Audit Score, Staff Productivity etc are bank-wide. v10.323 also marks bank-wide financial outcomes (PBT, Total NFI, NPL Ratio, etc.) since these are organisation-level metrics everyone scores against uniformly.",
     "rule": "A KPI in this list scores everyone against bank_targets[KPI|YEAR]. A KPI NOT in this list scores each staff against their cascaded target (target_cascade), or a role default target (role_default_targets.json), in that order."
   },
-  "2025-Q3": {
-    "kpis": [
-      "CX Score",
-      "Audit Score",
-      "Staff Productivity",
-      "CASA Ratio",
-      "PAR",
-      "Account Dormancy",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "Compliance Score"
-    ],
-    "_v10324_removed_from_fixed": [
-      "PBT",
-      "Total NFI",
-      "NPL Ratio",
-      "NIM",
-      "ROE",
-      "CIR"
-    ],
-    "_v10328_added": [
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "COMPLIANCE_SCORE"
-    ],
-    "_v10329_added": [
-      "NPL_RATIO"
-    ]
-  },
-  "2025-Q4": {
-    "kpis": [
-      "CX Score",
-      "Audit Score",
-      "Staff Productivity",
-      "CASA Ratio",
-      "PAR",
-      "Account Dormancy",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "Compliance Score"
-    ],
-    "_v10324_removed_from_fixed": [
-      "PBT",
-      "Total NFI",
-      "NPL Ratio",
-      "NIM",
-      "ROE",
-      "CIR"
-    ],
-    "_v10328_added": [
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "COMPLIANCE_SCORE"
-    ],
-    "_v10329_added": [
-      "NPL_RATIO"
-    ]
-  },
   "2026-Q1": {
     "kpis": [
+      "AU_DEPOSIT_CONC",
+      "BRANCH_TURNAROUND",
+      "CAPABILITY_READINESS",
+      "CCB_REV_CONTRIB",
+      "CIR",
+      "CRITICAL_VACANCIES",
+      "CUST_ACTIVE_RATE",
       "CX Score",
-      "Audit Score",
-      "Staff Productivity",
-      "CASA Ratio",
-      "PAR",
-      "Account Dormancy",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "Compliance Score"
-    ],
-    "_v10324_removed_from_fixed": [
+      "DIGITAL_ACTIVE_PCT",
+      "DISTRIBUTION_STRATEGY",
+      "ECAP_CLOSURE",
+      "ENGAGEMENT_SCORE",
+      "GRADUATE_PROGRAMME",
+      "GROUP_BUDGET_AUDIT",
+      "LCY_FCY_SPLIT",
+      "LDR",
+      "OP_LOSS_PCT_PBT",
+      "OTR",
       "PBT",
-      "Total NFI",
-      "NPL Ratio",
-      "NIM",
+      "PERF_CYCLE_ADHERENCE",
+      "REGRETTABLE_TURNOVER",
+      "REG_FINES_PCT_PBT",
+      "REV_PER_STAFF",
       "ROE",
-      "CIR"
+      "SUCCESSION_COVERAGE",
+      "TOTAL_OPEX",
+      "TOTAL_REVENUE"
     ],
-    "_v10328_added": [
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "COMPLIANCE_SCORE"
-    ],
-    "_v10329_added": [
-      "NPL_RATIO"
-    ]
+    "_note": "Inherits the 2026 bank targets \u2014 the bank's targets are annual and the quarter is measured against them."
   },
   "2026-Q2": {
     "kpis": [
+      "AU_DEPOSIT_CONC",
+      "BRANCH_TURNAROUND",
+      "CAPABILITY_READINESS",
+      "CCB_REV_CONTRIB",
+      "CIR",
+      "CRITICAL_VACANCIES",
+      "CUST_ACTIVE_RATE",
       "CX Score",
-      "Audit Score",
-      "Staff Productivity",
-      "CASA Ratio",
-      "PAR",
-      "Account Dormancy",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "Compliance Score"
-    ],
-    "_v10324_removed_from_fixed": [
+      "DIGITAL_ACTIVE_PCT",
+      "DISTRIBUTION_STRATEGY",
+      "ECAP_CLOSURE",
+      "ENGAGEMENT_SCORE",
+      "GRADUATE_PROGRAMME",
+      "GROUP_BUDGET_AUDIT",
+      "LCY_FCY_SPLIT",
+      "LDR",
+      "OP_LOSS_PCT_PBT",
+      "OTR",
       "PBT",
-      "Total NFI",
-      "NPL Ratio",
-      "NIM",
+      "PERF_CYCLE_ADHERENCE",
+      "REGRETTABLE_TURNOVER",
+      "REG_FINES_PCT_PBT",
+      "REV_PER_STAFF",
       "ROE",
-      "CIR"
+      "SUCCESSION_COVERAGE",
+      "TOTAL_OPEX",
+      "TOTAL_REVENUE"
     ],
-    "_v10328_added": [
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "COMPLIANCE_SCORE"
-    ],
-    "_v10329_added": [
-      "NPL_RATIO"
-    ]
+    "_note": "Inherits the 2026 bank targets \u2014 the bank's targets are annual and the quarter is measured against them."
   },
   "_v10324_design_note": "True bank-uniform scale KPIs only (CX, Audit, Staff Productivity, CASA Ratio, PAR, Account Dormancy, Channel Dormancy). Aggregate financial outcomes (PBT, Total NFI, NPL Ratio, NIM, ROE, CIR) removed in v10.324 because they need per-staff cascaded or role-default targets, not bank-aggregate (a RM's 150K NFI vs 130bn bank target = 0% achievement).",
   "2026": {
@@ -201,31 +105,6 @@
     "last_modified": "2026-05-13T19:18:11.169025",
     "last_modified_by": "v10.401_seed",
     "last_reason": "Establish authoritative annual 2025 fixed list per TC38 fix"
-  },
-  "2025": {
-    "kpis": [
-      "Account Dormancy",
-      "Audit Score",
-      "CASA Ratio",
-      "Compliance Score",
-      "CX Score",
-      "Channel Dormancy",
-      "K010",
-      "K014",
-      "K016",
-      "K121",
-      "K129",
-      "K132",
-      "K134",
-      "PAR",
-      "Staff Productivity"
-    ],
-    "_doc": "Annual fixed KPI list \u2014 promoted from quarters by v10.401_seed",
-    "_promoted_from_quarters": [
-      "2025-Q3",
-      "2025-Q4"
-    ],
-    "_promoted_at": "2026-05-13T19:18:11.169020"
   },
   "_v10402_migration_note": {
     "_doc": "v10.402: migrated NPL_RATIO\u2192NPL Ratio, COMPLIANCE_SCORE\u2192Compliance Score (and other uppercase aliases) to human-readable canonical form per Joshua deep review. Cascade now correctly excludes the human form when MD has reserved these KPIs.",

@@ -367,11 +367,20 @@ def _build_alias_map_from_library() -> Dict[str, str]:
     # field. These appear in role_kpis with shorter forms than the
     # canonical kpi.code values.
     aliases.setdefault("STAFF_PROD", "Staff Productivity")
-    aliases.setdefault("DEP_GROWTH", "Retail & MSME Deposit Growth")
     aliases.setdefault("FEES_COMM", "Total NFI")
     aliases.setdefault("LOAN_DISB", "Disbursements Retail Loans")
-    aliases.setdefault("TRANSACTIONS", "Digital Transactions (%)")
+    # TRANSACTIONS pointed at the NAME "Digital Transactions (%)"; the id is K012, so
+    # the alias resolved to nothing and the measure would have dropped off any
+    # scorecard carrying it, without a word.
+    aliases.setdefault("TRANSACTIONS", "K012")
     aliases.setdefault("NEW_CUST", "Number of Business Borrowers")
+    # DEP_GROWTH is deliberately NOT aliased. It is the real id of "Total Deposit
+    # Growth", and the alias pointed at a different KPI, "Retail & MSME Deposit
+    # Growth". Resolution now checks real ids first, so the alias was already dead —
+    # but a dead alias is a loaded gun: the next person to reorder that check
+    # reintroduces the bug that scored the MD on retail deposits instead of total.
+    # When a migration promotes a legacy code to a canonical id, delete its alias in
+    # the same commit. tests/test_bsc_library_integrity.py asserts this.
     # v10.329 — Branch Manager scorecard alignment
     aliases.setdefault("COMPLIANCE", "COMPLIANCE_SCORE")
     # Refs without a clean equivalent yet (logged for backlog):
