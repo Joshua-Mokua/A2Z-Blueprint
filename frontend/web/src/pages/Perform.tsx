@@ -14,6 +14,7 @@ import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { fetchWhoamiDetailed } from '@/lib/api';
 import {
   fetchBscTeam, fetchBscPillars, fetchBscScorecard, pct,
   type BscKpi, type BscObjective, type BscScorecard, type BscPillars,
@@ -214,6 +215,12 @@ export function Perform() {
   const { data: pillars } = useQuery({
     queryKey: ['bsc-pillars'], queryFn: fetchBscPillars,
   });
+  // Own identity, so a failing /team still leaves the viewer their own scorecard.
+  // Deriving the active tab solely from /team meant one failed request blanked the
+  // whole page — including the scorecard the error message promised was below.
+  const { data: me } = useQuery({
+    queryKey: ['whoami-detailed'], queryFn: fetchWhoamiDetailed,
+  });
   const [selected, setSelected] = useState<string>('');
 
   const tabs = useMemo(() => {
@@ -222,7 +229,7 @@ export function Perform() {
             ...team.reports.map((r) => ({ ...r, label: r.display_name }))];
   }, [team]);
 
-  const active = selected || team?.me.staff_code || '';
+  const active = selected || team?.me.staff_code || me?.staff_code || '';
 
   return (
     <div className="p-6 space-y-5">
@@ -239,7 +246,10 @@ export function Perform() {
         <Card padding="sm" className="border-red-200 bg-red-50">
           <p className="text-xs text-red-800">
             <span className="font-semibold">Could not load your team.</span>{' '}
-            {(teamError as Error).message} — your own scorecard is shown below.
+            {(teamError as Error).message}
+            {me?.staff_code
+              ? ' — your own scorecard is shown below; reportee tabs are unavailable.'
+              : ' — no scorecard can be shown until this is resolved.'}
           </p>
         </Card>
       )}
