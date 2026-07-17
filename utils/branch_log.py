@@ -40,9 +40,87 @@ LOG_FIELDS = [
 _METRIC_KEYS = [k for k, _, t, _, _ in LOG_FIELDS if t != "text"]
 
 
+_CONFIG_FILE = Path(DATA_DIR) / "branch_log_config.json"
+
+
+def load_log_config() -> dict:
+    """Admin-set daily-log config: per-activity weights + daily index target."""
+    try:
+        if _CONFIG_FILE.exists():
+            return json.loads(_CONFIG_FILE.read_text(encoding="utf-8")) or {}
+    except Exception:
+        pass
+    return {}
+
+
+def save_log_config(cfg: dict) -> None:
+    _CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+
+def activity_weights() -> dict:
+    return load_log_config().get("activity_weights", {}) or {}
+
+
+def daily_index_target() -> float:
+    try:
+        return float(load_log_config().get("daily_index_target", 0) or 0)
+    except Exception:
+        return 0.0
+
+
+def compute_index(metrics: dict) -> float:
+    """Productivity index for a log = sum(activity count x admin weight)."""
+    w = activity_weights()
+    total = 0.0
+    for k, v in (metrics or {}).items():
+        try:
+            total += float(v or 0) * float(w.get(k, 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
+
+
+def _extra_activities() -> list:
+    """Admin-added activities beyond the common base (e.g. head-office / role
+    specific), each: {key, label, type, unit, weight, roles:[...]}."""
+    return load_log_config().get("extra_activities", []) or []
+
+
+def metric_keys() -> list:
+    """All numeric activity keys — common base (LOG_FIELDS) + admin extras."""
+    keys = list(_METRIC_KEYS)
+    for a in _extra_activities():
+        k = str(a.get("key") or "").strip()
+        if k and str(a.get("type", "int")) != "text" and k not in keys:
+            keys.append(k)
+    return keys
+
+
 def fields_schema() -> list:
-    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi}
+    w = activity_weights()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0)}
             for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+def fields_for_role(role: str) -> list:
+    """Activity fields for a role: the common base + admin extras whose 'roles'
+    is empty (common) or includes this role."""
+    out = fields_schema()
+    w = activity_weights()
+    rl = str(role or "").strip().lower()
+    for a in _extra_activities():
+        k = str(a.get("key") or "").strip()
+        if not k:
+            continue
+        roles = [str(x).strip().lower() for x in (a.get("roles") or [])]
+        if roles and rl and rl not in roles:
+            continue
+        out.append({"key": k, "label": a.get("label", k), "type": a.get("type", "int"),
+                    "unit": a.get("unit", ""), "bsc_kpi": None,
+                    "weight": float(w.get(k, a.get("weight", 0)) or 0),
+                    "roles": a.get("roles") or []})
+    return out
 
 
 class BranchLogManager:
@@ -89,7 +167,7 @@ class BranchLogManager:
             except (TypeError, ValueError):
                 return 0
 
-        metrics = {k: _num(values.get(k, 0)) for k in _METRIC_KEYS}
+        metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
         remarks = str(values.get("remarks", "") or "")
 
         existing = next((l for l in self.logs
@@ -97,6 +175,7 @@ class BranchLogManager:
         if existing:
             existing.update(metrics)
             existing["remarks"] = remarks
+            existing["index"] = compute_index(metrics)
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
             existing["rejected"] = False
@@ -117,6 +196,7 @@ class BranchLogManager:
             "manager_note": "",
             "rejected": False,
             **metrics,
+            "index": compute_index(metrics),
             "remarks": remarks,
         }
         self.logs.append(rec)

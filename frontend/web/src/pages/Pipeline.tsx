@@ -24,6 +24,7 @@
 //
 // Composition: 100% bespoke v10.496 primitives. No new visual atoms.
 
+import { displayName } from "../lib/names";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -299,7 +300,7 @@ export function Pipeline() {
       exportValue: (row) => row.staff_name || '',
       render: (row) => (
         <div>
-          <div className="text-sm text-gray-800">{row.staff_name || '—'}</div>
+          <div className="text-sm text-gray-800">{row.staff_name ? displayName(row.staff_name) : '—'}</div>
           {row.staff_code && (
             <div className="text-xs text-gray-400 mt-0.5 font-mono">
               {row.staff_code}
@@ -322,6 +323,7 @@ export function Pipeline() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro' }]}
         title="EKE Sales Pro"
         subtitle="Deals across your scope — assured value, stage, and ownership."
@@ -370,7 +372,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="secondary"
+            tone="success"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -381,7 +383,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="accent"
+            tone="lime"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -392,7 +394,7 @@ export function Pipeline() {
               : 'Assured'}
             loading={loading}
             stripe={false}
-            tone="neutral"
+            tone="violet"
             onClick={() => navigate('/analytics')}
           />
         </div>
@@ -405,7 +407,7 @@ export function Pipeline() {
             sub="In your cascade scope"
             loading={loading}
             stripe={false}
-            tone="primary"
+            tone="teal"
             onClick={() => navigate('/analytics')}
           />
           <Stat
@@ -427,7 +429,7 @@ export function Pipeline() {
               : 'All validated'}
             loading={loading}
             stripe={false}
-            tone="neutral"
+            tone="secondary"
             onClick={() => navigate('/analytics')}
           />
         </div>
@@ -515,7 +517,7 @@ export function Pipeline() {
                               <td className="py-1.5 pr-3 text-gray-600">{d.product_type}</td>
                               <td className="py-1.5 pr-3 text-gray-600">{d.segment}</td>
                               <td className="py-1.5 pr-3 text-right tabular-nums text-gray-800">{formatValue(d.amount_kes, sym)}</td>
-                              <td className="py-1.5 pr-3 text-gray-600">{d.staff_name}</td>
+                              <td className="py-1.5 pr-3 text-gray-600">{displayName(d.staff_name)}</td>
                             </tr>
                           ))}
                         </tbody>

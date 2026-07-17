@@ -28,6 +28,16 @@ from typing import Any, Dict, List
 _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
     "sections": [
         {
+            "key": "memo_header",
+            "title": "Memo Header",
+            "fields": [
+                {"key": "to", "label": "To", "source": "rm", "required": False},
+                {"key": "from_branch", "label": "From (Branch)", "source": "cbs", "required": False},
+                {"key": "memo_date", "label": "Date", "source": "auto", "required": False},
+                {"key": "pp_ref", "label": "PP Ref", "source": "rm", "required": False},
+            ],
+        },
+        {
             "key": "customer_profile",
             "title": "Customer Profile",
             "fields": [
@@ -40,6 +50,22 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
                 {"key": "branch_name", "label": "Branch", "source": "cbs", "required": False},
                 {"key": "kyc_status", "label": "KYC status", "source": "cbs", "required": False},
                 {"key": "risk_rating", "label": "Customer risk rating", "source": "cbs", "required": False},
+                {"key": "employer_name", "label": "Employer name", "source": "cbs", "required": False},
+                {"key": "employer_sector", "label": "Employer sector", "source": "cbs", "required": False},
+                {"key": "orr", "label": "ORR (Obligor Risk Rating)", "source": "cbs", "required": False},
+                {"key": "frr", "label": "FRR (Facility Risk Rating)", "source": "cbs", "required": False},
+                {"key": "crb_pd", "label": "CRB PD (%)", "source": "cbs", "required": False},
+                {"key": "crb_orr", "label": "CRB ORR", "source": "cbs", "required": False},
+                {"key": "frr_crb", "label": "FRR based on CRB", "source": "cbs", "required": False},
+            ],
+        },
+        {
+            "key": "obligor_analysis",
+            "title": "Obligor Analysis",
+            "fields": [
+                {"key": "background", "label": "Background / obligor analysis", "source": "rm", "required": False},
+                {"key": "statements", "label": "Statements — significant credit & debit apart from salary", "source": "rm", "required": False},
+                {"key": "crb_arrears", "label": "CRB — overdue days & amounts in arrears", "source": "rm", "required": False},
             ],
         },
         {
@@ -55,6 +81,13 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
             ],
         },
         {
+            "key": "facilities",
+            "title": "Facilities",
+            "fields": [
+                {"key": "facilities_table", "label": "Facilities", "source": "rm", "required": False, "type": "table"},
+            ],
+        },
+        {
             "key": "financial_analysis",
             "title": "Financial Analysis",
             "fields": [
@@ -64,6 +97,10 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
                 {"key": "existing_loans", "label": "Existing loan balances (KES)", "source": "cbs", "required": False},
                 {"key": "dscr", "label": "Debt service coverage ratio", "source": "rm", "required": False},
                 {"key": "account_conduct", "label": "Account conduct / turnover in account", "source": "rm", "required": False},
+                {"key": "dsr_computation", "label": "DSR computation", "source": "rm", "required": False},
+                {"key": "policy_exception", "label": "Policy / PP exception", "source": "rm", "required": False},
+                {"key": "other_bank_facilities", "label": "Existing facilities with other banks", "source": "rm", "required": False},
+                {"key": "other_bank_securities", "label": "Securities pledged to other banks", "source": "rm", "required": False},
             ],
         },
         {
@@ -83,6 +120,7 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
                 {"key": "weaknesses", "label": "Weaknesses / risks", "source": "rm", "required": False},
                 {"key": "mitigants", "label": "Risk mitigants", "source": "rm", "required": False},
                 {"key": "aml_pep_flags", "label": "AML / PEP flags", "source": "cbs", "required": False},
+                {"key": "risk_summary", "label": "Risk summary", "source": "rm", "required": False},
             ],
         },
         {
@@ -91,6 +129,14 @@ _CR_TEMPLATE_DEFAULT: Dict[str, Any] = {
             "fields": [
                 {"key": "rm_recommendation", "label": "Recommendation", "source": "rm", "required": True},
                 {"key": "conditions", "label": "Proposed conditions / covenants", "source": "rm", "required": False},
+            ],
+        },
+        {
+            "key": "sign_off",
+            "title": "Sign-off (wet signatures on the printed copy)",
+            "fields": [
+                {"key": "ro_name", "label": "Relationship Officer (name)", "source": "rm", "required": False},
+                {"key": "bm_name", "label": "Branch Manager (name)", "source": "rm", "required": False},
             ],
         },
     ],

@@ -1,3 +1,4 @@
+import { displayName } from "../lib/names";
 import { Link, useLocation } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +20,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Executive Intelligence',
     items: [
       { path: '/',              label: 'Dashboard',        matchActive: (p) => p === '/' },
-      { path: '/perform',       label: 'BSC Performance',  matchActive: (p) => p === '/perform' },
+      { path: '/perform',       label: 'Balanced Scorecard', matchActive: (p) => p === '/perform' },
       { path: '/cascade',       label: 'Target Cascade',   matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/initiatives',   label: 'Initiatives',      matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
       { path: '/profitability', label: 'Profitability',    matchActive: (p) => p === '/profitability' },
@@ -33,7 +34,8 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/analytics',       label: 'Sales Pro Analytics',  matchActive: (p) => p.startsWith('/analytics') },
       { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
       { path: '/referrals',       label: 'Sales Referral',       matchActive: (p) => p.startsWith('/referrals') },
-      { path: '/branch-log',      label: 'Daily Branch Log',     matchActive: (p) => p.startsWith('/branch-log') },
+      { path: '/branch-log',      label: 'Daily Log',     matchActive: (p) => p.startsWith('/branch-log') },
+      { path: '/portfolio',       label: 'Portfolio',            matchActive: (p) => p.startsWith('/portfolio') },
     ],
   },
   {
@@ -50,12 +52,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Reference & Admin',
     items: [
       { path: '/cbs',              label: 'Customer Lookup',     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/fx-rates',         label: 'FX Rates',            matchActive: (p) => p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/config',     label: 'Configuration',       matchActive: (p) => p.startsWith('/admin/config'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/roles',      label: 'Role Registry',       matchActive: (p) => p.startsWith('/admin/roles'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/hierarchy',  label: 'Reporting Hierarchy', matchActive: (p) => p.startsWith('/admin/hierarchy'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/committees', label: 'Credit Committees',   matchActive: (p) => p.startsWith('/admin/committees'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/staff',      label: 'Staff Admin',         matchActive: (p) => p.startsWith('/admin/staff'), visibleFor: (_m, _a, _c, md) => md },
+      { path: '/admin/config',     label: 'Administration',      matchActive: (p) => (p.startsWith('/admin/') && !p.startsWith('/admin/cbs-debug')) || p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/admin/cbs-debug', label: 'CBS / FlexCube Debug', matchActive: (p) => p.startsWith('/admin/cbs-debug'), visibleFor: (_m, isA) => isA },
     ],
   },
@@ -124,7 +121,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <div className="sb-user">
           <div className="sb-av">{initials(user?.full_name ?? user?.username)}</div>
           <div className="sb-user-info">
-            <div className="sb-user-name">{user?.full_name ?? user?.username ?? '—'}</div>
+            <div className="sb-user-name">{user?.full_name ? displayName(user.full_name, (user as any).display_name) : (user?.username ?? '—')}</div>
             <div className="sb-user-role">{user?.role ?? ''}</div>
           </div>
         </div>
@@ -135,6 +132,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         >
           Sign out
         </button>
+        <Link to="/about" onClick={() => onNavigate?.()}
+          className="mt-2 block text-center text-[11px] text-white/40 hover:text-white/70">
+          © 2026 A2Z · About
+        </Link>
       </div>
     </aside>
   );

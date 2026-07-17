@@ -202,6 +202,36 @@ def _events_from_deal(deal: Dict[str, Any],
             "note": "Affordability appraisal completed by deal owner",
         })
 
+    # 6) SLA commitments — when a stage's SLA is at risk/breached, the deal owner
+    #    records a reason + a committed date. Surface each in the journey. If the
+    #    committed date has passed the commitment is UNFULFILLED — an SLA breach —
+    #    tagged `sla_breached` so the UI renders it red; otherwise `sla_commitment`.
+    commitments = deal.get("sla_commitments")
+    if isinstance(commitments, dict):
+        from datetime import date as _date
+        for step, c in commitments.items():
+            if not isinstance(c, dict):
+                continue
+            committed = str(c.get("committed_date") or "")
+            violated = False
+            try:
+                violated = bool(committed) and _date.fromisoformat(committed) < _date.today()
+            except Exception:
+                violated = False
+            step_label = str(step).replace("_", " ").strip() or "current stage"
+            reason = str(c.get("reason", "") or "").strip()
+            note = (f"SLA {'breached' if violated else 'at risk'} at stage '{step_label}'"
+                    + (f" — committed by {committed}" if committed else ""))
+            if reason:
+                note += f" · reason: {reason}"
+            events.append({
+                "event": "sla_breached" if violated else "sla_commitment",
+                "by": str(c.get("recorded_by", "") or ""),
+                "by_name": c.get("recorded_by_name") or None,
+                "at": _iso(c.get("recorded_at")),
+                "note": note,
+            })
+
     return events
 
 
@@ -268,3 +298,19 @@ def build_case_journey(app: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     merged.sort(key=lambda e: _parse_ts(e.get("at")))
     return merged
+
+
+def build_deal_journey(deal: Dict[str, Any],
+                       activities: Optional[List[Dict[str, Any]]] = None
+                       ) -> List[Dict[str, Any]]:
+    """Case Journey for a pipeline deal that is NOT yet linked to a credit
+    application (origination stages). Reuses the same deal->journey normalisation
+    as the merged application journey, so the two surfaces render identically.
+    Oldest-first; never raises.
+    """
+    try:
+        evs = _events_from_deal(deal, activities or [])
+        evs.sort(key=lambda e: _parse_ts(e.get("at")))
+        return evs
+    except Exception:
+        return []

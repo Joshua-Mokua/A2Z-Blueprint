@@ -189,6 +189,19 @@ def submit_for_approval(item: dict, data_path) -> str:
 
 
 @lru_cache(maxsize=1)
+def _data_custodian_roles() -> "frozenset[str]":
+    """Roles granted full data-custodian visibility (all pipeline / activity log /
+    referrals / portfolio), independent of the reporting tree — e.g. Finance (the
+    CFO and her team) and Ag Head HR, who are custodians of the data. Admin-editable
+    via org_config.data_custodian_roles; empty on any error so nothing over-scopes."""
+    try:
+        from utils.core import get_org_config
+        roles = (get_org_config() or {}).get("data_custodian_roles", []) or []
+        return frozenset(str(r).strip().lower() for r in roles if str(r).strip())
+    except Exception:
+        return frozenset()
+
+
 def _register_root_roles() -> "frozenset[str]":
     """Roles that are ROOTS in the staff register (blank 'Reports To') — the
     top of the org, which therefore sees everyone.
@@ -228,6 +241,29 @@ BRANCH_HEAD_ROLES = frozenset({
     "senior branch manager",
     "branch manager",
 })
+
+
+def _branch_grant_units_for(user_data: dict) -> set:
+    """B3: extra branch Units this user may see via admin grants —
+    per-branch viewing grants (org_config.branch_viewers: staff_code -> [branches])
+    and acting-BM delegation (org_config.acting_bm: branch -> staff_code). Since a
+    branch's Unit IS its name, the granted branch names are the extra Units. This
+    is additive visibility only — it never widens rollup or removes normal scope."""
+    sc = str(user_data.get("staff_code", "") or "").strip()
+    if not sc:
+        return set()
+    try:
+        from utils.core import get_org_config
+        cfg = get_org_config() or {}
+    except Exception:
+        return set()
+    units: set = set()
+    for b in (cfg.get("branch_viewers", {}) or {}).get(sc, []) or []:
+        units.add(str(b))
+    for branch, code in (cfg.get("acting_bm", {}) or {}).items():
+        if str(code) == sc:
+            units.add(str(branch))
+    return units
 
 
 @lru_cache(maxsize=1)
@@ -283,7 +319,8 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     # can_view_all is a legacy flag; tree_access is now role-based
     if (is_admin or "admin" in role_l
             or role_l in _ALL_VIEW_ROLES
-            or role_l in _register_root_roles()):   # B1: data-driven top role
+            or role_l in _register_root_roles()      # B1: data-driven top role
+            or role_l in _data_custodian_roles()):   # data custodians (Finance/HR)
         return staff_scores.copy()
 
     # B2: register-driven branch-head scope. A branch head sees everyone in
@@ -310,6 +347,27 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
         # No tree config — self only
         self_rows = staff_scores[staff_scores["Staff Name"] == my_name].copy()
         return self_rows
+
+    # A self_only role (no descendants in the hierarchy) sees only itself — UNLESS an
+    # admin grant widens it (an acting BM, or a per-branch viewing grant). So we start
+    # from the individual, then let the B3 branch-grant block below add any granted
+    # branch Units. This is what lets a Customer Service Manager who is acting BM see
+    # their whole branch, while a plain CSM/BOO/Teller sees only themselves.
+    if tree_cfg.get("self_only"):
+        my_code = str(user_data.get("staff_code", "") or "")
+        if my_code and "Staff Code" in staff_scores.columns:
+            visible = staff_scores[staff_scores["Staff Code"].astype(str) == my_code].copy()
+        else:
+            visible = staff_scores[staff_scores["Staff Name"] == my_name].copy()
+        try:
+            _extra_units = _branch_grant_units_for(user_data)
+        except Exception:
+            _extra_units = set()
+        if _extra_units and "Unit" in staff_scores.columns:
+            _extra_idx = staff_scores.index[staff_scores["Unit"].isin(_extra_units)]
+            if len(_extra_idx):
+                visible = staff_scores.loc[visible.index.union(_extra_idx)]
+        return visible
 
     tree_roles = tree_cfg["tree_roles"]
     tree_units = tree_cfg["units"]
@@ -361,6 +419,16 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
 
     elif role_l in _UNIT_SCOPED_ROLES and my_unit:
         visible = visible[visible["Unit"] == my_unit]
+
+    # B3: additive admin branch grants (per-branch viewing + acting-BM delegation).
+    try:
+        _extra_units = _branch_grant_units_for(user_data)
+    except Exception:
+        _extra_units = set()
+    if _extra_units and "Unit" in staff_scores.columns:
+        _extra_idx = staff_scores.index[staff_scores["Unit"].isin(_extra_units)]
+        if len(_extra_idx):
+            visible = staff_scores.loc[visible.index.union(_extra_idx)]
 
     return visible
 

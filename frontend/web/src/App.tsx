@@ -63,6 +63,7 @@ import { PipelineProvider } from './providers/PipelineProvider';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppShell } from './components/AppShell';
+import About from './pages/About';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
@@ -89,6 +90,7 @@ import AdminConfig from './pages/AdminConfig';
 import RolesAdmin from './pages/RolesAdmin';
 import HierarchyAdmin from './pages/HierarchyAdmin';
 import BranchLog from './pages/BranchLog';
+import Portfolio from './pages/Portfolio';
 import CommitteeAdmin from './pages/CommitteeAdmin';
 import { CommitteeConvening } from './pages/CommitteeConvening';
 import StaffAdmin from './pages/StaffAdmin';
@@ -131,6 +133,7 @@ function App() {
 
                     {/* BSC + Profitability */}
                     <Route path="/perform" element={<Perform />} />
+                    <Route path="/about" element={<About />} />
                     <Route path="/profitability" element={<Profitability />} />
 
                     {/* Pipeline list — wrapped in PipelineProvider for the
@@ -175,6 +178,7 @@ function App() {
                     <Route path="/admin/roles" element={<RolesAdmin />} />
                     <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
                     <Route path="/branch-log" element={<BranchLog />} />
+                    <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/admin/committees" element={<CommitteeAdmin />} />
                     <Route path="/admin/staff"      element={<StaffAdmin />} />
                     <Route path="/admin/cbs-debug" element={<CbsDebug />} />

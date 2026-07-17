@@ -135,6 +135,7 @@ export function Analytics() {
   return (
     <>
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro Analytics' }]}
         title="EKE Sales Pro Analytics"
         subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StaffPicker } from '@/components/StaffPicker';
 import type { StaffMember } from '@/lib/api';
-import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
@@ -129,10 +129,7 @@ export default function CommitteeAdmin() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Credit Committees"
-        subtitle="The palette of credit committees. Each product's journey opens the gates it needs. Renamable and fully editable."
-      />
+      <AdminTabs subtitle="The palette of credit committees. Each product's journey opens the gates it needs. Renamable and fully editable." />
 
       {error && (
         <Card><Card.Body>

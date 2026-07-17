@@ -79,6 +79,7 @@ export function Troops() {
     return (
       <>
         <PageHeader
+          ribbon
           breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Trops Disbursement' }]}
           title="Trops Disbursement"
           subtitle="Treasury Back Office disbursement desk."

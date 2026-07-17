@@ -99,6 +99,36 @@ def _role_sees_pool(role: str, pool_roles: List[str]) -> bool:
     return False
 
 
+def _analyst_segment(role: str) -> str:
+    """Segment ('consumer' / 'commercial' / 'cib') for a segment-specific
+    Department Analyst role; '' for any other role (no segment constraint).
+    Substring + case-insensitive, matching the rest of the role handling."""
+    rl = (role or "").strip().lower()
+    if "consumer credit analyst" in rl:
+        return "consumer"
+    if "commercial credit analyst" in rl:
+        return "commercial"
+    if "cib credit analyst" in rl:
+        return "cib"
+    return ""
+
+
+def _app_segment(app: Dict[str, Any]) -> str:
+    """Segment of an application, derived from its client_type
+    ('consumer' / 'commercial' / 'cib'); '' when unknown (e.g. legacy apps
+    created before client_type was stamped — deliberately NOT hidden)."""
+    ct = str(app.get("client_type", "") or "").strip().lower()
+    if not ct:
+        return ""
+    if "consumer" in ct:
+        return "consumer"
+    if "commercial" in ct:
+        return "commercial"
+    if ct == "cib" or "corporate" in ct or "investment" in ct:
+        return "cib"
+    return ""
+
+
 def filter_apps_by_visibility(
     apps: List[Dict[str, Any]],
     visible_codes: Set[str],
@@ -134,6 +164,7 @@ def filter_apps_by_visibility(
     pool_cfg = get_pool_visibility_config()
     pool_ok = _role_sees_pool(caller_role, pool_cfg["roles"])
     pool_statuses = {s.strip().lower() for s in pool_cfg["statuses"]}
+    caller_segment = _analyst_segment(caller_role)  # '' unless segment-specific
 
     visible: List[Dict[str, Any]] = []
     for a in apps:
@@ -151,6 +182,13 @@ def filter_apps_by_visibility(
         if pool_ok:
             status = str(a.get('status', '') or '').strip().lower()
             if status in pool_statuses:
+                # Segment-specific Department Analysts (Consumer / Commercial /
+                # CIB Credit Analyst) see ONLY their segment's cases. Cases whose
+                # segment is unknown (legacy, no client_type) are not hidden.
+                if caller_segment:
+                    seg = _app_segment(a)
+                    if seg and seg != caller_segment:
+                        continue
                 visible.append(a)
                 continue
     return visible

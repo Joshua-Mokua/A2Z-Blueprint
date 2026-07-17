@@ -42,6 +42,9 @@ export interface LoanApplicationPermissions {
   can_refer_committee?:        boolean;
   can_vote_committee?:         boolean;
   can_resolve_committee?:      boolean;
+  can_self_pick?:              boolean;
+  can_submit_to_dcc?:          boolean;
+  can_hand_to_credit_analyst?: boolean;
 }
 
 
@@ -185,6 +188,8 @@ export interface LoanApplication {
 
   // Status / lifecycle
   status:                 string;
+  appeal_pending?:        boolean;
+  appeals?:               Array<{ reason: string; by_name?: string; at?: string; outcome?: string; reviewed_by_name?: string; reviewed_at?: string; review_note?: string }>;
   application_date?:      string;
   last_updated?:          string;
 

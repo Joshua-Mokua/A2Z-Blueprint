@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
@@ -137,10 +138,7 @@ export default function RolesAdmin() {
   if (!canAdmin) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <PageHeader
-          title="Role Registry"
-          breadcrumbs={[{ label: 'Reference & Admin' }, { label: 'Role Registry' }]}
-        />
+        <AdminTabs subtitle="The roles available across the system." />
         <main className="max-w-3xl mx-auto px-6 py-10">
           <Card>
             <Card.Body>

@@ -99,6 +99,15 @@ export class AuthExpiredError extends Error {
 // 401 callback before throwing so AuthProvider state flips synchronously
 // with the failure. Other non-OK responses throw a generic Error.
 
+export interface PortfolioAccount { account_number: string; cif: string; account_type_name: string; current_balance: number; available_balance: number; account_status: string; dormancy_status: string; npl_status: string; branch_code: string; introducer_code?: string; relationship_manager_code?: string; managed_by_code?: string; managed_by_name?: string; }
+export interface PortfolioSummary { accounts: number; customers: number; total_balance: number; deposits: number; loans: number; dormant_accounts: number; dormant_pct: number; npl_accounts: number; by_type: { type: string; count: number; balance: number }[]; deposit_movement: { baseline: number; current: number; delta: number; pct: number | null } | null; baseline_date: string | null; pipeline_deposits: number; pipeline_loans: number; pipeline_value: number; }
+export interface PortfolioTeamMember { staff_code: string; name: string; }
+export interface PortfolioResponse { rm_code: string; accounts: PortfolioAccount[]; summary: PortfolioSummary; introduced?: { accounts: PortfolioAccount[]; summary: PortfolioSummary } | null; team: PortfolioTeamMember[]; view: string; selected: string; is_manager: boolean; branch_unallocated?: { accounts: number; deposits: number; loans: number; branch_codes: string[] } | null; }
+export async function fetchMyPortfolio(staffCode = ''): Promise<PortfolioResponse> {
+  const q = staffCode ? `?staff_code=${encodeURIComponent(staffCode)}` : '';
+  return getJson<PortfolioResponse>(`/cbs/portfolio${q}`);
+}
+
 export async function getJson<T>(path: string): Promise<T> {
   const headers: Record<string, string> = {};
   if (_currentToken) {
@@ -499,6 +508,12 @@ export interface ReferralView {
   cross_unit?: boolean;
   referrer_department?: string | null;
   recipient_department?: string | null;
+  referral_chain?: Array<{
+    seq: number; from_code?: string; from_name?: string; from_dept?: string;
+    to_code?: string; to_name?: string; to_dept?: string; note?: string;
+    at?: string; status?: string; resolved_at?: string; decline_reason?: string;
+  }>;
+  credit_stage?: { key: string; label: string; status: string; declined: boolean } | null;
 }
 
 export interface ReferralListResponse {
@@ -554,6 +569,7 @@ export interface ReferralsByDepartment {
   departments: ReferralDepartmentRow[];
   total: number;
   department_count: number;
+  scope?: string;
 }
 
 export async function fetchReferralsByDepartment(): Promise<ReferralsByDepartment> {
@@ -647,6 +663,11 @@ export async function acceptReferral(dealId: string): Promise<{ status?: string 
     `/pipeline/deals/${dealId}/referral/accept`, {});
 }
 
+export async function reReferReferral(dealId: string, referredToCode: string, referredTo: string, note?: string): Promise<{ referral_status?: string }> {
+  return postJson<{ referral_status?: string }, { referred_to_code: string; referred_to: string; note?: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/referral/re-refer`,
+    { referred_to_code: referredToCode, referred_to: referredTo, note });
+}
 export async function declineReferral(dealId: string, reason: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, { reason: string }>(
     `/pipeline/deals/${dealId}/referral/decline`, { reason });
@@ -690,8 +711,13 @@ export async function liftDealHold(dealId: string, note: string): Promise<{ deal
     `/pipeline/deals/${dealId}/unhold`, { note });
 }
 
+export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanAppHistoryEvent[]; linked_application_id: string | null }> {
+  return getJson<{ journey: LoanAppHistoryEvent[]; linked_application_id: string | null }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/journey`);
+}
+
 // ── Daily Branch Log ───────────────────────────────────────────
-export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; }
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; }
 export interface BranchLogEntry {
   id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
   submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;
@@ -700,6 +726,31 @@ export interface BranchLogEntry {
 }
 export async function fetchBranchLogFields(): Promise<{ fields: BranchLogField[] }> {
   return getJson<{ fields: BranchLogField[] }>('/branch-log/fields');
+}
+
+export interface BranchLogActivity { at: string; time: string; kind: string; detail: string; }
+export async function fetchBranchLogAutoActivities(): Promise<{ activities: BranchLogActivity[]; date: string }> {
+  return getJson<{ activities: BranchLogActivity[]; date: string }>('/branch-log/auto-activities');
+}
+
+export interface BranchLogConfig { activity_weights: Record<string, number>; daily_index_target: number; fields: BranchLogField[]; }
+export async function fetchBranchLogConfig(): Promise<BranchLogConfig> {
+  return getJson<BranchLogConfig>('/branch-log/config');
+}
+export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
+  return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
+    '/branch-log/config', { activity_weights, daily_index_target });
+}
+export interface ExtraActivity { key: string; label: string; type: string; unit: string; weight: number; roles: string[]; }
+export async function fetchBranchLogActivities(): Promise<{ base: BranchLogField[]; extra: ExtraActivity[] }> {
+  return getJson<{ base: BranchLogField[]; extra: ExtraActivity[] }>('/branch-log/activities');
+}
+export async function saveBranchLogActivities(extra_activities: ExtraActivity[]): Promise<{ status: string }> {
+  return postJson<{ status: string }, { extra_activities: ExtraActivity[] }>('/branch-log/activities', { extra_activities });
+}
+export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
+export async function fetchBranchLogRanking(days = 30): Promise<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }> {
+  return getJson<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }>(`/branch-log/ranking?days=${days}`);
 }
 export async function fetchMyBranchLogs(days = 14): Promise<{ logs: BranchLogEntry[]; identity: Record<string, string> }> {
   return getJson<{ logs: BranchLogEntry[]; identity: Record<string, string> }>(`/branch-log/mine?days=${days}`);
@@ -1134,6 +1185,7 @@ import type {
   CommitteeVoteRequest,
   ResolveCommitteeRequest,
   AppSla,
+  LoanAppHistoryEvent,
 } from '@/types/lms';
 
 
@@ -1231,6 +1283,86 @@ export async function assignLmsAnalyst(
   );
 }
 
+/**
+ * Self-pick: an analyst pulls an unallocated case to themselves (no manager
+ * assignment). Gated server-side by can_self_pick.
+ */
+export async function pickLmsApplication(
+  appId: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/pick`,
+    {},
+  );
+}
+
+/**
+ * Department Analyst: voice support + submit the case to the Department Credit
+ * Committee. Records opinion + PEP confirmation and refers onward. Gated
+ * server-side by can_submit_to_dcc; enforces the completeness gate (required
+ * attachments + PEP) with a 400 on failure.
+ */
+export async function submitLmsToDcc(
+  appId: string,
+  body: { opinion: string; pep_confirmed: boolean },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, { opinion: string; pep_confirmed: boolean }>(
+    `/lms/applications/${encodeURIComponent(appId)}/submit-to-dcc`,
+    body,
+  );
+}
+
+// Department Credit Committee (P4b) — self-contained, distinct from the
+// authority-tier charter. Roster + votes live on the application.
+export interface DccMember { id?: string; member_id?: string; name?: string; role?: string }
+export interface DccVote { member_id: string; vote: string; rationale?: string; by?: string; at?: string }
+export interface DccOutcome {
+  recommendation: string;
+  tally: { yes: number; no: number; abstain: number };
+  by?: string; by_name?: string; at?: string; note?: string;
+}
+export interface DccRosterResponse {
+  enabled: boolean; name: string; is_dcc_case: boolean;
+  members: DccMember[]; votes: DccVote[]; outcome?: DccOutcome | null;
+}
+export async function getDccRoster(appId: string): Promise<DccRosterResponse> {
+  return getJson<DccRosterResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/roster`);
+}
+export async function recordDccVote(
+  appId: string,
+  body: { member_id: string; vote: string; rationale: string },
+): Promise<{ dcc_votes: DccVote[] }> {
+  return postJson<{ dcc_votes: DccVote[] }, { member_id: string; vote: string; rationale: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/vote`,
+    body,
+  );
+}
+export async function resolveDcc(
+  appId: string,
+  body: { note?: string },
+): Promise<{ dcc_outcome: DccOutcome }> {
+  return postJson<{ dcc_outcome: DccOutcome }, { note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/dcc/resolve`,
+    body,
+  );
+}
+export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, Record<string, never>>(
+    `/lms/applications/${encodeURIComponent(appId)}/hand-to-credit-analyst`,
+    {},
+  );
+}
+export async function uploadCallbackMemo(
+  appId: string,
+  body: { filename: string; content_b64: string },
+): Promise<{ document_files: Record<string, unknown> }> {
+  return postJson<{ document_files: Record<string, unknown> }, { filename: string; content_b64: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/callback-memo`,
+    body,
+  );
+}
+
 
 /**
  * Partial update to application fields.
@@ -1305,7 +1437,7 @@ export async function addLmsAttachment(appId: string, body: { kind: string; file
 export async function recordLmsBcc(appId: string, body: { verdict: string; branch?: string; chaired_by?: string; attendees?: string[]; minutes?: string; filename?: string; ref?: string }): Promise<Record<string, unknown>> {
   return postJson<Record<string, unknown>, typeof body>(lmsAction(appId, 'bcc'), body);
 }
-export interface CrField { key: string; label: string; source: 'auto' | 'cbs' | 'rm'; required?: boolean; }
+export interface CrField { key: string; label: string; source: 'auto' | 'cbs' | 'rm'; required?: boolean; type?: 'table'; }
 export interface CrSection { key: string; title: string; fields: CrField[]; }
 export interface CrView {
   template: { sections: CrSection[] };
@@ -1759,6 +1891,7 @@ export async function upsertFxRate(
 
 // ── Staff administration (Postgres users table) ──────────────────────────
 export interface StaffRow {
+  display_name?: string; analytics_name?: string; preferred_name?: string;
   accessible_modules?: string[];
   username: string;
   staff_code: string | null;
@@ -1789,9 +1922,9 @@ export interface StaffCreateInput {
 
 export interface StaffPatchInput {
   accessible_modules?: string[];
-  full_name?: string; email?: string; role?: string; department?: string;
-  unit?: string; staff_code?: string; band?: string; gender?: string;
-  can_view_all?: boolean; is_admin?: boolean; active?: boolean;
+  full_name?: string; preferred_name?: string; email?: string; role?: string;
+  department?: string; unit?: string; staff_code?: string; band?: string;
+  gender?: string; can_view_all?: boolean; is_admin?: boolean; active?: boolean;
 }
 
 export async function fetchAdminStaff(): Promise<StaffListResponse> {
@@ -1853,6 +1986,7 @@ export async function applyStaffUpload(contentB64: string, keep: string[]): Prom
 export interface HierarchyResponse {
   roles: string[];
   hierarchy: Record<string, string[]>;
+  functional_hierarchy?: Record<string, string[]>;
   top: string[];
 }
 export async function fetchHierarchy(): Promise<HierarchyResponse> {
@@ -1904,6 +2038,28 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
   if (tok) headers['Authorization'] = `Bearer ${tok}`;
   const res = await fetch(
     `/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(docName)}`,
+    { headers });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  return res.blob();
+}
+
+// LMS-side document access: the documents that TRAVELLED with the case from the
+// pipeline deal, served under LMS view permission (the credit side has no deal
+// scope). Used by the analyst / DCC / BCC / Chief Credit to read every file.
+export interface LmsDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  provided: string[];
+}
+export async function listLmsDocuments(appId: string): Promise<LmsDocumentsResponse> {
+  return getJson<LmsDocumentsResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents`);
+}
+export async function downloadLmsDocument(appId: string, docName: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const tok = getCurrentTokenForBlob();
+  if (tok) headers['Authorization'] = `Bearer ${tok}`;
+  const res = await fetch(
+    `/api/lms/applications/${encodeURIComponent(appId)}/documents/${encodeURIComponent(docName)}`,
     { headers });
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   return res.blob();
@@ -2057,6 +2213,22 @@ export async function setCommitteeReadiness(
   return postJson<LoanAppMutationResponse, { decision: string; opinion?: string; reasons?: string[] }>(
     `/lms/applications/${encodeURIComponent(appId)}/committee-readiness`,
     { decision, opinion, reasons });
+}
+
+// C2: the configured rework reason codes (lms_config -> rework_reasons)
+export async function fetchReworkReasons(): Promise<string[]> {
+  const r = await getJson<{ rework_reasons: string[] }>('/lms/rework-reasons');
+  return r.rework_reasons ?? [];
+}
+
+// Decline appeal: file (originator) + review (manager grant/uphold)
+export async function appealDecline(appId: string, reason: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, { reason: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/appeal`, { reason });
+}
+export async function decideAppeal(appId: string, outcome: 'grant' | 'uphold', note?: string): Promise<{ status: string; reopened: boolean }> {
+  return postJson<{ status: string; reopened: boolean }, { outcome: string; note?: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/appeal-decision`, { outcome, note });
 }
 
 // C3b: committee pre-read (member non-binding view)

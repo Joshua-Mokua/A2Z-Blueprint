@@ -4,6 +4,7 @@
 //   • Incoming  — pending referrals addressed to me; Accept or Decline (reason).
 //   • Returned  — referrals I made that were declined; Reassign to someone new.
 //   • Following — referrals I made that are live (pending/accepted); read-only.
+import { displayName } from "../lib/names";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
@@ -14,12 +15,14 @@ import { useToast } from '@/components/Toast';
 import {
   fetchIncomingReferrals, fetchReturnedReferrals, fetchOutgoingReferrals,
   fetchOutgoingReferralAnalytics, fetchReferralsByDepartment, fetchTeamReferrals,
-  acceptReferral, declineReferral, reassignReferral,
-  type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment,
+  acceptReferral, declineReferral, reReferReferral, reassignReferral,
+  type ReferralView, type OutgoingReferralAnalytics, type ReferralsByDepartment, type StaffMember,
   type TeamReferralsResponse,
 } from '@/lib/api';
 
 type Tab = 'incoming' | 'returned' | 'following' | 'team';
+
+import { StaffPicker } from '@/components/StaffPicker';
 
 const inputCls =
   'w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none ' +
@@ -51,6 +54,9 @@ export default function Referrals() {
   const [analytics, setAnalytics] = useState<OutgoingReferralAnalytics | null>(null);
   const [dept, setDept] = useState<ReferralsByDepartment | null>(null);
   const [team, setTeam] = useState<ReferralView[]>([]);
+  const [reReferFor, setReReferFor] = useState<string | null>(null);
+  const [rrMember, setRrMember] = useState<StaffMember | null>(null);
+  const [rrNote, setRrNote] = useState('');
   const [teamSummary, setTeamSummary] = useState<TeamReferralsResponse['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -58,8 +64,7 @@ export default function Referrals() {
   const [declineFor, setDeclineFor] = useState<string | null>(null);
   const [declineReason, setDeclineReason] = useState('');
   const [reassignFor, setReassignFor] = useState<string | null>(null);
-  const [reCode, setReCode] = useState('');
-  const [reName, setReName] = useState('');
+  const [reMember, setReMember] = useState<StaffMember | null>(null);
   const [reNote, setReNote] = useState('');
 
   function loadAll() {
@@ -102,18 +107,30 @@ export default function Referrals() {
   }
 
   async function onReassign(d: ReferralView) {
-    if (!reCode.trim() || !reName.trim()) {
-      toast({ tone: 'warning', message: 'Recipient code and name are required.' });
+    if (!reMember) {
+      toast({ tone: 'warning', message: 'Pick a recipient from the list.' });
       return;
     }
     setBusyId(d.id);
     try {
-      await reassignReferral(d.id, reCode.trim(), reName.trim(), reNote.trim());
-      toast({ tone: 'success', message: `Reassigned to ${reName.trim()}.` });
-      setReassignFor(null); setReCode(''); setReName(''); setReNote(''); loadAll();
+      await reassignReferral(d.id, reMember.staff_code, reMember.name, reNote.trim());
+      toast({ tone: 'success', message: `Reassigned to ${displayName(reMember.name)}.` });
+      setReassignFor(null); setReMember(null); setReNote(''); loadAll();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Reassign failed.' });
     } finally { setBusyId(null); }
+  }
+
+  async function onReRefer(d: ReferralView) {
+    if (!rrMember) { toast({ tone: 'danger', message: 'Pick a recipient from the list.' }); return; }
+    setBusyId(d.id);
+    try {
+      await reReferReferral(d.id, rrMember.staff_code, rrMember.name, rrNote.trim() || undefined);
+      toast({ tone: 'success', message: 'Re-referred onward.' });
+      setReReferFor(null); setRrMember(null); setRrNote('');
+      await loadAll();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Re-refer failed' }); }
+    finally { setBusyId(null); }
   }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -126,6 +143,61 @@ export default function Referrals() {
     : tab === 'returned' ? returned
     : tab === 'team' ? team
     : outgoing;
+
+  function CreditJourney({ stage }: { stage?: ReferralView['credit_stage'] }) {
+    if (!stage) return null;
+    const steps = [
+      { key: 'intake', label: 'Submitted' },
+      { key: 'assessment', label: 'Assessment' },
+      { key: 'decision', label: 'Decision' },
+      { key: 'offer', label: 'Offer' },
+      { key: 'credit_admin', label: 'Credit admin' },
+      { key: 'disbursement', label: 'Cleared' },
+      { key: 'disbursed', label: 'Disbursed' },
+    ];
+    if (stage.declined) {
+      return (
+        <div className="mt-2 border-t border-gray-100 pt-2">
+          <div className="mb-1 text-xs font-medium text-gray-500">Credit journey</div>
+          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">Declined in credit</span>
+        </div>
+      );
+    }
+    const idx = steps.findIndex((s) => s.key === stage.key);
+    return (
+      <div className="mt-2 border-t border-gray-100 pt-2">
+        <div className="mb-1.5 text-xs font-medium text-gray-500">Credit journey</div>
+        <div className="flex flex-wrap items-center gap-1">
+          {steps.map((s, i) => (
+            <div key={s.key} className="flex items-center gap-1">
+              <span className={'rounded px-1.5 py-0.5 text-xs ' + (i < idx ? 'bg-emerald-50 text-emerald-700' : i === idx ? 'bg-brand-primary text-white' : 'bg-gray-50 text-gray-400')}>{s.label}</span>
+              {i < steps.length - 1 && <span className="text-gray-300 text-xs">→</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function ReferralJourney({ chain }: { chain?: ReferralView['referral_chain'] }) {
+    if (!chain || chain.length === 0) return null;
+    return (
+      <div className="mt-2 border-t border-gray-100 pt-2">
+        <div className="mb-1 text-xs font-medium text-gray-500">Referral journey</div>
+        <ol className="space-y-1">
+          {chain.map((h, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-600">{h.seq}</span>
+              <span className="text-gray-700">{h.from_name || h.from_code}{h.from_dept ? ` · ${h.from_dept}` : ''}</span>
+              <span className="text-gray-400">→</span>
+              <span className="text-gray-700">{h.to_name || h.to_code}{h.to_dept ? ` · ${h.to_dept}` : ''}</span>
+              <span className={'rounded px-1.5 py-0.5 ' + (h.status === 'accepted' ? 'bg-emerald-50 text-emerald-700' : h.status === 'declined' ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-500')}>{h.status}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
 
   function DealMeta({ d }: { d: ReferralView }) {
     return (
@@ -151,6 +223,7 @@ export default function Referrals() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
+        ribbon
         title="EKE Sales Referral"
         subtitle="Deals referred to you, returned to you, and the ones you're following."
         breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Referral' }]}
@@ -202,7 +275,10 @@ export default function Referrals() {
             </Card.Body></Card>
             {dept && dept.departments.length > 0 && (
               <Card><Card.Body>
-                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">By department</span>
+                  {dept.scope && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{dept.scope === 'branch' ? 'Your branch' : 'Bank-wide'}</span>}
+                </div>
                 <div className="space-y-1">
                   {dept.departments.map((row) => (
                     <div key={row.department} className="flex items-center justify-between text-sm">
@@ -230,6 +306,20 @@ export default function Referrals() {
               </div>
             </Card.Body></Card>
 
+            {analytics.by_stage && Object.keys(analytics.by_stage).length > 0 && (
+              <Card><Card.Body>
+                <div className="text-sm font-semibold text-gray-900 mb-2">Where they are now</div>
+                <div className="space-y-1">
+                  {Object.entries(analytics.by_stage).sort((a, b) => b[1] - a[1]).map(([stage, n]) => (
+                    <div key={stage} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{stage}</span>
+                      <span className="text-gray-500 tabular-nums">{n}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card.Body></Card>
+            )}
+
             {analytics.alerts.length > 0 && (
               <Card stripe="accent"><Card.Body>
                 <div className="text-sm font-semibold text-gray-900 mb-1">Needs attention</div>
@@ -237,7 +327,7 @@ export default function Referrals() {
                   {analytics.alerts.map((al, i) => (
                     <li key={al.id || i} className="text-sm text-gray-700">
                       <span className="font-medium">{al.client_name || al.id}</span>
-                      {al.referred_to ? ` → ${al.referred_to}` : ''} — {al.message}
+                      {al.referred_to ? ` → ${displayName(al.referred_to)}` : ''} — {al.message}
                     </li>
                   ))}
                 </ul>
@@ -246,7 +336,10 @@ export default function Referrals() {
 
             {dept && dept.departments.length > 0 && (
               <Card><Card.Body>
-                <div className="text-sm font-semibold text-gray-900 mb-2">By department</div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">By department</span>
+                  {dept.scope && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{dept.scope === 'branch' ? 'Your branch' : 'Bank-wide'}</span>}
+                </div>
                 <div className="space-y-1">
                   {dept.departments.map((row) => (
                     <div key={row.department} className="flex items-center justify-between text-sm">
@@ -282,15 +375,15 @@ export default function Referrals() {
                     <DealMeta d={d} />
                     <div className="shrink-0 text-right text-xs text-gray-400">
                       {tab === 'incoming' && d.referred_by_name && (
-                        <div>from <span className="text-gray-600">{d.referred_by_name}</span></div>
+                        <div>from <span className="text-gray-600">{displayName(d.referred_by_name)}</span></div>
                       )}
                       {tab === 'following' && d.referred_to && (
-                        <div>to <span className="text-gray-600">{d.referred_to}</span></div>
+                        <div>to <span className="text-gray-600">{displayName(d.referred_to)}</span></div>
                       )}
                       {tab === 'team' && (
                         <div>
-                          {d.referred_by_name && <div><span className="text-gray-600">{d.referred_by_name}</span></div>}
-                          {d.referred_to && <div className="mt-0.5">→ <span className="text-gray-600">{d.referred_to}</span></div>}
+                          {d.referred_by_name && <div><span className="text-gray-600">{displayName(d.referred_by_name)}</span></div>}
+                          {d.referred_to && <div className="mt-0.5">→ <span className="text-gray-600">{displayName(d.referred_to)}</span></div>}
                         </div>
                       )}
                       {formatDate(d.referred_at) && <div className="mt-0.5">{formatDate(d.referred_at)}</div>}
@@ -306,6 +399,39 @@ export default function Referrals() {
                     <p className="mt-1 text-sm text-amber-700">
                       <span className="text-amber-500">Declined: </span>{d.decline_reason}
                     </p>
+                  )}
+
+                  {(tab === 'following' || tab === 'team') && d.stage && (
+                    <p className="mt-2 text-sm">
+                      <span className="text-gray-400">Currently at: </span>
+                      <span className="font-medium text-gray-800">{d.stage}</span>
+                    </p>
+                  )}
+
+                  <ReferralJourney chain={d.referral_chain} />
+                  <CreditJourney stage={d.credit_stage} />
+
+                  {d.referral_status === 'accepted' && (
+                    <div className="mt-3 border-t border-gray-100 pt-3">
+                      {reReferFor === d.id ? (
+                        <div className="space-y-2">
+                          <StaffPicker value={rrMember} onChange={setRrMember} />
+                          <input className={inputCls} placeholder="Note (optional)"
+                            value={rrNote} onChange={(e) => setRrNote(e.target.value)} />
+                          <div className="flex gap-2">
+                            <Button variant="primary" size="sm" loading={busyId === d.id}
+                              onClick={() => onReRefer(d)}>Re-refer onward</Button>
+                            <Button variant="ghost" size="sm"
+                              onClick={() => { setReReferFor(null); setRrMember(null); setRrNote(''); }}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button variant="ghost" size="sm"
+                          onClick={() => { setReReferFor(d.id); setRrMember(null); setRrNote(''); }}>
+                          Re-refer to another department
+                        </Button>
+                      )}
+                    </div>
                   )}
 
                   {/* ── Incoming actions ── */}
@@ -340,19 +466,14 @@ export default function Referrals() {
                     <div className="mt-3 border-t border-gray-100 pt-3">
                       {reassignFor === d.id ? (
                         <div className="space-y-2">
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            <input className={inputCls} placeholder="New recipient staff code"
-                              value={reCode} onChange={(e) => setReCode(e.target.value)} />
-                            <input className={inputCls} placeholder="New recipient name"
-                              value={reName} onChange={(e) => setReName(e.target.value)} />
-                          </div>
+                          <StaffPicker value={reMember} onChange={setReMember} />
                           <input className={inputCls} placeholder="Note (optional)"
                             value={reNote} onChange={(e) => setReNote(e.target.value)} />
                           <div className="flex gap-2">
                             <Button variant="primary" size="sm" loading={busyId === d.id}
                               onClick={() => onReassign(d)}>Reassign</Button>
                             <Button variant="ghost" size="sm"
-                              onClick={() => { setReassignFor(null); setReCode(''); setReName(''); setReNote(''); }}>
+                              onClick={() => { setReassignFor(null); setReMember(null); setReNote(''); }}>
                               Cancel</Button>
                           </div>
                         </div>

@@ -91,6 +91,10 @@ from utils.api_pipeline_models import (
 logger = logging.getLogger("a2z.api")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+# Project root — used to store deal-document paths RELATIVE to the repo root
+# (upload writes str(path.relative_to(ROOT)); download reads ROOT / stored_path).
+# Resolved to match _DOC_UPLOAD_ROOT, which is also resolved, so relative_to works.
+ROOT = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
     title="A2Z Blueprint MIS 360 API",
@@ -512,6 +516,7 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "referred_by_code":     deal.get("referred_by_code"),
                 "referred_by_name":     deal.get("referred_by_name"),
                 "referral_note":        deal.get("referral_note"),
+                "referral_chain":       deal.get("referral_chain"),
                 "decline_reason":       deal.get("decline_reason"),
                 "sla_step_log":         deal.get("sla_step_log"),
                 "sla_commitments":      deal.get("sla_commitments"),
@@ -534,6 +539,8 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "credit_deferred_to":       deal.get("credit_deferred_to"),
                 "credit_deferred_to_code":  deal.get("credit_deferred_to_code"),
                 "history":                  deal.get("history"),
+                "document_files":           deal.get("document_files"),
+                "documents_provided":       deal.get("documents_provided"),
             }),
         }
         if not row["id"]:
@@ -606,7 +613,7 @@ def _normalize_db_deal_row(row):
                    "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
                    "referred_by_code", "referred_by_name", "referral_note",
-                   "decline_reason", "sla_step_log", "sla_commitments",
+                   "decline_reason", "sla_step_log", "sla_commitments", "referral_chain",
                    # Phase B0: lift the full field set back so DB-first reads
                    # reconstruct a complete deal (write side in _db_sync).
                    "portfolio_owner_code", "portfolio_owner_name", "is_ntb",
@@ -615,7 +622,8 @@ def _normalize_db_deal_row(row):
                    "declined_by", "declined_at", "disbursed", "disbursed_at",
                    "disbursed_under_override", "override_approved",
                    "override_approved_by", "win_probability",
-                   "credit_deferred_to", "credit_deferred_to_code", "history"):
+                   "credit_deferred_to", "credit_deferred_to_code", "history",
+                   "document_files", "documents_provided"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
@@ -1396,6 +1404,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
         "stage_flows":       cfg.get("stage_flows", {}),
         "product_flows":     cfg.get("product_flows", {}),
         "stage_catalogue":   cfg.get("stage_catalogue", {}),
+        "document_catalogue": cfg.get("document_catalogue", {}),
         "customer_segments": _customer_segments(),
         "client_types":      _client_types(),
         "currency":          cfg.get("currency", "KES"),
@@ -1408,6 +1417,7 @@ def pipeline_stages_config(user: dict = Depends(get_current_user)):
 # set is ignored so the write surface can't be used to mutate unrelated state.
 _EDITABLE_CONFIG_KEYS = {
     "stage_catalogue",
+    "document_catalogue",
     "segment_labels", "customer_segments", "client_types", "product_catalogue",
     "business_sectors", "sectors", "deal_categories",
     "stage_flows", "required_fields", "allow_other_sector", "allow_other_mou",
@@ -1702,6 +1712,12 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
     """Staff roster — PostgreSQL when available, users.json fallback otherwise."""
     from utils.db import db as _db
 
+    from utils.staff_names import names_for as _names_impl
+    def _names_for(r, meta):
+        rec = dict(r or {})
+        if (meta or {}).get("preferred_name"):
+            rec["preferred_name"] = meta["preferred_name"]
+        return _names_impl(rec)
     def _shape(r: dict, meta: dict = None) -> dict:
         meta = meta or {}
         return {
@@ -1717,6 +1733,9 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
             "can_view_all":         bool(r.get("can_view_all", False)),
             "must_change_password": bool(r.get("must_change_password", False)),
             "last_login":           str(r.get("last_login")) if r.get("last_login") else None,
+            "preferred_name":       meta.get("preferred_name") or "",
+            "display_name":         _names_for(r, meta)["display_name"],
+            "analytics_name":       _names_for(r, meta)["analytics_name"],
             "reports_to":           meta.get("reports_to"),
             "managed_staff_codes":  meta.get("managed_staff_codes", []),
             "managed_units":        meta.get("managed_units", []),
@@ -1730,10 +1749,16 @@ def get_admin_staff(user: dict = Depends(require_config_admin)):
             rows = _db.fetch_all(
                 "SELECT username, staff_code, full_name, role, department, unit, "
                 "       email, active, is_admin, can_view_all, "
-                "       must_change_password, last_login "
+                "       must_change_password, last_login, metadata "
                 "FROM users ORDER BY full_name NULLS LAST, username"
             ) or []
-            staff = [_shape(r) for r in rows]
+            def _meta_of(r):
+                m = r.get("metadata")
+                if isinstance(m, str):
+                    try: return json.loads(m or "{}")
+                    except Exception: return {}
+                return m or {}
+            staff = [_shape(r, _meta_of(r)) for r in rows]
             _audit("API_ADMIN_STAFF_LIST", user, f"{len(staff)} staff (pg)")
             return {"staff": staff, "count": len(staff), "source": "postgres"}
         except Exception as exc:
@@ -1780,6 +1805,7 @@ class _StaffPatch(BaseModel):
     is_admin: Optional[bool] = None
     active: Optional[bool] = None
     accessible_modules: Optional[list] = None
+    preferred_name: Optional[str] = None   # the name this person actually goes by
 
 
 def _staff_row_or_404(_db, username: str):
@@ -1824,6 +1850,9 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_confi
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"create failed: {exc}")
     _audit("API_ADMIN_STAFF_CREATE_V2", user, f"{final_user}|sc:{final_sc}")
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "created", "username": final_user, "staff_code": final_sc}
 
 
@@ -1857,9 +1886,27 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     if payload.gender is not None: metadata_patch["gender"] = payload.gender
     if getattr(payload, "accessible_modules", None) is not None:
         metadata_patch["accessible_modules"] = list(payload.accessible_modules)
-    if metadata_patch:
+    # preferred_name lives inside the metadata JSONB too — merged in via
+    # jsonb_set so we never clobber other metadata keys. Combined with
+    # metadata_patch into a SINGLE `metadata = ...` SET clause below:
+    # Postgres rejects two assignments to the same column in one UPDATE.
+    preferred_name = getattr(payload, "preferred_name", None)
+    if metadata_patch and preferred_name is not None:
+        cols.append(
+            "metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb) || %s::jsonb, "
+            "'{preferred_name}', %s::jsonb, true)"
+        )
+        vals.append(json.dumps(metadata_patch))
+        vals.append(json.dumps(str(preferred_name)))
+    elif metadata_patch:
         cols.append("metadata = COALESCE(metadata, '{}'::jsonb) || %s::jsonb")
         vals.append(json.dumps(metadata_patch))
+    elif preferred_name is not None:
+        cols.append(
+            "metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), "
+            "'{preferred_name}', %s::jsonb, true)"
+        )
+        vals.append(json.dumps(str(preferred_name)))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)
@@ -1868,6 +1915,9 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"update failed: {exc}")
     _audit("API_ADMIN_STAFF_UPDATE", user, f"{username}|{','.join(c.split(' = ')[0] for c in cols)}")
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "updated", "username": username}
 
 
@@ -1885,6 +1935,9 @@ def deactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"deactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_DEACTIVATE", user, username)
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "deactivated", "username": username}
 
 
@@ -1900,6 +1953,9 @@ def reactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"reactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_REACTIVATE", user, username)
+    # PostgreSQL is the system of record — rebuild the generated register.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"status": "reactivated", "username": username}
 
 
@@ -2131,14 +2187,21 @@ def admin_upsert_mou(
 # back to the per-class stage_flows then the core category flow. This endpoint
 # authors one product's flow at a time (add or replace), validated.
 # ─────────────────────────────────────────────────────────────────────
-def _validate_product_flow(entry: dict) -> tuple:
+def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     """(ok, reason) for a single product-flow entry. stages must be a non-empty
-    list of {stage, target_days(>0 int)}; client_types a list of strings."""
+    list of {stage, target_days(>0 int)}; client_types a list of strings.
+
+    `catalogue_names` (a lower-cased set) lets the caller validate against an
+    in-memory catalogue — e.g. right after auto-registering new stages — instead
+    of the on-disk stage_catalogue. When None, the on-disk catalogue is used.
+    """
     if not isinstance(entry, dict):
         return False, "flow must be an object"
     stages = entry.get("stages")
     if not isinstance(stages, list) or not stages:
         return False, "stages must be a non-empty list"
+    cat_names = (catalogue_names if catalogue_names is not None
+                 else {n.strip().lower() for n in _stage_catalogue_names()})
     seen = set()
     for s in stages:
         if not isinstance(s, dict):
@@ -2152,7 +2215,7 @@ def _validate_product_flow(entry: dict) -> tuple:
         # SR1: every stage must exist in the admin stage_catalogue (governed
         # vocabulary). If the catalogue is empty (not yet seeded), skip this
         # check so nothing breaks pre-seed.
-        if _stage_catalogue_names() and not _is_stage_catalogued(nm):
+        if cat_names and nm.strip().lower() not in cat_names:
             return False, (
                 f"Stage '{nm}' is not in the stage repository. Add it to the stage "
                 "repository first, then use it in a product flow."
@@ -2170,6 +2233,8 @@ def _validate_product_flow(entry: dict) -> tuple:
                 wp = float(s.get("win_probability"))
             except (TypeError, ValueError):
                 return False, f"stage '{nm}': win_probability must be a number"
+            if wp < 0 or wp > 100:
+                return False, f"stage '{nm}': win_probability must be between 0 and 100"
     # Batch 1: optional per-product document config.
     rd = entry.get("required_documents")
     if rd is not None:
@@ -2191,8 +2256,6 @@ def _validate_product_flow(entry: dict) -> tuple:
         for code in journey:
             if palette_codes and code not in palette_codes:
                 return False, f"committee '{code}' is not in the committee palette"
-            if wp < 0 or wp > 100:
-                return False, f"stage '{nm}': win_probability must be between 0 and 100"
     cts = entry.get("client_types", [])
     if not isinstance(cts, list):
         return False, "client_types must be a list"
@@ -2235,7 +2298,49 @@ def admin_upsert_product_flow(
         "documents_required_at_stage": str(payload.get("documents_required_at_stage", "") or ""),
         "committee_journey": payload.get("committee_journey", []) or [],
     }
-    ok, reason = _validate_product_flow(entry)
+    # Auto-register any NEW stage names into the governed stage_catalogue, so
+    # that introducing a stage in a product flow also registers it in the stage
+    # repository — one place to add a stage, no chicken-and-egg. The catalogue
+    # stays authoritative: validation below runs against this combined set.
+    cat = settings.get("stage_catalogue")
+    if not isinstance(cat, dict):
+        cat = {}
+    cat_stages = list(cat.get("stages", []) or [])
+    existing = set()
+    for st in cat_stages:
+        nm0 = str(st.get("name", "") if isinstance(st, dict) else st).strip().lower()
+        if nm0:
+            existing.add(nm0)
+    for s in entry["stages"]:
+        nm0 = str(s.get("stage", "") or "").strip()
+        if nm0 and nm0.lower() not in existing:
+            cat_stages.append({"name": nm0})
+            existing.add(nm0.lower())
+    cat["stages"] = cat_stages
+    settings["stage_catalogue"] = cat
+
+    # Auto-register any NEW required-document names into a governed
+    # document_catalogue — the same one-place-to-add pattern as the stage
+    # repository, so a document introduced on a product flow becomes a
+    # first-class governed document available to every flow.
+    dcat = settings.get("document_catalogue")
+    if not isinstance(dcat, dict):
+        dcat = {}
+    dcat_docs = list(dcat.get("documents", []) or [])
+    dexisting = set()
+    for d in dcat_docs:
+        dn = str(d.get("name", "") if isinstance(d, dict) else d).strip().lower()
+        if dn:
+            dexisting.add(dn)
+    for doc in (entry.get("required_documents") or []):
+        dn = str(doc or "").strip()
+        if dn and dn.lower() not in dexisting:
+            dcat_docs.append({"name": dn})
+            dexisting.add(dn.lower())
+    dcat["documents"] = dcat_docs
+    settings["document_catalogue"] = dcat
+
+    ok, reason = _validate_product_flow(entry, catalogue_names=existing)
     if not ok:
         raise HTTPException(status_code=400, detail=reason)
 
@@ -3268,7 +3373,14 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     from utils.api_pipeline_permissions import resolve_deal_permissions
     required = _get_required_documents_for_deal(deal)
     provided = list(deal.get("documents_provided", []) or [])
-    missing = [d for d in required if d not in provided]
+    # Process artifacts produced LATER in the credit flow must not block the RM's
+    # document submission: the Call-Back Memo is attached by the Department Analyst
+    # (at submit-to-DCC), and the Transaction Memo is the CR (gated separately by
+    # cr_ok below). They are enforced at their own stages, not at RM submission.
+    _LATER_STAGE_DOCS = {"call-back memo", "call back memo", "transaction memo",
+                         "forwarding memo"}
+    missing = [d for d in required
+               if d not in provided and str(d).strip().lower() not in _LATER_STAGE_DOCS]
     already = bool(deal.get("lms_application_id"))
     perms = resolve_deal_permissions(deal, user, visible_codes)
     my_code = str(user.get("staff_code", "") or "").strip()
@@ -3289,6 +3401,7 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}
     cr_required = True  # CR is the baseline artifact (Josh: "a CR should suffice")
     cr_ok = bool(cr.get("completed"))
+    manager_validated = bool(deal.get("manager_validated"))
     records = deal.get("committee_records", {}) or {}
     committee_pending = []
     committee_rejected = []
@@ -3316,10 +3429,12 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
         "committee_ok": committee_ok,
         "committee_pending": committee_pending,
         "committee_rejected": committee_rejected,
+        "manager_validated": manager_validated,
         "can_submit": (is_owner or is_admin_like) and not already
                       and not terminal and stage_ok
                       and (cr_ok or not cr_required)
                       and committee_ok
+                      and manager_validated
                       and perms.get("can_view", False),
     }
 
@@ -3518,6 +3633,25 @@ def _stage_catalogue_names(include_retired: bool = True) -> list:
             nm = str(st.get("name", "") or "").strip()
         else:
             nm = str(st or "").strip()
+        if nm:
+            out.append(nm)
+    return out
+
+
+def _document_catalogue_names(include_retired: bool = True) -> list:
+    """Ordered document-catalogue names (for dropdowns). Mirrors the stage
+    repository: the governed vocabulary of required-document types, auto-grown
+    when a product flow introduces a new required document."""
+    cfg = _load_json("pipeline_settings.json") or {}
+    cat = cfg.get("document_catalogue", {}) if isinstance(cfg, dict) else {}
+    out = []
+    for d in (cat.get("documents", []) if isinstance(cat, dict) else []):
+        if isinstance(d, dict):
+            if not include_retired and d.get("retired"):
+                continue
+            nm = str(d.get("name", "") or "").strip()
+        else:
+            nm = str(d or "").strip()
         if nm:
             out.append(nm)
     return out
@@ -4539,6 +4673,23 @@ def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
 # the next GET reflects the mutation.
 
 
+def _referral_dept_for(code: str) -> str:
+    """Department for a staff_code from the roster (for referral chain hops)."""
+    code = str(code or "").strip()
+    if not code:
+        return ""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is not None and "Department" in getattr(roster, "columns", []):
+            m = roster[roster["Staff Code"].astype(str).str.strip() == code]
+            if len(m):
+                return str(m.iloc[0].get("Department") or "").strip()
+    except Exception:
+        pass
+    return ""
+
+
 @app.post("/api/pipeline/deals/refer", status_code=201)
 def pipeline_deal_refer(
     payload: "PipelineDealRefer",  # noqa: F821
@@ -4628,6 +4779,18 @@ def pipeline_deal_refer(
         "referred_by_code":     str(deal_dict.get("staff_code") or "").strip(),
         "referred_by_name":     str(deal_dict.get("staff_name") or "").strip(),
         "referred_at":          datetime.now().isoformat(),
+        "referral_chain":       [{
+            "seq": 1,
+            "from_code": str(deal_dict.get("staff_code") or "").strip(),
+            "from_name": str(deal_dict.get("staff_name") or "").strip(),
+            "from_dept": _referral_dept_for(str(deal_dict.get("staff_code") or "").strip()),
+            "to_code": str(payload.portfolio_owner_code or "").strip(),
+            "to_name": payload.referred_to,
+            "to_dept": _referral_dept_for(str(payload.portfolio_owner_code or "").strip()),
+            "note": payload.referral_note or "",
+            "at": datetime.now().isoformat(),
+            "status": "pending",
+        }],
         # BSC credit goes to whoever closes the referred deal — typically
         # the portfolio owner. Default to portfolio_owner_name; the
         # picking-up RM can override later.
@@ -4794,6 +4957,10 @@ def pipeline_referral_accept(
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can accept it.")
 
+    _chain = list(deal.get("referral_chain") or [])
+    if _chain:
+        _chain[-1] = {**_chain[-1], "status": "accepted",
+                      "resolved_at": datetime.now().isoformat()}
     pm.update_deal(deal_id, {
         "referral_status":      "accepted",
         "accepted_at":          datetime.now().isoformat(),
@@ -4803,6 +4970,7 @@ def pipeline_referral_accept(
         "portfolio_owner_code": rcode or actor_code,
         "portfolio_owner_name": str(deal.get("referred_to") or actor_name),
         "manager_validated":    False,
+        "referral_chain":       _chain,
     }, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("DEAL_REFERRAL_ACCEPTED", user, f"{deal_id} by {actor_code or rcode}")
@@ -4841,16 +5009,82 @@ def pipeline_referral_decline(
         raise HTTPException(status_code=403,
                             detail="Only the person this deal was referred to can decline it.")
 
+    _chain = list(deal.get("referral_chain") or [])
+    if _chain:
+        _chain[-1] = {**_chain[-1], "status": "declined",
+                      "resolved_at": datetime.now().isoformat(), "decline_reason": reason}
     pm.update_deal(deal_id, {
         "referral_status": "declined",
         "decline_reason":  reason,
         "declined_at":     datetime.now().isoformat(),
         "declined_by":     actor_code or rcode,
+        "referral_chain":  _chain,
     }, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("DEAL_REFERRAL_DECLINED", user, f"{deal_id}: {reason[:60]}")
     invalidate_pipeline_caches()
     return {"deal_id": deal_id, "referral_status": "declined", "decline_reason": reason}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/referral/re-refer", status_code=200)
+def pipeline_referral_re_refer(
+    deal_id: str,
+    payload: Dict[str, Any] = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The current owner passes an ACCEPTED referral onward to another colleague/
+    department, appending a hop to referral_chain and re-entering the pending
+    lifecycle for the new recipient. This is how a referral flows across
+    departments; the journey (chain) is preserved end to end."""
+    _audit("API_PIPELINE_REFERRAL_REREFER_ATTEMPT", user, f"deal_id={deal_id}")
+    from utils.core import PipelineManager as _PM
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    if not deal.get("is_referral"):
+        raise HTTPException(status_code=400, detail="This deal is not a referral.")
+    if str(deal.get("referral_status") or "") != "accepted":
+        raise HTTPException(status_code=400,
+            detail="Only an accepted referral can be re-referred onward.")
+    actor_code, actor_name, priv = _resolve_actor(user)
+    owner = str(deal.get("staff_code") or deal.get("accepted_by") or "")
+    if not priv and actor_code != owner:
+        raise HTTPException(status_code=403,
+            detail="Only the current owner can re-refer this deal.")
+    to_code = str(payload.get("referred_to_code") or "").strip()
+    to_name = str(payload.get("referred_to") or "").strip()
+    note = str(payload.get("note") or payload.get("referral_note") or "").strip()
+    if not to_code or not to_name:
+        raise HTTPException(status_code=400, detail="A recipient (code + name) is required.")
+    if to_code == (actor_code or owner):
+        raise HTTPException(status_code=400, detail="You cannot re-refer to yourself.")
+    _chain = list(deal.get("referral_chain") or [])
+    seq = max((h.get("seq", 0) for h in _chain), default=0) + 1
+    _chain.append({
+        "seq": seq,
+        "from_code": actor_code or owner,
+        "from_name": actor_name or str(deal.get("staff_name") or ""),
+        "from_dept": _referral_dept_for(actor_code or owner),
+        "to_code": to_code, "to_name": to_name,
+        "to_dept": _referral_dept_for(to_code),
+        "note": note, "at": datetime.now().isoformat(), "status": "pending",
+    })
+    pm.update_deal(deal_id, {
+        "referral_status":  "pending",
+        "referred_to_code": to_code,
+        "referred_to":      to_name,
+        "referred_by_code": actor_code or owner,
+        "referred_by_name": actor_name or str(deal.get("staff_name") or ""),
+        "referral_note":    note,
+        "referred_at":      datetime.now().isoformat(),
+        "referral_chain":   _chain,
+    }, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
+    _audit("DEAL_REFERRAL_RE_REFERRED", user, f"{deal_id} {actor_code or owner}->{to_code}")
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "referral_status": "pending", "referral_chain": _chain}
 
 
 def _all_pipeline_deals() -> list:
@@ -4935,6 +5169,66 @@ def _classify_referral_tier(by_code, to_code, dept_of=None) -> dict:
     }
 
 
+_CREDIT_JOURNEY = [
+    ("intake", "Submitted"),
+    ("assessment", "Under assessment"),
+    ("decision", "Decisioned"),
+    ("offer", "Offer & acceptance"),
+    ("credit_admin", "Credit admin"),
+    ("disbursement", "Cleared for disbursement"),
+    ("disbursed", "Disbursed"),
+]
+_CREDIT_STATUS_TO_KEY = {
+    "submitted": "intake",
+    "assigned": "assessment", "updated": "assessment",
+    "decision_approved": "decision", "decision_returned": "decision",
+    "returned": "decision", "approved": "decision",
+    "offer_issued": "offer", "offer_signed": "offer", "offer_validated": "offer",
+    "credit_admin": "credit_admin",
+    "cleared_for_disbursement": "disbursement",
+    "disbursed": "disbursed", "declined": "declined",
+}
+_LMS_STATUS_CACHE = {"at": 0.0, "map": {}}
+
+def _lms_status_map() -> dict:
+    """app_id -> status from loan_applications.json (lightweight, 5s cache), for
+    enriching referral views with the referred deal's credit-journey position."""
+    import time as _t
+    now = _t.time()
+    if now - _LMS_STATUS_CACHE["at"] < 5.0 and _LMS_STATUS_CACHE["map"]:
+        return _LMS_STATUS_CACHE["map"]
+    m: dict = {}
+    try:
+        from pathlib import Path as _P
+        import json as _j
+        p = _P(__file__).resolve().parent.parent / "data" / "loan_applications.json"
+        if p.exists():
+            data = _j.loads(p.read_text(encoding="utf-8")) or {}
+            apps = data.values() if isinstance(data, dict) else data
+            for a in apps:
+                if isinstance(a, dict) and a.get("id"):
+                    m[str(a["id"])] = str(a.get("status") or "").lower().strip()
+    except Exception:
+        m = {}
+    _LMS_STATUS_CACHE["at"] = now
+    _LMS_STATUS_CACHE["map"] = m
+    return m
+
+
+def _referral_credit_stage(deal: dict):
+    """The referred deal's position in the credit journey once handed to credit,
+    so the referrer can track the full case (not just the pipeline stage)."""
+    app_id = str(deal.get("lms_application_id") or "").strip()
+    if not app_id:
+        return None
+    status = _lms_status_map().get(app_id, "")
+    if not status:
+        return None
+    key = _CREDIT_STATUS_TO_KEY.get(status, "intake")
+    label = dict(_CREDIT_JOURNEY).get(key, "Declined" if key == "declined" else "In credit")
+    return {"key": key, "label": label, "status": status, "declined": key == "declined"}
+
+
 def _referral_view(d: dict) -> dict:
     """Compact projection for referral list endpoints."""
     return {
@@ -4954,6 +5248,8 @@ def _referral_view(d: dict) -> dict:
         "referred_at":      d.get("referred_at"),
         "accepted_at":      d.get("accepted_at"),
         "declined_at":      d.get("declined_at"),
+        "referral_chain":   d.get("referral_chain") or [],
+        "credit_stage":     _referral_credit_stage(d),
         **_classify_referral_tier(d.get("referred_by_code"), d.get("referred_to_code")),
     }
 
@@ -5170,10 +5466,17 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
     This is the basis for a department-level referral BSC KPI that flows to Head /
     Chief scorecards, mirroring the individual-level KPI. Management roles only."""
     _c, _n, priv = _resolve_actor(user)
+    # Execs (chief/director/MD/admin) see bank-wide; a manager sees the breakdown
+    # for their own branch/reporting subtree; everyone else is denied.
+    scope_codes = None
     if not priv:
-        raise HTTPException(
-            status_code=403,
-            detail="Department referral analytics require a management role.")
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        _codes = {str(x) for x in (get_visible_staff_codes(user) or [])}
+        if len(_codes) <= 1:
+            raise HTTPException(
+                status_code=403,
+                detail="Department referral analytics require a management role.")
+        scope_codes = _codes
 
     # referrer staff_code -> normalized department, from the roster
     dept_of: dict = {}
@@ -5194,6 +5497,8 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
         st = str(d.get("referral_status") or "")
         if not rbc or not st:
             continue
+        if scope_codes is not None and rbc not in scope_codes:
+            continue  # branch-scoped: only referrals made by my subtree
         dept = dept_of.get(rbc) or "Unassigned"
         a = agg.setdefault(dept, {
             "department": dept, "total": 0,
@@ -5214,6 +5519,7 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
         "departments": departments,
         "total": sum(a["total"] for a in departments),
         "department_count": len(departments),
+        "scope": "bank" if priv else "branch",
     }
 
 
@@ -9349,6 +9655,20 @@ app.include_router(cascade_api_router)
 from utils.api_initiatives_routes import router as initiatives_api_router
 app.include_router(initiatives_api_router)
 
+# Balanced Scorecard — the scorecard *definition* (performance areas, KPIs with their
+# effective weights, and dated objectives). /api/bsc/staff/{username} returns computed
+# scores only, so the React page had no source for the scorecard itself.
+#
+# Mounted here, alongside the routers known to serve, rather than in the early block at
+# the top of this module: mounted there, include_router logged success and the routes
+# still answered 404, while every router mounted at this point in the file works.
+# Deliberately NOT wrapped in try/except — the surrounding mounts swallow failures into
+# a warning, which is how a router can look mounted while serving nothing. An API
+# missing an endpoint should fail at startup, not at the first request.
+from utils.api_bsc_scorecard import router as _bsc_scorecard_router
+app.include_router(_bsc_scorecard_router)
+logger.info("A2Z API — BSC scorecard router mounted at /api/v1/bsc")
+
 
 # === MODULE ACCESS LIST ENDPOINT ===
 @app.get("/api/admin/modules", tags=["admin"])
@@ -9418,6 +9738,7 @@ def _staffup_read_rows(content_b64: str):
             "reports_to": g(r, "Reports To Code"),
             "dotted1": g(r, "Dotted Line Code 1"), "dotted2": g(r, "Dotted Line Code 2"),
             "band": g(r, "Band"), "gender": g(r, "Gender"), "email": g(r, "Email"),
+            "dept": g(r, "Department"), "doe": g(r, "Date of Employment"),
         })
     wb.close()
     return rows
@@ -9503,27 +9824,58 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
     else:
         _db.execute("DELETE FROM users", ())
     inserted = 0
+    _staffup_failed = []
     for r in rows:
         if r["code"] in keep:
             continue
         pw = _hash_password(f"EcoStaff{r['code'][-4:]}")
-        _db.execute(
-            "INSERT INTO users (username, password_hash, full_name, role, unit, "
-            "staff_code, band, gender, active, is_admin, must_change_password) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,true,false,true) "
-            "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
-            "role=EXCLUDED.role, unit=EXCLUDED.unit, staff_code=EXCLUDED.staff_code, active=true",
-            (r["code"], pw, r["name"], r["role"], r["branch"], r["code"],
-             r["band"], r["gender"]))
-        inserted += 1
+        _meta = json.dumps({
+            "reports_to": r.get("reports_to") or "",
+            "dotted": [d for d in (r.get("dotted1"), r.get("dotted2")) if d],
+            "region": r.get("region") or "",
+            "date_of_employment": r.get("doe") or "",
+        })
+        try:
+            _db.execute(
+                "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
+                "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
+                "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
+                "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
+                "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
+                "metadata=EXCLUDED.metadata, active=true",
+                (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
+                 r["band"], r["gender"], r.get("email") or "", _meta))
+            inserted += 1
+        except Exception as _e:
+            _staffup_failed.append(f"{r['code']} {r.get('name','')}: {type(_e).__name__}: {_e}")
     after = len(_db.fetch_all("SELECT username FROM users") or [])
     try:
         from utils.api_pipeline_scope import invalidate_staff_roster_cache
         invalidate_staff_roster_cache()
     except Exception:
         pass
+    # PostgreSQL is the system of record; rebuild the generated register from it.
+    from utils.staff_projection import project_quietly
+    project_quietly()
     return {"ok": True, "applied": inserted, "before": before, "after": after,
-            "preserved": sorted(keep)}
+            "preserved": sorted(keep),
+            "failed": _staffup_failed[:50], "failed_count": len(_staffup_failed)}
+
+
+@app.post("/api/admin/staff/project", tags=["admin"])
+def staff_project_register(user: dict = Depends(require_config_admin)):
+    """Rebuild data/staff_register.xlsx from the users table on demand.
+
+    The register is a GENERATED PROJECTION of PostgreSQL — never a source. Use this
+    after any out-of-band DB change, or to verify the two agree.
+    """
+    from utils.staff_projection import export_register_from_db
+    try:
+        n = export_register_from_db()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"projection failed: {e}")
+    return {"ok": True, "rows": n}
 # === END STAFF EXCEL UPLOAD ENDPOINTS ===
 
 
@@ -9562,7 +9914,9 @@ def get_admin_hierarchy(user: dict = Depends(get_current_user)):
     roles = cfg.get("roles", []) or sorted(hierarchy.keys())
     top = [r for r, parents in hierarchy.items() if not parents]
     return {"roles": sorted(set(roles) | set(hierarchy.keys())),
-            "hierarchy": hierarchy, "top": top}
+            "hierarchy": hierarchy,
+            "functional_hierarchy": cfg.get("functional_hierarchy", {}) or {},
+            "top": top}
 
 
 @app.post("/api/admin/hierarchy", tags=["admin"])
@@ -9579,6 +9933,27 @@ def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
     cfg = get_org_config() or {}
     hierarchy = dict(cfg.get("hierarchy", {}) or {})
     roles = list(cfg.get("roles", []) or sorted(hierarchy.keys()))
+    functional = dict(cfg.get("functional_hierarchy", {}) or {})
+
+    if action == "set_functional":
+        # Dotted (functional) reporting lines — visibility only, no rollup.
+        if role not in hierarchy and role not in roles:
+            raise HTTPException(status_code=404, detail=f"role '{role}' not found")
+        parents = [str(p).strip() for p in (payload.get("parents") or []) if str(p).strip()]
+        for p in parents:
+            if p not in hierarchy and p not in roles:
+                raise HTTPException(status_code=400, detail=f"functional parent role '{p}' not found")
+        if role in parents:
+            raise HTTPException(status_code=400, detail="a role cannot have a functional line to itself")
+        if parents:
+            functional[role] = parents
+        else:
+            functional.pop(role, None)
+        cfg["functional_hierarchy"] = functional
+        save_org_config(cfg)
+        _audit("API_HIERARCHY_FUNCTIONAL", user, f"{role}|{','.join(parents)}")
+        return {"status": "saved", "action": action, "role": role,
+                "functional_hierarchy": functional}
 
     if action == "set_parents":
         if role not in hierarchy and role not in roles:
@@ -9659,6 +10034,58 @@ def set_admin_hierarchy(payload: dict = Body(default_factory=dict),
     _audit("API_HIERARCHY_CHANGE", user, f"{action}|{role}|{payload.get('parents') or payload.get('new_name') or ''}")
     return {"status": "saved", "action": action, "role": role, "hierarchy": hierarchy}
 # === END REPORTING HIERARCHY ENDPOINTS ===
+
+
+# === B3: BRANCH GRANTS (per-branch viewing + acting-BM delegation) ===
+@app.get("/api/admin/branch-grants", tags=["admin"])
+def get_admin_branch_grants(user: dict = Depends(get_current_user)):
+    """Current per-branch viewing grants + acting-BM delegations from org_config."""
+    from utils.core import get_org_config
+    cfg = get_org_config() or {}
+    branches = [b.get("name") for b in (cfg.get("branches", []) or [])
+                if str(b.get("type", "")).upper() != "HO"]
+    return {"branch_viewers": cfg.get("branch_viewers", {}) or {},
+            "acting_bm": cfg.get("acting_bm", {}) or {},
+            "branches": branches}
+
+
+@app.post("/api/admin/branch-grants", tags=["admin"])
+def set_admin_branch_grants(payload: dict = Body(default_factory=dict),
+                            user: dict = Depends(require_config_admin)):
+    """Set branch grants. Actions:
+      set_viewer     {staff_code, branches:[...]}  -> per-branch viewing (empty clears)
+      set_acting_bm  {branch, staff_code}          -> acting BM for a branch (empty clears)
+    Visibility is additive; acting-BM also grants manager authority scoped by the grant."""
+    from utils.core import get_org_config, save_org_config
+    action = str(payload.get("action", "")).strip()
+    cfg = get_org_config() or {}
+    bv = dict(cfg.get("branch_viewers", {}) or {})
+    ab = dict(cfg.get("acting_bm", {}) or {})
+    if action == "set_viewer":
+        sc = str(payload.get("staff_code", "")).strip()
+        if not sc:
+            raise HTTPException(status_code=400, detail="staff_code required")
+        branches = [str(b).strip() for b in (payload.get("branches") or []) if str(b).strip()]
+        if branches:
+            bv[sc] = branches
+        else:
+            bv.pop(sc, None)
+    elif action == "set_acting_bm":
+        branch = str(payload.get("branch", "")).strip()
+        if not branch:
+            raise HTTPException(status_code=400, detail="branch required")
+        sc = str(payload.get("staff_code", "")).strip()
+        if sc:
+            ab[branch] = sc
+        else:
+            ab.pop(branch, None)
+    else:
+        raise HTTPException(status_code=400, detail=f"unknown action '{action}'")
+    cfg["branch_viewers"] = bv
+    cfg["acting_bm"] = ab
+    save_org_config(cfg)
+    _audit("API_BRANCH_GRANTS", user, f"{action}|{payload.get('staff_code') or payload.get('branch') or ''}")
+    return {"status": "saved", "branch_viewers": bv, "acting_bm": ab}
 
 
 # === DOCUMENT CATALOG ENDPOINT ===
@@ -9774,6 +10201,7 @@ def upload_deal_document(deal_id: str, body: _DocUploadBody,
         provided.append(doc_name)
     pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # persist to PG (DB-first reads)
     # EDMS metadata registration (best-effort; governance, not blocking)
     try:
         from utils.document_management import compute_sha256  # noqa: F401
@@ -9792,7 +10220,7 @@ def list_deal_documents(deal_id: str, user: dict = Depends(get_current_user)):
             "provided": list(deal.get("documents_provided", []) or [])}
 
 
-@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+@app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
 def download_deal_document(deal_id: str, doc_name: str,
                            user: dict = Depends(get_current_user)):
     """Stream one attached document back."""
@@ -9813,11 +10241,12 @@ def download_deal_document(deal_id: str, doc_name: str,
         headers={"Content-Disposition": f'attachment; filename="{meta.get("filename","file")}"'})
 
 
-@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name}", tags=["pipeline"])
+@app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
 def delete_deal_document(deal_id: str, doc_name: str,
                          user: dict = Depends(get_current_user)):
     """Remove an attached document (so it can be re-uploaded)."""
     pm, deal = _deal_for_docs(deal_id, user)
+    _enforce_deal_lock(deal, user, "documents")  # Phase L: no removals once the deal is locked (submitted — documents travel with the case)
     files = dict(deal.get("document_files", {}) or {})
     meta = files.pop(doc_name, None)
     if meta:
@@ -9830,6 +10259,7 @@ def delete_deal_document(deal_id: str, doc_name: str,
     provided = [d for d in (deal.get("documents_provided", []) or []) if d != doc_name]
     pm.update_deal(deal_id, {"document_files": files, "documents_provided": provided},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # persist to PG (DB-first reads)
     _audit("API_DEAL_DOC_DELETE", user, f"deal={deal_id}|doc={doc_name}")
     return {"status": "removed", "doc_name": doc_name}
 # === END DOCUMENT UPLOAD ENDPOINTS ===
@@ -10071,6 +10501,83 @@ def get_deal_committee_journey(deal_id: str, user: dict = Depends(get_current_us
     return {"journey": journey, "codes": codes,
             "cr_only": len(codes) == 0}
 # === END COMMITTEE JOURNEY RESOLVER ===
+
+
+@app.get("/api/pipeline/deals/{deal_id}/journey", tags=["pipeline"])
+def get_deal_journey(deal_id: str, user: dict = Depends(get_current_user)):
+    """The deal's Case Journey — the travelling document's full history.
+
+    Reuses the Phase C case-journey builders (no re-implementation):
+      - linked to a credit application  -> build_case_journey(app): the FULL
+        merged journey (deal origination events + application-side events).
+      - origination only (no linked app) -> build_deal_journey(deal): the
+        deal-side events (creation, committee votes, appeals, stage activities,
+        affordability), normalised to the same Timeline shape.
+    Read-only; scoped to can_view. Never fails the read — returns [] on error.
+    """
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_permissions import resolve_deal_permissions
+    from utils.core import PipelineManager as _PM
+    pm = _PM()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+    visible = get_visible_staff_codes(user)
+    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    app_id = str(deal.get("lms_application_id", "") or "").strip()
+    try:
+        from utils.api_lms_journey import (
+            build_case_journey, build_deal_journey, _parse_ts, _iso,
+        )
+        if app_id:
+            from utils.core import LoanApplicationManager
+            app = LoanApplicationManager().get(app_id)
+            journey = build_case_journey(app) if app else []
+        else:
+            try:
+                activities = pm.get_activities(deal_id=deal_id, limit=200)
+            except Exception:
+                activities = []
+            journey = build_deal_journey(deal, activities)
+
+        # Surface a CURRENT SLA breach in red even when the owner recorded no
+        # reason — a computed breach event. Skipped if a commitment already
+        # covers the breached step (that commitment event carries the reason,
+        # emitted by _events_from_deal), so the two never duplicate.
+        try:
+            cfg = _sla_config()
+            status = _deal_sla_status(deal, cfg, cfg.get("product_promise") or {},
+                                      _sla_stage_step_map(cfg), _credit_step_index())
+            if status and status.get("state") == "breached":
+                step_key = status.get("step")
+                commits = deal.get("sla_commitments") or {}
+                covered = isinstance(commits, dict) and step_key in commits
+                if not covered:
+                    step_label = str(step_key or deal.get("stage") or "current stage").replace("_", " ")
+                    overdue = status.get("overdue_business_days")
+                    esc = str(status.get("escalate_to") or "").replace("_", " ")
+                    step_log = deal.get("sla_step_log") or {}
+                    started = step_log.get(step_key) if isinstance(step_log, dict) else None
+                    note = ("SLA breached at stage '" + step_label + "'"
+                            + (f" — {overdue} business days overdue" if overdue is not None else "")
+                            + (f" · escalates to {esc}" if esc else "")
+                            + " · no reason recorded yet")
+                    journey.append({
+                        "event": "sla_breached",
+                        "by": str(deal.get("staff_code", "") or ""),
+                        "by_name": deal.get("staff_name") or None,
+                        "at": _iso(started or deal.get("updated_at") or deal.get("last_updated")),
+                        "note": note,
+                    })
+                    journey = sorted(journey, key=lambda e: _parse_ts(e.get("at")))
+        except Exception:
+            pass
+
+        return {"journey": journey, "linked_application_id": app_id or None}
+    except Exception:
+        return {"journey": [], "linked_application_id": app_id or None}
 
 
 # === DEAL-LEVEL CR ENDPOINTS (4b-3) ===

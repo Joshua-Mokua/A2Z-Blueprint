@@ -22,33 +22,44 @@ interface PageHeaderProps {
   eyebrow?:     string;
   breadcrumbs?: Crumb[];
   actions?:     ReactNode;
+  /** Opt-in Ecobank-blue ribbon (matches the credit WorkbenchShell) for
+   *  visual consistency across the app. Defaults to the white header. */
+  ribbon?:      boolean;
 }
 
-export function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumbs, actions, ribbon }: PageHeaderProps) {
   const navigate = useNavigate();
   const hasRow = Boolean(subtitle) || Boolean(actions);
+  const headerCls = ribbon
+    ? 'bg-gradient-to-r from-[#0082BB] to-[#005B82] shadow-sm'
+    : 'bg-white border-b border-gray-200';
+  const crumbNav    = ribbon ? 'text-white/70' : 'text-gray-400';
+  const crumbSep    = ribbon ? 'text-white/40' : 'text-gray-300';
+  const crumbLink   = ribbon ? 'hover:text-white transition-colors' : 'hover:text-gray-600 transition-colors';
+  const crumbCur    = ribbon ? 'text-white font-medium' : 'text-gray-600 font-medium';
+  const subtitleCls = ribbon ? 'text-sm text-white/90 min-w-0 truncate' : 'text-sm text-gray-500 min-w-0 truncate';
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className={headerCls}>
       <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-3.5">
         <h1 className="sr-only">{title}</h1>
 
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-gray-400">
+          <nav aria-label="Breadcrumb" className={`flex items-center gap-1.5 text-xs ${crumbNav}`}>
             {breadcrumbs.map((c, i) => (
               <span key={`${c.label}-${i}`} className="flex items-center gap-1.5">
-                {i > 0 && <span className="text-gray-300">/</span>}
+                {i > 0 && <span className={crumbSep}>/</span>}
                 {c.to
                   ? (
                     <button
                       type="button"
                       onClick={() => navigate(c.to!)}
-                      className="hover:text-gray-600 transition-colors"
+                      className={crumbLink}
                     >
                       {c.label}
                     </button>
                   )
-                  : <span className="text-gray-600 font-medium">{c.label}</span>}
+                  : <span className={crumbCur}>{c.label}</span>}
               </span>
             ))}
           </nav>
@@ -57,7 +68,7 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeader
         {hasRow && (
           <div className="flex items-center justify-between gap-4 mt-1.5">
             {subtitle
-              ? <p className="text-sm text-gray-500 min-w-0 truncate">{subtitle}</p>
+              ? <p className={subtitleCls}>{subtitle}</p>
               : <span />}
             {actions && (
               <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>

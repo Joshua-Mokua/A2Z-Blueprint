@@ -6,6 +6,7 @@
 // Layout mirrors Pipeline.tsx: header strip + filter chips + Card-based
 // table + empty/loading/error states.
 
+import { displayName } from "../lib/names";
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -145,6 +146,7 @@ export function Lms() {
     <div className="min-h-screen bg-gray-50">
       {/* Header strip — same brand-navy as Pipeline pages */}
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Credit Analysis' }]}
         title="Credit Analysis"
         subtitle="Submitted, assigned, and decided applications in your cascade."
@@ -224,7 +226,7 @@ export function Lms() {
                       >
                         <option value="">— pick analyst —</option>
                         {analystPool.map((a) => (
-                          <option key={a.staff_code} value={a.staff_code}>{a.name} ({a.staff_code})</option>
+                          <option key={a.staff_code} value={a.staff_code}>{displayName(a.name)} ({a.staff_code})</option>
                         ))}
                       </select>
                     </div>

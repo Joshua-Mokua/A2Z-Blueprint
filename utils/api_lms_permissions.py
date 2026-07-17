@@ -101,9 +101,15 @@ def resolve_application_permissions(
     status = str(app.get('status', '') or '').lower()
 
     # ── can_view ──
-    # Admin sees all. Manager sees their cascade. Owner sees their own.
-    # Assigned analyst sees their assignments.
-    can_view = is_admin or in_scope or (is_mgr and in_scope)
+    # Separation of duties: the deal owner (RM) is NOT a spectator on the
+    # analyst's workspace. They reach the credit page ONLY when they have an
+    # active touchpoint there — provide-info (status 'info_requested') or
+    # sign-offer (status 'offer_issued'). At every other status they follow
+    # progress through the deal's Case Journey, not the analyst's page.
+    # Admin, managers in scope, the assigned analyst, and other credit staff in
+    # scope keep full view (they are in scope and are not the owner).
+    owner_touchpoint_open = is_owner and status in ("info_requested", "offer_issued")
+    can_view = is_admin or (in_scope and (not is_owner or owner_touchpoint_open))
 
     # ── can_update ──
     # Status guardrail FIRST. Then either:
@@ -198,6 +204,70 @@ def resolve_application_permissions(
         status == "referred_to_committee" and (is_admin or (is_mgr and in_scope))
     )
 
+    # ── can_self_pick ──
+    # An analyst pulls an UNALLOCATED case to themselves without waiting for a
+    # manager to assign it — avoids stalls when the assigning manager (e.g. the
+    # Chief Credit) is away. Config-gated per role type via
+    # credit_workflow.self_pick. Segment-specific Department Analysts only pick
+    # their own segment (the case being in their filtered queue already implies
+    # a segment match; re-checked here defensively).
+    can_self_pick = False
+    try:
+        _role = str(user.get("role", "") or "")
+        _unallocated = (status in STATUSES_PERMITTING_ASSIGN) and not analyst_code
+        if _unallocated and not is_owner:
+            from utils.api_lms_scope import (
+                _role_sees_pool, _analyst_segment, _app_segment,
+                get_pool_visibility_config,
+            )
+            from utils.api_lms_mutations import get_credit_workflow_config
+            if _role_sees_pool(_role, get_pool_visibility_config()["roles"]):
+                _sp = (get_credit_workflow_config() or {}).get("self_pick") or {}
+                _seg = _analyst_segment(_role)
+                _allowed = (_sp.get("department_analyst", False) if _seg
+                            else _sp.get("credit_analyst", False))
+                _seg_ok = (not _seg) or (_app_segment(app) in ("", _seg))
+                # A case handed to the conventional Credit Analyst (awaiting_
+                # credit_analyst) is for them only — a segment Department Analyst
+                # must not re-grab it.
+                if app.get("awaiting_credit_analyst") and _seg:
+                    _seg_ok = False
+                can_self_pick = bool(_allowed and _seg_ok)
+    except Exception:
+        can_self_pick = False
+
+    # ── can_submit_to_dcc ──
+    # The assigned Department Analyst (segment-specific) voices support and
+    # submits the case to the Department Credit Committee. They CANNOT decide —
+    # this only refers the case onward. Gated: the Department Analyst layer must
+    # be enabled and the caller must be a segment-specific analyst assigned to an
+    # 'assigned' case. Completeness (Call-Back Memo + PEP) is enforced at the
+    # endpoint, not here.
+    can_submit_to_dcc = False
+    try:
+        if is_assigned_analyst and status == "assigned" and not app.get("dcc_outcome"):
+            from utils.api_lms_scope import _analyst_segment
+            from utils.api_lms_mutations import get_credit_workflow_config
+            _da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+            if _da.get("enabled") and _analyst_segment(str(user.get("role", "") or "")):
+                can_submit_to_dcc = True
+    except Exception:
+        can_submit_to_dcc = False
+
+    # ── can_hand_to_credit_analyst ──
+    # Once the DCC has advised (dcc_outcome present), the Department Analyst hands
+    # the case to the conventional Credit Analyst — the decision-maker — by
+    # releasing it to the credit pool for self-pick.
+    can_hand_to_credit_analyst = False
+    try:
+        if is_assigned_analyst and status == "assigned" and app.get("dcc_outcome"):
+            from utils.api_lms_mutations import get_credit_workflow_config
+            _da2 = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+            if _da2.get("enabled"):
+                can_hand_to_credit_analyst = True
+    except Exception:
+        can_hand_to_credit_analyst = False
+
     return {
         "can_view": bool(can_view),
         "can_update": bool(can_update),
@@ -212,6 +282,9 @@ def resolve_application_permissions(
         "can_refer_committee": bool(can_refer_committee),
         "can_vote_committee": bool(can_vote_committee),
         "can_resolve_committee": bool(can_resolve_committee),
+        "can_self_pick": bool(can_self_pick),
+        "can_submit_to_dcc": bool(can_submit_to_dcc),
+        "can_hand_to_credit_analyst": bool(can_hand_to_credit_analyst),
     }
 
 

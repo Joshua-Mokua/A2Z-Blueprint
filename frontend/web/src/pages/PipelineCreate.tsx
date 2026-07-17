@@ -154,6 +154,8 @@ export function PipelineCreate() {
   const [expectedClose,  setExpectedClose]  = useState('');
   const [source,         setSource]         = useState<string>('Existing relationship');
   const [notes,          setNotes]          = useState('');
+  const [contactPhone,   setContactPhone]   = useState('');
+  const [contactEmail,   setContactEmail]   = useState('');
 
   // ── Conflict resolution state ────────────────────────────────────────
 
@@ -885,7 +887,9 @@ export function PipelineCreate() {
       source:             source,
       // Note: unit not sent — UserIdentity has department but not unit.
       // Server resolves unit from staff_code if needed.
-      account_number:     !isNtb && accountNumber.trim() ? accountNumber.trim() : undefined,
+      account_number:     accountNumber.trim() || undefined,
+      phone:              contactPhone.trim() || undefined,
+      email:              contactEmail.trim() || undefined,
     };
 
     // ── Apply conflict resolution to body ─────────────────────────────
@@ -1220,15 +1224,27 @@ export function PipelineCreate() {
                   <p className="text-xs text-red-700 mt-1">{fieldErrors.sectorMou}</p>
                 )}
               </div>
-              {!isNtb && (
-                <Input
-                  label="Account number / CIF (optional)"
-                  placeholder="e.g. ECO0123456789 or 100456789"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  disabled={mutations.loading}
-                />
-              )}
+              <Input
+                label={isNtb ? 'New account number (once opened)' : 'Account number / CIF (optional)'}
+                placeholder={isNtb ? "Enter once the customer's account is opened" : 'e.g. ECO0123456789 or 100456789'}
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <Input
+                label="Customer phone (optional)"
+                placeholder="e.g. 0712 345 678"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                disabled={mutations.loading}
+              />
+              <Input
+                label="Customer email (optional)"
+                placeholder="e.g. name@example.com"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                disabled={mutations.loading}
+              />
             </div>
           </Card.Body>
         </Card>

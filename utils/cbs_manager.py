@@ -103,6 +103,7 @@ def _load_accounts() -> pd.DataFrame:
                     "cif":                       str,
                     "account_number":            str,
                     "relationship_manager_code": str,
+                    "introducer_code":           str,
                     "branch_code":               str,
                 },
                 low_memory=False,
@@ -225,6 +226,7 @@ def _account_row_to_dict(row) -> dict:
         "cif":                _safe_str(row.get("cif")),
         "branch_code":        _safe_str(row.get("branch_code")),
         "branch_name":        _safe_str(row.get("branch_name")),
+        "introducer_code":    _safe_str(row.get("introducer_code")),
         "account_type_name":  _safe_str(row.get("account_type_name")),
         "category":           _safe_str(row.get("category")),
         "currency":           _safe_str(row.get("currency")),
@@ -412,6 +414,194 @@ def get_accounts_for_cif(cif: str) -> list[dict]:
 
 def get_branches() -> list[dict]:
     return _load_branches()
+
+
+def branch_code_for_name(name: str) -> list:
+    """CBS branch_code(s) whose branch_name matches a (register) branch name.
+    Matches on contains / stripped-'Branch' so 'Westlands' -> 'Westlands Branch'."""
+    nm = str(name or "").strip().lower()
+    if not nm:
+        return []
+    out = []
+    for b in _load_branches():
+        if not isinstance(b, dict):
+            continue
+        bn = str(b.get("branch_name") or "").strip().lower()
+        if not bn:
+            continue
+        if nm == bn or nm == bn.replace(" branch", "").strip() or nm in bn:
+            code = str(b.get("branch_code") or "").strip()
+            if code:
+                out.append(code)
+    return out
+
+
+def get_branch_unallocated(branch_codes, roster_codes) -> dict:
+    """Accounts physically in the given branch_code(s) that are NOT owned by a real
+    register RM (orphaned to a non-staff rm_code) — their value counts to the branch
+    even though unallocated. Returns {accounts, deposits, loans}."""
+    codes = {str(c).strip() for c in (branch_codes or []) if str(c).strip()}
+    empty = {"accounts": 0, "deposits": 0.0, "loans": 0.0}
+    if not codes:
+        return empty
+    df = _load_accounts()
+    if df is None or df.empty or "branch_code" not in df.columns:
+        return empty
+    inb = df[df["branch_code"].astype(str).str.strip().isin(codes)]
+    if inb.empty:
+        return empty
+    reg = {str(x).strip() for x in (roster_codes or set())}
+    orphan = inb[~inb["relationship_manager_code"].astype(str).str.strip().isin(reg)]
+    if orphan.empty:
+        return {"accounts": 0, "deposits": 0.0, "loans": 0.0}
+    accts = [_account_row_to_dict(r) for _, r in orphan.iterrows()]
+
+    def _is_loan(a):
+        t = str(a.get("account_type_name") or "").lower()
+        return any(w in t for w in ("loan", "facility", "lpo", "mortgage", "advance"))
+
+    dep = sum(a["current_balance"] for a in accts if not _is_loan(a))
+    loan = sum(a["current_balance"] for a in accts if _is_loan(a))
+    return {"accounts": len(accts), "deposits": round(dep, 2), "loans": round(loan, 2)}
+
+
+def get_portfolio_for_rm(rm_code: str) -> dict:
+    """Convenience wrapper: portfolio for a single RM code."""
+    return get_portfolio_for_codes({str(rm_code or "").strip()})
+
+
+def _staff_name_index() -> dict:
+    """staff_code -> Staff Name, from the register. Cached; empty on any error."""
+    global _staff_name_idx
+    try:
+        return _staff_name_idx  # type: ignore[name-defined]
+    except NameError:
+        pass
+    idx = {}
+    try:
+        import pandas as _pd
+        from pathlib import Path as _P
+        p = _P(__file__).resolve().parent.parent / "data" / "staff_register.xlsx"
+        if p.exists():
+            dfr = _pd.read_excel(p, dtype=str).fillna("")
+            for _, r in dfr.iterrows():
+                cc = str(r.get("Staff Code") or "").strip()
+                if cc:
+                    idx[cc] = str(r.get("Staff Name") or cc).strip()
+    except Exception:
+        idx = {}
+    globals()["_staff_name_idx"] = idx
+    return idx
+
+
+def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
+    """CBS accounts tagged to a set of staff codes, plus portfolio analytics.
+
+    attribution selects the lens, and the two are kept strictly separate — never
+    summed, because they answer different questions:
+      "managed"    -> accounts this person is the relationship manager for (their book:
+                      deposits, loans, NPL, the P&L they own)
+      "introduced" -> accounts this person introduced/originated (their production),
+                      which may now be managed by someone else in another segment.
+
+    A person can appear under both, for different accounts. Deposit-movement vs the
+    31-Dec baseline is only meaningful for the managed book, so it's suppressed for
+    the introduced lens.
+    """
+    col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
+    code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
+    # For the introduced lens we want ONLY accounts this scope introduced that are now
+    # managed by SOMEONE ELSE — origination that sits elsewhere. Accounts they both
+    # introduced and manage belong in the managed book, not here, so the two lenses
+    # never overlap.
+    exclude_self_managed = (attribution == "introduced")
+    rm = next(iter(code_set), "") if len(code_set) == 1 else ""
+    empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
+                     "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
+                     "dormant_pct": 0.0, "npl_accounts": 0, "by_type": [],
+                     "deposit_movement": None, "baseline_date": None,
+                     "attribution": attribution}
+    df = _load_accounts()
+    if df is None or df.empty or not code_set or col not in df.columns:
+        return {"rm_code": rm, "accounts": [], "summary": empty_summary}
+    mine = df[df[col].astype(str).str.strip().isin(code_set)]
+    if exclude_self_managed and "relationship_manager_code" in mine.columns:
+        # drop the ones this scope also manages
+        mgr = mine["relationship_manager_code"].astype(str).str.strip()
+        mine = mine[~mgr.isin(code_set)]
+    if mine.empty:
+        return {"rm_code": rm, "accounts": [], "summary": empty_summary}
+    accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
+    if attribution == "introduced" and accts:
+        # annotate each introduced account with WHO manages it now (name + code), so the
+        # UI can show the current owner alongside status / balance / loan.
+        try:
+            name_by_code = _staff_name_index()
+        except Exception:
+            name_by_code = {}
+        for a in accts:
+            mc = str(a.get("relationship_manager_code") or "").strip()
+            a["managed_by_code"] = mc
+            a["managed_by_name"] = name_by_code.get(mc, mc)
+
+    def _is_loan(a: dict) -> bool:
+        t = str(a.get("account_type_name") or "").lower()
+        return "loan" in t or "facility" in t or "advance" in t or "mortgage" in t
+
+    def _is_dormant(a: dict) -> bool:
+        s = str(a.get("dormancy_status") or "").lower().strip()
+        return bool(s) and s not in ("active", "regular", "none")
+
+    def _is_npl(a: dict) -> bool:
+        s = str(a.get("npl_status") or "").lower().strip()
+        return s in ("npl", "non-performing", "substandard", "doubtful", "loss")
+
+    deposits = sum(a["current_balance"] for a in accts if not _is_loan(a))
+    loans = sum(a["current_balance"] for a in accts if _is_loan(a))
+    dormant = sum(1 for a in accts if _is_dormant(a))
+    npl = sum(1 for a in accts if _is_npl(a))
+    by_type: dict = {}
+    for a in accts:
+        t = a.get("account_type_name") or "Other"
+        e = by_type.setdefault(t, {"type": t, "count": 0, "balance": 0.0})
+        e["count"] += 1
+        e["balance"] += a["current_balance"]
+
+    movement = None
+    baseline_date = None
+    try:
+        base_path = Path(__file__).resolve().parent.parent / "data" / "cbs_baseline_2025_Dec_31.json"
+        if attribution == "introduced":
+            raise StopIteration  # movement is a managed-book metric only
+        if base_path.exists():
+            bl = json.loads(base_path.read_text(encoding="utf-8"))
+            baseline_date = bl.get("snapshot_date")
+            per_rm = bl.get("per_rm") or {}
+            base_dep = None
+            for _c in code_set:
+                bd = (per_rm.get(_c) or {}).get("deposits")
+                if bd is not None:
+                    base_dep = (base_dep or 0) + float(bd)
+            if base_dep is not None:
+                movement = {"baseline": round(float(base_dep), 2), "current": round(deposits, 2),
+                            "delta": round(deposits - float(base_dep), 2),
+                            "pct": round((deposits - float(base_dep)) / float(base_dep) * 100, 1) if float(base_dep) else None}
+    except (Exception, StopIteration):
+        movement = None
+
+    summary = {
+        "accounts": len(accts), "customers": len({a["cif"] for a in accts}),
+        "total_balance": round(deposits + loans, 2),
+        "deposits": round(deposits, 2), "loans": round(loans, 2),
+        "dormant_accounts": dormant,
+        "dormant_pct": round(dormant / len(accts) * 100, 1) if accts else 0.0,
+        "npl_accounts": npl,
+        "by_type": sorted(({"type": k, "count": v["count"], "balance": round(v["balance"], 2)}
+                           for k, v in by_type.items()), key=lambda x: -x["balance"]),
+        "deposit_movement": movement, "baseline_date": baseline_date,
+        "attribution": attribution,
+    }
+    return {"rm_code": rm, "accounts": accts, "summary": summary}
 
 
 def get_aggregates() -> dict:

@@ -15,18 +15,22 @@
 // flipped (e.g. after assign, can_assign becomes false because status
 // is now 'assigned').
 
-import { useState, useEffect, useRef } from 'react';
+import { displayName } from "../lib/names";
+import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
+import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, type WorkbenchView } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useLmsApplication } from '@/hooks/useLmsApplication';
 import { useLmsMutations } from '@/hooks/useLmsMutations';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
+import { WorkbenchShell } from '@/components/WorkbenchShell';
 import {
-  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
+  getLmsCr, saveLmsCr, getCommitteeCharter, getCommitteeTiers, fetchCommitteeRouting, getLmsCommitteeRecords, fetchMyAnalysts, setCommitteeReadiness, fetchReworkReasons, appealDecline, decideAppeal, recordCommitteePreRead, fetchCommitteePreReads, type CommitteePreReadsResponse, type LmsCommitteeRecordsResponse, type AssignableAnalyst,
   type CrView, type CrField, type CommitteeMember, type CommitteeTier,
 } from '@/lib/api';  // attachment imports trimmed with AttachmentsBccCard
 import { Card, EmbeddedShell, EmbeddedHeader, EmbeddedBody } from '@/components/Card';
@@ -37,7 +41,6 @@ import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
 import { Timeline, eventLabel } from '@/components/Timeline';
 import {
-  statusTone,
   DECISION_VERDICTS,
   COMMON_AUTHORITIES,
   type DecisionVerdict,
@@ -67,23 +70,11 @@ export function LmsApplicationDetail() {
   const { branding } = useBranding();
   const { toast } = useToast();
   const { user } = useRole();
-  const [assessmentTab, setAssessmentTab] = useState<'cr' | 'engines' | 'affordability'>('cr');
 
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
 
-  // IA Phase 3: role-aware default view. The assigned analyst lands on the
-  // Engines tab (their working surface); everyone else keeps Credit Report.
-  // Run-once (ref-guarded) so it never overrides a manual tab click.
-  const didInitTab = useRef(false);
-  useEffect(() => {
-    if (didInitTab.current || !application) return;
-    didInitTab.current = true;
-    const isAnalyst = Boolean(application.analyst?.code) &&
-      String(application.analyst?.code ?? '') === String(user?.staff_code ?? '');
-    if (isAnalyst) setAssessmentTab('engines');
-  }, [application, user]);
 
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
@@ -148,46 +139,6 @@ export function LmsApplicationDetail() {
   // directly under the customer strip for the assigned analyst, or in its
   // regular place in the origination flow for everyone else. Defined once
   // here and placed conditionally in the JSX below to avoid duplication.
-  const assessmentCard = (
-    <Card stripe="accent">
-      <Card.Header>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-gray-900">Assessment</h2>
-          <div className="flex gap-1 text-xs">
-            {/* Option A: the Engines & Conflicts (analyst workbench) tab is
-                credit-internal — hidden from non-credit viewers (RM etc.), who
-                still see CR + Affordability read-only and the Case Journey. */}
-            {([['cr','Credit Report'],['engines','Engines & Conflicts'],['affordability','Affordability']] as const)
-              .filter(([id]) => id !== 'engines' || permissions.can_update)
-              .map(([id,lbl]) => (
-              <button key={id} onClick={() => setAssessmentTab(id)}
-                className={`rounded px-3 py-1.5 font-medium transition-colors ${
-                  assessmentTab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
-                {lbl}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        <div className={assessmentTab === 'cr' ? '' : 'hidden'}>
-          {/* CR is completed by the RM during origination, then frozen once the
-              case is in credit — read-only for the RM and the analyst; only a
-              credit manager/admin may correct it. */}
-          <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
-        </div>
-        {permissions.can_update && (
-        <div className={assessmentTab === 'engines' ? '' : 'hidden'}>
-          <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
-        </div>
-        )}
-        <div className={assessmentTab === 'affordability' ? '' : 'hidden'}>
-          <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
-        </div>
-      </Card.Body>
-    </Card>
-  );
-
   const printJourney = () => {
     const evs = [...(application.journey ?? application.history ?? [])];
     const rows = evs.map((e) => {
@@ -203,98 +154,47 @@ export function LmsApplicationDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="text-white shadow" style={{ background: 'var(--brand-secondary)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-xs text-white/70 mb-1 font-mono">{application.id}</div>
-              <h1 className="text-xl font-semibold">{application.client_name}</h1>
-              <div className="text-xs text-white/80 mt-1">
-                {application.product || 'unknown product'} · {formatAmount(application.amount, currencySymbol)}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <Badge tone={statusTone(application.status)} size="md">
-                {application.status}
-              </Badge>
-              {application.sla && (
-                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
-                  application.sla.state === 'breached' ? 'bg-red-500/90 text-white'
-                  : application.sla.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
-                  : 'bg-green-500/90 text-white'}`}>
-                  {application.sla.state === 'breached'
-                    ? `SLA breached — ${application.sla.overdue_business_days}d over promise`
-                    : application.sla.state === 'due_soon'
-                    ? `SLA due soon — ${application.sla.remaining_business_days}d left`
-                    : `SLA on track — ${application.sla.remaining_business_days}d left`}
-                </span>
-              )}
-              {application.sla?.stage && (
-                <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
-                  application.sla.stage.state === 'breached' ? 'bg-red-500/90 text-white'
-                  : application.sla.stage.state === 'due_soon' ? 'bg-amber-400/90 text-amber-950'
-                  : 'bg-green-500/90 text-white'}`}>
-                  {application.sla.stage.state === 'breached'
-                    ? `My stage — ${application.sla.stage.overdue_business_days}d over`
-                    : `My stage — ${application.sla.stage.remaining_business_days}d left of ${application.sla.stage.target_days}`}
-                </span>
-              )}
-              {application.swim_lane && (
-                <span className="text-xs text-white/70">{application.swim_lane}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-
-        {/* Back to list */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/lms')}>
-            ← Back to applications
-          </Button>
-          <Badge tone="brand" size="sm">β5</Badge>
-        </div>
-
-        {/* customer-summary-strip: key facts pinned at the top of the content */}
-        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">CIF</span>
-              <span className="font-mono font-medium text-gray-900">{application.client_cif || '—'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">Product</span>
-              <span className="text-gray-900">{application.product || '—'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">Amount</span>
-              <span className="font-medium text-gray-900">{formatAmount(application.amount, currencySymbol)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-400">RM</span>
-              <span className="text-gray-900">{application.rm_name || application.rm_code || '—'}</span>
-            </div>
-            {application.analyst?.name && (
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+        <WorkbenchShell
+          title={application.client_name}
+          stage={application.status}
+          badges={[
+            ...(application.sla?.state === 'breached' ? [{ label: 'SLA breached' }] : []),
+            ...(application.sla?.state === 'due_soon' ? [{ label: 'SLA due soon' }] : []),
+          ]}
+          idLabel={application.id}
+          onBack={() => navigate('/lms')}
+          onRefresh={() => void refetch()}
+          details={(
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
-                <span className="text-gray-900">{application.analyst.name}</span>
+                <span className="text-xs uppercase tracking-wide text-gray-400">CIF</span>
+                <span className="font-mono font-medium text-gray-900">{application.client_cif || '—'}</span>
               </div>
-            )}
-            <div className="ml-auto">
-              <Badge tone={statusTone(application.status)} size="sm">{application.status}</Badge>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">Product</span>
+                <span className="text-gray-900">{application.product || '—'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">Amount</span>
+                <span className="font-medium text-gray-900">{formatAmount(application.amount, currencySymbol)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-400">RM</span>
+                <span className="text-gray-900">{application.rm_name || application.rm_code || '—'}</span>
+              </div>
+              {application.analyst?.name && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">Analyst</span>
+                  <span className="text-gray-900">{displayName(application.analyst.name)}</span>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-
-        {/* IA Phase 3: for the assigned analyst, the Assessment card is hoisted
-            here — directly under the customer strip — so they land on their
-            working surface; Journey and origination drop below. */}
-        {_viewerIsAnalyst && assessmentCard}
-
-
+          )}
+        defaultTabId="journey"
+        tabs={[
+          { id: 'journey', label: 'Case Journey', color: '#0082BB', content: (
+            <>
         {/* ─────────── Case Journey (prominent, always shown) ─────────── */}
         {(
           <Card stripe="primary">
@@ -332,42 +232,13 @@ export function LmsApplicationDetail() {
         )}
 
 
-        {/* ─────────── Decision card (only if recorded) ─────────── */}
-        {application.decision?.verdict && (
-          <Card stripe="accent">
-            <Card.Header>
-              <h2 className="text-base font-semibold text-gray-900">
-                Decision: {application.decision.verdict}
-              </h2>
-            </Card.Header>
-            <Card.Body>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <Field label="Authority" value={application.decision.authority} />
-                <Field label="Date" value={formatDate(application.decision.date)} />
-                {application.decision.reason && (
-                  <Field label="Reason" value={application.decision.reason} fullWidth />
-                )}
-                {application.decision.comments && (
-                  <Field label="Comments" value={application.decision.comments} fullWidth />
-                )}
-                {application.decision.conditions && application.decision.conditions.length > 0 && (
-                  <div className="col-span-2">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Conditions
-                    </div>
-                    <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                      {application.decision.conditions.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </Card.Body>
-          </Card>
-        )}
-
-
+            </>
+          ) },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
+            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
+          ) },
+          { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
+            <>
         {/* ─────────── Documentation card ─────────── */}
         <Card>
           <Card.Header>
@@ -426,8 +297,9 @@ export function LmsApplicationDetail() {
           </Card.Body>
         </Card>
 
-        {/* Documents live on the RM's pipeline workbench (single source);
-            the credit surface stays free of origination controls. */}
+        <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update} />
+
+        <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -435,6 +307,82 @@ export function LmsApplicationDetail() {
           <CommitteePreReadPanel appId={application.id} toast={toast} />
         )}
 
+
+            </>
+          ) },
+          { id: 'affordability', label: 'Affordability', color: '#00A65A', content: (
+            <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
+          ) },
+          ...(permissions.can_update ? [{ id: 'engines', label: 'Engines & Conflicts', color: '#C62828', content: (
+            <CreditWorkbenchPanel appId={application.id} toast={toast} embedded canEdit={!!permissions.can_update} />
+          ) }] : []),
+          { id: 'actions', label: 'Actions', color: '#EF6C00', content: (
+            <div className="space-y-4">
+        {/* ─────────── Decision card (only if recorded) ─────────── */}
+        {application.decision?.verdict && (
+          <Card stripe="accent">
+            <Card.Header>
+              <h2 className="text-base font-semibold text-gray-900">
+                Decision: {application.decision.verdict}
+              </h2>
+            </Card.Header>
+            <Card.Body>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <Field label="Authority" value={application.decision.authority} />
+                <Field label="Date" value={formatDate(application.decision.date)} />
+                {application.decision.reason && (
+                  <Field label="Reason" value={application.decision.reason} fullWidth />
+                )}
+                {application.decision.comments && (
+                  <Field label="Comments" value={application.decision.comments} fullWidth />
+                )}
+                {application.decision.conditions && application.decision.conditions.length > 0 && (
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                      Conditions
+                    </div>
+                    <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+                      {application.decision.conditions.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
+
+        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
+        {permissions.can_self_pick && (
+          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-blue-900">
+                This case is unallocated and in your segment. Pick it to start working it.
+              </div>
+              <Button onClick={async () => {
+                try {
+                  await pickLmsApplication(application.id);
+                  await refetch();
+                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
+                } catch (e) {
+                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
+                }
+              }}>Pick this case</Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
+        {permissions.can_submit_to_dcc && (
+          <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
+
+        {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
+        {permissions.can_hand_to_credit_analyst && (
+          <HandToCreditAnalystPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
 
         {/* ─────────── ACTION: Assign Analyst (if can_assign) ─────────── */}
         {permissions.can_assign && (
@@ -458,7 +406,7 @@ export function LmsApplicationDetail() {
             application.assignment_purpose === 'correctness'
               ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
             {application.assignment_purpose === 'correctness'
-              ? 'Assigned for correctness check — confirm the case is well-packaged (CR complete, docs attached) and mark it ready for committee, or return it for rework.'
+              ? 'Assigned for correctness check — confirm the case is well-packaged (Transaction Memo complete, docs attached) and mark it ready for committee, or return it for rework.'
               : 'Assigned for decisioning — analyse the case and record the credit decision.'}
           </div>
         )}
@@ -478,13 +426,6 @@ export function LmsApplicationDetail() {
           && (
           <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
-
-        {/* ─────────── Assessment (tabbed: CR / Engines / Affordability) ─────────── */}
-        {/* IA Phase 3: for the assigned analyst this card is hoisted directly
-            under the customer strip (see above); here it renders for everyone
-            else in the normal origination flow. */}
-        {!_viewerIsAnalyst && assessmentCard}
-
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
         {permissions.can_update && (
@@ -521,6 +462,8 @@ export function LmsApplicationDetail() {
             toast={toast}
           />
         )}
+
+        <AppealPanel app={application} canReview={!!permissions.can_record_decision} onDone={refetch} toast={toast} />
 
 
         {/* ─────────── Credit workflow actions (v10.587) ─────────── */}
@@ -586,6 +529,10 @@ export function LmsApplicationDetail() {
           </Card>
         )}
 
+            </div>
+          ) },
+        ]}
+      />
       </main>
     </div>
   );
@@ -1382,6 +1329,274 @@ function WfCommittee({ application, mutations, toast, onDone, canVote, canResolv
 // show prefilled (editable but tinted to signal provenance); rm fields are
 // blank for the relationship owner. Save draft or mark complete (required
 // fields enforced server-side).
+function DccVotePanel({ appId, toast, onDone }: {
+  appId: string;
+  toast: ReturnType<typeof useToast>['toast'];
+  onDone: () => Promise<void> | void;
+}) {
+  const [roster, setRoster] = useState<DccRosterResponse | null>(null);
+  const [memberId, setMemberId] = useState('');
+  const [vote, setVote] = useState('YES');
+  const [rationale, setRationale] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
+  if (!roster || !roster.enabled || (!roster.is_dcc_case && !roster.outcome)) return null;
+  const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
+  const resolve = async () => {
+    setBusy(true);
+    try {
+      await resolveDcc(appId, {});
+      toast({ tone: 'success', message: 'DCC closed — case returned to the Department Analyst.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not close the DCC.' });
+    } finally { setBusy(false); }
+  };
+  const cast = async () => {
+    if (!memberId) return;
+    setBusy(true);
+    try {
+      await recordDccVote(appId, { member_id: memberId, vote, rationale: rationale.trim() });
+      toast({ tone: 'success', message: 'DCC vote recorded.' });
+      setRationale(''); load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Vote failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <Card className="mt-4" stripe="primary">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">{roster.name}</h3>
+        <span className="text-xs text-gray-500">{roster.votes.length}/{roster.members.length} voted</span>
+      </Card.Header>
+      <Card.Body>
+        {roster.outcome ? (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+            <div>DCC recommendation:{' '}
+              <span className={roster.outcome.recommendation === 'support' ? 'font-semibold text-green-700'
+                : roster.outcome.recommendation === 'oppose' ? 'font-semibold text-red-600'
+                : 'font-semibold text-gray-600'}>
+                {roster.outcome.recommendation}
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Tally: {roster.outcome.tally.yes} yes · {roster.outcome.tally.no} no · {roster.outcome.tally.abstain} abstain
+              {roster.outcome.by_name ? ` · closed by ${roster.outcome.by_name}` : ''}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">Advisory only — the Credit Analyst makes the final decision.</p>
+          </div>
+        ) : roster.members.length === 0 ? (
+          <p className="text-xs text-gray-400">No DCC members configured yet (set them in the credit-workflow config).</p>
+        ) : (
+          <>
+            <div className="mb-3 space-y-1">
+              {roster.members.map((m) => {
+                const id = m.id || m.member_id || '';
+                const v = votesByMember.get(id);
+                return (
+                  <div key={id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-800">
+                      {m.name || id}{m.role ? <span className="text-xs text-gray-500"> — {m.role}</span> : null}
+                    </span>
+                    <span className={v ? (v.vote === 'YES' ? 'text-green-700' : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500') : 'text-gray-300'}>
+                      {v ? v.vote : 'not voted'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-1 items-end gap-2 border-t pt-3 md:grid-cols-3">
+              <div>
+                <label className="text-xs font-medium text-gray-700">Member</label>
+                <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={busy}
+                  className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-sm">
+                  <option value="">Select…</option>
+                  {roster.members.map((m) => {
+                    const id = m.id || m.member_id || '';
+                    return <option key={id} value={id}>{m.name || id}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700">Vote</label>
+                <select value={vote} onChange={(e) => setVote(e.target.value)} disabled={busy}
+                  className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-sm">
+                  <option>YES</option><option>NO</option><option>ABSTAIN</option>
+                </select>
+              </div>
+              <Button onClick={cast} disabled={busy || !memberId}>Record vote</Button>
+            </div>
+            <input value={rationale} onChange={(e) => setRationale(e.target.value)} disabled={busy}
+              placeholder="Rationale (optional)"
+              className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+            {roster.votes.length > 0 && (
+              <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
+                <span className="text-xs text-gray-500">Advisory — closing returns the case to the Department Analyst.</span>
+                <Button variant="ghost" onClick={resolve} disabled={busy}>Close &amp; return to analyst</Button>
+              </div>
+            )}
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownload: boolean }) {
+  const [files, setFiles] = useState<LmsDocumentsResponse['files']>({});
+  const [viewing, setViewing] = useState<{ docName: string; filename: string } | null>(null);
+  useEffect(() => {
+    listLmsDocuments(appId).then((d) => setFiles(d.files || {})).catch(() => { /* none on file */ });
+  }, [appId]);
+  const entries = Object.entries(files);
+  if (entries.length === 0) return null;
+  return (
+    <Card className="mt-4">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Documents on file</h2>
+        <span className="text-xs text-gray-500">
+          {entries.length} document{entries.length === 1 ? '' : 's'} travelled with the case
+        </span>
+      </Card.Header>
+      <Card.Body>
+        <div className="space-y-2">
+          {entries.map(([doc, meta]) => (
+            <div key={doc} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+              <span className="text-gray-800">
+                <span className="text-gray-400">📄</span> {doc}
+                {meta?.filename && <span className="ml-2 text-xs text-gray-500">{meta.filename}</span>}
+              </span>
+              <button type="button" className="text-brand-primary hover:underline text-xs"
+                onClick={() => setViewing({ docName: doc, filename: meta?.filename || doc })}>View</button>
+            </div>
+          ))}
+        </div>
+        {!canDownload && (
+          <p className="mt-2 text-xs text-gray-400">Read-only — download is not permitted for your role.</p>
+        )}
+      </Card.Body>
+      {viewing && (
+        <DocumentViewerModal
+          dealId="" docName={viewing.docName} filename={viewing.filename}
+          canDownload={canDownload}
+          fetchBlob={() => downloadLmsDocument(appId, viewing.docName)}
+          onClose={() => setViewing(null)}
+        />
+      )}
+    </Card>
+  );
+}
+
+
+function HandToCreditAnalystPanel({ appId, onDone, toast }: {
+  appId: string;
+  onDone: () => Promise<void> | void;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [busy, setBusy] = useState(false);
+  const hand = async () => {
+    setBusy(true);
+    try {
+      await handToCreditAnalyst(appId);
+      toast({ tone: 'success', message: 'Handed to the Credit Analyst pool for decisioning.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Handoff failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+      <div className="text-sm font-semibold text-blue-900">Hand to Credit Analyst</div>
+      <p className="mt-1 text-xs text-blue-800">
+        The DCC has advised. Release this case to the Credit Analyst pool — a Credit Analyst
+        picks it up and, seeing both the Branch Committee and DCC inputs, makes the final
+        credit decision that issues the offer. You do not decide the case.
+      </p>
+      <div className="mt-3">
+        <Button onClick={hand} disabled={busy}>{busy ? 'Handing over…' : 'Hand to Credit Analyst'}</Button>
+      </div>
+    </div>
+  );
+}
+
+
+function SubmitToDccPanel({ appId, onDone, toast }: {
+  appId: string;
+  onDone: () => Promise<void> | void;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
+  const [opinion, setOpinion] = useState('');
+  const [pep, setPep] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [memoBusy, setMemoBusy] = useState(false);
+  const attachMemo = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setMemoBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadCallbackMemo(appId, { filename: f.name, content_b64: btoa(bin) });
+        toast({ tone: 'success', message: 'Call-Back Memo attached.' });
+        await onDone();
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setMemoBusy(false); }
+    };
+    inp.click();
+  };
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await submitLmsToDcc(appId, { opinion: opinion.trim(), pep_confirmed: pep });
+      toast({ tone: 'success', message: 'Submitted to the Department Credit Committee.' });
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Submit failed.' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="text-sm font-semibold text-amber-900">Submit to Department Credit Committee</div>
+      <p className="mt-1 text-xs text-amber-800">
+        Check completeness and voice your support. You do not make the credit decision —
+        this refers the case to the DCC. As the checker, complete the call-back and
+        <strong> attach the Call-Back Memo</strong> below, and confirm PEP compliance.
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={attachMemo} disabled={memoBusy || busy}>
+          {memoBusy ? 'Attaching…' : 'Attach Call-Back Memo'}
+        </Button>
+        <span className="text-xs text-amber-700">Stored with the case + readable by the committee.</span>
+      </div>
+      <label className="mt-3 block text-xs font-medium text-amber-900">Support opinion</label>
+      <textarea
+        value={opinion} disabled={busy} rows={3}
+        onChange={(e) => setOpinion(e.target.value)}
+        placeholder="Why you support this facility (completeness, key strengths)…"
+        className="mt-1 w-full rounded-md border border-amber-300 px-2 py-1.5 text-sm"
+      />
+      <label className="mt-3 flex items-center gap-2 text-sm text-amber-900">
+        <input type="checkbox" checked={pep} disabled={busy} onChange={(e) => setPep(e.target.checked)} />
+        I confirm the client is not a PEP and has no compliance issues.
+      </label>
+      <div className="mt-3">
+        <Button onClick={submit} disabled={busy || !pep}>
+          {busy ? 'Submitting…' : 'Submit to DCC'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   appId: string; canEdit: boolean; toast: ReturnType<typeof useToast>['toast'];
   embedded?: boolean;
@@ -1389,7 +1604,6 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   const [cr, setCr] = useState<CrView | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -1411,7 +1625,7 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
       // Send only RM-edited fields; server re-derives auto/cbs on read.
       await saveLmsCr(appId, { values: edits, completed });
       setEdits({});
-      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      toast({ tone: 'success', message: completed ? 'Transaction Memo marked complete.' : 'Transaction Memo saved.' });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
@@ -1428,12 +1642,16 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
 
   const printCr = () => {
     const secs = (cr.template?.sections ?? []).map((sec) => {
+      const tableField = (sec.fields ?? []).find((f) => f.type === 'table');
+      if (tableField) {
+        return `<h2>${escapeHtml(sec.title)}</h2>${facilitiesToPrintHtml(valueFor(tableField.key))}`;
+      }
       const rows = (sec.fields ?? []).map((f) =>
         `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
       return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
     }).join('');
-    const head = `<div class="head"><h1>Credit Report — ${escapeHtml(appId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
-    printDocument(`Credit Report ${appId}`, head + secs);
+    const head = `<div class="head"><h1>Transaction Memo — ${escapeHtml(appId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Transaction Memo ${appId}`, head + secs);
   };
 
   const Shell:   ElementType = embedded ? EmbeddedShell  : Card;
@@ -1443,18 +1661,14 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
   return (
     <Shell className="mt-6">
       <SHeader>
-        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <h2 className="text-base font-semibold text-gray-900">Transaction Memo (TM)</h2>
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
           <button className="text-sm text-brand-primary" onClick={printCr}>Print</button>
-          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide' : 'Open'}
-          </button>
         </div>
       </SHeader>
-      {open && (
-        <SBody>
+      <SBody>
           <p className="text-xs text-gray-500 mb-4">
             Fields tinted blue come from CBS; grey from the application. Both are editable.
             Plain fields are for the relationship owner to complete.
@@ -1468,7 +1682,15 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {sec.fields.map((f) => {
                     const val = valueFor(f.key);
-                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    if (f.type === 'table') {
+                      return (
+                        <div key={f.key} className="md:col-span-2">
+                          <label className="mb-1 block text-xs text-gray-600">{f.label}</label>
+                          <FacilitiesTable value={val} onChange={(v) => setEdits((p) => ({ ...p, [f.key]: v }))} disabled={!canEdit || busy} />
+                        </div>
+                      );
+                    }
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose', 'background', 'statements', 'crb_arrears', 'risk_summary', 'other_bank_facilities', 'other_bank_securities', 'dsr_computation', 'policy_exception', 'account_conduct', 'repayment_source'].includes(f.key);
                     return (
                       <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
                         <label className="block text-xs text-gray-600 mb-1">
@@ -1505,7 +1727,6 @@ function CreditReportCard({ appId, canEdit, toast, embedded = false }: {
             <div className="mt-2 text-xs text-gray-400">Last saved by {cr.updated_by}</div>
           )}
         </SBody>
-      )}
     </Shell>
   );
 }
@@ -1715,15 +1936,101 @@ function CreditWorkbenchPanel({ appId, toast, embedded = false, canEdit = false 
   );
 }
 
+function AppealPanel({ app, canReview, onDone, toast }: {
+  app: LoanApplication; canReview: boolean;
+  onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const pending = !!app.appeal_pending;
+  const isDeclined = String(app.status).toLowerCase() === 'declined';
+  const appeals = app.appeals ?? [];
+  if (!isDeclined && !pending && appeals.length === 0) return null;
+
+  const file = async () => {
+    if (!reason.trim()) { toast({ tone: 'danger', message: 'An appeal reason is required.' }); return; }
+    setBusy(true);
+    try {
+      await appealDecline(app.id, reason.trim());
+      toast({ tone: 'success', message: 'Appeal filed — pending manager review.' });
+      await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' }); }
+    finally { setBusy(false); }
+  };
+  const review = async (outcome: 'grant' | 'uphold') => {
+    setBusy(true);
+    try {
+      const r = await decideAppeal(app.id, outcome, note.trim() || undefined);
+      toast({ tone: 'success', message: r.reopened ? 'Appeal granted — case reopened for a fresh decision.' : 'Appeal upheld — the decline stands.' });
+      await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' }); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Card className="mt-4" stripe="accent">
+      <Card.Header><h3 className="text-sm font-semibold text-gray-900">Decline appeal</h3></Card.Header>
+      <Card.Body>
+        {appeals.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {appeals.map((a, i) => (
+              <div key={i} className="rounded border border-gray-200 bg-gray-50 p-2 text-xs">
+                <div><span className="font-medium">Reason:</span> {a.reason}</div>
+                <div className="text-gray-500">
+                  Filed{a.by_name ? ` by ${a.by_name}` : ''}{a.at ? ` · ${a.at}` : ''} — <span className="font-medium">{a.outcome}</span>{a.reviewed_by_name ? ` by ${a.reviewed_by_name}` : ''}
+                </div>
+                {a.review_note && <div className="italic text-gray-500">Note: {a.review_note}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {isDeclined && !pending && (
+          <div>
+            <p className="mb-2 text-xs text-gray-500">This application was declined. File an appeal for reconsideration — a manager will review it.</p>
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Grounds for appeal…" rows={3} className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <Button variant="primary" onClick={() => void file()} disabled={busy}>File appeal</Button>
+          </div>
+        )}
+        {pending && canReview && (
+          <div>
+            <p className="mb-2 text-xs text-gray-500">An appeal is pending. Grant it (reopens the case for a fresh decision) or uphold the decline.</p>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Review note (optional)…" rows={2} className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => void review('grant')} disabled={busy}>Grant (reopen)</Button>
+              <Button variant="ghost" onClick={() => void review('uphold')} disabled={busy}>Uphold decline</Button>
+            </div>
+          </div>
+        )}
+        {pending && !canReview && (
+          <p className="text-xs text-gray-500">Appeal filed — pending manager review.</p>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
 function CorrectnessPanel({ appId, onDone, toast }: {
   appId: string; onDone: () => Promise<unknown> | unknown; toast: (t: { tone: 'success' | 'danger'; message: string }) => void;
 }) {
   const [opinion, setOpinion] = useState('');
+  const [reasons, setReasons] = useState<string[]>([]);
+  const [reasonOptions, setReasonOptions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    fetchReworkReasons().then(setReasonOptions).catch(() => setReasonOptions([]));
+  }, []);
+  const toggleReason = (r: string) =>
+    setReasons((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]));
   const act = async (decision: 'ready' | 'rework') => {
+    if (decision === 'rework' && reasons.length === 0) {
+      toast({ tone: 'danger', message: 'Select at least one rework reason before returning the case.' });
+      return;
+    }
     setBusy(true);
     try {
-      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined);
+      await setCommitteeReadiness(appId, decision, opinion.trim() || undefined,
+        decision === 'rework' ? reasons : undefined);
       toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
       await onDone();
     } catch (e) {
@@ -1734,7 +2041,20 @@ function CorrectnessPanel({ appId, onDone, toast }: {
     <Card className="mt-4" stripe="accent">
       <Card.Header><h3 className="text-sm font-semibold text-gray-900">Correctness check</h3></Card.Header>
       <Card.Body>
-        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. You may add an opinion for the Chief.</p>
+        <p className="mb-2 text-xs text-gray-500">Confirm the case is well-packaged for committee, or return it for rework. When returning for rework, select the specific reason(s) so the branch knows exactly what to fix; you may also add an opinion for the Chief.</p>
+        {reasonOptions.length > 0 && (
+          <div className="mb-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+            <div className="mb-1.5 text-xs font-medium text-gray-600">Rework reasons <span className="text-gray-400">(required if returning for rework)</span></div>
+            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {reasonOptions.map((r) => (
+                <label key={r} className="flex items-center gap-2 text-xs text-gray-700">
+                  <input type="checkbox" checked={reasons.includes(r)} onChange={() => toggleReason(r)} disabled={busy} />
+                  {r}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <textarea
           value={opinion}
           onChange={(e) => setOpinion(e.target.value)}

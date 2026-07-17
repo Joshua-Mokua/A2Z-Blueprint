@@ -10,10 +10,11 @@
 // The page is also UX-gated to the executive tier; the server is the real
 // authority (a non-exec PATCH returns 403).
 
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -120,15 +121,29 @@ function StringListEditor({
   );
 }
 
+const SubTabCtx = createContext<string>('');
+
+const SUBTABS: { id: string; label: string }[] = [
+  { id: 'lines',    label: 'Business Lines' },
+  { id: 'segments', label: 'Segments' },
+  { id: 'catalog',  label: 'Sectors & Categories' },
+  { id: 'products', label: 'Products & Flows' },
+  { id: 'mou',      label: 'MOU / Partners' },
+  { id: 'org',      label: 'Committees & Branches' },
+];
+
 function PanelShell({
-  title, hint, onSave, saving, children,
+  title, hint, onSave, saving, children, group,
 }: {
   title: string;
   hint?: string;
   onSave?: () => void;
   saving?: boolean;
   children: ReactNode;
+  group?: string;
 }) {
+  const active = useContext(SubTabCtx);
+  if (group && active && group !== active) return null;
   return (
     <Card stripe="primary">
       <Card.Header>
@@ -162,6 +177,7 @@ export default function AdminConfig() {
   const [cfg, setCfg] = useState<PipelineConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState('lines');
 
   // Local drafts
   const [required, setRequired] = useState<string[]>([]);
@@ -451,11 +467,7 @@ export default function AdminConfig() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title="Configuration"
-        breadcrumbs={[{ label: 'Reference & Admin' }, { label: 'Configuration' }]}
-        subtitle="Reference data that drives the pipeline and credit factory. Changes apply on the next refresh."
-      />
+      <AdminTabs subtitle="Reference data that drives the pipeline and credit factory. Changes apply on the next refresh." />
 
       <main className="max-w-6xl mx-auto px-6 py-6">
         {loading ? (
@@ -463,9 +475,28 @@ export default function AdminConfig() {
         ) : !cfg ? (
           <div className="py-16 text-center text-sm text-gray-500">Configuration unavailable.</div>
         ) : (
+          <>
+            <div className="mb-5 flex gap-1 overflow-x-auto border-b border-gray-200">
+              {SUBTABS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSubTab(s.id)}
+                  className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
+                    subTab === s.id
+                      ? 'border-[#0082BB] font-medium text-[#0082BB]'
+                      : 'border-transparent text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <SubTabCtx.Provider value={subTab}>
           <div className="grid lg:grid-cols-2 gap-5 items-start">
             {/* Client business lines */}
             <PanelShell
+              group="lines"
               title="Client business lines"
               hint="Consumer / Commercial / CIB. 'Field' picks the third selector: MOU (consumer) or CBK sector (business)."
               onSave={() =>
@@ -518,6 +549,7 @@ export default function AdminConfig() {
 
             {/* Required fields */}
             <PanelShell
+              group="lines"
               title="Required fields"
               hint="Which inputs a new deal must have before it can be created."
               onSave={() => save('required', { required_fields: required }, 'Required fields')}
@@ -547,6 +579,7 @@ export default function AdminConfig() {
 
             {/* Sectors */}
             <PanelShell
+              group="catalog"
               title="CBK economic sectors"
               hint="Sector classification offered for business clients."
               onSave={() => save('sectors', { business_sectors: sectors }, 'Sectors')}
@@ -557,6 +590,7 @@ export default function AdminConfig() {
 
             {/* Pipeline categories (A2b) — balance-sheet class the bank tracks */}
             <PanelShell
+              group="catalog"
               title="Pipeline categories"
               hint="Balance-sheet classes shown on the create-deal form (Loan/Asset, Deposit/Liability, Insurance). Add a new pipeline class here. Dormant categories are kept but hidden."
               onSave={() => save('deal_categories', { deal_categories: dealCategories }, 'Pipeline categories')}
@@ -567,6 +601,7 @@ export default function AdminConfig() {
 
             {/* Segment display names */}
             <PanelShell
+              group="segments"
               title="Segment display names"
               hint="Map internal segment buckets to the bank's own names (e.g. Affluent → Premier)."
               onSave={() => save('labels', { segment_labels: labels }, 'Segment names')}
@@ -592,6 +627,7 @@ export default function AdminConfig() {
 
             {/* Customer segments per client business line */}
             <PanelShell
+              group="segments"
               title="Customer segment options"
               hint="The segment choices offered on the deal form, per business line."
               onSave={() => {
@@ -621,6 +657,7 @@ export default function AdminConfig() {
 
             {/* Product catalogue */}
             <PanelShell
+              group="products"
               title="Product catalogue"
               hint="Products offered, grouped by class. Class drives the pipeline buckets."
               onSave={() => save('products', { product_catalogue: products }, 'Product catalogue')}
@@ -645,6 +682,7 @@ export default function AdminConfig() {
             {/* MOU register — writes go to the dedicated endpoint, so additions
                 are immediately selectable on consumer deals. */}
             <PanelShell
+              group="mou"
               title="Partnership / MOU register"
               hint="Partners offered on consumer deals. Add a partner here and it's selectable immediately."
             >
@@ -711,6 +749,7 @@ export default function AdminConfig() {
 
             {/* Product flows — per-product stage sequence + per-stage SLA */}
             <PanelShell
+              group="products"
               title="Product flows"
               hint="Each product can have its own stage sequence and per-stage target days. Pick a product to customise its flow; unset products follow their class flow."
             >
@@ -721,11 +760,18 @@ export default function AdminConfig() {
                   className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
                 >
                   <option value="">Select a product to edit its flow…</option>
-                  {allProducts.map((p) => (
-                    <option key={p} value={p}>
-                      {p}{productFlows[p] ? '  • customised' : ''}
-                    </option>
-                  ))}
+                  {allProducts.some((p) => productFlows[p]) && (
+                    <optgroup label="Products with a custom flow">
+                      {allProducts.filter((p) => productFlows[p]).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Using their class default">
+                    {allProducts.filter((p) => !productFlows[p]).map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </optgroup>
                 </select>
 
                 {flowProduct && (
@@ -849,16 +895,34 @@ export default function AdminConfig() {
                                 : x)),
                             }))}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setFlowDraft((d) => ({
-                              ...d, stages: d.stages.filter((_, j) => j !== i),
-                            }))}
-                            className="text-gray-400 hover:text-red-600 px-1"
-                            aria-label="Remove stage"
-                          >
-                            ×
-                          </button>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setFlowDraft((d) => ({
+                                ...d,
+                                stages: [
+                                  ...d.stages.slice(0, i),
+                                  { stage: '', target_days: 3, win_probability: null },
+                                  ...d.stages.slice(i),
+                                ],
+                              }))}
+                              className="px-1 text-sm text-gray-400 hover:text-[#0082BB]"
+                              aria-label="Insert a stage above this one"
+                              title="Insert a stage above this one"
+                            >
+                              +↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFlowDraft((d) => ({
+                                ...d, stages: d.stages.filter((_, j) => j !== i),
+                              }))}
+                              className="text-gray-400 hover:text-red-600 px-1"
+                              aria-label="Remove stage"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
                       ))}
                       <Button
@@ -873,6 +937,7 @@ export default function AdminConfig() {
                       <p className="text-[11px] text-gray-400">
                         Win&nbsp;% is the likelihood of closing a deal sitting at that stage. A deal
                         inherits its current stage&apos;s value automatically — leave blank for none.
+                        Use <span className="font-medium">+↑</span> on a row to insert a stage above it; <span className="font-medium">+ Add stage</span> appends to the end.
                       </p>
                     </div>
 
@@ -948,29 +1013,16 @@ export default function AdminConfig() {
               </div>
             </PanelShell>
 
-            {/* Currency pointer */}
-            <Card>
-              <Card.Header>
-                <h2 className="text-base font-semibold text-gray-900">Currency &amp; FX rates</h2>
-              </Card.Header>
-              <Card.Body>
-                <p className="text-sm text-gray-600">
-                  Exchange rates and currency books are managed on their own page.
-                </p>
-                <div className="mt-3">
-                  <Button variant="secondary" size="sm" onClick={() => navigate('/fx-rates')}>
-                    Open FX Rates →
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
-
             {/* Committee tiers — the multi-tier credit committee ladder. */}
-            <CommitteeTiersPanel />
-
-            {/* Branches & regions — org_config single source of truth. */}
-            <BranchesPanel />
+            {subTab === 'org' && (
+              <>
+                <CommitteeTiersPanel />
+                <BranchesPanel />
+              </>
+            )}
           </div>
+            </SubTabCtx.Provider>
+          </>
         )}
       </main>
     </div>

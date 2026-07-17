@@ -1507,14 +1507,39 @@ def save_kpi_library(library: dict):
     KPI_LIBRARY_FILE.write_text(json.dumps(library, indent=2), encoding="utf-8")
 
 def get_active_kpis() -> list:
-    """Return only the KPIs the bank has activated."""
+    """Return the KPIs the bank has activated.
+
+    Two things were wrong here and both are load-bearing:
+
+    1. Shape. The live library keeps a flat ``kpis`` list, each entry carrying its own
+       ``pillar``; ``pillars`` is display metadata (id/name/colour). This function
+       iterated ``pillars`` as a {pillar: [kpi]} dict, so it raised AttributeError
+       against the real file and took the KPI Library admin down with it.
+
+    2. Source of truth. Each KPI carries its own ``active`` flag. A parallel
+       ``active_kpis`` allowlist also existed, but the v10.420/v10.469 migrations
+       renamed KPI ids and updated ``kpis`` and ``role_kpis`` without updating that
+       list, leaving most of its entries pointing at ids that no longer exist. Honouring
+       it would silently drop most of the library. The per-KPI flag is authoritative;
+       the allowlist is legacy and is no longer consulted.
+
+    The legacy nested shape is still read if a library ever presents it.
+    """
     lib = get_kpi_library()
-    active_ids = set(lib.get("active_kpis", []))
     result = []
-    for pillar, kpis in lib.get("pillars", DEFAULT_KPI_LIBRARY).items():
-        for k in kpis:
-            if not active_ids or k["id"] in active_ids:
-                result.append({**k, "pillar": pillar})
+
+    flat = lib.get("kpis")
+    if isinstance(flat, list) and flat:
+        return [dict(k) for k in flat
+                if isinstance(k, dict) and k.get("active") is not False]
+
+    pillars = lib.get("pillars", DEFAULT_KPI_LIBRARY)
+    if isinstance(pillars, dict):
+        active_ids = set(lib.get("active_kpis", []))
+        for pillar, kpis in pillars.items():
+            for k in kpis:
+                if not active_ids or k["id"] in active_ids:
+                    result.append({**k, "pillar": pillar})
     return result
 
 def get_role_kpis(role: str) -> list:
@@ -1527,9 +1552,10 @@ def get_pillar_weights() -> dict:
     lib = get_kpi_library()
     return lib.get("pillar_weights", {
         "Financial": 0.40,
-        "Customer Focus": 0.25,
-        "Operational Excellence": 0.25,
+        "Customer Focus": 0.20,
+        "Operational Excellence": 0.15,
         "People & Learning": 0.10,
+        "Must Win Battles": 0.15,
     })
 
 
@@ -6007,6 +6033,7 @@ class LoanApplicationManager:
             "pipeline_deal_id": deal_id,
             "client_name":     deal.get("client_name", ""),
             "client_cif":      str(deal.get("client_cif", "") or ""),
+            "client_type":     str(deal.get("client_type", "") or ""),
             "product":         product,
             "amount":          amount,
             "currency":        str(deal.get("currency", "") or "KES"),
@@ -6056,6 +6083,15 @@ class LoanApplicationManager:
             deal_appeals = deal.get("appeals")
             if isinstance(deal_appeals, list) and deal_appeals:
                 app["committee_appeals"] = deal_appeals
+            # Carry the deal's uploaded documents onto the application so the
+            # credit side (analyst, DCC/BCC, Chief Credit) can READ every file as
+            # the case travels. Stored paths are repo-relative; the LMS document
+            # endpoints serve them under LMS permissions (the analyst has no deal
+            # scope, so we cannot rely on the deal document routes here).
+            deal_docs = deal.get("document_files")
+            if isinstance(deal_docs, dict) and deal_docs:
+                app["document_files"] = deal_docs
+                app["documents_provided"] = list(deal.get("documents_provided", []) or [])
         except Exception:
             pass
         # Phase C: seed the journey so every case has history from creation —
@@ -7070,6 +7106,71 @@ REPORTING_TREE = {
         "units": None,
     },
 }
+
+
+# ── B1: derive the visibility tree from the admin-editable org_config hierarchy ──
+# tree_roles for a role = itself + every role reachable DOWN the hierarchy via a
+# solid (reports_to) OR dotted (functional_reports_to) link. Admin edits to the
+# hierarchy — including dotted functional lines — thus drive who sees whose
+# pipeline/performance. Branch heads stay own-unit-scoped (handled in
+# get_visible_staff); HO heads get their descendants with no unit filter, so a
+# dotted line (e.g. a Premier RO -> Head Premier) grants cross-branch visibility.
+# BSC rollup still follows the SOLID line only (see compute_actuals) — no
+# double-counting a matrixed role into two teams.
+def build_reporting_tree_from_hierarchy(cfg: dict = None) -> dict:
+    try:
+        cfg = cfg if cfg is not None else get_org_config()
+        hier = (cfg or {}).get("hierarchy", {}) or {}
+    except Exception:
+        return {}
+    if not isinstance(hier, dict) or not hier:
+        return {}
+    # Dotted (functional) lines live in a separate key so `hierarchy` stays a
+    # plain solid list; a role can also carry inline functional_reports_to.
+    functional = (cfg or {}).get("functional_hierarchy", {}) or {}
+    children: dict = {}
+    for role, info in hier.items():
+        if isinstance(info, dict):
+            parents = list(info.get("reports_to", []) or []) \
+                + list(info.get("functional_reports_to", []) or [])
+        else:
+            parents = list(info or [])
+        if isinstance(functional, dict):
+            parents = parents + list(functional.get(role, []) or [])
+        for p in parents:
+            children.setdefault(p, set()).add(role)
+    tree: dict = {}
+    for role in hier:
+        seen, stack = set(), [role]
+        while stack:
+            r = stack.pop()
+            if r in seen:
+                continue
+            seen.add(r)
+            stack.extend(children.get(r, ()))
+        # A role with NO descendants is not a manager — it must resolve to the
+        # individual, not to everyone who shares the role. Without this, a leaf role
+        # like "Branch Operations Officer" got tree_roles=[itself] + units=None, which
+        # get_visible_staff read as "every BOO bank-wide" (the 53-staff bug). Mark it
+        # self_only so the caller scopes to this person's staff_code.
+        if seen == {role}:
+            tree[role] = {"tree_roles": [role], "units": None, "self_only": True}
+        else:
+            tree[role] = {"tree_roles": sorted(seen), "units": None}
+    for top in ("Managing Director", "Chief Executive & Managing Director"):
+        if top in tree:
+            tree[top] = {"tree_roles": None, "units": None}
+    return tree
+
+
+# Merge derived tree over the hardcoded fallback: derived wins for any role in
+# the live hierarchy; hardcoded stays for roles not (yet) in it. Rebuilt on API
+# restart, so admin hierarchy edits take effect on restart.
+try:
+    REPORTING_TREE = {**REPORTING_TREE, **build_reporting_tree_from_hierarchy()}
+except Exception:
+    pass
+
 
 _UNIT_SCOPED_ROLES = {
     "branch manager","branch operations manager","branch credit manager",

@@ -264,6 +264,110 @@ def fetch_branches(
 
 # ── Aggregates (bank-level rollups; not audited) ────────────────────────
 
+@router.get("/portfolio")
+def fetch_my_portfolio(
+    staff_code: str = Query(default=""),
+    user: dict = Depends(get_current_user),
+):
+    """The logged-in person's CBS book, or — for a manager — the consolidated book
+    of their whole reporting subtree, with an optional per-staff drill-down.
+    Managers get a `team` list (staff in scope) for the selector."""
+    my_code = str(user.get("staff_code") or "").strip()
+    my_role = str(user.get("role") or "")
+    if not my_code:
+        try:
+            from utils.core import UserManager
+            u = UserManager().users.get(str(user.get("username") or ""))
+            my_code = str((u or {}).get("staff_code") or "").strip()
+            my_role = my_role or str((u or {}).get("role") or "")
+        except Exception:
+            pass
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        scope = {str(x) for x in get_visible_staff_codes(
+            {"staff_code": my_code, "role": my_role, "is_admin": bool(user.get("is_admin"))})}
+    except Exception:
+        scope = set()
+    scope = scope or ({my_code} if my_code else set())
+    # team roster for the selector (names)
+    team = []
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        seen = set()
+        for _, r in roster.iterrows():
+            sc = str(r.get("Staff Code") or "").strip()
+            if sc in scope and sc not in seen:
+                seen.add(sc)
+                team.append({"staff_code": sc, "name": str(r.get("Staff Name") or sc)})
+        team.sort(key=lambda x: x["name"])
+    except Exception:
+        team = []
+    sel = str(staff_code or "").strip()
+    if sel and sel in scope:
+        codes, view, selected = {sel}, "individual", sel
+    else:
+        codes = scope
+        view = "consolidated" if len(scope) > 1 else "individual"
+        selected = ""
+    from utils.cbs_manager import get_portfolio_for_codes
+    # Two independent lenses, never summed: the managed book (accounts this scope is RM
+    # for) and introduced production (accounts this scope originated, possibly now
+    # managed elsewhere). pf stays the managed book for back-compat; introduced rides
+    # alongside so the UI can offer a "Managing / Introduced" toggle.
+    pf = get_portfolio_for_codes(codes, attribution="managed")
+    introduced = get_portfolio_for_codes(codes, attribution="introduced")
+    # pipeline value for the scope, split deposits vs loans by product
+    try:
+        from utils.core import PipelineManager
+        pm = PipelineManager()
+        pipe_dep = pipe_loan = 0.0
+        loan_words = ("loan", "facility", "lpo", "mortgage", "advance", "overdraft", "credit")
+        for c in codes:
+            for dl in pm.get_deals(staff_code=c, active_only=True):
+                v = float(dl.get("deal_value") or 0)
+                prod = str(dl.get("product") or "").lower()
+                if any(w in prod for w in loan_words):
+                    pipe_loan += v
+                else:
+                    pipe_dep += v
+        pf["summary"]["pipeline_deposits"] = round(pipe_dep, 2)
+        pf["summary"]["pipeline_loans"] = round(pipe_loan, 2)
+        pf["summary"]["pipeline_value"] = round(pipe_dep + pipe_loan, 2)
+    except Exception:
+        pf["summary"]["pipeline_deposits"] = 0.0
+        pf["summary"]["pipeline_loans"] = 0.0
+        pf["summary"]["pipeline_value"] = 0.0
+    pf["introduced"] = {"accounts": introduced.get("accounts", []),
+                        "summary": introduced.get("summary", {})}
+    pf["team"] = team
+    pf["view"] = view
+    pf["selected"] = selected
+    pf["is_manager"] = len(scope) > 1
+    # branch-unallocated (orphaned accounts in the manager's branch) — consolidated view only
+    pf["branch_unallocated"] = None
+    if view == "consolidated" and len(scope) > 1:
+        try:
+            from utils.cbs_manager import branch_code_for_name, get_branch_unallocated
+            from utils.api_pipeline_scope import get_staff_roster
+            roster = get_staff_roster()
+            reg_codes = set(roster["Staff Code"].astype(str).str.strip())
+            hit = roster[roster["Staff Code"].astype(str).str.strip() == my_code]
+            units = set()
+            if not hit.empty:
+                units.add(str(hit.iloc[0].get("Unit") or "").strip())
+            bcodes = []
+            for u in units:
+                bcodes += branch_code_for_name(u)
+            if bcodes:
+                bu = get_branch_unallocated(bcodes, reg_codes)
+                bu["branch_codes"] = bcodes
+                pf["branch_unallocated"] = bu
+        except Exception:
+            pf["branch_unallocated"] = None
+    return pf
+
+
 @router.get("/aggregates")
 def fetch_aggregates(
     user: dict = Depends(get_current_user),

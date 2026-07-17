@@ -84,6 +84,42 @@ def _target_cascade() -> Dict[str, Any]:
     return _CACHE["target_cascade"]
 
 
+def _view_config() -> Dict[str, Any]:
+    """data/bsc_view_config.json — which basis scoring runs on, and who may switch."""
+    if "view_config" not in _CACHE:
+        from utils.db import db
+        _CACHE["view_config"] = (
+            db.load_json(DATA_DIR / "bsc_view_config.json",
+                          default={}) or {}
+        )
+    return _CACHE["view_config"]
+
+
+def default_scoring_basis() -> str:
+    """'stretch' or 'target'. Admin owns this; there is no hardcoded fallback
+    beyond 'target', which is the safe reading of a target with no stretch."""
+    b = str(_view_config().get("scoring_basis_default", "target")).lower()
+    return b if b in ("stretch", "target") else "target"
+
+
+def fx_kes_per_usd() -> float:
+    """data/fx_config.json — rate for showing the KES/USD equivalent.
+
+    Group reports in USD, the affiliate runs in KES, so a monetary target is shown
+    both ways. Only the equivalent is derived: the stored target keeps the currency
+    its source scorecard stated, so changing the rate never rewrites a target.
+    """
+    if "fx_config" not in _CACHE:
+        from utils.db import db
+        _CACHE["fx_config"] = (
+            db.load_json(DATA_DIR / "fx_config.json", default={}) or {}
+        )
+    try:
+        return float(_CACHE["fx_config"].get("kes_per_usd") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _fixed_kpis_config() -> Dict[str, Any]:
     """data/fixed_kpis.json — admin-marks which KPIs are bank-fixed
     per period. Format: {period: [kpi_id, kpi_id, ...]} or
@@ -155,22 +191,44 @@ def _staff_role_for_target(staff_code: str) -> Optional[str]:
         return None
 
 
+def _pick(entry: Dict[str, Any], basis: str) -> Optional[Tuple[float, str]]:
+    """Choose the stretch or the plain target from a bank_targets entry.
+
+    A KPI without a stretch scores on its target regardless of basis: only Revenue
+    and PBT carry a reach figure, and the rest would otherwise silently score
+    against nothing.
+    """
+    if basis == "stretch" and entry.get("stretch_target") is not None:
+        return (float(entry["stretch_target"]), "bank_fixed_stretch")
+    if entry.get("target") is not None:
+        return (float(entry["target"]), "bank_fixed")
+    return None
+
+
 def get_target_for_staff(
     staff_code: str,
     kpi_id: str,
     period: str,
+    basis: Optional[str] = None,
 ) -> Optional[Tuple[float, str]]:
     """Get the target value for a staff member on a KPI for a period.
 
     Returns (target, source) tuple where source is one of:
+      - 'bank_fixed_stretch' — bank-level stretch (the reach figure)
       - 'bank_fixed' — bank-level target (KPI is fixed for period)
       - 'cascaded' — per-staff target from target_cascade
       - 'role_default' — per-role quarterly default (v10.323 fallback)
       - None — no target configured
 
     Order: fixed → cascaded → role_default → missing.
+
+    ``basis`` is 'stretch' or 'target'; None takes the admin default from
+    bsc_view_config. The MD's sheet states the target, while the EXCO sheets quote
+    the stretch, and both reconcile at the configured FX rate — they are two real
+    figures, not a discrepancy.
     """
     year = period.split("-")[0] if "-" in period else period
+    basis = (basis or default_scoring_basis()).lower()
 
     # 1. Fixed (bank-wide target — same for everyone)
     if is_fixed_kpi(kpi_id, period):
@@ -179,8 +237,10 @@ def get_target_for_staff(
                             f"{kpi_id}|{period}"):
             if key_format in bt:
                 entry = bt[key_format]
-                if isinstance(entry, dict) and "target" in entry:
-                    return (float(entry["target"]), "bank_fixed")
+                if isinstance(entry, dict):
+                    got = _pick(entry, basis)
+                    if got:
+                        return got
                 if isinstance(entry, (int, float)):
                     return (float(entry), "bank_fixed")
         # Fixed but no explicit bank target — fall through
@@ -307,11 +367,20 @@ def _build_alias_map_from_library() -> Dict[str, str]:
     # field. These appear in role_kpis with shorter forms than the
     # canonical kpi.code values.
     aliases.setdefault("STAFF_PROD", "Staff Productivity")
-    aliases.setdefault("DEP_GROWTH", "Retail & MSME Deposit Growth")
     aliases.setdefault("FEES_COMM", "Total NFI")
     aliases.setdefault("LOAN_DISB", "Disbursements Retail Loans")
-    aliases.setdefault("TRANSACTIONS", "Digital Transactions (%)")
+    # TRANSACTIONS pointed at the NAME "Digital Transactions (%)"; the id is K012, so
+    # the alias resolved to nothing and the measure would have dropped off any
+    # scorecard carrying it, without a word.
+    aliases.setdefault("TRANSACTIONS", "K012")
     aliases.setdefault("NEW_CUST", "Number of Business Borrowers")
+    # DEP_GROWTH is deliberately NOT aliased. It is the real id of "Total Deposit
+    # Growth", and the alias pointed at a different KPI, "Retail & MSME Deposit
+    # Growth". Resolution now checks real ids first, so the alias was already dead —
+    # but a dead alias is a loaded gun: the next person to reorder that check
+    # reintroduces the bug that scored the MD on retail deposits instead of total.
+    # When a migration promotes a legacy code to a canonical id, delete its alias in
+    # the same commit. tests/test_bsc_library_integrity.py asserts this.
     # v10.329 — Branch Manager scorecard alignment
     aliases.setdefault("COMPLIANCE", "COMPLIANCE_SCORE")
     # Refs without a clean equivalent yet (logged for backlog):
@@ -325,8 +394,22 @@ KPI_ID_ALIASES: Dict[str, str] = _build_alias_map_from_library()
 
 
 def resolve_role_kpis(role: str) -> List[KpiResolution]:
-    """Resolve a role's KPI set with weights, directions, and
-    canonical IDs (handling B-010 alias mappings)."""
+    """Resolve a role's KPI set with weights, directions, and canonical IDs.
+
+    Weight resolution, in order:
+
+    1. ``role_kpi_weights[role]`` — the real scorecard. Each KPI carries the area it
+       sits in and its share WITHIN that area, so the effective weight is
+       ``areas[area] * weight``. This is per-role by nature: PBT is 15% of the MD's
+       scorecard and 20% of the CFO's, which a single library-level weight cannot say.
+       A null weight means the source scorecard gave no usable number — it resolves to
+       0.0 and shows up in validate_role_weights rather than being invented.
+    2. The KPI definition's own ``weight`` — the original library-level default, kept
+       for every role that has no scorecard loaded yet.
+
+    The KPI's ``pillar`` is its library-level home; the role's ``area`` is where that
+    role's scorecard files it. They normally agree, but the scorecard wins when set.
+    """
     lib = _kpi_library()
     role_kpi_ids = lib.get("role_kpis", {}).get(role, []) or []
     if not role_kpi_ids:
@@ -335,21 +418,42 @@ def resolve_role_kpis(role: str) -> List[KpiResolution]:
     all_defs = {k.get("id"): k for k in lib.get("kpis", [])
                 if isinstance(k, dict) and k.get("id")}
 
+    _rw = (lib.get("role_kpi_weights", {}) or {}).get(role) or {}
+    _areas = _rw.get("areas") or {}
+    _kpi_meta = _rw.get("kpis") or {}
+
+    def _weight_and_area(ref_, canonical_, defn_):
+        meta = _kpi_meta.get(canonical_) or _kpi_meta.get(ref_) or {}
+        if meta:
+            area = meta.get("area") or (defn_.get("pillar", "") if defn_ else "")
+            w = meta.get("weight")
+            if w is None:
+                return 0.0, area          # scorecard says "weight not yet known"
+            return float(_areas.get(area, 0.0)) * float(w), area
+        if defn_:
+            return float(defn_.get("weight", 0.0)), str(defn_.get("pillar", ""))
+        return 0.0, ""
+
     out: List[KpiResolution] = []
     for ref in role_kpi_ids:
-        canonical = KPI_ID_ALIASES.get(ref, ref)
-        defn = all_defs.get(canonical)
+        # A ref that is itself a real KPI id always wins. Aliases exist only to
+        # rescue legacy refs that have no definition, so consulting them first let a
+        # stale alias shadow a live KPI: DEP_GROWTH is the id of "Total Deposit
+        # Growth", but the alias redirected it to "Retail & MSME Deposit Growth",
+        # scoring the MD's whole-bank deposit KPI as retail-only deposits.
+        defn = all_defs.get(ref)
+        canonical = ref
         if not defn:
-            # Try the ref directly (in case it IS already canonical)
-            defn = all_defs.get(ref)
-            canonical = ref if defn else canonical
+            canonical = KPI_ID_ALIASES.get(ref, ref)
+            defn = all_defs.get(canonical)
         if defn:
+            _w, _area = _weight_and_area(ref, canonical, defn)
             out.append(KpiResolution(
                 role_kpi_ref=ref,
                 canonical_id=defn.get("id", canonical),
-                weight=float(defn.get("weight", 0.0)),
+                weight=_w,
                 direction=str(defn.get("direction", "higher")),
-                pillar=str(defn.get("pillar", "")),
+                pillar=_area or str(defn.get("pillar", "")),
                 defined=True,
             ))
         else:
@@ -469,12 +573,18 @@ def compute_staff_scorecard(
     staff_code: str,
     role: str,
     period: str,
+    basis: Optional[str] = None,
 ) -> StaffScorecard:
     """Compute one staff's BSC scorecard for a period.
 
     Returns a StaffScorecard with per-KPI breakdown and final
     weighted-average score.
+
+    ``basis`` is 'stretch' or 'target'; None takes the admin default. Scoring on the
+    stretch is the bank's rule, so the same actual scores lower than it would against
+    the plain target — that is the intent, not a defect.
     """
+    basis = (basis or default_scoring_basis()).lower()
     resolutions = resolve_role_kpis(role)
     weight_val = validate_role_weights(role)
 
@@ -490,10 +600,10 @@ def compute_staff_scorecard(
                 staff_code, res.role_kpi_ref, period)
 
         target_info = get_target_for_staff(
-            staff_code, res.canonical_id, period)
+            staff_code, res.canonical_id, period, basis)
         if target_info is None and res.role_kpi_ref != res.canonical_id:
             target_info = get_target_for_staff(
-                staff_code, res.role_kpi_ref, period)
+                staff_code, res.role_kpi_ref, period, basis)
 
         if target_info:
             target_value, target_source = target_info

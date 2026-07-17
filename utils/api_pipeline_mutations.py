@@ -259,6 +259,23 @@ def _credit_handoff_cutoff(product_type: str):
     """Return (handoff_stage, handoff_index, flow_stages). handoff_index is None if
     the product's flow has no credit-analysis handoff stage."""
     stages = _product_flow_stage_names(product_type)
+    # P2: Department Analyst layer. When enabled, the credit factory engages
+    # EARLIER — at the configured department handoff stage (e.g. "Department
+    # Credit Committee Review") rather than at Credit Analysis. Both the RM edit
+    # lock and the LMS-application creation key off this cutoff, so both shift
+    # earlier automatically. Gated: when disabled (default) this block is a
+    # no-op and the legacy Credit-Analysis cutoff below applies unchanged.
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+        if da.get("enabled"):
+            hs = str(da.get("handoff_stage", "") or "").strip().lower()
+            if hs:
+                for i, nm in enumerate(stages):
+                    if str(nm).strip().lower() == hs:
+                        return nm, i, stages
+    except Exception:
+        pass
     # explicit config override
     explicit = None
     try:
@@ -279,6 +296,39 @@ def _credit_handoff_cutoff(product_type: str):
         if str(nm).strip().lower() in _CREDIT_ANALYSIS_FAMILY:
             return nm, i, stages
     return None, None, stages
+
+
+def is_credit_handoff_for_deal(deal: Dict[str, Any], old_stage: str, new_stage: str) -> bool:
+    """Per-product credit handoff gate.
+
+    A deal hands off to Credit (creating the LMS application and locking the deal)
+    when it ENTERS its product's designated credit-analysis stage — "Credit
+    Analysis" / "Credit Assessment", or an explicit ``credit_handoff_stage``.
+    Origination stages that come BEFORE it in the product's own flow
+    (e.g. Documentation, Branch/Department Credit Committee Review) do NOT hand
+    off and do NOT lock — the RM keeps building the case there.
+
+    Each product's journey (and therefore its credit gate) varies, so this keys
+    off the product's own flow rather than a global stage-name set. Falls back to
+    the static ``LMS_DEFERRED_STAGES`` test only when the product's flow has no
+    credit-analysis stage (e.g. deposit/account products), preserving legacy
+    behaviour for those.
+    """
+    if new_stage == old_stage:
+        return False
+    product_type = str(deal.get("product_type", "") or "")
+    handoff_stage, handoff_idx, flow_stages = _credit_handoff_cutoff(product_type)
+    if handoff_stage is None or handoff_idx is None:
+        # No credit-analysis stage in this product's flow — legacy behaviour.
+        return is_lms_handoff_transition(old_stage, new_stage)
+    new_idx = flow_stages.index(new_stage) if new_stage in flow_stages else -1
+    if new_idx < 0:
+        # Target stage isn't in this product's flow — fall back to the static set.
+        return is_lms_handoff_transition(old_stage, new_stage)
+    # Fire once the deal reaches (enters or is past) the credit-analysis cutoff.
+    # create_from_pipeline_deal is idempotent, so LMS->LMS moves past the cutoff
+    # return the existing application id rather than creating a duplicate.
+    return new_idx >= handoff_idx
 
 
 def validate_create_payload(deal_data: Dict[str, Any]) -> Tuple[bool, str]:
@@ -566,7 +616,7 @@ def handle_lms_handoff(
     event `API_PIPELINE_ADVANCE_LMS_FAILED` should be emitted by the
     caller alongside.
     """
-    if not is_lms_handoff_transition(old_stage, new_stage):
+    if not is_credit_handoff_for_deal(deal, old_stage, new_stage):
         return False, None, None
 
     try:

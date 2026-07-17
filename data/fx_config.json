@@ -1,0 +1,6 @@
+{
+  "kes_per_usd": 129.0,
+  "as_of": "2026-07-16",
+  "note": "Rate for showing the KES/USD equivalent of a monetary target. Admin-editable. Stored targets keep the currency their source scorecard stated; only the equivalent is derived, so changing this never rewrites a target.",
+  "source": "budget rate, to be confirmed with Finance"
+}

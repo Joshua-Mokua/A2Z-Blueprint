@@ -1,0 +1,10 @@
+{
+  "scoring_basis_default": "stretch",
+  "basis_switch_roles": [
+    "Managing Director",
+    "Chief Finance Officer",
+    "Business Manager"
+  ],
+  "basis_switch_staff_codes": [],
+  "_note": "Scoring runs on the stretch. Holders of the roles listed here may switch the basis to the plain target and see both lines; everyone else sees a single Target column carrying the stretch, which is the figure their own scorecard gave them. Keyed by role rather than staff code so it survives people changing seats. Admin-editable."
+}

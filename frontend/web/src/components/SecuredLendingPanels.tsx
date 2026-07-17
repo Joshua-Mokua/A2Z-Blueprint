@@ -22,7 +22,7 @@ import type {
 // Collateral types — mirror the admin Credit Policy Matrix keys.
 const COLLATERAL_TYPES = [
   'Cash / Fixed Deposit', 'Residential Property', 'Commercial Property',
-  'Motor Vehicle', 'Debenture', 'Stock / Inventory',
+  'Motor Vehicle', 'Debenture', 'Stock / Inventory', 'Salary Domiciliation',
 ];
 
 const CLASS_TONE: Record<SecurityClassification, 'neutral' | 'warning' | 'success' | 'brand'> = {

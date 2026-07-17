@@ -30,23 +30,27 @@
 //   after request_cancel, can_request_cancel becomes false). They
 //   navigate back to /pipeline when they want.
 
+import { displayName } from "../lib/names";
 import { useCallback, useEffect, useState } from 'react';
+import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesTable';
+import { printDocument, escapeHtml } from '@/lib/print';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, downloadDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { Timeline } from '@/components/Timeline';
+import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { PageHeader } from '@/components/PageHeader';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { Input } from '@/components/Input';
 import { Skeleton } from '@/components/Skeleton';
-import { PermissionBadges } from '@/components/PermissionBadges';
+import { WorkbenchShell } from '@/components/WorkbenchShell';
 import { StaffPicker } from '@/components/StaffPicker';
 import {
-  stageTone,
   ADVANCE_TARGET_STAGES,
   type PipelineDeal,
   type DealPermissions,
@@ -191,25 +195,9 @@ export function PipelineDealDetail() {
 
   // ── Main render — deal + action panels ────────────────────────────────
 
-  const currency = branding?.currency_symbol ?? '';
 
   return (
     <DetailFrame title={`Deal ${deal.id}`}>
-      {/* Top action bar */}
-      <div className="flex items-center justify-between mt-8 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
-          ← Back to pipeline
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void reloadDeal()}
-          loading={loading}
-        >
-          Refresh
-        </Button>
-      </div>
-
       {/* Phase L: origination lock banner — the deal is with Credit and edits/
           stage moves are disabled until it's returned or info is requested. */}
       {deal.locked && (
@@ -224,143 +212,9 @@ export function PipelineDealDetail() {
         </div>
       )}
 
-      {/* Primary identity card */}
-      <Card stripe="primary">
-        <Card.Header>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-lg font-semibold text-brand-secondary">
-              {deal.client_name || '—'}
-            </h2>
-            <Badge tone={stageTone(deal.stage)} size="md">{deal.stage}</Badge>
-            {deal.locked && <Badge tone="warning" size="sm">🔒 Locked</Badge>}
-            {deal.draft && <Badge tone="warning" size="sm">Draft</Badge>}
-            {deal.cancel_requested && !deal.cancel_approved && (
-              <Badge tone="warning" size="sm">Cancel requested</Badge>
-            )}
-            {deal.manager_validated && (
-              <Badge tone="success" size="sm">Validated</Badge>
-            )}
-            {deal.referral_status && (
-              <Badge
-                tone={deal.referral_status === 'accepted' ? 'success'
-                  : deal.referral_status === 'declined' ? 'warning' : 'info'}
-                size="sm"
-              >
-                Referral: {deal.referral_status}
-              </Badge>
-            )}
-            {/* δ1 (2026-06-12): LMS cross-link when backend has created
-                a loan application from this deal (typically after advancing
-                to Compliance). Mirrors the Credit Admin → LMS cross-link
-                pattern from β6 so users can trace a deal's downstream lifecycle. */}
-            {deal.lms_application_id && (
-              <button
-                onClick={() => navigate(`/lms/${encodeURIComponent(deal.lms_application_id!)}`)}
-                className="text-xs text-brand-primary hover:underline font-medium"
-              >
-                View Credit Analysis →
-              </button>
-            )}
-          </div>
-          <span className="font-mono text-xs text-gray-500">{deal.id}</span>
-        </Card.Header>
-        <Card.Body>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <DetailField label="Product type" value={deal.product_type ?? deal.product} />
-            <DetailField label="Pipeline category" value={deal.pipeline_category ?? deal.deal_category} />
-            <DetailField label="Source" value={deal.source} />
-            <DetailField label="Client type" value={deal.client_type} />
-            <DetailField label="Deal value" value={formatValue(deal.amount_kes ?? deal.deal_value, currency)} />
-            <DetailField label="Probability" value={
-              typeof deal.probability === 'number'
-                ? `${Math.round(deal.probability * 100)}%`
-                : '—'
-            } />
-            {typeof deal.win_probability === 'number' && (
-              <DetailField
-                label="Win probability"
-                value={`${Math.round(deal.win_probability)}%`}
-                sub="from current stage"
-              />
-            )}
-            <DetailField label="Currency" value={deal.currency ?? currency} />
-            <DetailField label="Expected close" value={formatDate(deal.expected_close)} />
-            <DetailField label="Next action" value={deal.next_action} />
-            <DetailField label="Next action date" value={formatDate(deal.next_action_date)} />
-            <DetailField label="Owner" value={deal.staff_name} sub={deal.staff_code} />
-            {deal.backup_staff_codes && deal.backup_staff_codes.length > 0 && (
-              <DetailField label="Backup staff" value={deal.backup_staff_codes.join(', ')} />
-            )}
-          </div>
-        </Card.Body>
-      </Card>
-
-      {/* SLA status panel (Phase 4 #81) — the deal's own clock, due-soon, breach */}
-      {sla && sla.state && (
-        <Card className="mt-6" stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
-          <Card.Header>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-semibold text-gray-900">SLA status</h3>
-              <Badge
-                tone={sla.state === 'breached' ? 'danger' : sla.state === 'due_soon' ? 'warning' : 'success'}
-                size="sm"
-              >
-                {sla.state === 'breached' ? 'Breached' : sla.state === 'due_soon' ? 'Due soon' : 'On track'}
-              </Badge>
-              <Badge tone={sla.clock === 'step' ? 'info' : 'neutral'} size="sm">
-                {sla.clock === 'step' ? (sla.step || 'step').replace(/_/g, ' ') : 'age clock'}
-              </Badge>
-              {sla.commitment_status === 'active' && (
-                <Badge tone="info" size="sm">committed {sla.commitment?.committed_date}</Badge>
-              )}
-              {sla.commitment_status === 'unfulfilled' && (
-                <Badge tone="danger" size="sm">commitment overdue</Badge>
-              )}
-            </div>
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <DetailField label="Elapsed" value={`${sla.elapsed_business_days} bd`} />
-              <DetailField label="Target" value={`${sla.target_days} bd`} />
-              <DetailField
-                label={sla.breached ? 'Overdue' : 'Remaining'}
-                value={sla.breached ? `+${sla.overdue_business_days} bd` : `${sla.remaining_business_days ?? '—'} bd`}
-              />
-              <DetailField label="Escalation" value={(sla.escalate_to || '—').replace(/_/g, ' ')} />
-            </div>
-            {sla.commitment && (
-              <p className="text-xs text-gray-500 mt-3">
-                <span className="font-medium">Commitment:</span> {sla.commitment.reason}
-                {' · by '}{sla.commitment.committed_date}
-                {sla.commitment.recorded_by_name ? ` (${sla.commitment.recorded_by_name})` : ''}
-              </p>
-            )}
-          </Card.Body>
-        </Card>
-      )}
-
-      {/* Permissions panel — shows what server says you can do */}
-      <Card className="mt-6">
-        <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">
-            Your permissions on this deal
-          </h3>
-          <span className="text-xs text-gray-400">α7 server-resolved</span>
-        </Card.Header>
-        <Card.Body>
-          <PermissionBadges permissions={permissions ?? undefined} showAll />
-          <p className="text-xs text-gray-500 mt-3">
-            Each permission reflects your relationship to this deal
-            (owner / backup / manager-in-scope) combined with its state
-            (terminal stages, pending cancellation, validation status).
-            The buttons below appear only when the corresponding permission is true.
-          </p>
-        </Card.Body>
-      </Card>
-
       {/* Cancellation-pending notice */}
       {deal.cancel_requested && !deal.cancel_approved && (
-        <Card className="mt-6" stripe="accent">
+        <Card className="mb-4" stripe="accent">
           <Card.Body>
             <div className="flex items-start gap-3">
               <Badge tone="warning" size="md">Pending manager approval</Badge>
@@ -383,53 +237,101 @@ export function PipelineDealDetail() {
         </Card>
       )}
 
-      {/* Action: advance — gated by α7 can_advance_stage */}
-      {permissions?.can_advance_stage && (
-        <AdvancePanel
-          deal={deal}
-          mutations={mutations}
-          stageFlow={stageFlow}
-          onSuccess={() => {
-            // Credit submission is now an explicit, document-gated action
-            // (the Submit to Credit Analysis panel), not a side-effect of
-            // advancing a stage — so advancing just reports the advance.
-            toast({ tone: 'success', message: 'Deal advanced.' });
-            void reloadDeal();
-          }}
-        />
-      )}
-
-      {/* Action: submit to credit — gated by the document checklist (B10).
-          The panel fetches its own checklist and renders only when the
-          caller may submit, or when the deal is already submitted. */}
-      <DealCreditReportCard dealId={deal.id} canEdit={true} />
-      <CommitteeJourneyCard dealId={deal.id} canEdit={true} />
-
-      <AffordabilityAppraisal dealId={deal.id} />
-      <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} />
-
-      <ValidationPanel deal={deal} onChanged={() => void reloadDeal()} />
-
-      {/* Action: refer this deal to another person (A1). Hidden for drafts and
-          while a referral is already pending acceptance. */}
-      {!deal.draft && deal.referral_status !== 'pending' && (
-        <ReferPanel deal={deal} onSuccess={() => void reloadDeal()} />
-      )}
-
-      {/* Action: request cancellation — gated by α7 can_request_cancel */}
-      {permissions?.can_request_cancel && (
-        <RequestCancelPanel
-          deal={deal}
-          mutations={mutations}
-          onSuccess={() => {
-            toast({
-              tone: 'success',
-              message: 'Cancellation requested. A manager will review it.',
-            });
-            void reloadDeal();
-          }}
-        />
-      )}
+      <WorkbenchShell
+        title={deal.client_name || '—'}
+        stage={deal.stage}
+        badges={[
+          ...(deal.locked ? [{ label: '🔒 Locked' }] : []),
+          ...(deal.manager_validated ? [{ label: '✓ Validated' }] : []),
+          ...(deal.draft ? [{ label: 'Draft' }] : []),
+        ]}
+        idLabel={deal.id}
+        onBack={() => navigate('/pipeline')}
+        onRefresh={() => void reloadDeal()}
+        details={sla && sla.state ? (
+          <Card stripe={sla.state === 'breached' ? 'accent' : 'primary'}>
+            <Card.Header>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-semibold text-gray-900">SLA status</h3>
+                <Badge
+                  tone={sla.state === 'breached' ? 'danger' : sla.state === 'due_soon' ? 'warning' : 'success'}
+                  size="sm"
+                >
+                  {sla.state === 'breached' ? 'Breached' : sla.state === 'due_soon' ? 'Due soon' : 'On track'}
+                </Badge>
+                <Badge tone={sla.clock === 'step' ? 'info' : 'neutral'} size="sm">
+                  {sla.clock === 'step' ? (sla.step || 'step').replace(/_/g, ' ') : 'age clock'}
+                </Badge>
+                {sla.commitment_status === 'active' && (
+                  <Badge tone="info" size="sm">committed {sla.commitment?.committed_date}</Badge>
+                )}
+                {sla.commitment_status === 'unfulfilled' && (
+                  <Badge tone="danger" size="sm">commitment overdue</Badge>
+                )}
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <DetailField label="Elapsed" value={`${sla.elapsed_business_days} bd`} />
+                <DetailField label="Target" value={`${sla.target_days} bd`} />
+                <DetailField
+                  label={sla.breached ? 'Overdue' : 'Remaining'}
+                  value={sla.breached ? `+${sla.overdue_business_days} bd` : `${sla.remaining_business_days ?? '—'} bd`}
+                />
+                <DetailField label="Escalation" value={(sla.escalate_to || '—').replace(/_/g, ' ')} />
+              </div>
+              {sla.commitment && (
+                <p className="text-xs text-gray-500 mt-3">
+                  <span className="font-medium">Commitment:</span> {sla.commitment.reason}
+                  {' · by '}{sla.commitment.committed_date}
+                  {sla.commitment.recorded_by_name ? ` (${sla.commitment.recorded_by_name})` : ''}
+                </p>
+              )}
+            </Card.Body>
+          </Card>
+        ) : undefined}
+        defaultTabId="journey"
+        tabs={[
+          { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
+          { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
+          { id: 'documents', label: 'Documents', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} /> },
+          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
+          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
+          { id: 'actions', label: 'Actions', color: '#C62828', content: (
+            <div className="space-y-6">
+              {permissions?.can_advance_stage && (
+                <AdvancePanel
+                  deal={deal}
+                  mutations={mutations}
+                  stageFlow={stageFlow}
+                  onSuccess={() => {
+                    toast({ tone: 'success', message: 'Deal advanced.' });
+                    void reloadDeal();
+                  }}
+                />
+              )}
+              <ValidationPanel deal={deal} onChanged={() => void reloadDeal()} />
+              {!deal.draft && deal.referral_status !== 'pending' && (
+                <ReferPanel deal={deal} onSuccess={() => void reloadDeal()} />
+              )}
+              {permissions?.can_request_cancel && (
+                <RequestCancelPanel
+                  deal={deal}
+                  mutations={mutations}
+                  onSuccess={() => {
+                    toast({
+                      tone: 'success',
+                      message: 'Cancellation requested. A manager will review it.',
+                    });
+                    void reloadDeal();
+                  }}
+                />
+              )}
+            </div>
+          ) },
+        ]}
+      />
 
       {/* Footer */}
       <footer className="mt-12 pb-6 text-center text-[11px] text-gray-400 leading-relaxed">
@@ -448,19 +350,10 @@ interface DetailFrameProps {
 }
 
 function DetailFrame({ title, children }: DetailFrameProps) {
-  const navigate = useNavigate();
+  useEffect(() => { document.title = title; }, [title]);
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title={title}
-        breadcrumbs={[{ label: 'EKE Sales Pro', to: '/pipeline' }, { label: title }]}
-        actions={
-          <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
-            ← Back to pipeline
-          </Button>
-        }
-      />
-      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 pt-3 pb-6">
         {children}
       </main>
     </div>
@@ -499,6 +392,75 @@ interface CreditPanelProps {
 // Phase V/R: line-manager validation. Shows validation requests; lets the deal
 // owner request a reopen of a declined case; lets the resolved line manager
 // (or admin) approve/reject. Approval of a reopen returns the case for rework.
+function CaseJourneyTab({ deal }: { deal: PipelineDeal }) {
+  const [events, setEvents] = useState<LoanAppHistoryEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const dealId = deal.id;
+  const load = useCallback(() => {
+    setLoading(true);
+    return fetchDealJourney(dealId)
+      .then((r) => setEvents(r.journey || []))
+      .catch(() => setEvents([]))
+      .finally(() => setLoading(false));
+  }, [dealId]);
+  // Re-fetch on deal change (parent reloadDeal after any action) so the journey
+  // stays live as the case travels — validation, votes, stage moves, submission.
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    fetchDealJourney(dealId)
+      .then((r) => { if (alive) setEvents(r.journey || []); })
+      .catch(() => { if (alive) setEvents([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [dealId, deal.updated_at]);
+
+  const facts: [string, string, boolean][] = [
+    ['Product', String(deal.product_type ?? deal.product ?? '—'), false],
+    ['Category', String(deal.pipeline_category ?? deal.deal_category ?? '—'), false],
+    ['Client type', String(deal.client_type ?? '—'), false],
+    ['Value', formatValue(deal.amount_kes ?? deal.deal_value, deal.currency ?? 'KES'), false],
+    ['Currency', String(deal.currency ?? 'KES'), false],
+    ['Stage', String(deal.stage ?? '—'), false],
+    ['Expected close', deal.expected_close ? formatDate(deal.expected_close) : '—', false],
+    ['Owner', deal.staff_name ? displayName(deal.staff_name) : '—', false],
+    ['Deal', String(deal.id), true],
+  ];
+
+  return (
+    <Card stripe="primary">
+      <Card.Header>
+        <div className="flex w-full items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Case Journey</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">{events.length} events · who did what, when</span>
+            <button onClick={() => void load()} className="text-xs font-medium text-brand-primary hover:underline">Refresh</button>
+          </div>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        {/* Executive summary — key deal facts folded into the journey, mirroring
+            the LMS analysis Case Journey. One place to read the case: the facts,
+            then the travelling history. */}
+        <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1.5 border-b border-gray-100 pb-3 text-xs">
+          {facts.map(([label, value, mono]) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className="uppercase tracking-wide text-gray-400">{label}</span>
+              <span className={mono ? 'font-mono text-gray-800' : 'text-gray-800'}>{value}</span>
+            </span>
+          ))}
+        </div>
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : (
+          <Timeline events={events} emptyHint="No activity recorded yet. Creation, manager validation, stage moves, committee votes, and submission appear here as the case travels." />
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
 function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
   const { user } = useRole();
@@ -586,7 +548,7 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
           <div className="mb-4 rounded-lg border border-gray-200 p-3">
             <p className="mb-2 text-sm text-gray-700">
               Put this case on hold — this freezes all SLA clocks until lifted. Your line
-              manager{deal.validator?.name ? ` (${deal.validator.name})` : ''} must validate the request.
+              manager{deal.validator?.name ? ` (${displayName(deal.validator.name)})` : ''} must validate the request.
             </p>
             <Input value={holdReason} onChange={(e) => setHoldReason(e.target.value)}
               placeholder="Reason for placing on hold (required)" />
@@ -602,7 +564,7 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
           <div className="mb-4 rounded-lg border border-gray-200 p-3">
             <p className="mb-2 text-sm text-gray-700">
               This case was declined. You can request to reopen it for rework — your{' '}
-              line manager{deal.validator?.name ? ` (${deal.validator.name})` : ''} must validate the request.
+              line manager{deal.validator?.name ? ` (${displayName(deal.validator.name)})` : ''} must validate the request.
             </p>
             <Input value={reason} onChange={(e) => setReason(e.target.value)}
               placeholder="Reason for reopening (required)" />
@@ -667,13 +629,13 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
 
 function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
   const [busyDoc,    setBusyDoc]    = useState<string | null>(null);
   const [otherLabel, setOtherLabel] = useState('');
+  const [viewing,    setViewing]    = useState<{ docName: string; filename: string } | null>(null);
   const OTHER_PREFIX = 'Other: ';
 
   const reloadDocs = () => {
@@ -706,15 +668,9 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     inp.click();
   };
 
-  const viewDoc = async (doc: string) => {
-    try {
-      const blob = await downloadDealDocument(deal.id, doc);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not open document');
-    }
+  const viewDoc = (doc: string) => {
+    const meta = docFiles[doc];
+    setViewing({ docName: doc, filename: meta?.filename || doc });
   };
 
   const removeDoc = async (doc: string) => {
@@ -758,58 +714,39 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-700">
-            This deal has been submitted to credit analysis.
-            {checklist.lms_application_id && (
-              <>
-                {' '}
-                <button
-                  onClick={() =>
-                    navigate(`/lms/${encodeURIComponent(checklist.lms_application_id!)}`)}
-                  className="text-brand-primary hover:underline font-medium"
-                >
-                  View Credit Analysis →
-                </button>
-              </>
-            )}
+            This deal has been submitted to credit analysis. The case is now with
+            Credit; you can follow its progress in the Case Journey.
           </p>
         </Card.Body>
       </Card>
     );
   }
 
-  // Only the owner / admin sees the submission form. If the ONLY thing blocking
-  // submission is the stage gate, show an explanation instead of hiding.
-  if (!checklist.can_submit) {
-    const gateReasons: string[] = [];
-    if (checklist.stage_ok === false && checklist.stage_required) {
-      gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
-    }
-    if ((checklist.committee_rejected ?? []).length > 0) {
-      gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
-    }
-    if ((checklist.committee_pending ?? []).length > 0) {
-      gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
-    }
-    if (checklist.cr_required && checklist.cr_ok === false) {
-      gateReasons.push('The Credit Report (CR) must be completed first.');
-    }
-    if (gateReasons.length > 0) {
-      const rejected = (checklist.committee_rejected ?? []).length > 0;
-      return (
-        <Card className="mt-6" stripe="accent">
-          <Card.Header>
-            <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
-            <Badge tone={rejected ? 'danger' : 'warning'} size="sm">{rejected ? 'committee gate' : 'prerequisites'}</Badge>
-          </Card.Header>
-          <Card.Body>
-            <p className="mb-2 text-sm text-gray-700">Before this deal can be submitted to credit analysis:</p>
-            <ul className="list-disc pl-5 text-sm text-amber-700">
-              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
-            </ul>
-          </Card.Body>
-        </Card>
-      );
-    }
+  // Gate reasons that block the FINAL submit. Shown as a soft banner in the
+  // upload UI below — they no longer hide the document upload. The CR
+  // prerequisite is intentionally NOT listed here: the RM completes the CR on
+  // its own tab, so surfacing it on the Documents tab is noise.
+  const gateReasons: string[] = [];
+  if (checklist.manager_validated === false) {
+    gateReasons.push('This deal has not been validated by a manager. A manager must validate it (from their Manager Queue) before it can be submitted to credit.');
+  }
+  if (checklist.stage_ok === false && checklist.stage_required) {
+    gateReasons.push(`Deal must be at stage "${checklist.stage_required}"${checklist.current_stage ? ` (currently "${checklist.current_stage}")` : ''}.`);
+  }
+  if ((checklist.committee_rejected ?? []).length > 0) {
+    gateReasons.push(`Committee rejected: ${(checklist.committee_rejected ?? []).join(', ')}. The deal returns to the owner (appeal or close).`);
+  }
+  if ((checklist.committee_pending ?? []).length > 0) {
+    gateReasons.push(`Committee decision outstanding: ${(checklist.committee_pending ?? []).join(', ')}.`);
+  }
+
+  // Hide the panel only when there is genuinely nothing for this viewer to do:
+  // can't submit, no gates, no required documents and no CR path (e.g. a
+  // non-owner, or a deal with no credit journey). Otherwise fall through and
+  // show the upload UI so the owner can attach documents even before the deal
+  // is submit-ready.
+  if (!checklist.can_submit && gateReasons.length === 0
+      && checklist.required.length === 0 && !checklist.cr_required) {
     return null;
   }
 
@@ -844,6 +781,14 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
         {reopenedForDocs && (
           <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
             Credit returned this deal for more information. Supply the outstanding documents below, then resubmit.
+          </div>
+        )}
+        {gateReasons.length > 0 && (
+          <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+            <div className="font-medium">Submission is blocked until:</div>
+            <ul className="list-disc pl-5">
+              {gateReasons.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
           </div>
         )}
         <p className="text-xs text-gray-500 mb-3">
@@ -922,15 +867,27 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
             {missing.length} document{missing.length === 1 ? '' : 's'} still required.
           </div>
         )}
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-end gap-3">
+          {!checklist.can_submit && (
+            <span className="text-xs text-gray-500">Submission opens once all prerequisites are complete.</span>
+          )}
           <Button
             onClick={() => void onSubmit()}
             loading={submitting}
-            disabled={missing.length > 0}
+            disabled={missing.length > 0 || !checklist.can_submit}
           >
             Submit to Credit Analysis
           </Button>
         </div>
+        {viewing && (
+          <DocumentViewerModal
+            dealId={deal.id}
+            docName={viewing.docName}
+            filename={viewing.filename}
+            canDownload
+            onClose={() => setViewing(null)}
+          />
+        )}
       </Card.Body>
     </Card>
   );
@@ -1164,7 +1121,7 @@ function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => 
         referred_to_name: picked.name,
         referral_note: note.trim(),
       });
-      toast({ tone: 'success', message: `Referred to ${picked.name}. They'll need to accept it.` });
+      toast({ tone: 'success', message: `Referred to ${displayName(picked.name)}. They'll need to accept it.` });
       setOpen(false); setPicked(null); setNote('');
       onSuccess();
     } catch (e) {
@@ -1221,12 +1178,104 @@ function ReferPanel({ deal, onSuccess }: { deal: PipelineDeal; onSuccess: () => 
 }
 
 // ── Deal Credit Report (4b-3): CR originates at the branch, on the deal ──
+function ForwardingMemoCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
+  const { toast } = useToast();
+  const [to, setTo] = useState('Bank Credit Committee');
+  const [recommendation, setRecommendation] = useState('');
+  const [roName, setRoName] = useState('');
+  const [bmName, setBmName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const printMemo = () => {
+    const esc = escapeHtml;
+    const body = `
+      <table>
+        <tr><th style="width:32%">To</th><td>${esc(to)}</td></tr>
+        <tr><th>Re</th><td>Deal ${esc(dealId)}</td></tr>
+        <tr><th>Forwarding recommendation</th><td>${esc(recommendation) || '\u2014'}</td></tr>
+      </table>
+      <h2>Sign-off</h2>
+      <table>
+        <tr><th style="width:32%">Relationship Officer</th><td>${esc(roName) || '________________'}&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+        <tr><th>Branch Manager</th><td>${esc(bmName) || '________________'}&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+      </table>
+      <h2>Branch Credit Committee</h2>
+      <table>
+        <tr><td>Name: ________________&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+        <tr><td>Name: ________________&nbsp;&nbsp;Signature: ____________&nbsp;&nbsp;Date: __________</td></tr>
+      </table>
+      <h2>Bank Credit Committee \u2014 Approver&apos;s Comments</h2>
+      <table><tr><td style="height:80px">&nbsp;</td></tr></table>
+    `;
+    const head = `<div class="head"><h1>Forwarding Memo \u2014 ${esc(dealId)}</h1><span class="muted">printed ${esc(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Forwarding Memo ${dealId}`, head + body);
+  };
+
+  const uploadSigned = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(dealId, 'Forwarding Memo', f.name, btoa(bin));
+        toast({ tone: 'success', message: 'Signed Forwarding Memo uploaded.' });
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setBusy(false); }
+    };
+    inp.click();
+  };
+
+  return (
+    <Card className="mt-6">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Forwarding Memo</h2>
+        <div className="flex items-center gap-2">
+          <button className="text-sm text-brand-primary" onClick={printMemo}>Print</button>
+          {canEdit && (
+            <button className="text-sm text-brand-primary disabled:opacity-50" onClick={uploadSigned} disabled={busy}>Upload signed</button>
+          )}
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-4 text-xs text-gray-500">
+          Complete after the Branch Credit Committee gives its input, then Print for wet
+          signatures and Upload the signed copy. The signed copy travels with the case.
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">To</label>
+            <input value={to} onChange={(e) => setTo(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">Relationship Officer</label>
+            <input value={roName} onChange={(e) => setRoName(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-gray-600">Forwarding recommendation</label>
+            <textarea value={recommendation} onChange={(e) => setRecommendation(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">Branch Manager</label>
+            <input value={bmName} onChange={(e) => setBmName(e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+          </div>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+
 function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: boolean }) {
   const { toast } = useToast();
   const [cr, setCr] = useState<CrView | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const load = async () => {
     try { setCr(await getDealCr(dealId)); } catch { /* non-fatal */ }
@@ -1244,7 +1293,7 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
     try {
       await saveDealCr(dealId, { values: edits, completed });
       setEdits({});
-      toast({ tone: 'success', message: completed ? 'CR marked complete.' : 'CR saved.' });
+      toast({ tone: 'success', message: completed ? 'Transaction Memo marked complete.' : 'Transaction Memo saved.' });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Save failed.' });
@@ -1259,22 +1308,57 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
     return '';
   };
 
+  const printTm = () => {
+    const secs = (cr.template?.sections ?? []).map((sec) => {
+      const tableField = (sec.fields ?? []).find((f) => f.type === 'table');
+      if (tableField) {
+        return `<h2>${escapeHtml(sec.title)}</h2>${facilitiesToPrintHtml(valueFor(tableField.key))}`;
+      }
+      const rows = (sec.fields ?? []).map((f) =>
+        `<tr><th style="width:42%">${escapeHtml(f.label)}</th><td>${escapeHtml(valueFor(f.key)) || '—'}</td></tr>`).join('');
+      return `<h2>${escapeHtml(sec.title)}</h2><table>${rows}</table>`;
+    }).join('');
+    const head = `<div class="head"><h1>Transaction Memo — ${escapeHtml(dealId)}</h1><span class="muted">${cr.completed ? 'Complete' : 'Draft'} · printed ${escapeHtml(new Date().toLocaleString())}</span></div>`;
+    printDocument(`Transaction Memo ${dealId}`, head + secs);
+  };
+
+  const uploadSignedTm = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.onchange = async () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      setBusy(true);
+      try {
+        const buf = await f.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        await uploadDealDocument(dealId, 'Transaction Memo', f.name, btoa(bin));
+        toast({ tone: 'success', message: 'Signed Transaction Memo uploaded.' });
+      } catch (e) {
+        toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' });
+      } finally { setBusy(false); }
+    };
+    inp.click();
+  };
+
   return (
     <Card className="mt-6">
       <Card.Header>
-        <h2 className="text-base font-semibold text-gray-900">Credit Report (CR)</h2>
+        <h2 className="text-base font-semibold text-gray-900">Transaction Memo (TM)</h2>
         <div className="flex items-center gap-2">
           {cr.completed && <Badge tone="success">Complete</Badge>}
           {!cr.cbs_available && <span className="text-xs text-gray-400">CBS data unavailable — fill manually</span>}
-          <button className="text-sm text-brand-primary" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide' : 'Open'}
-          </button>
+          <button className="text-sm text-brand-primary" onClick={printTm}>Print</button>
+          {canEdit && (
+            <button className="text-sm text-brand-primary disabled:opacity-50" onClick={uploadSignedTm} disabled={busy}>Upload signed</button>
+          )}
         </div>
       </Card.Header>
-      {open && (
-        <Card.Body>
+      <Card.Body>
           <p className="text-xs text-gray-500 mb-4">
-            Complete the CR at the branch (after documents). Blue = CBS, grey = deal;
+            Complete the Transaction Memo at the branch (after documents). Blue = CBS, grey = deal;
             both editable. Plain fields are for the deal owner.
           </p>
           <div className="space-y-6">
@@ -1286,7 +1370,15 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {sec.fields.map((f) => {
                     const val = valueFor(f.key);
-                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose'].includes(f.key);
+                    if (f.type === 'table') {
+                      return (
+                        <div key={f.key} className="md:col-span-2">
+                          <label className="mb-1 block text-xs text-gray-600">{f.label}</label>
+                          <FacilitiesTable value={val} onChange={(v) => setEdits((p) => ({ ...p, [f.key]: v }))} disabled={!canEdit || busy} />
+                        </div>
+                      );
+                    }
+                    const isLong = ['strengths', 'weaknesses', 'mitigants', 'rm_recommendation', 'conditions', 'purpose', 'background', 'statements', 'crb_arrears', 'risk_summary', 'other_bank_facilities', 'other_bank_securities', 'dsr_computation', 'policy_exception', 'account_conduct', 'repayment_source'].includes(f.key);
                     return (
                       <div key={f.key} className={isLong ? 'md:col-span-2' : ''}>
                         <label className="block text-xs text-gray-600 mb-1">
@@ -1320,7 +1412,6 @@ function DealCreditReportCard({ dealId, canEdit }: { dealId: string; canEdit: bo
             </div>
           )}
         </Card.Body>
-      )}
     </Card>
   );
 }

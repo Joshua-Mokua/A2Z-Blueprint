@@ -380,6 +380,142 @@ def lms_application_assign(
     return {"application": updated, "status": "assigned"}
 
 
+@router.post(
+    "/applications/{app_id}/pick",
+    response_model=LoanAppMutationResponse,
+)
+def lms_application_pick(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Self-pick: an analyst pulls an UNALLOCATED case to themselves.
+
+    Unlike /assign (manager-tier, chooses who), /pick lets a credit analyst or a
+    segment-specific Department Analyst assign an unallocated case (submitted, no
+    analyst) to THEMSELVES — so work doesn't stall when the assigning manager
+    (e.g. the Chief Credit) is away. Gated by can_self_pick (config-driven via
+    credit_workflow.self_pick; segment analysts limited to their own segment).
+    Reuses submit_to_credit with the caller as the analyst.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    perms = resolve_application_permissions(user, app)
+    if not perms.get("can_self_pick"):
+        raise HTTPException(
+            status_code=403,
+            detail=("You cannot self-pick this case — it is not unallocated, "
+                    "not in your segment, or self-pick is disabled."),
+        )
+
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_name = str(user.get('full_name', '') or '')
+    if not caller_code:
+        raise HTTPException(status_code=400, detail="Caller has no staff code; cannot self-pick.")
+
+    success = lam.submit_to_credit(
+        app_id,
+        analyst_code=caller_code,
+        analyst_name=caller_name,
+        by=caller_code,
+        by_name=caller_name,
+        by_role=str(user.get('role', '') or ''),
+    )
+    if not success:
+        raise HTTPException(status_code=500, detail="Self-pick failed (manager method returned False)")
+
+    audit_log("LMS_ANALYST_SELF_PICKED", str(user.get('username', '') or ''), f"{app_id}|{caller_code}")
+    try:
+        lam.update(app_id, {"assignment_requests": [], "assignment_purpose": "decisioning"})
+    except Exception:
+        pass
+    updated = lam.get(app_id)
+    return {"application": updated, "status": "assigned"}
+
+
+@router.post(
+    "/applications/{app_id}/submit-to-dcc",
+    response_model=LoanAppMutationResponse,
+)
+def lms_application_submit_to_dcc(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Department Analyst: voice support + submit the case to the Department
+    Credit Committee (DCC). The Department Analyst does NOT decide — this records
+    their support opinion + PEP confirmation and refers the case onward to the
+    committee. Completeness gate: the configured required attachments (e.g. the
+    Call-Back Memo) must be present, and PEP compliance must be confirmed.
+    Gated by can_submit_to_dcc.
+    """
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    perms = resolve_application_permissions(user, app)
+    if not perms.get("can_submit_to_dcc"):
+        raise HTTPException(status_code=403, detail="Not permitted to submit this case to the DCC.")
+
+    payload = payload if isinstance(payload, dict) else {}
+    opinion = str(payload.get("opinion", "") or "").strip()
+    pep_confirmed = bool(payload.get("pep_confirmed", False))
+
+    # ── Completeness gate ──
+    from utils.api_lms_mutations import get_credit_workflow_config
+    da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
+    required_atts = [str(x).strip() for x in (da.get("required_attachments") or []) if str(x).strip()]
+    atts = list(lam.list_attachments(app_id) or [])
+    # The Department Analyst attaches the Call-Back Memo as a CASE DOCUMENT
+    # (document_files) so it travels + is readable; count those toward the gate.
+    for _k, _v in (app.get("document_files", {}) or {}).items():
+        atts.append({"filename": f"{_k} {(_v or {}).get('filename', '')}", "kind": "document"})
+
+    def _att_present(name: str) -> bool:
+        toks = [t for t in name.lower().replace("-", " ").replace("_", " ").split() if t]
+        for a in atts:
+            hay = f"{a.get('filename', '')} {a.get('kind', '')} {a.get('label', '')}".lower().replace("-", " ").replace("_", " ")
+            if toks and all(t in hay for t in toks):
+                return True
+        return False
+
+    missing = [n for n in required_atts if not _att_present(n)]
+    if missing:
+        raise HTTPException(status_code=400,
+                            detail=f"Missing required attachment(s): {', '.join(missing)}")
+    pep_required = bool((da.get("compliance_confirmation") or {}).get("pep_check"))
+    if pep_required and not pep_confirmed:
+        raise HTTPException(status_code=400,
+                            detail="Confirm PEP compliance (client is not a PEP / has no issues) before submitting.")
+
+    # ── Record the Department Analyst's review, then refer to committee (DCC) ──
+    if not is_valid_lms_transition(str(app.get("status", "")), "referred_to_committee"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot submit to committee from status '{app.get('status')}'")
+    review = {
+        "opinion": opinion,
+        "pep_confirmed": pep_confirmed,
+        "by": str(user.get("staff_code", "") or ""),
+        "by_name": str(user.get("full_name", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+    }
+    try:
+        # Mark the case as before the DEPARTMENT Credit Committee (distinct from
+        # an authority-tier committee). P4b/c key off committee_kind to validate
+        # votes against the DCC roster and route the resolution back to the
+        # Department Analyst instead of auto-issuing the offer.
+        lam.update(app_id, {"dept_analyst_review": review, "committee_kind": "dcc"})
+    except Exception:
+        pass
+    lam.refer_to_committee(app_id, by=str(user.get("username", "") or ""), note=opinion)
+    audit_log("LMS_SUBMITTED_TO_DCC", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "referred_to_committee"}
+
+
 # ─────────────────────────────────────────────────────────────────────
 # PUT /api/lms/applications/{app_id} — partial update
 # ─────────────────────────────────────────────────────────────────────
@@ -1099,6 +1235,254 @@ def lms_application_attachments_list(
     return {"attachments": lam.list_attachments(app_id), "bcc": app.get("bcc")}
 
 
+@router.get("/applications/{app_id}/documents")
+def lms_application_documents_list(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """List the documents that travelled with the case from the pipeline deal.
+    Visible to anyone who can view the application (analyst, DCC/BCC, Chief
+    Credit). The credit side has no deal scope, so these are the app's carried
+    files, not the deal document routes."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    return {"files": app.get("document_files", {}) or {},
+            "provided": list(app.get("documents_provided", []) or [])}
+
+
+@router.get("/applications/{app_id}/documents/{doc_name:path}")
+def lms_application_document_download(
+    app_id: str,
+    doc_name: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Stream one travelled document back, gated by LMS view permission."""
+    from pathlib import Path as _P
+    from fastapi.responses import StreamingResponse
+    import io as _io
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    meta = (app.get("document_files", {}) or {}).get(doc_name)
+    if not meta:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_name}' not found")
+    root = _P(__file__).resolve().parent.parent
+    fpath = root / str(meta.get("path", ""))
+    if not fpath.exists():
+        raise HTTPException(status_code=404, detail="Stored file missing")
+    data = fpath.read_bytes()
+    return StreamingResponse(
+        _io.BytesIO(data), media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"'})
+
+
+@router.get("/applications/{app_id}/dcc/roster")
+def lms_dcc_roster(
+    app_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The Department Credit Committee roster + recorded votes for a case.
+    Self-contained (distinct from the authority-tier charter). Visible to anyone
+    who can view the application."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    return {
+        "enabled": bool(dcc.get("enabled")),
+        "name": str(dcc.get("name", "Department Credit Committee")),
+        "is_dcc_case": str(app.get("committee_kind", "")) == "dcc",
+        "members": list(dcc.get("members") or []),
+        "votes": list(app.get("dcc_votes", []) or []),
+        "outcome": app.get("dcc_outcome"),
+    }
+
+
+@router.post("/applications/{app_id}/dcc/vote")
+def lms_dcc_vote(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Record one DCC member's vote (YES/NO/ABSTAIN), validated against the DCC
+    roster (not the authority-tier charter). Gated: DCC enabled + case before the
+    DCC. One vote per member (re-voting replaces)."""
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    if not dcc.get("enabled"):
+        raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
+    if str(app.get("committee_kind", "")) != "dcc":
+        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    payload = payload if isinstance(payload, dict) else {}
+    member_id = str(payload.get("member_id", "") or "").strip()
+    vote = str(payload.get("vote", "") or "").strip().upper()
+    roster_ids = {str(m.get("id") or m.get("member_id") or "").strip()
+                  for m in (dcc.get("members") or []) if isinstance(m, dict)}
+    if not member_id or member_id not in roster_ids:
+        raise HTTPException(status_code=400, detail=f"'{member_id}' is not a DCC member")
+    if vote not in ("YES", "NO", "ABSTAIN"):
+        raise HTTPException(status_code=400, detail="vote must be YES, NO, or ABSTAIN")
+    votes = [v for v in (app.get("dcc_votes", []) or []) if v.get("member_id") != member_id]
+    votes.append({
+        "member_id": member_id, "vote": vote,
+        "rationale": str(payload.get("rationale", "") or ""),
+        "by": str(user.get("staff_code", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+    })
+    lam.update(app_id, {"dcc_votes": votes})
+    audit_log("LMS_DCC_VOTE", str(user.get("username", "") or ""), f"{app_id}|{member_id}:{vote}")
+    return {"dcc_votes": votes}
+
+
+@router.post("/applications/{app_id}/dcc/resolve")
+def lms_dcc_resolve(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Close the DCC: tally the votes into an ADVISORY recommendation, record it,
+    and route the case BACK to the Department Analyst (status -> assigned) so they
+    can hand it to the Credit Analyst. The DCC does NOT approve/decline the loan —
+    the Credit Analyst is the decision-maker. Gated: a manager or the assigned
+    analyst, DCC enabled, case before the DCC."""
+    import datetime as _dt
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    caller = str(user.get("staff_code", "") or "")
+    analyst_code = str((app.get("analyst") or {}).get("code", "") or "")
+    if not (is_manager(user) or (caller and caller == analyst_code)):
+        raise HTTPException(status_code=403,
+                            detail="Only a manager or the assigned analyst can close the DCC.")
+    from utils.api_lms_mutations import get_credit_workflow_config
+    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    if not dcc.get("enabled"):
+        raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
+    if str(app.get("committee_kind", "")) != "dcc":
+        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    votes = app.get("dcc_votes", []) or []
+    yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
+    no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
+    abstain = sum(1 for v in votes if str(v.get("vote", "")).upper() == "ABSTAIN")
+    recommendation = "support" if yes > no else "oppose" if no > yes else "split"
+    outcome = {
+        "recommendation": recommendation,
+        "tally": {"yes": yes, "no": no, "abstain": abstain},
+        "by": caller, "by_name": str(user.get("full_name", "") or ""),
+        "at": _dt.datetime.now().isoformat(timespec="seconds"),
+        "note": str((payload or {}).get("note", "") or "") if isinstance(payload, dict) else "",
+    }
+    if not is_valid_lms_transition(str(app.get("status", "")), "assigned"):
+        raise HTTPException(status_code=400,
+                            detail=f"Cannot return to the analyst from '{app.get('status')}'")
+    # Return to the Department Analyst (status -> assigned); clear committee_kind
+    # so the case is no longer 'before the DCC'. dcc_outcome carries the advice.
+    lam.update(app_id, {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""})
+    audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
+              f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
+    return {"application": lam.get(app_id), "dcc_outcome": outcome}
+
+
+@router.post("/applications/{app_id}/hand-to-credit-analyst")
+def lms_hand_to_credit_analyst(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Department Analyst hands the case to the conventional Credit Analyst: the
+    case is released to the credit pool (status -> submitted, analyst cleared,
+    awaiting_credit_analyst set) so a Credit Analyst self-picks it and makes the
+    final decision (which triggers the offer). Gated by can_hand_to_credit_analyst."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_hand_to_credit_analyst"):
+        raise HTTPException(status_code=403,
+                            detail="Not permitted to hand this case to the Credit Analyst.")
+    if not is_valid_lms_transition(str(app.get("status", "")), "submitted"):
+        raise HTTPException(status_code=400, detail=f"Cannot release from '{app.get('status')}'")
+    lam.update(app_id, {
+        "status": "submitted",
+        "analyst": None,
+        "awaiting_credit_analyst": True,
+    })
+    audit_log("LMS_HANDED_TO_CREDIT_ANALYST", str(user.get("username", "") or ""), app_id)
+    return {"application": lam.get(app_id), "status": "submitted"}
+
+
+@router.post("/applications/{app_id}/callback-memo")
+def lms_callback_memo_upload(
+    app_id: str,
+    payload: Dict[str, Any],
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The Department Analyst attaches the Call-Back Memo (their checker
+    confirmation). Stored as a CASE DOCUMENT so it travels + is readable in the
+    viewer, and satisfies the submit-to-DCC completeness gate. Gated: the
+    assigned analyst on the case."""
+    from pathlib import Path as _P
+    import base64 as _b64, datetime as _dt, re as _re
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    caller = str(user.get("staff_code", "") or "")
+    analyst_code = str((app.get("analyst") or {}).get("code", "") or "")
+    if not (caller and caller == analyst_code):
+        raise HTTPException(status_code=403,
+                            detail="Only the assigned analyst can attach the Call-Back Memo.")
+    payload = payload if isinstance(payload, dict) else {}
+    filename = str(payload.get("filename", "") or "").strip() or "call_back_memo.pdf"
+    try:
+        raw = _b64.b64decode(str(payload.get("content_b64", "") or ""))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file content.")
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file.")
+    if len(raw) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 15 MB).")
+    root = _P(__file__).resolve().parent.parent
+    safe = (_re.sub(r"[^A-Za-z0-9._-]", "_", filename)[:120]) or "memo"
+    ddir = root / "data" / "uploads" / "credit_docs" / ("lms_" + _re.sub(r"[^A-Za-z0-9._-]", "_", app_id))
+    ddir.mkdir(parents=True, exist_ok=True)
+    stored = ddir / f"CallBackMemo__{safe}"
+    stored.write_bytes(raw)
+    files = dict(app.get("document_files", {}) or {})
+    files["Call-Back Memo"] = {
+        "filename": filename,
+        "path": str(stored.relative_to(root)),
+        "size": len(raw),
+        "uploaded_by": caller,
+        "uploaded_at": _dt.datetime.now().isoformat(timespec="seconds"),
+    }
+    provided = list(app.get("documents_provided", []) or [])
+    if "Call-Back Memo" not in provided:
+        provided.append("Call-Back Memo")
+    lam.update(app_id, {"document_files": files, "documents_provided": provided})
+    audit_log("LMS_CALLBACK_MEMO", str(user.get("username", "") or ""), app_id)
+    return {"document_files": files}
+
+
 @router.post("/applications/{app_id}/attachments")
 def lms_application_attachment_add(
     app_id: str,
@@ -1584,7 +1968,120 @@ def lms_committee_set_require_mcc(
     return {"status": "saved", "require_mcc_before_higher": enabled}
 
 
+# === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/appeal")
+def lms_application_appeal(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The originating side files an appeal against a DECLINED credit decision.
+    Records the appeal reason and flags it pending; a manager reviews it via
+    /appeal-decision (this does not itself reopen the case)."""
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get('status', '') or '').lower() != 'declined':
+        raise HTTPException(status_code=400, detail="Only a declined application can be appealed")
+    if bool(app.get('appeal_pending')):
+        raise HTTPException(status_code=400, detail="An appeal is already pending on this application")
+    reason = str((payload or {}).get('reason', '') or '').strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="An appeal reason is required")
+    from datetime import datetime as _dt
+    appeals = list(app.get('appeals', []) or [])
+    appeals.append({
+        "reason": reason,
+        "by_code": caller_code,
+        "by_name": str(user.get('full_name', '') or user.get('username', '') or ''),
+        "at": _dt.now().isoformat(timespec="seconds"),
+        "outcome": "PENDING",
+    })
+    lam.update(app_id, {"appeals": appeals, "appeal_pending": True})
+    try:
+        lam._log_event(app_id, "decline_appealed", caller_code, note=reason,
+                       by_name=str(user.get('full_name', '') or ''), by_role=caller_role)
+    except Exception:
+        pass
+    return {"status": "appealed", "appeals": appeals, "appeal_pending": True}
+
+
+@router.post("/applications/{app_id}/appeal-decision")
+def lms_application_appeal_decision(
+    app_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """A manager reviews a pending decline appeal: 'uphold' (decline stands) or
+    'grant' (reopen the case for a fresh decision — status back to 'assigned')."""
+    if not is_manager(user) and not user.get('is_admin'):
+        raise HTTPException(status_code=403, detail="Manager authority required to decide appeals")
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    visible_codes = get_visible_staff_codes(user)
+    caller_code = str(user.get('staff_code', '') or '')
+    caller_role = str(user.get('role', '') or '')
+    if not user.get('is_admin') and not is_app_in_scope(app, visible_codes, caller_code, caller_role=caller_role):
+        raise HTTPException(status_code=403, detail="Application is out of scope")
+    if not bool(app.get('appeal_pending')):
+        raise HTTPException(status_code=400, detail="No appeal is pending on this application")
+    outcome = str((payload or {}).get('outcome', '') or '').lower()  # "grant" | "uphold"
+    if outcome not in ("grant", "uphold"):
+        raise HTTPException(status_code=400, detail="outcome must be 'grant' or 'uphold'")
+    note = str((payload or {}).get('note', '') or '').strip()
+    from datetime import datetime as _dt
+    appeals = list(app.get('appeals', []) or [])
+    for a in reversed(appeals):
+        if str(a.get('outcome', '')).upper() == 'PENDING':
+            a["outcome"] = "GRANTED" if outcome == "grant" else "UPHELD"
+            a["reviewed_by_code"] = caller_code
+            a["reviewed_by_name"] = str(user.get('full_name', '') or user.get('username', '') or '')
+            a["reviewed_at"] = _dt.now().isoformat(timespec="seconds")
+            a["review_note"] = note
+            break
+    fields = {"appeals": appeals, "appeal_pending": False}
+    if outcome == "grant":
+        fields["status"] = "assigned"  # reopen for a fresh decision
+    lam.update(app_id, fields)
+    try:
+        lam._log_event(app_id, "appeal_granted" if outcome == "grant" else "appeal_upheld",
+                       caller_code, note=note, by_name=str(user.get('full_name', '') or ''), by_role=caller_role)
+    except Exception:
+        pass
+    return {"status": "appeal_" + ("granted" if outcome == "grant" else "upheld"),
+            "appeals": appeals, "reopened": outcome == "grant"}
+
+
 # === C2: CORRECTNESS STAGING ===
+@router.get("/rework-reasons")
+def lms_rework_reasons(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The configured rework reason codes (lms_config -> rework_reasons), so the
+    correctness reviewer can pick specific reasons when returning a case for rework."""
+    from pathlib import Path as _Path
+    import json as _json
+    p = _Path(__file__).resolve().parent.parent / "data" / "lms_config.json"
+    reasons = []
+    try:
+        if p.exists():
+            cfg = _json.loads(p.read_text(encoding="utf-8")) or {}
+            r = cfg.get("rework_reasons")
+            if isinstance(r, list):
+                reasons = [str(x) for x in r if str(x).strip()]
+    except Exception:
+        reasons = []
+    return {"rework_reasons": reasons}
+
+
 @router.post("/applications/{app_id}/committee-readiness",
              response_model=LoanAppMutationResponse)
 def lms_committee_readiness(

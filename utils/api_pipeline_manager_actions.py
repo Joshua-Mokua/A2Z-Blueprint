@@ -86,6 +86,15 @@ def is_manager(user: Dict[str, Any]) -> bool:
         return False
     if user.get("is_admin"):
         return True
+    # B3: acting-BM delegation grants manager authority (scoped by the grant).
+    try:
+        _sc = str(user.get("staff_code", "") or "").strip()
+        if _sc:
+            from utils.core import get_org_config
+            if _sc in ((get_org_config() or {}).get("acting_bm", {}) or {}).values():
+                return True
+    except Exception:
+        pass
     role = str(user.get("role", "") or "").lower().strip()
     if not role:
         return False

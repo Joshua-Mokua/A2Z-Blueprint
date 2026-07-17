@@ -7,6 +7,7 @@
 // Pattern mirrors CreditAdmin.tsx (β6): useState list hook + Card/Badge/Button.
 
 import { useState, useMemo } from 'react';
+import { AdminTabs } from '@/components/AdminTabs';
 import { useRole } from '@/hooks/useRole';
 import { useFxRates } from '@/hooks/useFxRates';
 import { useFxMutations } from '@/hooks/useFxMutations';
@@ -74,17 +75,9 @@ export function FxRates() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand-secondary)' }}>
-          FX Rates
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Operational rates for currency conversion. {baseCurrency} is the base currency
-          (rate = 1). Loans, deposits, and reporting normalize to {baseCurrency} using the
-          latest active rate on or before the booking date.
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <AdminTabs subtitle="Operational rates for currency conversion. Loans, deposits, and reporting normalize to the base currency using the latest active rate on or before the booking date." />
+      <main className="mx-auto max-w-6xl space-y-6 px-6 py-6">
 
       {isAdmin && (
         <Card stripe>
@@ -175,6 +168,7 @@ export function FxRates() {
           </table>
         )}
       </Card>
+      </main>
     </div>
   );
 }

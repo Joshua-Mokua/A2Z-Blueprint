@@ -9,6 +9,7 @@
 // 224B allocated). This is the read-only γ3 surface — γ5 will add
 // edit affordances for MD bank-target setting and leader allocation.
 
+import { displayName } from "../lib/names";
 import { useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
@@ -16,7 +17,7 @@ import { useMyCascade } from '@/hooks/useMyCascade';
 import { setBankTarget, setCascadeAllocations, ApiValidationError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Card } from '@/components/Card';
-import { PageHeader } from '@/components/PageHeader';
+import { AdminTabs } from '@/components/AdminTabs';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
@@ -71,9 +72,7 @@ export function Cascade() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        breadcrumbs={[{ label: 'Executive Intelligence' }, { label: 'Target Cascade' }]}
-        title="Target Cascade"
+      <AdminTabs
         subtitle={`Bank-level targets · incoming allocations · my cascade · period ${period}`}
         actions={
           <input
@@ -91,7 +90,7 @@ export function Cascade() {
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">
             {user?.full_name && (
-              <>Viewing as <span className="font-medium text-gray-700">{user.full_name}</span> (staff {user.staff_code})</>
+              <>Viewing as <span className="font-medium text-gray-700">{displayName(user.full_name, (user as any).display_name)}</span> (staff {user.staff_code})</>
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>

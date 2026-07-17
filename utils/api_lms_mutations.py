@@ -241,6 +241,55 @@ _CREDIT_WORKFLOW_DEFAULTS: Dict[str, Any] = {
         "validity_days": 14,
         "sla_days": 5,
     },
+    # ── Department Analyst layer (P1 scaffold) ──────────────────────────────
+    # DISABLED by default = zero behaviour change. P2+ reads this to wire the
+    # earlier, segment-routed handoff, the RM edit-lock shift and auto stage
+    # travel. Per-institution: Ecobank runs the layer; others may leave it off.
+    "department_analyst": {
+        "enabled": False,
+        # The case routes to a Department Analyst on entering this stage (ahead
+        # of the DCC); then to the Credit Analyst at the credit-analysis stage.
+        "handoff_stage": "Department Credit Committee Review",
+        "credit_analyst_handoff_stage": "Credit Analysis",
+        # segment -> department-analyst role title (substring-matched like the
+        # rest of the role handling).
+        "segment_roles": {
+            "consumer":   "Consumer Credit Analyst",
+            "commercial": "Commercial Credit Analyst",
+            "cib":        "CIB Credit Analyst",
+        },
+        "routing": "queue",            # all segment analysts see + pick (no assign)
+        "can_decide": False,           # completeness + support only; no decision
+        "required_attachments": ["Call-Back Memo"],
+        "compliance_confirmation": {"pep_check": True},
+        "auto_stage_travel": True,     # advance stages on real actions
+    },
+    # ── Self-pick (P1 scaffold) ─────────────────────────────────────────────
+    # Credit analysts may pull unallocated cases so work never stalls when the
+    # Chief Credit is away; department analysts pick from the segment queue.
+    "self_pick": {
+        "credit_analyst": True,
+        "department_analyst": True,
+    },
+    # ── Department Credit Committee (DCC) — P4 scaffold ─────────────────────
+    # A DISTINCT committee from the authority-tier charter: its own roster votes
+    # on a case after the Department Analyst submits it. DISABLED by default =
+    # zero behaviour change (nothing reads this until P4 wires the vote/resolve).
+    # On resolve the case returns to the Department Analyst (who then hands to
+    # the Credit Analyst) rather than auto-issuing the offer — the DCC is
+    # ADVISORY; the Credit Analyst is the decision-maker.
+    "dcc": {
+        "enabled": False,
+        "name": "Department Credit Committee",
+        # Distinct roster — list of {id, name, role} the admin configures. Empty
+        # until set; the vote endpoint will validate against this (not the
+        # authority-tier charter) when the case is before the DCC.
+        "members": [],
+        "voting_rule": "SIMPLE_MAJORITY",
+        # After the DCC resolves, return the case to the Department Analyst
+        # instead of issuing the Letter of Offer.
+        "return_to_department_analyst_on_resolve": True,
+    },
 }
 
 
@@ -268,9 +317,9 @@ def get_credit_workflow_config() -> Dict[str, Any]:
 LMS_WORKFLOW_TRANSITIONS: Dict[str, Tuple[str, ...]] = {
     "submitted":                  ("assigned", "declined"),
     "assigned":                   ("info_requested", "approved", "declined",
-                                   "referred_to_committee"),
+                                   "referred_to_committee", "submitted"),
     "info_requested":             ("assigned",),
-    "referred_to_committee":      ("approved", "declined"),
+    "referred_to_committee":      ("approved", "declined", "assigned"),
     "approved":                   ("offer_issued",),
     "offer_issued":               ("offer_signed", "declined"),
     "offer_signed":               ("offer_validated", "analyst_confirmed",

@@ -62,6 +62,34 @@ marks requires express written permission.
 
 ---
 
+## Licensed deployment — Ecobank Kenya Limited
+
+Notwithstanding the reserved rights above, the Author grants **Ecobank Kenya
+Limited** a non-exclusive, non-transferable, non-sublicensable licence to
+deploy and operate the Software **for its own internal business use within
+Ecobank Kenya Limited**.
+
+This grant is **specific to Ecobank Kenya Limited as a single legal entity**
+and expressly does **not** extend to:
+
+- any affiliate, subsidiary, parent, or sister company of Ecobank Kenya
+  Limited, including without limitation other entities within the Ecobank
+  Transnational Incorporated (ETI) group;
+- deployment, replication, or roll-out of the Software to any other national
+  operation, business unit, or legal entity; or
+- transfer, assignment, or sublicensing of the Software to any third party.
+
+Deployment of the Software to, or for the benefit of, any entity other than
+Ecobank Kenya Limited — including any ETI-group affiliate — requires a
+**separate written licence agreement** with the Author obtained in advance.
+This licence may be evidenced by an entity-bound deployment key issued by the
+Author.
+
+Nothing in this grant transfers ownership of, or any intellectual-property
+right in, the Software. All rights not expressly granted are reserved.
+
+---
+
 ## Commercial licensing
 
 Commercial use, deployment, or licensing inquiries — including but
@@ -75,7 +103,7 @@ not limited to:
 
 — must be discussed in advance and reduced to a written agreement.
 
-**Contact:** [contact email — to be added by Joshua]
+**Contact:** Joshua Onyancha Mokua — via the repository owner at github.com/Joshua-Mokua
 
 ---
 

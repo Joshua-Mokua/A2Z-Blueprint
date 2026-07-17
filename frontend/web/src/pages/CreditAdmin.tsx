@@ -103,6 +103,7 @@ export function CreditAdmin() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <PageHeader
+        ribbon
         breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Credit Admin' }]}
         title="Credit Admin"
         subtitle="Approved loans in the disbursement pipeline · condition tracking."
