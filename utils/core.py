@@ -4220,15 +4220,38 @@ class PipelineManager:
                 break
         self._save_deals()
 
+    def _stage_needs_validation(self, stage: str) -> bool:
+        """Is a deal at this stage still awaiting its manager's validation?
+
+        The global STAGE_NAMES list is NOT the whole truth any more. Per-product
+        flows define their own stages — Personal Loan opens at 'Initiation', and 38
+        flows use 'Proposal' or 'Documentation', none of which appear in STAGE_NAMES
+        ('Proposal' is not 'Offer / Proposal'). Testing membership of the global list
+        therefore silently excluded every deal in a custom flow from every manager's
+        validation queue, for ever. Since submit-to-credit requires manager
+        validation, that closed the consumer business rather than merely hiding a row.
+
+        PIPELINE_VALIDATE_STAGE is 'Lead' — validate at creation — so the intent was
+        always "everything that is not closed". That is what this says now.
+        """
+        terminal = set(STAGE_NAMES) - set(ACTIVE_STAGES)   # Closed Won / Closed Lost
+        if stage in terminal:
+            return False
+        if stage in STAGE_NAMES:
+            # A global stage: honour the configured start point, so setting
+            # PIPELINE_VALIDATE_STAGE later still means what it says.
+            idx = (STAGE_NAMES.index(PIPELINE_VALIDATE_STAGE)
+                   if PIPELINE_VALIDATE_STAGE in STAGE_NAMES else 1)
+            return stage in set(STAGE_NAMES[idx:]) & set(ACTIVE_STAGES)
+        # A per-product flow stage. The global ordering cannot rank it, so it cannot
+        # be compared to the start point — but it is live and someone must validate
+        # it. Include it rather than let it vanish.
+        return True
+
     def get_pending_validations(self, manager_codes: set = None):
-        """Deals at Contacted+ stage that need manager validation."""
-        idx = STAGE_NAMES.index(PIPELINE_VALIDATE_STAGE) if PIPELINE_VALIDATE_STAGE in STAGE_NAMES else 1
-        # STAGE_NAMES[idx:] runs to the end of the list, which includes the
-        # terminal stages (Closed Won / Closed Lost). A closed deal never needs
-        # validation, so intersect with ACTIVE_STAGES to drop terminal deals.
+        """Deals awaiting manager validation, in any product flow."""
         result = [d for d in self.deals
-                  if d['stage'] in STAGE_NAMES[idx:]
-                  and d['stage'] in ACTIVE_STAGES
+                  if self._stage_needs_validation(d.get('stage', ''))
                   and not d.get('manager_validated')
                   and not d.get('cancel_requested')
                   and d.get('referral_status') not in ('pending', 'declined')]
