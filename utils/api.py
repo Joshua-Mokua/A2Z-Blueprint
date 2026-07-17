@@ -520,6 +520,14 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "decline_reason":       deal.get("decline_reason"),
                 "sla_step_log":         deal.get("sla_step_log"),
                 "sla_commitments":      deal.get("sla_commitments"),
+                # The Credit Report. Omitted here, it was written to the JSON
+                # store and lost on every Postgres-first read, so cr_ok stayed
+                # false and submit-to-credit refused every deal for ever with
+                # "the Credit Report (CR) must be completed first" — blaming the
+                # RM for the one thing they had done. Phase B0 set out to make
+                # PG a complete mirror and missed it.
+                "cr":                   deal.get("cr"),
+                "submitted_to_credit":  deal.get("submitted_to_credit"),
                 # Phase B0: persist the remaining deal fields so PG is a COMPLETE
                 # mirror (these were JSON-only and vanished under PG-first reads).
                 "bsc_credit_to":            deal.get("bsc_credit_to"),
@@ -623,7 +631,11 @@ def _normalize_db_deal_row(row):
                    "disbursed_under_override", "override_approved",
                    "override_approved_by", "win_probability",
                    "credit_deferred_to", "credit_deferred_to_code", "history",
-                   "document_files", "documents_provided"):
+                   "document_files", "documents_provided",
+                   # Lift the CR back out — a field carried on the write side
+                   # but not listed here is mirrored and then dropped on read,
+                   # which looks identical to never having been saved.
+                   "cr", "submitted_to_credit"):
             if r.get(_k) in (None, "") and md.get(_k) is not None:
                 r[_k] = md.get(_k)
         # manager_validated is a bool — lift whenever absent on the row so the
@@ -3472,6 +3484,21 @@ def pipeline_submit_to_credit(
         if state.get("cr_required") and not state.get("cr_ok"):
             raise HTTPException(status_code=400,
                 detail="Cannot submit to credit — the Credit Report (CR) must be completed first.")
+        # manager_validated is part of can_submit but had no branch here, so an
+        # unvalidated deal fell through to the 403 below and told the owner that only
+        # the owner may submit — false, and it sends the RM looking for a permissions
+        # problem that does not exist. It was masked until the CR gate above started
+        # passing; the CR check simply fired first.
+        if not state.get("manager_validated"):
+            raise HTTPException(status_code=400,
+                detail="Cannot submit to credit — your line manager must validate the "
+                       "deal first.")
+        if state.get("terminal"):
+            raise HTTPException(status_code=400,
+                detail=f"Cannot submit to credit — the deal is at a closed stage "
+                       f"('{state.get('current_stage')}').")
+        # Reaching here means the caller genuinely is not the owner (or cannot view
+        # it). Every other reason now names itself.
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
     provided = list(payload.documents_provided or [])
@@ -10597,9 +10624,28 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
         "updated_at": _dt.now().isoformat(timespec="seconds"),
     }
     pm.update_deal(deal_id, {"cr": cr}, str(user.get("username", "") or ""))
+    # update_deal writes the JSON store. Reads are Postgres-FIRST (see
+    # _get_or_hydrate_deal, Phase B2), so without this mirror the CR is written to
+    # JSON, never reaches PG, and every later read loses it: the deal saves with a
+    # 200, this endpoint's own response says completed=false, and submit-to-credit
+    # then refuses forever with "the Credit Report (CR) must be completed first".
+    # The RM has no way through, and it looks like their mistake. Every other
+    # mutating pipeline route already mirrors — this one was missed.
+    # Mirror the record that HOLDS the CR — the in-memory one update_deal just
+    # mutated. Re-reading via _get_or_hydrate_deal first returns the Postgres row,
+    # which does not have the CR yet, and replaces the good copy on its way past;
+    # syncing that back is a no-op that looks like a fix. Every other mutating
+    # pipeline route uses pm.get_deal(deal_id) here for exactly this reason.
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_CR_SAVE", user, f"deal={deal_id}|completed={completed}")
     deal2 = _get_or_hydrate_deal(pm, deal_id)
-    return build_cr_view(deal2)
+    view = build_cr_view(deal2)
+    # Fail loudly rather than return a cheerful 200 that did nothing.
+    if completed and not view.get("completed"):
+        raise HTTPException(status_code=500,
+            detail="CR was marked complete but did not persist — refusing to report "
+                   "success. This is a server-side persistence fault, not a data error.")
+    return view
 # === END DEAL-LEVEL CR ENDPOINTS ===
 
 
