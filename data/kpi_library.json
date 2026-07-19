@@ -9212,23 +9212,23 @@
       "kpis": {
         "CONSUMER_REVENUE": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARD_REVENUE_TOTAL": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARDS_ISSUED": {
           "area": "Financial",
-          "weight": 0.0833
+          "weight": 0.1
         },
         "NET_LOANS_ODS": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARD_REVENUE": {
           "area": "Financial",
-          "weight": 0.0833
+          "weight": 0.1
         },
         "CARD_NPL": {
           "area": "Operational",
@@ -9236,7 +9236,7 @@
         },
         "TOTAL_DEPOSITS": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "NPS_CX": {
           "area": "Customer",
@@ -9331,23 +9331,23 @@
       "kpis": {
         "CONSUMER_REVENUE": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARD_REVENUE_TOTAL": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARDS_ISSUED": {
           "area": "Financial",
-          "weight": 0.0833
+          "weight": 0.1
         },
         "NET_LOANS_ODS": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "CARD_REVENUE": {
           "area": "Financial",
-          "weight": 0.0833
+          "weight": 0.1
         },
         "CARD_NPL": {
           "area": "Operational",
@@ -9355,7 +9355,7 @@
         },
         "TOTAL_DEPOSITS": {
           "area": "Financial",
-          "weight": 0.1667
+          "weight": 0.2
         },
         "NPS_CX": {
           "area": "Customer",
