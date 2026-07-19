@@ -269,11 +269,19 @@ def compute_actuals_from_cbs(force: bool = False) -> dict:
     kpi_weights  = lib.get("kpi_weights", {})
     pillars_data = lib.get("pillars", {})
 
-    # Build KPI maps
+    # Build KPI maps. The library now stores KPIs as a flat "kpis" list (each with its
+    # own "area"), not a "pillars" dict. Support both: prefer the flat list, fall back
+    # to the legacy dict shape. Iterating lib["pillars"].items() when "pillars" is a
+    # list is the latent bug that stopped this engine ever completing a run.
     id_to_kpi = {}
-    for pillar, kpis in pillars_data.items():
-        for k in kpis:
-            id_to_kpi[k["id"]] = {**k, "pillar": pillar}
+    if isinstance(pillars_data, dict) and pillars_data:
+        for pillar, kpis in pillars_data.items():
+            for k in kpis:
+                id_to_kpi[k["id"]] = {**k, "pillar": pillar}
+    else:
+        for k in lib.get("kpis", []):
+            if isinstance(k, dict) and k.get("id"):
+                id_to_kpi[k["id"]] = {**k, "pillar": k.get("area", k.get("pillar", ""))}
 
     # ── Load CBS actuals ───────────────────────────────────────────────
     # Prefer pre-computed actuals file from compute_actuals.py if available
@@ -574,6 +582,11 @@ def aggregate_cbs_by_rm(cbs_dir: Path) -> dict:
 def _map_cbs_to_kpi(kpi_id: str, kpi_name: str, rm_data: dict) -> float:
     """Map KPI ID to pre-aggregated rm_data field from aggregate_cbs_by_rm()."""
     ID_MAP = {
+        # Consumer BSC 2026 — CBS-sourceable ids only.
+        "NET_LOANS_ODS":        "loan_outstanding",
+        "TOTAL_DEPOSITS":       "total_deposits",
+        "NTB_CLIENTS":          "new_accounts_2026",
+        "CARD_NPL":             "npl_ratio",
         "RETAIL_MSME_DEPOSIT": "retail_deposits",
         "DEP_GROWTH":          "total_deposits",
         "COMMERCIAL_DEPOSIT":  "commercial_deposits",
@@ -600,6 +613,12 @@ def _map_cbs_to_kpi(kpi_id: str, kpi_name: str, rm_data: dict) -> float:
     field = ID_MAP.get(kpi_id.upper())
     if field:
         return float(rm_data.get(field, 0) or 0)
+    if kpi_id.upper() == "CONSUMER_REVENUE":
+        # Revenue = interest income + non-funded income (fees). Both are
+        # produced per RM by the CBS aggregate; their sum is the honest
+        # revenue figure, not nfi alone.
+        return float(rm_data.get("interest_income", 0) or 0) + \
+               float(rm_data.get("fee_income", 0) or 0)
     # Name-based fallback
     name_l = kpi_name.lower()
     if "retail" in name_l and "deposit" in name_l:
