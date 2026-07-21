@@ -2,10 +2,10 @@
   "version": 1,
   "source": "postgres_export",
   "count": 362,
-  "includes_hashes": true,
+  "includes_hashes": false,
+  "auth_note": "Staff authenticate via bank domain; NO passwords in this file.",
   "users": [
     {
-      "password_hash": "$2b$12$oTfkcLSDy3nVxDj16qoWS.PtPBljiJNfDO1cmE2ribY.mJei9ifx2",
       "username": "CN020",
       "staff_code": "CN020",
       "full_name": "Josephat Mutwiri",
@@ -18,7 +18,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -27,7 +26,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$bgMvkxWa0Z4TnmQuE1D8iO6ke5ZERumnlyhGROmNoHjibq/Kq2lQy",
       "username": "CN103",
       "staff_code": "CN103",
       "full_name": "Rita Binsari Nyasente",
@@ -40,7 +38,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -49,7 +46,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$VD3ERaw/9NpPYav36aCZw.vndRxRDxm1vW2dG5DofNImpW1sdMIG2",
       "username": "CN112",
       "staff_code": "CN112",
       "full_name": "Caroline Taabu Were",
@@ -62,7 +58,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -71,7 +66,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$EPDzdxqQYJKE7PYRUeQFkel..xDJwIUjBi0uzaiY8ad8JXir6.Oua",
       "username": "CN155",
       "staff_code": "CN155",
       "full_name": "Minica Ogachi",
@@ -84,7 +78,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -93,7 +86,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$HUD1sJ3RnoGO69IT7KDJIuYJBMNL8RGQg26RRl.pvSf9Er9zBeiy.",
       "username": "CN159",
       "staff_code": "CN159",
       "full_name": "Faith Jepkogei",
@@ -106,7 +98,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -115,7 +106,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$InE5yOHzUkmry1fS9I.iBeeMtZGvS/nlDQ2mRPrwa9jrRCrp3dwsC",
       "username": "CN160",
       "staff_code": "CN160",
       "full_name": "Elizabeth Khasiani Acham",
@@ -128,7 +118,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -137,7 +126,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/TEHRHRpc8J/HAf6FHNNWeMurkT6T5duKTeIHAKbXG63EdEIHPFVy",
       "username": "CN17",
       "staff_code": "CN17",
       "full_name": "Jackson Kipkogei Kipchoge",
@@ -150,7 +138,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -159,7 +146,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xlQO.vS7KOqtdCj8ev12yOGHWdpE6Ta6CQlEr6v3R0H./gTehAgzC",
       "username": "CN190",
       "staff_code": "CN190",
       "full_name": "Eric Mbatha Mukwilu",
@@ -172,7 +158,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -181,7 +166,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3LaHiPGuT/rahh14LK76ueouGjY2ll..u7kxEHFzcEDvo8lCFZLBC",
       "username": "CN201",
       "staff_code": "CN201",
       "full_name": "Antony Ndirangu Gichuhi",
@@ -194,7 +178,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -203,7 +186,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Q2XN9a6KVEnWwVw1RBrZvudEkwjcW0M2E5VlcAcjqvn8JKmHZOqaq",
       "username": "CN202",
       "staff_code": "CN202",
       "full_name": "Topister Akinyi Musumba",
@@ -216,7 +198,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -225,7 +206,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KsWGl/d6Two4AiQn0P4/bOaXgMc3ToBSuNdmatO7LW3nNxUUgQIU2",
       "username": "CN205",
       "staff_code": "CN205",
       "full_name": "Billy Owiny Ochieng",
@@ -238,7 +218,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -247,7 +226,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$g5hc/hM7cnarvmwUNPDqyumKFc2G/LAZ0Q5tL9hf6mNE6lWmtWjha",
       "username": "CN207",
       "staff_code": "CN207",
       "full_name": "Victor kibiwot Kibet",
@@ -260,7 +238,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -269,7 +246,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ySRllWQpDAche4tUIWfLsOpvw9hfbJmM87xqqYmc0zlNGJOp4R5jm",
       "username": "CN208",
       "staff_code": "CN208",
       "full_name": "BRIAN MBUGUA OGUTU",
@@ -282,7 +258,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -291,7 +266,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sSXaINhtAWjfPhgJWw47AOkuGWLttr4BFlD.tUFvM.65XQM2h8RZi",
       "username": "CN21",
       "staff_code": "CN21",
       "full_name": "Judith Akeng'o",
@@ -304,7 +278,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -313,7 +286,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0np.hsWuHyRACeFKw6F/POb8acabi6Jz7mMjzYERXqeDzu/rlhO/u",
       "username": "CN212",
       "staff_code": "CN212",
       "full_name": "Dinah Nekesa Makokha",
@@ -326,7 +298,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -335,7 +306,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$HQq1iS1HkKsvlS4pe0aKHO9q3OCWaWp9XHq87TN8Ej11/EOwbbcH.",
       "username": "CN214",
       "staff_code": "CN214",
       "full_name": "Grace Nkirote",
@@ -348,7 +318,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -357,7 +326,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ReguAJ7Bcja1CmP1.w/1i.lr63lub9nPofofgVOTn3.yjCEokMwxy",
       "username": "CN216",
       "staff_code": "CN216",
       "full_name": "Brian Gitari",
@@ -370,7 +338,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -379,7 +346,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QGcKNLVhI/g7ypdzxD2mZ.zUsQX5HUCn4/KnlltB2PPa9Gref0h3e",
       "username": "CN220",
       "staff_code": "CN220",
       "full_name": "Vivian Wairimu Mwaura",
@@ -392,7 +358,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -401,7 +366,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$JSEtB0ThJRw7mRPAsoyqROMWMQpfLyJv2lIqHsoLhj4Nn1Dpd4R4u",
       "username": "CN223",
       "staff_code": "CN223",
       "full_name": "Stella Nyaguthii Murithi",
@@ -414,7 +378,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -423,7 +386,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zT2gqQ1U8ZsBOxXwe91hMOdKm7BgOJ9sALGv8Px22lnSrHfIEmgyy",
       "username": "CN224",
       "staff_code": "CN224",
       "full_name": "Kelvin Kipruto Kimaiyo",
@@ -436,7 +398,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -445,7 +406,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$g1B94pl4oActPHrACw0HbehY2ihEc4DXtQKQNVxBu9BJ3r4Nw1yTy",
       "username": "CN225",
       "staff_code": "CN225",
       "full_name": "Everline Jerusa",
@@ -458,7 +418,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -467,7 +426,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/r22eM59ufN6FWKGNZNIK.1y3B9Ek.rrM/MlHLWNvru.eln3BxneO",
       "username": "CN24",
       "staff_code": "CN24",
       "full_name": "Monicah Nyambura Wanjohi",
@@ -480,7 +438,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -489,7 +446,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sm1F.H.cOlsdx4.kGly4Ae6nXfXnnQWFFfzvKVBIAiK9oe8SQRlmK",
       "username": "CN243",
       "staff_code": "CN243",
       "full_name": "NDWIGA MERCY WANJIKU",
@@ -502,7 +458,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -511,7 +466,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KCk5YNn3mBolUzGJqaAX0.dxjjMiOqZM7StjQqGXYJ5xDaIE.Cd1.",
       "username": "CN245",
       "staff_code": "CN245",
       "full_name": "ONDIGI OBWOGE ALBERT",
@@ -524,7 +478,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -533,7 +486,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$d/PUMZJzcaMbZo5KSO0VwOmR4IyZEVxp.7cDr4rjh2QGjbByuKiZG",
       "username": "CN246",
       "staff_code": "CN246",
       "full_name": "MUTATA RHODA KALIMI",
@@ -546,7 +498,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -555,7 +506,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$2nWojvbCVBklWk1DWcRto.KhiBOXZaiAS9Z60klGhyn3s.me.8WTq",
       "username": "CN251",
       "staff_code": "CN251",
       "full_name": "KABENA IRENE MUTHONI",
@@ -568,7 +518,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -577,7 +526,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OGKyWbBLTUY9xNqvyj4qduI9OxzWJOcTQRPO6SwWcnNoUykXv9iAO",
       "username": "CN254",
       "staff_code": "CN254",
       "full_name": "Moureen Kathure Runogone",
@@ -590,7 +538,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -599,7 +546,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$01atKWAk4R3j5Qnbz4JUnuBMXZG9rAIqnmM1cxWNaKZ5sdObUy6vu",
       "username": "CN255",
       "staff_code": "CN255",
       "full_name": "Nerryne Akinyi",
@@ -612,7 +558,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -621,7 +566,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/fxXbueUGAqa91om0hl.DOoL3fiLFKuP/wHcK9coiFqpjkB5GcW1a",
       "username": "CN256",
       "staff_code": "CN256",
       "full_name": "Dominic Ngetich Kipkurui",
@@ -634,7 +578,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -643,7 +586,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$TC1KjdliOikUDnNCZPeXwe5yr2cfA0uhOhLHXUoAxoOf04jY7pX8.",
       "username": "CN257",
       "staff_code": "CN257",
       "full_name": "Violah Biwott Jepkorir",
@@ -656,7 +598,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -665,7 +606,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$DA8hmJbm39zSjYUvz6Rzgu5jbPgqLNh1f.WUIkJVFNi7nVkaJRCFe",
       "username": "CN26",
       "staff_code": "CN26",
       "full_name": "Patrick Kichwen",
@@ -678,7 +618,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -687,7 +626,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qeY5AXwAgUSUirLRA6m.XORGTjQ6GV/3MoqvtyfHz3AY66b7BzN7i",
       "username": "CN262",
       "staff_code": "CN262",
       "full_name": "Elizabeth Nyambura Waweru",
@@ -700,7 +638,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -709,7 +646,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ct.GfkFmT6069PijtK5OcuVuJ18jXi05b8gHBfDMCY6ipcfz7D72W",
       "username": "CN263",
       "staff_code": "CN263",
       "full_name": "Dorine Kerubo Nyamwaro",
@@ -722,7 +658,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -731,7 +666,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZC5zZxYC38TV9HuL13UfCOooo5S/EcdAmvvybNSGsFsrNE.VOp/sS",
       "username": "CN269",
       "staff_code": "CN269",
       "full_name": "Yvonne Mukhaye",
@@ -744,7 +678,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -753,7 +686,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$AjCnfKhSSaz1VsmhsGpR3e5MGnDSLW19QWRs0GVY4.GF7JUs.a3Dq",
       "username": "CN27",
       "staff_code": "CN27",
       "full_name": "Pauline Atieno Odhiambo",
@@ -766,7 +698,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -775,7 +706,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$DF3T.QMoxU6..Yn01lJ8sOUN7.THzYCxRbkwv/a7.7lDVLRuar9ui",
       "username": "CN270",
       "staff_code": "CN270",
       "full_name": "Naftal Onchiri Nyakundi",
@@ -788,7 +718,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -797,7 +726,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$nx4AUAznjAbPNGk/GK7f5ehpLX8i.yByHHThJrEyNx20KAxyQBxlq",
       "username": "CN277",
       "staff_code": "CN277",
       "full_name": "Leakey Omondi",
@@ -810,7 +738,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -819,7 +746,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$T4YsEQDsc7Cn9iaxSNjuzuEgv6fjBUMeOMPy.hzYiccKlfoTqGnLm",
       "username": "CN278",
       "staff_code": "CN278",
       "full_name": "Walter Okoth",
@@ -832,7 +758,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -841,7 +766,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oIkg31Wp4rA9Jo4c6aDdQumjNXGnqKJQtABMLD7F9n2.O9IcMJK.6",
       "username": "CN280",
       "staff_code": "CN280",
       "full_name": "Stephine Owuor",
@@ -854,7 +778,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -863,7 +786,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Px3kE8VclqvMMm2T2m2uz.5XMAMGP9hkrsnmy.ivkR5tr3IhoRmKK",
       "username": "CN281",
       "staff_code": "CN281",
       "full_name": "Mercy Achieng Nange",
@@ -876,7 +798,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -885,7 +806,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Zcy3q0/ckwDtVFvEg2FaE.424o5tP2Xp3w7XgqWjx3Fxi3feJAgPu",
       "username": "CN282",
       "staff_code": "CN282",
       "full_name": "Emily Papa",
@@ -898,7 +818,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -907,7 +826,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$GcCFHXRxmlxsjAQ/7WgAz.rqUxDNkLtUmMmLNp1r2OG2LpRUcb1O6",
       "username": "CN283",
       "staff_code": "CN283",
       "full_name": "Naomi Kate Maina",
@@ -920,7 +838,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -929,7 +846,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$vzBOhttX/qdBrltp8FIhpusYJfCPkwSdAklYtWTwxRU2pHOZ2Rswq",
       "username": "CN284",
       "staff_code": "CN284",
       "full_name": "Emmanuel Ogo Jilani",
@@ -942,7 +858,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -951,7 +866,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QyVJok95Q4wyKs7gh8ZgNuYYHfMOqCfTSzY/x4qPtqn4jw3SWIequ",
       "username": "CN285",
       "staff_code": "CN285",
       "full_name": "Nancy Stecy Akinyi",
@@ -964,7 +878,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -973,7 +886,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$TsCjxXqyipkole170QROYedM2TxRVmqLcFLBB6/UFYpwIUf6hmVHm",
       "username": "CN288",
       "staff_code": "CN288",
       "full_name": "Sharon Anyango",
@@ -986,7 +898,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -995,7 +906,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$n41g0azBsitkzbzi0DZqcOW2FOtlTYmkdWoiuRms4LCFhhHsRjH8S",
       "username": "CN289",
       "staff_code": "CN289",
       "full_name": "Ruth Wangari Chege",
@@ -1008,7 +918,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1017,7 +926,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ALmR1NJUl3AWTL1CyoaDZeVV2ElEB37Q.fMnC4bnjviuF.ThYmEHu",
       "username": "CN29",
       "staff_code": "CN29",
       "full_name": "Roselyne Akoth Ochanda",
@@ -1030,7 +938,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1039,7 +946,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Py8ruFJpAGkOjb4ChXzSsemmnUshqJ4VP52HAmIrblUY9MNJOAOha",
       "username": "CN290",
       "staff_code": "CN290",
       "full_name": "Diana Okeyo",
@@ -1052,7 +958,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1061,7 +966,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$K7vrcTKXQYv6w7XzgbMw7OTvLytolHcq/qbm1VghKpRg6tAgXHPaC",
       "username": "CN291",
       "staff_code": "CN291",
       "full_name": "Silas Kiprotich Chirchir",
@@ -1074,7 +978,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1083,7 +986,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$owAhxW4WaAps25IEWdRNIOmmpccAXxYz8d1T0p4x9Mz67hHOzVtba",
       "username": "CN292",
       "staff_code": "CN292",
       "full_name": "Seth Mokaya",
@@ -1096,7 +998,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1105,7 +1006,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$HLTMMq4pFfv69tzG36F4Eu8pV9bE40474d0piw6ApU70Z7MWoiK/u",
       "username": "CN293",
       "staff_code": "CN293",
       "full_name": "Mercy Nasimiyu Kundu",
@@ -1118,7 +1018,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1127,7 +1026,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$2oq/CyE6vM0J/Z.8TdE2BOWux2hFz.W4emGpk0D/GhnU.GDbZWSs2",
       "username": "CN297",
       "staff_code": "CN297",
       "full_name": "Sharon Jeptoo Sitienei",
@@ -1140,7 +1038,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1149,7 +1046,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$DH.xZk223dKwfOsxl2i3cuM4qJ7wT7kEAoMHY81390TaFy6WURmA6",
       "username": "CN298",
       "staff_code": "CN298",
       "full_name": "Emmanuel Otieno Abongo",
@@ -1162,7 +1058,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1171,7 +1066,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aP/iHuWNYHdWx.zk4gcFauYHJ1dlIRsdKz1sCgY6LanNhW1FwAziu",
       "username": "CN299",
       "staff_code": "CN299",
       "full_name": "Nancy Jepchoge",
@@ -1184,7 +1078,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1193,7 +1086,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$A8SeyWX1XlRnv76/0QyQOuOIF/eS9SiQVmW8i5ZVeJgiwEIwKczpC",
       "username": "CN300",
       "staff_code": "CN300",
       "full_name": "Stephine Lwali",
@@ -1206,7 +1098,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1215,7 +1106,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$7GVZZtPA3047rWmtkZnzherib1HiukytcwTP2G5QUDLpAvoaQ8UeG",
       "username": "CN301",
       "staff_code": "CN301",
       "full_name": "Jared Oluoch Ouko",
@@ -1228,7 +1118,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1237,7 +1126,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$XgdjInrSxw7Rt2bnSonkFO6cW1mLF/JjftgYtYUlbwbH1ykisquDm",
       "username": "CN302",
       "staff_code": "CN302",
       "full_name": "Concepta Mutauta",
@@ -1250,7 +1138,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1259,7 +1146,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$VPBljDMZYVLPRIq8B75t4ubVauHwVzF4bsG1y2bI.iLMqflQIQYm6",
       "username": "CN303",
       "staff_code": "CN303",
       "full_name": "Doreen Wawira",
@@ -1272,7 +1158,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1281,7 +1166,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qhguejhfwOvmIguiqWthle23Rv8kB7D21hil2hz/ryT.qGVWbLOda",
       "username": "CN304",
       "staff_code": "CN304",
       "full_name": "Lynet Mutheu",
@@ -1294,7 +1178,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1303,7 +1186,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$clQBRw5HaFajZ9Ni7U./oeF8InpSfj43cVaKnJEqxxNh3529zNX1m",
       "username": "CN305",
       "staff_code": "CN305",
       "full_name": "Vivian Moraa",
@@ -1316,7 +1198,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1325,7 +1206,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$1vdsOTwGwNv2CtajG8vQ.eHQO7yUifpwWnzF93TsgXuK7n33GMa06",
       "username": "CN306",
       "staff_code": "CN306",
       "full_name": "Michael Obiero Sijenyi",
@@ -1338,7 +1218,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1347,7 +1226,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$RFEN7bmjkjVKEeKslABodufqmiy1.Zu.BMLJt1l3QUAh1FEWHQ/.e",
       "username": "CN307",
       "staff_code": "CN307",
       "full_name": "Brian Sagini Ogeto",
@@ -1360,7 +1238,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1369,7 +1246,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$o7/nDIRGMweSBIv/.O6KWOXd7SSBLuiF5yOoF2u/St9baOPWPI4dG",
       "username": "CN308",
       "staff_code": "CN308",
       "full_name": "Shadrack Cheruiyot Kirui",
@@ -1382,7 +1258,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1391,7 +1266,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$XCt.6YWTzAxxcv0Rv/QhquS00dvaqTmpuNoiBoQ4aprK33qBtQs7C",
       "username": "CN309",
       "staff_code": "CN309",
       "full_name": "Shalom Wanjiku Thumbi",
@@ -1404,7 +1278,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1413,7 +1286,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sa2kOmHv5TDDcTeqtd9sfuvpRLWOjQ2epoEsD.8GbJ032SbFl7QSK",
       "username": "CN310",
       "staff_code": "CN310",
       "full_name": "Kezia Moraa",
@@ -1426,7 +1298,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1435,7 +1306,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$kUP.xGN4rgkCX2DBxuwx4eS9OSgkJ3o3bfFpClaAXO1SpmjSgT7hW",
       "username": "CN312",
       "staff_code": "CN312",
       "full_name": "Steven Omondi Ongoje",
@@ -1448,7 +1318,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1457,7 +1326,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Ph7wxo8btEB2WMv9KnnfzeKfnmiJUZTk/8K3eleFAGm80N4XSxPOG",
       "username": "CN314",
       "staff_code": "CN314",
       "full_name": "Amina Awuor Saad",
@@ -1470,7 +1338,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1479,7 +1346,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$C4nXgTS8uIU54QffWwFLVeBZ3euqjcZQyYMvMPVtiGVYQfUZbKbnW",
       "username": "CN315",
       "staff_code": "CN315",
       "full_name": "George Mbinda Mutua",
@@ -1492,7 +1358,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1501,7 +1366,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QdToftwEcfCS5PCTPET5cOf8t6cJc8Soq6avRMgpK2y62U1banBTu",
       "username": "CN317",
       "staff_code": "CN317",
       "full_name": "Perpetua Nana Kauma",
@@ -1514,7 +1378,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1523,7 +1386,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$gh3TIDZIVjVcsqbdXO61NegCQAH6h0i20KHJ0hxE7fftufm.Gewz6",
       "username": "CN319",
       "staff_code": "CN319",
       "full_name": "James Mung'ei Mwangi",
@@ -1536,7 +1398,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1545,7 +1406,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$US70UgUVz0UIElVkys443u3Tm1fBoSrjrmgdz1x2vIwyjvNGQP1Ya",
       "username": "CN320",
       "staff_code": "CN320",
       "full_name": "Christine Akinyi Omondi",
@@ -1558,7 +1418,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1567,7 +1426,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xFQXCmgFUVEKIqS/hQuuOObW3dFpGO5Z0YlSfGX40jV47kInm8Wq.",
       "username": "CN322",
       "staff_code": "CN322",
       "full_name": "Alex Kibet Serem",
@@ -1580,7 +1438,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1589,7 +1446,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$mlYldL10syVJax1i3oaSiewFwbwtOOzSLlvGQ74kEnHSKeO72NBLy",
       "username": "CN324",
       "staff_code": "CN324",
       "full_name": "Catherine Ombogi",
@@ -1602,7 +1458,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1611,7 +1466,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sEkx9sTcsv6bOAAqW/rpvum658LxAWHywZP/JZ6uaG6gPKDuLYVUy",
       "username": "CN48",
       "staff_code": "CN48",
       "full_name": "Ann Kinya Jeremiah",
@@ -1624,7 +1478,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1633,7 +1486,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3vpaMgD.aRT92OT.tb0qUed24P8F9tcxamfaaeE1NAs9H4wB43x5C",
       "username": "KE101",
       "staff_code": "KE101",
       "full_name": "Isabella Mbula Manthi",
@@ -1646,7 +1498,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1655,7 +1506,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Xy6C3sFQRLDSg/btV3INA.1Op5QQ/OwS.h/XcWM8/xspi/bYMPTNe",
       "username": "KE1014",
       "staff_code": "KE1014",
       "full_name": "Pius Muchangi",
@@ -1668,7 +1518,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1677,7 +1526,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$SuznuktnD0Rd36TruCSJEOz1KU3iLCUj3FWOpQULGC7EOG/mmDgb.",
       "username": "KE1015",
       "staff_code": "KE1015",
       "full_name": "Dorcas Cherotich Siwatum",
@@ -1690,7 +1538,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1699,7 +1546,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$DdCmq1OWPNX0Euf3H67vDu7dnP/pEjPUlU62GQsnTlQpfLZSipCGi",
       "username": "KE1019",
       "staff_code": "KE1019",
       "full_name": "Kevin Kithinji Murithi",
@@ -1712,7 +1558,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1721,7 +1566,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$FaV568tFBabQKgqrkRHTBeGnTxgRM.dHuX1S0F.kH5PgW.W0lpIoG",
       "username": "KE1020",
       "staff_code": "KE1020",
       "full_name": "Elizabeth Waithegeni Kioi",
@@ -1734,7 +1578,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1743,7 +1586,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$axofgpXOAFBZME.BkKVWNe3QktscJlSV9eBTwQufuPHEL5OeDAhRy",
       "username": "KE1026",
       "staff_code": "KE1026",
       "full_name": "Rene Musyoki Wambua",
@@ -1756,7 +1598,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1765,7 +1606,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$b/QJWOtdtfef25YHuVQzjugctPTyZDQl9l7sReOeleT6GqKfH4KVi",
       "username": "KE1028",
       "staff_code": "KE1028",
       "full_name": "Everlyne Wanjiku Gachago",
@@ -1778,7 +1618,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1787,7 +1626,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sFG3FuPE/WsNnkceJwEjse822LXKQgIVLH4AxyCnvFvCKJvpEgyqK",
       "username": "KE1031",
       "staff_code": "KE1031",
       "full_name": "Lazaro Muriuki Kariara",
@@ -1800,7 +1638,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1809,7 +1646,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$6Di4MARuWEIK4HJtXvC8pOgukR4GVr7cKTDryjj3eSF6VgSi/nnkq",
       "username": "KE1032",
       "staff_code": "KE1032",
       "full_name": "Ursula Wanjira Muthee",
@@ -1822,7 +1658,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1831,7 +1666,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Y7Iyk.InGupDm8n.Yo/6Pu2uefXWHe3i85ssffQRxiqMsFZRn5zCi",
       "username": "KE1034",
       "staff_code": "KE1034",
       "full_name": "Loise Wanjiku Gachigua",
@@ -1844,7 +1678,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1853,7 +1686,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$XGlwc8vtr/uF7KhoD3CrR.8ZbjYbN24fDyodnaITb2buQ6.XnrCvq",
       "username": "KE1039",
       "staff_code": "KE1039",
       "full_name": "Sharleen Njeri Alli",
@@ -1866,7 +1698,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1875,7 +1706,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$u9kq.f4bgm0ElrpJOvuABu5nN4dGGtHM/0om/AN/JbN1xf43bpsVe",
       "username": "KE1044",
       "staff_code": "KE1044",
       "full_name": "Esther Nkatha Mwirigi",
@@ -1888,7 +1718,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1897,7 +1726,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$NBXBNFePuv69cbTkSIt/3eAYqd7z/d1ZwDEEbiA5VyM9AXtzUWhc.",
       "username": "KE1046",
       "staff_code": "KE1046",
       "full_name": "Florence Wambui Muhia",
@@ -1910,7 +1738,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1919,7 +1746,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$knmwU1irMTkFUkzh4JGLeezE4yycwI1u3WmPH0nMuVRgC0kUwdFxS",
       "username": "KE1048",
       "staff_code": "KE1048",
       "full_name": "Maryanne Nanjala Simiyu",
@@ -1932,7 +1758,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1941,7 +1766,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$yEM6wj7z0lD4etuAQH6gLuUMDWtBijuR/3723kmFle8.nvTA9maHu",
       "username": "KE1049",
       "staff_code": "KE1049",
       "full_name": "Samuel Mutisya Kavilu",
@@ -1954,7 +1778,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1963,7 +1786,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$f8I4Tqc8S7iiZAto9pSQLeJd0fscgymXQvdqe8wbSf4HFQApdUtIK",
       "username": "KE1055",
       "staff_code": "KE1055",
       "full_name": "Purity Chepkorir Ronoh",
@@ -1976,7 +1798,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -1985,7 +1806,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5m68LuaSQebeioP2Fp0RDuIRXvCnA.PdE.AsdVCSifGMR9j9dpqC.",
       "username": "KE1057",
       "staff_code": "KE1057",
       "full_name": "Rachael Koki Mbili",
@@ -1998,7 +1818,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2007,7 +1826,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Vdp3WBzvuhDiIzY6rBQ5leZP66LQCjX2U7t8nSCinFOMtjDESvgp2",
       "username": "KE1060",
       "staff_code": "KE1060",
       "full_name": "Stanley Kimeli Birech",
@@ -2020,7 +1838,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2029,7 +1846,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$u9OJNFDoYSispHs6nRDAE.loYR73L9UfqXVzxz5aIojSyX5QSCswK",
       "username": "KE1084",
       "staff_code": "KE1084",
       "full_name": "James Ngewa Muthoka",
@@ -2042,7 +1858,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2051,7 +1866,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9d2Imtk2Kzul7.4RQC8TteBhIPvntCWLa0K5s.XGq0Qf0NaDHkcLa",
       "username": "KE1090",
       "staff_code": "KE1090",
       "full_name": "David Otieno Omolo",
@@ -2064,7 +1878,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2073,7 +1886,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$vRXbyhpBZcJJBmBPDsQprOXIVV1WfT8IwOWX.fwg7dUAB87FyL58a",
       "username": "KE1094",
       "staff_code": "KE1094",
       "full_name": "Vivian Kwamboka Ochako",
@@ -2086,7 +1898,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2095,7 +1906,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$pVbXAB87.uIZNTZXuAjkUOo0qa.7FVqe2VyadklOSVfdYLgSC58Ba",
       "username": "KE1095",
       "staff_code": "KE1095",
       "full_name": "Faith J. Ellies",
@@ -2108,7 +1918,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2117,7 +1926,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$y0zoM8FGEbT5GZjGL91EzOdbqnsk70XrhdCwpMYkEVmDtxMiE8XMa",
       "username": "KE1100",
       "staff_code": "KE1100",
       "full_name": "Edna Adhiambo Odera",
@@ -2130,7 +1938,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2139,7 +1946,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$WbPWyxUXI3xhUlk.oCDV/eK6U7WyZjR6e5fbLs/FPVj5oIqR3cDk.",
       "username": "KE1106",
       "staff_code": "KE1106",
       "full_name": "Brenda Awuor Bolo",
@@ -2152,7 +1958,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2161,7 +1966,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$lmjmZI.LtH6P/fES5aA7W.KydlRYhunaUSFdaB8YVF43zCtIMWvli",
       "username": "KE1108",
       "staff_code": "KE1108",
       "full_name": "John Wambugu Wangeci",
@@ -2174,7 +1978,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2183,7 +1986,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ms5JReEUeErsN08n0Ib2oePOthBXpb5Z6.nZfjeFqOuloD9lEoYQS",
       "username": "KE1110",
       "staff_code": "KE1110",
       "full_name": "Joel Kamatu Kiarie",
@@ -2196,7 +1998,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2205,7 +2006,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$b2ejEcZcwJIFP0B99XS.Oe.2gy3V24u8OhbSPKHf.E.lJuC2cB6BO",
       "username": "KE1112",
       "staff_code": "KE1112",
       "full_name": "Kelvin Kyulu",
@@ -2218,7 +2018,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2227,7 +2026,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$s87ZfhPU6BlUS3Nez6UQguwq.0lg9IeE3jWd9s9nEJMKGz/x7TxmO",
       "username": "KE1113",
       "staff_code": "KE1113",
       "full_name": "Joseph Onyango Odipo",
@@ -2240,7 +2038,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2249,7 +2046,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$7NpCnH5N09MsDiTWsd0GSuaq7AT/Spq2lwLBnvhaYiIrC6.8ZIM0C",
       "username": "KE1117",
       "staff_code": "KE1117",
       "full_name": "Joel Amenya Kiyondi",
@@ -2262,7 +2058,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2271,7 +2066,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xPYzxBV4.Xn1Z9LwVAOxqu6Ia6qsEYR4MJQe0TjxcL8Tp.eGCdZQW",
       "username": "KE1119",
       "staff_code": "KE1119",
       "full_name": "Winnie Achieng",
@@ -2284,7 +2078,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2293,7 +2086,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$yij2RRFSquq1Wr4/VOzwN.yN.9FvowAOn3f3a5NAJd.D3alOymqdy",
       "username": "KE1121",
       "staff_code": "KE1121",
       "full_name": "Kelvin Baraka Oketch",
@@ -2306,7 +2098,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2315,7 +2106,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KpGanVZW.oECwRSybQymRucPai6Xyv8aU.JVCKFvDlNgQKI5RYs6G",
       "username": "KE1124",
       "staff_code": "KE1124",
       "full_name": "Brenda Karimi Gitonga",
@@ -2328,7 +2118,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2337,7 +2126,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KyPF1gfUmoimiAW08foDq.6oZgBKiy2qHaXxpOjf3cTidCP6niURG",
       "username": "KE1129",
       "staff_code": "KE1129",
       "full_name": "Tobias Felix Oduor",
@@ -2350,7 +2138,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2359,7 +2146,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$jtZ6dg/.TI0vTaTDSvOwB.dsTcTTj8I28ADPAZmZASse61qogJ2P6",
       "username": "KE1131",
       "staff_code": "KE1131",
       "full_name": "Dennis Onyango Ndonji",
@@ -2372,7 +2158,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2381,7 +2166,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Tu1AlRObA9Rb9jBkVZelL.HhsbV1iRGyi6btw5xzLJnMd02Izybfm",
       "username": "KE1132",
       "staff_code": "KE1132",
       "full_name": "Emmanuel Kaptalai",
@@ -2394,7 +2178,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2403,7 +2186,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$jVIc3TorzA8/sDjLYqbBM.z9b2QpGGR/GvNYu9yQhIZuv9iSiJHem",
       "username": "KE1133",
       "staff_code": "KE1133",
       "full_name": "Francis Muturi Wambui",
@@ -2416,7 +2198,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2425,7 +2206,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$RS6QmMAHzIsSf94TeIBsM.2IsD8fCs/eVFjOk.ZktjdHodrOTLjqi",
       "username": "KE1134",
       "staff_code": "KE1134",
       "full_name": "Roselyne Atieno Butt",
@@ -2438,7 +2218,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2447,7 +2226,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$S61CMHwAoAfl/ivEbQkPruPpv3F0JR3RXHWitkN6By7QmMJCn9rxi",
       "username": "KE1136",
       "staff_code": "KE1136",
       "full_name": "Lunar Magero",
@@ -2460,7 +2238,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2469,7 +2246,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Pc/u9B9tfFQGf86170JzSONV3cGs8ysR/frZ5F8yg1wMgZTlXY4Ty",
       "username": "KE1138",
       "staff_code": "KE1138",
       "full_name": "Patrick Kivuva",
@@ -2482,7 +2258,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2491,7 +2266,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$VrEPmcZUMZVnONZIDKBnZuEhJ1uqNQMw44QKxlc7KJINsKpcowMqS",
       "username": "KE1141",
       "staff_code": "KE1141",
       "full_name": "Mohamed Souleymane",
@@ -2504,7 +2278,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2513,7 +2286,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$tqgQ8ii8pTeMasl2o6f5vuXohyBY.1UOTbjMFFa0zeNbg7VkQ5Cfa",
       "username": "KE1148",
       "staff_code": "KE1148",
       "full_name": "Diana Mukami Kaaria",
@@ -2526,7 +2298,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2535,7 +2306,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$782oDZg40trIFMz6i1tzYOonTrHOEyb7f0oIEyYMNCKwrNDrE77F.",
       "username": "KE1150",
       "staff_code": "KE1150",
       "full_name": "Sandra Virginia Shibichila",
@@ -2548,7 +2318,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2557,7 +2326,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$m26.EbBnhnuspsy.yTpAx.BJdb78gcixa5FhVJeX2MKyjYJMC4Uce",
       "username": "KE1151",
       "staff_code": "KE1151",
       "full_name": "Emmanuel Kipkirui Rotich",
@@ -2570,7 +2338,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2579,7 +2346,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qpmBCaEqYAhBePkLjet0kelASUm9KBs3LAm0Euxf9MtcI63wvlfri",
       "username": "KE1153",
       "staff_code": "KE1153",
       "full_name": "Grace Wanjiru Rubia",
@@ -2592,7 +2358,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [
           "KE833"
@@ -2603,7 +2368,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$EmRAsV/z2ID/slE5dX5ud.tMtJR30iVcpPclk8oeHn9s2ya2H4PkW",
       "username": "KE1154",
       "staff_code": "KE1154",
       "full_name": "Macklin Achieng Ochieng",
@@ -2616,7 +2380,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2625,7 +2388,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Jn2BX89w6T0yGVwCY6AUPOI.0Kqi7GZmK.Uy5/asFYeSM9VB2/Xf.",
       "username": "KE1158",
       "staff_code": "KE1158",
       "full_name": "Jane Jelagat Atugah",
@@ -2638,7 +2400,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2647,7 +2408,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$4j/A8H8pp2HdC0d/j9YlTuUhXufHPus26P5PbYFeSjdzyJR9cVdRC",
       "username": "KE1159",
       "staff_code": "KE1159",
       "full_name": "Robert Githaiga Maingi",
@@ -2660,7 +2420,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2669,7 +2428,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$PaiTSuM7t/ma3l4pt8GL0.EZ333G2y.s6LoHmoNU36aeWHwqyFz12",
       "username": "KE1162",
       "staff_code": "KE1162",
       "full_name": "Brian Mmami Bulimo",
@@ -2682,7 +2440,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [
           "KE833"
@@ -2693,7 +2450,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zBy8RTiXw/1PHAmQgy1.b.z/IgNsWnXPSSyZCQWvDM6qBYlBo32PW",
       "username": "KE1170",
       "staff_code": "KE1170",
       "full_name": "Pauline Wangari Wacheru",
@@ -2706,7 +2462,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2715,7 +2470,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$8SboapsU0ekjlDvwRLznTOfSNTg7esgqIf2TyZjoMYFIoH2cmBSY2",
       "username": "KE1172",
       "staff_code": "KE1172",
       "full_name": "Oscar Owuor Odiemo",
@@ -2728,7 +2482,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2737,7 +2490,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$SxlaNXuV4tCzHa7y6sQdiuz1V/0nF9.UtQvvfMq48sOcdhgpB6aBS",
       "username": "KE1173",
       "staff_code": "KE1173",
       "full_name": "Chrispinus Juma Masika",
@@ -2750,7 +2502,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2759,7 +2510,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$gv5xiMrQpqCFj/jagBmtDuetfdqnG3FqzNHSWGBonNLAqORYPEZTe",
       "username": "KE1174",
       "staff_code": "KE1174",
       "full_name": "Msellem Ali Omar",
@@ -2772,7 +2522,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2781,7 +2530,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$K8NrYmuf8g7LZrMyujXUJepu1jUryUhp.jDwNrrOi/wGO7qI7UkPu",
       "username": "KE1175",
       "staff_code": "KE1175",
       "full_name": "George Sakwa Atsulu",
@@ -2794,7 +2542,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2803,7 +2550,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9P/VFZ8yyWPxruU/6UNKre0j0/eQA1A974rMIjckOW0ltsce8QBp6",
       "username": "KE1183",
       "staff_code": "KE1183",
       "full_name": "Peter Maina Ndere",
@@ -2816,7 +2562,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2825,7 +2570,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9uW7.l0wpFHj0.NF7761Q.HUerByFDosvsUfteJQkRwjkhUX3.ba6",
       "username": "KE1186",
       "staff_code": "KE1186",
       "full_name": "Francis Otieno Onyango",
@@ -2838,7 +2582,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2847,7 +2590,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KdjjIQyT3JT2PtVwE0nhM.cguhcex89Q2vcoeKnK3rwoEN9G6XwBi",
       "username": "KE1187",
       "staff_code": "KE1187",
       "full_name": "Betty Chelagat Keter",
@@ -2860,7 +2602,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2869,7 +2610,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$NykB1zTupZYSEZq16YdPv.DomcYpY29Z8KvvqaeKV15CiGyIEsuLy",
       "username": "KE1189",
       "staff_code": "KE1189",
       "full_name": "Edward Mwenda",
@@ -2882,7 +2622,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2891,7 +2630,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$MOd4aqKH3U82dG1KQcSGwO5m6YpYyQmu42orCgpueUQHpUdVgsN2y",
       "username": "KE1191",
       "staff_code": "KE1191",
       "full_name": "Anna Wang Huan",
@@ -2904,7 +2642,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2913,7 +2650,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aBKylUrmF5JRWJWJ3TN2Uuv93mfQxMrWnIg7iDS/Y0NMkw.6TRSfS",
       "username": "KE1192",
       "staff_code": "KE1192",
       "full_name": "Joshua Debarge Mwatibo",
@@ -2926,7 +2662,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2935,7 +2670,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$8FpSu2kFiJ/sZixTa7C0feKRBafFpGmRfgn5YJb5ypJ1dwdK6FyDS",
       "username": "KE1194",
       "staff_code": "KE1194",
       "full_name": "Victor Njagi Ndambiri",
@@ -2948,7 +2682,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2957,7 +2690,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$F6n.fRrsusJeBxbMNmk3..adRgBam4JuRUen/YFJbRDjVMtwN4V8a",
       "username": "KE1195",
       "staff_code": "KE1195",
       "full_name": "Ken Maina Mwangi",
@@ -2970,7 +2702,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -2979,7 +2710,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5HSYPuJzps2OXQmNSkG55uivUapE9KONsuTtjbSpsm572jjRGPtE6",
       "username": "KE1199",
       "staff_code": "KE1199",
       "full_name": "Nancy Waithira Mwai",
@@ -2992,7 +2722,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3001,7 +2730,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$wi55HECrXIOUhwhoyvbJ4.9gl.q47MVTuqGUtWz2xA.SW6D9xDyMi",
       "username": "KE1202",
       "staff_code": "KE1202",
       "full_name": "Erick Bundi Kirimi",
@@ -3014,7 +2742,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3023,7 +2750,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$hYnQuC8isGpVBMMNU3FyxelW0vN/Js1EK2OedUjp03gor1C3zmNlu",
       "username": "KE1204",
       "staff_code": "KE1204",
       "full_name": "Michael Maina Ngugi",
@@ -3036,7 +2762,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3045,7 +2770,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sm009YLUO7.2DAnCdJmpfeV0vvdbVruiEdmHLhJBC0ePAPSMO2OEe",
       "username": "KE1205",
       "staff_code": "KE1205",
       "full_name": "Joshua Kiprop Tarbei",
@@ -3058,7 +2782,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3067,7 +2790,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$D0bZ7QPR1Kk8KLvvE8qPr.PGt/EzqfNqOBTbl/CyMZg6Rl6OEcjOi",
       "username": "KE1206",
       "staff_code": "KE1206",
       "full_name": "Caroline Njoki Nyoro",
@@ -3080,7 +2802,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3089,7 +2810,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$kt2iMCyHjewKJ28chJ.I4.3aCBQLt4SQ/HWzmMrTXml641R.lHuHu",
       "username": "KE1207",
       "staff_code": "KE1207",
       "full_name": "Lynnette Awuor Otieno",
@@ -3102,7 +2822,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3111,7 +2830,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Htp0k/FaSCZe3cvDgs3ryuF3I6HyKbcPxacwc21RGZQGS6wBwWjg2",
       "username": "KE1209",
       "staff_code": "KE1209",
       "full_name": "Leonard Kipkoech Ngeno",
@@ -3124,7 +2842,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3133,7 +2850,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$l40owtIrxH1vr8HVlplRuuKsGLuZxoWdI4oo1z8pJvK4d4c.IadgS",
       "username": "KE1210",
       "staff_code": "KE1210",
       "full_name": "Lynne Wambui Maina",
@@ -3146,7 +2862,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3155,7 +2870,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$8S/2pTwfopls7ev1WmVnZePt.aHx9a0IY3.YkroYrd8bsB0z5vfd6",
       "username": "KE1211",
       "staff_code": "KE1211",
       "full_name": "Brian Ambuka",
@@ -3168,7 +2882,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3177,7 +2890,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$1Awmi/KQy1Gppwj3n7FpD.G1IBLtBzhPinS1JhL7KDZtZ7QjAqjV.",
       "username": "KE1214",
       "staff_code": "KE1214",
       "full_name": "Linet Naisenya Kamami",
@@ -3190,7 +2902,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3199,7 +2910,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QUZIeuMT9mAbuXGUyPy6husOOd3yg1XbGLLrw5eObNxUh3iO6ueu6",
       "username": "KE1215",
       "staff_code": "KE1215",
       "full_name": "Kelvin Mutonga Wachira",
@@ -3212,7 +2922,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3221,7 +2930,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sPlsJJGoZNv38/Q8gJPpk.SoaVmHwpevazv81KNOCxukaKvBm1cpS",
       "username": "KE1217",
       "staff_code": "KE1217",
       "full_name": "Gladys Mutanu Vundi",
@@ -3234,7 +2942,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3243,7 +2950,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$pDUf9g2Vtskjvdol/TEyeOhSjEZ0ESf7VaJ5thSUUN/Qn67kdZWCy",
       "username": "KE1218",
       "staff_code": "KE1218",
       "full_name": "Dennis Michael Ojiambo",
@@ -3256,7 +2962,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3265,7 +2970,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$voZaWIwvtKoNOG5ZFB8amOnN.tOx3h2f6Ny.koakdtzoO6nRcZDzi",
       "username": "KE1219",
       "staff_code": "KE1219",
       "full_name": "Justus Kimutai Korir",
@@ -3278,7 +2982,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3287,7 +2990,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$hAOkooUMPlVQ2CoTgvoWjOPv4ORYiEWgaoYU1Y0kw9vYfLHbRka9C",
       "username": "KE1223",
       "staff_code": "KE1223",
       "full_name": "Josphat Nyaberi Gichana",
@@ -3300,7 +3002,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3309,7 +3010,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$z4YFoNhc9sBXsom6Zih63.xK3Od683TJxDxuQZeLw.7BMKcjgytQa",
       "username": "KE1224",
       "staff_code": "KE1224",
       "full_name": "Simon Kamau Gatonye",
@@ -3322,7 +3022,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3331,7 +3030,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$f1Enn0jH802sle4CTz6ID.6JGbkLpfZTWKJrHcrD5bOIrgcuwfMvO",
       "username": "KE1225",
       "staff_code": "KE1225",
       "full_name": "Jean Wathoni Ng'ang'a",
@@ -3344,7 +3042,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3353,7 +3050,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$7N/ww9ZtMGM61P8llXyyI.cun4L8QeNVl8DDB5GYKg83TOwPn2wWq",
       "username": "KE1227",
       "staff_code": "KE1227",
       "full_name": "Hildah Wambani Munoko",
@@ -3366,7 +3062,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3375,7 +3070,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$knttiAVpK8Jecn8IM2uxaOQrY0MnlngFo5PcipiFQ6T1PWqCgiAju",
       "username": "KE1228",
       "staff_code": "KE1228",
       "full_name": "James Chisakane Odera",
@@ -3388,7 +3082,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3397,7 +3090,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$x1hdW7Uy1nHsrmTqX3sAd.Cmsr2FUUocBl7v7D09dztRHS0HOoRjC",
       "username": "KE1229",
       "staff_code": "KE1229",
       "full_name": "Erick Ochieng Ouma",
@@ -3410,7 +3102,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3419,7 +3110,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$332VgpuJpeQpQdjQkgMR.eh1i91WTE6P8.pH1Nn0AI6zw.KOAt0Am",
       "username": "KE1230",
       "staff_code": "KE1230",
       "full_name": "Shen Xue PEI",
@@ -3432,7 +3122,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3441,7 +3130,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$m8sq/W2ISyujnJkAMUB7Be26Xu/qgHfl3zDcBWCOEvlZ/Nj56DhGq",
       "username": "KE1233",
       "staff_code": "KE1233",
       "full_name": "Catherine Wanjiku Njoroge",
@@ -3454,7 +3142,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3463,7 +3150,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5cOHBLeOUz1Aq9NsqPQt7u/OtySD8CbfSNR56byanYL9KWX3N15O6",
       "username": "KE1237",
       "staff_code": "KE1237",
       "full_name": "Michael Muriu Kinuthia",
@@ -3476,7 +3162,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3485,7 +3170,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3NcnQ18HNXj3JfldBJrRJucyEreiqi8mAGtZE5yT/sOW/saph/Vu.",
       "username": "KE1238",
       "staff_code": "KE1238",
       "full_name": "Amon Onduso Ogendo",
@@ -3498,7 +3182,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3507,7 +3190,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$8PAqOeC/gAW4kIS.1ZTYQuLWGnhLcSqg4uDgQ5VRULbVnDhEnZW5O",
       "username": "KE1240",
       "staff_code": "KE1240",
       "full_name": "Raphael Wambua Kivati",
@@ -3520,7 +3202,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3529,7 +3210,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$b/rutp4CZ18giKLsM3rRNefwgpyzoZlcFkfFKZpaXM7FkM4d9FhOC",
       "username": "KE1241",
       "staff_code": "KE1241",
       "full_name": "Joseph Mutua Mumo",
@@ -3542,7 +3222,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3551,7 +3230,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oAP6Fo8cPM1xTOFQr7BgueLeHXrUmiQyYV5NHfrkBkKsuIMpA8bTy",
       "username": "KE1243",
       "staff_code": "KE1243",
       "full_name": "Obed Mogaka Ogeto",
@@ -3564,7 +3242,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3573,7 +3250,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oUuDqzFbPUs24lEyzwUiguqpV5Y25ol58FLpmhnKVOXum13KD1/Ka",
       "username": "KE1244",
       "staff_code": "KE1244",
       "full_name": "Jackline Akinyi Ajock",
@@ -3586,7 +3262,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3595,7 +3270,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$mKQmGH3wmW1MkCBKKUxJze1WLhw0PTi4dO66434vhweHf3EDoe6TW",
       "username": "KE1245",
       "staff_code": "KE1245",
       "full_name": "Anne Waguthii Mureithi",
@@ -3608,7 +3282,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3617,7 +3290,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$TMpZCNByB0DdIA6gJuHuNuU4h6nbd6ZCsUHcwodb.NgJRMG0na0Vm",
       "username": "KE1249",
       "staff_code": "KE1249",
       "full_name": "Carolyne Waithira Kamande",
@@ -3630,7 +3302,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3639,7 +3310,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oorsMxiTLGMzwoBKpulaN.T2uzBRRke2yPDOyvxr9TtFqDK03ldA6",
       "username": "KE1250",
       "staff_code": "KE1250",
       "full_name": "Felix Odiwuor Ouma",
@@ -3652,7 +3322,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3661,7 +3330,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZPLa19wzPgiYjOgJtZqXB.s9XAthkjpEiM/j5q/F7UxRTXnhwx6Ku",
       "username": "KE1251",
       "staff_code": "KE1251",
       "full_name": "Paul Macharia Kirega",
@@ -3674,7 +3342,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3683,7 +3350,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$w/YKXojY4XOCjgi4nxqfSexGVQQcpi42IklR3ZaUtMEC9UvT28rJK",
       "username": "KE1252",
       "staff_code": "KE1252",
       "full_name": "Livingstone Maina Kagio",
@@ -3696,7 +3362,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3705,7 +3370,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$H9rBwulGtaKhLGnlRSIsBOammEwQDpeZpBcZ8To4UJ75hh3zoWyje",
       "username": "KE1253",
       "staff_code": "KE1253",
       "full_name": "Ian Otieno Onyango",
@@ -3718,7 +3382,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3727,7 +3390,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$D1yws/DVZkylxjbTECB1Pu52imhinjIRjx1l5BJk.sXqvF2YQCp0G",
       "username": "KE1255",
       "staff_code": "KE1255",
       "full_name": "Louis Orwa",
@@ -3740,7 +3402,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3749,7 +3410,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3w4fiyQFciXRz5dhaeRbYe.qB82RbSZFadbMUlucPbGLtU0LVwmf2",
       "username": "KE1256",
       "staff_code": "KE1256",
       "full_name": "Peter Omondi Ogwenya",
@@ -3762,7 +3422,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3771,7 +3430,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oQExeFjW8GvElIgbGH5ixeyPwjsnIUJxtoCsZ4nHpGgQlKm4beiWW",
       "username": "KE1258",
       "staff_code": "KE1258",
       "full_name": "Collins F. Oloo",
@@ -3784,7 +3442,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3793,7 +3450,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$GDQJkT1jOLADSnfmdAn/OeCHP9UlMEE/oWkcCP1EH6gz64hhYl5Om",
       "username": "KE1259",
       "staff_code": "KE1259",
       "full_name": "Diana Mutanu",
@@ -3806,7 +3462,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3815,7 +3470,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$d4.Ua49.R3nQCyO2Ie2l7OwycaJKQ.OqtDe09dWiCADOnCYtT6ad2",
       "username": "KE1261",
       "staff_code": "KE1261",
       "full_name": "Stephen Kagiri Kimuyu",
@@ -3828,7 +3482,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3837,7 +3490,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$RL0Kf7VrC4zzAvN2YLTCjO/wHvzk4iou.86mJGA4GY7p30/beFTdi",
       "username": "KE1262",
       "staff_code": "KE1262",
       "full_name": "Glory Kendi",
@@ -3850,7 +3502,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3859,7 +3510,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$MTLm.MRmKdDCdY0ybBGyqe5NLCfIzBE1NY8Jract2gD5jlYJuiyK2",
       "username": "KE1264",
       "staff_code": "KE1264",
       "full_name": "Hassanali Mudukiza",
@@ -3872,7 +3522,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3881,7 +3530,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OmMSrnBMmh4Q1MvQ46.JlOvvb3f74J2tsLHyMndju6IiY9TyJD1c6",
       "username": "KE1265",
       "staff_code": "KE1265",
       "full_name": "Cyprian Kiprotich Rono",
@@ -3894,7 +3542,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3903,7 +3550,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qkC7dtP3RhhsJ/33pb8a6uepLw7OAp4EEWqsJmNP1x1gr1TyYxTBq",
       "username": "KE1266",
       "staff_code": "KE1266",
       "full_name": "Shadrack Mwongela Musyoki",
@@ -3916,7 +3562,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3925,7 +3570,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$YfOz01YGDfgeIwFNu0.Rz.5J5dXBB.5DSa8p36CD.3V7nCj5iD/9.",
       "username": "KE1269",
       "staff_code": "KE1269",
       "full_name": "Fiona Nanetia Lein",
@@ -3938,7 +3582,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3947,7 +3590,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$jeSpFuDSGROdW6j.YXsnH.uXHKwWlSQmBSZgYplSn5rS9wCv8tEe.",
       "username": "KE1270",
       "staff_code": "KE1270",
       "full_name": "Bellah Njeri Muriuki",
@@ -3960,7 +3602,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3969,7 +3610,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$2h9NvRXEKxGlKZEJlWfqHOZwfNsJMp8IrZaaYmyVCS9FoZjrSiSxO",
       "username": "KE1271",
       "staff_code": "KE1271",
       "full_name": "Gilbert Ariemo",
@@ -3982,7 +3622,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -3991,7 +3630,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$id4vbCxYsyxM5UbNw/mPMuvdCTNagxtQL9Mex7ePmntfkwSWFbsvi",
       "username": "KE1272",
       "staff_code": "KE1272",
       "full_name": "Francis Kamau Gathecha",
@@ -4004,7 +3642,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4013,7 +3650,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$lFUvtwq4V16hBCmVUhFmDePXp13ekkKZOAiEegiIeOZhrywaq//AW",
       "username": "KE1273",
       "staff_code": "KE1273",
       "full_name": "Moses Mwange Muasya",
@@ -4026,7 +3662,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4035,7 +3670,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$1ojBW9.JNI0TGYcNnShl9OTHQf0xBhiwSmdHPHcaBW/FSzj3YDzdm",
       "username": "KE1274",
       "staff_code": "KE1274",
       "full_name": "Florence Kabona",
@@ -4048,7 +3682,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4057,7 +3690,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZIsBeEDcSU3igX/QIXSWu.rDYj1lJfE2SXt8WlHHlMsI004Vwe7QO",
       "username": "KE1276",
       "staff_code": "KE1276",
       "full_name": "Joseph Aloice Machi",
@@ -4070,7 +3702,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4079,7 +3710,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$WqXkO5PUhjywEC0hV2R0Y.CM5FHPQRjNvL6egPeEzowpTIxNsOrDG",
       "username": "KE1278",
       "staff_code": "KE1278",
       "full_name": "Patrick Solomon Guda",
@@ -4092,7 +3722,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4101,7 +3730,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ca8yRyq.yZU9Jp8mgv0mOOfACkunRQEFd3hAlhbITnurP5ATKE31C",
       "username": "KE1279",
       "staff_code": "KE1279",
       "full_name": "Rose Wangari Munene",
@@ -4114,7 +3742,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4123,7 +3750,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$cLsAPPvn0npEJSu4.HSk7uvFWPE3aBkYr2A0JXRcho1p2q3aOHdem",
       "username": "KE1281",
       "staff_code": "KE1281",
       "full_name": "Upendo Mutave Wambua",
@@ -4136,7 +3762,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4145,7 +3770,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9A9gNRF71KSEkYV1uzzyjul9jwfvzA2bcqybJhOxvI2shUXWG3VXC",
       "username": "KE1282",
       "staff_code": "KE1282",
       "full_name": "Alex Odanga Ochieng",
@@ -4158,7 +3782,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4167,7 +3790,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$SS4dS2sUiIw6W9etIyLnve9icHauT.2HmyJ94NUUriC7Xy8jerXfy",
       "username": "KE1284",
       "staff_code": "KE1284",
       "full_name": "Kennedy Libibi Manyala",
@@ -4180,7 +3802,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4189,7 +3810,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$UcdKgd5QIo/ifhTK7IhufOmM36LMib7E3vwhVp7TRWP1e9UaZWmse",
       "username": "KE1285",
       "staff_code": "KE1285",
       "full_name": "Jackson Nyakang'o",
@@ -4202,7 +3822,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4211,7 +3830,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$cm0FH6I5b6sXQGfE0NgtteYPQWjS2lgQ1qro8HmZgsqF.jh2rVEjG",
       "username": "KE1286",
       "staff_code": "KE1286",
       "full_name": "Viginia Wangui Waweru",
@@ -4224,7 +3842,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4233,7 +3850,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QtoiZPg2xZiovC4f5Vs5Fu0/nTE03.cQ6qxYt5PIX.8CK30G25LpO",
       "username": "KE1287",
       "staff_code": "KE1287",
       "full_name": "Felix Deku",
@@ -4246,7 +3862,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4255,7 +3870,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ExNhENu4N4C.ryxVI4lwV.TzmpDD018Xbc0iT0UeU3LBxC4qxQzYu",
       "username": "KE1288",
       "staff_code": "KE1288",
       "full_name": "Griffin Muendo William",
@@ -4268,7 +3882,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4277,7 +3890,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$90dbLb8VMoeELigTnCvLXeJg8ysb4Hcwr79T.psTUXtfJyH9/Dl.6",
       "username": "KE1289",
       "staff_code": "KE1289",
       "full_name": "Geoffrey Simiyu Wanjala",
@@ -4290,7 +3902,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4299,7 +3910,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$22aZvOmdyL6tQ2LdeofUauGqZIHSErq.YdJMgQZJXLdtlZhxMXJpO",
       "username": "KE1291",
       "staff_code": "KE1291",
       "full_name": "Christine Kerubo Makone",
@@ -4312,7 +3922,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4321,7 +3930,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$47j/Z3v0ikzjNkTn7diqxe1bgxx//v8fTWcXNkB9GJMcy6K3VP5Vy",
       "username": "KE1292",
       "staff_code": "KE1292",
       "full_name": "Job Wepukhulu Sudi",
@@ -4334,7 +3942,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4343,7 +3950,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Hn45X9MyzSwemQFb/q8goO2PZ0MA1io6a.aiTUkrDUAfpSvgPvZ8a",
       "username": "KE1293",
       "staff_code": "KE1293",
       "full_name": "Jaffrson Orenge Nyakagwa",
@@ -4356,7 +3962,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4365,7 +3970,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$n5NWMB90sGNTKxHnkjS3r.gsHxcOXNlcjuEmKcXlqfOMi6de2V8ky",
       "username": "KE1295",
       "staff_code": "KE1295",
       "full_name": "George Tak Simel",
@@ -4378,7 +3982,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4387,7 +3990,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$CC.w3KWTOzpY3CC8G.K71e49c5gdWJ8XEpyHSRpZ4eF8WymQQt0Di",
       "username": "KE1296",
       "staff_code": "KE1296",
       "full_name": "Jane Nyawira Gachagi",
@@ -4400,7 +4002,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4409,7 +4010,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$tK0cP5bIkDIACZWxYuZvK.tDEjLBHqgtH29HtFpjWnLJsf1t0y0li",
       "username": "KE1297",
       "staff_code": "KE1297",
       "full_name": "Robert Kiprotich Bett",
@@ -4422,7 +4022,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4431,7 +4030,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aetH7Ot3O48/0/CKs/CjR.D0AQ0SYCNfKrzs4Iy.Pw/M7AhgYH1Aq",
       "username": "KE1298",
       "staff_code": "KE1298",
       "full_name": "Humphrey Omondi Obiero",
@@ -4444,7 +4042,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4454,7 +4051,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$mKunyIhlq21R4yvER32ehOgyKw.0kfFM6CJdrA9ScpxNq3QcvP1Fm",
       "username": "KE1300",
       "staff_code": "KE1300",
       "full_name": "Catherine Mwikali Mutisya",
@@ -4467,7 +4063,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4476,7 +4071,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3j3Kq5gSWtJpV62sAWKJiOPiZH/GA9dPL0KbEh8W.nJiW7MCgllIy",
       "username": "KE1301",
       "staff_code": "KE1301",
       "full_name": "Susan Wanza Odhiambo",
@@ -4489,7 +4083,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4498,7 +4091,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$2CDCb/gYCTBbvY7Via/WFuRpZQorQC1a4sER7Qp1iKQT/6IKn.QQG",
       "username": "KE1302",
       "staff_code": "KE1302",
       "full_name": "Arnold Murimi Ngure",
@@ -4511,7 +4103,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4520,7 +4111,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$O8iw.P04SVc24Ed3BfkUkO9eL.GSBXJE0DPAcAhTR0ezIDZLOMr9O",
       "username": "KE1303",
       "staff_code": "KE1303",
       "full_name": "Faith Ambiyo Essendi",
@@ -4533,7 +4123,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4542,7 +4131,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Pf08rbGqCT95G4OvfdTtEulYMrbKg4eFEDQFaNbLy8sGuSmrHKhHa",
       "username": "KE1304",
       "staff_code": "KE1304",
       "full_name": "Kelvin Mwendwa Muthoka",
@@ -4555,7 +4143,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4564,7 +4151,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$e7oMv5iFz2/EBjEdz.5bbekJqOr8rqSsJO3FGhBgqeq/mrQhPRhDq",
       "username": "KE1305",
       "staff_code": "KE1305",
       "full_name": "Brian Ong'era Ontita",
@@ -4577,7 +4163,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4586,7 +4171,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$doxY9IZXTnS9raOERcUrR.MGa0ItYWStiIcUjHE9/f2inizulG0Ie",
       "username": "KE1306",
       "staff_code": "KE1306",
       "full_name": "Benter Atieno",
@@ -4599,7 +4183,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4608,7 +4191,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$QmDoHCT8lJJDCqLjVBH92Oo7knckO3x9UhKPlB7dnfSymFcGx20EW",
       "username": "KE1307",
       "staff_code": "KE1307",
       "full_name": "Marieanne Ebby Kadatz Wanzare",
@@ -4621,7 +4203,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4630,7 +4211,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aS84IaqhwaCNjfratneLKurV80/urONXJUxUEDKRi8tTZnacHokwy",
       "username": "KE1308",
       "staff_code": "KE1308",
       "full_name": "Christine Mbukuli Omucheni",
@@ -4643,7 +4223,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4652,7 +4231,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3ozd62H8zKIWv.jGAoday.cEaRLg8vGTs8Z2rXn98toVG50TRY1i.",
       "username": "KE1309",
       "staff_code": "KE1309",
       "full_name": "Juliet Kinya Gitonga",
@@ -4665,7 +4243,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4674,7 +4251,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$j5wpO6GHqLVnIenc66mYOeNAZ4FH5ad2crs9bBqaGWB08SJKjwz52",
       "username": "KE1310",
       "staff_code": "KE1310",
       "full_name": "Lydiah Kakuvi Musyoki",
@@ -4687,7 +4263,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4696,7 +4271,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$XTdR8sbvA7xQLeUhhFHpQe1me.Rm3d6QGwHr79vZ0uc4QElQk5C2S",
       "username": "KE1312",
       "staff_code": "KE1312",
       "full_name": "Sanchez Logan Madara",
@@ -4709,7 +4283,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4718,7 +4291,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$d6sinF2kCEUhm/J5GtLUAOmcGnuWDiGF3ycXkzgchg29AhjDksW3y",
       "username": "KE1313",
       "staff_code": "KE1313",
       "full_name": "Alfred Muthomi Miriti",
@@ -4731,7 +4303,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4740,7 +4311,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$eszSIiQB37UboaBITRGloeX90epjgyrw5Lq31PWV6XY3ulQ.kugdC",
       "username": "KE1314",
       "staff_code": "KE1314",
       "full_name": "Mirriam Mueni Muema",
@@ -4753,7 +4323,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4762,7 +4331,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0BOmdSVZBfNOtrbgCvorZelO98SvN7BsvAP.2GRNCd9RxA2xfK/Sm",
       "username": "KE1315",
       "staff_code": "KE1315",
       "full_name": "George Nyamai Jimmy",
@@ -4775,7 +4343,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4784,7 +4351,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$CNqV4AVHOCP1S85ST4N77O7Ah4JKRjgx9H9gV2DDEWJeuYIETpsMi",
       "username": "KE1316",
       "staff_code": "KE1316",
       "full_name": "Philiph Kimutai Ngetich",
@@ -4797,7 +4363,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4806,7 +4371,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/IDQiel8dVMcM3FbYG.XQOrRJJ69gvj0H97YeoPG6bWCdkkchIrwu",
       "username": "KE1317",
       "staff_code": "KE1317",
       "full_name": "Richard Nzioka",
@@ -4819,7 +4383,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4828,7 +4391,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0xK33fhAWH4v/Jd4198YpOsX2UNWkxz3NRo33JPQjMbCF4j5ReIy2",
       "username": "KE1318",
       "staff_code": "KE1318",
       "full_name": "Edwin Nyamenia Araka",
@@ -4841,7 +4403,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4850,7 +4411,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qKq2mdLhovVUFNHO2v1lvucgcyax9ZXgBnTF0indTd80OU0tWbBD2",
       "username": "KE1319",
       "staff_code": "KE1319",
       "full_name": "Esther Wambui Mbano",
@@ -4863,7 +4423,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4872,7 +4431,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OZ.p6O3qQRxyKi.VN2eagOlG4dzJabl42xdXRtGTx.4/TL4dcgpB6",
       "username": "KE1320",
       "staff_code": "KE1320",
       "full_name": "David Muriithi Mathenge",
@@ -4885,7 +4443,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4894,7 +4451,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$4ltMTf3gNINt52WpLe/5vuGyIhdy9PZns9TCRC7ArEXO//RJOJrou",
       "username": "KE1321",
       "staff_code": "KE1321",
       "full_name": "Calvin Abondo Oyugi",
@@ -4907,7 +4463,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4916,7 +4471,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZP4Qab3OP7OmAMMjfZ5sLuKGTZLKhZTlaXlN3JQ2TFxOUU3a/XOsi",
       "username": "KE1323",
       "staff_code": "KE1323",
       "full_name": "Stephen Mutiku Kyalo",
@@ -4929,7 +4483,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4938,7 +4491,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$is24lBs9ZRFEp6yTNRgXSOYyvEOk.PZACGZWCkQmXvuyBmruVwVSa",
       "username": "KE1324",
       "staff_code": "KE1324",
       "full_name": "Wahiu Waciira",
@@ -4951,7 +4503,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4960,7 +4511,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aTng58Hpy.oNSOhiGKTv8.BgpjIFvTzRh512y7AX/ld7Y6IfpD6we",
       "username": "KE1325",
       "staff_code": "KE1325",
       "full_name": "Chilson Indatula Vidolo",
@@ -4973,7 +4523,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -4982,7 +4531,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Dsp3oPSk7YQtkCk9mw8EOOd7WryCbjEx6wRFLPlQU9qkcwdc86.iy",
       "username": "KE1328",
       "staff_code": "KE1328",
       "full_name": "Angela Kinya Gitonga",
@@ -4995,7 +4543,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5004,7 +4551,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$LpNzd41e96WpNNTJ9zK/eeSvJUZVe2LJJfWy6ubn6yhSgcq0kMfZ2",
       "username": "KE1330",
       "staff_code": "KE1330",
       "full_name": "Jenipher Anyango Dola",
@@ -5017,7 +4563,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5026,7 +4571,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5vzBpdkSURo1WTVQQQhUmeoFSAE7gZrH3sndnbFaQBibV10eKMTDa",
       "username": "KE1333",
       "staff_code": "KE1333",
       "full_name": "Rabecca Mueni Mbithi",
@@ -5039,7 +4583,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5049,7 +4592,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$lQiD5ccFaeEfqWIlc7ni/Oe.69slNqD.7Oxc4DBea0dhl3Be.3b6e",
       "username": "KE1334",
       "staff_code": "KE1334",
       "full_name": "Ian Odiwuor Were",
@@ -5062,7 +4604,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5071,7 +4612,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3vJY0tBjZ4f3q47OfOfoWeI.UpJR4WbrIbFOVMCNUxUGz9HNNm3kO",
       "username": "KE1335",
       "staff_code": "KE1335",
       "full_name": "Geoffrey Kerandi Onywoki",
@@ -5084,7 +4624,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5093,7 +4632,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$L1oz41/eNMkegNgQaHeMW.rGPQiiMtBP2wIglLj1Rgx7OxkGiLy0G",
       "username": "KE1339",
       "staff_code": "KE1339",
       "full_name": "Emmanuel Akaka Okumu",
@@ -5106,7 +4644,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5115,7 +4652,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$tUWvhdITtnBNODAdXNTpCu95XeADHGQ/BIHJ8OeX.9HMKgpt3dloG",
       "username": "KE1340",
       "staff_code": "KE1340",
       "full_name": "Mathew Kyalo Mutisya",
@@ -5128,7 +4664,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5137,7 +4672,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$z4V4.RxJ8vw4iVDYVeFLyekZN2OvtwuC.oaYdRzHk2Q8CsD2Vxm9C",
       "username": "KE1341",
       "staff_code": "KE1341",
       "full_name": "Vincent Gitonga Maina",
@@ -5150,7 +4684,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5159,7 +4692,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$AcMoCnSKqpGHLcU8LBvzSe1mqX4n.BiyuYtw4I230qHIerHWIPFgC",
       "username": "KE1342",
       "staff_code": "KE1342",
       "full_name": "Carolyne Nashipae Adewunmi",
@@ -5172,7 +4704,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5181,7 +4712,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zWl/o9ZH0qzRmCwfnX.dgOyMjy0FOav6IqUv38.X2qYVkh2UdvMwG",
       "username": "KE1343",
       "staff_code": "KE1343",
       "full_name": "Joan Jerono Sang",
@@ -5194,7 +4724,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5203,7 +4732,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$P0lByTXWyAx2sd4NCdyjPOJWwgv3OaGbTt0s.5eMgeHVTeWWLnmQy",
       "username": "KE1344",
       "staff_code": "KE1344",
       "full_name": "Kennedy Luseno Voreza",
@@ -5216,7 +4744,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5225,7 +4752,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$.Vf1NNc6pi3zpezhbhgc9.hvcWyXYiNUMlWmy19hLKvEhDJ5qi/T2",
       "username": "KE1346",
       "staff_code": "KE1346",
       "full_name": "Grace Kinya Miriti",
@@ -5238,7 +4764,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5247,7 +4772,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$fqHZChjWw4pDjjZwku1Apuo0Aw6cfCQxsi8qudiq8wDJCU2ZtPt22",
       "username": "KE1347",
       "staff_code": "KE1347",
       "full_name": "Joshua Onyancha Mokua",
@@ -5260,7 +4784,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5269,7 +4792,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0Nv.ZIZUMDDPsZRs4EtOYuHdx0QeQCzDD1qvfzgeB3ISBnEqVOPJy",
       "username": "KE1348",
       "staff_code": "KE1348",
       "full_name": "Dennis Mwangi Mutiga",
@@ -5282,7 +4804,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5291,7 +4812,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$nlQFKomskzuvbP7ZpbGb.OtZfOIL3.J3JNUhGvIPCQ/c1t4fT1t/e",
       "username": "KE1349",
       "staff_code": "KE1349",
       "full_name": "Faith Chepkemoi Yego",
@@ -5304,7 +4824,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5313,7 +4832,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ynDF4.dRi9h.NvvFN4VqQu8.twC/ShSF9Dhbr6T4RDnl2dDlC7pdK",
       "username": "KE1350",
       "staff_code": "KE1350",
       "full_name": "Beatrice Mwende Nzuve",
@@ -5326,7 +4844,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5335,7 +4852,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$jgZPbMOqSl4uLfDuSxdE4uTFmAuIDa/DwTYlY061VTdF/Wqw5EXGq",
       "username": "KE1351",
       "staff_code": "KE1351",
       "full_name": "Linnet Wangui Waiharo",
@@ -5348,7 +4864,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5357,7 +4872,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$CIFp0ngAvxzSzDZ9.dSTMePUkyul3VuWVYwClmOmFAzoeHeztDDGe",
       "username": "KE1352",
       "staff_code": "KE1352",
       "full_name": "Eric Odhiambo Onyango",
@@ -5370,7 +4884,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5379,7 +4892,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sRMy/NdM/kWejpfm4evSwePAKSYTUyAV6qM5sh/sJLVGu6P7mIeGS",
       "username": "KE1353",
       "staff_code": "KE1353",
       "full_name": "Ian Mulonzia Kilonzo",
@@ -5392,7 +4904,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5401,7 +4912,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$P3Ui3W1hnMVXmPUnQNWTpOA3c7t5iLCcJHdJoqQ7hrJbruubQga5m",
       "username": "KE1354",
       "staff_code": "KE1354",
       "full_name": "Joshua Muthama",
@@ -5414,7 +4924,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5423,7 +4932,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$POl4yOvPFkhZQnqML0ZiUegwdRUiWlgQSPP18gzKKTiXRa2NmTTSC",
       "username": "KE150",
       "staff_code": "KE150",
       "full_name": "Martha Muthoni Muraya",
@@ -5436,7 +4944,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5445,7 +4952,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5dV4asCd5mk3W4rs63wjMumHw9qOj2Foqne.xpNYAnUIgfIqoWWWi",
       "username": "KE175",
       "staff_code": "KE175",
       "full_name": "Peninah Wanjiru Njenga",
@@ -5458,7 +4964,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5467,7 +4972,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Bqwo56cIu9R5mvQdoAXQAOMfMmkRF2tiBlEMUKC9fOwiFa35yPlW6",
       "username": "KE176",
       "staff_code": "KE176",
       "full_name": "Geoffrey Nderitu Muthui",
@@ -5480,7 +4984,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5489,7 +4992,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/4N7WNX4JXb028koL8qs7u4Pcb6.Eg8X0wTlYDoQT9gbeJm0WPtqe",
       "username": "KE177",
       "staff_code": "KE177",
       "full_name": "Moses Migwi Karimi",
@@ -5502,7 +5004,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5511,7 +5012,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$nJdolqyGDwi9PdNlnf9UTuGA/zlKoXeiZ3GCGlRm99oYvZyi.5O2u",
       "username": "KE232",
       "staff_code": "KE232",
       "full_name": "Ayub Maina",
@@ -5524,7 +5024,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5533,7 +5032,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$mrSF2bWssQHkVf03QpKgV.vYiRLgcJKr4ZhphTX7lowTwp4hmqyp6",
       "username": "KE284",
       "staff_code": "KE284",
       "full_name": "George Pino",
@@ -5546,7 +5044,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5555,7 +5052,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$4TXCoebSgNKYBw7aBVC.iOnKaqyPKZqcqhgKTRxqhWzBNiBeYP37q",
       "username": "KE292",
       "staff_code": "KE292",
       "full_name": "Tabman Odhiambo Nyaoro",
@@ -5568,7 +5064,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5577,7 +5072,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$froRZWtn/jKKlyNjLbxF0OQS0rl2Ez9TQRv02n8/FYjbBT1pqSJDW",
       "username": "KE305",
       "staff_code": "KE305",
       "full_name": "David Kimani Kinyanjui",
@@ -5590,7 +5084,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5599,7 +5092,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$oVdT1hKf4VtjJEagsect4OzqA8m7qIHGaBq6XuJu02gnCBjA091ie",
       "username": "KE313",
       "staff_code": "KE313",
       "full_name": "Philgona Akinyi Odera",
@@ -5612,7 +5104,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5621,7 +5112,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xpeImAlVtBsHapcbK3EVDuSKRMFTOPlhAb6OvEPZmBuz8Xz/MFCLO",
       "username": "KE314",
       "staff_code": "KE314",
       "full_name": "Phyllis Sibolo",
@@ -5634,7 +5124,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5643,7 +5132,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xF.oN6mEFAJHI6Zu/pHIJukDVqV2.LwnJhbZvMDkgIaeZtM.pFaLS",
       "username": "KE317",
       "staff_code": "KE317",
       "full_name": "Christine Achieng Kiche",
@@ -5656,7 +5144,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5665,7 +5152,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$wMT0mE8cZO18aIMHigw6C.Kdrpnm6MAX3hb5SIn2FV/T1r6eN9xvS",
       "username": "KE322",
       "staff_code": "KE322",
       "full_name": "Thaddaeus Mboga Okwaro",
@@ -5678,7 +5164,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5687,7 +5172,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$SlNr3NPEmhC0sjbFh8GdfOPoBYmk02OTa.dEOnS5BXrRf81nk/LHu",
       "username": "KE332",
       "staff_code": "KE332",
       "full_name": "Ruth Wambui Thairu",
@@ -5700,7 +5184,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5709,7 +5192,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$2zq5dGhyebLpHARaRKHjY.ZWN3gbdljO3UJm87c9anwIIRdk/MLay",
       "username": "KE343",
       "staff_code": "KE343",
       "full_name": "Nancy Akoth Oywer",
@@ -5722,7 +5204,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5731,7 +5212,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$PRLoZ0jvAq/GPsJSULWjredH/FlGGCxRwJpB5hYPTVopymAmZvWHC",
       "username": "KE345",
       "staff_code": "KE345",
       "full_name": "Josephine Gakii Gituma",
@@ -5744,7 +5224,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5753,7 +5232,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$GKHEWgmrRhtouxA1xs4b.OHpr1Hub7Wgoj5IrxR84O8d6P3zllUi2",
       "username": "KE356",
       "staff_code": "KE356",
       "full_name": "Hellen Wangui Gathii",
@@ -5766,7 +5244,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5775,7 +5252,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$iGcdxG7z4Am58KiivRWfm.JDYobdZ2iBtfBkqmdxQtTMFLYczlLdS",
       "username": "KE357",
       "staff_code": "KE357",
       "full_name": "Judy Njeri Irungu",
@@ -5788,7 +5264,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5797,7 +5272,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$tcCMcip7X6cuzz4dbs4wo.WMBrPqYaFa/q8C1FYE.4m/MoGMhhvZi",
       "username": "KE395",
       "staff_code": "KE395",
       "full_name": "Violet Bochere Monari",
@@ -5810,7 +5284,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5819,7 +5292,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9d9HaG6.CIf/H.OHc2Vd4extwclJgxfy1hCZYKK5vh4euX3UQY0gG",
       "username": "KE397",
       "staff_code": "KE397",
       "full_name": "Charles Maunda Orina",
@@ -5832,7 +5304,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5841,7 +5312,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$WkoWF291CrcpIV0ixtDJCOJpwIQ2kAlJR/9E6lhTDaCo9KxjbDbnG",
       "username": "KE399",
       "staff_code": "KE399",
       "full_name": "Abdalla Mohamed Ali",
@@ -5854,7 +5324,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5863,7 +5332,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ubD5kGi0A5.iXUR8e3gEOO1/NOJGSSTBsAnN5isIxHHTry7vbk8Fe",
       "username": "KE406",
       "staff_code": "KE406",
       "full_name": "Benjamin Muthini",
@@ -5876,7 +5344,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5885,7 +5352,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$s6575Xv.Stoct2wmJ8S4KOG0vOs60gtxCxPl8TzgrlmVVKPf/bJEu",
       "username": "KE408",
       "staff_code": "KE408",
       "full_name": "Mary Chepkemboi Lagat",
@@ -5898,7 +5364,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5907,7 +5372,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$LWwSIPSbusEdPfd3nBOsOOIp8nD/7.vp7ibnNu8K.UEgF9ANeT8Oy",
       "username": "KE412",
       "staff_code": "KE412",
       "full_name": "Moses Bwogo Nyandiko",
@@ -5920,7 +5384,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5929,7 +5392,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$814nfrmtXUfhCy88Lt4AUODS/uN2gA.NoKHNm6LBCDaeTccm3viW2",
       "username": "KE439",
       "staff_code": "KE439",
       "full_name": "Ludy Chebet Mining",
@@ -5942,7 +5404,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5951,7 +5412,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ouPVGsI4NZaruiRB7xg3NOLCpnAThVg2vxcmMl/8ENTQqNO3SW.im",
       "username": "KE443",
       "staff_code": "KE443",
       "full_name": "Caroline Mbenge Wambua",
@@ -5964,7 +5424,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5973,7 +5432,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ssbin/CXKeQ9B0UG15nY8uNtWXssrUkIwzgV9BsnrnJvsh2ieQ8bO",
       "username": "KE445",
       "staff_code": "KE445",
       "full_name": "Jennifer Waithera Macharia",
@@ -5986,7 +5444,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -5995,7 +5452,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$BEWYKqJ6o03vrnm1uVRqu.DVIMSY8TLp/pNCrpPIIg8H0ebnbC4De",
       "username": "KE451",
       "staff_code": "KE451",
       "full_name": "Nirmal Singh Sembi",
@@ -6008,7 +5464,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6017,7 +5472,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$TmWBRUsdfH5TtGHkFGtx1.hjDxuxUzYZPSu8twdE6s3Y6BFrzh/OS",
       "username": "KE461",
       "staff_code": "KE461",
       "full_name": "Betty Wachera Waiguru",
@@ -6030,7 +5484,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6039,7 +5492,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZsxKQ51l.FAFF/NfrXFGpODfWdrLglhgb.xo.H8GjIWA2s9X/KnAO",
       "username": "KE467",
       "staff_code": "KE467",
       "full_name": "Caren Mbithe Nyakundi",
@@ -6052,7 +5504,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [
           "KE833"
@@ -6063,7 +5514,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3OLeoeOFsx/kcNgu481b2OmofqohbY9tvJlFofbk4KiULgxB9jt1G",
       "username": "KE484",
       "staff_code": "KE484",
       "full_name": "Florence Wanjiru Mbuthia",
@@ -6076,7 +5526,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6085,7 +5534,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$dFL7ZPdVeFg9ZCPt0wNbZOWs/w3HqENfWZyd30QvjkkLeTqYH4M4a",
       "username": "KE486",
       "staff_code": "KE486",
       "full_name": "Stellah Cherop Maina",
@@ -6098,7 +5546,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6107,7 +5554,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$AwGMQZNcA60UzfG6SRXYu.3ZPCFPBUTB9sbqQJoH1..HZny4kiNum",
       "username": "KE507",
       "staff_code": "KE507",
       "full_name": "Rachel Watiri Muriithi",
@@ -6120,7 +5566,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6129,7 +5574,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zEbxzWBHWIUmW/OG83V7yeqkQmBz9sj5fAZmOuxvHPWGajdjVC6ra",
       "username": "KE508",
       "staff_code": "KE508",
       "full_name": "Nelly Mjomba",
@@ -6142,7 +5586,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6151,7 +5594,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zvYLm9TK.hoiWpmmAWV.XeLT7IOfKyURlmn2rFBZ1N/omiKE677Im",
       "username": "KE519",
       "staff_code": "KE519",
       "full_name": "Margaret Wambui Wairimu",
@@ -6164,7 +5606,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6173,7 +5614,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$g0bq9vfykh9ZikTSGYLZuOC7siAnWvxFjQwyePBkI5DHxUHJ7vmnG",
       "username": "KE526",
       "staff_code": "KE526",
       "full_name": "Amina Adam",
@@ -6186,7 +5626,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6195,7 +5634,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$An/AalqIhqFbnkJL41DT1unlpMD2c4YnDP9R5jJlEIt/Csupl/Wcq",
       "username": "KE539",
       "staff_code": "KE539",
       "full_name": "Lucy Kamede Lidahuli",
@@ -6208,7 +5646,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6217,7 +5654,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$F5kRGJ7kuYZrJ3fvP7gS0.gv/0UyaWRitlWcWfYD7f356tluelNPC",
       "username": "KE545",
       "staff_code": "KE545",
       "full_name": "Robert Oginda Siro",
@@ -6230,7 +5666,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6239,7 +5674,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$bh9UadxmXZyxD2J1BYdGfumuu5XjjwhlTgWu1sv2I5HeKAzLr9Hpi",
       "username": "KE546",
       "staff_code": "KE546",
       "full_name": "Elizabeth Nyawira Miano",
@@ -6252,7 +5686,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6261,7 +5694,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$4kRraDy1LvkAO/Fkw/WNaOba8skstd6xR33nxmpoKVrsDLVhxDHNq",
       "username": "KE555",
       "staff_code": "KE555",
       "full_name": "Mary Wangari Wanjiru",
@@ -6274,7 +5706,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6283,7 +5714,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$bJxKy9oGj8r.XGLBMWpXlu6pfN28.lAOV9kbyo1.RA5BXsO579VMi",
       "username": "KE557",
       "staff_code": "KE557",
       "full_name": "Christine Wahu Wanyoike",
@@ -6296,7 +5726,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6305,7 +5734,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Gu6iHD5lFQP2w5CnWdcf7e4Zawfhh6M8y8vrnbA58PX4NwHw/CZ3q",
       "username": "KE561",
       "staff_code": "KE561",
       "full_name": "Susan Akoth Abok",
@@ -6318,7 +5746,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6327,7 +5754,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$zH7sly78E5dkJH9Wp893y.YHPx4FoY/6GvLCEQhWybMCKuL0o9oiq",
       "username": "KE569",
       "staff_code": "KE569",
       "full_name": "Paulina Anna Wangare",
@@ -6340,7 +5766,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6349,7 +5774,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/0aCGp/8ms9k6J2It8euiOcagzZpdwd5ISsERpaOo9uWyhkZpSh5y",
       "username": "KE573",
       "staff_code": "KE573",
       "full_name": "Divinah Kwamboka Ondimu",
@@ -6362,7 +5786,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6371,7 +5794,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$rKjwC.g7TwAJ2K/UaJ3Tx.FYo3P.YX2ZeXF1fVoolF7yaoT/5mnMS",
       "username": "KE587",
       "staff_code": "KE587",
       "full_name": "Evans Mwaura Ngugi",
@@ -6384,7 +5806,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6393,7 +5814,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$JEE8idXtI.wgHDRF2l5Ple/ztDNZhr4cOmEzHM2U3h8jTpEf2fYvi",
       "username": "KE592",
       "staff_code": "KE592",
       "full_name": "Edward Muchoki Mbugua",
@@ -6406,7 +5826,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6415,7 +5834,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$PBHKvox4sQPe0W1wpdM5euBtf4CcExchpHhVnFk0S2sgivaeJb6Qa",
       "username": "KE603",
       "staff_code": "KE603",
       "full_name": "Alexander Maina Kibaara",
@@ -6428,7 +5846,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6437,7 +5854,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$fs2NbWpcAvjRM9yRZ6KDEeQSyA9AoHyu6rCGQ2DFkOtZG38iZDxHS",
       "username": "KE621",
       "staff_code": "KE621",
       "full_name": "Trevor Omondi Otieno",
@@ -6450,7 +5866,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6459,7 +5874,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9AYA7FQT980JFrv/8g01yepcuoZ5EqvcN5OIwIYjwYjaXTMWJW7Qm",
       "username": "KE632",
       "staff_code": "KE632",
       "full_name": "Joyce Gituura Meeme",
@@ -6472,7 +5886,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6481,7 +5894,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qoS9XBIINsiFIzbEPcoqROtDn6Btap6/w8QHoREXGNxNrKFEMO3jK",
       "username": "KE637",
       "staff_code": "KE637",
       "full_name": "Brenda Cherono Rono",
@@ -6494,7 +5906,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6503,7 +5914,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$7QD977GKiY7qaruQep2cO.jCpIICACntR4ROA3LnuK3DB3V71H9pe",
       "username": "KE639",
       "staff_code": "KE639",
       "full_name": "Nelly Ogutu",
@@ -6516,7 +5926,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6525,7 +5934,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$GduE4Cpaxii/PgNDErhLgOG1ghtPHuC/Zg5Q0G1vlmG5va6GqI6D.",
       "username": "KE662",
       "staff_code": "KE662",
       "full_name": "Faith Jemutai Koech",
@@ -6538,7 +5946,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6547,7 +5954,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/ffMwaZ5fGL8sjiDci4Bi.2QiFdy6iOTLr9Gyq8mTbA/a8NburACy",
       "username": "KE668",
       "staff_code": "KE668",
       "full_name": "Billy Calary Arika",
@@ -6560,7 +5966,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6569,7 +5974,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$INCeYMFOMCHcW0g6vq4fyuXcoXY8Hah2v.H7F7tCOiRwqz5WSk5pO",
       "username": "KE672",
       "staff_code": "KE672",
       "full_name": "Martin Maina Muritu",
@@ -6582,7 +5986,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6591,7 +5994,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$.rR2QwxB92OeOefztE5NiOLjvSVpXdJ7NnNkdEW6y9tuwi0unbHq.",
       "username": "KE677",
       "staff_code": "KE677",
       "full_name": "Stephen Otieno Omondi",
@@ -6604,7 +6006,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6613,7 +6014,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$6MubRBkjGQ5Z8yKFeK5.FuvvrkeqduojDRnER/kFN9NqMNXNnwT9G",
       "username": "KE691",
       "staff_code": "KE691",
       "full_name": "Edmund Uledi Moga",
@@ -6626,7 +6026,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6635,7 +6034,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$WVW3.FZr070dnXkFWJOUIuPt/tXpvJ04c4XayDkX6M3/rhBYIDU.C",
       "username": "KE70",
       "staff_code": "KE70",
       "full_name": "Pauline Wairimu Omondi",
@@ -6648,7 +6046,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6657,7 +6054,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sDdZvvjiMOK8NhiI6L9oe.HjKq8oBbiS6/CwXB1v6CFoONUUmRjla",
       "username": "KE701",
       "staff_code": "KE701",
       "full_name": "Enid Jesang Tallam",
@@ -6670,7 +6066,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6679,7 +6074,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$wiDUnBN8sAo2ACuD8w7wbep5j9rVdPT41RpCpHuKz7e.7aESnGsLO",
       "username": "KE708",
       "staff_code": "KE708",
       "full_name": "Maryanne Njeri Chege",
@@ -6692,7 +6086,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6701,7 +6094,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$IVd0E596Lkt1/aODPsHmtOlHwt2dP4kZt5776ZjA0M7vz1vMBhVwy",
       "username": "KE718",
       "staff_code": "KE718",
       "full_name": "Rosabeth Theuri",
@@ -6714,7 +6106,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6723,7 +6114,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$YWnfst8q8GFBdMFIt5Z0iuMdv2TeCUFFChrWhCEdlVXJ/RQJ6kO7u",
       "username": "KE723",
       "staff_code": "KE723",
       "full_name": "Loryne Bulimo",
@@ -6736,7 +6126,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6745,7 +6134,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$FsXlzh0O1kOpmPJmc6p0S.lnLxlSSJZN5JgcR6b59IhWdknhsH6Ka",
       "username": "KE741",
       "staff_code": "KE741",
       "full_name": "Clare Wairimu Njeri",
@@ -6758,7 +6146,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6767,7 +6154,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$G0msCZyxirBv.BlILuk4COzqynMD3ZqYAuodcvBLW3VfR0iQOFKLe",
       "username": "KE745",
       "staff_code": "KE745",
       "full_name": "David Macharia Murigi",
@@ -6780,7 +6166,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6789,7 +6174,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$A7mrz5m96aBcKrmpQz9RtuxdHhPbPVJtqV5uQhsHTOhy7ZYhcXyBS",
       "username": "KE748",
       "staff_code": "KE748",
       "full_name": "Nicholus Macharia Karani",
@@ -6802,7 +6186,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6811,7 +6194,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$E/LW4Am83DLBIslT8uqQ7e1DNq1R.JiT568KP5tV/Nm3E7uZRDd6u",
       "username": "KE754",
       "staff_code": "KE754",
       "full_name": "Latifa Achieng Outa",
@@ -6824,7 +6206,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6833,7 +6214,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OX0wW2KKgZY6WM7khJiT3e.QO3iJH4qHlQMQSfdvjAHbhcVlh7gRu",
       "username": "KE762",
       "staff_code": "KE762",
       "full_name": "Caroline Nduta Gakinya",
@@ -6846,7 +6226,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6855,7 +6234,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$R/XTasQ6xxF00wPHOdbDFekw4xUB7NNmfM4Evqxk0kAHmGKFLY6Ke",
       "username": "KE776",
       "staff_code": "KE776",
       "full_name": "Eric Muchai Mwongera",
@@ -6868,7 +6246,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6877,7 +6254,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ZcETpBVNv.MSAMV6US0mH..9Zzzi3Kr.d0LIfSKCn7XH2Rz81nElK",
       "username": "KE792",
       "staff_code": "KE792",
       "full_name": "Esther Wangari Mathenge",
@@ -6890,7 +6266,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6899,7 +6274,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$xL.IApmEoqcuodKIw9Nw0uvjZzfrwvtkVIyKkrlEHIN85Vyj/933m",
       "username": "KE793",
       "staff_code": "KE793",
       "full_name": "Mercy Mueni Inyama",
@@ -6912,7 +6286,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6921,7 +6294,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$YeMghNNDVyZIZvZYQ3G5VO539CQTjk6WbBgFlPXSXhSC1ck.dTGye",
       "username": "KE801",
       "staff_code": "KE801",
       "full_name": "Hilda Nyaboke Osoro",
@@ -6934,7 +6306,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6943,7 +6314,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$PYGEaXsb1asGfkDX6j1tpOSkm0HjH8BmFcs4Uup9qlsHMajam9qva",
       "username": "KE807",
       "staff_code": "KE807",
       "full_name": "Fenella Mwamburi",
@@ -6956,7 +6326,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6965,7 +6334,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$pHkRny.qvXG8/kvokPiOrOvc9fcJqjc7nD/qmCtfi/y0.T2t9byky",
       "username": "KE810",
       "staff_code": "KE810",
       "full_name": "Caroline Gateru",
@@ -6978,7 +6346,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -6987,7 +6354,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$DbCIcp5wcm9hobZTRmBtVeyvT5pvHyH3uAO4nujdNmV9Jn3jfHou2",
       "username": "KE812",
       "staff_code": "KE812",
       "full_name": "Barbara Robi Mwita",
@@ -7000,7 +6366,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7009,7 +6374,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OmkR4/UnxzCXqQoV8QsBjuQb4CVtXz2Ve2y2sL4K7fTtOaOIAbbXW",
       "username": "KE814",
       "staff_code": "KE814",
       "full_name": "Loise Wanjiru Ributhi",
@@ -7022,7 +6386,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7031,7 +6394,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$dga8QT4TZrF5wKjV7ccQMua88X0bbD26UMaBS4mDFD.WA7JpXv0Xq",
       "username": "KE816",
       "staff_code": "KE816",
       "full_name": "Annette Wambui Kamere",
@@ -7044,7 +6406,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7053,7 +6414,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$mUskvZ1LSg2S/wvEZuN7OOZLapy/tJbNq0pqZ7ba1O2aEmC9QUQz2",
       "username": "KE820",
       "staff_code": "KE820",
       "full_name": "Thomas Okumu",
@@ -7066,7 +6426,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7075,7 +6434,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$LURe1IXkrMocax5qNzFj/umqDEyZs9FL6/WZiOBESPZQjaGQVgb6u",
       "username": "KE822",
       "staff_code": "KE822",
       "full_name": "Vincent Kipkoech Langat",
@@ -7088,7 +6446,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7097,7 +6454,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$bGfBdlPuPLZOYn5YYzHsfulA4R1ByT5WeH6xngz4IF8ddN8l/dvza",
       "username": "KE824",
       "staff_code": "KE824",
       "full_name": "Patrick Muthui Katuta",
@@ -7110,7 +6466,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7119,7 +6474,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$C5otpVeHG8obGnp.Jgsh.O06rMgaBGBv1YyEkvlWhNEBRo1OsthEG",
       "username": "KE827",
       "staff_code": "KE827",
       "full_name": "Veronica Lalarari",
@@ -7132,7 +6486,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7141,7 +6494,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$/2gKa/5wPRr1kL62noIyLeYXHpksN2xNd9DAydPBUyXqLByrfp.kG",
       "username": "KE831",
       "staff_code": "KE831",
       "full_name": "Brenda Sawo",
@@ -7154,7 +6506,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7163,7 +6514,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$kWAbpA9VnS.JTa1XHctQW.IDAyUmGa3VSlw8HX.ooBoS0NZ10OFk2",
       "username": "KE833",
       "staff_code": "KE833",
       "full_name": "Benson Oloo Omondi",
@@ -7176,7 +6526,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7185,7 +6534,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$fs2hNlQ8GhdXEmY7C02Aleb6epfvokwmzN9zWyeGyZJK9TGDE5wJG",
       "username": "KE834",
       "staff_code": "KE834",
       "full_name": "Salome Nganga",
@@ -7198,7 +6546,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7207,7 +6554,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$6VGA9g30uUHJ4eir853gZ.5gz2xjsU7NacSdUM8//v7AxTMSCjcB.",
       "username": "KE840",
       "staff_code": "KE840",
       "full_name": "Samuel Magothe",
@@ -7220,7 +6566,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7229,7 +6574,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$OEelWdBjS7WY99uTSwZNQ.DZQShe0UjQ5f.sBp4xkhd2h/SIR5BeK",
       "username": "KE852",
       "staff_code": "KE852",
       "full_name": "Faith Sungu Busolo",
@@ -7242,7 +6586,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7251,7 +6594,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9OF1BNi.pMgQuuq/W8HgG.1EfHkhfh3F/rFoTR3odthxXoLGKy5NK",
       "username": "KE859",
       "staff_code": "KE859",
       "full_name": "Jackline Nyakerario Mainye",
@@ -7264,7 +6606,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7273,7 +6614,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$TyYNlZZGeKYLpnrCHKd66uEIhPP6hvYMbblTuc1psHuUSAbQcY/Ga",
       "username": "KE867",
       "staff_code": "KE867",
       "full_name": "Frankline Koriko Obuya",
@@ -7286,7 +6626,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7295,7 +6634,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$A3VMVCQAvluFtqlC3AMlHeqAX0e3aEL9AxNf5Uuyccaur4kSSkU9y",
       "username": "KE870",
       "staff_code": "KE870",
       "full_name": "Naomi Muthoni Muriuki",
@@ -7308,7 +6646,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7317,7 +6654,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$9MmxJbZqg8b8RjxW1HjVge8yTt9hFu7UZMHORMhmj4kLnWS7HC7De",
       "username": "KE874",
       "staff_code": "KE874",
       "full_name": "Mercy Wanjiru Kabuiku",
@@ -7330,7 +6666,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7339,7 +6674,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$aoJCOKhTZyOyaYJdG0biOOwnnVUDOk2OULgs6l9kvOwoSzGkjYu8G",
       "username": "KE886",
       "staff_code": "KE886",
       "full_name": "Michelle Mwihaki Mwangi",
@@ -7352,7 +6686,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7361,7 +6694,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ei.ph5Lndim7TXQoYQ/9OuZcLw9Ah7m4ZjV52KCjXNrKPRGNOUJ.C",
       "username": "KE887",
       "staff_code": "KE887",
       "full_name": "John Njogu Waithaka",
@@ -7374,7 +6706,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7383,7 +6714,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$3HxpTgK/LEtTtNzyLOgdQuBOL36xaUK8mEpN2kYk6StPDKM1Eo7Ma",
       "username": "KE894",
       "staff_code": "KE894",
       "full_name": "Ruby Michelle Cherotich",
@@ -7396,7 +6726,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7405,7 +6734,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$EZ/JywRxY3qR4sbbjz1hqukD0XDbMonds3Vnxgu8YDX69Hjk3y3Lm",
       "username": "KE899",
       "staff_code": "KE899",
       "full_name": "Abdul Hafiz Otieno",
@@ -7418,7 +6746,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7427,7 +6754,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$swCO7L4tHP4cOywuXNcu2O1oqgf.4Vgdz3Ltrkacj63aNGmvzkBeq",
       "username": "KE902",
       "staff_code": "KE902",
       "full_name": "Alfred Muriithi Maringa",
@@ -7440,7 +6766,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7449,7 +6774,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$KNoLzKcFYTLMAyjqiBf6q.EbnXvEJiy1WSh/oqRLvEsk//XdOTZdu",
       "username": "KE905",
       "staff_code": "KE905",
       "full_name": "Frida Alice Karimi Njiru",
@@ -7462,7 +6786,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7471,7 +6794,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0TdoUJj4esoQDZkIup0x0eLca2Mz/L9LpTBnzMXRRluDeOdIb5NKO",
       "username": "KE913",
       "staff_code": "KE913",
       "full_name": "Judy Mwende Muthama",
@@ -7484,7 +6806,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7493,7 +6814,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$1d0oNcE80D14CFp2jz53G.uj7tZJsLA.5m27W7/9UeGB9tXb53jPu",
       "username": "KE949",
       "staff_code": "KE949",
       "full_name": "Monicah Nyambura Gikonyo",
@@ -7506,7 +6826,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7515,7 +6834,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$EdRzkLSNhbgiY9OdSNH8AOpyVTVsqZzRl8/jTl3ii9QYw70ebGxXq",
       "username": "KE954",
       "staff_code": "KE954",
       "full_name": "Fred Wanyonyi Mutekhele",
@@ -7528,7 +6846,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7537,7 +6854,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$gmzJB4vEuLmMLbQnGBD61eQVX8lbAghybTZOQpVodm8AwPH4eyFB6",
       "username": "KE955",
       "staff_code": "KE955",
       "full_name": "Bertha Ngala Mulumia",
@@ -7550,7 +6866,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7559,7 +6874,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$MFc7rwls8hNZivJ3ScXXT.76s8NKj7pjUuVK0uGgMlK8os0Tb7gSa",
       "username": "KE956",
       "staff_code": "KE956",
       "full_name": "Sera Wanjiru Njuguna",
@@ -7572,7 +6886,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7581,7 +6894,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$WPFfocdkig6mk.gJo8Qxj.4kHlgV/.XFq491CvDz5H9Hvd4BtUSPa",
       "username": "KE958",
       "staff_code": "KE958",
       "full_name": "Tamara Kageha Kidulla",
@@ -7594,7 +6906,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7603,7 +6914,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$Hq6/q722gpjZKBec3BvYNO5pyFrhsYUyVT4DkE/YrjS6Q/YJ3Ymc.",
       "username": "KE959",
       "staff_code": "KE959",
       "full_name": "Victor Mutabari Mbaabu",
@@ -7616,7 +6926,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7625,7 +6934,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$VsPxueMQabo8HtuoSoXUIOdrqxTzCA3tpB1iV9x6N7Aqs/OtOFGMW",
       "username": "KE96",
       "staff_code": "KE96",
       "full_name": "Joyce Nyambura Mwangi",
@@ -7638,7 +6946,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [
           "KE833"
@@ -7649,7 +6956,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$hlbmN1HCIC8Bu6DoBAD5J.AytnNGnfgn7111e4csOMiDi5HW5E5aa",
       "username": "KE966",
       "staff_code": "KE966",
       "full_name": "Lindah Gakii Murithi",
@@ -7662,7 +6968,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7671,7 +6976,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$H5W2H7Tw6w4cklEBqX3b3epwvfuFqoO7r/J/RiraoclQGo.031vM6",
       "username": "KE967",
       "staff_code": "KE967",
       "full_name": "Faith Moraa Nyagero",
@@ -7684,7 +6988,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7693,7 +6996,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$0zHawiHyz3isCkVepBAfd.gDlJwSMCq8YwsRi5pxF5w/agTd10XRy",
       "username": "KE968",
       "staff_code": "KE968",
       "full_name": "Honest John Atibu",
@@ -7706,7 +7008,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7715,7 +7016,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$ClxhRh3ak95dyFP1VIyVtuS0ETQSwywJS8HNuKoedYmqFMLamCVPO",
       "username": "KE970",
       "staff_code": "KE970",
       "full_name": "Wanjora Kamau",
@@ -7728,7 +7028,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7737,7 +7036,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$SA41tSM8BBEqP.1WGODoS.H8BWWLTZ6HUCULrliQk2t/sZFS494Yu",
       "username": "KE972",
       "staff_code": "KE972",
       "full_name": "Vera Cheruto Rono",
@@ -7750,7 +7048,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7759,7 +7056,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$a7UpjhHqhiWbPfYMB/D.R.e1ndTUKa/5KpBIm14.Rm6buHgcXZcZe",
       "username": "KE973",
       "staff_code": "KE973",
       "full_name": "George Anyona Patroba",
@@ -7772,7 +7068,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7781,7 +7076,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$HvJCfnyloncJQUBMXFjqxOusTp2PcrMNkHMKTM3hu5AKL.dV0fB4O",
       "username": "KE982",
       "staff_code": "KE982",
       "full_name": "Milcah Wambui Mwangi",
@@ -7794,7 +7088,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7803,7 +7096,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$qpLMSTqcyFRX/Dr816bcHewyt5IVJmcX8fugCL8Z/3eJzVPWgwQ.i",
       "username": "KE984",
       "staff_code": "KE984",
       "full_name": "Kipkorir Ngeno",
@@ -7816,7 +7108,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7825,7 +7116,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$tDE9yqmeAYOF92cUORg4yO.DqLJI8F./YEQabywCAKoJ3OfkrW6mW",
       "username": "KE986",
       "staff_code": "KE986",
       "full_name": "Richard Ogato Momanyi",
@@ -7838,7 +7128,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7847,7 +7136,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$4TfVH4bBC.RUMc81G.gFaOVoP9HXQ4UQsgnSZy7G/d3y2Kh/w73Ai",
       "username": "KE987",
       "staff_code": "KE987",
       "full_name": "Kingsley Efedi Onyia",
@@ -7860,7 +7148,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7869,7 +7156,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$5tmt8NefQoJfpLHMVVzOHO0gK6pZSqqhVfQG2a5ZFgIu/yOGs8T.6",
       "username": "KE988",
       "staff_code": "KE988",
       "full_name": "Eva Yvonne Oyando",
@@ -7882,7 +7168,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7891,7 +7176,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$42FHVRluo5rorpTwAn.qnuUZbEUBt8jFJFTmBmtBhyDQyzrcZf736",
       "username": "KE990",
       "staff_code": "KE990",
       "full_name": "Jacinta Mbaki Makau",
@@ -7904,7 +7188,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7913,7 +7196,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$pn2gSKfW0sGQmRkme2EqreJY3BlEiDEEDbtvUqZTvML0QcrdBbGu.",
       "username": "KE994",
       "staff_code": "KE994",
       "full_name": "Nelson Muguna Kiambi",
@@ -7926,7 +7208,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7935,7 +7216,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$rUGzTI4AL3u2Z1cKpPqD7umkQ00oi4cJ.6qfnzKiu39Zde3/q6deS",
       "username": "KE995",
       "staff_code": "KE995",
       "full_name": "Sharon Osimbo Ombonya",
@@ -7948,7 +7228,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
@@ -7957,7 +7236,6 @@
       }
     },
     {
-      "password_hash": "$2b$12$sCCIusl/wd3RhK624YABj.SL9sjKMuiUq/cSoqyd7AZSfYOHmKYXK",
       "username": "KE998",
       "staff_code": "KE998",
       "full_name": "John Nzau Mwonga",
@@ -7970,7 +7248,6 @@
       "active": true,
       "is_admin": false,
       "can_view_all": false,
-      "must_change_password": true,
       "metadata": {
         "dotted": [],
         "region": "",
