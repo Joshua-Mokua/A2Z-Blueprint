@@ -15,6 +15,8 @@ import {
   milestoneTone,
   type ExecuteInitiative,
 } from '@/types/executeInitiatives';
+import { NewInitiativeForm } from '@/components/NewInitiativeForm';
+import { AddMilestoneForm } from '@/components/AddMilestoneForm';
 
 function GateBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
@@ -28,7 +30,7 @@ function GateBar({ score }: { score: number }) {
   );
 }
 
-function InitiativeRow({ init }: { init: ExecuteInitiative }) {
+function InitiativeRow({ init, onChanged }: { init: ExecuteInitiative; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const ms = Array.isArray(init.milestones) ? init.milestones : [];
   const total = init.milestone_total ?? ms.length;
@@ -93,6 +95,9 @@ function InitiativeRow({ init }: { init: ExecuteInitiative }) {
               ))}
             </ol>
           )}
+          <div className="mt-3">
+            <AddMilestoneForm initiativeId={init.id} onAdded={onChanged} />
+          </div>
         </div>
       )}
     </div>
@@ -113,6 +118,7 @@ export function MilestonePlans() {
         <h2 className="text-base font-semibold text-gray-900">
           Milestone Plans ({initiatives.length})
         </h2>
+        <NewInitiativeForm onCreated={() => void refetch()} />
         <span className="text-xs text-gray-500">
           Execution initiatives with milestone plans and gate progress · feeds the BSC
         </span>
@@ -142,7 +148,7 @@ export function MilestonePlans() {
           </div>
         )}
         {!loading && !error && sorted.map((init) => (
-          <InitiativeRow key={init.id} init={init} />
+          <InitiativeRow key={init.id} init={init} onChanged={() => void refetch()} />
         ))}
       </Card.Body>
     </Card>
