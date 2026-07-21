@@ -141,3 +141,77 @@ def fetch_initiative_detail(
         "initiative": status,
         "source":     "command_centre",
     }
+
+
+# ─── v10.542 — canonical list route (execute_initiatives.json) ──────────
+# The two routes above read the RAG portfolio store via the command-centre
+# engine. The initiatives that actually score the BSC — and that carry the
+# milestone plans — live in execute_initiatives.json, owned by
+# core.ExecuteManager. This route exposes that canonical store so the React
+# page can list the milestone-bearing initiatives (the Must Win Battles).
+# Additive: it does not alter portfolio-summary or /{initiative_id}.
+
+_GATE_SCORES = {"G0": 0, "G1": 20, "G2": 40, "G3": 60, "G4": 80, "G5": 100}
+
+
+def _execute_manager():
+    """Fresh ExecuteManager (cheap; reads a JSON list). Kept local so a load
+    error here never affects the RAG routes above."""
+    from utils.core import ExecuteManager
+    return ExecuteManager()
+
+
+def _slim_initiative(init: dict) -> dict:
+    """Project an execute-initiative to what the list view needs, including a
+    gate-derived implementation score and its milestone plan."""
+    gate = init.get("gate") or "G0"
+    milestones = []
+    for ms in init.get("milestones", []) or []:
+        milestones.append({
+            "id":        ms.get("id"),
+            "name":      ms.get("name"),
+            "owner":     ms.get("owner"),
+            "due_date":  ms.get("due_date"),
+            "status":    ms.get("status"),
+            "confirmed": ms.get("confirmed", False),
+        })
+    done = sum(1 for m in milestones if str(m.get("status")).lower() == "complete")
+    return {
+        "id":            init.get("id"),
+        "name":          init.get("name"),
+        "objective":     init.get("objective", ""),
+        "workstream":    init.get("workstream", ""),
+        "io":            init.get("io", ""),
+        "gate":          gate,
+        "gate_score":    _GATE_SCORES.get(gate, 0),
+        "status":        init.get("status", "Active"),
+        "milestone_total":    len(milestones),
+        "milestone_complete": done,
+        "milestones":    milestones,
+    }
+
+
+@router.get("")
+def list_initiatives(
+    status: Optional[str] = "Active",
+    workstream: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """List canonical execute-initiatives with their milestone plans.
+
+    status defaults to Active; pass status=All to include closed. Empty-state
+    tolerant: returns {"status": "no_data", "initiatives": []} if the store is
+    empty or unreadable, so the UI renders a friendly empty state.
+    """
+    try:
+        mgr = _execute_manager()
+        items = mgr.get_initiatives(status=status or "Active", workstream=workstream)
+        slim = [_slim_initiative(i) for i in items]
+        return {
+            "status": "ok" if slim else "no_data",
+            "count": len(slim),
+            "initiatives": slim,
+        }
+    except Exception as e:  # noqa: BLE001
+        _log.warning("list_initiatives failed: %s", e)
+        return {"status": "no_data", "count": 0, "initiatives": [], "note": str(e)}
