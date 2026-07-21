@@ -215,3 +215,79 @@ def list_initiatives(
     except Exception as e:  # noqa: BLE001
         _log.warning("list_initiatives failed: %s", e)
         return {"status": "no_data", "count": 0, "initiatives": [], "note": str(e)}
+
+
+# ─── v10.543 Phase 1 — authoring write routes ──────────────────────────
+# POST create-initiative + POST add-milestone. Both wrap ExecuteManager
+# methods that already exist. created_by / actor is taken from the auth'd
+# user, never the client body. Additive: GET routes above are untouched.
+
+from pydantic import BaseModel, Field
+from typing import List as _List, Optional as _Optional
+
+
+class _NewInitiative(BaseModel):
+    name:           str
+    objective:      str
+    category:       str = "Strategic Initiative"
+    workstream:     str
+    io:             str                      # owner — must be a register Staff Name
+    sub_workstream: str = ""
+    io_backup:      str = ""
+    estimated_impact: float = 0
+    tags:           _List[str] = Field(default_factory=list)
+
+
+class _NewMilestone(BaseModel):
+    name:       str
+    owner:      str
+    due_date:   str
+    type:       str = "Delivery"
+    start_date: str = ""
+    description: str = ""
+
+
+@router.post("")
+def create_initiative_route(
+    payload: _NewInitiative,
+    user: dict = Depends(get_current_user),
+):
+    """Create a new initiative (starts at gate G0). created_by = the auth'd user."""
+    try:
+        mgr = _execute_manager()
+        data = payload.model_dump()
+        data["created_by"] = (user.get("full_name") or user.get("username") or "unknown")
+        init_id = mgr.create_initiative(data)
+        if not init_id:
+            raise HTTPException(status_code=400, detail="create_initiative returned nothing")
+        # create_initiative returns the id string
+        iid = init_id if isinstance(init_id, str) else init_id.get("id")
+        return {"status": "ok", "id": iid}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("create_initiative failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{initiative_id}/milestones")
+def add_milestone_route(
+    initiative_id: str,
+    payload: _NewMilestone,
+    user: dict = Depends(get_current_user),
+):
+    """Add a milestone to an existing initiative."""
+    try:
+        mgr = _execute_manager()
+        if not mgr.get_initiative(initiative_id):
+            raise HTTPException(status_code=404, detail=f"no initiative {initiative_id}")
+        ms = mgr.add_milestone(initiative_id, payload.model_dump())
+        if ms is None:
+            raise HTTPException(status_code=400, detail="add_milestone returned nothing")
+        ms_id = ms if isinstance(ms, str) else (ms.get("id") if isinstance(ms, dict) else None)
+        return {"status": "ok", "milestone_id": ms_id}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("add_milestone failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
