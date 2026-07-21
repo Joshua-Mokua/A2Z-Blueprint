@@ -7437,6 +7437,82 @@ class UserManager:
         return restored
 
     def _load(self):
+        """Load all users into the in-memory dict shape every other method
+        on this class expects (JSON-era shape: 'password' not
+        'password_hash'; band/gender/managed_*/accessible_modules/etc.
+        flattened in from Postgres's metadata JSONB catch-all).
+
+        Postgres is the source of truth when A2Z_USE_DB is configured and
+        reachable — falls back to users.json only when it isn't (a dev box
+        without DB access). This mirrors the JSON path's own philosophy:
+        prefer the real thing, degrade to a local file rather than lock
+        everyone out.
+        """
+        from utils.db import db as _db
+        if _db.is_postgres_ready():
+            return self._load_from_db()
+        return self._load_from_json()
+
+    def _load_from_db(self):
+        from utils.db import db as _db
+        rows = _db.fetch_all("SELECT * FROM users")
+        users = {}
+        for row in rows:
+            uname = row["username"]
+            rec = dict(row.get("metadata") or {})  # extras first (title, managed_*, ...)
+            rec.update({
+                "username":              uname,
+                "password":              row.get("password_hash") or "",
+                "full_name":             row.get("full_name") or "",
+                "email":                 row.get("email") or "",
+                "role":                  row.get("role") or "",
+                "department":            row.get("department") or "",
+                "unit":                  row.get("unit") or "",
+                "staff_code":            row.get("staff_code") or "",
+                "active":                bool(row.get("active", True)),
+                "is_admin":              bool(row.get("is_admin", False)),
+                "can_view_all":          bool(row.get("can_view_all", False)),
+                "must_change_password":  bool(row.get("must_change_password", False)),
+            })
+            users[uname] = rec
+
+        if not users:
+            return self._defaults()
+
+        # Always ensure admin account exists and cannot be permanently removed
+        # (same normalization as the JSON path — see _load_from_json).
+        _admin_was_missing = 'admin' not in users
+        if _admin_was_missing:
+            users['admin'] = {
+                "password":   self.hash_pw("admin123"),
+                "full_name":  "System Admin",
+                "role":       "Admin",
+                "department": "All",
+                "can_view_all": True,
+                "managed_roles": [], "managed_units": [],
+                "managed_staff_codes": [],
+                "staff_code": "ADMIN001",
+                "email":      "admin@bank.com",
+                "active":     True,
+                "_protected": True,
+            }
+        else:
+            users['admin'].update({
+                'can_view_all': True,
+                'role': 'Admin',
+                'active': True,
+                '_protected': True,
+            })
+        # AUTH-RACE FIX (same rationale as _load_from_json): persist the
+        # seed only when genuinely absent, never on every load.
+        if _admin_was_missing:
+            try:
+                self._save(users)
+            except Exception:
+                pass
+        return users
+
+    def _load_from_json(self):
         # Hardened (P-AUTH-b): a transient read error or a corrupt file must
         # NEVER cause a silent fall-back to defaults, because _defaults()
         # immediately re-saves and would overwrite a recoverable real file
@@ -7559,7 +7635,57 @@ class UserManager:
         self._save(u)
         return u
 
+    # Real columns on the Postgres users table — everything else in a user
+    # dict (managed_roles, managed_staff_codes, title, accessible_modules,
+    # band, gender, _protected, ...) is a metadata-jsonb-only field.
+    _DB_REAL_COLS = {"full_name", "email", "role", "department", "unit",
+                      "staff_code", "active", "is_admin", "can_view_all",
+                      "must_change_password"}
+
     def _save(self, u=None):
+        """Persist all users. Postgres (upsert per user) when configured
+        and reachable; falls back to the JSON file otherwise."""
+        from utils.db import db as _db
+        if _db.is_postgres_ready():
+            return self._save_to_db(u)
+        return self._save_to_json(u)
+
+    def _save_to_db(self, u=None):
+        from utils.db import db as _db
+        users_dict = u or self.users
+        for uname, rec in users_dict.items():
+            metadata_extra = {k: v for k, v in rec.items()
+                               if k not in self._DB_REAL_COLS
+                               and k not in ("username", "password")}
+            _db.execute("""
+                INSERT INTO users (username, password_hash, full_name, email, role,
+                    department, unit, staff_code, active, is_admin, can_view_all,
+                    must_change_password, metadata)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (username) DO UPDATE SET
+                    password_hash         = EXCLUDED.password_hash,
+                    full_name             = EXCLUDED.full_name,
+                    email                 = EXCLUDED.email,
+                    role                  = EXCLUDED.role,
+                    department            = EXCLUDED.department,
+                    unit                  = EXCLUDED.unit,
+                    staff_code            = EXCLUDED.staff_code,
+                    active                = EXCLUDED.active,
+                    is_admin              = EXCLUDED.is_admin,
+                    can_view_all          = EXCLUDED.can_view_all,
+                    must_change_password  = EXCLUDED.must_change_password,
+                    metadata              = EXCLUDED.metadata
+            """, (
+                uname, rec.get("password", ""), rec.get("full_name", ""),
+                rec.get("email", ""), rec.get("role", "Staff"),
+                rec.get("department", rec.get("unit", "")), rec.get("unit", ""),
+                str(rec.get("staff_code", "")), bool(rec.get("active", True)),
+                bool(rec.get("is_admin", False)), bool(rec.get("can_view_all", False)),
+                bool(rec.get("must_change_password", False)),
+                json.dumps(metadata_extra),
+            ))
+
+    def _save_to_json(self, u=None):
         # Atomic write: serialize to a temp file in the same directory, then
         # os.replace() it over the target. os.replace is atomic on both Windows
         # and POSIX, so an interrupted or concurrent write can never leave a
@@ -7614,6 +7740,17 @@ class UserManager:
         if not can:
             return False, reason
         self.users.pop(username, None)
+        # save_users()/_save() only upserts — a username absent from the
+        # in-memory dict doesn't get removed from Postgres by itself, so
+        # delete the row explicitly (best-effort: the in-memory removal
+        # above is what every other request-scoped UserManager() sees
+        # immediately regardless of DB reachability).
+        try:
+            from utils.db import db as _db
+            if _db.is_postgres_ready():
+                _db.execute("DELETE FROM users WHERE username = %s", (username,))
+        except Exception:
+            pass
         self.save_users()
         return True, f"User '{username}' deleted by {verified_by}."
 

@@ -1850,6 +1850,13 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_confi
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"create failed: {exc}")
     _audit("API_ADMIN_STAFF_CREATE_V2", user, f"{final_user}|sc:{final_sc}")
+    # UserManager caches every user in memory for the life of the process
+    # (see utils/core.py _USER_STORE) — this endpoint just wrote Postgres
+    # directly, bypassing that cache. Without a reload, the NEXT call to
+    # save_users() from anywhere (including project_quietly() below) would
+    # blindly re-upsert the stale cached copy over this write.
+    from utils.core import UserManager
+    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -1915,6 +1922,10 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"update failed: {exc}")
     _audit("API_ADMIN_STAFF_UPDATE", user, f"{username}|{','.join(c.split(' = ')[0] for c in cols)}")
+    # See create_admin_staff above — refresh UserManager's cache before
+    # anything downstream can re-persist a stale copy over this write.
+    from utils.core import UserManager
+    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -1935,6 +1946,10 @@ def deactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"deactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_DEACTIVATE", user, username)
+    # See create_admin_staff above — refresh UserManager's cache before
+    # anything downstream can re-persist a stale copy over this write.
+    from utils.core import UserManager
+    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -1953,6 +1968,10 @@ def reactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"reactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_REACTIVATE", user, username)
+    # See create_admin_staff above — refresh UserManager's cache before
+    # anything downstream can re-persist a stale copy over this write.
+    from utils.core import UserManager
+    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
