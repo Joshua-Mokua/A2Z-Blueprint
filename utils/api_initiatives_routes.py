@@ -126,69 +126,16 @@ def fetch_initiative_detail(
     initiative_id: str,
     user: dict = Depends(get_current_user),
 ):
-    """
-    Full status detail for a single initiative — milestones, RAG,
-    dependencies, KPI linkage. 404 if not found.
-    """
-    status = _safe_call("initiative_status", initiative_id, default=None)
-    if status is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No initiative found with id={initiative_id}",
-        )
-    return {
-        "status":     "ok",
-        "initiative": status,
-        "source":     "command_centre",
-    }
-
-
-# ─── v10.542 — canonical list route (execute_initiatives.json) ──────────
-# The two routes above read the RAG portfolio store via the command-centre
-# engine. The initiatives that actually score the BSC — and that carry the
-# milestone plans — live in execute_initiatives.json, owned by
-# core.ExecuteManager. This route exposes that canonical store so the React
-# page can list the milestone-bearing initiatives (the Must Win Battles).
-# Additive: it does not alter portfolio-summary or /{initiative_id}.
-
-_GATE_SCORES = {"G0": 0, "G1": 20, "G2": 40, "G3": 60, "G4": 80, "G5": 100}
-
-
-def _execute_manager():
-    """Fresh ExecuteManager (cheap; reads a JSON list). Kept local so a load
-    error here never affects the RAG routes above."""
-    from utils.core import ExecuteManager
-    return ExecuteManager()
-
-
-def _slim_initiative(init: dict) -> dict:
-    """Project an execute-initiative to what the list view needs, including a
-    gate-derived implementation score and its milestone plan."""
-    gate = init.get("gate") or "G0"
-    milestones = []
-    for ms in init.get("milestones", []) or []:
-        milestones.append({
-            "id":        ms.get("id"),
-            "name":      ms.get("name"),
-            "owner":     ms.get("owner"),
-            "due_date":  ms.get("due_date"),
-            "status":    ms.get("status"),
-            "confirmed": ms.get("confirmed", False),
-        })
-    done = sum(1 for m in milestones if str(m.get("status")).lower() == "complete")
-    return {
-        "id":            init.get("id"),
-        "name":          init.get("name"),
-        "objective":     init.get("objective", ""),
-        "workstream":    init.get("workstream", ""),
-        "io":            init.get("io", ""),
-        "gate":          gate,
-        "gate_score":    _GATE_SCORES.get(gate, 0),
-        "status":        init.get("status", "Active"),
-        "milestone_total":    len(milestones),
-        "milestone_complete": done,
-        "milestones":    milestones,
-    }
+    """Single initiative detail with milestones, from the canonical execute store."""
+    try:
+        mgr = _execute_manager()
+        init = mgr.get_initiative(initiative_id)
+        if not init:
+            return {"status": "not_found", "initiative": None}
+        return {"status": "ok", "initiative": _slim_initiative(init)}
+    except Exception as e:  # noqa: BLE001
+        _log.warning("fetch_initiative_detail failed: %s", e)
+        return {"status": "error", "initiative": None, "note": str(e)}
 
 
 @router.get("")
