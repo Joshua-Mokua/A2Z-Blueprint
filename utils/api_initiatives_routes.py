@@ -67,6 +67,51 @@ def _get_engine():
         return None
 
 
+
+
+# ─── canonical execute-store helpers (shared by all routes below) ──────
+_GATE_SCORES = {"G0": 0, "G1": 20, "G2": 40, "G3": 60, "G4": 80, "G5": 100}
+
+
+def _execute_manager():
+    """Fresh ExecuteManager reading execute_initiatives.json (the BSC-scoring store).
+    Local import so a load error here never breaks the RAG routes."""
+    from utils.core import ExecuteManager
+    return ExecuteManager()
+
+
+def _slim_initiative(init: dict) -> dict:
+    """Project an execute-initiative to what the UI needs: fields + gate score +
+    milestone plan."""
+    gate = init.get("gate") or "G0"
+    milestones = []
+    for ms in init.get("milestones", []) or []:
+        milestones.append({
+            "id":        ms.get("id"),
+            "name":      ms.get("name"),
+            "owner":     ms.get("owner"),
+            "due_date":  ms.get("due_date"),
+            "start_date": ms.get("start_date"),
+            "status":    ms.get("status"),
+            "confirmed": ms.get("confirmed", False),
+        })
+    done = sum(1 for m in milestones if str(m.get("status")).lower() in ("complete", "completed"))
+    return {
+        "id":            init.get("id"),
+        "name":          init.get("name"),
+        "objective":     init.get("objective", ""),
+        "category":      init.get("category", ""),
+        "workstream":    init.get("workstream", ""),
+        "sub_workstream": init.get("sub_workstream", ""),
+        "io":            init.get("io", ""),
+        "gate":          gate,
+        "gate_score":    _GATE_SCORES.get(gate, 0),
+        "status":        init.get("status", "Active"),
+        "milestone_total":    len(milestones),
+        "milestone_complete": done,
+        "milestones":    milestones,
+    }
+
 def _safe_call(method_name: str, *args, default=None):
     """
     Call engine.<method_name>(*args). On any exception, return `default`
