@@ -13,7 +13,7 @@ interface NavItem {
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
-const DEMO_HIDE = new Set<string>(['/', '/initiatives', '/profitability']);
+const DEMO_HIDE = new Set<string>([]);
 
 const NAV_GROUPS: NavGroup[] = [
   {
