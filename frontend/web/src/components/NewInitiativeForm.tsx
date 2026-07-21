@@ -76,8 +76,6 @@ export function NewInitiativeForm({ onCreated }: { onCreated: () => void }) {
       <div className="space-y-2">
         <input className={inputCls} placeholder="Initiative name"
           value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
-        <input className={inputCls} placeholder="Objective (what it delivers)"
-          value={objective} onChange={(e) => setObjective(e.target.value)} autoComplete="off" />
         <div className="flex gap-2">
           <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -96,6 +94,15 @@ export function NewInitiativeForm({ onCreated }: { onCreated: () => void }) {
           ) : (
             <StaffPicker value={owner} onChange={setOwner} />
           )}
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 mb-1 mt-2">Objective (supporting context)</div>
+          <textarea
+            className={inputCls + ' min-h-[72px] resize-y'}
+            placeholder="What this initiative delivers, and why it matters…"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          />
         </div>
       </div>
 
