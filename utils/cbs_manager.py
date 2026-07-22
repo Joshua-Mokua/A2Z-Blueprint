@@ -495,11 +495,15 @@ def _staff_name_index() -> dict:
 
 
 def _rm_code_variants(code: str) -> str:
-    """staff_code -> cbs_accounts.rm_code convention: 'KE' + staff_code
-    (confirmed empirically: rm_code IN ('KE1293') matched 361 real accounts
-    for staff_code=1293). Codes that already carry a bank prefix pass through."""
+    """staff_code -> cbs_accounts.rm_code convention: 'KE' + staff_code by
+    default (confirmed empirically: rm_code IN ('KE1293') matched 361 real
+    accounts for staff_code=1293; 'KE' covers 81,386 of the real rm_codes in
+    cbs_accounts vs a few hundred under other prefixes). Codes that already
+    carry ANY letter prefix (KE, CN, ...) pass through unchanged — staff_code
+    is not universally KE-prefixed (e.g. CN245 is a real, distinct code), so
+    only bare-numeric input gets the default prefix applied."""
     c = str(code or "").strip()
-    return c if c[:2].upper() == "KE" else f"KE{c}"
+    return c.upper() if c[:1].isalpha() else f"KE{c}"
 
 
 def _is_loan_type_name(name) -> bool:

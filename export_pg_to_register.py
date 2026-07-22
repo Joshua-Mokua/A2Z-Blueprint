@@ -31,9 +31,19 @@ def md_of(raw):
             except Exception: pass
     return {}
 
-rows = _db.fetch_all(
-    "SELECT staff_code, full_name, role, unit, department, email, band, gender, metadata "
-    "FROM users WHERE active = true ORDER BY staff_code") or []
+try:
+    # Schema where band/gender are real columns (e.g. load_roster_json.py's target shape).
+    rows = _db.fetch_all(
+        "SELECT staff_code, full_name, role, unit, department, email, band, gender, metadata "
+        "FROM users WHERE active = true ORDER BY staff_code") or []
+    _band_gender_are_columns = True
+except Exception:
+    # This server's schema (utils/core.py's UserManager._save_to_db): band/gender
+    # aren't real columns, they live in the metadata JSONB blob.
+    rows = _db.fetch_all(
+        "SELECT staff_code, full_name, role, unit, department, email, metadata "
+        "FROM users WHERE active = true ORDER BY staff_code") or []
+    _band_gender_are_columns = False
 print(f"Postgres active users: {len(rows)}")
 
 out = []
@@ -42,6 +52,8 @@ for r in rows:
     md = md_of(r.get("metadata"))
     reports_to = md.get("reports_to", "") or ""
     if not reports_to: missing_reports += 1
+    band = r.get("band", "") if _band_gender_are_columns else md.get("band", "")
+    gender = r.get("gender", "") if _band_gender_are_columns else md.get("gender", "")
     out.append({
         "Staff Code":      r.get("staff_code", ""),
         "Staff Name":      r.get("full_name", ""),
@@ -52,8 +64,8 @@ for r in rows:
         "Region":          md.get("region", "") or "",
         "Reports To Code": reports_to,
         "Email":           r.get("email", "") or "",
-        "Band":            r.get("band", "") or "",
-        "Gender":          (r.get("gender", "") or "").strip(),
+        "Band":            band or "",
+        "Gender":          (gender or "").strip(),
     })
 
 df = pd.DataFrame(out)

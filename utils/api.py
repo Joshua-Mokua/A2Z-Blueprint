@@ -913,6 +913,15 @@ def set_staff_id(
         raise HTTPException(status_code=400, detail="Staff ID cannot be empty")
     if len(code) > 20:
         raise HTTPException(status_code=400, detail="Staff ID is too long")
+    # Default prefix: staff codes are letter-prefixed bank-wide (KE covers the
+    # large majority of real cbs_accounts.rm_code values; a handful of staff
+    # carry other prefixes like CN). A user typing bare digits ("1293") means
+    # the default KE prefix — anyone who already has a different prefix types
+    # it themselves and it passes through untouched.
+    if code[:1].isalpha():
+        code = code.upper()
+    else:
+        code = f"KE{code}"
 
     from utils.core import UserManager
     um = UserManager()
