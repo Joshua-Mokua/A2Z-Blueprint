@@ -14,6 +14,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { ragTone, type AtRiskItem } from '@/types/initiatives';
+import { MilestonePlans } from '@/components/MilestonePlans';
 
 
 export function Initiatives() {
@@ -173,6 +174,7 @@ export function Initiatives() {
           </Card.Body>
         </Card>
 
+              <MilestonePlans />
       </main>
     </div>
   );

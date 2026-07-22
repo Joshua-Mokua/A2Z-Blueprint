@@ -1,0 +1,7259 @@
+{
+  "version": 1,
+  "source": "postgres_export",
+  "count": 362,
+  "includes_hashes": false,
+  "auth_note": "Staff authenticate via bank domain; NO passwords in this file.",
+  "users": [
+    {
+      "username": "CN020",
+      "staff_code": "CN020",
+      "full_name": "Josephat Mutwiri",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN103",
+      "staff_code": "CN103",
+      "full_name": "Rita Binsari Nyasente",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN112",
+      "staff_code": "CN112",
+      "full_name": "Caroline Taabu Were",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1349",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN155",
+      "staff_code": "CN155",
+      "full_name": "Minica Ogachi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN159",
+      "staff_code": "CN159",
+      "full_name": "Faith Jepkogei",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN160",
+      "staff_code": "CN160",
+      "full_name": "Elizabeth Khasiani Acham",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN17",
+      "staff_code": "CN17",
+      "full_name": "Jackson Kipkogei Kipchoge",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN190",
+      "staff_code": "CN190",
+      "full_name": "Eric Mbatha Mukwilu",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN201",
+      "staff_code": "CN201",
+      "full_name": "Antony Ndirangu Gichuhi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN202",
+      "staff_code": "CN202",
+      "full_name": "Topister Akinyi Musumba",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN48",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN205",
+      "staff_code": "CN205",
+      "full_name": "Billy Owiny Ochieng",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN207",
+      "staff_code": "CN207",
+      "full_name": "Victor kibiwot Kibet",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN208",
+      "staff_code": "CN208",
+      "full_name": "BRIAN MBUGUA OGUTU",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN21",
+      "staff_code": "CN21",
+      "full_name": "Judith Akeng'o",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN212",
+      "staff_code": "CN212",
+      "full_name": "Dinah Nekesa Makokha",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN214",
+      "staff_code": "CN214",
+      "full_name": "Grace Nkirote",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN216",
+      "staff_code": "CN216",
+      "full_name": "Brian Gitari",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN220",
+      "staff_code": "CN220",
+      "full_name": "Vivian Wairimu Mwaura",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN223",
+      "staff_code": "CN223",
+      "full_name": "Stella Nyaguthii Murithi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN224",
+      "staff_code": "CN224",
+      "full_name": "Kelvin Kipruto Kimaiyo",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN225",
+      "staff_code": "CN225",
+      "full_name": "Everline Jerusa",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN24",
+      "staff_code": "CN24",
+      "full_name": "Monicah Nyambura Wanjohi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN243",
+      "staff_code": "CN243",
+      "full_name": "NDWIGA MERCY WANJIKU",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN245",
+      "staff_code": "CN245",
+      "full_name": "ONDIGI OBWOGE ALBERT",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1218",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN246",
+      "staff_code": "CN246",
+      "full_name": "MUTATA RHODA KALIMI",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN251",
+      "staff_code": "CN251",
+      "full_name": "KABENA IRENE MUTHONI",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN254",
+      "staff_code": "CN254",
+      "full_name": "Moureen Kathure Runogone",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN255",
+      "staff_code": "CN255",
+      "full_name": "Nerryne Akinyi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN256",
+      "staff_code": "CN256",
+      "full_name": "Dominic Ngetich Kipkurui",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN257",
+      "staff_code": "CN257",
+      "full_name": "Violah Biwott Jepkorir",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN26",
+      "staff_code": "CN26",
+      "full_name": "Patrick Kichwen",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN262",
+      "staff_code": "CN262",
+      "full_name": "Elizabeth Nyambura Waweru",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN263",
+      "staff_code": "CN263",
+      "full_name": "Dorine Kerubo Nyamwaro",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN269",
+      "staff_code": "CN269",
+      "full_name": "Yvonne Mukhaye",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN27",
+      "staff_code": "CN27",
+      "full_name": "Pauline Atieno Odhiambo",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE322",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN270",
+      "staff_code": "CN270",
+      "full_name": "Naftal Onchiri Nyakundi",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1218",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN277",
+      "staff_code": "CN277",
+      "full_name": "Leakey Omondi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN278",
+      "staff_code": "CN278",
+      "full_name": "Walter Okoth",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN280",
+      "staff_code": "CN280",
+      "full_name": "Stephine Owuor",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN281",
+      "staff_code": "CN281",
+      "full_name": "Mercy Achieng Nange",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN282",
+      "staff_code": "CN282",
+      "full_name": "Emily Papa",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN283",
+      "staff_code": "CN283",
+      "full_name": "Naomi Kate Maina",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN48",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN284",
+      "staff_code": "CN284",
+      "full_name": "Emmanuel Ogo Jilani",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN285",
+      "staff_code": "CN285",
+      "full_name": "Nancy Stecy Akinyi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN288",
+      "staff_code": "CN288",
+      "full_name": "Sharon Anyango",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN289",
+      "staff_code": "CN289",
+      "full_name": "Ruth Wangari Chege",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN48",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN29",
+      "staff_code": "CN29",
+      "full_name": "Roselyne Akoth Ochanda",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN290",
+      "staff_code": "CN290",
+      "full_name": "Diana Okeyo",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN291",
+      "staff_code": "CN291",
+      "full_name": "Silas Kiprotich Chirchir",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN292",
+      "staff_code": "CN292",
+      "full_name": "Seth Mokaya",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN293",
+      "staff_code": "CN293",
+      "full_name": "Mercy Nasimiyu Kundu",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN297",
+      "staff_code": "CN297",
+      "full_name": "Sharon Jeptoo Sitienei",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN298",
+      "staff_code": "CN298",
+      "full_name": "Emmanuel Otieno Abongo",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN299",
+      "staff_code": "CN299",
+      "full_name": "Nancy Jepchoge",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN300",
+      "staff_code": "CN300",
+      "full_name": "Stephine Lwali",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN301",
+      "staff_code": "CN301",
+      "full_name": "Jared Oluoch Ouko",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN302",
+      "staff_code": "CN302",
+      "full_name": "Concepta Mutauta",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN303",
+      "staff_code": "CN303",
+      "full_name": "Doreen Wawira",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN304",
+      "staff_code": "CN304",
+      "full_name": "Lynet Mutheu",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN305",
+      "staff_code": "CN305",
+      "full_name": "Vivian Moraa",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN306",
+      "staff_code": "CN306",
+      "full_name": "Michael Obiero Sijenyi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN307",
+      "staff_code": "CN307",
+      "full_name": "Brian Sagini Ogeto",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN308",
+      "staff_code": "CN308",
+      "full_name": "Shadrack Cheruiyot Kirui",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN309",
+      "staff_code": "CN309",
+      "full_name": "Shalom Wanjiku Thumbi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN112",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN310",
+      "staff_code": "CN310",
+      "full_name": "Kezia Moraa",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN312",
+      "staff_code": "CN312",
+      "full_name": "Steven Omondi Ongoje",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN27",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN314",
+      "staff_code": "CN314",
+      "full_name": "Amina Awuor Saad",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "CN020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN315",
+      "staff_code": "CN315",
+      "full_name": "George Mbinda Mutua",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1342",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN317",
+      "staff_code": "CN317",
+      "full_name": "Perpetua Nana Kauma",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN319",
+      "staff_code": "CN319",
+      "full_name": "James Mung'ei Mwangi",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE461",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN320",
+      "staff_code": "CN320",
+      "full_name": "Christine Akinyi Omondi",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN322",
+      "staff_code": "CN322",
+      "full_name": "Alex Kibet Serem",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN324",
+      "staff_code": "CN324",
+      "full_name": "Catherine Ombogi",
+      "email": "",
+      "role": "Direct Sales Agent",
+      "department": "Consumer Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "CN48",
+      "staff_code": "CN48",
+      "full_name": "Ann Kinya Jeremiah",
+      "email": "",
+      "role": "Branch DSA Team Lead",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE101",
+      "staff_code": "KE101",
+      "full_name": "Isabella Mbula Manthi",
+      "email": "",
+      "role": "Cheque Validation Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1014",
+      "staff_code": "KE1014",
+      "full_name": "Pius Muchangi",
+      "email": "",
+      "role": "Head, EBS",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1015",
+      "staff_code": "KE1015",
+      "full_name": "Dorcas Cherotich Siwatum",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1019",
+      "staff_code": "KE1019",
+      "full_name": "Kevin Kithinji Murithi",
+      "email": "",
+      "role": "Senior Treasury Sales Officer",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1141",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1020",
+      "staff_code": "KE1020",
+      "full_name": "Elizabeth Waithegeni Kioi",
+      "email": "",
+      "role": "Head Contact Centre & Complaints Management",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1026",
+      "staff_code": "KE1026",
+      "full_name": "Rene Musyoki Wambua",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE150",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1028",
+      "staff_code": "KE1028",
+      "full_name": "Everlyne Wanjiku Gachago",
+      "email": "",
+      "role": "Social Media Officer",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1309",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1031",
+      "staff_code": "KE1031",
+      "full_name": "Lazaro Muriuki Kariara",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1032",
+      "staff_code": "KE1032",
+      "full_name": "Ursula Wanjira Muthee",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1034",
+      "staff_code": "KE1034",
+      "full_name": "Loise Wanjiku Gachigua",
+      "email": "",
+      "role": "Corporate Credit Analyst",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1039",
+      "staff_code": "KE1039",
+      "full_name": "Sharleen Njeri Alli",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE662",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1044",
+      "staff_code": "KE1044",
+      "full_name": "Esther Nkatha Mwirigi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1046",
+      "staff_code": "KE1046",
+      "full_name": "Florence Wambui Muhia",
+      "email": "",
+      "role": "Personal Assistant",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1048",
+      "staff_code": "KE1048",
+      "full_name": "Maryanne Nanjala Simiyu",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1049",
+      "staff_code": "KE1049",
+      "full_name": "Samuel Mutisya Kavilu",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1055",
+      "staff_code": "KE1055",
+      "full_name": "Purity Chepkorir Ronoh",
+      "email": "",
+      "role": "CAD Officer",
+      "department": "CAD",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1057",
+      "staff_code": "KE1057",
+      "full_name": "Rachael Koki Mbili",
+      "email": "",
+      "role": "Team Leader-Payments RPC & Remittances",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE486",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1060",
+      "staff_code": "KE1060",
+      "full_name": "Stanley Kimeli Birech",
+      "email": "",
+      "role": "Channels Implementation Manager",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1084",
+      "staff_code": "KE1084",
+      "full_name": "James Ngewa Muthoka",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1090",
+      "staff_code": "KE1090",
+      "full_name": "David Otieno Omolo",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1094",
+      "staff_code": "KE1094",
+      "full_name": "Vivian Kwamboka Ochako",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1095",
+      "staff_code": "KE1095",
+      "full_name": "Faith J. Ellies",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1100",
+      "staff_code": "KE1100",
+      "full_name": "Edna Adhiambo Odera",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1106",
+      "staff_code": "KE1106",
+      "full_name": "Brenda Awuor Bolo",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1108",
+      "staff_code": "KE1108",
+      "full_name": "John Wambugu Wangeci",
+      "email": "",
+      "role": "Senior Legal Officer",
+      "department": "Legal",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE443",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1110",
+      "staff_code": "KE1110",
+      "full_name": "Joel Kamatu Kiarie",
+      "email": "",
+      "role": "Investigations Manager",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE754",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1112",
+      "staff_code": "KE1112",
+      "full_name": "Kelvin Kyulu",
+      "email": "",
+      "role": "Channels Implementation Officer",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1113",
+      "staff_code": "KE1113",
+      "full_name": "Joseph Onyango Odipo",
+      "email": "",
+      "role": "Regional Head Remedial CESA",
+      "department": "Credit Risk Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1117",
+      "staff_code": "KE1117",
+      "full_name": "Joel Amenya Kiyondi",
+      "email": "",
+      "role": "Information Systems Controller",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1119",
+      "staff_code": "KE1119",
+      "full_name": "Winnie Achieng",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1121",
+      "staff_code": "KE1121",
+      "full_name": "Kelvin Baraka Oketch",
+      "email": "",
+      "role": "Trade Middle Office Officer",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1124",
+      "staff_code": "KE1124",
+      "full_name": "Brenda Karimi Gitonga",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE461",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1129",
+      "staff_code": "KE1129",
+      "full_name": "Tobias Felix Oduor",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE573",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1131",
+      "staff_code": "KE1131",
+      "full_name": "Dennis Onyango Ndonji",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1132",
+      "staff_code": "KE1132",
+      "full_name": "Emmanuel Kaptalai",
+      "email": "",
+      "role": "Compliance Officer",
+      "department": "Compliance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1133",
+      "staff_code": "KE1133",
+      "full_name": "Francis Muturi Wambui",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1134",
+      "staff_code": "KE1134",
+      "full_name": "Roselyne Atieno Butt",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1349",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1136",
+      "staff_code": "KE1136",
+      "full_name": "Lunar Magero",
+      "email": "",
+      "role": "Head of Sales",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1138",
+      "staff_code": "KE1138",
+      "full_name": "Patrick Kivuva",
+      "email": "",
+      "role": "Archivist",
+      "department": "CAD",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1141",
+      "staff_code": "KE1141",
+      "full_name": "Mohamed Souleymane",
+      "email": "",
+      "role": "Director, Treasury & FICC, EAC",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1148",
+      "staff_code": "KE1148",
+      "full_name": "Diana Mukami Kaaria",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1150",
+      "staff_code": "KE1150",
+      "full_name": "Sandra Virginia Shibichila",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1151",
+      "staff_code": "KE1151",
+      "full_name": "Emmanuel Kipkirui Rotich",
+      "email": "",
+      "role": "Internal Control Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1153",
+      "staff_code": "KE1153",
+      "full_name": "Grace Wanjiru Rubia",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [
+          "KE833"
+        ],
+        "region": "",
+        "reports_to": "KE792",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1154",
+      "staff_code": "KE1154",
+      "full_name": "Macklin Achieng Ochieng",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1158",
+      "staff_code": "KE1158",
+      "full_name": "Jane Jelagat Atugah",
+      "email": "",
+      "role": "Head of Consumer",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1159",
+      "staff_code": "KE1159",
+      "full_name": "Robert Githaiga Maingi",
+      "email": "",
+      "role": "Head, Digital Channels & Agency Network",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1162",
+      "staff_code": "KE1162",
+      "full_name": "Brian Mmami Bulimo",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [
+          "KE833"
+        ],
+        "region": "",
+        "reports_to": "KE792",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1170",
+      "staff_code": "KE1170",
+      "full_name": "Pauline Wangari Wacheru",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1172",
+      "staff_code": "KE1172",
+      "full_name": "Oscar Owuor Odiemo",
+      "email": "",
+      "role": "Digital sales Officer",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1324",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1173",
+      "staff_code": "KE1173",
+      "full_name": "Chrispinus Juma Masika",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1174",
+      "staff_code": "KE1174",
+      "full_name": "Msellem Ali Omar",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1175",
+      "staff_code": "KE1175",
+      "full_name": "George Sakwa Atsulu",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE662",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1183",
+      "staff_code": "KE1183",
+      "full_name": "Peter Maina Ndere",
+      "email": "",
+      "role": "Agency Manager",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1159",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1186",
+      "staff_code": "KE1186",
+      "full_name": "Francis Otieno Onyango",
+      "email": "",
+      "role": "EBS Officer",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1014",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1187",
+      "staff_code": "KE1187",
+      "full_name": "Betty Chelagat Keter",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1189",
+      "staff_code": "KE1189",
+      "full_name": "Edward Mwenda",
+      "email": "",
+      "role": "Relationship Manager, Premier Banking",
+      "department": "Consumer Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1191",
+      "staff_code": "KE1191",
+      "full_name": "Anna Wang Huan",
+      "email": "",
+      "role": "Head, Chinese Desk",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1192",
+      "staff_code": "KE1192",
+      "full_name": "Joshua Debarge Mwatibo",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1194",
+      "staff_code": "KE1194",
+      "full_name": "Victor Njagi Ndambiri",
+      "email": "",
+      "role": "Service Availability Officer",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE176",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1195",
+      "staff_code": "KE1195",
+      "full_name": "Ken Maina Mwangi",
+      "email": "",
+      "role": "ALM Officer",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1141",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1199",
+      "staff_code": "KE1199",
+      "full_name": "Nancy Waithira Mwai",
+      "email": "",
+      "role": "HR Officer",
+      "department": "Human Resources",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1202",
+      "staff_code": "KE1202",
+      "full_name": "Erick Bundi Kirimi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1204",
+      "staff_code": "KE1204",
+      "full_name": "Michael Maina Ngugi",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1205",
+      "staff_code": "KE1205",
+      "full_name": "Joshua Kiprop Tarbei",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1206",
+      "staff_code": "KE1206",
+      "full_name": "Caroline Njoki Nyoro",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE668",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1207",
+      "staff_code": "KE1207",
+      "full_name": "Lynnette Awuor Otieno",
+      "email": "",
+      "role": "Team Leader-Payments RPC & Remittances",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE486",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1209",
+      "staff_code": "KE1209",
+      "full_name": "Leonard Kipkoech Ngeno",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1210",
+      "staff_code": "KE1210",
+      "full_name": "Lynne Wambui Maina",
+      "email": "",
+      "role": "Litigation Officer",
+      "department": "Legal",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE443",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1211",
+      "staff_code": "KE1211",
+      "full_name": "Brian Ambuka",
+      "email": "",
+      "role": "Operations Assistant Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1214",
+      "staff_code": "KE1214",
+      "full_name": "Linet Naisenya Kamami",
+      "email": "",
+      "role": "Scheme Administrator Officer",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1261",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1215",
+      "staff_code": "KE1215",
+      "full_name": "Kelvin Mutonga Wachira",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1217",
+      "staff_code": "KE1217",
+      "full_name": "Gladys Mutanu Vundi",
+      "email": "",
+      "role": "Manager, Partnership, Alliances & Diaspora",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1218",
+      "staff_code": "KE1218",
+      "full_name": "Dennis Michael Ojiambo",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1219",
+      "staff_code": "KE1219",
+      "full_name": "Justus Kimutai Korir",
+      "email": "",
+      "role": "Credit Risk Manager",
+      "department": "Credit Risk Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1223",
+      "staff_code": "KE1223",
+      "full_name": "Josphat Nyaberi Gichana",
+      "email": "",
+      "role": "Head of Direct",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1224",
+      "staff_code": "KE1224",
+      "full_name": "Simon Kamau Gatonye",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Consumer Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1225",
+      "staff_code": "KE1225",
+      "full_name": "Jean Wathoni Ng'ang'a",
+      "email": "",
+      "role": "Operations Manager-Cards, Mobile & Digital Products",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1227",
+      "staff_code": "KE1227",
+      "full_name": "Hildah Wambani Munoko",
+      "email": "",
+      "role": "Operations Controls Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1228",
+      "staff_code": "KE1228",
+      "full_name": "James Chisakane Odera",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Consumer Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1229",
+      "staff_code": "KE1229",
+      "full_name": "Erick Ochieng Ouma",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1342",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1230",
+      "staff_code": "KE1230",
+      "full_name": "Shen Xue PEI",
+      "email": "",
+      "role": "Relationship Manager, Chinese Banking",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1191",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1233",
+      "staff_code": "KE1233",
+      "full_name": "Catherine Wanjiku Njoroge",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1237",
+      "staff_code": "KE1237",
+      "full_name": "Michael Muriu Kinuthia",
+      "email": "",
+      "role": "FX Trader",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1141",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1238",
+      "staff_code": "KE1238",
+      "full_name": "Amon Onduso Ogendo",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1218",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1240",
+      "staff_code": "KE1240",
+      "full_name": "Raphael Wambua Kivati",
+      "email": "",
+      "role": "Acquiring Manager, EAC & Cash Product Manager Kenya",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1241",
+      "staff_code": "KE1241",
+      "full_name": "Joseph Mutua Mumo",
+      "email": "",
+      "role": "Cards Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE776",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1243",
+      "staff_code": "KE1243",
+      "full_name": "Obed Mogaka Ogeto",
+      "email": "",
+      "role": "Relationship Officer, Ellevate Desk",
+      "department": "Ellevate Desk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1244",
+      "staff_code": "KE1244",
+      "full_name": "Jackline Akinyi Ajock",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE322",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1245",
+      "staff_code": "KE1245",
+      "full_name": "Anne Waguthii Mureithi",
+      "email": "",
+      "role": "Director Compliance- CESA 1",
+      "department": "Compliance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1249",
+      "staff_code": "KE1249",
+      "full_name": "Carolyne Waithira Kamande",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1250",
+      "staff_code": "KE1250",
+      "full_name": "Felix Odiwuor Ouma",
+      "email": "",
+      "role": "Officer Operations",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1251",
+      "staff_code": "KE1251",
+      "full_name": "Paul Macharia Kirega",
+      "email": "",
+      "role": "Credit Administration Officer",
+      "department": "CAD",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1252",
+      "staff_code": "KE1252",
+      "full_name": "Livingstone Maina Kagio",
+      "email": "",
+      "role": "Head, Local Corporates",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1253",
+      "staff_code": "KE1253",
+      "full_name": "Ian Otieno Onyango",
+      "email": "",
+      "role": "Reconciliations Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1255",
+      "staff_code": "KE1255",
+      "full_name": "Louis Orwa",
+      "email": "",
+      "role": "Cards Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE776",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1256",
+      "staff_code": "KE1256",
+      "full_name": "Peter Omondi Ogwenya",
+      "email": "",
+      "role": "Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1258",
+      "staff_code": "KE1258",
+      "full_name": "Collins F. Oloo",
+      "email": "",
+      "role": "IT Officer",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE176",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1259",
+      "staff_code": "KE1259",
+      "full_name": "Diana Mutanu",
+      "email": "",
+      "role": "Compliance Officer",
+      "department": "Compliance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1261",
+      "staff_code": "KE1261",
+      "full_name": "Stephen Kagiri Kimuyu",
+      "email": "",
+      "role": "Relationship Manager, Employee Schemes",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1262",
+      "staff_code": "KE1262",
+      "full_name": "Glory Kendi",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE546",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1264",
+      "staff_code": "KE1264",
+      "full_name": "Hassanali Mudukiza",
+      "email": "",
+      "role": "Acquiring Officer",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1265",
+      "staff_code": "KE1265",
+      "full_name": "Cyprian Kiprotich Rono",
+      "email": "",
+      "role": "Director, Corporate Banking Kenya & EAC",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1266",
+      "staff_code": "KE1266",
+      "full_name": "Shadrack Mwongela Musyoki",
+      "email": "",
+      "role": "Senior Internal Controller",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1269",
+      "staff_code": "KE1269",
+      "full_name": "Fiona Nanetia Lein",
+      "email": "",
+      "role": "Head Premier Banking",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1270",
+      "staff_code": "KE1270",
+      "full_name": "Bellah Njeri Muriuki",
+      "email": "",
+      "role": "Relationship Manager, Public Sector",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1271",
+      "staff_code": "KE1271",
+      "full_name": "Gilbert Ariemo",
+      "email": "",
+      "role": "Country Risk Manager, Kenya & EAC",
+      "department": "Risk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1272",
+      "staff_code": "KE1272",
+      "full_name": "Francis Kamau Gathecha",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1273",
+      "staff_code": "KE1273",
+      "full_name": "Moses Mwange Muasya",
+      "email": "",
+      "role": "Financial Crime Compliance Manager",
+      "department": "Compliance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1274",
+      "staff_code": "KE1274",
+      "full_name": "Florence Kabona",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1276",
+      "staff_code": "KE1276",
+      "full_name": "Joseph Aloice Machi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1278",
+      "staff_code": "KE1278",
+      "full_name": "Patrick Solomon Guda",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1279",
+      "staff_code": "KE1279",
+      "full_name": "Rose Wangari Munene",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1281",
+      "staff_code": "KE1281",
+      "full_name": "Upendo Mutave Wambua",
+      "email": "",
+      "role": "Head, SME",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1282",
+      "staff_code": "KE1282",
+      "full_name": "Alex Odanga Ochieng",
+      "email": "",
+      "role": "Credit Administration Officer",
+      "department": "CAD",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1284",
+      "staff_code": "KE1284",
+      "full_name": "Kennedy Libibi Manyala",
+      "email": "",
+      "role": "Head of Operations",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1285",
+      "staff_code": "KE1285",
+      "full_name": "Jackson Nyakang'o",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE322",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1286",
+      "staff_code": "KE1286",
+      "full_name": "Viginia Wangui Waweru",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE461",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1287",
+      "staff_code": "KE1287",
+      "full_name": "Felix Deku",
+      "email": "",
+      "role": "Regional Business Manager-CESA",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1288",
+      "staff_code": "KE1288",
+      "full_name": "Griffin Muendo William",
+      "email": "",
+      "role": "Relationship Manager, Local Corporate",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1289",
+      "staff_code": "KE1289",
+      "full_name": "Geoffrey Simiyu Wanjala",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1291",
+      "staff_code": "KE1291",
+      "full_name": "Christine Kerubo Makone",
+      "email": "",
+      "role": "Senior Relationship Manager, Public Sector",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1292",
+      "staff_code": "KE1292",
+      "full_name": "Job Wepukhulu Sudi",
+      "email": "",
+      "role": "Trade Sales Manager",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1293",
+      "staff_code": "KE1293",
+      "full_name": "Jaffrson Orenge Nyakagwa",
+      "email": "",
+      "role": "Relationship Manager, Regional Corporates",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1295",
+      "staff_code": "KE1295",
+      "full_name": "George Tak Simel",
+      "email": "",
+      "role": "Relationship Manager, FI & IO",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1296",
+      "staff_code": "KE1296",
+      "full_name": "Jane Nyawira Gachagi",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Consumer Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1297",
+      "staff_code": "KE1297",
+      "full_name": "Robert Kiprotich Bett",
+      "email": "",
+      "role": "Manager, Business Finance & Performance Management",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1298",
+      "staff_code": "KE1298",
+      "full_name": "Humphrey Omondi Obiero",
+      "email": "",
+      "role": "Business Analyst",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "preferred_name": "",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1300",
+      "staff_code": "KE1300",
+      "full_name": "Catherine Mwikali Mutisya",
+      "email": "",
+      "role": "Credit Analyst",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1301",
+      "staff_code": "KE1301",
+      "full_name": "Susan Wanza Odhiambo",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1302",
+      "staff_code": "KE1302",
+      "full_name": "Arnold Murimi Ngure",
+      "email": "",
+      "role": "Senior Relationship Manager, Local Corporates",
+      "department": "Local Corporate",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1303",
+      "staff_code": "KE1303",
+      "full_name": "Faith Ambiyo Essendi",
+      "email": "",
+      "role": "Finance Officer",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1304",
+      "staff_code": "KE1304",
+      "full_name": "Kelvin Mwendwa Muthoka",
+      "email": "",
+      "role": "Operations Assistant Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1305",
+      "staff_code": "KE1305",
+      "full_name": "Brian Ong'era Ontita",
+      "email": "",
+      "role": "Credit Analyst",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1306",
+      "staff_code": "KE1306",
+      "full_name": "Benter Atieno",
+      "email": "",
+      "role": "Value Chain Manager",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1307",
+      "staff_code": "KE1307",
+      "full_name": "Marieanne Ebby Kadatz Wanzare",
+      "email": "",
+      "role": "Relationship Manager, Local Corporate",
+      "department": "Commercial Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1349",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1308",
+      "staff_code": "KE1308",
+      "full_name": "Christine Mbukuli Omucheni",
+      "email": "",
+      "role": "EBS Officer",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1014",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1309",
+      "staff_code": "KE1309",
+      "full_name": "Juliet Kinya Gitonga",
+      "email": "",
+      "role": "Corporate Communications Manager",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1310",
+      "staff_code": "KE1310",
+      "full_name": "Lydiah Kakuvi Musyoki",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1312",
+      "staff_code": "KE1312",
+      "full_name": "Sanchez Logan Madara",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1313",
+      "staff_code": "KE1313",
+      "full_name": "Alfred Muthomi Miriti",
+      "email": "",
+      "role": "Portfololio Analysis & Reporting Manager",
+      "department": "Credit Risk Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1314",
+      "staff_code": "KE1314",
+      "full_name": "Mirriam Mueni Muema",
+      "email": "",
+      "role": "Business Development Officer, Bancassurance",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1320",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1315",
+      "staff_code": "KE1315",
+      "full_name": "George Nyamai Jimmy",
+      "email": "",
+      "role": "Corporate Credit Analyst",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1316",
+      "staff_code": "KE1316",
+      "full_name": "Philiph Kimutai Ngetich",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1317",
+      "staff_code": "KE1317",
+      "full_name": "Richard Nzioka",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1318",
+      "staff_code": "KE1318",
+      "full_name": "Edwin Nyamenia Araka",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1218",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1319",
+      "staff_code": "KE1319",
+      "full_name": "Esther Wambui Mbano",
+      "email": "",
+      "role": "Asset Product Manager",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE816",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1320",
+      "staff_code": "KE1320",
+      "full_name": "David Muriithi Mathenge",
+      "email": "",
+      "role": "Manager, Bancassurance",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1321",
+      "staff_code": "KE1321",
+      "full_name": "Calvin Abondo Oyugi",
+      "email": "",
+      "role": "Senior Internal Auditor",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE754",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1323",
+      "staff_code": "KE1323",
+      "full_name": "Stephen Mutiku Kyalo",
+      "email": "",
+      "role": "Information Systems Auditor",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE754",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1324",
+      "staff_code": "KE1324",
+      "full_name": "Wahiu Waciira",
+      "email": "",
+      "role": "Head, Cash Management",
+      "department": "Cash Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1325",
+      "staff_code": "KE1325",
+      "full_name": "Chilson Indatula Vidolo",
+      "email": "",
+      "role": "Market Risk Manager",
+      "department": "Risk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1271",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1328",
+      "staff_code": "KE1328",
+      "full_name": "Angela Kinya Gitonga",
+      "email": "",
+      "role": "Software Developer",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE176",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1330",
+      "staff_code": "KE1330",
+      "full_name": "Jenipher Anyango Dola",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1333",
+      "staff_code": "KE1333",
+      "full_name": "Rabecca Mueni Mbithi",
+      "email": "",
+      "role": "Managing Director",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "",
+        "preferred_name": "Rabecca Mbithi",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1334",
+      "staff_code": "KE1334",
+      "full_name": "Ian Odiwuor Were",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1342",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1335",
+      "staff_code": "KE1335",
+      "full_name": "Geoffrey Kerandi Onywoki",
+      "email": "",
+      "role": "Relationship Manager, SME",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE322",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1339",
+      "staff_code": "KE1339",
+      "full_name": "Emmanuel Akaka Okumu",
+      "email": "",
+      "role": "Card Officer",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE816",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1340",
+      "staff_code": "KE1340",
+      "full_name": "Mathew Kyalo Mutisya",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1341",
+      "staff_code": "KE1341",
+      "full_name": "Vincent Gitonga Maina",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1342",
+      "staff_code": "KE1342",
+      "full_name": "Carolyne Nashipae Adewunmi",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1343",
+      "staff_code": "KE1343",
+      "full_name": "Joan Jerono Sang",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE439",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1344",
+      "staff_code": "KE1344",
+      "full_name": "Kennedy Luseno Voreza",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Commercial Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1346",
+      "staff_code": "KE1346",
+      "full_name": "Grace Kinya Miriti",
+      "email": "",
+      "role": "Asset & Liabilities Management Officer",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1141",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1347",
+      "staff_code": "KE1347",
+      "full_name": "Joshua Onyancha Mokua",
+      "email": "",
+      "role": "Business Manager",
+      "department": "MD's Office",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1348",
+      "staff_code": "KE1348",
+      "full_name": "Dennis Mwangi Mutiga",
+      "email": "",
+      "role": "Credit Analyst",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1349",
+      "staff_code": "KE1349",
+      "full_name": "Faith Chepkemoi Yego",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1350",
+      "staff_code": "KE1350",
+      "full_name": "Beatrice Mwende Nzuve",
+      "email": "",
+      "role": "Relationship Manager",
+      "department": "Commercial Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1349",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1351",
+      "staff_code": "KE1351",
+      "full_name": "Linnet Wangui Waiharo",
+      "email": "",
+      "role": "Contact Center Agent",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1352",
+      "staff_code": "KE1352",
+      "full_name": "Eric Odhiambo Onyango",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE801",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1353",
+      "staff_code": "KE1353",
+      "full_name": "Ian Mulonzia Kilonzo",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE662",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE1354",
+      "staff_code": "KE1354",
+      "full_name": "Joshua Muthama",
+      "email": "",
+      "role": "Head of Branches",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE959",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE150",
+      "staff_code": "KE150",
+      "full_name": "Martha Muthoni Muraya",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE175",
+      "staff_code": "KE175",
+      "full_name": "Peninah Wanjiru Njenga",
+      "email": "",
+      "role": "Senior FX Trader",
+      "department": "Treasury",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1141",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE176",
+      "staff_code": "KE176",
+      "full_name": "Geoffrey Nderitu Muthui",
+      "email": "",
+      "role": "Head Information & Techonolgy",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE177",
+      "staff_code": "KE177",
+      "full_name": "Moses Migwi Karimi",
+      "email": "",
+      "role": "Senior Service Officer, Technology (Applications)",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE176",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE232",
+      "staff_code": "KE232",
+      "full_name": "Ayub Maina",
+      "email": "",
+      "role": "Service Officer- Payments",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE486",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE284",
+      "staff_code": "KE284",
+      "full_name": "George Pino",
+      "email": "",
+      "role": "Manager Operation Risk",
+      "department": "Risk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1271",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE292",
+      "staff_code": "KE292",
+      "full_name": "Tabman Odhiambo Nyaoro",
+      "email": "",
+      "role": "Senior Service Officer, Technology (Networks & Telcoms)",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE176",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE305",
+      "staff_code": "KE305",
+      "full_name": "David Kimani Kinyanjui",
+      "email": "",
+      "role": "Service Officer, TROPS",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE314",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE313",
+      "staff_code": "KE313",
+      "full_name": "Philgona Akinyi Odera",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE461",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE314",
+      "staff_code": "KE314",
+      "full_name": "Phyllis Sibolo",
+      "email": "",
+      "role": "Team Leader-Trade & Trops",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE557",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE317",
+      "staff_code": "KE317",
+      "full_name": "Christine Achieng Kiche",
+      "email": "",
+      "role": "Ag. Head Human Resources & Senior HR Business Partner",
+      "department": "Human Resources",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE322",
+      "staff_code": "KE322",
+      "full_name": "Thaddaeus Mboga Okwaro",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE332",
+      "staff_code": "KE332",
+      "full_name": "Ruth Wambui Thairu",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE343",
+      "staff_code": "KE343",
+      "full_name": "Nancy Akoth Oywer",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE345",
+      "staff_code": "KE345",
+      "full_name": "Josephine Gakii Gituma",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE356",
+      "staff_code": "KE356",
+      "full_name": "Hellen Wangui Gathii",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE357",
+      "staff_code": "KE357",
+      "full_name": "Judy Njeri Irungu",
+      "email": "",
+      "role": "Finanacial Risk Manager",
+      "department": "Risk Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1271",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE395",
+      "staff_code": "KE395",
+      "full_name": "Violet Bochere Monari",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE397",
+      "staff_code": "KE397",
+      "full_name": "Charles Maunda Orina",
+      "email": "",
+      "role": "Chauffeur",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE399",
+      "staff_code": "KE399",
+      "full_name": "Abdalla Mohamed Ali",
+      "email": "",
+      "role": "Product Manager",
+      "department": "Technology",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE406",
+      "staff_code": "KE406",
+      "full_name": "Benjamin Muthini",
+      "email": "",
+      "role": "Finance Officer",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE408",
+      "staff_code": "KE408",
+      "full_name": "Mary Chepkemboi Lagat",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE412",
+      "staff_code": "KE412",
+      "full_name": "Moses Bwogo Nyandiko",
+      "email": "",
+      "role": "Chauffeur",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE439",
+      "staff_code": "KE439",
+      "full_name": "Ludy Chebet Mining",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Eldoret",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE443",
+      "staff_code": "KE443",
+      "full_name": "Caroline Mbenge Wambua",
+      "email": "",
+      "role": "Director, Legal Services & Company Secretary",
+      "department": "Legal",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE445",
+      "staff_code": "KE445",
+      "full_name": "Jennifer Waithera Macharia",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE451",
+      "staff_code": "KE451",
+      "full_name": "Nirmal Singh Sembi",
+      "email": "",
+      "role": "Information Systems Auditor",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE754",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE461",
+      "staff_code": "KE461",
+      "full_name": "Betty Wachera Waiguru",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE467",
+      "staff_code": "KE467",
+      "full_name": "Caren Mbithe Nyakundi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [
+          "KE833"
+        ],
+        "region": "",
+        "reports_to": "KE792",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE484",
+      "staff_code": "KE484",
+      "full_name": "Florence Wanjiru Mbuthia",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE486",
+      "staff_code": "KE486",
+      "full_name": "Stellah Cherop Maina",
+      "email": "",
+      "role": "Operations Manager-Payments, RPC & Remittances",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE507",
+      "staff_code": "KE507",
+      "full_name": "Rachel Watiri Muriithi",
+      "email": "",
+      "role": "Payments Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE486",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE508",
+      "staff_code": "KE508",
+      "full_name": "Nelly Mjomba",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE150",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE519",
+      "staff_code": "KE519",
+      "full_name": "Margaret Wambui Wairimu",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE573",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE526",
+      "staff_code": "KE526",
+      "full_name": "Amina Adam",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE539",
+      "staff_code": "KE539",
+      "full_name": "Lucy Kamede Lidahuli",
+      "email": "",
+      "role": "Relationship Manager, Premier Banking",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE545",
+      "staff_code": "KE545",
+      "full_name": "Robert Oginda Siro",
+      "email": "",
+      "role": "Manager, Financial Control & Regulatory Reporting",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE546",
+      "staff_code": "KE546",
+      "full_name": "Elizabeth Nyawira Miano",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Karatina",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE555",
+      "staff_code": "KE555",
+      "full_name": "Mary Wangari Wanjiru",
+      "email": "",
+      "role": "Chief Finance Officer",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE557",
+      "staff_code": "KE557",
+      "full_name": "Christine Wahu Wanyoike",
+      "email": "",
+      "role": "Operations Manager- Treasury & Trade Operations",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE561",
+      "staff_code": "KE561",
+      "full_name": "Susan Akoth Abok",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE150",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE569",
+      "staff_code": "KE569",
+      "full_name": "Paulina Anna Wangare",
+      "email": "",
+      "role": "Compliance Officer",
+      "department": "Compliance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1245",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE573",
+      "staff_code": "KE573",
+      "full_name": "Divinah Kwamboka Ondimu",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1342",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE587",
+      "staff_code": "KE587",
+      "full_name": "Evans Mwaura Ngugi",
+      "email": "",
+      "role": "Internal Control Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE592",
+      "staff_code": "KE592",
+      "full_name": "Edward Muchoki Mbugua",
+      "email": "",
+      "role": "Physical Security, Logistics & Transport",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE603",
+      "staff_code": "KE603",
+      "full_name": "Alexander Maina Kibaara",
+      "email": "",
+      "role": "Director, Internal Control",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE621",
+      "staff_code": "KE621",
+      "full_name": "Trevor Omondi Otieno",
+      "email": "",
+      "role": "Senior Officer, Payments & Digital Channels",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1159",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE632",
+      "staff_code": "KE632",
+      "full_name": "Joyce Gituura Meeme",
+      "email": "",
+      "role": "Branch Manager",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE637",
+      "staff_code": "KE637",
+      "full_name": "Brenda Cherono Rono",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE639",
+      "staff_code": "KE639",
+      "full_name": "Nelly Ogutu",
+      "email": "",
+      "role": "Client Engagement Manager, Corporate Banking",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE662",
+      "staff_code": "KE662",
+      "full_name": "Faith Jemutai Koech",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE632",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE668",
+      "staff_code": "KE668",
+      "full_name": "Billy Calary Arika",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1218",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE672",
+      "staff_code": "KE672",
+      "full_name": "Martin Maina Muritu",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nyeri",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE461",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE677",
+      "staff_code": "KE677",
+      "full_name": "Stephen Otieno Omondi",
+      "email": "",
+      "role": "Head of Reconciliations & Balance Sheet Assurance",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE691",
+      "staff_code": "KE691",
+      "full_name": "Edmund Uledi Moga",
+      "email": "",
+      "role": "Operations Manager-Branch Operations & Retail Support",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE70",
+      "staff_code": "KE70",
+      "full_name": "Pauline Wairimu Omondi",
+      "email": "",
+      "role": "Senior Reconciliations Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE701",
+      "staff_code": "KE701",
+      "full_name": "Enid Jesang Tallam",
+      "email": "",
+      "role": "HR Services Manager",
+      "department": "Human Resources",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE708",
+      "staff_code": "KE708",
+      "full_name": "Maryanne Njeri Chege",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE662",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE718",
+      "staff_code": "KE718",
+      "full_name": "Rosabeth Theuri",
+      "email": "",
+      "role": "Reconciliations Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE723",
+      "staff_code": "KE723",
+      "full_name": "Loryne Bulimo",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE668",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE741",
+      "staff_code": "KE741",
+      "full_name": "Clare Wairimu Njeri",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE745",
+      "staff_code": "KE745",
+      "full_name": "David Macharia Murigi",
+      "email": "",
+      "role": "Manager Operation Risk",
+      "department": "Risk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1271",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE748",
+      "staff_code": "KE748",
+      "full_name": "Nicholus Macharia Karani",
+      "email": "",
+      "role": "Internal Control Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE754",
+      "staff_code": "KE754",
+      "full_name": "Latifa Achieng Outa",
+      "email": "",
+      "role": "Director, Internal Audit",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE762",
+      "staff_code": "KE762",
+      "full_name": "Caroline Nduta Gakinya",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE776",
+      "staff_code": "KE776",
+      "full_name": "Eric Muchai Mwongera",
+      "email": "",
+      "role": "Team Leader-Cards, Mobile and Digital Products",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1225",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE792",
+      "staff_code": "KE792",
+      "full_name": "Esther Wangari Mathenge",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE793",
+      "staff_code": "KE793",
+      "full_name": "Mercy Mueni Inyama",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE801",
+      "staff_code": "KE801",
+      "full_name": "Hilda Nyaboke Osoro",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE322",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE807",
+      "staff_code": "KE807",
+      "full_name": "Fenella Mwamburi",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1354",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE810",
+      "staff_code": "KE810",
+      "full_name": "Caroline Gateru",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE812",
+      "staff_code": "KE812",
+      "full_name": "Barbara Robi Mwita",
+      "email": "",
+      "role": "Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE814",
+      "staff_code": "KE814",
+      "full_name": "Loise Wanjiru Ributhi",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE816",
+      "staff_code": "KE816",
+      "full_name": "Annette Wambui Kamere",
+      "email": "",
+      "role": "Head, Consumer Products",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1158",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE820",
+      "staff_code": "KE820",
+      "full_name": "Thomas Okumu",
+      "email": "",
+      "role": "Director, Credit Risk Management- Kenya & EAC",
+      "department": "Credit Risk Management",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE822",
+      "staff_code": "KE822",
+      "full_name": "Vincent Kipkoech Langat",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE801",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE824",
+      "staff_code": "KE824",
+      "full_name": "Patrick Muthui Katuta",
+      "email": "",
+      "role": "Operations Assistant Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE827",
+      "staff_code": "KE827",
+      "full_name": "Veronica Lalarari",
+      "email": "",
+      "role": "Relationship Manager, Premier Banking",
+      "department": "Consumer Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE150",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE831",
+      "staff_code": "KE831",
+      "full_name": "Brenda Sawo",
+      "email": "",
+      "role": "Quality Analyst",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE833",
+      "staff_code": "KE833",
+      "full_name": "Benson Oloo Omondi",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE356",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE834",
+      "staff_code": "KE834",
+      "full_name": "Salome Nganga",
+      "email": "",
+      "role": "Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE840",
+      "staff_code": "KE840",
+      "full_name": "Samuel Magothe",
+      "email": "",
+      "role": "Relationship Manager, Regional Corporates",
+      "department": "Corporate Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1265",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE852",
+      "staff_code": "KE852",
+      "full_name": "Faith Sungu Busolo",
+      "email": "",
+      "role": "Assistant Branch Service & Operations Manager",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE859",
+      "staff_code": "KE859",
+      "full_name": "Jackline Nyakerario Mainye",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Kisii",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE668",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE867",
+      "staff_code": "KE867",
+      "full_name": "Frankline Koriko Obuya",
+      "email": "",
+      "role": "Head Informations Security & BCP",
+      "department": "Risk",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1271",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE870",
+      "staff_code": "KE870",
+      "full_name": "Naomi Muthoni Muriuki",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Industrial Area",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE573",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE874",
+      "staff_code": "KE874",
+      "full_name": "Mercy Wanjiru Kabuiku",
+      "email": "",
+      "role": "Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE886",
+      "staff_code": "KE886",
+      "full_name": "Michelle Mwihaki Mwangi",
+      "email": "",
+      "role": "Internal Control Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE887",
+      "staff_code": "KE887",
+      "full_name": "John Njogu Waithaka",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE894",
+      "staff_code": "KE894",
+      "full_name": "Ruby Michelle Cherotich",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Fortis",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE662",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE899",
+      "staff_code": "KE899",
+      "full_name": "Abdul Hafiz Otieno",
+      "email": "",
+      "role": "Reconciliations Officer",
+      "department": "Internal Control",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE603",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE902",
+      "staff_code": "KE902",
+      "full_name": "Alfred Muriithi Maringa",
+      "email": "",
+      "role": "Procurement & vendor Management Officer",
+      "department": "EBS",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1284",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE905",
+      "staff_code": "KE905",
+      "full_name": "Frida Alice Karimi Njiru",
+      "email": "",
+      "role": "Senior Internal Auditor",
+      "department": "Internal Audit",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE754",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE913",
+      "staff_code": "KE913",
+      "full_name": "Judy Mwende Muthama",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE949",
+      "staff_code": "KE949",
+      "full_name": "Monicah Nyambura Gikonyo",
+      "email": "",
+      "role": "Relationship Officer",
+      "department": "Consumer Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE395",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE954",
+      "staff_code": "KE954",
+      "full_name": "Fred Wanyonyi Mutekhele",
+      "email": "",
+      "role": "Customer Insights & Analytics Manager",
+      "department": "Client Engagement",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1020",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE955",
+      "staff_code": "KE955",
+      "full_name": "Bertha Ngala Mulumia",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Plaza 2000",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1349",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE956",
+      "staff_code": "KE956",
+      "full_name": "Sera Wanjiru Njuguna",
+      "email": "",
+      "role": "Head, CAD",
+      "department": "CAD",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE958",
+      "staff_code": "KE958",
+      "full_name": "Tamara Kageha Kidulla",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Nakuru",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1289",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE959",
+      "staff_code": "KE959",
+      "full_name": "Victor Mutabari Mbaabu",
+      "email": "",
+      "role": "Head EFS",
+      "department": "Commercial Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1333",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE96",
+      "staff_code": "KE96",
+      "full_name": "Joyce Nyambura Mwangi",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Westlands",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [
+          "KE833"
+        ],
+        "region": "",
+        "reports_to": "KE792",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE966",
+      "staff_code": "KE966",
+      "full_name": "Lindah Gakii Murithi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Thika",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE637",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE967",
+      "staff_code": "KE967",
+      "full_name": "Faith Moraa Nyagero",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE968",
+      "staff_code": "KE968",
+      "full_name": "Honest John Atibu",
+      "email": "",
+      "role": "Customer Service Manager",
+      "department": "Commercial Banking",
+      "unit": "Upper Hill",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE150",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE970",
+      "staff_code": "KE970",
+      "full_name": "Wanjora Kamau",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE972",
+      "staff_code": "KE972",
+      "full_name": "Vera Cheruto Rono",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Mombasa Moi",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE807",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE973",
+      "staff_code": "KE973",
+      "full_name": "George Anyona Patroba",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Ecobank Towers",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE852",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE982",
+      "staff_code": "KE982",
+      "full_name": "Milcah Wambui Mwangi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Karen",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE332",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE984",
+      "staff_code": "KE984",
+      "full_name": "Kipkorir Ngeno",
+      "email": "",
+      "role": "Service Assistant, Operations Officer",
+      "department": "Operations",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE691",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE986",
+      "staff_code": "KE986",
+      "full_name": "Richard Ogato Momanyi",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE801",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE987",
+      "staff_code": "KE987",
+      "full_name": "Kingsley Efedi Onyia",
+      "email": "",
+      "role": "Tax Advisor, EAC",
+      "department": "Finance",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE555",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE988",
+      "staff_code": "KE988",
+      "full_name": "Eva Yvonne Oyando",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Kisumu",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE801",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE990",
+      "staff_code": "KE990",
+      "full_name": "Jacinta Mbaki Makau",
+      "email": "",
+      "role": "Branch Operations Officer",
+      "department": "Commercial Banking",
+      "unit": "Valley Arcade",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1317",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE994",
+      "staff_code": "KE994",
+      "full_name": "Nelson Muguna Kiambi",
+      "email": "",
+      "role": "Bancassurance Officer",
+      "department": "Consumer Banking",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE1320",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE995",
+      "staff_code": "KE995",
+      "full_name": "Sharon Osimbo Ombonya",
+      "email": "",
+      "role": "Remedial Officer",
+      "department": "EWRR",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    },
+    {
+      "username": "KE998",
+      "staff_code": "KE998",
+      "full_name": "John Nzau Mwonga",
+      "email": "",
+      "role": "Head, EWRR Kenya & EAC",
+      "department": "EWRR",
+      "unit": "Head Office",
+      "band": "",
+      "gender": " ",
+      "active": true,
+      "is_admin": false,
+      "can_view_all": false,
+      "metadata": {
+        "dotted": [],
+        "region": "",
+        "reports_to": "KE820",
+        "date_of_employment": ""
+      }
+    }
+  ]
+}

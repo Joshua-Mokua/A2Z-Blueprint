@@ -5,7 +5,7 @@ import { useRole } from '@/hooks/useRole';
 
 interface RouteEntry { label: string; domain: string; path: string; match: (p: string) => boolean; }
 
-const DEMO_HIDE = new Set<string>(['/', '/initiatives', '/profitability']);
+const DEMO_HIDE = new Set<string>([]);
 
 const ROUTES: RouteEntry[] = [
   { label: 'Dashboard',             domain: 'Executive Intelligence',       path: '/',                 match: (p) => p === '/' },

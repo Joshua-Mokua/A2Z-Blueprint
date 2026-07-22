@@ -1057,6 +1057,43 @@ export async function createPipelineDeal(
   );
 }
 
+// ─── Initiatives authoring (Phase 1) ──────────────────────────────────
+export interface CreateInitiativeBody {
+  name: string; objective: string; category: string;
+  workstream: string; io: string; sub_workstream?: string;
+}
+export async function createInitiative(
+  body: CreateInitiativeBody,
+): Promise<{ status: string; id?: string }> {
+  return postJson<{ status: string; id?: string }, CreateInitiativeBody>(
+    '/initiatives', body,
+  );
+}
+
+export interface AddMilestoneBody {
+  name: string; owner: string; due_date: string;
+  type?: string; start_date?: string; description?: string;
+}
+export async function addMilestone(
+  initiativeId: string, body: AddMilestoneBody,
+): Promise<{ status: string; milestone_id?: string }> {
+  return postJson<{ status: string; milestone_id?: string }, AddMilestoneBody>(
+    `/initiatives/${encodeURIComponent(initiativeId)}/milestones`, body,
+  );
+}
+
+export interface MilestoneStatusBody {
+  status: string; note?: string; started?: boolean;
+}
+export async function setMilestoneStatus(
+  initiativeId: string, msId: string, body: MilestoneStatusBody,
+): Promise<{ status: string }> {
+  return postJson<{ status: string }, MilestoneStatusBody>(
+    `/initiatives/${encodeURIComponent(initiativeId)}/milestones/${encodeURIComponent(msId)}/status`,
+    body, 'PATCH',
+  );
+}
+
 
 /**
  * Refer a deal to its portfolio owner via POST /api/pipeline/deals/refer.

@@ -67,6 +67,51 @@ def _get_engine():
         return None
 
 
+
+
+# ─── canonical execute-store helpers (shared by all routes below) ──────
+_GATE_SCORES = {"G0": 0, "G1": 20, "G2": 40, "G3": 60, "G4": 80, "G5": 100}
+
+
+def _execute_manager():
+    """Fresh ExecuteManager reading execute_initiatives.json (the BSC-scoring store).
+    Local import so a load error here never breaks the RAG routes."""
+    from utils.core import ExecuteManager
+    return ExecuteManager()
+
+
+def _slim_initiative(init: dict) -> dict:
+    """Project an execute-initiative to what the UI needs: fields + gate score +
+    milestone plan."""
+    gate = init.get("gate") or "G0"
+    milestones = []
+    for ms in init.get("milestones", []) or []:
+        milestones.append({
+            "id":        ms.get("id"),
+            "name":      ms.get("name"),
+            "owner":     ms.get("owner"),
+            "due_date":  ms.get("due_date"),
+            "start_date": ms.get("start_date"),
+            "status":    ms.get("status"),
+            "confirmed": ms.get("confirmed", False),
+        })
+    done = sum(1 for m in milestones if str(m.get("status")).lower() in ("complete", "completed"))
+    return {
+        "id":            init.get("id"),
+        "name":          init.get("name"),
+        "objective":     init.get("objective", ""),
+        "category":      init.get("category", ""),
+        "workstream":    init.get("workstream", ""),
+        "sub_workstream": init.get("sub_workstream", ""),
+        "io":            init.get("io", ""),
+        "gate":          gate,
+        "gate_score":    _GATE_SCORES.get(gate, 0),
+        "status":        init.get("status", "Active"),
+        "milestone_total":    len(milestones),
+        "milestone_complete": done,
+        "milestones":    milestones,
+    }
+
 def _safe_call(method_name: str, *args, default=None):
     """
     Call engine.<method_name>(*args). On any exception, return `default`
@@ -126,18 +171,146 @@ def fetch_initiative_detail(
     initiative_id: str,
     user: dict = Depends(get_current_user),
 ):
+    """Single initiative detail with milestones, from the canonical execute store."""
+    try:
+        mgr = _execute_manager()
+        init = mgr.get_initiative(initiative_id)
+        if not init:
+            return {"status": "not_found", "initiative": None}
+        return {"status": "ok", "initiative": _slim_initiative(init)}
+    except Exception as e:  # noqa: BLE001
+        _log.warning("fetch_initiative_detail failed: %s", e)
+        return {"status": "error", "initiative": None, "note": str(e)}
+
+
+@router.get("")
+def list_initiatives(
+    status: Optional[str] = "Active",
+    workstream: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    """List canonical execute-initiatives with their milestone plans.
+
+    status defaults to Active; pass status=All to include closed. Empty-state
+    tolerant: returns {"status": "no_data", "initiatives": []} if the store is
+    empty or unreadable, so the UI renders a friendly empty state.
     """
-    Full status detail for a single initiative — milestones, RAG,
-    dependencies, KPI linkage. 404 if not found.
-    """
-    status = _safe_call("initiative_status", initiative_id, default=None)
-    if status is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No initiative found with id={initiative_id}",
+    try:
+        mgr = _execute_manager()
+        items = mgr.get_initiatives(status=status or "Active", workstream=workstream)
+        slim = [_slim_initiative(i) for i in items]
+        return {
+            "status": "ok" if slim else "no_data",
+            "count": len(slim),
+            "initiatives": slim,
+        }
+    except Exception as e:  # noqa: BLE001
+        _log.warning("list_initiatives failed: %s", e)
+        return {"status": "no_data", "count": 0, "initiatives": [], "note": str(e)}
+
+
+# ─── v10.543 Phase 1 — authoring write routes ──────────────────────────
+# POST create-initiative + POST add-milestone. Both wrap ExecuteManager
+# methods that already exist. created_by / actor is taken from the auth'd
+# user, never the client body. Additive: GET routes above are untouched.
+
+from pydantic import BaseModel, Field
+from typing import List as _List, Optional as _Optional
+
+
+class _NewInitiative(BaseModel):
+    name:           str
+    objective:      str
+    category:       str = "Strategic Initiative"
+    workstream:     str
+    io:             str                      # owner — must be a register Staff Name
+    sub_workstream: str = ""
+    io_backup:      str = ""
+    estimated_impact: float = 0
+    tags:           _List[str] = Field(default_factory=list)
+
+
+class _NewMilestone(BaseModel):
+    name:       str
+    owner:      str
+    due_date:   str
+    type:       str = "Delivery"
+    start_date: str = ""
+    description: str = ""
+
+
+@router.post("")
+def create_initiative_route(
+    payload: _NewInitiative,
+    user: dict = Depends(get_current_user),
+):
+    """Create a new initiative (starts at gate G0). created_by = the auth'd user."""
+    try:
+        mgr = _execute_manager()
+        data = payload.model_dump()
+        data["created_by"] = (user.get("full_name") or user.get("username") or "unknown")
+        init_id = mgr.create_initiative(data)
+        if not init_id:
+            raise HTTPException(status_code=400, detail="create_initiative returned nothing")
+        # create_initiative returns the id string
+        iid = init_id if isinstance(init_id, str) else init_id.get("id")
+        return {"status": "ok", "id": iid}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("create_initiative failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{initiative_id}/milestones")
+def add_milestone_route(
+    initiative_id: str,
+    payload: _NewMilestone,
+    user: dict = Depends(get_current_user),
+):
+    """Add a milestone to an existing initiative."""
+    try:
+        mgr = _execute_manager()
+        if not mgr.get_initiative(initiative_id):
+            raise HTTPException(status_code=404, detail=f"no initiative {initiative_id}")
+        ms = mgr.add_milestone(initiative_id, payload.model_dump())
+        if ms is None:
+            raise HTTPException(status_code=400, detail="add_milestone returned nothing")
+        ms_id = ms if isinstance(ms, str) else (ms.get("id") if isinstance(ms, dict) else None)
+        return {"status": "ok", "milestone_id": ms_id}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("add_milestone failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class _MilestoneStatus(BaseModel):
+    status: str
+    note: str = ""
+    started: _Optional[bool] = None
+
+
+@router.patch("/{initiative_id}/milestones/{ms_id}/status")
+def set_milestone_status(
+    initiative_id: str,
+    ms_id: str,
+    payload: _MilestoneStatus,
+    user: dict = Depends(get_current_user),
+):
+    """Update a milestone's status (Not Started / Active / Complete / Delayed)."""
+    try:
+        mgr = _execute_manager()
+        if not mgr.get_initiative(initiative_id):
+            raise HTTPException(status_code=404, detail=f"no initiative {initiative_id}")
+        who = user.get("full_name") or user.get("username") or "unknown"
+        mgr.update_milestone_status(
+            initiative_id, ms_id, payload.status,
+            note=payload.note, updated_by=who, started=payload.started,
         )
-    return {
-        "status":     "ok",
-        "initiative": status,
-        "source":     "command_centre",
-    }
+        return {"status": "ok"}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("set_milestone_status failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))

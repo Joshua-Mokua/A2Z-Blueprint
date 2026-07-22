@@ -758,22 +758,106 @@
       "ACCOUNT_REFERRALS"
     ],
     "Head of Consumer": [
-      "DIVISION_REVENUE",
-      "NTB_CUSTOMERS",
-      "TOTAL_REVENUE",
-      "PBT",
-      "NET_LOANS",
+      "CONSUMER_REVENUE",
+      "NTB_CLIENTS",
+      "NET_LOANS_ODS",
       "TOTAL_DEPOSITS",
-      "CX Score",
-      "DIGITAL_ACTIVE_PCT",
+      "MOU_SIGNUPS",
+      "NPS_CX",
+      "CARD_ACTIVE_BASE",
       "DORMANCY_RATIO",
-      "PERF_CYCLE_ADHERENCE",
-      "MANDATORY_TRAINING",
-      "ENGAGEMENT_SCORE",
-      "OTR",
-      "PDO_MANAGEMENT",
-      "EXPIRED_TICKLERS",
-      "CROSS_SELL_RATIO"
+      "CARD_NPL"
+    ],
+    "Manager, Bancassurance": [
+      "CONSUMER_REVENUE",
+      "BANCA_REVENUE",
+      "BANCA_POLICIES",
+      "MOU_SIGNUPS",
+      "NPS_CX"
+    ],
+    "Head Premier Banking": [
+      "NTB_CLIENTS",
+      "NET_LOANS_ODS",
+      "TOTAL_DEPOSITS",
+      "NTB_CARD_SALES",
+      "BANCA_REVENUE",
+      "PARTNERSHIPS_SIGNED",
+      "NPS_CX",
+      "CARD_ACTIVE_BASE",
+      "DORMANCY_RATIO",
+      "CARD_NPL"
+    ],
+    "Head of Sales": [
+      "CONSUMER_REVENUE",
+      "NTB_CLIENTS",
+      "NET_LOANS_ODS",
+      "TOTAL_DEPOSITS",
+      "NTB_CARD_SALES_DSA",
+      "BANCA_REVENUE",
+      "DSA_HEADCOUNT",
+      "DIGITAL_ACQUISITION"
+    ],
+    "Manager, Partnership, Alliances & Diaspora": [
+      "CONSUMER_REVENUE",
+      "DIASPORA_LIABILITY_GROWTH",
+      "NTB_CLIENTS",
+      "DIASPORA_LOANS",
+      "PARTNERSHIPS_SIGNED",
+      "NPS_CX"
+    ],
+    "Head, Consumer Products": [
+      "CONSUMER_REVENUE",
+      "CARD_REVENUE_TOTAL",
+      "CARDS_ISSUED",
+      "NET_LOANS_ODS",
+      "CARD_REVENUE",
+      "CARD_NPL",
+      "TOTAL_DEPOSITS",
+      "NPS_CX",
+      "CARD_ACTIVE_BASE",
+      "DORMANCY_RATIO"
+    ],
+    "Card Officer": [
+      "CONSUMER_REVENUE",
+      "CARD_REVENUE_TOTAL",
+      "CARDS_ISSUED",
+      "NET_LOANS_ODS",
+      "CARD_REVENUE",
+      "CARD_NPL",
+      "TOTAL_DEPOSITS",
+      "NPS_CX",
+      "CARD_ACTIVE_BASE",
+      "DORMANCY_RATIO"
+    ],
+    "Head, Digital Channels & Agency Network": [
+      "DIGITAL_REVENUE",
+      "CONSUMER_REVENUE",
+      "NTB_MOBILE_ONBOARD",
+      "NTB_ONLINE_ONBOARD",
+      "DIGITAL_ACQUISITION",
+      "NTB_MPESA_SIGNUP",
+      "DORMANCY_ACT_MOBILE",
+      "NPS_CX",
+      "DORMANCY_RATIO"
+    ],
+    "Senior Officer, Payments & Digital Channels": [
+      "DIGITAL_REVENUE",
+      "NTB_MOBILE_ONBOARD",
+      "NTB_ONLINE_ONBOARD",
+      "DIGITAL_ACQUISITION",
+      "DORMANCY_ACT_EOL",
+      "DORMANCY_ACT_MOBILE",
+      "NPS_CX",
+      "DORMANCY_RATIO",
+      "CARD_NPL"
+    ],
+    "Asset Product Manager": [
+      "CONSUMER_REVENUE",
+      "MORTGAGE_SUBMISSION",
+      "PRIORITY_ASSET_GROWTH",
+      "NET_LOANS_ODS",
+      "NPS_CX",
+      "CARD_NPL"
     ]
   },
   "pillar_weights": {
@@ -5740,6 +5824,222 @@
       "active": true,
       "description": "Quarterly competitor analysis delivered to EXCO.",
       "source": "EKE 2026 EXCO scorecards"
+    },
+    {
+      "id": "CONSUMER_REVENUE",
+      "name": "Consumer Banking Revenue",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_CLIENTS",
+      "name": "Client Numbers Ntb",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NET_LOANS_ODS",
+      "name": "Net Loans Ods",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "CARD_REVENUE_TOTAL",
+      "name": "Total Credit Card Revenue",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "CARD_REVENUE",
+      "name": "Card Revenue",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "CARDS_ISSUED",
+      "name": "Number Of Cards",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "CARD_NPL",
+      "name": "Credit Card Npl Ratio",
+      "unit": "percent",
+      "area": "Operational",
+      "higher_is_better": false,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "CARD_ACTIVE_BASE",
+      "name": "Active Card Base",
+      "unit": "percent",
+      "area": "Customer",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "BANCA_REVENUE",
+      "name": "Bancassurance Revenue Performance",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "BANCA_POLICIES",
+      "name": "Number Of Policies Stand Alone Insurance",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DIGITAL_REVENUE",
+      "name": "Digital Revenue Contribution",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_MOBILE_ONBOARD",
+      "name": "Ntb Onboarding To Mobile App",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_MPESA_SIGNUP",
+      "name": "Ntb Mpesa Alias Tills Paybills",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DIGITAL_ACQUISITION",
+      "name": "Customer Acquisition Via Digital Channel",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DORMANCY_ACT_MOBILE",
+      "name": "Dormancy Activation Mobile Banking",
+      "unit": "number",
+      "area": "Customer",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DORMANCY_ACT_EOL",
+      "name": "Dormancy Activation Eol",
+      "unit": "number",
+      "area": "Customer",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_CARD_SALES",
+      "name": "Ntb Prepaid And Credit Card Sales",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_CARD_SALES_DSA",
+      "name": "Ntb Prepaid And Credit Card Sales Dsas",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DSA_HEADCOUNT",
+      "name": "Maintain Average Dsa Head Count",
+      "unit": "number",
+      "area": "People",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "MOU_SIGNUPS",
+      "name": "Mou Partnership Signups",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "PARTNERSHIPS_SIGNED",
+      "name": "New Partnerships And Alliances Signed",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DIASPORA_LIABILITY_GROWTH",
+      "name": "Liability Growth Of The Diaspora Book",
+      "unit": "percent",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "DIASPORA_LOANS",
+      "name": "Loan Sign Ups For Diaspora Customers",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "MORTGAGE_SUBMISSION",
+      "name": "Mortgage Submission",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "PRIORITY_ASSET_GROWTH",
+      "name": "Growth Of Priority Asset Products",
+      "unit": "kes_mm",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NPS_CX",
+      "name": "Nps Cx Score",
+      "unit": "percent",
+      "area": "Customer",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
+    },
+    {
+      "id": "NTB_ONLINE_ONBOARD",
+      "name": "NTB Onboarding To Ecobank Online",
+      "unit": "number",
+      "area": "Financial",
+      "higher_is_better": true,
+      "_source": "Consumer BSC 2026"
     }
   ],
   "_v10324_role_kpi_updates": {
@@ -8228,113 +8528,1337 @@
     },
     "Head of Consumer": {
       "areas": {
-        "Financial": 0.6,
-        "Customer Focus": 0.1,
-        "People & Learning": 0.05,
-        "Operational Excellence": 0.1,
-        "Must Win Battles": 0.15
+        "Financial": 0.5,
+        "MustWin": 0.15,
+        "Customer": 0.1,
+        "Operational": 0.15,
+        "People": 0.1
       },
       "kpis": {
-        "DIVISION_REVENUE": {
+        "CONSUMER_REVENUE": {
           "area": "Financial",
-          "weight": null
+          "weight": 0.2
         },
-        "NTB_CUSTOMERS": {
+        "NTB_CLIENTS": {
           "area": "Financial",
-          "weight": null
+          "weight": 0.15
         },
-        "TOTAL_REVENUE": {
+        "NET_LOANS_ODS": {
           "area": "Financial",
-          "weight": null
-        },
-        "PBT": {
-          "area": "Financial",
-          "weight": null
-        },
-        "NET_LOANS": {
-          "area": "Financial",
-          "weight": null
+          "weight": 0.2
         },
         "TOTAL_DEPOSITS": {
           "area": "Financial",
-          "weight": null
+          "weight": 0.25
         },
-        "CX Score": {
-          "area": "Customer Focus",
-          "weight": null
+        "MOU_SIGNUPS": {
+          "area": "Financial",
+          "weight": 0.2
         },
-        "DIGITAL_ACTIVE_PCT": {
-          "area": "Customer Focus",
-          "weight": null
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.3
+        },
+        "CARD_ACTIVE_BASE": {
+          "area": "Customer",
+          "weight": 0.5
         },
         "DORMANCY_RATIO": {
-          "area": "Customer Focus",
-          "weight": null
+          "area": "Customer",
+          "weight": 0.2
         },
-        "PERF_CYCLE_ADHERENCE": {
-          "area": "People & Learning",
-          "weight": null
-        },
-        "MANDATORY_TRAINING": {
-          "area": "People & Learning",
-          "weight": null
-        },
-        "ENGAGEMENT_SCORE": {
-          "area": "People & Learning",
-          "weight": null
-        },
-        "OTR": {
-          "area": "Operational Excellence",
-          "weight": null
-        },
-        "PDO_MANAGEMENT": {
-          "area": "Operational Excellence",
-          "weight": null
-        },
-        "EXPIRED_TICKLERS": {
-          "area": "Operational Excellence",
-          "weight": null
-        },
-        "CROSS_SELL_RATIO": {
-          "area": "Must Win Battles",
-          "weight": null
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.2
         }
       },
       "objectives": [
         {
-          "text": "MOU & partnership signups (100) with attributable growth",
-          "area": "Financial",
-          "weight": null,
-          "due": "2026-12-31"
+          "text": "Increase EKE touchpoints (Agent locations)",
+          "area": "MustWin",
+          "weight": 0.25,
+          "due": null,
+          "target": null,
+          "unit": ""
         },
         {
-          "text": "Implement SME digital onboarding",
-          "area": "Must Win Battles",
-          "weight": null,
-          "due": "2026-05-31"
+          "text": "Implement Digital onboarding by May",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": "2026-05",
+          "target": null,
+          "unit": ""
         },
         {
-          "text": "Complete full DSA sales coverage",
-          "area": "Must Win Battles",
-          "weight": null,
-          "due": "2026-05-31"
+          "text": "Complete full DSA model implementation by May",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": "2026-05",
+          "target": null,
+          "unit": ""
         },
         {
-          "text": "Implement M-Pesa solutions on the mobile app (LCY collection)",
-          "area": "Must Win Battles",
-          "weight": null,
-          "due": "2026-04-30"
+          "text": "Implement Digital lending by June",
+          "area": "MustWin",
+          "weight": 0.15,
+          "due": "2026-06",
+          "target": null,
+          "unit": ""
         },
         {
-          "text": "PAR ratio \u2014 NPL reduction in stage 2",
-          "area": "Operational Excellence",
-          "weight": null,
-          "due": "2026-12-31"
+          "text": "CRM Utilization (call reports, leads, conversion)",
+          "area": "Operational",
+          "weight": 0.2,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "No PDOs on consumer banking names",
+          "area": "Operational",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Nil expired CAs/PP/Insurance/Deferrals",
+          "area": "Operational",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Training programs staff will attend",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "Mandatory trainings 5 days before timeline",
+          "area": "People",
+          "weight": 0.1,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "Product training scheduled",
+          "area": "People",
+          "weight": 0.15,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "Frontline RM/RO Productivity",
+          "area": "People",
+          "weight": 0.15,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "Full Consumer org chart implementation by Jun 2025",
+          "area": "People",
+          "weight": 0.1,
+          "due": "2026-06",
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Employee score of consumer banking min 75%",
+          "area": "People",
+          "weight": 0.2,
+          "due": null,
+          "target": 75.0,
+          "unit": "PCT"
         }
       ],
-      "source": "EKE 2026 scorecard \u2014 Jane Jelagat Atugah (KE1158)",
-      "weights_complete": false,
-      "weights_pending_reason": "Business area KPI weights total 105% (7 x 15%) in the source sheet."
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Manager, Bancassurance": {
+      "areas": {
+        "Financial": 0.7,
+        "MustWin": 0.05,
+        "Customer": 0.1,
+        "Operational": 0.1,
+        "People": 0.05
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "BANCA_REVENUE": {
+          "area": "Financial",
+          "weight": 0.65
+        },
+        "BANCA_POLICIES": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "MOU_SIGNUPS": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.3
+        }
+      },
+      "objectives": [
+        {
+          "text": "90% Renewal retention rate",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": null,
+          "target": 90.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "EKE sales team Pinnacle training by Sanlam end May 2025",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Embedded Insurance to CSB Salary Accounts",
+          "area": "MustWin",
+          "weight": 0.2,
+          "due": null,
+          "target": 50.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "One call to top 5 insurance partners per quarter",
+          "area": "Customer",
+          "weight": 0.4,
+          "due": null,
+          "target": 4.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Partnerships: Prudential, Absa Life, First Assurance by Jun 2026",
+          "area": "Customer",
+          "weight": 0.3,
+          "due": "2026-06",
+          "target": 3.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Close pending audit findings within timelines",
+          "area": "Operational",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Renew Agency license 2026 by Q3",
+          "area": "Operational",
+          "weight": 0.35,
+          "due": "2026-Q3",
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Quarterly board meetings for performance reporting",
+          "area": "Operational",
+          "weight": 0.35,
+          "due": null,
+          "target": 4.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Employee score of consumer banking min 75%",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 75.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Drive insurance product visibility per quarter",
+          "area": "People",
+          "weight": 0.4,
+          "due": null,
+          "target": 4.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "100% leave utilization by close 2025",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Head Premier Banking": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.1,
+        "Customer": 0.15,
+        "Operational": 0.05,
+        "People": 0.1
+      },
+      "kpis": {
+        "NTB_CLIENTS": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NET_LOANS_ODS": {
+          "area": "Financial",
+          "weight": 0.4
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "NTB_CARD_SALES": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "BANCA_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "PARTNERSHIPS_SIGNED": {
+          "area": "MustWin",
+          "weight": 0.3
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.3
+        },
+        "CARD_ACTIVE_BASE": {
+          "area": "Customer",
+          "weight": 0.5
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer",
+          "weight": 0.2
+        },
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.2
+        }
+      },
+      "objectives": [
+        {
+          "text": "Cross-sell into portfolio (PHC@3)",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "Wealth Management Launch - end May",
+          "area": "MustWin",
+          "weight": 0.4,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "CRM Utilization",
+          "area": "Operational",
+          "weight": 0.4,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Nil expired CAs/PP/Insurance/Deferrals",
+          "area": "Operational",
+          "weight": 0.2,
+          "due": null,
+          "target": 95.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "UFAA",
+          "area": "Operational",
+          "weight": 0.2,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "People performance & coaching reviews",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Mandatory trainings 5 days before timeline",
+          "area": "People",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Frontline RM Productivity",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        },
+        {
+          "text": "100% leave day utilization",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Head of Sales": {
+      "areas": {
+        "Financial": 0.65,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.05,
+        "People": 0.1
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NTB_CLIENTS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "NET_LOANS_ODS": {
+          "area": "Financial",
+          "weight": 0.35
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "NTB_CARD_SALES_DSA": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "BANCA_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "DSA_HEADCOUNT": {
+          "area": "MustWin",
+          "weight": 0.5
+        },
+        "DIGITAL_ACQUISITION": {
+          "area": "Customer",
+          "weight": 0.3
+        }
+      },
+      "objectives": [
+        {
+          "text": "Roll out quarterly internal sales campaigns",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 4.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "80% of NTB accounts funded",
+          "area": "Customer",
+          "weight": 0.4,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Asset application error rate below 3%",
+          "area": "Customer",
+          "weight": 0.3,
+          "due": null,
+          "target": 5.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Nil fraud via DSA channel",
+          "area": "Operational",
+          "weight": 0.4,
+          "due": null,
+          "target": 70.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Errors not exceed 5% of sales",
+          "area": "Operational",
+          "weight": 0.3,
+          "due": null,
+          "target": 95.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Center management (Hubs)",
+          "area": "Operational",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "People performance & coaching for DSAs",
+          "area": "People",
+          "weight": 0.375,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Refresher product trainings for DSA channel",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Frontline DSA Productivity",
+          "area": "People",
+          "weight": 0.1875,
+          "due": null,
+          "target": 65.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "100% leave day utilization",
+          "area": "People",
+          "weight": 0.1875,
+          "due": null,
+          "target": null,
+          "unit": "pending"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Manager, Partnership, Alliances & Diaspora": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.15,
+        "Customer": 0.1,
+        "Operational": 0.1,
+        "People": 0.05
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "DIASPORA_LIABILITY_GROWTH": {
+          "area": "Financial",
+          "weight": 0.25
+        },
+        "NTB_CLIENTS": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "DIASPORA_LOANS": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "PARTNERSHIPS_SIGNED": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.2
+        }
+      },
+      "objectives": [
+        {
+          "text": "Drive market share growth via partnerships",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Roll out diaspora agents origination model Apr-26",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Develop and Launch Diaspora CVP by May",
+          "area": "MustWin",
+          "weight": 0.4,
+          "due": "2026-05",
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "CRM: 2 calls/day to partners, 3/week via D365",
+          "area": "Customer",
+          "weight": 0.3,
+          "due": null,
+          "target": 144.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Segment client engagement sessions",
+          "area": "Customer",
+          "weight": 0.3,
+          "due": null,
+          "target": 24.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Timely messages to drive card utilization",
+          "area": "Customer",
+          "weight": 0.2,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Renewal of existing Partnership Agreements",
+          "area": "Operational",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Consumer risk oversight - BURC/BRCC meetings",
+          "area": "Operational",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Adherence to regulatory & co-branding guidelines",
+          "area": "Operational",
+          "weight": 0.5,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Partnerships onboarding & governance framework",
+          "area": "Operational",
+          "weight": 0.1,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "10 training/engagement sessions on product CVP",
+          "area": "People",
+          "weight": 0.4,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "100% leave day utilization",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Product & mandatory institute training, no overdue",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Head, Consumer Products": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.15,
+        "People": 0.05
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARD_REVENUE_TOTAL": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARDS_ISSUED": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NET_LOANS_ODS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARD_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.3333
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "CARD_ACTIVE_BASE": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer",
+          "weight": 0.25
+        }
+      },
+      "objectives": [
+        {
+          "text": "Migration to New Tieto Platform - ETI",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Product campaigns - quarterly, evergreen",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "90 day card activation plan - ETI",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Pending audit findings",
+          "area": "Operational",
+          "weight": 0.3333,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Nil expired PP/Insurance/Deferrals/Ticklers",
+          "area": "Operational",
+          "weight": 0.3333,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Staff campaign to drive credit card - ETI",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 5.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Product training scheduled",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 5.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Employee score of consumer banking min 75%",
+          "area": "People",
+          "weight": 0.5,
+          "due": null,
+          "target": 75.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (effective)"
+    },
+    "Card Officer": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.15,
+        "People": 0.05
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARD_REVENUE_TOTAL": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARDS_ISSUED": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NET_LOANS_ODS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "CARD_REVENUE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.3333
+        },
+        "TOTAL_DEPOSITS": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "CARD_ACTIVE_BASE": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer",
+          "weight": 0.25
+        }
+      },
+      "objectives": [
+        {
+          "text": "Migration to New Tieto Platform",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Product campaigns - quarterly, evergreen",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "90 day card activation plan",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": 80.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Pending audit findings",
+          "area": "Operational",
+          "weight": 0.3333,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Nil expired PP/Insurance/Deferrals/Ticklers",
+          "area": "Operational",
+          "weight": 0.3333,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Staff campaign to drive credit card",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 5.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Product training scheduled",
+          "area": "People",
+          "weight": 0.25,
+          "due": null,
+          "target": 5.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Employee score of consumer banking min 75%",
+          "area": "People",
+          "weight": 0.5,
+          "due": null,
+          "target": 75.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (effective)"
+    },
+    "Head, Digital Channels & Agency Network": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.1,
+        "People": 0.1
+      },
+      "kpis": {
+        "DIGITAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.35
+        },
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.05
+        },
+        "NTB_MOBILE_ONBOARD": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NTB_ONLINE_ONBOARD": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "DIGITAL_ACQUISITION": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NTB_MPESA_SIGNUP": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "DORMANCY_ACT_MOBILE": {
+          "area": "Financial",
+          "weight": 0.1
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer",
+          "weight": 0.25
+        }
+      },
+      "objectives": [
+        {
+          "text": "Implement Phase two Digital onboarding (FCY & SME)",
+          "area": "MustWin",
+          "weight": 0.5,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "NTB Agent onboarding",
+          "area": "MustWin",
+          "weight": 0.15,
+          "due": null,
+          "target": 300.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Rollout & commercialization of Mpesa suites",
+          "area": "MustWin",
+          "weight": 0.35,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Resolve all digital queries within SLA (24hrs)",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Agency banking regulatory renewals & support",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Digital solutions processes documented & approved",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "No expired product programmes / process flows",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Nil expired eCaps",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Deploy two recyclers and replace with 4 ATM",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Entrenchment Officers capacity building",
+          "area": "People",
+          "weight": 0.4,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Mandatory trainings 5 days before timeline",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Training of bank staff on digital channels",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Senior Officer, Payments & Digital Channels": {
+      "areas": {
+        "Financial": 0.6,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.1,
+        "People": 0.1
+      },
+      "kpis": {
+        "DIGITAL_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2727
+        },
+        "NTB_MOBILE_ONBOARD": {
+          "area": "Financial",
+          "weight": 0.0909
+        },
+        "NTB_ONLINE_ONBOARD": {
+          "area": "Financial",
+          "weight": 0.0909
+        },
+        "DIGITAL_ACQUISITION": {
+          "area": "Financial",
+          "weight": 0.1818
+        },
+        "DORMANCY_ACT_EOL": {
+          "area": "Financial",
+          "weight": 0.1818
+        },
+        "DORMANCY_ACT_MOBILE": {
+          "area": "Financial",
+          "weight": 0.1818
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "DORMANCY_RATIO": {
+          "area": "Customer",
+          "weight": 0.25
+        },
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.25
+        }
+      },
+      "objectives": [
+        {
+          "text": "Implement Phase two Digital onboarding (FCY & JOINT)",
+          "area": "MustWin",
+          "weight": 0.35,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Implement Digital Lending by June 2026",
+          "area": "MustWin",
+          "weight": 0.35,
+          "due": "2026-06",
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Rollout ATM recyclers",
+          "area": "MustWin",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Resolve all digital queries within SLA (24hrs)",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "(unlabelled 4th line)",
+          "area": "Customer",
+          "weight": 0.25,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Digital solutions processes documented & approved",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "No expired product programmes / process flows",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Nil expired eCaps",
+          "area": "Operational",
+          "weight": 0.25,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "DAA capacity building and productivity",
+          "area": "People",
+          "weight": 0.4,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Mandatory trainings 5 days before timeline",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Training of bank staff on digital channels",
+          "area": "People",
+          "weight": 0.3,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (within)"
+    },
+    "Asset Product Manager": {
+      "areas": {
+        "Financial": 0.5,
+        "MustWin": 0.1,
+        "Customer": 0.1,
+        "Operational": 0.25,
+        "People": 0.05
+      },
+      "kpis": {
+        "CONSUMER_REVENUE": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "MORTGAGE_SUBMISSION": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "PRIORITY_ASSET_GROWTH": {
+          "area": "Financial",
+          "weight": 0.2
+        },
+        "NET_LOANS_ODS": {
+          "area": "Financial",
+          "weight": 0.3
+        },
+        "NPS_CX": {
+          "area": "Customer",
+          "weight": 0.2
+        },
+        "CARD_NPL": {
+          "area": "Operational",
+          "weight": 0.4
+        }
+      },
+      "objectives": [
+        {
+          "text": "Automate instalment upload with IT",
+          "area": "MustWin",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Product campaigns - quarterly, evergreen",
+          "area": "MustWin",
+          "weight": 0.1,
+          "due": null,
+          "target": 2.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Commercialize 2 partnerships (Developer & Motor Dealer)",
+          "area": "MustWin",
+          "weight": 0.1,
+          "due": null,
+          "target": 2.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Sign KMRC Partnership",
+          "area": "MustWin",
+          "weight": 0.6,
+          "due": null,
+          "target": 1.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Monthly top-up campaign & lead generation",
+          "area": "Customer",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Support webinar forums for product input",
+          "area": "Customer",
+          "weight": 0.2,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Run monthly loan customer survey",
+          "area": "Customer",
+          "weight": 0.4,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "Revise all product programs by Mar 2026",
+          "area": "Operational",
+          "weight": 0.4,
+          "due": "2026-03",
+          "target": 100.0,
+          "unit": "PCT"
+        },
+        {
+          "text": "No pending audit findings",
+          "area": "Operational",
+          "weight": 0.04,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Nil expired PP/Insurance/Deferrals/Ticklers",
+          "area": "Operational",
+          "weight": 0.16,
+          "due": null,
+          "target": null,
+          "unit": ""
+        },
+        {
+          "text": "Product training - Asset Products (5)",
+          "area": "People",
+          "weight": 0.6,
+          "due": null,
+          "target": 5.0,
+          "unit": "NUM"
+        },
+        {
+          "text": "Mandatory VBI trainings",
+          "area": "People",
+          "weight": 0.4,
+          "due": null,
+          "target": 100.0,
+          "unit": "PCT"
+        }
+      ],
+      "weights_complete": true,
+      "_source": "Consumer BSC 2026 (effective)"
     }
   }
 }
