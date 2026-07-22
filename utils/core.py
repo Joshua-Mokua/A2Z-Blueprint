@@ -7685,6 +7685,19 @@ class UserManager:
                 json.dumps(metadata_extra),
             ))
 
+        # Mirror to users.json too. Postgres is authoritative, but ~40
+        # modules (BSC, cascade, coaching, gamification, growth-path, etc.)
+        # still read data/users.json directly and were never migrated to
+        # query the DB. Without this mirror, any change made through
+        # UserManager (admin edits, AD login upserts, set-staff-id) would
+        # write to Postgres but leave those modules showing stale data —
+        # exactly the JSON/DB divergence that keeps resurfacing. Best-effort:
+        # a JSON write failure must never block the authoritative DB save.
+        try:
+            self._save_to_json(users_dict)
+        except Exception as exc:
+            print(f"[UserManager] users.json mirror write failed (DB save still succeeded): {exc}")
+
     def _save_to_json(self, u=None):
         # Atomic write: serialize to a temp file in the same directory, then
         # os.replace() it over the target. os.replace is atomic on both Windows

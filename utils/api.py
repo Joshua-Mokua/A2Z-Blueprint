@@ -728,12 +728,25 @@ class TokenResponse(BaseModel):
     # don't set it still get a valid response that React reads as full
     # access.
     must_change_password: bool = False
+    # True when the authenticating user has no staff_code on file. AD
+    # doesn't carry a staff_code, so AD-authenticated users need a one-time
+    # prompt to supply theirs — staff_code drives rm_code ("KE" + code)
+    # portfolio lookups against cbs_accounts downstream. Informational only:
+    # unlike must_change_password this does NOT restrict the token scope,
+    # since the user's role/access is already known. The frontend shows a
+    # blocking modal (not a route redirect) until POST /api/auth/set-staff-id
+    # clears it.
+    must_set_staff_id: bool = False
 
 
 # ── /api/auth/change-password request shape (Batch 3b) ───────────────
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class SetStaffIdRequest(BaseModel):
+    staff_code: str
 
 
 @app.post("/api/auth/login", response_model=TokenResponse)
@@ -784,6 +797,7 @@ def login(request: Request, req: LoginRequest):
                 user_data = um.users[req.username]
                 user = {"username": req.username, "role": user_data.get("role", "Staff")}
                 token = create_access_token(user, scope=TOKEN_SCOPE_FULL)
+                needs_staff_id = not str(user_data.get("staff_code") or "").strip()
                 _audit(
                     "API_LOGIN_SUCCESS_AD", user,
                     f"Issued full-scope token via external AD for {req.username}",
@@ -793,6 +807,7 @@ def login(request: Request, req: LoginRequest):
                     username=req.username,
                     role=user["role"],
                     must_change_password=False,
+                    must_set_staff_id=needs_staff_id,
                 )
 
             # AD returned nothing — fall through to local auth only if
@@ -843,6 +858,7 @@ def login(request: Request, req: LoginRequest):
     scope = TOKEN_SCOPE_MUST_ROTATE if must_rotate else TOKEN_SCOPE_FULL
 
     token = create_access_token(user, scope=scope)
+    needs_staff_id = not str(user_data.get("staff_code") or "").strip()
     if must_rotate:
         _audit(
             "API_LOGIN_FORCE_PW", user,
@@ -858,6 +874,56 @@ def login(request: Request, req: LoginRequest):
         username=req.username,
         role=user["role"],
         must_change_password=must_rotate,
+        must_set_staff_id=needs_staff_id,
+    )
+
+
+@app.post("/api/auth/set-staff-id", response_model=TokenResponse)
+@limiter.limit("10/minute")
+def set_staff_id(
+    request: Request,
+    req: SetStaffIdRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Persist the caller's staff_code — the one-time prompt AD-authenticated
+    users (and any local user missing it) see as a blocking modal after
+    login. staff_code drives rm_code ("KE" + staff_code) portfolio lookups
+    against cbs_accounts, so it must be captured before those features work.
+
+    Unlike /api/auth/change-password, this takes a normal full-scope token
+    (Depends(get_current_user)) — missing staff_code doesn't restrict what
+    the user can already do, it's the portfolio feature that's blocked
+    until this is set.
+    """
+    username = user["username"]
+    code = req.staff_code.strip().strip("'").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Staff ID cannot be empty")
+    if len(code) > 20:
+        raise HTTPException(status_code=400, detail="Staff ID is too long")
+
+    from utils.core import UserManager
+    um = UserManager()
+    full_user = um.users.get(username)
+    if not full_user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    full_user["staff_code"] = code
+    um.save_users()
+
+    fresh_user = {"username": username, "role": full_user.get("role", "Staff")}
+    must_rotate = bool(full_user.get("must_change_password"))
+    scope = TOKEN_SCOPE_MUST_ROTATE if must_rotate else TOKEN_SCOPE_FULL
+    token = create_access_token(fresh_user, scope=scope)
+
+    _audit("API_STAFF_ID_SET", user, f"'{username}' set staff_code={code}")
+
+    return TokenResponse(
+        access_token=token,
+        username=username,
+        role=fresh_user["role"],
+        must_change_password=must_rotate,
+        must_set_staff_id=False,
     )
 
 
@@ -1060,6 +1126,7 @@ def change_password(
         username=username,
         role=full_user.get("role", "Staff"),
         must_change_password=False,
+        must_set_staff_id=not str(full_user.get("staff_code") or "").strip(),
     )
 
 

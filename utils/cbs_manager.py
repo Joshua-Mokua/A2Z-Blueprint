@@ -494,6 +494,72 @@ def _staff_name_index() -> dict:
     return idx
 
 
+def _rm_code_variants(code: str) -> str:
+    """staff_code -> cbs_accounts.rm_code convention: 'KE' + staff_code
+    (confirmed empirically: rm_code IN ('KE1293') matched 361 real accounts
+    for staff_code=1293). Codes that already carry a bank prefix pass through."""
+    c = str(code or "").strip()
+    return c if c[:2].upper() == "KE" else f"KE{c}"
+
+
+def _is_loan_type_name(name) -> bool:
+    t = str(name or "").lower()
+    return "loan" in t or "facility" in t or "advance" in t or "mortgage" in t
+
+
+def _db_account_row_to_dict(row: dict) -> dict:
+    """Map a cbs_accounts row (real FlexCube ETL data) to the same shape
+    _account_row_to_dict produces from the legacy CSV, so the aggregation
+    logic below (deposits/loans/dormant/by_type) works unmodified regardless
+    of which source served the data."""
+    bal = _safe_float(row.get("lcy_balance"))
+    is_loan = _is_loan_type_name(row.get("account_type_name"))
+    return {
+        "account_number":     _safe_str(row.get("account_number")),
+        "cif":                _safe_str(row.get("f12_cif")),
+        "branch_code":        _safe_str(row.get("branch_code")),
+        "branch_name":        "",
+        "introducer_code":    _safe_str(row.get("introducer")),
+        "account_type_name":  _safe_str(row.get("account_type_name")),
+        "category":           _safe_str(row.get("account_class")),
+        "currency":           "",
+        "date_opened":        _safe_str(row.get("date_opened")),
+        "current_balance":    bal,
+        "available_balance":  _safe_float(row.get("available_balance")),
+        "account_status":     _safe_str(row.get("account_status")),
+        "dormancy_status":    "dormant" if row.get("is_dormant") else "active",
+        "interest_rate":      0.0,
+        "loan_outstanding":   bal if is_loan else 0.0,
+        "npl_status":         "",
+        "npl_days":           0,
+        "relationship_manager_code": _safe_str(row.get("rm_code")),
+    }
+
+
+def _db_accounts_for_codes(code_set: set, attribution: str):
+    """Postgres-backed lookup against cbs_accounts (329K+ real FlexCube-ETL
+    rows) — the production data source. Returns None (not []) when Postgres
+    isn't reachable, so the caller can distinguish "not available, try CSV"
+    from "reachable, genuinely zero accounts"."""
+    from utils.db import db as _db
+    if not _db.is_postgres_ready() or not code_set:
+        return None
+    rm_codes = sorted({_rm_code_variants(c) for c in code_set})
+    col = "introducer" if attribution == "introduced" else "rm_code"
+    rows = _db.fetch_all(
+        f"SELECT account_number, f12_cif, branch_code, introducer, account_type_name, "
+        f"account_class, date_opened, lcy_balance, available_balance, account_status, "
+        f"is_dormant, rm_code FROM cbs_accounts WHERE {col} = ANY(%s)",
+        (rm_codes,),
+    ) or []
+    accts = [_db_account_row_to_dict(r) for r in rows]
+    if attribution == "introduced":
+        # drop accounts this scope both introduced AND still manages — those
+        # belong to the managed book, not here (mirrors the CSV-path rule).
+        accts = [a for a in accts if a["relationship_manager_code"] not in rm_codes]
+    return accts
+
+
 def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     """CBS accounts tagged to a set of staff codes, plus portfolio analytics.
 
@@ -507,31 +573,37 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     A person can appear under both, for different accounts. Deposit-movement vs the
     31-Dec baseline is only meaningful for the managed book, so it's suppressed for
     the introduced lens.
+
+    Tries the Postgres cbs_accounts table (real FlexCube ETL data, keyed by
+    rm_code='KE'+staff_code) first; falls back to the legacy CSV path only
+    when Postgres itself is unreachable.
     """
-    col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
     code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
-    # For the introduced lens we want ONLY accounts this scope introduced that are now
-    # managed by SOMEONE ELSE — origination that sits elsewhere. Accounts they both
-    # introduced and manage belong in the managed book, not here, so the two lenses
-    # never overlap.
-    exclude_self_managed = (attribution == "introduced")
     rm = next(iter(code_set), "") if len(code_set) == 1 else ""
     empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
                      "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
                      "dormant_pct": 0.0, "npl_accounts": 0, "by_type": [],
                      "deposit_movement": None, "baseline_date": None,
                      "attribution": attribution}
-    df = _load_accounts()
-    if df is None or df.empty or not code_set or col not in df.columns:
+    if not code_set:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-    mine = df[df[col].astype(str).str.strip().isin(code_set)]
-    if exclude_self_managed and "relationship_manager_code" in mine.columns:
-        # drop the ones this scope also manages
-        mgr = mine["relationship_manager_code"].astype(str).str.strip()
-        mine = mine[~mgr.isin(code_set)]
-    if mine.empty:
+
+    accts = _db_accounts_for_codes(code_set, attribution)
+    if accts is None:
+        # Postgres unreachable — legacy CSV path (dev boxes without a DB).
+        col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
+        exclude_self_managed = (attribution == "introduced")
+        df = _load_accounts()
+        if df is None or df.empty or col not in df.columns:
+            return {"rm_code": rm, "accounts": [], "summary": empty_summary}
+        mine = df[df[col].astype(str).str.strip().isin(code_set)]
+        if exclude_self_managed and "relationship_manager_code" in mine.columns:
+            mgr = mine["relationship_manager_code"].astype(str).str.strip()
+            mine = mine[~mgr.isin(code_set)]
+        accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
+
+    if not accts:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-    accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
     if attribution == "introduced" and accts:
         # annotate each introduced account with WHO manages it now (name + code), so the
         # UI can show the current owner alongside status / balance / loan.

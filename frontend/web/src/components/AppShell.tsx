@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { StaffIdModal } from '@/components/StaffIdModal';
 
 export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -12,6 +13,8 @@ export function AppShell() {
 
   return (
     <div className="app-shell h-screen flex overflow-hidden">
+      <StaffIdModal />
+
       {/* Desktop sidebar */}
       <div className="hidden md:block flex-shrink-0 h-full">
         <Sidebar />

@@ -46,6 +46,11 @@ export interface TokenResponse {
   username:              string;
   role:                  string;
   must_change_password:  boolean;
+  // True when the user has no staff_code on file (AD auth doesn't carry
+  // one). Informational only — does not restrict the token's scope, it
+  // just tells the frontend to show the blocking staff-ID modal. Cleared
+  // by POST /api/auth/set-staff-id.
+  must_set_staff_id:     boolean;
 }
 
 // ── /api/auth/change-password request shape (Batch 3b) ──────────────────
@@ -55,6 +60,12 @@ export interface TokenResponse {
 export interface ChangePasswordRequest {
   current_password: string;
   new_password:     string;
+}
+
+// ── /api/auth/set-staff-id request shape ─────────────────────────────────
+// Matches SetStaffIdRequest pydantic model in utils/api.py.
+export interface SetStaffIdRequest {
+  staff_code: string;
 }
 
 // ── AuthProvider state machine ──────────────────────────────────────────
@@ -88,8 +99,13 @@ export interface AuthContextValue {
   token:     string | null;
   expiresAt: number | null;   // ms since epoch (Date.now() compatible)
   error:     string | null;   // last login OR rotation error
+  // True when the signed-in user has no staff_code on file. Independent of
+  // `status` — the user is fully authenticated/authorized, this just gates
+  // a blocking modal (rendered in AppShell) until setStaffId() clears it.
+  mustSetStaffId: boolean;
 
   login:          (username: string, password: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  setStaffId:     (staffCode: string) => Promise<void>;
   logout:         () => void;
 }
