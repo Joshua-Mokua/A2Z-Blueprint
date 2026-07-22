@@ -788,6 +788,16 @@ def login(request: Request, req: LoginRequest):
             if ext_user:
                 # Upsert into local user store. Preserve existing role if
                 # the account already exists; default to "Staff" for new ones.
+                #
+                # UserManager.reload() FIRST is load-bearing: its cache is
+                # process-wide and loaded once, but admin grants / staff-id
+                # backfills / other scripts write straight to Postgres from
+                # other processes. Without a reload here, save_users() below
+                # flushes this process's STALE full in-memory dict back over
+                # Postgres on every single AD login — silently reverting any
+                # such change made since this process last touched the cache
+                # (confirmed: reverted a staff_code backfill this way).
+                UserManager.reload()
                 um = UserManager()
                 existing = um.users.get(req.username, {})
                 um.users[req.username] = {
