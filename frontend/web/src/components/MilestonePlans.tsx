@@ -12,11 +12,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { useExecuteInitiatives } from '@/hooks/useExecuteInitiatives';
 import {
   GATE_LABEL,
-  milestoneTone,
   type ExecuteInitiative,
 } from '@/types/executeInitiatives';
 import { NewInitiativeForm } from '@/components/NewInitiativeForm';
 import { AddMilestoneForm } from '@/components/AddMilestoneForm';
+import { MilestoneStatusControl } from '@/components/MilestoneStatusControl';
 
 function GateBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
@@ -87,9 +87,12 @@ function InitiativeRow({ init, onChanged }: { init: ExecuteInitiative; onChanged
                     {m.due_date && (
                       <span className="text-xs text-gray-500">{m.due_date}</span>
                     )}
-                    <Badge tone={milestoneTone(m.status)}>
-                      {m.status ?? 'Pending'}
-                    </Badge>
+                    <MilestoneStatusControl
+                      initiativeId={init.id}
+                      msId={String(m.id ?? '')}
+                      status={m.status}
+                      onChanged={onChanged}
+                    />
                   </span>
                 </li>
               ))}

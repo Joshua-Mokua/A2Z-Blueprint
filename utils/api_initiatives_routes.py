@@ -283,3 +283,34 @@ def add_milestone_route(
     except Exception as e:  # noqa: BLE001
         _log.warning("add_milestone failed: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class _MilestoneStatus(BaseModel):
+    status: str
+    note: str = ""
+    started: _Optional[bool] = None
+
+
+@router.patch("/{initiative_id}/milestones/{ms_id}/status")
+def set_milestone_status(
+    initiative_id: str,
+    ms_id: str,
+    payload: _MilestoneStatus,
+    user: dict = Depends(get_current_user),
+):
+    """Update a milestone's status (Not Started / Active / Complete / Delayed)."""
+    try:
+        mgr = _execute_manager()
+        if not mgr.get_initiative(initiative_id):
+            raise HTTPException(status_code=404, detail=f"no initiative {initiative_id}")
+        who = user.get("full_name") or user.get("username") or "unknown"
+        mgr.update_milestone_status(
+            initiative_id, ms_id, payload.status,
+            note=payload.note, updated_by=who, started=payload.started,
+        )
+        return {"status": "ok"}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        _log.warning("set_milestone_status failed: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))

@@ -1082,6 +1082,18 @@ export async function addMilestone(
   );
 }
 
+export interface MilestoneStatusBody {
+  status: string; note?: string; started?: boolean;
+}
+export async function setMilestoneStatus(
+  initiativeId: string, msId: string, body: MilestoneStatusBody,
+): Promise<{ status: string }> {
+  return postJson<{ status: string }, MilestoneStatusBody>(
+    `/initiatives/${encodeURIComponent(initiativeId)}/milestones/${encodeURIComponent(msId)}/status`,
+    body, 'PATCH',
+  );
+}
+
 
 /**
  * Refer a deal to its portfolio owner via POST /api/pipeline/deals/refer.
