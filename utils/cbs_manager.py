@@ -30,6 +30,7 @@ import json
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+from utils.staff_code import canon  # KE0406/KE406/406 comparison
 
 
 # ── Paths ────────────────────────────────────────────────────────────────
@@ -373,7 +374,7 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     the introduced lens.
     """
     col = "introducer_code" if attribution == "introduced" else "relationship_manager_code"
-    code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
+    code_set = {canon(x) for x in (codes or set()) if str(x).strip()}
     # For the introduced lens we want ONLY accounts this scope introduced that are now
     # managed by SOMEONE ELSE — origination that sits elsewhere. Accounts they both
     # introduced and manage belong in the managed book, not here, so the two lenses
@@ -388,10 +389,10 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     df = _load_accounts()
     if df is None or df.empty or not code_set or col not in df.columns:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-    mine = df[df[col].astype(str).str.strip().isin(code_set)]
+    mine = df[df[col].astype(str).map(canon).isin(code_set)]
     if exclude_self_managed and "relationship_manager_code" in mine.columns:
         # drop the ones this scope also manages
-        mgr = mine["relationship_manager_code"].astype(str).str.strip()
+        mgr = mine["relationship_manager_code"].astype(str).map(canon)
         mine = mine[~mgr.isin(code_set)]
     if mine.empty:
         return {"rm_code": rm, "accounts": [], "summary": empty_summary}
