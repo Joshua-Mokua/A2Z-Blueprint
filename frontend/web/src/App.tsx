@@ -87,6 +87,7 @@ import { Cascade } from './pages/Cascade';
 import { Initiatives } from './pages/Initiatives';
 import { FxRates } from './pages/FxRates';
 import AdminConfig from './pages/AdminConfig';
+import DailyLogAdmin from './pages/DailyLogAdmin';
 import RolesAdmin from './pages/RolesAdmin';
 import HierarchyAdmin from './pages/HierarchyAdmin';
 import BranchLog from './pages/BranchLog';
@@ -175,6 +176,7 @@ function App() {
 
                     {/* Admin → Configuration — P4 Batch 1b. CEO/MD/Director; server enforces. */}
                     <Route path="/admin/config" element={<AdminConfig />} />
+                    <Route path="/admin/daily-log" element={<DailyLogAdmin />} />
                     <Route path="/admin/roles" element={<RolesAdmin />} />
                     <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
                     <Route path="/branch-log" element={<BranchLog />} />
