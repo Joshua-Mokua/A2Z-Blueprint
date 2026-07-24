@@ -17,7 +17,7 @@ Token payload:
                                       # circulation in localStorage).
     }
 
-Lifetime: 30 minutes (matches the audit's session-timeout expectation).
+Lifetime: 8 hours (matches the audit's session-timeout expectation).
 Refresh tokens are intentionally NOT supported in this iteration — log in
 again on expiry. The audit didn't require refresh and the React migration
 that would benefit from it isn't here yet.
@@ -72,7 +72,7 @@ logger = logging.getLogger("a2z.auth")
 # generated value preserves dev ergonomics but a warning fires once at
 # startup so it can't ship to prod unnoticed.
 ALGORITHM       = "HS256"
-TOKEN_LIFETIME  = timedelta(minutes=30)
+TOKEN_LIFETIME  = timedelta(hours=8)
 _DEFAULT_SECRET_USED = False
 
 # ── Token scope constants (Batch 3b) ──────────────────────────────────────
