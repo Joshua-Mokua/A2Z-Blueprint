@@ -5869,6 +5869,15 @@ def pipeline_deal_create(
     # top_up_amount BEFORE FX stamping so amount_kes (and every downstream value
     # consumer) reflects the increment. The original facility is preserved
     # separately for context (metadata + column) but never enters pipeline value.
+    if deal_dict.get("bundle_lines"):
+        _lines = [l for l in (deal_dict.get("bundle_lines") or [])
+                  if float((l or {}).get("amount") or 0) > 0]
+        if not _lines:
+            raise HTTPException(status_code=400,
+                detail="A bundled loan needs at least one product line with an amount.")
+        deal_dict["bundle_lines"] = _lines
+        deal_dict["deal_value"]   = round(sum(float(l["amount"]) for l in _lines), 2)
+        deal_dict["product_type"] = "Bundled Loan Product"
     if deal_dict.get("is_top_up"):
         try:
             _inc = float(deal_dict.get("top_up_amount") or 0)

@@ -272,6 +272,12 @@ class PipelineDealsResponse(BaseModel):
 # forcing the API to mirror every UI affordance.
 
 
+class BundleLine(BaseModel):
+    """One component of a Bundled Loan Product: a loan product + its amount."""
+    product_type: str = Field(description="A catalogued loan product name.")
+    amount: float = Field(description="Amount for this line; must be > 0.")
+
+
 class PipelineDealCreate(BaseModel):
     """Request body for POST /api/pipeline/deals.
 
@@ -304,6 +310,11 @@ class PipelineDealCreate(BaseModel):
     )
     product_type: str = Field(
         description="e.g. 'Business Loan', 'Personal Loan', 'CASA'"
+    )
+    bundle_lines: Optional[list[BundleLine]] = Field(
+        default=None,
+        description="For a Bundled Loan Product: component loan products with "
+        "amounts. When present, deal_value is set to their sum server-side.",
     )
     stage: str = Field(
         description="Initial stage. Must be in ALLOWED_ADVANCE_STAGES "
