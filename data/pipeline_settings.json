@@ -2255,7 +2255,8 @@
     },
     "Bundled Loan Product": {
       "client_types": [
-        "Consumer"
+        "Consumer",
+        "Business"
       ],
       "stages": [
         {
