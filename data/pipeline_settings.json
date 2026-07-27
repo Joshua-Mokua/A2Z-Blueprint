@@ -124,7 +124,8 @@
       "Structured Finance",
       "Term Loan",
       "Trade Finance",
-      "Working Capital"
+      "Working Capital",
+      "Bundled Loan Product"
     ],
     "Liabilities": [
       "Current Account",
@@ -266,7 +267,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -356,7 +357,7 @@
         "asset"
       ],
       "surface": "pipeline",
-      "description": "Asset-side pipeline — loans and credit facilities.",
+      "description": "Asset-side pipeline \u2014 loans and credit facilities.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -379,7 +380,7 @@
         "other"
       ],
       "surface": "pipeline",
-      "description": "Liability-side pipeline — deposits, accounts, transactional.",
+      "description": "Liability-side pipeline \u2014 deposits, accounts, transactional.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -1511,7 +1512,17 @@
           "stage": "Closed Lost",
           "target_days": 1
         }
-      ]
+      ],
+      "required_documents": [
+        "Board Resolution",
+        "Business Plan",
+        "Branch Committee Decision",
+        "Bank Statements (6 months)",
+        "3 Months' Payslips",
+        "Audited Accounts"
+      ],
+      "documents_required_at_stage": "",
+      "committee_journey": []
     },
     "Treasury Bills": {
       "client_types": [],
@@ -2241,6 +2252,71 @@
           "target_days": 3
         }
       ]
+    },
+    "Bundled Loan Product": {
+      "client_types": [
+        "Consumer"
+      ],
+      "stages": [
+        {
+          "stage": "Initiation",
+          "target_days": 3,
+          "win_probability": 2
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 1,
+          "win_probability": 5
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1,
+          "win_probability": 9
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1,
+          "win_probability": 30
+        },
+        {
+          "stage": "Consumer Credit Analysis",
+          "target_days": 1,
+          "win_probability": 40
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1,
+          "win_probability": 70
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1,
+          "win_probability": 80
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1,
+          "win_probability": 90
+        },
+        {
+          "stage": "Credit Administration",
+          "target_days": 3,
+          "win_probability": 100
+        },
+        {
+          "stage": "Trops",
+          "target_days": 3
+        }
+      ],
+      "required_documents": [
+        "Bank Statements (6 months)",
+        "Branch Committee Decision",
+        "ID/Passport",
+        "Credit Report",
+        "CRB Report"
+      ],
+      "documents_required_at_stage": "",
+      "committee_journey": []
     }
   },
   "customer_segments": {
@@ -2256,11 +2332,14 @@
       "EFS"
     ],
     "CIB": [
-      "Multinational",
-      "Large Local Corporate",
       "Financial Institution",
-      "Public Sector"
-    ]
+      "Public Corporates",
+      "International Organizations",
+      "Regional Corporates",
+      "Multinationals Chinese",
+      "Multinationals Others"
+    ],
+    "Treasury": []
   },
   "client_types": [
     {
@@ -2324,6 +2403,21 @@
       },
       {
         "name": "Consumer Credit Analysis"
+      },
+      {
+        "name": "Lead"
+      },
+      {
+        "name": "Contacted"
+      },
+      {
+        "name": "Proposal"
+      },
+      {
+        "name": "Closed Won"
+      },
+      {
+        "name": "Closed Lost"
       }
     ]
   },
@@ -2377,6 +2471,18 @@
       },
       {
         "name": "Transaction Memo"
+      },
+      {
+        "name": "Board Resolution"
+      },
+      {
+        "name": "Business Plan"
+      },
+      {
+        "name": "Branch Committee Decision"
+      },
+      {
+        "name": "Audited Accounts"
       }
     ]
   }
