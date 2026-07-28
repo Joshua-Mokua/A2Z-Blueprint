@@ -451,6 +451,7 @@ export interface CreateDealRequest {
   pipeline_category?:    string;
   is_top_up?:            boolean;   // true if topping up an existing facility
   top_up_amount?:        number;    // the increment (becomes pipeline value)
+  bundle_lines?:         { product_type: string; amount: number }[]; // Bundled Loan Product lines
   original_facility_amount?: number; // existing facility size (context only)
   probability?:          number;     // 0..1 (NOT 0..100)
   next_action?:          string;
