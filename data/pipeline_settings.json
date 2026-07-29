@@ -553,7 +553,11 @@
       }
     ],
     "product_promise": {
-      "Personal Loan": 10
+      "Personal Loan": 10,
+      "Business Loan": 26,
+      "Current Account": 2,
+      "Savings Account": 2,
+      "Overdraft": 27
     },
     "due_soon_days": 2,
     "stage_step_map": {
@@ -572,49 +576,80 @@
   ],
   "product_flows": {
     "Business Loan": {
-      "client_types": [],
+      "client_types": [
+        "Commercial",
+        "CIB"
+      ],
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 2
+          "target_days": 2,
+          "win_probability": 1
         },
         {
           "stage": "Contacted",
-          "target_days": 2
+          "target_days": 2,
+          "win_probability": 2
         },
         {
           "stage": "Qualified",
-          "target_days": 3
+          "target_days": 5,
+          "win_probability": 10
         },
         {
-          "stage": "Application",
-          "target_days": 3
+          "stage": "Credit Analysis & Assesment",
+          "target_days": 3,
+          "win_probability": 10
         },
         {
-          "stage": "Credit Assessment",
-          "target_days": 5
+          "stage": "Credit Assessment - BCC",
+          "target_days": 2,
+          "win_probability": 30
         },
         {
           "stage": "Offer / Proposal",
-          "target_days": 3
+          "target_days": 2,
+          "win_probability": 20
         },
         {
           "stage": "Negotiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 5
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
+          "stage": "Legal - Security Perfection",
+          "target_days": 7,
+          "win_probability": 7
         },
         {
-          "stage": "Closed Won",
-          "target_days": 1
+          "stage": "Credit Admin",
+          "target_days": 1,
+          "win_probability": 5
         },
         {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Closed Lost - Trops",
+          "target_days": 1,
+          "win_probability": 7
         }
-      ]
+      ],
+      "required_documents": [
+        "Audited Accounts",
+        "Bank Statements (6 months)",
+        "Board Resolution",
+        "Branch Committee Decision",
+        "Business Registration",
+        "Certificate of Incorporation",
+        "CRB Report",
+        "Credit Report",
+        "ID/Passport",
+        "Memorandum of Association",
+        "Title deed",
+        "Financial Statements",
+        "KRA PIN",
+        "Valuation Report"
+      ],
+      "documents_required_at_stage": "Credit Analysis & Assesment",
+      "committee_journey": []
     },
     "Mortgage": {
       "client_types": [],
@@ -662,94 +697,150 @@
       ]
     },
     "Asset Finance": {
-      "client_types": [],
+      "client_types": [
+        "Consumer",
+        "Commercial",
+        "CIB"
+      ],
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 2
+          "target_days": 2,
+          "win_probability": 1
         },
         {
           "stage": "Contacted",
-          "target_days": 2
+          "target_days": 1,
+          "win_probability": 2
         },
         {
           "stage": "Qualified",
-          "target_days": 3
+          "target_days": 5,
+          "win_probability": 10
         },
         {
-          "stage": "Application",
-          "target_days": 3
+          "stage": "Credit Analysis & Assesment",
+          "target_days": 3,
+          "win_probability": 10
         },
         {
-          "stage": "Credit Assessment",
-          "target_days": 5
+          "stage": "Credit Assessment - BCC",
+          "target_days": 2,
+          "win_probability": 30
         },
         {
           "stage": "Offer / Proposal",
-          "target_days": 3
+          "target_days": 2,
+          "win_probability": 20
         },
         {
           "stage": "Negotiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 10
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
+          "stage": "Credit Admin",
+          "target_days": 1,
+          "win_probability": 10
         },
         {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Closed - Trops",
+          "target_days": 1,
+          "win_probability": 7
         }
-      ]
+      ],
+      "required_documents": [
+        "Audited Accounts",
+        "Bank Statements (6 months)",
+        "Board Resolution",
+        "Branch Committee Decision",
+        "Business Registration",
+        "CRB Report",
+        "Credit Report",
+        "KRA PIN",
+        "ID/Passport",
+        "Certificate of Incorporation",
+        "Memorandum of Association",
+        "Valuation Report"
+      ],
+      "documents_required_at_stage": "Credit Analysis & Assesment",
+      "committee_journey": []
     },
     "Overdraft": {
-      "client_types": [],
+      "client_types": [
+        "Commercial",
+        "CIB"
+      ],
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 2
+          "target_days": 2,
+          "win_probability": 1
         },
         {
           "stage": "Contacted",
-          "target_days": 2
+          "target_days": 2,
+          "win_probability": 2
         },
         {
           "stage": "Qualified",
-          "target_days": 3
+          "target_days": 5,
+          "win_probability": 10
         },
         {
-          "stage": "Application",
-          "target_days": 3
+          "stage": "Credit Analyst & Assesment",
+          "target_days": 3,
+          "win_probability": 10
         },
         {
-          "stage": "Credit Assessment",
-          "target_days": 5
+          "stage": "Credit Assessment - BCC",
+          "target_days": 3,
+          "win_probability": 30
         },
         {
           "stage": "Offer / Proposal",
-          "target_days": 3
+          "target_days": 2,
+          "win_probability": 20
         },
         {
           "stage": "Negotiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 10
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
+          "stage": "Legal - Security Perfection",
+          "target_days": 7,
+          "win_probability": 10
         },
         {
-          "stage": "Closed Won",
-          "target_days": 1
+          "stage": "Credit Admin",
+          "target_days": 1,
+          "win_probability": 5
         },
         {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Closed - Trops",
+          "target_days": 1,
+          "win_probability": 2
         }
-      ]
+      ],
+      "required_documents": [
+        "Audited Accounts",
+        "Bank Statements (6 months)",
+        "Board Resolution",
+        "Branch Committee Decision",
+        "Business Registration",
+        "Business Plan",
+        "CRB Report",
+        "Certificate of Incorporation",
+        "Credit Report",
+        "ID/Passport",
+        "Financial Statements",
+        "KRA PIN",
+        "Valuation Report",
+        "Title deed"
+      ],
+      "documents_required_at_stage": "Credit Analyst & Assesment",
+      "committee_journey": []
     },
     "Invoice Discounting": {
       "client_types": [],
@@ -887,70 +978,50 @@
       ]
     },
     "Current Account": {
-      "client_types": [],
+      "client_types": [
+        "Consumer"
+      ],
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 50
         },
         {
           "stage": "Documentation",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 50
         }
-      ]
+      ],
+      "required_documents": [
+        "ID/Passport",
+        "KRA PIN"
+      ],
+      "documents_required_at_stage": "Documentation",
+      "committee_journey": []
     },
     "Savings Account": {
-      "client_types": [],
+      "client_types": [
+        "Consumer"
+      ],
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 50
         },
         {
           "stage": "Documentation",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 50
         }
-      ]
+      ],
+      "required_documents": [
+        "ID/Passport",
+        "KRA PIN"
+      ],
+      "documents_required_at_stage": "Documentation",
+      "committee_journey": []
     },
     "Fixed Deposit": {
       "client_types": [],
@@ -2261,22 +2332,25 @@
     }
   },
   "customer_segments": {
-    "Consumer": [
-      "Premier",
-      "Advantage",
-      "Direct"
+    "Consumer ": [
+      "Direct Banking",
+      "Premier Banking",
+      "Advantage Banking"
     ],
     "Commercial": [
-      "Large Corporate",
       "SME",
-      "Micro Enterprise",
-      "EFS"
+      "EFS",
+      "Local Corporate"
     ],
     "CIB": [
       "Multinational",
-      "Large Local Corporate",
       "Financial Institution",
-      "Public Sector"
+      "Public Sector",
+      "Regional Corporates",
+      "International Organizations"
+    ],
+    "Treasury": [
+      "Treasury"
     ]
   },
   "client_types": [
@@ -2350,6 +2424,39 @@
       },
       {
         "name": "Credit Administarion"
+      },
+      {
+        "name": "Lead"
+      },
+      {
+        "name": "Contacted"
+      },
+      {
+        "name": "Qualified"
+      },
+      {
+        "name": "Credit Analysis & Assesment"
+      },
+      {
+        "name": "Credit Assessment - BCC"
+      },
+      {
+        "name": "Offer / Proposal"
+      },
+      {
+        "name": "Credit Admin"
+      },
+      {
+        "name": "Closed - Trops"
+      },
+      {
+        "name": "Legal - Security Perfection"
+      },
+      {
+        "name": "Closed Lost - Trops"
+      },
+      {
+        "name": "Credit Analyst & Assesment"
       }
     ]
   },
@@ -2415,7 +2522,45 @@
       },
       {
         "name": "KRA PIN"
+      },
+      {
+        "name": "Audited Accounts"
+      },
+      {
+        "name": "Board Resolution"
+      },
+      {
+        "name": "Business Registration"
+      },
+      {
+        "name": "Certificate of Incorporation"
+      },
+      {
+        "name": "Memorandum of Association"
+      },
+      {
+        "name": "Valuation Report"
+      },
+      {
+        "name": "Title deed"
+      },
+      {
+        "name": "Financial Statements"
+      },
+      {
+        "name": "Business Plan"
       }
     ]
-  }
+  },
+  "required_fields": [
+    "client_name",
+    "product_type",
+    "deal_value",
+    "stage",
+    "segment",
+    "currency",
+    "relationship_status",
+    "mou_id",
+    "sector"
+  ]
 }
