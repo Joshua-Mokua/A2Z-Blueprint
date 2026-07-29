@@ -37,6 +37,7 @@
 //   - Manager "assign to" override
 
 import { useEffect, useMemo, useState } from 'react';
+import { BundleLinesEditor, type BundleLine } from '@/components/BundleLinesEditor';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
@@ -145,6 +146,9 @@ export function PipelineCreate() {
   const [topUpAmt,    setTopUpAmt]    = useState<string>('');
   const [productType, setProductType] = useState('');
   const [dealValue,   setDealValue]   = useState<string>('');     // string so input keeps cursor position
+  const [bundleLines, setBundleLines] = useState<BundleLine[]>([]);
+  const [bundleTotal, setBundleTotal] = useState<number>(0);
+  const isBundle = productType.trim() === 'Bundled Loan Product';
   const [stage,       setStage]       = useState<string>('Lead');
   // (Manual probability slider removed — win probability is now DERIVED from the
   //  selected product flow's stage; see derivedWinProbability below.)
@@ -859,7 +863,10 @@ export function PipelineCreate() {
       client_name:  clientName.trim(),
       staff_code:   user.staff_code,
       staff_name:   user.full_name,
-      deal_value:   isTopUp ? topUpAmtNum : dealValueNum,
+      deal_value:   isBundle ? bundleTotal : (isTopUp ? topUpAmtNum : dealValueNum),
+        bundle_lines: isBundle && bundleLines.length
+          ? bundleLines.map((l) => ({ product_type: l.product_type, amount: Number(String(l.amount).replace(/[,\s]/g, '')) }))
+          : undefined,
       product_type: productType.trim(),
       stage:        stage,
 
@@ -1352,14 +1359,22 @@ export function PipelineCreate() {
                   onClick={() => { setIsTopUp(true); clearFieldError('dealValue'); }}
                   disabled={mutations.loading}>Top-up</button>
               </div>
-              {isTopUp && (
+              {isBundle && (
+                <BundleLinesEditor
+                  value={bundleLines}
+                  onChange={(lines, total) => { setBundleLines(lines); setBundleTotal(total); }}
+                  currencySymbol={branding?.currency_symbol ?? 'KES'}
+                />
+              )}
+
+              {!isBundle && isTopUp && (
                 <p className="mt-1 text-xs text-gray-500">
                   A top-up adds to an existing facility. The pipeline value reflects only the increment (the new money), not the whole facility.
                 </p>
               )}
             </div>
 
-            {isTopUp && (
+            {!isBundle && isTopUp && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <Input
@@ -1390,7 +1405,7 @@ export function PipelineCreate() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {!isTopUp && (
+              {!isBundle && !isTopUp && (
               <div data-field="dealValue">
                 <Input
                   label={category === 'Account'
@@ -1408,7 +1423,7 @@ export function PipelineCreate() {
                 />
               </div>
               )}
-              {isTopUp && (
+              {!isBundle && isTopUp && (
               <div>
                 <label className="text-sm font-medium text-gray-700">Pipeline value</label>
                 <div className="mt-2 flex items-center gap-2">

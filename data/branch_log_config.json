@@ -1,0 +1,23 @@
+{
+  "activity_weights": {
+    "accounts_opened": 5,
+    "accounts_activated": 4,
+    "transactions_count": 0.2,
+    "cards_issued": 2,
+    "dfs_registrations": 3,
+    "loans_referred": 3,
+    "loans_disbursed": 2e-05,
+    "deposits_mobilised": 2e-05,
+    "bancassurance_sold": 4,
+    "complaints_received": 0,
+    "complaints_resolved": 3,
+    "digital_txns": 0.5,
+    "new_leads": 2,
+    "cross_sell_success": 3,
+    "teller_errors": -3,
+    "customer_visits": 0.3,
+    "nps_collected": 1
+  },
+  "daily_index_target": 25,
+  "extra_activities": []
+}

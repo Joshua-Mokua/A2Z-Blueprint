@@ -31,6 +31,7 @@ import logging
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+from utils.staff_code import canon, canon_set  # KE0406/KE406/406 comparison
 
 logger = logging.getLogger("a2z.cbs_manager")
 
@@ -494,18 +495,6 @@ def _staff_name_index() -> dict:
     return idx
 
 
-def _rm_code_variants(code: str) -> str:
-    """staff_code -> cbs_accounts.rm_code convention: 'KE' + staff_code by
-    default (confirmed empirically: rm_code IN ('KE1293') matched 361 real
-    accounts for staff_code=1293; 'KE' covers 81,386 of the real rm_codes in
-    cbs_accounts vs a few hundred under other prefixes). Codes that already
-    carry ANY letter prefix (KE, CN, ...) pass through unchanged — staff_code
-    is not universally KE-prefixed (e.g. CN245 is a real, distinct code), so
-    only bare-numeric input gets the default prefix applied."""
-    c = str(code or "").strip()
-    return c.upper() if c[:1].isalpha() else f"KE{c}"
-
-
 def _is_loan_type_name(name) -> bool:
     t = str(name or "").lower()
     return "loan" in t or "facility" in t or "advance" in t or "mortgage" in t
@@ -544,23 +533,28 @@ def _db_accounts_for_codes(code_set: set, attribution: str):
     """Postgres-backed lookup against cbs_accounts (329K+ real FlexCube-ETL
     rows) — the production data source. Returns None (not []) when Postgres
     isn't reachable, so the caller can distinguish "not available, try CSV"
-    from "reachable, genuinely zero accounts"."""
+    from "reachable, genuinely zero accounts".
+
+    Matching is canon()-tolerant (KE0439/KE439/439 all match) via SQL-side
+    zero-stripping on rm_code/introducer, mirroring canon()'s own KE0*->KE
+    rule — cbs_accounts carries FlexCube's zero-padded codes verbatim."""
     from utils.db import db as _db
     if not _db.is_postgres_ready() or not code_set:
         return None
-    rm_codes = sorted({_rm_code_variants(c) for c in code_set})
+    rm_codes = sorted(canon_set(code_set))
     col = "introducer" if attribution == "introduced" else "rm_code"
     rows = _db.fetch_all(
         f"SELECT account_number, f12_cif, branch_code, introducer, account_type_name, "
         f"account_class, date_opened, lcy_balance, available_balance, account_status, "
-        f"is_dormant, rm_code FROM cbs_accounts WHERE {col} = ANY(%s)",
+        f"is_dormant, rm_code FROM cbs_accounts "
+        f"WHERE regexp_replace(UPPER({col}), '^KE0+', 'KE') = ANY(%s)",
         (rm_codes,),
     ) or []
     accts = [_db_account_row_to_dict(r) for r in rows]
     if attribution == "introduced":
         # drop accounts this scope both introduced AND still manages — those
         # belong to the managed book, not here (mirrors the CSV-path rule).
-        accts = [a for a in accts if a["relationship_manager_code"] not in rm_codes]
+        accts = [a for a in accts if canon(a["relationship_manager_code"]) not in rm_codes]
     return accts
 
 
@@ -582,7 +576,7 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
     rm_code='KE'+staff_code) first; falls back to the legacy CSV path only
     when Postgres itself is unreachable.
     """
-    code_set = {str(x).strip() for x in (codes or set()) if str(x).strip()}
+    code_set = {canon(x) for x in (codes or set()) if str(x).strip()}
     rm = next(iter(code_set), "") if len(code_set) == 1 else ""
     empty_summary = {"accounts": 0, "customers": 0, "total_balance": 0.0,
                      "deposits": 0.0, "loans": 0.0, "dormant_accounts": 0,
@@ -600,9 +594,9 @@ def get_portfolio_for_codes(codes, attribution: str = "managed") -> dict:
         df = _load_accounts()
         if df is None or df.empty or col not in df.columns:
             return {"rm_code": rm, "accounts": [], "summary": empty_summary}
-        mine = df[df[col].astype(str).str.strip().isin(code_set)]
+        mine = df[df[col].astype(str).map(canon).isin(code_set)]
         if exclude_self_managed and "relationship_manager_code" in mine.columns:
-            mgr = mine["relationship_manager_code"].astype(str).str.strip()
+            mgr = mine["relationship_manager_code"].astype(str).map(canon)
             mine = mine[~mgr.isin(code_set)]
         accts = [_account_row_to_dict(r) for _, r in mine.iterrows()]
 

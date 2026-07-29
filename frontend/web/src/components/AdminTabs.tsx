@@ -17,6 +17,7 @@ const TABS: { to: string; label: string }[] = [
   { to: '/admin/roles',      label: 'Roles' },
   { to: '/admin/hierarchy',  label: 'Hierarchy' },
   { to: '/admin/committees', label: 'Committees' },
+  { to: '/admin/daily-log', label: 'Daily Log' },
   { to: '/cascade',          label: 'Target Cascade' },
   { to: '/fx-rates',         label: 'FX Rates' },
 ];
