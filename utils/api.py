@@ -3185,6 +3185,7 @@ def create_validation_request(deal_id: str, payload: dict = Body(default_factory
     }
     reqs = _vr_list(deal) + [req]
     pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log("VALIDATION_REQUEST_CREATED", str(user.get("username", "") or ""),
@@ -3274,6 +3275,7 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
                 pass
 
     pm.update_deal(deal_id, _deal_updates, str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log(f"VALIDATION_REQUEST_{decision.upper()}", str(user.get("username", "") or ""),
@@ -3321,6 +3323,7 @@ def lift_deal_hold(deal_id: str, payload: dict = Body(default_factory=dict),
         except Exception:
             pass
     pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log("DEAL_HOLD_LIFTED", str(user.get("username", "") or ""), f"deal={deal_id}")
@@ -10921,6 +10924,7 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
     records = dict(deal.get("committee_records", {}) or {})
     records[code] = record
     pm.update_deal(deal_id, {"committee_records": records}, str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_COMMITTEE_RECORD", user, f"deal={deal_id}|code={code}|outcome={record['outcome']}")
     return {"status": "recorded", "code": code, "record": record}
 # === END COMMITTEE DECISION CAPTURE ===
@@ -10976,6 +10980,7 @@ def appeal_committee_decision(deal_id: str, payload: dict = Body(default_factory
     records.pop(code, None)
     pm.update_deal(deal_id, {"committee_records": records, "appeals": appeals},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_COMMITTEE_APPEAL", user, f"deal={deal_id}|code={code}")
     return {"status": "appealed", "code": code,
             "message": f"{code} re-opened for a fresh decision.", "appeals": appeals}
@@ -11004,6 +11009,7 @@ def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
     reason = str(payload.get("reason", "") or "").strip()
     pm.update_deal(deal_id, {"stage": "Closed Lost", "close_reason": reason},
                    str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_CLOSE_LOST", user, f"deal={deal_id}|reason={reason[:60]}")
     return {"status": "closed_lost", "deal_id": deal_id}
 # === END REJECT -> OWNER FALLBACK ===
@@ -11384,6 +11390,7 @@ def save_deal_appraisal(deal_id: str, payload: dict = Body(default_factory=dict)
     _enforce_deal_lock(deal, user, "appraisal")  # Phase L
     appr = _appraisal_stamp(payload, user)
     pm.update_deal(deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     return appr
 
 
