@@ -88,16 +88,24 @@ class ExternalAuthService:
         self.fallback_url = (settings.get("ad_fallback_url") or "").strip()
         self.timeout      = int(settings.get("ad_timeout_seconds") or 20)
         self.verify_ssl   = bool(settings.get("ad_verify_ssl", False))
+        # Set when the most recent authenticate() call never got a response
+        # from any configured URL within `timeout` — distinct from "AD
+        # responded and said no". The login endpoint uses this to avoid
+        # reporting a slow/unreachable AD server as "invalid credentials":
+        # those are different problems with different fixes.
+        self.timed_out = False
 
     def authenticate(self, username: str, password: str) -> Optional[dict]:
         """Return normalised user dict on success, None on failure."""
         import requests  # lazy — not installed in all envs; fail fast here
 
+        self.timed_out = False
         urls = [u for u in [self.primary_url, self.fallback_url] if u]
         if not urls:
             logger.warning("ExternalAuthService: ad_enabled=true but no URLs configured")
             return None
 
+        any_timeout = False
         for idx, url in enumerate(urls):
             label = "primary" if idx == 0 else "fallback"
             try:
@@ -124,11 +132,20 @@ class ExternalAuthService:
                     "ExternalAuth %s URL returned non-success for '%s': HTTP %d",
                     label, username, resp.status_code,
                 )
+            except requests.exceptions.Timeout:
+                any_timeout = True
+                logger.warning(
+                    "ExternalAuth %s URL TIMED OUT after %ds for '%s'",
+                    label, self.timeout, username,
+                )
+                # continue to next URL
             except Exception as exc:
                 logger.warning(
                     "ExternalAuth %s URL error for '%s': %s", label, username, exc
                 )
                 # continue to next URL
 
-        logger.warning("ExternalAuth failed on all URLs for '%s'", username)
+        self.timed_out = any_timeout
+        logger.warning("ExternalAuth failed on all URLs for '%s' (timed_out=%s)",
+                        username, any_timeout)
         return None

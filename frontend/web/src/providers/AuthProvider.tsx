@@ -196,21 +196,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     setState((s) => ({ ...s, error: null }));
 
+    // AD auth (utils/external_auth.py) waits up to ad_timeout_seconds
+    // (default 20s) before falling back to local auth, which then also has
+    // to run — a slow AD server can legitimately take 20+ seconds to fail.
+    // 30s gives that headroom before the CLIENT gives up and reports a
+    // network error, rather than the request hanging indefinitely on a
+    // truly dead connection.
+    const LOGIN_TIMEOUT_MS = 30_000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
+
     let res: Response;
     try {
       res = await fetch(LOGIN_ENDPOINT, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ username, password }),
+        signal:  controller.signal,
       });
-    } catch {
-      const msg = 'Cannot reach authentication server. Please try again.';
+    } catch (err) {
+      const msg = (err instanceof DOMException && err.name === 'AbortError')
+        ? 'The authentication server took too long to respond. Please try again.'
+        : 'Cannot reach authentication server. Please try again.';
       setState((s) => ({ ...s, error: msg }));
       throw new Error(msg);
+    } finally {
+      clearTimeout(timer);
     }
 
     if (res.status === 401) {
       const msg = 'Invalid username or password.';
+      setState((s) => ({ ...s, error: msg }));
+      throw new Error(msg);
+    }
+    if (res.status === 504) {
+      // Backend distinguishes "AD server didn't respond in time" from
+      // "credentials were checked and rejected" — surface its own message
+      // rather than the generic 5xx one below, since the fix is "try again",
+      // not "check your password".
+      let msg = 'The authentication server did not respond in time. Please try again.';
+      try {
+        const body = await res.json();
+        if (body && typeof body.detail === 'string') msg = body.detail;
+      } catch { /* keep default */ }
       setState((s) => ({ ...s, error: msg }));
       throw new Error(msg);
     }

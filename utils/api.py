@@ -779,12 +779,14 @@ def login(request: Request, req: LoginRequest):
     from utils.core import UserManager
 
     # ── 1. External / AD authentication ───────────────────────────────
+    ad_timed_out = False
     try:
         from utils.external_auth import ExternalAuthService, get_auth_settings
         auth_cfg = get_auth_settings()
         if auth_cfg.get("ad_enabled"):
             svc = ExternalAuthService(auth_cfg)
             ext_user = svc.authenticate(req.username, req.password)
+            ad_timed_out = svc.timed_out
             if ext_user:
                 # Upsert into local user store. Preserve existing role if
                 # the account already exists; default to "Staff" for new ones.
@@ -858,6 +860,18 @@ def login(request: Request, req: LoginRequest):
         raise HTTPException(status_code=500, detail="Authentication system unavailable")
 
     if not ok or not user_data:
+        if ad_timed_out:
+            # The AD server didn't respond within the configured timeout, and
+            # the local fallback check (correctly) also failed — most AD-only
+            # accounts have no local password. Reporting this as "Invalid
+            # credentials" is misleading: the fix is "try again" or "check the
+            # AD server", not "check your password".
+            _audit("API_LOGIN_FAILED", {"username": req.username},
+                   "AD server timed out; local fallback also failed")
+            raise HTTPException(
+                status_code=504,
+                detail="The authentication server did not respond in time. Please try again.",
+            )
         # Audit failed login attempts (V-007 brute-force visibility)
         _audit("API_LOGIN_FAILED", {"username": req.username},
                f"Failed login from API for {req.username}")
