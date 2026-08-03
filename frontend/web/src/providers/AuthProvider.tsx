@@ -197,12 +197,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, error: null }));
 
     // AD auth (utils/external_auth.py) waits up to ad_timeout_seconds
-    // (default 20s) before falling back to local auth, which then also has
-    // to run — a slow AD server can legitimately take 20+ seconds to fail.
-    // 30s gives that headroom before the CLIENT gives up and reports a
-    // network error, rather than the request hanging indefinitely on a
-    // truly dead connection.
-    const LOGIN_TIMEOUT_MS = 30_000;
+    // (60s, data/auth_settings.json) before falling back to local auth, which
+    // then also has to run — a slow AD server can legitimately take 60+
+    // seconds to fail. 75s gives that headroom before the CLIENT gives up and
+    // reports a network error, rather than the request hanging indefinitely
+    // on a truly dead connection.
+    const LOGIN_TIMEOUT_MS = 75_000;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
 

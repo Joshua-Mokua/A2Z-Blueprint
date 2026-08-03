@@ -135,7 +135,7 @@ export function Login() {
 
           {submitting && showSlowHint && (
             <p className="login-slow-hint">
-              Still contacting the authentication server — this can take up to 20 seconds.
+              Still contacting the authentication server — this can take up to 60 seconds.
             </p>
           )}
 
