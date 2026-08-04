@@ -10558,6 +10558,24 @@ def _effective_committee_journey(deal: dict) -> list:
         code = str(c.get("code"))
         if thr > 0 and amount >= thr and code not in out:
             out.append(code)
+    # Per-branch routing: a branch-originated deal reviews at ITS branch committee
+    # (BCC_BRN00N), not the generic BCC1. Substitute where a specific one resolves.
+    if _deal_is_branch_originated(deal):
+        _bc = _branch_committee_code_for(deal)
+        if _bc:
+            _branch_only = set(_committee_routing_cfg().get('branch_only_codes', []) or [])
+            _replaced = False
+            _new = []
+            for c in out:
+                if c in _branch_only:
+                    if not _replaced:
+                        _new.append(_bc); _replaced = True
+                    # drop other generic branch-only codes
+                else:
+                    _new.append(c)
+            if not _replaced and _bc not in _new:
+                _new.insert(0, _bc)
+            out = _new
     return out
 
 
