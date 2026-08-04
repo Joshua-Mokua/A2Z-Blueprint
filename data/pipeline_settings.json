@@ -573,9 +573,7 @@
   ],
   "product_flows": {
     "Business Loan": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -595,7 +593,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -621,9 +619,7 @@
       ]
     },
     "Mortgage": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -643,7 +639,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -669,9 +665,7 @@
       ]
     },
     "Asset Finance": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -691,7 +685,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -717,9 +711,7 @@
       ]
     },
     "Overdraft": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -739,7 +731,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -765,9 +757,7 @@
       ]
     },
     "Invoice Discounting": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -787,7 +777,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -813,9 +803,7 @@
       ]
     },
     "Trade Finance LC": {
-      "client_types": [
-        "CIB"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -835,7 +823,7 @@
           "target_days": 1
         },
         {
-          "stage": "CIB Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -861,9 +849,7 @@
       ]
     },
     "Structured Finance": {
-      "client_types": [
-        "CIB"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -883,7 +869,7 @@
           "target_days": 1
         },
         {
-          "stage": "CIB Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -1789,9 +1775,7 @@
       ]
     },
     "Term Loan": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -1811,7 +1795,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -1837,9 +1821,7 @@
       ]
     },
     "Trade Finance": {
-      "client_types": [
-        "CIB"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -1859,7 +1841,7 @@
           "target_days": 1
         },
         {
-          "stage": "CIB Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
@@ -2344,9 +2326,7 @@
       "committee_journey": []
     },
     "Working Capital": {
-      "client_types": [
-        "Commercial"
-      ],
+      "client_types": [],
       "committee_journey": [],
       "stages": [
         {
@@ -2366,7 +2346,7 @@
           "target_days": 1
         },
         {
-          "stage": "Commercial Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1
         },
         {
