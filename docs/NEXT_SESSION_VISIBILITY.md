@@ -39,3 +39,21 @@ the scope engine uses it, and whether the dotted-line relationships are mapped.
 ## Resume pointer
 HEAD at EOD: 36f6449 (branch-scoped committee picker). Today closed the credit-flow + branch-
 committee workstream. This visibility issue is a NEW workstream for the morning.
+
+## ADDENDUM (Josh EOD) — segment-level Consumer visibility
+Beyond the individual dotted-line managers, there's a SEGMENT-level requirement:
+- The **Consumer head-office team** should see the **ENTIRE Consumer pipeline**, and be able to
+  **filter by sub-segment: Direct / Premier / Advantage** — for continuity.
+So the morning's problem is two layers of the same scope engine:
+  1. SEGMENT-level: Consumer HO team sees all Consumer pipeline, filterable by Direct/Premier/
+     Advantage.
+  2. DOTTED-LINE manager: Fiona (Premier), Head of DSA, Head of Direct Banking see their slices.
+
+## Morning plan (refined)
+1. Probe the scope engine: does get_visible_staff_codes support segment-wide visibility (see a
+   whole Department/segment) AND dotted-line (managed_roles/units/staff)? Or only solid-line?
+2. Confirm the Consumer sub-segments in data: are Direct / Premier / Advantage distinct values
+   somewhere (a column, a segment field, a unit)? Needed for the filter.
+3. Design: a Consumer-HO "sees all Consumer, filter by sub-segment" scope, plus the dotted-line
+   maps for Fiona / Head of DSA / Head of Direct Banking.
+4. Decide explicit-mapping vs derived, then implement + verify each manager sees the right slice.
