@@ -240,7 +240,7 @@ export default function CommitteeAdmin() {
                             onClick={() => setMemberFromStaff(i, null)}>Change</button>
                         </div>
                       ) : (
-                        <StaffPicker value={null} onChange={(sm) => setMemberFromStaff(i, sm)} />
+                        <StaffPicker value={null} onChange={(sm) => setMemberFromStaff(i, sm)} branchScope={draft.kind === 'branch' ? draft.branch : undefined} />
                       )}
                     </div>
                     <label className="flex items-center gap-1 text-xs text-gray-600 whitespace-nowrap" title="EXCO full-funnel visibility (planning view like the MD)">

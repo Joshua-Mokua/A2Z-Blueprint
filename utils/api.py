@@ -5593,6 +5593,7 @@ def staff_segments(user: dict = Depends(get_current_user)):
 def staff_search(
     q: str = Query(default=""),
     segment: str = Query(default=""),
+    branch: str = Query(default=""),
     limit: int = Query(default=20, le=50),
     user: dict = Depends(get_current_user),
 ):
@@ -5609,6 +5610,9 @@ def staff_search(
     me = str(user.get("staff_code") or "").strip()
     ql = q.strip().lower()
     segl = segment.strip().lower()
+    branchl = branch.strip().lower()
+    has_branch = "Branch" in roster.columns
+    has_unit = "Unit" in roster.columns
     out = []
     for _, row in roster.iterrows():
         code = str(row.get("Staff Code") or "").strip()
@@ -5618,6 +5622,11 @@ def staff_search(
         seg = _norm_segment(row.get("Department")) if has_dept else ""
         if segl and seg.lower() != segl:
             continue
+        if branchl:
+            rb = str(row.get("Branch") or "").strip().lower() if has_branch else ""
+            ru = str(row.get("Unit") or "").strip().lower() if has_unit else ""
+            if branchl not in (rb, ru):
+                continue
         if ql and ql not in name.lower() and ql not in code.lower():
             continue
         out.append({

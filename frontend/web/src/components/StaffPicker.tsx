@@ -10,11 +10,13 @@ const inputCls =
   'focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20';
 
 interface StaffPickerProps {
+  branchScope?: string;
   value: StaffMember | null;
   onChange: (member: StaffMember | null) => void;
 }
 
-export function StaffPicker({ value, onChange }: StaffPickerProps) {
+export function StaffPicker({ value, onChange, branchScope }: StaffPickerProps) {
+  const [showAll, setShowAll] = useState(false);
   const [segments, setSegments] = useState<StaffSegment[]>([]);
   const [segment, setSegment] = useState('');
   const [q, setQ] = useState('');
@@ -30,7 +32,7 @@ export function StaffPicker({ value, onChange }: StaffPickerProps) {
     let cancelled = false;
     setLoading(true);
     const t = setTimeout(() => {
-      searchStaff(q.trim(), segment)
+      searchStaff(q.trim(), segment, showAll ? undefined : branchScope)
         .then((r) => { if (!cancelled) setResults(r.staff); })
         .catch(() => { if (!cancelled) setResults([]); })
         .finally(() => { if (!cancelled) setLoading(false); });
@@ -63,6 +65,12 @@ export function StaffPicker({ value, onChange }: StaffPickerProps) {
             <option key={s.segment} value={s.segment}>{s.segment} ({s.count})</option>
           ))}
         </select>
+        {branchScope && (
+          <button type="button" className="mt-1 text-xs text-brand-primary hover:underline"
+            onClick={() => setShowAll((v) => !v)}>
+            {showAll ? `Filter to ${branchScope}` : "Show all branches"}
+          </button>
+        )}
         <input className={inputCls} placeholder="Search name or code…"
           value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
