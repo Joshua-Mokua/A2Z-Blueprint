@@ -293,9 +293,9 @@ export function PipelineDealDetail() {
         defaultTabId="journey"
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
+          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()}  stageFlow={stageFlow} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
-          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()}  stageFlow={stageFlow} /> },
           { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
           { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
