@@ -10123,7 +10123,7 @@ import re as _re_docup
 from datetime import datetime as _dt_docup
 
 _DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
-_DOC_MAX_BYTES = 15 * 1024 * 1024  # 15 MB
+_DOC_MAX_BYTES = 30 * 1024 * 1024  # 15 MB
 
 
 class _DocUploadBody(BaseModel):

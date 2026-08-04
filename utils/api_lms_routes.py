@@ -1459,8 +1459,8 @@ def lms_callback_memo_upload(
         raise HTTPException(status_code=400, detail="Invalid file content.")
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file.")
-    if len(raw) > 15 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 15 MB).")
+    if len(raw) > 30 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 30 MB).")
     root = _P(__file__).resolve().parent.parent
     safe = (_re.sub(r"[^A-Za-z0-9._-]", "_", filename)[:120]) or "memo"
     ddir = root / "data" / "uploads" / "credit_docs" / ("lms_" + _re.sub(r"[^A-Za-z0-9._-]", "_", app_id))
