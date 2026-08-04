@@ -324,7 +324,7 @@ export default function Sla() {
                         <div className="col-span-3">
                           <Input
                             type="number"
-                            min={1}
+                            min={0} step="any"
                             value={String(s.target_days)}
                             disabled={!canEdit}
                             onChange={(e) => updateStep(i, { target_days: Number(e.target.value) })}

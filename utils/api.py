@@ -1593,7 +1593,7 @@ def _validate_sla_config(cfg) -> tuple:
             return False, f"duplicate step key: {k}"
         seen.add(k)
         try:
-            t = int(s.get("target_days"))
+            t = float(s.get("target_days"))
         except (TypeError, ValueError):
             return False, f"step '{k}': target_days must be an integer"
         if t <= 0:
@@ -2208,7 +2208,7 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
                 "repository first, then use it in a product flow."
             )
         try:
-            t = int(s.get("target_days"))
+            t = float(s.get("target_days"))
         except (TypeError, ValueError):
             return False, f"stage '{nm}': target_days must be an integer"
         if t <= 0:
@@ -2373,7 +2373,7 @@ def _sla_step_target_sum(cfg: dict) -> int:
     total = 0
     for s in (cfg.get("steps") or []):
         try:
-            t = int(s.get("target_days", 0))
+            t = float(s.get("target_days", 0))
         except (TypeError, ValueError):
             t = 0
         if t > 0:
@@ -2385,7 +2385,7 @@ def _sla_step_target(cfg: dict, step_key: str) -> int:
     for s in (cfg.get("steps") or []):
         if s.get("key") == step_key:
             try:
-                return int(s.get("target_days", 0))
+                return float(s.get("target_days", 0))
             except (TypeError, ValueError):
                 return 0
     return 0
@@ -3702,7 +3702,7 @@ def _product_readiness(product_type: str) -> dict:
                     for s in stages:
                         if isinstance(s, dict):
                             try:
-                                t = int(s.get("target_days", 0))
+                                t = float(s.get("target_days", 0))
                                 if t > 0:
                                     flow_day_sum += t
                             except (TypeError, ValueError):
@@ -3877,7 +3877,7 @@ def _flow_stage_target(product_type: str, stage_name: str) -> int:
     for s in stages:
         if isinstance(s, dict) and str(s.get("stage", "")).strip().lower() == target_stage:
             try:
-                t = int(s.get("target_days", 0))
+                t = float(s.get("target_days", 0))
                 return t if t > 0 else 0
             except (TypeError, ValueError):
                 return 0

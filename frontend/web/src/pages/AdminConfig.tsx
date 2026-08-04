@@ -875,7 +875,7 @@ export default function AdminConfig() {
                           />
                           <Input
                             value={String(s.target_days)}
-                            type="number"
+                            type="number" step="any"
                             onChange={(e) => setFlowDraft((d) => ({
                               ...d,
                               stages: d.stages.map((x, j) => (j === i ? { ...x, target_days: Number(e.target.value) } : x)),
