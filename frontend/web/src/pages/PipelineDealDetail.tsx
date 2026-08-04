@@ -823,6 +823,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   return (
     <Card className="mt-6" stripe="accent">
       <Card.Header>
+        <CreditJourneyStepper checklist={checklist} />
         <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
         <Badge tone="info" size="sm">document gate</Badge>
       </Card.Header>
