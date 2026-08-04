@@ -22,7 +22,7 @@ Then affected users sign out / in and get their correct role (and managers get t
 import sys, json
 from pathlib import Path
 
-CODES = ["KE395", "KE1298", "KE406", "KE1347", "KE555", "KE1333"]  # Violet, Humphrey, Benjamin, Josh, Mary, Rabecca
+CODES = ["KE395", "KE1298", "KE0406", "KE1347", "KE555", "KE1333"]  # Violet, Humphrey, Benjamin, Josh, Mary, Rabecca
 DATA = Path(__file__).resolve().parent / "data"
 
 def load_users_json():

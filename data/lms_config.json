@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "description": "LMS module configuration — editable via Admin → LMS Config tab",
+    "description": "LMS module configuration \u2014 editable via Admin \u2192 LMS Config tab",
     "last_updated": "2026-04-16",
     "updated_by": "admin"
   },
   "swim_lanes": {
     "express": {
       "label": "Express",
-      "description": "Repeat borrowers · Clean history · Auto-score",
+      "description": "Repeat borrowers \u00b7 Clean history \u00b7 Auto-score",
       "max_amount": 5000000,
       "requires_repeat": true,
       "requires_clean": true,
@@ -20,7 +20,7 @@
     },
     "standard": {
       "label": "Standard",
-      "description": "New borrowers · Full appraisal",
+      "description": "New borrowers \u00b7 Full appraisal",
       "min_amount": 0,
       "max_amount": 100000000,
       "requires_repeat": false,
@@ -34,7 +34,7 @@
     },
     "complex": {
       "label": "Complex",
-      "description": "Large corporate · Trade Finance · Committee required",
+      "description": "Large corporate \u00b7 Trade Finance \u00b7 Committee required",
       "min_amount": 100000000,
       "sla_days": 21,
       "color": "#7C3AED",
@@ -273,7 +273,155 @@
           "is_independent": true
         }
       ]
-    }
+    },
+    "committee_palette": [
+      {
+        "code": "B1",
+        "name": "Consumer Banking Credit Committee",
+        "chaired_by": "Jane Jelagat Atugah",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "members": [
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          }
+        ]
+      },
+      {
+        "code": "B2",
+        "name": "Commercial Banking Credit Committee",
+        "chaired_by": "Victor Mutabari Mbaabu",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "members": [
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          }
+        ]
+      },
+      {
+        "code": "B3",
+        "name": "Corporate & Investment Banking Credit Committee",
+        "chaired_by": "Cyprian Kiprotich Rono",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "members": [
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": true
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": true
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          }
+        ]
+      },
+      {
+        "code": "B4",
+        "name": "Credit Committee",
+        "chaired_by": "Thomas Okumu",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "members": [
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": false
+          }
+        ]
+      },
+      {
+        "code": "B5",
+        "name": "Board Credit Committee",
+        "chaired_by": "",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "members": [
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": true
+          },
+          {
+            "name": "",
+            "role": "",
+            "staff_code": "",
+            "full_funnel": true
+          }
+        ]
+      }
+    ]
   },
   "pool_visibility": {
     "roles": [

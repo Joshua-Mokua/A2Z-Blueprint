@@ -240,7 +240,7 @@ def _enrich_identity_from_store(user: dict) -> None:
         rec = UserManager().users.get(str(user.get("username", "") or "")) or {}
         if not rec:
             return
-        for key in ("staff_code", "full_name", "can_view_all",
+        for key in ("staff_code", "full_name", "can_view_all", "is_admin",
                     "managed_staff_codes", "managed_roles", "managed_units",
                     "department"):
             if key in rec and (key not in user or user.get(key) in (None, "")):
@@ -350,7 +350,16 @@ def require_admin(user: dict = None) -> dict:
 
 
 def _require_admin_impl(user: dict) -> dict:
-    """Internal — the actual role-check, called with a resolved user."""
+    """Internal — the actual role-check, called with a resolved user.
+
+    Accepts EITHER the is_admin DB flag OR the literal role string
+    ("admin"/"director") — is_admin is only usable here because
+    _enrich_identity_from_store now copies it onto the JWT-derived dict.
+    Before that fix, a granted is_admin=True with role="Staff" (e.g.
+    bmuthini, hobiero, jmokua) silently could NOT pass this gate: the flag
+    existed in Postgres but this function never saw it."""
+    if user.get("is_admin"):
+        return user
     role = (user.get("role") or "").lower()
     if role not in ("admin", "director"):
         raise HTTPException(

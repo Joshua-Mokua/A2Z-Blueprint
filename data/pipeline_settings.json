@@ -267,7 +267,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -357,7 +357,7 @@
         "asset"
       ],
       "surface": "pipeline",
-      "description": "Asset-side pipeline \u2014 loans and credit facilities.",
+      "description": "Asset-side pipeline — loans and credit facilities.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -380,7 +380,7 @@
         "other"
       ],
       "surface": "pipeline",
-      "description": "Liability-side pipeline \u2014 deposits, accounts, transactional.",
+      "description": "Liability-side pipeline — deposits, accounts, transactional.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -556,7 +556,7 @@
     "product_promise": {
       "Personal Loan": 10,
       "Business Loan": 26,
-      "Current Account": 2,
+      "Current Account": 3,
       "Savings Account": 2,
       "Overdraft": 27
     },
@@ -992,6 +992,10 @@
           "stage": "Documentation",
           "target_days": 1,
           "win_probability": 50
+        },
+        {
+          "stage": "Account Openned",
+          "target_days": 1
         }
       ],
       "required_documents": [
@@ -2543,6 +2547,9 @@
       },
       {
         "name": "Closed Lost"
+      },
+      {
+        "name": "Account Openned"
       }
     ]
   },

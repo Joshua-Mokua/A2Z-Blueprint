@@ -24,7 +24,7 @@ REGISTER = _DATA / "staff_register.xlsx"
 _COLS = ["Staff Code", "Staff Name", "Role", "Unit", "Department", "Branch",
          "Region", "Reports To Code", "Email", "Band", "Gender"]
 _SELECT = ("staff_code", "full_name", "role", "department", "unit",
-           "email", "band", "gender", "metadata")
+           "email", "metadata")
 
 
 def _branch_region_map() -> dict:
@@ -82,8 +82,8 @@ def export_register_from_db() -> int:
             "Region": str(meta.get("region") or breg.get(branch, "") or ""),
             "Reports To Code": str(meta.get("reports_to") or ""),
             "Email": str(d.get("email") or ""),
-            "Band": str(d.get("band") or ""),
-            "Gender": str(d.get("gender") or ""),
+            "Band": str(meta.get("band") or ""),
+            "Gender": str(meta.get("gender") or ""),
         })
 
     _DATA.mkdir(exist_ok=True)
