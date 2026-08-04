@@ -10368,6 +10368,84 @@ def seed_committee_palette(user: dict = Depends(require_config_admin)):
     return {"status": "seeded", "committees": _DEFAULT_COMMITTEE_PALETTE}
 
 
+
+def _branch_committee_code_for(deal: dict) -> str:
+    """The branch committee code for a deal's origin branch, or '' if none/head-office."""
+    import json as _json
+    branch = str(deal.get("branch", "") or "").strip()
+    if not branch:
+        return ""
+    for c in _read_committee_palette():
+        if str(c.get("kind", "")).lower() == "branch" and \
+           str(c.get("branch", "")).strip().lower() == branch.lower():
+            return str(c.get("code", ""))
+    return ""
+
+
+def _resolve_branch_bm(branch_name: str) -> dict:
+    """Best-effort: find the Branch Manager for a branch. Returns {name, staff_code} or {}.
+    Staff branch/unit fields are unreliable, so try unit==branch, else name match."""
+    try:
+        from utils.core import UserManager
+        um = UserManager()
+        users = list(getattr(um, "users", {}).values()) if isinstance(getattr(um, "users", {}), dict) else []
+    except Exception:
+        users = []
+    bn = branch_name.strip().lower()
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        role = str(u.get("role", "")).lower()
+        unit = str(u.get("unit", "") or "").lower()
+        if "branch manager" in role and unit and unit == bn:
+            return {"name": u.get("full_name", ""), "staff_code": u.get("staff_code", "")}
+    return {}
+
+
+@app.post("/api/admin/committee-palette/generate-branch", tags=["admin"])
+def generate_branch_committees(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(require_config_admin)):
+    """Scaffold one Branch Credit Committee per non-HO branch (idempotent). Names them
+    '<Branch> Branch Credit Committee', kind=branch, branch=<name>, chair=BM (best-effort).
+    Skips branches that already have a branch committee. Members left for admin to fill."""
+    import json as _json
+    palette = _read_committee_palette()
+    existing_branches = {str(c.get("branch", "")).strip().lower()
+                         for c in palette if str(c.get("kind", "")).lower() == "branch"}
+    try:
+        org = _json.loads((Path(__file__).resolve().parent.parent / "data" / "org_config.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"org_config unreadable: {e}")
+    branches = org.get("branches", []) or []
+    created = []
+    for b in branches:
+        if not isinstance(b, dict):
+            continue
+        if str(b.get("type", "")).upper() == "HO":
+            continue  # head office excluded
+        name = str(b.get("name", "")).strip()
+        if not name or name.lower() in existing_branches:
+            continue
+        code = "BCC_" + str(b.get("code", name)).strip().upper().replace(" ", "_")
+        bm = _resolve_branch_bm(name)
+        palette.append({
+            "code": code,
+            "name": f"{name} Branch Credit Committee",
+            "chaired_by": bm.get("name", ""),
+            "recording_mode": "voting",
+            "voting_rule": "SIMPLE_MAJORITY",
+            "amount_threshold_kes": 0.0,
+            "branch": name,
+            "kind": "branch",
+            "members": [],
+        })
+        created.append(code)
+    _write_committee_palette(palette)
+    _audit("COMMITTEE_BRANCH_GENERATE", user, f"created={len(created)}")
+    return {"status": "generated", "created": created, "count": len(created),
+            "committees": palette}
+
+
 @app.post("/api/admin/committee-palette", tags=["admin"])
 def upsert_committee_palette(payload: dict = Body(default_factory=dict),
                              user: dict = Depends(require_config_admin)):
@@ -10388,6 +10466,8 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
         "code": code,
         "name": str(c.get("name")).strip(),
         "chaired_by": str(c.get("chaired_by", "") or ""),
+        "branch": str(c.get("branch", "") or ""),
+        "kind": str(c.get("kind", "") or ""),
         "recording_mode": str(c.get("recording_mode", "voting")),
         "voting_rule": str(c.get("voting_rule", "SIMPLE_MAJORITY")),
         "amount_threshold_kes": float(c.get("amount_threshold_kes", 0) or 0),
