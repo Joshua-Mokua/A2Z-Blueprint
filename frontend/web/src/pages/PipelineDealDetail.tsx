@@ -631,11 +631,17 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
 // future ones greyed. Reads checklist state (backend already enforces the sequence). ──
 function creditSubmitLabel(checklist: CreditChecklistResponse, stageFlow?: string[]): string {
   const current = String(checklist.current_stage ?? '');
-  const flow = (stageFlow && stageFlow.length) ? stageFlow : CREDIT_JOURNEY_STAGES;
-  const idx = flow.findIndex((st) => st.toLowerCase() === current.toLowerCase());
-  // submit moves to the NEXT credit stage; name it.
-  const next = idx >= 0 && idx + 1 < flow.length
-    ? flow[idx + 1]
+  // Only name CREDIT-JOURNEY stages (Documentation..Credit Analysis), never sales stages
+  // like Negotiation. Slice the deal's flow to its credit portion first.
+  const full = (stageFlow && stageFlow.length) ? stageFlow : CREDIT_JOURNEY_STAGES;
+  const d = full.findIndex((st) => /documentation/i.test(st));
+  const c = full.findIndex((st) => /^credit analysis$/i.test(st.trim()));
+  const journey = (d >= 0 && c >= 0 && c >= d) ? full.slice(d, c + 1) : CREDIT_JOURNEY_STAGES;
+  const idx = journey.findIndex((st) => st.toLowerCase() === current.toLowerCase());
+  // If current is before/at the doc gate, submit enters the first gate after Documentation.
+  const next =
+    idx >= 0 && idx + 1 < journey.length ? journey[idx + 1]
+    : idx < 0 && journey.length > 1 ? journey[1]
     : 'Credit Analysis';
   return `Submit to ${next}`;
 }
