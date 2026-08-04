@@ -298,6 +298,22 @@ def _credit_handoff_cutoff(product_type: str):
     return None, None, stages
 
 
+def _is_credit_product(product_type: str) -> bool:
+    """Only credit-bearing products hand off to the credit factory: the Assets
+    class (loans, overdraft, trade finance, bundled facilities) plus Credit Card,
+    which is catalogued under Transactional but is a credit product. Deposit and
+    account products, debit/prepaid cards, insurance and investments never hand
+    off, even when documents are attached."""
+    try:
+        from utils.api import _product_class, _norm_product
+    except Exception:
+        return True
+    cls = _product_class(product_type)
+    if cls == "Assets":
+        return True
+    return _norm_product(product_type) == _norm_product("Credit Card")
+
+
 def is_credit_handoff_for_deal(deal: Dict[str, Any], old_stage: str, new_stage: str) -> bool:
     """Per-product credit handoff gate.
 
@@ -317,6 +333,8 @@ def is_credit_handoff_for_deal(deal: Dict[str, Any], old_stage: str, new_stage: 
     if new_stage == old_stage:
         return False
     product_type = str(deal.get("product_type", "") or "")
+    if not _is_credit_product(product_type):
+        return False
     handoff_stage, handoff_idx, flow_stages = _credit_handoff_cutoff(product_type)
     if handoff_stage is None or handoff_idx is None:
         # No credit-analysis stage in this product's flow — legacy behaviour.
