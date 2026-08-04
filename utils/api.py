@@ -801,11 +801,27 @@ def login(request: Request, req: LoginRequest):
                 # (confirmed: reverted a staff_code backfill this way).
                 UserManager.reload()
                 um = UserManager()
-                existing = um.users.get(req.username, {})
-                um.users[req.username] = {
+                # Identity key: the AD-verified email, not the literal string the
+                # person typed as username. The same person can present different
+                # username strings across logins (hobiero@ecobank.com vs
+                # hobiero@ecobank.co.ke — same AD account, different domain
+                # suffix typed/returned) — matching on req.username alone created
+                # a fresh duplicate row every time, twice confirmed on this
+                # server. If an existing user already carries this email
+                # (case-insensitive), update THAT record instead of creating a
+                # new one under req.username.
+                target_username = req.username
+                ad_email = str(ext_user.get("email") or "").strip().lower()
+                if ad_email and req.username not in um.users:
+                    for _uname, _rec in um.users.items():
+                        if str(_rec.get("email") or "").strip().lower() == ad_email:
+                            target_username = _uname
+                            break
+                existing = um.users.get(target_username, {})
+                um.users[target_username] = {
                     **existing,
-                    "username":           req.username,
-                    "full_name":          ext_user.get("name", req.username),
+                    "username":           target_username,
+                    "full_name":          ext_user.get("name", target_username),
                     "email":              ext_user.get("email", ""),
                     "department":         ext_user.get("department", ""),
                     "title":              ext_user.get("title", ""),
@@ -818,17 +834,20 @@ def login(request: Request, req: LoginRequest):
                 }
                 um.save_users()
 
-                user_data = um.users[req.username]
-                user = {"username": req.username, "role": user_data.get("role", "Staff")}
+                user_data = um.users[target_username]
+                user = {"username": target_username, "role": user_data.get("role", "Staff")}
                 token = create_access_token(user, scope=TOKEN_SCOPE_FULL)
                 needs_staff_id = not str(user_data.get("staff_code") or "").strip()
                 _audit(
                     "API_LOGIN_SUCCESS_AD", user,
+                    f"Issued full-scope token via external AD for {req.username} "
+                    f"(matched to existing record {target_username})"
+                    if target_username != req.username else
                     f"Issued full-scope token via external AD for {req.username}",
                 )
                 return TokenResponse(
                     access_token=token,
-                    username=req.username,
+                    username=target_username,
                     role=user["role"],
                     must_change_password=False,
                     must_set_staff_id=needs_staff_id,
