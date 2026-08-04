@@ -293,9 +293,9 @@ export function PipelineDealDetail() {
         defaultTabId="journey"
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
+          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()}  stageFlow={stageFlow} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
-          { id: 'documents', label: 'Documents', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} /> },
           { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
           { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
@@ -627,7 +627,86 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
   );
 }
 
-function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
+// ── Credit Journey stepper: the credit stages in order, active one highlighted,
+// future ones greyed. Reads checklist state (backend already enforces the sequence). ──
+function creditSubmitLabel(checklist: CreditChecklistResponse, stageFlow?: string[]): string {
+  const current = String(checklist.current_stage ?? '');
+  // Only name CREDIT-JOURNEY stages (Documentation..Credit Analysis), never sales stages
+  // like Negotiation. Slice the deal's flow to its credit portion first.
+  const full = (stageFlow && stageFlow.length) ? stageFlow : CREDIT_JOURNEY_STAGES;
+  const d = full.findIndex((st) => /documentation/i.test(st));
+  const c = full.findIndex((st) => /^credit analysis$/i.test(st.trim()));
+  const journey = (d >= 0 && c >= 0 && c >= d) ? full.slice(d, c + 1) : CREDIT_JOURNEY_STAGES;
+  const idx = journey.findIndex((st) => st.toLowerCase() === current.toLowerCase());
+  // If current is before/at the doc gate, submit enters the first gate after Documentation.
+  const next =
+    idx >= 0 && idx + 1 < journey.length ? journey[idx + 1]
+    : idx < 0 && journey.length > 1 ? journey[1]
+    : 'Credit Analysis';
+  return `Submit to ${next}`;
+}
+
+const CREDIT_JOURNEY_STAGES = [
+  'Documentation',
+  'Branch Credit Committee Review',
+  'Consumer Credit Analysis',
+  'Department Credit Committee Review',
+  'Credit Analysis',
+];
+
+function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditChecklistResponse; stageFlow?: string[] }) {
+  const current = String(checklist.current_stage ?? '');
+  const submitted = Boolean(checklist.already_submitted);
+  const journeyStages = (() => {
+    const f = stageFlow ?? [];
+    const d = f.findIndex((st) => /documentation/i.test(st));
+    const c = f.findIndex((st) => /^credit analysis$/i.test(st.trim()));
+    return (d >= 0 && c >= 0 && c >= d) ? f.slice(d, c + 1) : CREDIT_JOURNEY_STAGES;
+  })();
+  const currentIdx = journeyStages.findIndex(
+    (st) => st.toLowerCase() === current.toLowerCase(),
+  );
+  const activeIdx = currentIdx >= 0 ? currentIdx : 0;
+
+  return (
+    <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 px-3 py-3">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Credit journey
+      </div>
+      <div className="flex items-start">
+        {journeyStages.map((stage, i) => {
+          const isDone = i < activeIdx;
+          const isActive = i === activeIdx;
+          const isAwaiting = isActive && submitted;
+          let markCls = 'border-gray-300 text-gray-400 bg-white';
+          let labelCls = 'text-gray-400';
+          let mark = String(i + 1);
+          if (isDone) { markCls = 'border-[#669438] bg-[#669438] text-white'; labelCls = 'text-[#669438]'; mark = '✓'; }
+          else if (isAwaiting) { markCls = 'border-amber-500 text-amber-600 bg-white'; labelCls = 'text-amber-600 font-medium'; }
+          else if (isActive) { markCls = 'border-[#0082BB] bg-[#0082BB] text-white'; labelCls = 'text-[#0082BB] font-semibold'; }
+          return (
+            <div key={stage} className="flex flex-1 flex-col items-center text-center">
+              <div className="flex w-full items-center">
+                <div className={`h-0.5 flex-1 ${i === 0 ? 'bg-transparent' : isDone || isActive ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${markCls}`}>
+                  {mark}
+                </div>
+                <div className={`h-0.5 flex-1 ${i === journeyStages.length - 1 ? 'bg-transparent' : isDone ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
+              </div>
+              <div className={`mt-1 px-1 text-[11px] leading-tight ${labelCls}`}>
+                {stage}
+                {isActive && !submitted && <div className="text-[10px] text-gray-400">current step</div>}
+                {isAwaiting && <div className="text-[10px] text-amber-500">awaiting decision</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps & { stageFlow?: string[] }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -713,6 +792,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
           <Badge tone="success" size="sm">Submitted</Badge>
         </Card.Header>
         <Card.Body>
+          <CreditJourneyStepper checklist={checklist} stageFlow={stageFlow} />
           <p className="text-sm text-gray-700">
             This deal has been submitted to credit analysis. The case is now with
             Credit; you can follow its progress in the Case Journey.
@@ -774,7 +854,8 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   return (
     <Card className="mt-6" stripe="accent">
       <Card.Header>
-        <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
+        <CreditJourneyStepper checklist={checklist} stageFlow={stageFlow} />
+        <h3 className="text-sm font-semibold text-gray-900">{creditSubmitLabel(checklist, stageFlow)}</h3>
         <Badge tone="info" size="sm">document gate</Badge>
       </Card.Header>
       <Card.Body>

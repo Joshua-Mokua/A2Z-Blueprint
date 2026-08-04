@@ -1693,7 +1693,7 @@ def _validate_sla_config(cfg) -> tuple:
             return False, f"duplicate step key: {k}"
         seen.add(k)
         try:
-            t = int(s.get("target_days"))
+            t = float(s.get("target_days"))
         except (TypeError, ValueError):
             return False, f"step '{k}': target_days must be an integer"
         if t <= 0:
@@ -2352,7 +2352,7 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
                 "repository first, then use it in a product flow."
             )
         try:
-            t = int(s.get("target_days"))
+            t = float(s.get("target_days"))
         except (TypeError, ValueError):
             return False, f"stage '{nm}': target_days must be an integer"
         if t <= 0:
@@ -2517,7 +2517,7 @@ def _sla_step_target_sum(cfg: dict) -> int:
     total = 0
     for s in (cfg.get("steps") or []):
         try:
-            t = int(s.get("target_days", 0))
+            t = float(s.get("target_days", 0))
         except (TypeError, ValueError):
             t = 0
         if t > 0:
@@ -2529,7 +2529,7 @@ def _sla_step_target(cfg: dict, step_key: str) -> int:
     for s in (cfg.get("steps") or []):
         if s.get("key") == step_key:
             try:
-                return int(s.get("target_days", 0))
+                return float(s.get("target_days", 0))
             except (TypeError, ValueError):
                 return 0
     return 0
@@ -3849,7 +3849,7 @@ def _product_readiness(product_type: str) -> dict:
                     for s in stages:
                         if isinstance(s, dict):
                             try:
-                                t = int(s.get("target_days", 0))
+                                t = float(s.get("target_days", 0))
                                 if t > 0:
                                     flow_day_sum += t
                             except (TypeError, ValueError):
@@ -4024,7 +4024,7 @@ def _flow_stage_target(product_type: str, stage_name: str) -> int:
     for s in stages:
         if isinstance(s, dict) and str(s.get("stage", "")).strip().lower() == target_stage:
             try:
-                t = int(s.get("target_days", 0))
+                t = float(s.get("target_days", 0))
                 return t if t > 0 else 0
             except (TypeError, ValueError):
                 return 0
@@ -10281,7 +10281,7 @@ import re as _re_docup
 from datetime import datetime as _dt_docup
 
 _DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
-_DOC_MAX_BYTES = 15 * 1024 * 1024  # 15 MB
+_DOC_MAX_BYTES = 30 * 1024 * 1024  # 15 MB
 
 
 class _DocUploadBody(BaseModel):
@@ -10526,6 +10526,84 @@ def seed_committee_palette(user: dict = Depends(require_config_admin)):
     return {"status": "seeded", "committees": _DEFAULT_COMMITTEE_PALETTE}
 
 
+
+def _branch_committee_code_for(deal: dict) -> str:
+    """The branch committee code for a deal's origin branch, or '' if none/head-office."""
+    import json as _json
+    branch = str(deal.get("branch", "") or "").strip()
+    if not branch:
+        return ""
+    for c in _read_committee_palette():
+        if str(c.get("kind", "")).lower() == "branch" and \
+           str(c.get("branch", "")).strip().lower() == branch.lower():
+            return str(c.get("code", ""))
+    return ""
+
+
+def _resolve_branch_bm(branch_name: str) -> dict:
+    """Best-effort: find the Branch Manager for a branch. Returns {name, staff_code} or {}.
+    Staff branch/unit fields are unreliable, so try unit==branch, else name match."""
+    try:
+        from utils.core import UserManager
+        um = UserManager()
+        users = list(getattr(um, "users", {}).values()) if isinstance(getattr(um, "users", {}), dict) else []
+    except Exception:
+        users = []
+    bn = branch_name.strip().lower()
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        role = str(u.get("role", "")).lower()
+        unit = str(u.get("unit", "") or "").lower()
+        if "branch manager" in role and unit and unit == bn:
+            return {"name": u.get("full_name", ""), "staff_code": u.get("staff_code", "")}
+    return {}
+
+
+@app.post("/api/admin/committee-palette/generate-branch", tags=["admin"])
+def generate_branch_committees(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(require_config_admin)):
+    """Scaffold one Branch Credit Committee per non-HO branch (idempotent). Names them
+    '<Branch> Branch Credit Committee', kind=branch, branch=<name>, chair=BM (best-effort).
+    Skips branches that already have a branch committee. Members left for admin to fill."""
+    import json as _json
+    palette = _read_committee_palette()
+    existing_branches = {str(c.get("branch", "")).strip().lower()
+                         for c in palette if str(c.get("kind", "")).lower() == "branch"}
+    try:
+        org = _json.loads((Path(__file__).resolve().parent.parent / "data" / "org_config.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"org_config unreadable: {e}")
+    branches = org.get("branches", []) or []
+    created = []
+    for b in branches:
+        if not isinstance(b, dict):
+            continue
+        if str(b.get("type", "")).upper() == "HO":
+            continue  # head office excluded
+        name = str(b.get("name", "")).strip()
+        if not name or name.lower() in existing_branches:
+            continue
+        code = "BCC_" + str(b.get("code", name)).strip().upper().replace(" ", "_")
+        bm = _resolve_branch_bm(name)
+        palette.append({
+            "code": code,
+            "name": f"{name} Branch Credit Committee",
+            "chaired_by": bm.get("name", ""),
+            "recording_mode": "voting",
+            "voting_rule": "SIMPLE_MAJORITY",
+            "amount_threshold_kes": 0.0,
+            "branch": name,
+            "kind": "branch",
+            "members": [],
+        })
+        created.append(code)
+    _write_committee_palette(palette)
+    _audit("COMMITTEE_BRANCH_GENERATE", user, f"created={len(created)}")
+    return {"status": "generated", "created": created, "count": len(created),
+            "committees": palette}
+
+
 @app.post("/api/admin/committee-palette", tags=["admin"])
 def upsert_committee_palette(payload: dict = Body(default_factory=dict),
                              user: dict = Depends(require_config_admin)):
@@ -10546,6 +10624,8 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
         "code": code,
         "name": str(c.get("name")).strip(),
         "chaired_by": str(c.get("chaired_by", "") or ""),
+        "branch": str(c.get("branch", "") or ""),
+        "kind": str(c.get("kind", "") or ""),
         "recording_mode": str(c.get("recording_mode", "voting")),
         "voting_rule": str(c.get("voting_rule", "SIMPLE_MAJORITY")),
         "amount_threshold_kes": float(c.get("amount_threshold_kes", 0) or 0),
@@ -10636,6 +10716,24 @@ def _effective_committee_journey(deal: dict) -> list:
         code = str(c.get("code"))
         if thr > 0 and amount >= thr and code not in out:
             out.append(code)
+    # Per-branch routing: a branch-originated deal reviews at ITS branch committee
+    # (BCC_BRN00N), not the generic BCC1. Substitute where a specific one resolves.
+    if _deal_is_branch_originated(deal):
+        _bc = _branch_committee_code_for(deal)
+        if _bc:
+            _branch_only = set(_committee_routing_cfg().get('branch_only_codes', []) or [])
+            _replaced = False
+            _new = []
+            for c in out:
+                if c in _branch_only:
+                    if not _replaced:
+                        _new.append(_bc); _replaced = True
+                    # drop other generic branch-only codes
+                else:
+                    _new.append(c)
+            if not _replaced and _bc not in _new:
+                _new.insert(0, _bc)
+            out = _new
     return out
 
 

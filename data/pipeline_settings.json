@@ -654,46 +654,47 @@
     },
     "Mortgage": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
@@ -845,136 +846,139 @@
     },
     "Invoice Discounting": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
     "Trade Finance LC": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
     "Structured Finance": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
@@ -1861,91 +1865,93 @@
     },
     "Term Loan": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
     "Trade Finance": {
       "client_types": [],
+      "committee_journey": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 3
-        },
-        {
-          "stage": "Application",
-          "target_days": 3
-        },
-        {
-          "stage": "Credit Assessment",
-          "target_days": 5
-        },
-        {
-          "stage": "Offer / Proposal",
+          "stage": "Initiation",
           "target_days": 3
         },
         {
           "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 3
         },
         {
-          "stage": "Compliance",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Trops",
+          "target_days": 3
         }
       ]
     },
@@ -2407,6 +2413,52 @@
       ],
       "documents_required_at_stage": "",
       "committee_journey": []
+    },
+    "Working Capital": {
+      "client_types": [],
+      "committee_journey": [],
+      "stages": [
+        {
+          "stage": "Initiation",
+          "target_days": 3
+        },
+        {
+          "stage": "Negotiation",
+          "target_days": 1
+        },
+        {
+          "stage": "Documentation",
+          "target_days": 1
+        },
+        {
+          "stage": "Branch Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 1
+        },
+        {
+          "stage": "Offer Letter",
+          "target_days": 1
+        },
+        {
+          "stage": "Credit Administration",
+          "target_days": 3
+        },
+        {
+          "stage": "Trops",
+          "target_days": 3
+        }
+      ]
     }
   },
   "customer_segments": {

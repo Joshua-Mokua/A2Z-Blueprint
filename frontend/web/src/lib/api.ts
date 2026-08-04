@@ -2134,6 +2134,11 @@ export async function seedCommitteePalette(): Promise<{ status: string; committe
     '/admin/committee-palette/seed', {});
 }
 
+export async function generateBranchCommittees(): Promise<{ status: string; created: string[]; count: number; committees: CommitteeDef[] }> {
+  return postJson<{ status: string; created: string[]; count: number; committees: CommitteeDef[] }, Record<string, never>>(
+    '/admin/committee-palette/generate-branch', {});
+}
+
 // deal-level CR (4b-3): the CR originates at the branch on the deal.
 export async function getDealCr(dealId: string): Promise<CrView> {
   return getJson<CrView>(`/pipeline/deals/${encodeURIComponent(dealId)}/cr`);
