@@ -12,6 +12,7 @@ import {
   upsertCommittee,
   deleteCommittee,
   seedCommitteePalette,
+  generateBranchCommittees,
   setRequireMcc,
   type CommitteeDef,
 } from '@/lib/api';
@@ -79,6 +80,19 @@ export default function CommitteeAdmin() {
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Seed failed' });
     } finally { setSaving(false); }
+  }
+
+  async function genBranch() {
+    setSaving(true);
+    try {
+      const r = await generateBranchCommittees();
+      toast({ tone: 'success', message: `Created ${r.count} branch committee${r.count === 1 ? '' : 's'}. Set members and any missing chairs.` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Generate failed' });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function remove(code: string) {
@@ -162,6 +176,7 @@ export default function CommitteeAdmin() {
             {committees.length === 0 && (
               <Button variant="ghost" onClick={() => void seed()} disabled={saving}>Seed defaults</Button>
             )}
+            <Button variant="ghost" onClick={() => void genBranch()} disabled={saving}>Generate branch committees</Button>
             <Button onClick={() => setDraft({ ...EMPTY })} disabled={saving}>+ Add committee</Button>
           </div>
         </div>
