@@ -2029,6 +2029,39 @@ export interface HierarchyResponse {
 export async function fetchHierarchy(): Promise<HierarchyResponse> {
   return getJson<HierarchyResponse>('/admin/hierarchy');
 }
+
+export interface DataSourceStatus {
+  users: {
+    authoritative_source: string;
+    postgres_ready: boolean;
+    total_in_postgres: number;
+    total_in_staff_register_xlsx: number | null;
+    total_registrable_in_postgres: number;
+    in_sync: boolean | null;
+  };
+  hierarchy: {
+    role_hierarchy: {
+      source: string;
+      editable_at: string | null;
+      roles_with_parents_set: number;
+      used_by_scope_engine: boolean;
+    };
+    person_hierarchy: {
+      source: string;
+      editable_at: string | null;
+      staff_with_reports_to: number;
+      total_staff: number;
+      used_by_scope_engine: boolean;
+    };
+  };
+}
+export async function fetchDataSourceStatus(): Promise<DataSourceStatus> {
+  return getJson<DataSourceStatus>('/admin/data-source-status');
+}
+export async function syncDataSource(): Promise<{ status: string; staff_register_rows: number }> {
+  return postJson<{ status: string; staff_register_rows: number }, Record<string, never>>(
+    '/admin/data-source-status/sync', {});
+}
 export async function saveHierarchy(
   body: { action: string; role?: string; parents?: string[]; new_name?: string },
 ): Promise<{ status: string; hierarchy: Record<string, string[]> }> {

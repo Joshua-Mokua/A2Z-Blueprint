@@ -1838,6 +1838,89 @@ def set_auth_config(
 # ─────────────────────────────────────────────────────────────────────
 
 
+@app.get("/api/admin/data-source-status", tags=["admin"])
+def get_admin_data_source_status(user: dict = Depends(require_config_admin)):
+    """Live indicator: what store is actually serving/authoritative for
+    users vs hierarchy right now, and how in-sync the derived projections are.
+
+    Two genuinely separate systems live under "hierarchy" and this endpoint
+    is explicit about which is which, since conflating them is exactly what
+    caused this session's sync bugs:
+      - ROLE hierarchy (org_config.json, role -> parent roles) is what the
+        Hierarchy admin page edits and what get_visible_staff / cascade scope
+        actually resolves against. JSON-file-backed, admin-editable, live.
+      - PERSON hierarchy (users.metadata.reports_to, per staff_code) lives in
+        Postgres from the staff-roster import. NOT currently read by the
+        scope engine — informational/future, not yet wired in.
+    """
+    from utils.db import db as _db
+    from utils.core import UserManager, get_org_config
+
+    pg_ready = _db.is_postgres_ready()
+    total_users = 0
+    registrable_users = 0  # active + staff_code set — export_register_from_db's own filter
+    reports_to_count = 0
+    if pg_ready:
+        total_users = (_db.fetch_one("SELECT COUNT(*) c FROM users") or {}).get("c", 0)
+        registrable_users = (_db.fetch_one(
+            "SELECT COUNT(*) c FROM users WHERE active = true "
+            "AND staff_code IS NOT NULL AND staff_code <> ''") or {}).get("c", 0)
+        reports_to_count = (_db.fetch_one(
+            "SELECT COUNT(*) c FROM users WHERE metadata->>'reports_to' IS NOT NULL "
+            "AND metadata->>'reports_to' <> ''") or {}).get("c", 0)
+
+    register_path = Path(__file__).resolve().parent.parent / "data" / "staff_register.xlsx"
+    register_count = None
+    if register_path.exists():
+        try:
+            import pandas as _pd
+            register_count = int(len(_pd.read_excel(register_path)))
+        except Exception:
+            register_count = None
+
+    cfg = get_org_config() or {}
+    role_hierarchy_count = len(cfg.get("hierarchy", {}) or {})
+
+    return {
+        "users": {
+            "authoritative_source": "postgres" if pg_ready else "users.json (fallback — Postgres unreachable)",
+            "postgres_ready": pg_ready,
+            "total_in_postgres": total_users,
+            "total_in_staff_register_xlsx": register_count,
+            "total_registrable_in_postgres": registrable_users,
+            "in_sync": (register_count == registrable_users) if register_count is not None else None,
+        },
+        "hierarchy": {
+            "role_hierarchy": {
+                "source": "org_config.json",
+                "editable_at": "/hierarchy (Admin > Hierarchy)",
+                "roles_with_parents_set": role_hierarchy_count,
+                "used_by_scope_engine": True,
+            },
+            "person_hierarchy": {
+                "source": "postgres (users.metadata.reports_to)",
+                "editable_at": None,
+                "staff_with_reports_to": reports_to_count,
+                "total_staff": total_users,
+                "used_by_scope_engine": False,
+            },
+        },
+    }
+
+
+@app.post("/api/admin/data-source-status/sync", tags=["admin"])
+def post_admin_data_source_sync(user: dict = Depends(require_config_admin)):
+    """Rebuild data/staff_register.xlsx from Postgres — the one sync action
+    that's actually safe to expose as a button: read-only against Postgres,
+    only ever overwrites the generated projection file, never touches a
+    login or a role. Returns the fresh counts so the badge can update
+    without a page reload."""
+    from utils.staff_projection import export_register_from_db
+    n = export_register_from_db()
+    _audit("API_ADMIN_DATA_SOURCE_SYNC", user, f"staff_register.xlsx rebuilt: {n} rows")
+    return {"status": "synced", "staff_register_rows": n}
+
+
 @app.get("/api/admin/staff", tags=["admin"])
 def get_admin_staff(user: dict = Depends(require_config_admin)):
     """Staff roster — PostgreSQL when available, users.json fallback otherwise."""

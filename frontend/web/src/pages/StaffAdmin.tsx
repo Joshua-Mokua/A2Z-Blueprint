@@ -12,6 +12,7 @@
 import { displayName } from "../lib/names";
 import { useEffect, useMemo, useState } from 'react';
 import { AdminTabs } from '@/components/AdminTabs';
+import { DataSourceBadge } from '@/components/DataSourceBadge';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
@@ -299,6 +300,8 @@ export default function StaffAdmin() {
           ) : undefined
         }
       />
+
+      <DataSourceBadge domain="users" />
 
       {error && (
         <Card><Card.Body>
