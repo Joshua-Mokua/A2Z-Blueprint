@@ -629,12 +629,13 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
 
 // ── Credit Journey stepper: the credit stages in order, active one highlighted,
 // future ones greyed. Reads checklist state (backend already enforces the sequence). ──
-function creditSubmitLabel(checklist: CreditChecklistResponse): string {
+function creditSubmitLabel(checklist: CreditChecklistResponse, stageFlow?: string[]): string {
   const current = String(checklist.current_stage ?? '');
-  const idx = CREDIT_JOURNEY_STAGES.findIndex((st) => st.toLowerCase() === current.toLowerCase());
+  const flow = (stageFlow && stageFlow.length) ? stageFlow : CREDIT_JOURNEY_STAGES;
+  const idx = flow.findIndex((st) => st.toLowerCase() === current.toLowerCase());
   // submit moves to the NEXT credit stage; name it.
-  const next = idx >= 0 && idx + 1 < CREDIT_JOURNEY_STAGES.length
-    ? CREDIT_JOURNEY_STAGES[idx + 1]
+  const next = idx >= 0 && idx + 1 < flow.length
+    ? flow[idx + 1]
     : 'Credit Analysis';
   return `Submit to ${next}`;
 }
@@ -647,10 +648,16 @@ const CREDIT_JOURNEY_STAGES = [
   'Credit Analysis',
 ];
 
-function CreditJourneyStepper({ checklist }: { checklist: CreditChecklistResponse }) {
+function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditChecklistResponse; stageFlow?: string[] }) {
   const current = String(checklist.current_stage ?? '');
   const submitted = Boolean(checklist.already_submitted);
-  const currentIdx = CREDIT_JOURNEY_STAGES.findIndex(
+  const journeyStages = (() => {
+    const f = stageFlow ?? [];
+    const d = f.findIndex((st) => /documentation/i.test(st));
+    const c = f.findIndex((st) => /^credit analysis$/i.test(st.trim()));
+    return (d >= 0 && c >= 0 && c >= d) ? f.slice(d, c + 1) : CREDIT_JOURNEY_STAGES;
+  })();
+  const currentIdx = journeyStages.findIndex(
     (st) => st.toLowerCase() === current.toLowerCase(),
   );
   const activeIdx = currentIdx >= 0 ? currentIdx : 0;
@@ -661,7 +668,7 @@ function CreditJourneyStepper({ checklist }: { checklist: CreditChecklistRespons
         Credit journey
       </div>
       <div className="flex items-start">
-        {CREDIT_JOURNEY_STAGES.map((stage, i) => {
+        {journeyStages.map((stage, i) => {
           const isDone = i < activeIdx;
           const isActive = i === activeIdx;
           const isAwaiting = isActive && submitted;
@@ -678,7 +685,7 @@ function CreditJourneyStepper({ checklist }: { checklist: CreditChecklistRespons
                 <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${markCls}`}>
                   {mark}
                 </div>
-                <div className={`h-0.5 flex-1 ${i === CREDIT_JOURNEY_STAGES.length - 1 ? 'bg-transparent' : isDone ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
+                <div className={`h-0.5 flex-1 ${i === journeyStages.length - 1 ? 'bg-transparent' : isDone ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
               </div>
               <div className={`mt-1 px-1 text-[11px] leading-tight ${labelCls}`}>
                 {stage}
@@ -693,7 +700,7 @@ function CreditJourneyStepper({ checklist }: { checklist: CreditChecklistRespons
   );
 }
 
-function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
+function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps & { stageFlow?: string[] }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -779,7 +786,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
           <Badge tone="success" size="sm">Submitted</Badge>
         </Card.Header>
         <Card.Body>
-          <CreditJourneyStepper checklist={checklist} />
+          <CreditJourneyStepper checklist={checklist} stageFlow={stageFlow} />
           <p className="text-sm text-gray-700">
             This deal has been submitted to credit analysis. The case is now with
             Credit; you can follow its progress in the Case Journey.
@@ -841,8 +848,8 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
   return (
     <Card className="mt-6" stripe="accent">
       <Card.Header>
-        <CreditJourneyStepper checklist={checklist} />
-        <h3 className="text-sm font-semibold text-gray-900">{creditSubmitLabel(checklist)}</h3>
+        <CreditJourneyStepper checklist={checklist} stageFlow={stageFlow} />
+        <h3 className="text-sm font-semibold text-gray-900">{creditSubmitLabel(checklist, stageFlow)}</h3>
         <Badge tone="info" size="sm">document gate</Badge>
       </Card.Header>
       <Card.Body>
