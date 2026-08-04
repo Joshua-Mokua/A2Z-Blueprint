@@ -629,6 +629,16 @@ function ValidationPanel({ deal, onChanged }: CreditPanelProps) {
 
 // ── Credit Journey stepper: the credit stages in order, active one highlighted,
 // future ones greyed. Reads checklist state (backend already enforces the sequence). ──
+function creditSubmitLabel(checklist: CreditChecklistResponse): string {
+  const current = String(checklist.current_stage ?? '');
+  const idx = CREDIT_JOURNEY_STAGES.findIndex((st) => st.toLowerCase() === current.toLowerCase());
+  // submit moves to the NEXT credit stage; name it.
+  const next = idx >= 0 && idx + 1 < CREDIT_JOURNEY_STAGES.length
+    ? CREDIT_JOURNEY_STAGES[idx + 1]
+    : 'Credit Analysis';
+  return `Submit to ${next}`;
+}
+
 const CREDIT_JOURNEY_STAGES = [
   'Documentation',
   'Branch Credit Committee Review',
@@ -639,38 +649,46 @@ const CREDIT_JOURNEY_STAGES = [
 
 function CreditJourneyStepper({ checklist }: { checklist: CreditChecklistResponse }) {
   const current = String(checklist.current_stage ?? '');
+  const submitted = Boolean(checklist.already_submitted);
   const currentIdx = CREDIT_JOURNEY_STAGES.findIndex(
     (st) => st.toLowerCase() === current.toLowerCase(),
   );
-  const submitted = Boolean(checklist.already_submitted);
+  const activeIdx = currentIdx >= 0 ? currentIdx : 0;
 
   return (
     <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 px-3 py-3">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
         Credit journey
       </div>
-      <ol className="space-y-1">
+      <div className="flex items-start">
         {CREDIT_JOURNEY_STAGES.map((stage, i) => {
-          const isDone = currentIdx >= 0 && i < currentIdx;
-          const isActive = currentIdx >= 0 ? i === currentIdx : i === 0;
+          const isDone = i < activeIdx;
+          const isActive = i === activeIdx;
           const isAwaiting = isActive && submitted;
-          const isLocked = currentIdx >= 0 && i > currentIdx;
-          let mark = '○';
-          let cls = 'text-gray-400';
-          let note = '';
-          if (isDone) { mark = '✓'; cls = 'text-[#669438]'; }
-          else if (isAwaiting) { mark = '◔'; cls = 'text-amber-600 font-medium'; note = 'awaiting decision'; }
-          else if (isActive) { mark = '→'; cls = 'text-[#0082BB] font-semibold'; note = 'current step'; }
-          else if (isLocked) { mark = '○'; cls = 'text-gray-300'; }
+          let markCls = 'border-gray-300 text-gray-400 bg-white';
+          let labelCls = 'text-gray-400';
+          let mark = String(i + 1);
+          if (isDone) { markCls = 'border-[#669438] bg-[#669438] text-white'; labelCls = 'text-[#669438]'; mark = '✓'; }
+          else if (isAwaiting) { markCls = 'border-amber-500 text-amber-600 bg-white'; labelCls = 'text-amber-600 font-medium'; }
+          else if (isActive) { markCls = 'border-[#0082BB] bg-[#0082BB] text-white'; labelCls = 'text-[#0082BB] font-semibold'; }
           return (
-            <li key={stage} className={`flex items-center gap-2 text-sm ${cls}`}>
-              <span className="w-4 text-center">{mark}</span>
-              <span>{stage}</span>
-              {note && <span className="text-xs text-gray-400">— {note}</span>}
-            </li>
+            <div key={stage} className="flex flex-1 flex-col items-center text-center">
+              <div className="flex w-full items-center">
+                <div className={`h-0.5 flex-1 ${i === 0 ? 'bg-transparent' : isDone || isActive ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${markCls}`}>
+                  {mark}
+                </div>
+                <div className={`h-0.5 flex-1 ${i === CREDIT_JOURNEY_STAGES.length - 1 ? 'bg-transparent' : isDone ? 'bg-[#0082BB]' : 'bg-gray-200'}`} />
+              </div>
+              <div className={`mt-1 px-1 text-[11px] leading-tight ${labelCls}`}>
+                {stage}
+                {isActive && !submitted && <div className="text-[10px] text-gray-400">current step</div>}
+                {isAwaiting && <div className="text-[10px] text-amber-500">awaiting decision</div>}
+              </div>
+            </div>
           );
         })}
-      </ol>
+      </div>
     </div>
   );
 }
@@ -824,7 +842,7 @@ function CreditSubmissionPanel({ deal, onChanged }: CreditPanelProps) {
     <Card className="mt-6" stripe="accent">
       <Card.Header>
         <CreditJourneyStepper checklist={checklist} />
-        <h3 className="text-sm font-semibold text-gray-900">Submit to Credit Analysis</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{creditSubmitLabel(checklist)}</h3>
         <Badge tone="info" size="sm">document gate</Badge>
       </Card.Header>
       <Card.Body>
