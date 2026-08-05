@@ -343,6 +343,9 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
         _has_dept = "Department" in staff_scores.columns
         if _has_dept:
             _dept_l = staff_scores["Department"].astype(str).str.strip().str.lower()
+            # Treasury staff get full pipeline view (planning). All-view.
+            if _dl == "treasury":
+                return staff_scores.copy()
             # cross-segment directors (title-based, HO)
             if ("director" in role_l and ("ccb" in role_l or "retail" in role_l)) or "chief retail" in role_l:
                 return staff_scores[_dept_l.isin(["consumer banking", "commercial banking"])].copy()
