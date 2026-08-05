@@ -108,11 +108,18 @@ export function Pipeline() {
     if (typeof wp !== 'number') return null;
     return wp >= 75 ? 'high' : wp >= 40 ? 'medium' : 'low';
   };
+  const [segmentFilter, setSegmentFilter] = useState('');
+  const segmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const d of deals) set.add(d.segment || 'Unclassified');
+    return Array.from(set).sort();
+  }, [deals]);
   const visibleDeals = useMemo(
     () => deals.filter((d) =>
       (!slaFilter || d.sla?.state === slaFilter)
-      && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)),
-    [deals, slaFilter, winprobFilter],
+      && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)
+      && (!segmentFilter || (d.segment || 'Unclassified') === segmentFilter)),
+    [deals, slaFilter, winprobFilter, segmentFilter],
   );
   const clearSlaFilter = () => {
     const next = new URLSearchParams(searchParams);
@@ -586,6 +593,17 @@ export function Pipeline() {
                 <option value="">All stages</option>
                 {stageOptions.map((s) => (
                   <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select
+                value={segmentFilter}
+                onChange={(e) => setSegmentFilter(e.target.value)}
+                aria-label="Filter by segment"
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              >
+                <option value="">All segments</option>
+                {segmentOptions.map((sg) => (
+                  <option key={sg} value={sg}>{sg}</option>
                 ))}
               </select>
               <select

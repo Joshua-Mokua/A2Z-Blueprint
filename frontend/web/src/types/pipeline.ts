@@ -53,6 +53,7 @@ export interface DealSlaStatus {
 }
 
 export interface PipelineDeal {
+  segment?: string | null;
   // Identity
   id:                   string;
   client_name:          string;
