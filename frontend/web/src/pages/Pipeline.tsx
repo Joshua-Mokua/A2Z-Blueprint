@@ -108,11 +108,56 @@ export function Pipeline() {
     if (typeof wp !== 'number') return null;
     return wp >= 75 ? 'high' : wp >= 40 ? 'medium' : 'low';
   };
+  const [config, setConfig] = useState<PipelineConfig | null>(null);
+  const [segmentFilter, setSegmentFilter] = useState('');
+  // Two-level segment model, sourced from the configurable business units (customer_segments):
+  //   Business unit (Consumer/Commercial/CIB/Treasury) -> its sub-segments (Premier/SME/...).
+  // Each visible deal's sub-segment is resolved to its business unit via a reverse map, then
+  // grouped by unit. A single-unit viewer (e.g. Consumer) therefore sees ONLY that unit's
+  // sub-segments; a leaked cross-unit value groups under its OWN unit, never polluting another.
+  const segmentGroups = useMemo(() => {
+    const cfgSegs = config?.customer_segments ?? {};
+    // reverse map: sub-segment -> business unit
+    const subToUnit = new Map<string, string>();
+    for (const [unit, subs] of Object.entries(cfgSegs)) {
+      for (const sub of subs) subToUnit.set(sub, unit);
+    }
+    // tally sub-segment counts present in visible deals
+    const counts = new Map<string, number>();
+    for (const d of deals) {
+      const k = (d.segment && String(d.segment).trim()) || 'Unclassified';
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    // build ordered groups: business unit -> [{key, count}] in config order
+    const groups: { unit: string; subs: { key: string; count: number }[] }[] = [];
+    for (const [unit, subs] of Object.entries(cfgSegs)) {
+      const present = subs
+        .filter((sub) => counts.has(sub))
+        .map((sub) => ({ key: sub, count: counts.get(sub) ?? 0 }));
+      if (present.length) groups.push({ unit, subs: present });
+    }
+    // any present sub-segment that IS a bare business-unit name (mis-tagged) or unknown:
+    // collect under an 'Other' group so it's visible but not mixed into a real unit.
+    const known = new Set<string>();
+    for (const g of groups) for (const s of g.subs) known.add(s.key);
+    const other: { key: string; count: number }[] = [];
+    for (const [k, c] of counts.entries()) {
+      if (k === 'Unclassified') continue;
+      if (!known.has(k) && !subToUnit.has(k)) other.push({ key: k, count: c });
+    }
+    if (other.length) groups.push({ unit: 'Other', subs: other });
+    if (counts.has('Unclassified')) {
+      groups.push({ unit: 'Unclassified', subs: [{ key: 'Unclassified', count: counts.get('Unclassified') ?? 0 }] });
+    }
+    return groups;
+  }, [deals, config]);
+  const singleUnit = segmentGroups.length === 1;
   const visibleDeals = useMemo(
     () => deals.filter((d) =>
       (!slaFilter || d.sla?.state === slaFilter)
-      && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)),
-    [deals, slaFilter, winprobFilter],
+      && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)
+      && (!segmentFilter || (d.segment || 'Unclassified') === segmentFilter)),
+    [deals, slaFilter, winprobFilter, segmentFilter],
   );
   const clearSlaFilter = () => {
     const next = new URLSearchParams(searchParams);
@@ -126,7 +171,6 @@ export function Pipeline() {
   };
 
   // Batch A: admin-configured category/stage filters (from /api/pipeline/stages)
-  const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [catFilter, setCatFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
 
@@ -451,6 +495,7 @@ export function Pipeline() {
                 { key: 'insurance', label: 'Insurance', stages: analytics.pipelines.insurance.funnel, activeCount: analytics.pipelines.insurance.active_count },
                 { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
               ] : []}
+              customerSegments={config?.customer_segments}
               segmentCategories={analytics?.by_segment_funnel
                 ? analytics.by_segment_funnel.map((s) => ({
                     key: s.segment,
@@ -563,8 +608,7 @@ export function Pipeline() {
               <h2 className="text-base font-semibold text-gray-900">
                 Pipeline Deals
               </h2>
-              <Badge tone="brand" size="sm">v10.582 capstone</Badge>
-            </div>
+                </div>
             <div className="flex items-center gap-2">
               <select
                 value={catFilter}
@@ -588,6 +632,48 @@ export function Pipeline() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              {segmentGroups.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by segment">
+                  <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setSegmentFilter('')}
+                      className={[
+                        'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                        segmentFilter === '' ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
+                                             : 'text-gray-500 hover:text-gray-800',
+                      ].join(' ')}
+                    >
+                      All
+                    </button>
+                  </div>
+                  {segmentGroups.map((g) => (
+                    <div key={g.unit} className="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
+                      {!singleUnit && (
+                        <span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{g.unit}</span>
+                      )}
+                      {g.subs.map((sg) => {
+                        const on = segmentFilter === sg.key;
+                        return (
+                          <button
+                            key={sg.key}
+                            type="button"
+                            onClick={() => setSegmentFilter(sg.key)}
+                            className={[
+                              'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                              on ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
+                                 : 'text-gray-500 hover:text-gray-800',
+                            ].join(' ')}
+                          >
+                            {sg.key}
+                            <span className="ml-1.5 text-gray-400">{sg.count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
               <select
                 value={winprobFilter ?? ''}
                 onChange={(e) => setWinprobFilter(e.target.value)}

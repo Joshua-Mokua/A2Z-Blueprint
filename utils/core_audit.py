@@ -323,6 +323,40 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
             or role_l in _data_custodian_roles()):   # data custodians (Finance/HR)
         return staff_scores.copy()
 
+    # ── SEGMENT-SCOPE (additive, Head-Office only) ──────────────────────────
+    # A Head-Office person in a banking Department sees ALL deals owned by their
+    # Department (branch + HO) — for segment oversight & continuity. Branch staff
+    # do NOT get this (they stay in the branch hierarchy below). Cross-segment
+    # directors (CCB=Consumer+Commercial, CIB=Corporate) handled explicitly.
+    # This is an EARLY RETURN for segment roles only; every other role falls
+    # through to the unchanged reporting-tree logic. The tree is NOT modified,
+    # so BSC/targets/private items keep their exact hierarchy semantics.
+    try:
+        _my_code = str(user_data.get("staff_code", "") or "").strip()
+        _my_dept = ""
+        if _my_code and "Staff Code" in staff_scores.columns and "Department" in staff_scores.columns:
+            _mrow = staff_scores[staff_scores["Staff Code"].astype(str).str.strip() == _my_code]
+            if len(_mrow):
+                _my_dept = str(_mrow.iloc[0].get("Department", "") or "").strip()
+        _dl = _my_dept.lower()
+        _unit_ho = str(my_unit).strip().lower() == "head office"
+        _has_dept = "Department" in staff_scores.columns
+        if _has_dept:
+            _dept_l = staff_scores["Department"].astype(str).str.strip().str.lower()
+            # Treasury staff get full pipeline view (planning). All-view.
+            if _dl == "treasury":
+                return staff_scores.copy()
+            # cross-segment directors (title-based, HO)
+            if ("director" in role_l and ("ccb" in role_l or "retail" in role_l)) or "chief retail" in role_l:
+                return staff_scores[_dept_l.isin(["consumer banking", "commercial banking"])].copy()
+            if ("director" in role_l and ("cib" in role_l or "corporate" in role_l)) or "chief commercial" in role_l:
+                return staff_scores[_dept_l == "corporate banking"].copy()
+            # HO staff in a banking department → that department's pipeline
+            if _unit_ho and _dl in ("consumer banking", "commercial banking", "corporate banking"):
+                return staff_scores[_dept_l == _dl].copy()
+    except Exception:
+        pass  # any issue → fall through to the unchanged tree logic
+
     # B2: register-driven branch-head scope. A branch head sees everyone in
     # their OWN branch Unit (resolved from the register by staff_code), bounded
     # to that single Unit — no cross-branch leakage. Falls through to the

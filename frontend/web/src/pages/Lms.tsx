@@ -60,6 +60,8 @@ export function Lms() {
   const isPureAnalyst = roleLc.includes('analyst') && !isAdmin
     && !/chief|head|manager|officer|director|managing/.test(roleLc);
   const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
   const { toast } = useToast();
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
   const isManagerRole = isAdmin || /chief|head|manager|officer|director|managing/.test(roleLc);
@@ -121,6 +123,10 @@ export function Lms() {
     }
     return result;
   }, [applications, statusFilter, searchTerm, tab, myCode]);
+  // Keep the current page in range when the filtered set shrinks.
+  const pageCount = Math.max(1, Math.ceil(filteredApps.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pagedApps = filteredApps.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   // ── Status counts for the filter chips ──
   const statusCounts = useMemo(() => {
@@ -162,7 +168,7 @@ export function Lms() {
               const inAnalysis = applications.filter((a) =>
                 ['submitted', 'assigned', 'info_requested'].includes((a.status || '').toLowerCase())).length;
               const decided = applications.filter((a) =>
-                ['approved', 'declined', 'returned'].includes((a.status || '').toLowerCase())).length;
+                ['approved', 'declined', 'disbursed'].includes((a.status || '').toLowerCase())).length;
               const totalValue = applications.reduce((s, a) => s + (Number(a.amount) || 0), 0);
               const stat = (label: string, value: string, accent: string) => (
                 <Card>
@@ -394,7 +400,7 @@ export function Lms() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredApps.map((app) => (
+                    {pagedApps.map((app) => (
                       <tr
                         key={app.id}
                         onClick={() => navigate(`/lms/${encodeURIComponent(app.id)}`)}
@@ -523,10 +529,24 @@ export function Lms() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-500">
-                Showing {filteredApps.length} of {applications.length} applications
-                {statusFilter !== 'all' && ` (filtered by status: ${statusFilter})`}
-                {searchTerm && ` (search: "${searchTerm}")`}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-xs text-gray-500">
+                <span>
+                  {filteredApps.length === 0 ? 'No applications' :
+                    `${safePage * PAGE_SIZE + 1}–${Math.min((safePage + 1) * PAGE_SIZE, filteredApps.length)} of ${filteredApps.length}`}
+                  {statusFilter !== 'all' && ` (status: ${statusFilter})`}
+                  {searchTerm && ` (search: "${searchTerm}")`}
+                </span>
+                {pageCount > 1 && (
+                  <span className="inline-flex items-center gap-2">
+                    <button type="button" onClick={() => setPage(Math.max(0, safePage - 1))}
+                      disabled={safePage === 0}
+                      className="rounded border px-2 py-1 text-brand-primary disabled:opacity-40 hover:bg-gray-50">Prev</button>
+                    <span>Page {safePage + 1} / {pageCount}</span>
+                    <button type="button" onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
+                      disabled={safePage >= pageCount - 1}
+                      className="rounded border px-2 py-1 text-brand-primary disabled:opacity-40 hover:bg-gray-50">Next</button>
+                  </span>
+                )}
               </div>
             </Card.Body>
           </Card>

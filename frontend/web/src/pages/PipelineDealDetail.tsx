@@ -94,6 +94,7 @@ export function PipelineDealDetail() {
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { user: viewer } = useRole();
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -194,6 +195,14 @@ export function PipelineDealDetail() {
   }
 
   // ── Main render — deal + action panels ────────────────────────────────
+  // Document/credit-review edit rights: the deal OWNER always; admins/executives retain
+  // override rights, but every edit they make is audit-logged server-side (upload/CR/committee
+  // all call _audit with the actor). Everyone else is view-only.
+  // Edit override is restricted to the literal system Admin role (granted via config /
+  // role-capability), NOT senior bankers like Heads/Directors — they view-only on deals
+  // they don't own. Admin edits remain audit-logged server-side.
+  const _viewerIsAdmin = String(viewer?.role ?? '').trim().toLowerCase() === 'admin';
+  const canEditDocs = (!!viewer?.staff_code && String(viewer.staff_code) === String(deal.staff_code)) || _viewerIsAdmin;
 
 
   return (
@@ -293,11 +302,11 @@ export function PipelineDealDetail() {
         defaultTabId="journey"
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
-          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()}  stageFlow={stageFlow} /> },
+          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} stageFlow={stageFlow} canEdit={canEditDocs} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
-          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
-          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
-          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={canEditDocs} /> },
+          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={canEditDocs} /> },
+          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={canEditDocs} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
             <div className="space-y-6">
               {permissions?.can_advance_stage && (
@@ -706,7 +715,7 @@ function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditCheck
   );
 }
 
-function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps & { stageFlow?: string[] }) {
+function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: CreditPanelProps & { stageFlow?: string[]; canEdit?: boolean }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -873,8 +882,9 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps 
           </div>
         )}
         <p className="text-xs text-gray-500 mb-3">
-          Upload each required document. All required documents must be attached
-          before the deal can be submitted to credit analysis.
+          {canEdit
+            ? 'Upload each required document. All required documents must be attached before the deal can be submitted to credit analysis.'
+            : 'Documents for this deal (managed by the owner). You have view access — open any attached document below.'}
         </p>
         <div className="space-y-2">
           {checklist.required.map((doc) => {
@@ -894,11 +904,13 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps 
                     <button type="button" className="text-brand-primary hover:underline text-xs"
                       onClick={() => void viewDoc(doc)}>View</button>
                   )}
-                  <button type="button" className="text-brand-primary hover:underline text-xs"
-                    onClick={() => uploadFor(doc)} disabled={busyDoc === doc}>
-                    {busyDoc === doc ? 'Uploading…' : attached ? 'Replace' : 'Upload'}
-                  </button>
-                  {attached && (
+                  {canEdit && (
+                    <button type="button" className="text-brand-primary hover:underline text-xs"
+                      onClick={() => uploadFor(doc)} disabled={busyDoc === doc}>
+                      {busyDoc === doc ? 'Uploading…' : attached ? 'Replace' : 'Upload'}
+                    </button>
+                  )}
+                  {canEdit && attached && (
                     <button type="button" className="text-red-600 hover:underline text-xs"
                       onClick={() => void removeDoc(doc)} disabled={busyDoc === doc}>Remove</button>
                   )}
@@ -917,15 +929,17 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps 
                 <div className="flex items-center gap-2">
                   <button type="button" className="text-brand-primary hover:underline text-xs"
                     onClick={() => void viewDoc(k)}>View</button>
-                  <button type="button" className="text-red-600 hover:underline text-xs"
-                    onClick={() => void removeDoc(k)} disabled={busyDoc === k}>Remove</button>
+                  {canEdit && (
+                    <button type="button" className="text-red-600 hover:underline text-xs"
+                      onClick={() => void removeDoc(k)} disabled={busyDoc === k}>Remove</button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
         {/* BO1: add an ad-hoc "Other" document */}
-        <div className="mt-3 flex items-center gap-2">
+        {canEdit && <div className="mt-3 flex items-center gap-2">
           <input
             type="text"
             className="flex-1 rounded border px-2 py-1.5 text-sm"
@@ -941,25 +955,29 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps 
           >
             Attach other
           </button>
-        </div>
+        </div>}
         {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
         {!error && missing.length > 0 && (
           <div className="mt-3 text-xs text-amber-600">
             {missing.length} document{missing.length === 1 ? '' : 's'} still required.
           </div>
         )}
-        <div className="mt-4 flex items-center justify-end gap-3">
-          {!checklist.can_submit && (
-            <span className="text-xs text-gray-500">Submission opens once all prerequisites are complete.</span>
-          )}
-          <Button
-            onClick={() => void onSubmit()}
-            loading={submitting}
-            disabled={missing.length > 0 || !checklist.can_submit}
-          >
-            Submit to Credit Analysis
-          </Button>
-        </div>
+        {canEdit ? (
+          <div className="mt-4 flex items-center justify-end gap-3">
+            {!checklist.can_submit && (
+              <span className="text-xs text-gray-500">Submission opens once all prerequisites are complete.</span>
+            )}
+            <Button
+              onClick={() => void onSubmit()}
+              loading={submitting}
+              disabled={missing.length > 0 || !checklist.can_submit}
+            >
+              Submit to Credit Analysis
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-4 text-xs text-gray-400">Submission is managed by the deal owner.</div>
+        )}
         {viewing && (
           <DocumentViewerModal
             dealId={deal.id}

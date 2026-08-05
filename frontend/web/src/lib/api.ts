@@ -809,10 +809,11 @@ export async function fetchStaffSegments(): Promise<StaffSegmentsResponse> {
 }
 
 /** Search the roster, optionally within one segment. */
-export async function searchStaff(q: string, segment: string): Promise<StaffSearchResponse> {
+export async function searchStaff(q: string, segment: string, branch?: string): Promise<StaffSearchResponse> {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (segment) params.set('segment', segment);
+  if (branch) params.set('branch', branch);
   const qs = params.toString();
   return getJson<StaffSearchResponse>(`/staff/search${qs ? `?${qs}` : ''}`);
 }
@@ -2140,6 +2141,8 @@ export interface CommitteeMemberDef { name: string; role: string; staff_code?: s
 export interface CommitteeDef {
   code: string;
   name: string;
+  kind?: string;
+  branch?: string;
   chaired_by?: string;
   recording_mode: string;
   voting_rule: string;
