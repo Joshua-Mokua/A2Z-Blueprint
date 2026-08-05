@@ -94,6 +94,7 @@ export function PipelineDealDetail() {
   const [stageFlow, setStageFlow] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { user: viewer } = useRole();
 
   // ── Fetch routine ─────────────────────────────────────────────────────
   // Called on mount and after each successful mutation. Refreshes the
@@ -194,6 +195,11 @@ export function PipelineDealDetail() {
   }
 
   // ── Main render — deal + action panels ────────────────────────────────
+  // Document/credit-review edit rights: the deal OWNER always; admins/executives retain
+  // override rights, but every edit they make is audit-logged server-side (upload/CR/committee
+  // all call _audit with the actor). Everyone else is view-only.
+  const _viewerIsAdmin = Boolean(viewer?.role && /admin|managing director|chief|director|head of/i.test(viewer.role));
+  const canEditDocs = (!!viewer?.staff_code && String(viewer.staff_code) === String(deal.staff_code)) || _viewerIsAdmin;
 
 
   return (
@@ -293,11 +299,11 @@ export function PipelineDealDetail() {
         defaultTabId="journey"
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
-          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()}  stageFlow={stageFlow} /> },
+          { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} stageFlow={stageFlow} canEdit={canEditDocs} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
-          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={true} /> },
-          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={true} /> },
-          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={true} /> },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={canEditDocs} /> },
+          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={canEditDocs} /> },
+          { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={canEditDocs} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
             <div className="space-y-6">
               {permissions?.can_advance_stage && (
@@ -706,7 +712,7 @@ function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditCheck
   );
 }
 
-function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps & { stageFlow?: string[] }) {
+function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: CreditPanelProps & { stageFlow?: string[]; canEdit?: boolean }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
