@@ -198,7 +198,10 @@ export function PipelineDealDetail() {
   // Document/credit-review edit rights: the deal OWNER always; admins/executives retain
   // override rights, but every edit they make is audit-logged server-side (upload/CR/committee
   // all call _audit with the actor). Everyone else is view-only.
-  const _viewerIsAdmin = Boolean(viewer?.role && /admin|managing director|chief|director|head of/i.test(viewer.role));
+  // Edit override is restricted to the literal system Admin role (granted via config /
+  // role-capability), NOT senior bankers like Heads/Directors — they view-only on deals
+  // they don't own. Admin edits remain audit-logged server-side.
+  const _viewerIsAdmin = String(viewer?.role ?? '').trim().toLowerCase() === 'admin';
   const canEditDocs = (!!viewer?.staff_code && String(viewer.staff_code) === String(deal.staff_code)) || _viewerIsAdmin;
 
 
