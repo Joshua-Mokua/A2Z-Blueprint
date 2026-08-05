@@ -495,6 +495,7 @@ export function Pipeline() {
                 { key: 'insurance', label: 'Insurance', stages: analytics.pipelines.insurance.funnel, activeCount: analytics.pipelines.insurance.active_count },
                 { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
               ] : []}
+              customerSegments={config?.customer_segments}
               segmentCategories={analytics?.by_segment_funnel
                 ? analytics.by_segment_funnel.map((s) => ({
                     key: s.segment,

@@ -52,6 +52,9 @@ export interface PipelineFunnelProps {
   /** Per-segment funnels (Premier / Advantage / Direct / SME / …). When provided,
    *  a "By class / By segment" toggle appears and the tab row can show segments. */
   segmentCategories?: FunnelCategory[];
+  /** Sub-segment -> business-unit grouping source (customer_segments config). When provided,
+   *  the 'By segment' view shows a Consumer/Commercial/CIB selector then that unit's sub-segments. */
+  customerSegments?: Record<string, string[]>;
   /** Admin-configured defined stage flow per class (asset/liability/…). */
   stageFlows?: Record<string, string[]>;
   /** Drill: fired when a non-empty stage band is clicked (class key, stage). */
@@ -66,6 +69,7 @@ export function PipelineFunnel({
   overall,
   categories = [],
   segmentCategories = [],
+  customerSegments,
   stageFlows,
   onStageClick,
   currencySymbol = '',
@@ -79,12 +83,33 @@ export function PipelineFunnel({
   const hasSegments = segmentCategories.length > 0;
   const isSegment = dimension === 'segment';
 
+  // Two-level segment grouping: sub-segment -> business unit (Consumer/Commercial/CIB/…).
+  const subToUnit = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const [unit, subs] of Object.entries(customerSegments ?? {})) {
+      for (const sub of subs) m.set(sub, unit);
+    }
+    return m;
+  }, [customerSegments]);
+  // Business units present among the segment categories, in config order.
+  const unitsPresent = useMemo(() => {
+    if (!customerSegments) return [] as string[];
+    const present = new Set(segmentCategories.map((c) => subToUnit.get(c.key)).filter(Boolean) as string[]);
+    return Object.keys(customerSegments).filter((u) => present.has(u));
+  }, [customerSegments, segmentCategories, subToUnit]);
+  const [unitKey, setUnitKey] = useState<string>('all');
+  // Sub-segment categories filtered to the selected business unit (all if 'all' or no grouping).
+  const visibleSegmentCats = useMemo(() => {
+    if (!isSegment || unitKey === 'all' || unitsPresent.length === 0) return segmentCategories;
+    return segmentCategories.filter((c) => subToUnit.get(c.key) === unitKey);
+  }, [isSegment, unitKey, unitsPresent, segmentCategories, subToUnit]);
+
   const tabs = useMemo(
     () => [
       { key: 'all', label: 'All', stages: overall, activeCount: undefined as number | undefined },
-      ...(isSegment ? segmentCategories : categories),
+      ...(isSegment ? visibleSegmentCats : categories),
     ],
-    [overall, categories, segmentCategories, isSegment],
+    [overall, categories, visibleSegmentCats, isSegment],
   );
 
   const active = tabs.find((t) => t.key === catKey) ?? tabs[0];
@@ -126,7 +151,7 @@ export function PipelineFunnel({
                 <button
                   key={d}
                   type="button"
-                  onClick={() => { setDimension(d); setCatKey('all'); setHover(null); }}
+                  onClick={() => { setDimension(d); setCatKey('all'); setUnitKey('all'); setHover(null); }}
                   className={[
                     'px-2.5 py-1.5 text-xs font-semibold transition-colors',
                     dimension === d
@@ -136,6 +161,24 @@ export function PipelineFunnel({
                   ].join(' ')}
                 >
                   {d === 'class' ? 'By class' : 'By segment'}
+                </button>
+              ))}
+            </div>
+          )}
+          {isSegment && unitsPresent.length > 0 && (
+            <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+              {['all', ...unitsPresent].map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => { setUnitKey(u); setCatKey('all'); setHover(null); }}
+                  className={[
+                    'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                    unitKey === u ? 'bg-[var(--brand-secondary)] text-white shadow-sm'
+                                  : 'text-gray-500 hover:text-gray-800',
+                  ].join(' ')}
+                >
+                  {u === 'all' ? 'All units' : u}
                 </button>
               ))}
             </div>
