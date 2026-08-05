@@ -608,8 +608,7 @@ export function Pipeline() {
               <h2 className="text-base font-semibold text-gray-900">
                 Pipeline Deals
               </h2>
-              <Badge tone="brand" size="sm">v10.582 capstone</Badge>
-            </div>
+                </div>
             <div className="flex items-center gap-2">
               <select
                 value={catFilter}
