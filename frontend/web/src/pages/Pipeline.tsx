@@ -108,12 +108,29 @@ export function Pipeline() {
     if (typeof wp !== 'number') return null;
     return wp >= 75 ? 'high' : wp >= 40 ? 'medium' : 'low';
   };
+  const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [segmentFilter, setSegmentFilter] = useState('');
   const segmentOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const d of deals) set.add(d.segment || 'Unclassified');
-    return Array.from(set).sort();
-  }, [deals]);
+    // Vocabulary from the shared customer_segments config (same source the funnel uses),
+    // flattened across the segments the user's deals span, preserving config order. A
+    // trailing 'Unclassified' bucket appears only if some visible deals lack a segment.
+    const counts = new Map<string, number>();
+    for (const d of deals) {
+      const k = d.segment || 'Unclassified';
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const ordered: string[] = [];
+    const cfgSegs = config?.customer_segments ?? {};
+    for (const subs of Object.values(cfgSegs)) {
+      for (const sub of subs) if (counts.has(sub) && !ordered.includes(sub)) ordered.push(sub);
+    }
+    // include any present segment not in config (defensive), then Unclassified last
+    for (const k of counts.keys()) {
+      if (k !== 'Unclassified' && !ordered.includes(k)) ordered.push(k);
+    }
+    if (counts.has('Unclassified')) ordered.push('Unclassified');
+    return ordered.map((k) => ({ key: k, count: counts.get(k) ?? 0 }));
+  }, [deals, config]);
   const visibleDeals = useMemo(
     () => deals.filter((d) =>
       (!slaFilter || d.sla?.state === slaFilter)
@@ -133,7 +150,6 @@ export function Pipeline() {
   };
 
   // Batch A: admin-configured category/stage filters (from /api/pipeline/stages)
-  const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [catFilter, setCatFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
 
@@ -595,17 +611,39 @@ export function Pipeline() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
-              <select
-                value={segmentFilter}
-                onChange={(e) => setSegmentFilter(e.target.value)}
-                aria-label="Filter by segment"
-                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-              >
-                <option value="">All segments</option>
-                {segmentOptions.map((sg) => (
-                  <option key={sg} value={sg}>{sg}</option>
-                ))}
-              </select>
+              {segmentOptions.length > 0 && (
+                <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1" role="tablist" aria-label="Filter by segment">
+                  <button
+                    type="button"
+                    onClick={() => setSegmentFilter('')}
+                    className={[
+                      'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                      segmentFilter === '' ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
+                                           : 'text-gray-500 hover:text-gray-800',
+                    ].join(' ')}
+                  >
+                    All segments
+                  </button>
+                  {segmentOptions.map((sg) => {
+                    const on = segmentFilter === sg.key;
+                    return (
+                      <button
+                        key={sg.key}
+                        type="button"
+                        onClick={() => setSegmentFilter(sg.key)}
+                        className={[
+                          'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                          on ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
+                             : 'text-gray-500 hover:text-gray-800',
+                        ].join(' ')}
+                      >
+                        {sg.key}
+                        <span className="ml-1.5 text-gray-400">{sg.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <select
                 value={winprobFilter ?? ''}
                 onChange={(e) => setWinprobFilter(e.target.value)}
