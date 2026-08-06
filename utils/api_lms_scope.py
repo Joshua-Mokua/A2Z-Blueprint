@@ -99,17 +99,63 @@ def _role_sees_pool(role: str, pool_roles: List[str]) -> bool:
     return False
 
 
-def _analyst_segment(role: str) -> str:
-    """Segment ('consumer' / 'commercial' / 'cib') for a segment-specific
-    Department Analyst role; '' for any other role (no segment constraint).
-    Substring + case-insensitive, matching the rest of the role handling."""
+# Cycle-free staff_code -> department lookup (reads staff_register.xlsx directly, like the
+# lms_config.json read above — no core/roster import, to keep this module import-cycle-free).
+_DEPT_LUT: Dict[str, str] = {}
+_DEPT_LUT_LOADED = False
+
+def _staff_department(staff_code: str) -> str:
+    """Department for a staff code, from staff_register.xlsx. Cached. '' if unknown."""
+    global _DEPT_LUT_LOADED
+    if not staff_code:
+        return ""
+    if not _DEPT_LUT_LOADED:
+        _DEPT_LUT_LOADED = True
+        try:
+            import openpyxl  # local import; only when first needed
+            p = _Path(__file__).resolve().parent.parent / "data" / "staff_register.xlsx"
+            if p.exists():
+                wb = openpyxl.load_workbook(p, read_only=True)
+                ws = wb.active
+                it = ws.iter_rows(values_only=True)
+                hdr = list(next(it))
+                ci = {h: i for i, h in enumerate(hdr)}
+                cc, dc = ci.get("Staff Code"), ci.get("Department")
+                if cc is not None and dc is not None:
+                    for row in it:
+                        if row and row[cc]:
+                            _DEPT_LUT[str(row[cc]).strip()] = str(row[dc] or "")
+        except Exception:
+            pass
+    return _DEPT_LUT.get(str(staff_code).strip(), "")
+
+
+def _analyst_segment(role: str, staff_code: str = "") -> str:
+    """Segment ('consumer' / 'commercial' / 'cib') for a segment-specific Department Analyst;
+    '' for any other role (managers / credit risk / admin -> no segment constraint).
+
+    Role alone is ambiguous ('Credit Analyst' spans Consumer & Commercial), so the caller's
+    DEPARTMENT disambiguates:
+      - 'corporate credit analyst' (any dept)      -> cib
+      - 'credit analyst' + dept ~ Consumer         -> consumer
+      - 'credit analyst' + dept ~ Commercial       -> commercial
+      - anything else                              -> '' (no restriction)"""
     rl = (role or "").strip().lower()
+    # explicit legacy strings still honoured
     if "consumer credit analyst" in rl:
         return "consumer"
     if "commercial credit analyst" in rl:
         return "commercial"
-    if "cib credit analyst" in rl:
+    if "cib credit analyst" in rl or "corporate credit analyst" in rl:
         return "cib"
+    if "credit analyst" in rl:
+        dept = _staff_department(staff_code).lower()
+        if "consumer" in dept:
+            return "consumer"
+        if "commercial" in dept:
+            return "commercial"
+        if "corporate" in dept or "investment" in dept:
+            return "cib"
     return ""
 
 
@@ -117,6 +163,12 @@ def _app_segment(app: Dict[str, Any]) -> str:
     """Segment of an application, derived from its client_type
     ('consumer' / 'commercial' / 'cib'); '' when unknown (e.g. legacy apps
     created before client_type was stamped — deliberately NOT hidden)."""
+    # Prefer the explicit stamped segment (metadata.segment), then client_type.
+    meta = app.get("metadata") or {}
+    if isinstance(meta, dict):
+        ms = str(meta.get("segment", "") or "").strip().lower()
+        if ms in ("consumer", "commercial", "cib"):
+            return ms
     ct = str(app.get("client_type", "") or "").strip().lower()
     if not ct:
         return ""
@@ -164,12 +216,17 @@ def filter_apps_by_visibility(
     pool_cfg = get_pool_visibility_config()
     pool_ok = _role_sees_pool(caller_role, pool_cfg["roles"])
     pool_statuses = {s.strip().lower() for s in pool_cfg["statuses"]}
-    caller_segment = _analyst_segment(caller_role)  # '' unless segment-specific
+    caller_segment = _analyst_segment(caller_role, caller_staff_code)  # '' unless segment-specific
 
     visible: List[Dict[str, Any]] = []
     for a in apps:
         rm_code = str(a.get('rm_code', '') or '')
         if rm_code and rm_code in visible_codes:
+            # Segment-bound Dept Analysts see ONLY their own segment even via cascade.
+            if caller_segment:
+                seg = _app_segment(a)
+                if seg and seg != caller_segment:
+                    continue
             visible.append(a)
             continue
         if caller_staff_code:
@@ -211,8 +268,13 @@ def is_app_in_scope(
     """
     if not app:
         return False
+    caller_segment = _analyst_segment(caller_role, caller_staff_code)
     rm_code = str(app.get('rm_code', '') or '')
     if rm_code and rm_code in visible_codes:
+        if caller_segment:
+            seg = _app_segment(app)
+            if seg and seg != caller_segment:
+                return False
         return True
     if caller_staff_code:
         analyst = app.get('analyst') or {}
@@ -225,5 +287,9 @@ def is_app_in_scope(
         if _role_sees_pool(caller_role, pool_cfg["roles"]):
             status = str(app.get('status', '') or '').strip().lower()
             if status in {s.strip().lower() for s in pool_cfg["statuses"]}:
+                if caller_segment:
+                    seg = _app_segment(app)
+                    if seg and seg != caller_segment:
+                        return False
                 return True
     return False
