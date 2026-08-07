@@ -242,7 +242,7 @@ export function PipelineDealDetail() {
         stage={deal.stage}
         badges={[
           ...(deal.locked ? [{ label: '🔒 Locked' }] : []),
-          ...(deal.manager_validated ? [{ label: '✓ Validated' }] : []),
+          ...(deal.manager_validated ? [{ label: deal.validated_by_name ? `✓ Validated by ${deal.validated_by_name}` : '✓ Validated' }] : []),
           ...(deal.draft ? [{ label: 'Draft' }] : []),
         ]}
         idLabel={deal.id}

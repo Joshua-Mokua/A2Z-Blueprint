@@ -510,6 +510,9 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "manager_validated":    deal.get("manager_validated"),
                 "validated_by":         deal.get("validated_by"),
                 "validated_at":         deal.get("validated_at"),
+                "validated_by_name":    deal.get("validated_by_name"),
+                "validated_by_role":    deal.get("validated_by_role"),
+                "validated_by_code":    deal.get("validated_by_code"),
                 "referral_status":      deal.get("referral_status"),
                 "referred_to_code":     deal.get("referred_to_code"),
                 "referred_to":          deal.get("referred_to"),
@@ -617,6 +620,7 @@ def _normalize_db_deal_row(row):
         for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
                    "fx_rate_source", "client_type", "mou_id", "mou_title",
                    "sector", "segment", "validated_by", "validated_at",
+                   "validated_by_name", "validated_by_role", "validated_by_code",
                    "is_top_up", "top_up_amount", "original_facility_amount",
                    "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
@@ -6797,6 +6801,22 @@ def pipeline_deal_validate(
         payload.approved,
         payload.note or "",
     )
+
+    # Item 5: record WHO validated (name + role), not just the username, so the
+    # journey attributes it correctly regardless of which of the three in-line
+    # validators (Branch Manager / Branch Operations Manager / Service Manager)
+    # acted. Best-effort enrichment on the deal record.
+    try:
+        _vname = str(user.get("full_name", "") or user.get("username", "") or "")
+        _vrole = str(user.get("role", "") or "")
+        _vcode = str(user.get("staff_code", "") or "")
+        pm.update_deal(deal_id, {
+            "validated_by_name": _vname,
+            "validated_by_role": _vrole,
+            "validated_by_code": _vcode,
+        }, user.get("username", ""))
+    except Exception:
+        pass
 
     # Persist the validation to the DB read path. The analytics assured value
     # and funnel read deals via _acquire_scoped_deals (DB-first); without this

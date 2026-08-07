@@ -240,6 +240,16 @@ def _register_root_roles() -> "frozenset[str]":
 BRANCH_HEAD_ROLES = frozenset({
     "senior branch manager",
     "branch manager",
+    # Item 5 (2026-08-07): the 3-in-line validators must all SEE their branch's
+    # deals so any of them can validate in the manager's absence. These roles
+    # pass is_manager (authority) but previously fell to self-only scope (empty
+    # queue). Grant them whole-branch scope like the BM. Variants for spelling.
+    "branch operations manager",
+    "branch operation manager",
+    "operations manager",
+    "service manager",
+    "branch service manager",
+    "customer service manager",
 })
 
 

@@ -104,6 +104,9 @@ export interface PipelineDeal {
   // Manager validation
   manager_validated?:   boolean;
   validated_by?:        string;
+  validated_by_name?:   string;
+  validated_by_role?:   string;
+  validated_by_code?:   string;
   validated_at?:        string;
   validation_note?:     string;
   draft?:               boolean;
