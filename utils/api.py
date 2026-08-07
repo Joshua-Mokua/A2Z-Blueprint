@@ -4300,7 +4300,20 @@ def _customer_segments() -> dict:
     m = cfg.get("customer_segments") if isinstance(cfg, dict) else None
     out = dict(_DEFAULT_CUSTOMER_SEGMENTS)
     if isinstance(m, dict) and m:
-        out.update(m)
+        # Strip whitespace from keys (and list values) before overlaying, so a
+        # stray "Consumer " in the config correctly overrides "Consumer" instead
+        # of forking into a duplicate segment entry. Storage is untouched; this is
+        # read-time hygiene only.
+        cleaned = {}
+        for _k, _v in m.items():
+            _ck = str(_k).strip()
+            if isinstance(_v, list):
+                _cv = [str(x).strip() for x in _v if str(x).strip()]
+            else:
+                _cv = _v
+            if _ck:
+                cleaned[_ck] = _cv
+        out.update(cleaned)
     return out
 
 
