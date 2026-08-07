@@ -556,9 +556,11 @@
     "product_promise": {
       "Personal Loan": 10,
       "Business Loan": 26,
-      "Current Account": 3,
+      "Current Account": 2,
       "Savings Account": 2,
-      "Overdraft": 27
+      "Overdraft": 27,
+      "Working Capital": 16,
+      "Fixed Deposit": 1
     },
     "due_soon_days": 2,
     "stage_step_map": {
@@ -989,12 +991,12 @@
       "stages": [
         {
           "stage": "Lead",
-          "target_days": 1,
+          "target_days": 0.5,
           "win_probability": 50
         },
         {
           "stage": "Documentation",
-          "target_days": 1,
+          "target_days": 0.5,
           "win_probability": 50
         },
         {
@@ -1036,34 +1038,19 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
+          "stage": "Lead/Cutomer Instructions",
+          "target_days": 0.5,
+          "win_probability": 50
         },
         {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
-        },
-        {
-          "stage": "Documentation",
-          "target_days": 4
-        },
-        {
-          "stage": "Closed Won",
-          "target_days": 1
-        },
-        {
-          "stage": "Closed Lost",
-          "target_days": 1
+          "stage": "Fixed Deposit Openned",
+          "target_days": 0.5,
+          "win_probability": 50
         }
-      ]
+      ],
+      "required_documents": [],
+      "documents_required_at_stage": "Lead/Cutomer Instructions",
+      "committee_journey": []
     },
     "Call Deposit": {
       "client_types": [],
@@ -2006,8 +1993,10 @@
       "committee_journey": []
     },
     "Working Capital": {
-      "client_types": [],
-      "committee_journey": [],
+      "client_types": [
+        "Commercial",
+        "CIB"
+      ],
       "stages": [
         {
           "stage": "Initiation",
@@ -2049,7 +2038,22 @@
           "stage": "Trops",
           "target_days": 3
         }
-      ]
+      ],
+      "required_documents": [
+        "Audited Accounts",
+        "Bank Statements (6 months)",
+        "Branch Committee Decision",
+        "Business Registration",
+        "Certificate of Incorporation",
+        "Board Resolution",
+        "Financial Statements",
+        "KRA PIN",
+        "Valuation report",
+        "Credit Report",
+        "CRB Report"
+      ],
+      "documents_required_at_stage": "Documentation",
+      "committee_journey": []
     }
   },
   "customer_segments": {
@@ -2193,6 +2197,15 @@
       },
       {
         "name": "Account Openned"
+      },
+      {
+        "name": "Department Credit Analysis"
+      },
+      {
+        "name": "Lead/Cutomer Instructions"
+      },
+      {
+        "name": "Fixed Deposit Openned"
       }
     ]
   },

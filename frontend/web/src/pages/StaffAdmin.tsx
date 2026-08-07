@@ -251,6 +251,7 @@ export default function StaffAdmin() {
     { key: 'full_name', header: 'Name', render: (r) => (r.full_name ? displayName(r.full_name, (r as any).display_name) : r.username) },
     { key: 'staff_code', header: 'Staff code' },
     { key: 'role', header: 'Role' },
+    { key: 'department', header: 'Department' },
     { key: 'unit', header: 'Unit' },
     {
       key: 'active', header: 'Status',

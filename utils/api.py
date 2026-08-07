@@ -10103,18 +10103,20 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
             "dotted": [d for d in (r.get("dotted1"), r.get("dotted2")) if d],
             "region": r.get("region") or "",
             "date_of_employment": r.get("doe") or "",
+            "band": r.get("band") or "",
+            "gender": r.get("gender") or "",
         })
         try:
             _db.execute(
                 "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
-                "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
+                "staff_code, email, metadata, active, is_admin, must_change_password) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
                 "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
                 "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
                 "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
                 "metadata=EXCLUDED.metadata, active=true",
                 (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
-                 r["band"], r["gender"], r.get("email") or "", _meta))
+                 r.get("email") or "", _meta))
             inserted += 1
         except Exception as _e:
             _staffup_failed.append(f"{r['code']} {r.get('name','')}: {type(_e).__name__}: {_e}")
