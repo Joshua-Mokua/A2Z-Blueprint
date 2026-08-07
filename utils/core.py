@@ -7214,6 +7214,14 @@ _ALL_VIEW_ROLES = {
     "chief executive & managing director",
     "chief executive officer",
     "chief executive",
+    # Item 1 (2026-08-07): Head of Branches oversees the ENTIRE branch network.
+    # Since all deals reside in branches, this role is MD-equivalent for
+    # visibility (sees every branch's deals + head-office units). Variants
+    # included for resilience to title spelling on the live roster.
+    "head of branches",
+    "head, branches",
+    "head of branch",
+    "head branches",
 }
 
 
