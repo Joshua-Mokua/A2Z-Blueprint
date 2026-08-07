@@ -51,6 +51,7 @@ export interface UserIdentity {
   staff_code: string;
   full_name:  string;
   department: string;
+  unit:       string;
   email:      string | null;   // optional in users.json; serialises to null when missing
   active:     boolean;
 

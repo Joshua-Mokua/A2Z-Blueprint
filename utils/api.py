@@ -1036,6 +1036,7 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
         "staff_code":   full_user.get("staff_code"),
         "full_name":    full_user.get("full_name"),
         "department":   full_user.get("department"),
+        "unit":         full_user.get("unit"),
         "email":        full_user.get("email"),
         "active":       full_user.get("active", True),
 
@@ -6058,6 +6059,19 @@ def pipeline_deal_create(
         if not str(deal_dict.get("staff_name") or "").strip():
             deal_dict["staff_name"] = str(
                 _full.get("full_name", "") or user.get("username", "") or "")
+    # Item 1: a deal's originating branch defaults to the creator's own branch
+    # (their staff record's `unit`). Branch staff never need to pick it. Head
+    # Office RMs — whose own unit is "Head Office", not a real branch — send an
+    # explicit `unit` (the frontend shows them a branch picker), which we keep.
+    if not str(deal_dict.get("unit") or "").strip():
+        from utils.core import UserManager as _UM_unit
+        _cr = _UM_unit().users.get(str(user.get("username", "") or "")) or {}
+        _cru = str(_cr.get("unit", "") or "").strip()
+        # Don't stamp "Head Office" as a deal's branch — leave blank so an HO
+        # deal without an explicit pick stays clearly unassigned rather than
+        # masquerading as a branch.
+        if _cru and _cru.lower() != "head office":
+            deal_dict["unit"] = _cru
     ok, reason = validate_create_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)

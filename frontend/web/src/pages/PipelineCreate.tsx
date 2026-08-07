@@ -60,6 +60,7 @@ import {
   type PipelineConfig,
 } from '@/types/pipeline';
 import { segmentToCustomerType, type CbsCustomer } from '@/types/cbs';
+import { getAdminBranches, type AdminBranch } from '@/lib/api';
 
 
 // ── Conflict resolution path discriminator ──────────────────────────────
@@ -117,6 +118,12 @@ export function PipelineCreate() {
   const [segment,     setSegment]     = useState<string>('');
   const [sector,      setSector]      = useState<string>('');
   const [currency,    setCurrency]    = useState<string>('KES');
+  // Item 1: originating branch. Auto-derived from the creator's own branch for
+  // branch staff; Head-Office RMs pick one here (their own unit is 'Head Office').
+  const [branches,          setBranches]          = useState<AdminBranch[]>([]);
+  const [originatingBranch, setOriginatingBranch] = useState<string>('');
+  const creatorIsHeadOffice = ((user?.unit || '').trim().toLowerCase() === 'head office')
+                              || !((user?.unit || '').trim());
   const [mouId,       setMouId]       = useState<string>('');     // Individual: selected MOU id
   const [mouQuery,    setMouQuery]    = useState<string>('');     // MOU picker search filter
   const [mouOpen,     setMouOpen]     = useState<boolean>(false); // MOU dropdown open
@@ -210,6 +217,10 @@ export function PipelineCreate() {
     fetchPipelineConfig()
       .then((c) => { if (active) setConfig(c); })
       .catch(() => { /* fall back to category-based stages, empty segments */ });
+    // Item 1: load branches for the Head-Office RM originating-branch picker.
+    getAdminBranches()
+      .then((r) => setBranches((r.branches || []).filter((b) => b.active !== false)))
+      .catch(() => { /* picker will be empty; validation still guards HO RMs */ });
     return () => { active = false; };
   }, []);
 
@@ -617,6 +628,7 @@ export function PipelineCreate() {
     const errors: Record<string, string> = {};
 
     if (!clientName.trim()) errors.clientName = 'Client name is required.';
+    if (creatorIsHeadOffice && !originatingBranch.trim()) errors.originatingBranch = 'Please select the originating branch.';
 
     // Refer mode: only the client and the recipient are required; everything
     // else is optional (the recipient completes the deal after accepting).
@@ -892,7 +904,9 @@ export function PipelineCreate() {
       expected_close:     expectedClose  || undefined,
       notes:              notes.trim() || undefined,
       source:             source,
-      // Note: unit not sent — UserIdentity has department but not unit.
+      // Item 1: Head-Office RMs pick an originating branch; send it as unit.
+      // Branch staff omit it and the backend auto-derives from their own branch.
+      unit:               creatorIsHeadOffice && originatingBranch ? originatingBranch : undefined,
       // Server resolves unit from staff_code if needed.
       account_number:     accountNumber.trim() || undefined,
       phone:              contactPhone.trim() || undefined,
@@ -1135,6 +1149,27 @@ export function PipelineCreate() {
                   <p className="text-xs text-red-700 mt-1">{fieldErrors.segment}</p>
                 )}
               </div>
+              {creatorIsHeadOffice && (
+                <div data-field="originatingBranch">
+                  <label className="text-sm font-medium text-gray-700">
+                    Originating branch<RedStar />
+                  </label>
+                  <select
+                    value={originatingBranch}
+                    onChange={(e) => setOriginatingBranch(e.target.value)}
+                    disabled={mutations.loading}
+                    className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  >
+                    <option value="">Select branch…</option>
+                    {branches.map((b) => (
+                      <option key={b.id || b.name} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.originatingBranch && (
+                    <p className="text-xs text-red-700 mt-1">{fieldErrors.originatingBranch}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Currency{reqStar('currency')}
