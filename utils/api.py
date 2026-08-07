@@ -10547,7 +10547,40 @@ def admin_document_catalog(user: dict = Depends(get_current_user)):
     for extra in ("Credit Report", "Branch Committee Decision"):
         if extra not in catalog:
             catalog.append(extra)
+    # Admin-added custom document types (global master list additions). These let
+    # an admin introduce a new document that can then be ticked against any product.
+    try:
+        _ps = _load_json("pipeline_settings.json") or {}
+        for _cd in (_ps.get("custom_document_types", []) or []):
+            if isinstance(_cd, str) and _cd.strip() and _cd.strip() not in catalog:
+                catalog.append(_cd.strip())
+    except Exception:
+        pass
     return {"documents": sorted(set(catalog))}
+@app.post("/api/admin/document-catalog", tags=["admin"])
+def admin_document_catalog_add(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(require_config_admin)):
+    """Add a NEW document type to the global master catalog. It then appears in the
+    per-product required-documents tick list. Idempotent (case-insensitive)."""
+    name = str(payload.get("name", "") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="A document name is required.")
+    if len(name) > 120:
+        raise HTTPException(status_code=400, detail="Document name too long (max 120).")
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+    settings = get_pipeline_settings()
+    existing = list(settings.get("custom_document_types", []) or [])
+    # also consider the derived catalog so we don't duplicate a built-in
+    _derived = {d.lower() for d in admin_document_catalog(user).get("documents", [])}
+    if name.lower() in _derived or any(name.lower() == e.lower() for e in existing):
+        return {"status": "exists", "name": name,
+                "documents": admin_document_catalog(user).get("documents", [])}
+    existing.append(name)
+    settings["custom_document_types"] = existing
+    save_pipeline_settings(settings)
+    _audit("API_DOCUMENT_TYPE_ADDED", user, f"name={name}")
+    return {"status": "added", "name": name,
+            "documents": admin_document_catalog(user).get("documents", [])}
 # === END DOCUMENT CATALOG ENDPOINT ===
 
 

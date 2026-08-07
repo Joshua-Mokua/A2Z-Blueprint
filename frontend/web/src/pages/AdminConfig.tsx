@@ -27,6 +27,7 @@ import {
   upsertMou,
   upsertProductFlow,
   fetchDocumentCatalog,
+  addDocumentType,
   fetchCommitteePalette,
   type CommitteeDef,
   getCommitteeTiers,
@@ -199,6 +200,8 @@ export default function AdminConfig() {
   const [flowProduct, setFlowProduct] = useState<string>('');
   const [flowDraft, setFlowDraft] = useState<ProductFlow>({ client_types: [], stages: [] });
   const [docCatalog, setDocCatalog] = useState<string[]>([]);
+  const [newDocType, setNewDocType] = useState<string>('');
+  const [addingDoc, setAddingDoc] = useState<boolean>(false);
   const [committeePalette, setCommitteePalette] = useState<CommitteeDef[]>([]);
   useEffect(() => {
     fetchCommitteePalette().then((d) => setCommitteePalette(d.committees)).catch(() => setCommitteePalette([]));
@@ -952,6 +955,35 @@ export default function AdminConfig() {
                       {doc}
                     </label>
                   ))}
+                </div>
+                {/* Admin: introduce a NEW document type into the global master list.
+                    Once added it appears above as a tickable checkbox for any product. */}
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 rounded border px-2 py-1.5 text-sm"
+                    placeholder="Add a new document type (e.g. Board Resolution)…"
+                    value={newDocType}
+                    onChange={(e) => setNewDocType(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="rounded border px-3 py-1.5 text-sm text-brand-primary hover:bg-gray-50 disabled:opacity-50"
+                    disabled={!newDocType.trim() || addingDoc}
+                    onClick={async () => {
+                      const nm = newDocType.trim();
+                      if (!nm) return;
+                      setAddingDoc(true);
+                      try {
+                        const docs = await addDocumentType(nm);
+                        setDocCatalog(docs);
+                        setNewDocType('');
+                      } catch { /* surfaced via disabled state; keep input */ }
+                      finally { setAddingDoc(false); }
+                    }}
+                  >
+                    {addingDoc ? 'Adding…' : 'Add type'}
+                  </button>
                 </div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">Documents required at stage</label>
                 <select

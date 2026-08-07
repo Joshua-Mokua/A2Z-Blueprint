@@ -872,6 +872,30 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow }: CreditPanelProps 
             </ul>
           </div>
         )}
+        {/* Read-only view of ALL attached documents — visible to any viewer of
+            the deal (owners, managers, and oversight roles like MD / Head of
+            Branches), independent of the required list or submission state.
+            Without this, senior reviewers had no View surface at all. */}
+        {Object.keys(docFiles).length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-600 mb-2">Attached documents</p>
+            <div className="space-y-2">
+              {Object.keys(docFiles).map((k) => {
+                const meta = docFiles[k];
+                const label = k.startsWith(OTHER_PREFIX) ? k.slice(OTHER_PREFIX.length) : k;
+                return (
+                  <div key={`all-${k}`} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+                    <span className="text-gray-800">📎 {label}
+                      {meta?.filename && <span className="text-xs text-gray-500 ml-2">{meta.filename}</span>}
+                    </span>
+                    <button type="button" className="text-brand-primary hover:underline text-xs"
+                      onClick={() => void viewDoc(k)}>View</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <p className="text-xs text-gray-500 mb-3">
           Upload each required document. All required documents must be attached
           before the deal can be submitted to credit analysis.

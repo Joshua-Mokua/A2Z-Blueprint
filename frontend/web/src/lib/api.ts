@@ -2083,6 +2083,12 @@ export async function fetchDocumentCatalog(): Promise<string[]> {
   return res.documents ?? [];
 }
 
+// admin: add a new document type to the global master catalog
+export async function addDocumentType(name: string): Promise<string[]> {
+  const res = await postJson<{ documents: string[] }>('/admin/document-catalog', { name });
+  return res.documents ?? [];
+}
+
 // deal document upload/attach (Batch 3)
 export interface DealDocumentMeta {
   filename: string; path: string; sha256: string; size: number;
