@@ -162,7 +162,7 @@ export function Analytics() {
       </div>
 
       {/* Model A slicer */}
-      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} referralDepartments={data.by_referral_department ?? []} />
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} referralDepartments={data.by_referral_department ?? []} referralBranchSplit={data.referral_branch_split} referralVsOriginated={data.referral_vs_originated} />
 
       {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
       <SlaSummaryCard />
@@ -194,7 +194,7 @@ export function Analytics() {
 
 // ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
 function PipelineSlicer({
-  dimensions, sliceFor, kes, productFunnels, probabilityBands, referralDepartments,
+  dimensions, sliceFor, kes, productFunnels, probabilityBands, referralDepartments, referralBranchSplit, referralVsOriginated,
 }: {
   dimensions: readonly string[];
   sliceFor: (d: never) => { label: string; value: number; count: number }[];
@@ -202,6 +202,11 @@ function PipelineSlicer({
   productFunnels: ProductFunnel[];
   probabilityBands: ProbabilityBandBreakdown[];
   referralDepartments: ReferralDepartmentBreakdown[];
+  referralBranchSplit?: { in_branch: number; cross_branch: number };
+  referralVsOriginated?: {
+    open:   { referred: { count: number; value: number }; originated: { count: number; value: number } };
+    closed: { referred: { count: number; value: number }; originated: { count: number; value: number } };
+  };
 }) {
   const [dim, setDim] = useState<string>('Product');
   const [expandedBand, setExpandedBand] = useState<string | null>(null);
@@ -281,10 +286,47 @@ function PipelineSlicer({
             <p className="text-sm text-gray-500">No referral activity yet. Referrals appear here grouped by the receiving department.</p>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500 mb-2">Referrals received per department (with head count). Click a department to see who referred in.</p>
+              {/* Referred-vs-Originated donut + In/Cross-branch split — the shadow-reporting overview */}
+              {(referralVsOriginated || referralBranchSplit) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                  {referralVsOriginated && (
+                    <div className="rounded border p-3">
+                      <p className="text-xs font-medium text-gray-600 mb-2">Referred vs Originated (open pipeline)</p>
+                      <DonutChart height={200}
+                        data={[
+                          { name: 'Referred',   value: referralVsOriginated.open.referred.value },
+                          { name: 'Originated', value: referralVsOriginated.open.originated.value },
+                        ]}
+                        centerLabel="Deals"
+                        centerValue={String(referralVsOriginated.open.referred.count + referralVsOriginated.open.originated.count)} />
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Closed-won: {referralVsOriginated.closed.referred.count} referred · {referralVsOriginated.closed.originated.count} originated
+                        ({kes(referralVsOriginated.closed.referred.value)} vs {kes(referralVsOriginated.closed.originated.value)})
+                      </p>
+                    </div>
+                  )}
+                  {referralBranchSplit && (
+                    <div className="rounded border p-3">
+                      <p className="text-xs font-medium text-gray-600 mb-2">In-Branch vs Cross-Branch referrals</p>
+                      <DonutChart height={200}
+                        data={[
+                          { name: 'In-Branch',    value: referralBranchSplit.in_branch },
+                          { name: 'Cross-Branch', value: referralBranchSplit.cross_branch },
+                        ]}
+                        centerLabel="Referrals"
+                        centerValue={String(referralBranchSplit.in_branch + referralBranchSplit.cross_branch)} />
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        {referralBranchSplit.in_branch} stayed in-branch · {referralBranchSplit.cross_branch} crossed branches
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mb-2">Per department: referrals <span className="font-medium">received</span> (bar) and <span className="text-emerald-700 font-medium">referred out</span> (support units' contribution), with head count. Click to see who referred in.</p>
               {(() => {
-                const maxV = Math.max(...referralDepartments.map((r) => r.value), 0);
-                return referralDepartments.map((r) => {
+                const _sortedDepts = [...referralDepartments].sort((a, b) => (b.count + b.referred_out) - (a.count + a.referred_out));
+                const maxV = Math.max(...referralDepartments.map((r) => Math.max(r.value, r.referred_out_value)), 0);
+                return _sortedDepts.map((r) => {
                   const pct = maxV > 0 ? (r.value / maxV) * 100 : 0;
                   const open = expandedDept === r.department;
                   return (
@@ -298,6 +340,8 @@ function PipelineSlicer({
                             {r.count} ref{r.count === 1 ? '' : 's'}
                           </span>
                         </span>
+                        <span className="w-24 shrink-0 text-right text-[11px] text-emerald-700 tabular-nums" title="referrals sent out by this department">{r.referred_out} out</span>
+                        <span className="w-28 shrink-0 text-right text-[11px] text-gray-500 tabular-nums">{r.in_branch}·in / {r.cross_branch}·cross</span>
                         <span className="w-20 shrink-0 text-right text-[11px] text-gray-500 tabular-nums">{r.head_count} staff</span>
                         <span className="w-24 shrink-0 text-right text-xs text-gray-600 tabular-nums">{kes(r.value)}</span>
                         <span className="w-4 shrink-0 text-xs text-gray-400">{open ? '▾' : '▸'}</span>

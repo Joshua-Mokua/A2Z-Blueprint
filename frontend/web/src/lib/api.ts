@@ -565,11 +565,30 @@ export interface ReferralDepartmentRow {
   closed: { won: number; lost: number };
 }
 
+export interface ReferralLeaderRow {
+  code: string; referrer: string; count: number; value: number; accepted: number; won: number;
+}
+export interface ReferralRvoSide { referred: { count: number; value: number }; originated: { count: number; value: number }; }
+export interface ReferralRecentRow {
+  id: string; client_name?: string; product?: string;
+  referred_by_name?: string; referred_by_code?: string; referred_to?: string;
+  referral_status?: string; referral_tier?: 'B2B' | 'S2B' | null;
+  stage?: string; value?: number; referred_at?: string;
+}
 export interface ReferralsByDepartment {
   departments: ReferralDepartmentRow[];
   total: number;
   department_count: number;
   scope?: string;
+  scope_tier?: 'bank' | 'department' | 'unit';
+  totals?: {
+    total: number; accepted: number; pending: number; declined: number;
+    won: number; lost: number; value_influenced: number; conversion_rate: number;
+  };
+  by_referrer?: ReferralLeaderRow[];
+  referral_vs_originated?: { open: ReferralRvoSide; closed: ReferralRvoSide };
+  referral_branch_split?: { in_branch: number; cross_branch: number };
+  recent?: ReferralRecentRow[];
 }
 
 export async function fetchReferralsByDepartment(): Promise<ReferralsByDepartment> {

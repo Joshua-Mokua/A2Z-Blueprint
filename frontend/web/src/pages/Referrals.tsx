@@ -5,7 +5,7 @@
 //   • Returned  — referrals I made that were declined; Reassign to someone new.
 //   • Following — referrals I made that are live (pending/accepted); read-only.
 import { displayName } from "../lib/names";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -20,9 +20,10 @@ import {
   type TeamReferralsResponse,
 } from '@/lib/api';
 
-type Tab = 'incoming' | 'returned' | 'following' | 'team';
+type Tab = 'overview' | 'incoming' | 'returned' | 'following' | 'team';
 
 import { StaffPicker } from '@/components/StaffPicker';
+import { Table, type Column } from '@/components/Table';
 
 const inputCls =
   'w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none ' +
@@ -44,10 +45,151 @@ function statusTone(s: string | undefined): BadgeTone {
   return 'neutral';
 }
 
+function ReferralOverview({ dept, team, navigate, formatKes, displayName }: {
+  dept: ReferralsByDepartment | null;
+  team: ReferralView[];
+  navigate: (to: string) => void;
+  formatKes: (n: number | undefined) => string;
+  displayName: (s: string | undefined) => string;
+}) {
+  const [dir, setDir] = useState<'by_us' | 'to_us' | 'all'>('all');
+  const [fMember, setFMember] = useState('');
+  const [fProduct, setFProduct] = useState('');
+  const [fStatus, setFStatus] = useState('');
+
+  // "our" codes = the referrers within scope (from the analytics leaderboard)
+  const ourCodes = useMemo(() => {
+    const set = new Set<string>();
+    (dept?.by_referrer ?? []).forEach((l) => { if (l.code) set.add(String(l.code)); });
+    return set;
+  }, [dept]);
+
+  const byUs = useMemo(
+    () => team.filter((d) => ourCodes.size === 0 || ourCodes.has(String(d.referred_by_code || ''))),
+    [team, ourCodes]);
+  const toUs = useMemo(
+    () => team.filter((d) => ourCodes.size === 0 || ourCodes.has(String(d.referred_to_code || ''))),
+    [team, ourCodes]);
+  const dirRows = dir === 'by_us' ? byUs : dir === 'to_us' ? toUs : team;
+
+  const memberOpts = Array.from(new Set(team.map((r) => r.referred_by_name).filter(Boolean))) as string[];
+  const productOpts = Array.from(new Set(team.map((r) => r.product_type).filter(Boolean))) as string[];
+  const statusOpts = Array.from(new Set(team.map((r) => r.referral_status).filter(Boolean))) as string[];
+
+  const rows = dirRows.filter((r) =>
+    (!fMember || r.referred_by_name === fMember)
+    && (!fProduct || r.product_type === fProduct)
+    && (!fStatus || r.referral_status === fStatus));
+
+  const t = dept?.totals;
+
+  const statusTone2 = (v?: string): BadgeTone =>
+    v === 'accepted' ? 'success' : v === 'declined' ? 'warning' : v === 'pending' ? 'info' : 'neutral';
+
+  const columns: Column<ReferralView>[] = [
+    { key: 'client_name', header: 'Client', sortable: true, exportValue: (r) => r.client_name || r.id,
+      render: (r) => (
+        <div>
+          <div className="font-medium text-gray-900">{r.client_name || r.id}</div>
+          {r.product_type && <div className="text-xs text-gray-500 mt-0.5">{r.product_type}</div>}
+        </div>
+      ) },
+    { key: 'referred_by_name', header: 'Referred by', sortable: true, exportValue: (r) => r.referred_by_name || '',
+      render: (r) => (
+        <div>
+          <div className="text-sm text-gray-800">{displayName(r.referred_by_name)}</div>
+          {r.referred_by_code && <div className="text-xs text-gray-400 mt-0.5 font-mono">{r.referred_by_code}</div>}
+        </div>
+      ) },
+    { key: 'referred_to', header: 'To', sortable: true, exportValue: (r) => r.referred_to || '',
+      render: (r) => <span className="text-sm text-gray-600">{displayName(r.referred_to)}</span> },
+    { key: 'stage', header: 'Stage', sortable: true, exportValue: (r) => r.stage || '',
+      render: (r) => <span className="text-sm text-gray-700">{r.stage || '—'}</span> },
+    { key: 'referral_status', header: 'Status', sortable: true, exportValue: (r) => r.referral_status || '',
+      render: (r) => (
+        <span className="flex items-center gap-1">
+          <Badge tone={statusTone2(r.referral_status)} size="sm">{r.referral_status || '—'}</Badge>
+          {r.referral_tier && <Badge tone={r.referral_tier === 'S2B' ? 'success' : 'info'} size="sm">{r.referral_tier}</Badge>}
+        </span>
+      ) },
+    { key: 'amount_kes', header: 'Value', align: 'right', sortable: true,
+      sortAccessor: (r) => Number(r.amount_kes ?? r.deal_value) || 0,
+      exportValue: (r) => String(r.amount_kes ?? r.deal_value ?? ''),
+      render: (r) => <span className="font-medium text-gray-900 tabular-nums">{formatKes(r.amount_kes ?? r.deal_value)}</span> },
+    { key: 'actions', header: '',
+      render: (r) => (
+        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/pipeline/${encodeURIComponent(r.id)}`); }}>View</Button>
+      ) },
+  ];
+
+  const dirTabs: { key: 'by_us' | 'to_us' | 'all'; label: string; count: number }[] = [
+    { key: 'by_us', label: 'Referred by us', count: byUs.length },
+    { key: 'to_us', label: 'Referred to us', count: toUs.length },
+    { key: 'all', label: 'All', count: team.length },
+  ];
+
+  const Filter = ({ label, val, set, opts }: { label: string; val: string; set: (v: string) => void; opts: string[] }) => (
+    <select value={val} onChange={(e) => set(e.target.value)}
+      className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700">
+      <option value="">{label}: All</option>
+      {opts.map((o) => <option key={o} value={o}>{displayName(o)}</option>)}
+    </select>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* compact stat strip */}
+      {t && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card><Card.Body className="py-3"><div className="text-xs text-gray-500">Referrals</div><div className="text-xl font-bold text-gray-900 tabular-nums">{t.total}</div><div className="text-[11px] text-gray-400">{t.pending} pending · {t.accepted} accepted</div></Card.Body></Card>
+          <Card><Card.Body className="py-3"><div className="text-xs text-gray-500">Conversion</div><div className="text-xl font-bold text-emerald-700 tabular-nums">{t.conversion_rate}%</div><div className="text-[11px] text-gray-400">{t.won} won · {t.lost} lost</div></Card.Body></Card>
+          <Card><Card.Body className="py-3"><div className="text-xs text-gray-500">Value influenced</div><div className="text-xl font-bold text-gray-900 tabular-nums">{formatKes(t.value_influenced)}</div></Card.Body></Card>
+          <Card><Card.Body className="py-3"><div className="text-xs text-gray-500">Declined</div><div className="text-xl font-bold text-amber-700 tabular-nums">{t.declined}</div></Card.Body></Card>
+        </div>
+      )}
+
+      {/* direction toggle */}
+      <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+        {dirTabs.map((d) => (
+          <button key={d.key} onClick={() => setDir(d.key)}
+            className={'px-4 py-1.5 rounded-md text-sm font-medium transition-colors ' + (dir === d.key ? 'bg-brand-primary text-white' : 'text-gray-600 hover:text-gray-900')}>
+            {d.label}
+            <span className={'ml-2 rounded-full px-1.5 py-0.5 text-xs ' + (dir === d.key ? 'bg-white/20' : 'bg-gray-100 text-gray-500')}>{d.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* the referral table (referrer-inclusive data) */}
+      <Card><Card.Body>
+        <Table<ReferralView>
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          searchable
+          searchPlaceholder="Search referrals by client, stage, referrer…"
+          paginated
+          pageSize={15}
+          exportable
+          exportFilename="referrals.csv"
+          onRowClick={(r) => navigate(`/pipeline/${encodeURIComponent(r.id)}`)}
+          empty={<span className="text-sm text-gray-500">No referrals in this view yet.</span>}
+          toolbar={
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter label="Referrer" val={fMember} set={setFMember} opts={memberOpts} />
+              <Filter label="Product" val={fProduct} set={setFProduct} opts={productOpts} />
+              <Filter label="Status" val={fStatus} set={setFStatus} opts={statusOpts} />
+            </div>
+          }
+        />
+      </Card.Body></Card>
+    </div>
+  );
+}
+
 export default function Referrals() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('incoming');
+  const [tab, setTab] = useState<Tab>('overview');
   const [incoming, setIncoming] = useState<ReferralView[]>([]);
   const [returned, setReturned] = useState<ReferralView[]>([]);
   const [outgoing, setOutgoing] = useState<ReferralView[]>([]);
@@ -134,12 +276,14 @@ export default function Referrals() {
   }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: 'overview', label: 'Overview', count: dept?.totals?.total ?? 0 },
     { key: 'incoming', label: 'Incoming', count: incoming.length },
     { key: 'returned', label: 'Returned', count: returned.length },
     { key: 'following', label: 'Following', count: outgoing.length },
     { key: 'team', label: 'Team', count: team.length },
   ];
-  const active = tab === 'incoming' ? incoming
+  const active = tab === 'overview' ? []
+    : tab === 'incoming' ? incoming
     : tab === 'returned' ? returned
     : tab === 'team' ? team
     : outgoing;
@@ -233,7 +377,7 @@ export default function Referrals() {
           </Button>
         }
       />
-      <main className="max-w-4xl mx-auto px-6 py-6">
+      <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-1">
           {tabs.map((t) => (
             <button
@@ -254,6 +398,10 @@ export default function Referrals() {
             </button>
           ))}
         </div>
+
+        {tab === 'overview' && (
+          <ReferralOverview dept={dept} team={team} navigate={navigate} formatKes={formatKes} displayName={displayName} />
+        )}
 
         {tab === 'team' && teamSummary && (
           <div className="space-y-3 mb-3">
@@ -355,7 +503,7 @@ export default function Referrals() {
           </div>
         )}
 
-        {loading ? (
+        {tab !== 'overview' && (loading ? (
           <div className="py-16 text-center text-sm text-gray-500">Loading referrals…</div>
         ) : active.length === 0 ? (
           <Card><Card.Body>
@@ -372,7 +520,11 @@ export default function Referrals() {
               <Card key={d.id}>
                 <Card.Body>
                   <div className="flex items-start justify-between gap-4">
-                    <DealMeta d={d} />
+                    <button type="button" onClick={() => navigate(`/pipeline/${d.id}`)}
+                      className="text-left min-w-0 flex-1 group" title="Open the full case journey">
+                      <DealMeta d={d} />
+                      <span className="mt-1 inline-block text-[11px] text-brand-primary opacity-0 group-hover:opacity-100 transition-opacity">Open case journey →</span>
+                    </button>
                     <div className="shrink-0 text-right text-xs text-gray-400">
                       {tab === 'incoming' && d.referred_by_name && (
                         <div>from <span className="text-gray-600">{displayName(d.referred_by_name)}</span></div>
@@ -487,7 +639,7 @@ export default function Referrals() {
               </Card>
             ))}
           </div>
-        )}
+        ))}
       </main>
     </div>
   );
