@@ -761,6 +761,14 @@ export async function fetchPendingBranchLogs(): Promise<{ logs: BranchLogEntry[]
 export async function submitBranchLog(values: Record<string, number | string>): Promise<{ log: BranchLogEntry }> {
   return postJson<{ log: BranchLogEntry }, { values: Record<string, number | string> }>('/branch-log', { values });
 }
+// Item 3: save the daily log as a private DRAFT (not submitted for validation).
+export async function saveBranchLogDraft(values: Record<string, number | string>): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { values: Record<string, number | string> }>('/branch-log/draft', { values });
+}
+// Item 3: fetch today's log (draft or submitted) to re-hydrate the form.
+export async function fetchBranchLogDraft(): Promise<{ log: BranchLogEntry | null }> {
+  return getJson<{ log: BranchLogEntry | null }>('/branch-log/draft');
+}
 export async function validateBranchLog(logId: string, approved: boolean, note: string): Promise<{ log: BranchLogEntry }> {
   return postJson<{ log: BranchLogEntry }, { approved: boolean; note: string }>(
     `/branch-log/${encodeURIComponent(logId)}/validate`, { approved, note });

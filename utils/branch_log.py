@@ -179,6 +179,7 @@ class BranchLogManager:
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
             existing["rejected"] = False
+            existing["status"] = "submitted"
             self._save()
             return existing
 
@@ -195,6 +196,7 @@ class BranchLogManager:
             "validated_at": "",
             "manager_note": "",
             "rejected": False,
+            "status": "submitted",
             **metrics,
             "index": compute_index(metrics),
             "remarks": remarks,
@@ -226,11 +228,75 @@ class BranchLogManager:
         return sorted(logs, key=lambda l: l.get("submitted_at", ""), reverse=True)
 
     def get_pending_validation(self, unit: Optional[str] = None) -> list:
+        # Drafts (status="draft") are private to the author and never enter the
+        # manager validation queue until explicitly submitted.
         logs = [l for l in self.logs
-                if not l.get("validated") and not l.get("rejected", False)]
+                if l.get("status") != "draft"
+                and not l.get("validated") and not l.get("rejected", False)]
         if unit and unit != "All":
             logs = [l for l in logs if l.get("unit") == unit]
         return sorted(logs, key=lambda l: l.get("submitted_at", ""), reverse=True)
+
+    def save_draft(self, staff_code: str, staff_name: str, unit: str, role: str,
+                   values: dict) -> dict:
+        """Save (upsert) today's log as a DRAFT for this staff member. A draft is
+        NOT submitted for validation and never appears in a manager's queue; the
+        author can keep editing and later submit(). Survives logout (persisted)."""
+        today = str(date.today())
+        code = str(staff_code)
+
+        def _num(v):
+            try:
+                return float(v or 0)
+            except (TypeError, ValueError):
+                return 0
+
+        metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
+        remarks = str(values.get("remarks", "") or "")
+
+        existing = next((l for l in self.logs
+                         if str(l.get("staff_code")) == code and l.get("log_date") == today), None)
+        if existing:
+            existing.update(metrics)
+            existing["remarks"] = remarks
+            existing["index"] = compute_index(metrics)
+            existing["updated_at"] = datetime.now().isoformat()
+            existing["status"] = "draft"
+            existing["validated"] = False
+            existing["rejected"] = False
+            self._save()
+            return existing
+
+        rec = {
+            "id": f"LOG{len(self.logs) + 1:06d}",
+            "log_date": today,
+            "staff_code": code,
+            "staff_name": staff_name,
+            "unit": unit,
+            "role": role,
+            "submitted_at": "",
+            "updated_at": datetime.now().isoformat(),
+            "validated": False,
+            "validated_by": "",
+            "validated_at": "",
+            "manager_note": "",
+            "rejected": False,
+            "status": "draft",
+            **metrics,
+            "index": compute_index(metrics),
+            "remarks": remarks,
+        }
+        self.logs.append(rec)
+        self._save()
+        return rec
+
+    def get_today(self, staff_code: str) -> Optional[dict]:
+        """Return today's log (draft or submitted) for this staff member, so the
+        Daily Log form can re-hydrate on return. None if nothing saved today."""
+        today = str(date.today())
+        code = str(staff_code)
+        return next((l for l in self.logs
+                     if str(l.get("staff_code")) == code and l.get("log_date") == today), None)
 
     def get_all(self) -> list:
         return list(self.logs)

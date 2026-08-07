@@ -325,6 +325,33 @@ def branch_log_history(unit: str = "", days: int = 7, user: dict = Depends(get_c
     return {"logs": blm.get_history(staff_code=me["staff_code"], days=days)}
 
 
+@router.post("/draft")
+def branch_log_save_draft(payload: dict = Body(default_factory=dict),
+                          user: dict = Depends(get_current_user)):
+    """Save the caller's Daily Log as a DRAFT (private, not submitted for
+    validation). Survives logout; the author can keep editing and later submit."""
+    me = _identity(user)
+    if not me["staff_code"]:
+        raise HTTPException(status_code=400, detail="Your staff identity could not be resolved.")
+    values = payload.get("values") if isinstance(payload.get("values"), dict) else payload
+    blm = BranchLogManager()
+    rec = blm.save_draft(me["staff_code"], me["staff_name"], me["unit"], me["role"], values or {})
+    audit_log("BRANCH_LOG_DRAFT", user.get("username", "unknown"),
+              detail=f"draft={rec.get('id')} unit={me['unit']}")
+    return {"log": rec}
+
+
+@router.get("/draft")
+def branch_log_get_draft(user: dict = Depends(get_current_user)):
+    """Return the caller's log for today (draft or already-submitted) so the
+    Daily Log form can re-hydrate on return. Empty when nothing saved today."""
+    me = _identity(user)
+    if not me["staff_code"]:
+        return {"log": None}
+    blm = BranchLogManager()
+    return {"log": blm.get_today(me["staff_code"])}
+
+
 @router.post("")
 def branch_log_submit(payload: dict = Body(default_factory=dict),
                       user: dict = Depends(get_current_user)):
