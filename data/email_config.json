@@ -1,1 +1,8 @@
-{}
+{
+  "smtp_host": "192.168.48.27",
+  "smtp_port": 25,
+  "smtp_encryption": "tls",
+  "sender_email": "noreply@ecobank.com",
+  "sender_username": "",
+  "sender_password": ""
+}

@@ -81,6 +81,25 @@ def load_email_config():
 def save_email_config(cfg):
     (DATA_DIR/"email_config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
+def _smtp_deliver(cfg, msg, to):
+    """Shared send path for both email functions below.
+
+    Handles an unauthenticated internal relay (MAIL_USERNAME/PASSWORD blank
+    — common for a bank's internal Postfix/Exchange relay bound to trusted
+    IPs) as well as an authenticated one: STARTTLS is attempted only when
+    encryption is configured as tls/starttls, and login() is skipped
+    entirely when no credentials are configured, since calling it with
+    blank credentials would fail against a real server."""
+    import smtplib
+    with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
+        if str(cfg.get("smtp_encryption", "tls")).lower() in ("tls", "starttls"):
+            s.starttls()
+        user, pwd = cfg.get("sender_username") or "", cfg.get("sender_password") or ""
+        if user and pwd:
+            s.login(user, pwd)
+        s.sendmail(cfg["sender_email"], to, msg.as_string())
+
+
 def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
                                due_date, days_info, esc_level, workstream, io_name):
     """Send milestone escalation/due-soon email."""
@@ -125,10 +144,7 @@ def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
-            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        _smtp_deliver(cfg, msg, to_email)
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -169,10 +185,7 @@ def send_structural_delay_email(to_emails, ms_name, init_name, workstream,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = ", ".join(to_emails)
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
-            s.sendmail(cfg["sender_email"], to_emails, msg.as_string())
+        _smtp_deliver(cfg, msg, to_emails)
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -210,10 +223,7 @@ def send_start_alert_email(to_email, recipient_name, ms_name, init_name, start_d
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
-            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        _smtp_deliver(cfg, msg, to_email)
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -328,10 +338,7 @@ def send_welcome_email(to_email, full_name, username, temp_password):
 </div>
 </body></html>"""
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
-            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        _smtp_deliver(cfg, msg, to_email)
         return True, "Email sent"
     except Exception as e:
         return False, str(e)
