@@ -36,12 +36,21 @@ def get_notifications(staff_code: str, role: str, unit: str) -> list:
         except: pass
     
     # ── Pending waiver approvals ──────────────────────────────────
-    if any(x in role.lower() for x in ('branch manager','area manager','head')):
+    # Waivers are approved by FINANCE roles (or admin), NOT every "head". This
+    # mirrors pages/29_revenue_assurance.py:29 (is_finance) so we don't spam
+    # unrelated department heads with a queue they cannot action. Match on the
+    # finance-approver titles + explicit revenue-assurance ownership.
+    _wf = role.lower()
+    _is_waiver_approver = any(x in _wf for x in (
+        "chief financial", "financial controller", "finance manager", "cfo",
+        "tax", "revenue assurance", "head of finance", "head, finance"))
+    if _is_waiver_approver:
         try:
             ra = json.loads((DATA/"revenue_assurance.json").read_text())
             pend = [r for r in ra if r["type"]=="Waiver" and r["status"]=="Pending Approval"]
             if pend:
-                notifs.append({"type":"warning","icon":"⏳","title":f"{len(pend)} waiver(s) pending your approval",
+                notifs.append({"type":"warning","icon":"⏳",
+                                "title":f"{len(pend)} waiver(s) pending approval in the queue",
                                 "link":"Revenue Assurance","count":len(pend)})
         except: pass
     
@@ -163,10 +172,46 @@ def notify(recipient: str, subject: str, body: str = "",
 
 def send_email(to: str, subject: str, body: str = "",
                attachments=None, **kwargs) -> bool:
-    """Send an email. Best-effort dispatch."""
+    """Send an email via the configured SMTP relay (data/email_config.json).
+
+    Safe by default: if email is not configured (no smtp_host/sender_email),
+    this is a logged no-op that returns False — NOTHING is sent. Real sending
+    only happens once the bank provides email_config.json. Reuses the same
+    load_email_config() + smtplib pattern as core.py's transactional emails so
+    there is one SMTP path, not two.
+
+    `body` may be plain text or HTML; we send it as HTML (HTML degrades fine in
+    text clients, and our digests are HTML).
+    """
+    if not to or "@" not in str(to):
+        _v471_logger.info(f"send_email skipped — no valid address ({to!r})")
+        return False
     try:
-        _v471_logger.info(f"send_email({to}, {subject})")
-        # In real env: SMTP / SendGrid / SES.
+        from utils.core import load_email_config
+        cfg = load_email_config() or {}
+    except Exception as exc:
+        _v471_logger.warning(f"send_email: could not load email config: {exc}")
+        return False
+    if not cfg.get("smtp_host") or not cfg.get("sender_email"):
+        # Not configured — safe no-op. This is the default state until the bank
+        # sets email_config.json; the in-app bell still works regardless.
+        _v471_logger.info(f"send_email no-op (email not configured): to={to} subj={subject!r}")
+        return False
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = cfg["sender_email"]
+        msg["To"]      = to
+        msg.attach(MIMEText(body or subject, "html"))
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as srv:
+            srv.starttls()
+            if cfg.get("sender_password"):
+                srv.login(cfg["sender_email"], cfg["sender_password"])
+            srv.sendmail(cfg["sender_email"], [to], msg.as_string())
+        _v471_logger.info(f"send_email sent: to={to} subj={subject!r}")
         return True
     except Exception as exc:
         _v471_logger.warning(f"send_email failed: {exc}")
@@ -180,4 +225,39 @@ def sms_send(to: str, message: str, **kwargs) -> bool:
         return True
     except Exception as exc:
         _v471_logger.warning(f"sms_send failed: {exc}")
+        return False
+
+
+def _email_for_staff(staff_code: str) -> str:
+    """Resolve a staff member's email from the roster (Email column). '' if none."""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is None or len(roster) == 0 or "Email" not in roster.columns:
+            return ""
+        hit = roster[roster["Staff Code"].astype(str).str.strip() == str(staff_code).strip()]
+        if len(hit):
+            return str(hit.iloc[0].get("Email", "") or "").strip()
+    except Exception as exc:
+        _v471_logger.warning(f"_email_for_staff({staff_code}) failed: {exc}")
+    return ""
+
+
+def notify_staff(staff_code: str, subject: str, body_html: str = "") -> bool:
+    """Real-time notification to a staff member by code: emails them now (if they
+    have an address and email is configured). Best-effort — never raises, never
+    blocks the caller. Returns True only if an email was actually sent.
+
+    Event hooks (deal assigned, app assigned, approval pending, …) call THIS so
+    there is one testable, rate-guardable real-time path. If email is not
+    configured, this is a safe no-op and the in-app bell still shows the item.
+    """
+    try:
+        email = _email_for_staff(staff_code)
+        if not email:
+            _v471_logger.info(f"notify_staff({staff_code}) — no email on file; in-app only")
+            return False
+        return send_email(email, subject, body_html or subject)
+    except Exception as exc:
+        _v471_logger.warning(f"notify_staff({staff_code}) failed: {exc}")
         return False

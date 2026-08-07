@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -7,7 +7,7 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
-  submitBranchLog, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
+  submitBranchLog, saveBranchLogDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
   fetchBranchLogActivities, saveBranchLogActivities,
   type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
 } from '@/lib/api';
@@ -24,6 +24,9 @@ export default function BranchLog() {
   const [pending, setPending] = useState<BranchLogEntry[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  // Item 3/4: track unsaved edits so we can auto-save a draft on leave.
+  const [dirty, setDirty] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [autoActs, setAutoActs] = useState<BranchLogActivity[]>([]);
   const [indexTarget, setIndexTarget] = useState(0);
   const [ranking, setRanking] = useState<BranchLogRankRow[]>([]);
@@ -77,11 +80,58 @@ export default function BranchLog() {
     try {
       await submitBranchLog(values);
       toast({ tone: 'success', message: 'Daily log submitted for validation.' });
-      setValues({}); void loadMine();
+      setValues({}); setDirty(false); void loadMine();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Submit failed.' });
     } finally { setBusy(false); }
   };
+
+  // Item 3: save the current entry as a private draft (not submitted).
+  const saveDraft = useCallback(async (silent = false) => {
+    if (Object.keys(values).length === 0) return;
+    setSavingDraft(true);
+    try {
+      await saveBranchLogDraft(values);
+      setDirty(false);
+      if (!silent) toast({ tone: 'success', message: 'Draft saved. You can submit later today.' });
+    } catch (e) {
+      if (!silent) toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save draft.' });
+    } finally { setSavingDraft(false); }
+  }, [values, toast]);
+
+  // Item 3: re-hydrate today's saved entry (draft or submitted) on first load.
+  const loadDraft = useCallback(async () => {
+    try {
+      const r = await fetchBranchLogDraft();
+      if (r.log) {
+        const v: Record<string, string> = {};
+        for (const [k, val] of Object.entries(r.log)) {
+          if (typeof val === 'number') v[k] = String(val);
+        }
+        if (typeof r.log.remarks === 'string') v.remarks = r.log.remarks;
+        setValues((prev) => (Object.keys(prev).length ? prev : v));
+      }
+    } catch { /* no draft — start blank */ }
+  }, []);
+
+  // Item 3: load today's saved entry once, on mount (after loadDraft exists).
+  useEffect(() => { void loadDraft(); }, [loadDraft]);
+
+  // Item 4: auto-save a draft when leaving with unsaved edits. The unmount
+  // handler runs on logout and in-app navigation (React unmounts the page) and
+  // uses the normal authenticated saveDraft. A beforeunload warning covers the
+  // browser-close/refresh case (sendBeacon can't carry the JWT, so we warn).
+  const dirtyRef = useRef(false); useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      if (dirtyRef.current) void saveDraft(true);
+    };
+  }, [saveDraft, dirty]);
 
   const review = async (id: string, approved: boolean) => {
     setBusy(true);
@@ -159,7 +209,7 @@ export default function BranchLog() {
                     <label key={f.key} className="text-sm">
                       <span className="mb-1 block text-gray-700">{f.label}{f.unit ? ` (${f.unit})` : ''}</span>
                       <input type="number" min={0} className="w-full rounded border px-2 py-1.5 text-sm"
-                        value={values[f.key] ?? ''} onChange={(e) => setValues((p) => ({ ...p, [f.key]: e.target.value }))} />
+                        value={values[f.key] ?? ''} onChange={(e) => { setDirty(true); setValues((p) => ({ ...p, [f.key]: e.target.value })); }} />
                     </label>
                   ))}
                 </div>
@@ -171,7 +221,7 @@ export default function BranchLog() {
                 <label className="block text-sm">
                   <span className="mb-1 block text-gray-700">Remarks / challenges</span>
                   <textarea rows={12} className="w-full rounded border px-2 py-1.5 text-sm"
-                    value={values.remarks ?? ''} onChange={(e) => setValues((p) => ({ ...p, remarks: e.target.value }))} />
+                    value={values.remarks ?? ''} onChange={(e) => { setDirty(true); setValues((p) => ({ ...p, remarks: e.target.value })); }} />
                 </label>
               </div>
             </div>
@@ -185,7 +235,12 @@ export default function BranchLog() {
                   </span>
                 )}
               </div>
-              <Button onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={() => void saveDraft()} disabled={busy || savingDraft}>
+                  {savingDraft ? 'Saving…' : 'Save draft'}
+                </Button>
+                <Button onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
+              </div>
             </div>
           </Card.Body>
         </Card>

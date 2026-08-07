@@ -105,6 +105,9 @@ export interface PipelineDeal {
   // Manager validation
   manager_validated?:   boolean;
   validated_by?:        string;
+  validated_by_name?:   string;
+  validated_by_role?:   string;
+  validated_by_code?:   string;
   validated_at?:        string;
   validation_note?:     string;
   draft?:               boolean;
@@ -713,4 +716,25 @@ export interface PipelineAnalyticsResponse {
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
   by_unit?:           UnitBreakdown[];
   by_rm?:             RmBreakdown[];
+  by_probability_band?: ProbabilityBandBreakdown[];
+  by_product_funnel?: ProductFunnel[];
+}
+
+export interface ProductFunnelStage {
+  stage: string;
+  count: number;
+  value: number;
+  win_probability: number | null;
+}
+export interface ProductFunnel {
+  product: string;
+  active_count: number;
+  value: number;
+  funnel: ProductFunnelStage[];
+}
+
+export interface ProbabilityBandBreakdown {
+  band:  string;
+  value: number;
+  count: number;
 }

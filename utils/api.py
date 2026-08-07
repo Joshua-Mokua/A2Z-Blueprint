@@ -510,6 +510,9 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "manager_validated":    deal.get("manager_validated"),
                 "validated_by":         deal.get("validated_by"),
                 "validated_at":         deal.get("validated_at"),
+                "validated_by_name":    deal.get("validated_by_name"),
+                "validated_by_role":    deal.get("validated_by_role"),
+                "validated_by_code":    deal.get("validated_by_code"),
                 "referral_status":      deal.get("referral_status"),
                 "referred_to_code":     deal.get("referred_to_code"),
                 "referred_to":          deal.get("referred_to"),
@@ -617,6 +620,7 @@ def _normalize_db_deal_row(row):
         for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
                    "fx_rate_source", "client_type", "mou_id", "mou_title",
                    "sector", "segment", "validated_by", "validated_at",
+                   "validated_by_name", "validated_by_role", "validated_by_code",
                    "is_top_up", "top_up_amount", "original_facility_amount",
                    "existing_facility_id", "is_repeat_borrower",
                    "referral_status", "referred_to_code", "referred_to",
@@ -1036,6 +1040,7 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
         "staff_code":   full_user.get("staff_code"),
         "full_name":    full_user.get("full_name"),
         "department":   full_user.get("department"),
+        "unit":         full_user.get("unit"),
         "email":        full_user.get("email"),
         "active":       full_user.get("active", True),
 
@@ -4500,6 +4505,42 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_probability_band: ACTIVE deals grouped into 6 win-probability bands. Win
+    # probability is DERIVED per-product-stage from the admin matrix
+    # (_flow_stage_win_probability), the same source the deal read uses — so the
+    # bands reconcile with each deal's shown probability. Bands (inclusive):
+    # 0-20, 21-40, 41-60, 61-80, 81-99, and 100 (isolates fully-committed).
+    # Deals whose stage has no configured probability are grouped under "Unset".
+    _PROB_BANDS = [
+        ("0–20%",   0,   20),
+        ("21–40%",  21,  40),
+        ("41–60%",  41,  60),
+        ("61–80%",  61,  80),
+        ("81–99%",  81,  99),
+        ("100%",    100, 100),
+    ]
+    def _band_label(p):
+        for lbl, lo, hi in _PROB_BANDS:
+            if lo <= p <= hi:
+                return lbl
+        return None
+    _pb = {lbl: {"band": lbl, "value": 0.0, "count": 0} for lbl, _, _ in _PROB_BANDS}
+    _pb["Unset"] = {"band": "Unset", "value": 0.0, "count": 0}
+    for d in active:  # active = open pipeline only (excludes Closed Won/Lost)
+        _wp = _flow_stage_win_probability(
+            str(d.get("product_type") or d.get("product") or ""),
+            str(d.get("stage") or ""))
+        if _wp is None:
+            _key = "Unset"
+        else:
+            _key = _band_label(float(_wp)) or "Unset"
+        _pb[_key]["value"] += _deal_value(d)
+        _pb[_key]["count"] += 1
+    # Preserve band order (bands ascending, Unset last); drop empty bands.
+    _by_probability_band = [_pb[lbl] for lbl, _, _ in _PROB_BANDS if _pb[lbl]["count"] > 0]
+    if _pb["Unset"]["count"] > 0:
+        _by_probability_band.append(_pb["Unset"])
+
     # by_segment_funnel: per-segment ASSURED (validated + active) funnel by stage,
     # so the pipeline funnel can be sliced by Ecobank segment (Premier / Advantage /
     # Direct / SME / Corporate / …) the same way it slices by product class. Uses
@@ -4529,6 +4570,57 @@ def _compute_pipeline_analytics(deals: list) -> dict:
             "funnel": funnel,
         })
     by_segment_funnel.sort(key=lambda x: x["value"], reverse=True)
+
+    # by_product_funnel: per-PRODUCT ASSURED (validated + active) funnel, each
+    # product bucketed into ITS OWN redefined stage flow (_stage_flow_for) rather
+    # than the global stage list — so a product's funnel reflects the stages the
+    # admin actually defined for it. Each stage also carries its win probability
+    # from the per-product matrix (_flow_stage_win_probability), so the funnel
+    # conveys likelihood, not just counts. Products with no explicit flow fall
+    # back to their class/category flow (handled inside _stage_flow_for).
+    _prod_funnels: dict = {}
+    for d in live:
+        if d.get("stage") not in ACTIVE_STAGES or not d.get("manager_validated"):
+            continue
+        prod = str(d.get("product_type") or d.get("product") or "Unclassified").strip() or "Unclassified"
+        entry = _prod_funnels.setdefault(prod, {})
+        stg = str(d.get("stage") or "")
+        cell = entry.setdefault(stg, {"count": 0, "value": 0.0})
+        cell["count"] += 1
+        cell["value"] += _deal_value(d)
+    by_product_funnel = []
+    for prod, cells in _prod_funnels.items():
+        flow = _stage_flow_for(prod)  # the product's OWN stages, in order
+        # Order the funnel by the product's flow; include only stages that have deals.
+        ordered = []
+        for stg in flow:
+            c = cells.get(stg)
+            if c and c["count"] > 0:
+                ordered.append({
+                    "stage": stg,
+                    "count": c["count"],
+                    "value": c["value"],
+                    "win_probability": _flow_stage_win_probability(prod, stg),
+                })
+        # Any deal sitting in a stage NOT in the product's configured flow (data
+        # drift) is still surfaced, appended after the ordered flow stages.
+        for stg, c in cells.items():
+            if stg not in flow and c["count"] > 0:
+                ordered.append({
+                    "stage": stg,
+                    "count": c["count"],
+                    "value": c["value"],
+                    "win_probability": _flow_stage_win_probability(prod, stg),
+                })
+        if not ordered:
+            continue
+        by_product_funnel.append({
+            "product": prod,
+            "active_count": sum(f["count"] for f in ordered),
+            "value": sum(f["value"] for f in ordered),
+            "funnel": ordered,
+        })
+    by_product_funnel.sort(key=lambda x: x["value"], reverse=True)
 
     # by_currency_book: KES-equivalent split (mirrors the dashboard).
     _by_currency_book = {"LCY": {"value": 0.0, "count": 0},
@@ -4620,7 +4712,9 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
+        "by_product_funnel": by_product_funnel,
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
         "by_rm": _by_rm,
@@ -5093,6 +5187,27 @@ def pipeline_deal_refer(
     invalidate_pipeline_caches()
 
     created = pm.get_deal(new_id) or referral_record
+    # Real-time email: tell the person a deal was referred to them. Best-effort;
+    # a notification failure never breaks the referral.
+    try:
+        from utils.notifications import notify_staff
+        _to_code = str(payload.portfolio_owner_code or "").strip()
+        if _to_code:
+            notify_staff(
+                _to_code,
+                "A2Z MIS 360 — a deal has been referred to you",
+                f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+                f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+                f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+                f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+                f"<p>Hi <strong>{payload.referred_to or ''}</strong>,</p>"
+                f"<p>A deal for <strong>{payload.client_name or 'a client'}</strong> has been referred "
+                f"to you. Please log in to A2Z MIS 360 to accept and take it forward.</p>"
+                f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+                f"</div></body></html>",
+            )
+    except Exception:
+        pass
     return PipelineDealMutationResponse(
         deal=PipelineDeal.model_validate(created),
         status="referred",
@@ -6067,6 +6182,19 @@ def pipeline_deal_create(
         if not str(deal_dict.get("staff_name") or "").strip():
             deal_dict["staff_name"] = str(
                 _full.get("full_name", "") or user.get("username", "") or "")
+    # Item 1: a deal's originating branch defaults to the creator's own branch
+    # (their staff record's `unit`). Branch staff never need to pick it. Head
+    # Office RMs — whose own unit is "Head Office", not a real branch — send an
+    # explicit `unit` (the frontend shows them a branch picker), which we keep.
+    if not str(deal_dict.get("unit") or "").strip():
+        from utils.core import UserManager as _UM_unit
+        _cr = _UM_unit().users.get(str(user.get("username", "") or "")) or {}
+        _cru = str(_cr.get("unit", "") or "").strip()
+        # Don't stamp "Head Office" as a deal's branch — leave blank so an HO
+        # deal without an explicit pick stays clearly unassigned rather than
+        # masquerading as a branch.
+        if _cru and _cru.lower() != "head office":
+            deal_dict["unit"] = _cru
     ok, reason = validate_create_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
@@ -6683,6 +6811,22 @@ def pipeline_deal_validate(
         payload.note or "",
     )
 
+    # Item 5: record WHO validated (name + role), not just the username, so the
+    # journey attributes it correctly regardless of which of the three in-line
+    # validators (Branch Manager / Branch Operations Manager / Service Manager)
+    # acted. Best-effort enrichment on the deal record.
+    try:
+        _vname = str(user.get("full_name", "") or user.get("username", "") or "")
+        _vrole = str(user.get("role", "") or "")
+        _vcode = str(user.get("staff_code", "") or "")
+        pm.update_deal(deal_id, {
+            "validated_by_name": _vname,
+            "validated_by_role": _vrole,
+            "validated_by_code": _vcode,
+        }, user.get("username", ""))
+    except Exception:
+        pass
+
     # Persist the validation to the DB read path. The analytics assured value
     # and funnel read deals via _acquire_scoped_deals (DB-first); without this
     # sync, manager_validated would live only in the JSON store and the DB
@@ -6704,6 +6848,37 @@ def pipeline_deal_validate(
     invalidate_pipeline_caches()
 
     updated = pm.get_deal(deal_id) or deal
+    # Real-time email: tell the deal OWNER their deal was validated (or queried
+    # back with a note). sc = deal's staff_code (owner), captured above. Best-
+    # effort; a notification failure never breaks validation.
+    try:
+        from utils.notifications import notify_staff
+        _owner = str(sc or "").strip()
+        _client = str(updated.get("client_name", "") or "your deal")
+        if _owner:
+            if payload.approved:
+                _subj = "A2Z MIS 360 — your deal was validated"
+                _msg = (f"<p>Good news — your deal for <strong>{_client}</strong> has been "
+                        f"validated by your manager and now counts toward the pipeline forecast.</p>")
+            else:
+                _note = str(payload.note or "").strip()
+                _subj = "A2Z MIS 360 — your deal was queried (needs attention)"
+                _msg = (f"<p>Your deal for <strong>{_client}</strong> was queried by your manager "
+                        f"and returned to you"
+                        + (f" with this note: <em>{_note}</em>" if _note else "")
+                        + ".</p><p>Please review and resubmit.</p>")
+            notify_staff(
+                _owner, _subj,
+                f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+                f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+                f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+                f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+                f"{_msg}"
+                f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+                f"</div></body></html>",
+            )
+    except Exception:
+        pass
     return {
         "deal":           updated,
         "status":         "validated" if payload.approved else "queried",
@@ -10383,7 +10558,40 @@ def admin_document_catalog(user: dict = Depends(get_current_user)):
     for extra in ("Credit Report", "Branch Committee Decision"):
         if extra not in catalog:
             catalog.append(extra)
+    # Admin-added custom document types (global master list additions). These let
+    # an admin introduce a new document that can then be ticked against any product.
+    try:
+        _ps = _load_json("pipeline_settings.json") or {}
+        for _cd in (_ps.get("custom_document_types", []) or []):
+            if isinstance(_cd, str) and _cd.strip() and _cd.strip() not in catalog:
+                catalog.append(_cd.strip())
+    except Exception:
+        pass
     return {"documents": sorted(set(catalog))}
+@app.post("/api/admin/document-catalog", tags=["admin"])
+def admin_document_catalog_add(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(require_config_admin)):
+    """Add a NEW document type to the global master catalog. It then appears in the
+    per-product required-documents tick list. Idempotent (case-insensitive)."""
+    name = str(payload.get("name", "") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="A document name is required.")
+    if len(name) > 120:
+        raise HTTPException(status_code=400, detail="Document name too long (max 120).")
+    from utils.core import get_pipeline_settings, save_pipeline_settings
+    settings = get_pipeline_settings()
+    existing = list(settings.get("custom_document_types", []) or [])
+    # also consider the derived catalog so we don't duplicate a built-in
+    _derived = {d.lower() for d in admin_document_catalog(user).get("documents", [])}
+    if name.lower() in _derived or any(name.lower() == e.lower() for e in existing):
+        return {"status": "exists", "name": name,
+                "documents": admin_document_catalog(user).get("documents", [])}
+    existing.append(name)
+    settings["custom_document_types"] = existing
+    save_pipeline_settings(settings)
+    _audit("API_DOCUMENT_TYPE_ADDED", user, f"name={name}")
+    return {"status": "added", "name": name,
+            "documents": admin_document_catalog(user).get("documents", [])}
 # === END DOCUMENT CATALOG ENDPOINT ===
 
 
@@ -10394,7 +10602,9 @@ import re as _re_docup
 from datetime import datetime as _dt_docup
 
 _DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
-_DOC_MAX_BYTES = 30 * 1024 * 1024  # 15 MB
+_DOC_MAX_BYTES = 200 * 1024 * 1024  # 200 MB (several documents per deal). NOTE: base64
+# inflates the request body ~33%, so a 200MB file is ~267MB on the wire — ensure uvicorn and any
+# reverse proxy (nginx client_max_body_size etc.) allow at least ~300MB, else the proxy 413s first.
 
 
 class _DocUploadBody(BaseModel):
