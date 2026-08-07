@@ -36,12 +36,21 @@ def get_notifications(staff_code: str, role: str, unit: str) -> list:
         except: pass
     
     # ── Pending waiver approvals ──────────────────────────────────
-    if any(x in role.lower() for x in ('branch manager','area manager','head')):
+    # Waivers are approved by FINANCE roles (or admin), NOT every "head". This
+    # mirrors pages/29_revenue_assurance.py:29 (is_finance) so we don't spam
+    # unrelated department heads with a queue they cannot action. Match on the
+    # finance-approver titles + explicit revenue-assurance ownership.
+    _wf = role.lower()
+    _is_waiver_approver = any(x in _wf for x in (
+        "chief financial", "financial controller", "finance manager", "cfo",
+        "tax", "revenue assurance", "head of finance", "head, finance"))
+    if _is_waiver_approver:
         try:
             ra = json.loads((DATA/"revenue_assurance.json").read_text())
             pend = [r for r in ra if r["type"]=="Waiver" and r["status"]=="Pending Approval"]
             if pend:
-                notifs.append({"type":"warning","icon":"⏳","title":f"{len(pend)} waiver(s) pending your approval",
+                notifs.append({"type":"warning","icon":"⏳",
+                                "title":f"{len(pend)} waiver(s) pending approval in the queue",
                                 "link":"Revenue Assurance","count":len(pend)})
         except: pass
     
