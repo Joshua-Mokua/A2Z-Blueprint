@@ -334,12 +334,24 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     try:
         _my_code = str(user_data.get("staff_code", "") or "").strip()
         _my_dept = ""
-        if _my_code and "Staff Code" in staff_scores.columns and "Department" in staff_scores.columns:
+        _roster_unit = ""
+        if _my_code and "Staff Code" in staff_scores.columns:
             _mrow = staff_scores[staff_scores["Staff Code"].astype(str).str.strip() == _my_code]
             if len(_mrow):
-                _my_dept = str(_mrow.iloc[0].get("Department", "") or "").strip()
+                if "Department" in staff_scores.columns:
+                    _my_dept = str(_mrow.iloc[0].get("Department", "") or "").strip()
+                # ROOT-CAUSE FIX: the thin JWT user carries no `unit` (identity
+                # enrichment fills department but not unit), so trusting
+                # user_data["unit"] left HO segment staff (Fiona/Catherine) unable
+                # to see their department book. Look unit up from the roster via
+                # staff_code — same source as _my_dept — so the segment rule is
+                # self-sufficient and fires for every Head-Office banking member.
+                if "Unit" in staff_scores.columns:
+                    _roster_unit = str(_mrow.iloc[0].get("Unit", "") or "").strip()
         _dl = _my_dept.lower()
-        _unit_ho = str(my_unit).strip().lower() == "head office"
+        # Prefer the roster unit; fall back to any unit the caller did supply.
+        _eff_unit = _roster_unit or str(my_unit)
+        _unit_ho = str(_eff_unit).strip().lower() == "head office"
         _has_dept = "Department" in staff_scores.columns
         if _has_dept:
             _dept_l = staff_scores["Department"].astype(str).str.strip().str.lower()
