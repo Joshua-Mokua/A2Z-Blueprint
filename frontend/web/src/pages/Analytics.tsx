@@ -105,7 +105,7 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Currency', 'Branch', 'RM'] as const;
+  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Probability', 'Currency', 'Branch', 'RM'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -118,6 +118,8 @@ export function Analytics() {
         return (data.by_segment ?? []).map((x) => ({ label: x.segment, value: x.value, count: x.count }));
       case 'Stage':
         return (data.funnel ?? []).map((x) => ({ label: x.stage, value: x.value, count: x.count }));
+      case 'Probability':
+        return (data.by_probability_band ?? []).map((x) => ({ label: x.band, value: x.value, count: x.count }));
       case 'Currency': {
         const cb = data.by_currency_book;
         return cb ? [

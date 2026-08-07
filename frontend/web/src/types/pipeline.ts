@@ -712,4 +712,11 @@ export interface PipelineAnalyticsResponse {
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
   by_unit?:           UnitBreakdown[];
   by_rm?:             RmBreakdown[];
+  by_probability_band?: ProbabilityBandBreakdown[];
+}
+
+export interface ProbabilityBandBreakdown {
+  band:  string;
+  value: number;
+  count: number;
 }

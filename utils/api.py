@@ -4501,6 +4501,42 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_probability_band: ACTIVE deals grouped into 6 win-probability bands. Win
+    # probability is DERIVED per-product-stage from the admin matrix
+    # (_flow_stage_win_probability), the same source the deal read uses — so the
+    # bands reconcile with each deal's shown probability. Bands (inclusive):
+    # 0-20, 21-40, 41-60, 61-80, 81-99, and 100 (isolates fully-committed).
+    # Deals whose stage has no configured probability are grouped under "Unset".
+    _PROB_BANDS = [
+        ("0–20%",   0,   20),
+        ("21–40%",  21,  40),
+        ("41–60%",  41,  60),
+        ("61–80%",  61,  80),
+        ("81–99%",  81,  99),
+        ("100%",    100, 100),
+    ]
+    def _band_label(p):
+        for lbl, lo, hi in _PROB_BANDS:
+            if lo <= p <= hi:
+                return lbl
+        return None
+    _pb = {lbl: {"band": lbl, "value": 0.0, "count": 0} for lbl, _, _ in _PROB_BANDS}
+    _pb["Unset"] = {"band": "Unset", "value": 0.0, "count": 0}
+    for d in active:  # active = open pipeline only (excludes Closed Won/Lost)
+        _wp = _flow_stage_win_probability(
+            str(d.get("product_type") or d.get("product") or ""),
+            str(d.get("stage") or ""))
+        if _wp is None:
+            _key = "Unset"
+        else:
+            _key = _band_label(float(_wp)) or "Unset"
+        _pb[_key]["value"] += _deal_value(d)
+        _pb[_key]["count"] += 1
+    # Preserve band order (bands ascending, Unset last); drop empty bands.
+    _by_probability_band = [_pb[lbl] for lbl, _, _ in _PROB_BANDS if _pb[lbl]["count"] > 0]
+    if _pb["Unset"]["count"] > 0:
+        _by_probability_band.append(_pb["Unset"])
+
     # by_segment_funnel: per-segment ASSURED (validated + active) funnel by stage,
     # so the pipeline funnel can be sliced by Ecobank segment (Premier / Advantage /
     # Direct / SME / Corporate / …) the same way it slices by product class. Uses
@@ -4621,6 +4657,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
