@@ -732,8 +732,16 @@ export interface ProductFunnel {
   funnel: ProductFunnelStage[];
 }
 
+export interface ProbabilityBandStage {
+  stage: string;
+  product: string;
+  win_probability: number | null;
+  count: number;
+  value: number;
+}
 export interface ProbabilityBandBreakdown {
   band:  string;
   value: number;
   count: number;
+  stages?: ProbabilityBandStage[];
 }

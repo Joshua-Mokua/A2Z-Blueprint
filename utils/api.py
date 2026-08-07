@@ -4526,16 +4526,33 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         return None
     _pb = {lbl: {"band": lbl, "value": 0.0, "count": 0} for lbl, _, _ in _PROB_BANDS}
     _pb["Unset"] = {"band": "Unset", "value": 0.0, "count": 0}
+    # Band -> stages within it. The win band is the consistent cross-product layer
+    # (an MD can compare products by band regardless of each product's stage names);
+    # the stages underneath give the detail. Keyed by (stage, product) so the same
+    # stage name from different products stays distinguishable, then flattened.
+    _pb_stages = {lbl: {} for lbl, _, _ in _PROB_BANDS}
+    _pb_stages["Unset"] = {}
     for d in active:  # active = open pipeline only (excludes Closed Won/Lost)
-        _wp = _flow_stage_win_probability(
-            str(d.get("product_type") or d.get("product") or ""),
-            str(d.get("stage") or ""))
+        _prod = str(d.get("product_type") or d.get("product") or "")
+        _stage = str(d.get("stage") or "")
+        _wp = _flow_stage_win_probability(_prod, _stage)
         if _wp is None:
             _key = "Unset"
         else:
             _key = _band_label(float(_wp)) or "Unset"
         _pb[_key]["value"] += _deal_value(d)
         _pb[_key]["count"] += 1
+        _skey = (_stage, _prod)
+        _cell = _pb_stages[_key].setdefault(
+            _skey, {"stage": _stage, "product": _prod,
+                    "win_probability": _wp, "count": 0, "value": 0.0})
+        _cell["count"] += 1
+        _cell["value"] += _deal_value(d)
+    # Attach the stage breakdown (sorted by value desc) to each band.
+    for _lbl in list(_pb.keys()):
+        _stages_list = sorted(_pb_stages.get(_lbl, {}).values(),
+                              key=lambda x: x["value"], reverse=True)
+        _pb[_lbl]["stages"] = _stages_list
     # Preserve band order (bands ascending, Unset last); drop empty bands.
     _by_probability_band = [_pb[lbl] for lbl, _, _ in _PROB_BANDS if _pb[lbl]["count"] > 0]
     if _pb["Unset"]["count"] > 0:

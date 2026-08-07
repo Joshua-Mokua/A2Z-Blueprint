@@ -6,7 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchPipelineDrill, fetchSlaViolations } from '@/lib/api';
-import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel } from '@/types/pipeline';
+import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel, ProbabilityBandBreakdown } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
@@ -159,7 +159,7 @@ export function Analytics() {
       </div>
 
       {/* Model A slicer */}
-      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} />
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} />
 
       {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
       <SlaSummaryCard />
@@ -191,14 +191,16 @@ export function Analytics() {
 
 // ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
 function PipelineSlicer({
-  dimensions, sliceFor, kes, productFunnels,
+  dimensions, sliceFor, kes, productFunnels, probabilityBands,
 }: {
   dimensions: readonly string[];
   sliceFor: (d: never) => { label: string; value: number; count: number }[];
   kes: (n: number) => string;
   productFunnels: ProductFunnel[];
+  probabilityBands: ProbabilityBandBreakdown[];
 }) {
   const [dim, setDim] = useState<string>('Product');
+  const [expandedBand, setExpandedBand] = useState<string | null>(null);
   const [pfProduct, setPfProduct] = useState<string>('');
   // Default the product-funnel picker to the highest-value product.
   const activePf = useMemo(() => {
@@ -208,6 +210,7 @@ function PipelineSlicer({
   // Stage renders as a funnel (server/flow order preserved); Sector & Currency
   // as donuts (share); everything else as ranked bars (value-sorted).
   const isProductFunnel = dim === 'Product Funnel';
+  const isProbability = dim === 'Probability';
   const isFunnel = dim === 'Stage' || isProductFunnel;
   const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
@@ -267,7 +270,49 @@ function PipelineSlicer({
             </select>
           </div>
         )}
-        {rows.length === 0 ? (
+        {isProbability ? (
+          probabilityBands.length === 0 ? (
+            <p className="text-sm text-gray-500">No probability data yet — win % is set per product stage in Admin.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-2">Win-probability bands (consistent across all products). Click a band to see the stages within it.</p>
+              {(() => {
+                const maxV = Math.max(...probabilityBands.map((b) => b.value), 0);
+                return probabilityBands.map((b) => {
+                  const bpct = maxV > 0 ? (b.value / maxV) * 100 : 0;
+                  const open = expandedBand === b.band;
+                  return (
+                    <div key={b.band} className="rounded border">
+                      <button type="button" onClick={() => setExpandedBand(open ? null : b.band)}
+                        className="w-full flex items-center gap-3 p-2 text-left hover:bg-gray-50">
+                        <span className="w-16 shrink-0 text-xs font-medium text-gray-700">{b.band}</span>
+                        <span className="flex-1 bg-gray-100 rounded">
+                          <span className="block h-6 rounded flex items-center justify-end px-2 text-[11px] text-white tabular-nums"
+                            style={{ width: `${Math.max(bpct, 8)}%`, background: 'var(--brand-primary, #0082BB)' }}>
+                            {b.count}
+                          </span>
+                        </span>
+                        <span className="w-24 shrink-0 text-right text-xs text-gray-600 tabular-nums">{kes(b.value)}</span>
+                        <span className="w-4 shrink-0 text-xs text-gray-400">{open ? '▾' : '▸'}</span>
+                      </button>
+                      {open && (b.stages ?? []).length > 0 && (
+                        <div className="border-t bg-gray-50 px-3 py-2 space-y-1">
+                          {(b.stages ?? []).map((st, i) => (
+                            <div key={`${st.stage}-${st.product}-${i}`} className="flex items-center gap-2 text-xs text-gray-600">
+                              <span className="flex-1">{st.stage} <span className="text-gray-400">· {st.product}</span>{st.win_probability != null ? ` · ${st.win_probability}%` : ''}</span>
+                              <span className="tabular-nums">{st.count} deal{st.count === 1 ? '' : 's'}</span>
+                              <span className="w-24 text-right tabular-nums">{kes(st.value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )
+        ) : rows.length === 0 ? (
           <p className="text-sm text-gray-500">No data for this dimension yet.</p>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
