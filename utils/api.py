@@ -5094,6 +5094,27 @@ def pipeline_deal_refer(
     invalidate_pipeline_caches()
 
     created = pm.get_deal(new_id) or referral_record
+    # Real-time email: tell the person a deal was referred to them. Best-effort;
+    # a notification failure never breaks the referral.
+    try:
+        from utils.notifications import notify_staff
+        _to_code = str(payload.portfolio_owner_code or "").strip()
+        if _to_code:
+            notify_staff(
+                _to_code,
+                "A2Z MIS 360 — a deal has been referred to you",
+                f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+                f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+                f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+                f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+                f"<p>Hi <strong>{payload.referred_to or ''}</strong>,</p>"
+                f"<p>A deal for <strong>{payload.client_name or 'a client'}</strong> has been referred "
+                f"to you. Please log in to A2Z MIS 360 to accept and take it forward.</p>"
+                f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+                f"</div></body></html>",
+            )
+    except Exception:
+        pass
     return PipelineDealMutationResponse(
         deal=PipelineDeal.model_validate(created),
         status="referred",
@@ -6709,6 +6730,37 @@ def pipeline_deal_validate(
     invalidate_pipeline_caches()
 
     updated = pm.get_deal(deal_id) or deal
+    # Real-time email: tell the deal OWNER their deal was validated (or queried
+    # back with a note). sc = deal's staff_code (owner), captured above. Best-
+    # effort; a notification failure never breaks validation.
+    try:
+        from utils.notifications import notify_staff
+        _owner = str(sc or "").strip()
+        _client = str(updated.get("client_name", "") or "your deal")
+        if _owner:
+            if payload.approved:
+                _subj = "A2Z MIS 360 — your deal was validated"
+                _msg = (f"<p>Good news — your deal for <strong>{_client}</strong> has been "
+                        f"validated by your manager and now counts toward the pipeline forecast.</p>")
+            else:
+                _note = str(payload.note or "").strip()
+                _subj = "A2Z MIS 360 — your deal was queried (needs attention)"
+                _msg = (f"<p>Your deal for <strong>{_client}</strong> was queried by your manager "
+                        f"and returned to you"
+                        + (f" with this note: <em>{_note}</em>" if _note else "")
+                        + ".</p><p>Please review and resubmit.</p>")
+            notify_staff(
+                _owner, _subj,
+                f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+                f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+                f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+                f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+                f"{_msg}"
+                f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+                f"</div></body></html>",
+            )
+    except Exception:
+        pass
     return {
         "deal":           updated,
         "status":         "validated" if payload.approved else "queried",

@@ -376,6 +376,26 @@ def lms_application_assign(
         lam.update(app_id, {"assignment_requests": [], "assignment_purpose": _purpose})
     except Exception:
         pass
+    # Real-time email: tell the assigned analyst a case is now theirs. Best-effort,
+    # never blocks or breaks the assignment if email is down/unconfigured.
+    try:
+        from utils.notifications import notify_staff
+        _client = str((updated or app or {}).get("client_name", "") or "a client")
+        notify_staff(
+            str(payload.analyst_code or ""),
+            "A2Z MIS 360 — a credit case has been assigned to you",
+            f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+            f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+            f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+            f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+            f"<p>Hi <strong>{payload.analyst_name or ''}</strong>,</p>"
+            f"<p>Credit application <strong>{app_id}</strong> ({_client}) has been assigned to you "
+            f"for analysis. Please log in to A2Z MIS 360 to begin.</p>"
+            f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+            f"</div></body></html>",
+        )
+    except Exception:
+        pass
     updated = lam.get(app_id)
     return {"application": updated, "status": "assigned"}
 
