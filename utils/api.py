@@ -4567,6 +4567,57 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         })
     by_segment_funnel.sort(key=lambda x: x["value"], reverse=True)
 
+    # by_product_funnel: per-PRODUCT ASSURED (validated + active) funnel, each
+    # product bucketed into ITS OWN redefined stage flow (_stage_flow_for) rather
+    # than the global stage list — so a product's funnel reflects the stages the
+    # admin actually defined for it. Each stage also carries its win probability
+    # from the per-product matrix (_flow_stage_win_probability), so the funnel
+    # conveys likelihood, not just counts. Products with no explicit flow fall
+    # back to their class/category flow (handled inside _stage_flow_for).
+    _prod_funnels: dict = {}
+    for d in live:
+        if d.get("stage") not in ACTIVE_STAGES or not d.get("manager_validated"):
+            continue
+        prod = str(d.get("product_type") or d.get("product") or "Unclassified").strip() or "Unclassified"
+        entry = _prod_funnels.setdefault(prod, {})
+        stg = str(d.get("stage") or "")
+        cell = entry.setdefault(stg, {"count": 0, "value": 0.0})
+        cell["count"] += 1
+        cell["value"] += _deal_value(d)
+    by_product_funnel = []
+    for prod, cells in _prod_funnels.items():
+        flow = _stage_flow_for(prod)  # the product's OWN stages, in order
+        # Order the funnel by the product's flow; include only stages that have deals.
+        ordered = []
+        for stg in flow:
+            c = cells.get(stg)
+            if c and c["count"] > 0:
+                ordered.append({
+                    "stage": stg,
+                    "count": c["count"],
+                    "value": c["value"],
+                    "win_probability": _flow_stage_win_probability(prod, stg),
+                })
+        # Any deal sitting in a stage NOT in the product's configured flow (data
+        # drift) is still surfaced, appended after the ordered flow stages.
+        for stg, c in cells.items():
+            if stg not in flow and c["count"] > 0:
+                ordered.append({
+                    "stage": stg,
+                    "count": c["count"],
+                    "value": c["value"],
+                    "win_probability": _flow_stage_win_probability(prod, stg),
+                })
+        if not ordered:
+            continue
+        by_product_funnel.append({
+            "product": prod,
+            "active_count": sum(f["count"] for f in ordered),
+            "value": sum(f["value"] for f in ordered),
+            "funnel": ordered,
+        })
+    by_product_funnel.sort(key=lambda x: x["value"], reverse=True)
+
     # by_currency_book: KES-equivalent split (mirrors the dashboard).
     _by_currency_book = {"LCY": {"value": 0.0, "count": 0},
                          "FCY": {"value": 0.0, "count": 0}}
@@ -4659,6 +4710,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_segment": _by_segment,
         "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
+        "by_product_funnel": by_product_funnel,
         "by_currency_book": _by_currency_book,
         "by_unit": _by_unit,
         "by_rm": _by_rm,

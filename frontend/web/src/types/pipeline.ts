@@ -713,6 +713,20 @@ export interface PipelineAnalyticsResponse {
   by_unit?:           UnitBreakdown[];
   by_rm?:             RmBreakdown[];
   by_probability_band?: ProbabilityBandBreakdown[];
+  by_product_funnel?: ProductFunnel[];
+}
+
+export interface ProductFunnelStage {
+  stage: string;
+  count: number;
+  value: number;
+  win_probability: number | null;
+}
+export interface ProductFunnel {
+  product: string;
+  active_count: number;
+  value: number;
+  funnel: ProductFunnelStage[];
 }
 
 export interface ProbabilityBandBreakdown {

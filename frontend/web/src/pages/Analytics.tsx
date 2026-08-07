@@ -6,7 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchPipelineDrill, fetchSlaViolations } from '@/lib/api';
-import type { UnitBreakdown, PipelineDrillResponse } from '@/types/pipeline';
+import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
@@ -105,7 +105,7 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Probability', 'Currency', 'Branch', 'RM'] as const;
+  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -120,6 +120,9 @@ export function Analytics() {
         return (data.funnel ?? []).map((x) => ({ label: x.stage, value: x.value, count: x.count }));
       case 'Probability':
         return (data.by_probability_band ?? []).map((x) => ({ label: x.band, value: x.value, count: x.count }));
+      case 'Product Funnel':
+        // Handled specially in the slicer (needs a product picker); return empty here.
+        return [];
       case 'Currency': {
         const cb = data.by_currency_book;
         return cb ? [
@@ -156,7 +159,7 @@ export function Analytics() {
       </div>
 
       {/* Model A slicer */}
-      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} />
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} />
 
       {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
       <SlaSummaryCard />
@@ -188,21 +191,36 @@ export function Analytics() {
 
 // ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
 function PipelineSlicer({
-  dimensions, sliceFor, kes,
+  dimensions, sliceFor, kes, productFunnels,
 }: {
   dimensions: readonly string[];
   sliceFor: (d: never) => { label: string; value: number; count: number }[];
   kes: (n: number) => string;
+  productFunnels: ProductFunnel[];
 }) {
   const [dim, setDim] = useState<string>('Product');
+  const [pfProduct, setPfProduct] = useState<string>('');
+  // Default the product-funnel picker to the highest-value product.
+  const activePf = useMemo(() => {
+    if (!productFunnels.length) return null;
+    return productFunnels.find((p) => p.product === pfProduct) ?? productFunnels[0];
+  }, [productFunnels, pfProduct]);
   // Stage renders as a funnel (server/flow order preserved); Sector & Currency
   // as donuts (share); everything else as ranked bars (value-sorted).
-  const isFunnel = dim === 'Stage';
+  const isProductFunnel = dim === 'Product Funnel';
+  const isFunnel = dim === 'Stage' || isProductFunnel;
   const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
+    if (isProductFunnel) {
+      return (activePf?.funnel ?? []).map((f) => ({
+        label: f.win_probability != null ? `${f.stage} · ${f.win_probability}%` : f.stage,
+        value: f.value,
+        count: f.count,
+      }));
+    }
     const raw = sliceFor(dim as never);
     return isFunnel ? raw : raw.slice().sort((a, b) => b.value - a.value);
-  }, [dim, sliceFor, isFunnel]);
+  }, [dim, sliceFor, isFunnel, isProductFunnel, activePf]);
   const total = useMemo(() => rows.reduce((s, r) => s + r.value, 0), [rows]);
 
   // Donut: top 8 slices + "Others" so 14 sectors don't clutter.
@@ -235,6 +253,20 @@ function PipelineSlicer({
         </div>
       </div>
       <Card><Card.Body>
+        {isProductFunnel && productFunnels.length > 0 && (
+          <div className="mb-4 flex items-center gap-2">
+            <label className="text-sm text-gray-600">Product:</label>
+            <select
+              value={activePf?.product ?? ''}
+              onChange={(e) => setPfProduct(e.target.value)}
+              className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+            >
+              {productFunnels.map((p) => (
+                <option key={p.product} value={p.product}>{p.product} ({p.active_count})</option>
+              ))}
+            </select>
+          </div>
+        )}
         {rows.length === 0 ? (
           <p className="text-sm text-gray-500">No data for this dimension yet.</p>
         ) : (
