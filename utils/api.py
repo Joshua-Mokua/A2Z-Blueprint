@@ -10538,7 +10538,9 @@ import re as _re_docup
 from datetime import datetime as _dt_docup
 
 _DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
-_DOC_MAX_BYTES = 30 * 1024 * 1024  # 15 MB
+_DOC_MAX_BYTES = 200 * 1024 * 1024  # 200 MB (several documents per deal). NOTE: base64
+# inflates the request body ~33%, so a 200MB file is ~267MB on the wire — ensure uvicorn and any
+# reverse proxy (nginx client_max_body_size etc.) allow at least ~300MB, else the proxy 413s first.
 
 
 class _DocUploadBody(BaseModel):
