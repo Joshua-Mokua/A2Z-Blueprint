@@ -3626,7 +3626,7 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     perms = resolve_deal_permissions(deal, user, visible_codes)
     my_code = str(user.get("staff_code", "") or "").strip()
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
-    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    is_owner = _same_staff_code(my_code, str(deal.get("staff_code", "") or "").strip())
     terminal = str(deal.get("stage", "")) in ("Closed Won", "Closed Lost")
     # Batch 4a: stage gate. If the product configured a doc-stage, submission is
     # only allowed when the deal is AT that stage. Unset = no stage restriction.
@@ -4166,6 +4166,18 @@ def _flow_stage_win_probability(product_type: str, stage_name: str):
             except (TypeError, ValueError):
                 return None
     return None
+
+
+def _same_staff_code(a, b) -> bool:
+    """True if two staff codes refer to the same person across format variants
+    (KE0439 == KE439 == 439). Comparison only — never mutates stored codes. CN
+    (DSA) and ADMIN codes compare exactly. Falls back to strict == if the helper
+    is unavailable, so behaviour is never looser than before."""
+    try:
+        from utils.staff_code import same_staff as _ss
+        return _ss(a, b)
+    except Exception:
+        return bool(a) and str(a).strip() == str(b).strip()
 
 
 def _stage_flow_for(product_type: str) -> list:
@@ -6256,7 +6268,16 @@ def pipeline_deal_create(
             _creator = str(deal_dict.get("staff_code") or "").strip()
             _po_mapped = bool(_po) and _po.upper() != "UNASSIGNED"
             _resolved = bool(str(deal_dict.get("portfolio_owner_code") or "").strip())
-            if _po_mapped and _po != _creator and not _resolved:
+            # Compare with the canonical staff-code helper, NOT a raw string !=.
+            # CBS/FLEXCUBE stores zero-padded codes (KE0439) while the roster/login
+            # uses KE439; a raw compare told an RM their OWN customer belonged to
+            # someone else. same_staff() treats KE0439 == KE439 == 439.
+            try:
+                from utils.staff_code import same_staff as _same_staff
+                _is_same = _same_staff(_po, _creator)
+            except Exception:
+                _is_same = (_po == _creator)
+            if _po_mapped and not _is_same and not _resolved:
                 msg = (f"Customer {_cif} is in another RM's portfolio (owner {_po}). "
                        f"Set portfolio_owner_code and choose a resolution path "
                        f"(refer, seek permission, or override).")
@@ -8177,7 +8198,7 @@ def integration_actuals(
             continue
 
         for sc, value in per_staff.items():
-            if staff_code and sc != staff_code:
+            if staff_code and not _same_staff_code(sc, staff_code):
                 continue
             # Apply ownership gate
             try:
@@ -11402,7 +11423,7 @@ def appeal_committee_decision(deal_id: str, payload: dict = Body(default_factory
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     my_code = str(user.get("staff_code", "") or "").strip()
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
-    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    is_owner = _same_staff_code(my_code, str(deal.get("staff_code", "") or "").strip())
     if not (is_owner or is_admin_like):
         raise HTTPException(status_code=403, detail="Only the deal owner (or admin) can appeal.")
 
@@ -11455,7 +11476,7 @@ def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     my_code = str(user.get("staff_code", "") or "").strip()
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
-    is_owner = bool(my_code) and my_code == str(deal.get("staff_code", "") or "").strip()
+    is_owner = _same_staff_code(my_code, str(deal.get("staff_code", "") or "").strip())
     if not (is_owner or is_admin_like):
         raise HTTPException(status_code=403, detail="Only the deal owner (or admin) can close the deal.")
     reason = str(payload.get("reason", "") or "").strip()

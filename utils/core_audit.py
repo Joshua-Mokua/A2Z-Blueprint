@@ -297,12 +297,23 @@ def _register_staff_index() -> dict:
             code = str(r.get("Staff Code", "")).strip()
             if not code:
                 continue
-            idx[code] = {
+            _rec = {
                 "role": str(r.get("Role", "")).strip(),
                 "unit": str(r.get("Unit", "")).strip(),
                 "region": str(r.get("Region", "")).strip(),
                 "name": str(r.get("Staff Name", "")).strip(),
             }
+            idx[code] = _rec
+            # Also key by canonical staff code so a login in a different format
+            # (KE816 vs KE0816) still resolves. Never mutates the register; only
+            # adds a comparison-tolerant alias. Exact key wins if both present.
+            try:
+                from utils.staff_code import canon as _canon
+                _ck = _canon(code)
+                if _ck and _ck not in idx:
+                    idx[_ck] = _rec
+            except Exception:
+                pass
         return idx
     except Exception:
         return {}
@@ -386,7 +397,14 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
     # staff_code is unknown, or the Unit looks like a non-branch (Head Office).
     if role_l in BRANCH_HEAD_ROLES:
         staff_code = str(user_data.get("staff_code", "")).strip()
-        rec = _register_staff_index().get(staff_code)
+        _sidx = _register_staff_index()
+        rec = _sidx.get(staff_code)
+        if rec is None:
+            try:
+                from utils.staff_code import canon as _canon
+                rec = _sidx.get(_canon(staff_code))
+            except Exception:
+                rec = None
         unit = (rec.get("unit") if rec else "") or str(my_unit).strip()
         if unit and unit.lower() != "head office":
             return staff_scores[staff_scores["Unit"] == unit].copy()
