@@ -6,7 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchPipelineDrill, fetchSlaViolations } from '@/lib/api';
-import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel, ProbabilityBandBreakdown } from '@/types/pipeline';
+import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel, ProbabilityBandBreakdown, ReferralDepartmentBreakdown } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
@@ -105,7 +105,7 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM'] as const;
+  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -134,6 +134,9 @@ export function Analytics() {
         return (data.by_unit ?? []).map((x) => ({ label: x.unit, value: x.value, count: x.count }));
       case 'RM':
         return (data.by_rm ?? []).map((x) => ({ label: x.rm, value: x.value, count: x.count }));
+      case 'Departments':
+        // Handled specially in the slicer (two-level dept -> referrers); return empty here.
+        return [];
     }
   };
 
@@ -159,7 +162,7 @@ export function Analytics() {
       </div>
 
       {/* Model A slicer */}
-      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} />
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} referralDepartments={data.by_referral_department ?? []} />
 
       {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
       <SlaSummaryCard />
@@ -191,16 +194,18 @@ export function Analytics() {
 
 // ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
 function PipelineSlicer({
-  dimensions, sliceFor, kes, productFunnels, probabilityBands,
+  dimensions, sliceFor, kes, productFunnels, probabilityBands, referralDepartments,
 }: {
   dimensions: readonly string[];
   sliceFor: (d: never) => { label: string; value: number; count: number }[];
   kes: (n: number) => string;
   productFunnels: ProductFunnel[];
   probabilityBands: ProbabilityBandBreakdown[];
+  referralDepartments: ReferralDepartmentBreakdown[];
 }) {
   const [dim, setDim] = useState<string>('Product');
   const [expandedBand, setExpandedBand] = useState<string | null>(null);
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
   const [pfProduct, setPfProduct] = useState<string>('');
   // Default the product-funnel picker to the highest-value product.
   const activePf = useMemo(() => {
@@ -211,6 +216,7 @@ function PipelineSlicer({
   // as donuts (share); everything else as ranked bars (value-sorted).
   const isProductFunnel = dim === 'Product Funnel';
   const isProbability = dim === 'Probability';
+  const isReferralDept = dim === 'Departments';
   const isFunnel = dim === 'Stage' || isProductFunnel;
   const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
@@ -270,7 +276,51 @@ function PipelineSlicer({
             </select>
           </div>
         )}
-        {isProbability ? (
+        {isReferralDept ? (
+          referralDepartments.length === 0 ? (
+            <p className="text-sm text-gray-500">No referral activity yet. Referrals appear here grouped by the receiving department.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-2">Referrals received per department (with head count). Click a department to see who referred in.</p>
+              {(() => {
+                const maxV = Math.max(...referralDepartments.map((r) => r.value), 0);
+                return referralDepartments.map((r) => {
+                  const pct = maxV > 0 ? (r.value / maxV) * 100 : 0;
+                  const open = expandedDept === r.department;
+                  return (
+                    <div key={r.department} className="rounded border">
+                      <button type="button" onClick={() => setExpandedDept(open ? null : r.department)}
+                        className="w-full flex items-center gap-3 p-2 text-left hover:bg-gray-50">
+                        <span className="w-44 shrink-0 text-xs font-medium text-gray-700 truncate">{r.department}</span>
+                        <span className="flex-1 bg-gray-100 rounded">
+                          <span className="block h-6 rounded flex items-center justify-end px-2 text-[11px] text-white tabular-nums"
+                            style={{ width: `${Math.max(pct, 8)}%`, background: 'var(--brand-primary, #0082BB)' }}>
+                            {r.count} ref{r.count === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                        <span className="w-20 shrink-0 text-right text-[11px] text-gray-500 tabular-nums">{r.head_count} staff</span>
+                        <span className="w-24 shrink-0 text-right text-xs text-gray-600 tabular-nums">{kes(r.value)}</span>
+                        <span className="w-4 shrink-0 text-xs text-gray-400">{open ? '▾' : '▸'}</span>
+                      </button>
+                      {open && (r.referrers ?? []).length > 0 && (
+                        <div className="border-t bg-gray-50 px-3 py-2 space-y-1">
+                          <p className="text-[11px] font-medium text-gray-500 mb-1">Referred in by:</p>
+                          {(r.referrers ?? []).map((rf, i) => (
+                            <div key={`${rf.referrer}-${i}`} className="flex items-center gap-2 text-xs text-gray-600">
+                              <span className="flex-1">{rf.referrer}</span>
+                              <span className="tabular-nums">{rf.count} ref{rf.count === 1 ? '' : 's'}</span>
+                              <span className="w-24 text-right tabular-nums">{kes(rf.value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )
+        ) : isProbability ? (
           probabilityBands.length === 0 ? (
             <p className="text-sm text-gray-500">No probability data yet — win % is set per product stage in Admin.</p>
           ) : (

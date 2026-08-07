@@ -4735,6 +4735,46 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_client_type = sorted(_ctype.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_referral_department: referral flow rolled up by the RECEIVING department.
+    # For each dept: total referrals received (count + value), the dept head count,
+    # and the referrers who sent in (name + count), as an expandable breakdown.
+    # A "referral" deal is one carrying referred_to_code (it was referred to someone).
+    # Department resolves via _referral_dept_for(recipient); falls back to the
+    # recipient's stored to_dept, then the deal's unit, so it's never blank when a
+    # department can be inferred. This is the Sales Pro "Referral Pipeline" view.
+    _headcounts = _dept_head_counts()
+    _refdept: dict = {}
+    for d in live:
+        _to_code = str(d.get("referred_to_code") or "").strip()
+        if not _to_code:
+            continue  # not a referred deal
+        # recipient department: helper -> stored to_dept -> deal unit -> Unassigned
+        _dept = (_referral_dept_for(_to_code)
+                 or str(d.get("to_dept") or "").strip()
+                 or str(d.get("unit") or "").strip()
+                 or "Unassigned")
+        e = _refdept.setdefault(_dept, {
+            "department": _dept, "value": 0.0, "count": 0,
+            "head_count": _headcounts.get(_dept, 0),
+            "_referrers": {},
+        })
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+        _rby = (str(d.get("referred_by_name") or "").strip()
+                or str(d.get("referred_by_code") or "").strip()
+                or "Unknown")
+        rc = e["_referrers"].setdefault(_rby, {"referrer": _rby, "count": 0, "value": 0.0})
+        rc["count"] += 1
+        rc["value"] += _deal_value(d)
+    # flatten referrers (sorted by count desc) onto each dept
+    _by_referral_department = []
+    for _dept, e in _refdept.items():
+        referrers = sorted(e.pop("_referrers").values(),
+                           key=lambda x: x["count"], reverse=True)
+        e["referrers"] = referrers
+        _by_referral_department.append(e)
+    _by_referral_department.sort(key=lambda x: x["count"], reverse=True)
+
     return {
         "totals": {
             "total_value": total_value,
@@ -4763,6 +4803,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_region": _by_region,
         "by_area": _by_area,
         "by_client_type": _by_client_type,
+        "by_referral_department": _by_referral_department,
     }
 
 
@@ -5058,6 +5099,29 @@ def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
 # (matches Streamlit's `_bsc_trigger(uname, "K041")` pattern, 16
 # occurrences in the page); pipeline_summary cache invalidation so
 # the next GET reflects the mutation.
+
+
+def _dept_head_counts() -> dict:
+    """Staff count per department from the roster. Uses the 'Department' column
+    when present; falls back to 'Unit' so it still returns useful counts on data
+    (like dev) that lacks a Department column. Cached-cheap; safe on any error."""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is None:
+            return {}
+        cols = list(getattr(roster, "columns", []))
+        keycol = "Department" if "Department" in cols else ("Unit" if "Unit" in cols else None)
+        if not keycol:
+            return {}
+        out = {}
+        for _, r in roster.iterrows():
+            k = str(r.get(keycol, "") or "").strip()
+            if k:
+                out[k] = out.get(k, 0) + 1
+        return out
+    except Exception:
+        return {}
 
 
 def _referral_dept_for(code: str) -> str:

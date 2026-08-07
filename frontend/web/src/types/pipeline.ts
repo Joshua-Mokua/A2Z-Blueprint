@@ -718,6 +718,20 @@ export interface PipelineAnalyticsResponse {
   by_rm?:             RmBreakdown[];
   by_probability_band?: ProbabilityBandBreakdown[];
   by_product_funnel?: ProductFunnel[];
+  by_referral_department?: ReferralDepartmentBreakdown[];
+}
+
+export interface ReferralReferrer {
+  referrer: string;
+  count: number;
+  value: number;
+}
+export interface ReferralDepartmentBreakdown {
+  department: string;
+  value: number;
+  count: number;
+  head_count: number;
+  referrers: ReferralReferrer[];
 }
 
 export interface ProductFunnelStage {
