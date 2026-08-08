@@ -1,4 +1,144 @@
-// Daily log validation — the Manager Queues tab.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+B1 - branch line: staff totals, branch actuals, variance, and the submit gate.
+
+RULING (2026-08-08): the branch productivity index is the SUM of validated staff
+indices PLUS whatever the manager adds on the branch line, scored on the SAME
+index weights. The branch manager does not file personally; they own the branch
+output.
+
+ONE NUMBER, TWO JOBS - deliberately. The "Fortis branch (actual)" row is both
+  (a) where the manager records activity no individual logged, and
+  (b) the control total the over-reporting checker compares against.
+Keeping them as two separate numbers would let them drift, and the check would
+then be against a figure nobody maintains.
+
+Because the gate guarantees reported <= actual, the branch line's contribution
+is exactly the unattributed remainder. So a column WITH an actual scores that
+actual; a column WITHOUT one scores what staff reported. Staff reporting always
+sets the floor.
+
+WHAT THIS ADDS
+
+  utils/api_branch_log.py - /validation-queue now returns branch, staff_totals,
+  control_totals, reconciliation, branch_index, validated_count, filed_count.
+  Reuses control_totals_for + reconcile_branch_day from branch_log_reconcile,
+  which already implements exactly the rule you asked for: flag ONLY when the
+  reported sum exceeds the branch actual; under-reporting is not an anomaly.
+
+  frontend .../lib/api.ts - the queue type gains those fields and a
+  saveBranchControlTotals() client. It reuses the ReconMetric / ReconBranchDay
+  types already declared further down that file rather than restating them.
+
+  frontend .../components/DailyLogValidation.tsx - three footer rows:
+      Staff total     read-only column sums, with "N of M filed"
+      Branch (actual) editable per column + Save branch line
+      Variance        actual minus reported; red names an over-report
+
+  and a gated "Submit branch day": disabled while any column is over-reported
+  OR any filed log is still unactioned. Individual validation is NEVER blocked -
+  a manager must be able to validate a correct row even when another is wrong.
+
+NOT YET WIRED: the submit button currently confirms readiness rather than
+writing a branch-day submission record. That record, and the branch index
+entering /ranking, are B2/B3 - deliberately separate, because they change what
+the rankings mean.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean, and the
+reconciliation gate demonstrated firing on seeded data (Fortis, 9 anomalies,
+naming the contributing staff).
+
+Usage (from project root, .venv active):
+    python scripts\\patch_b1_branch_line.py            # dry run
+    python scripts\\patch_b1_branch_line.py --apply    # write + .pre_b1 backups
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api_branch_log.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+COMP = os.path.join("frontend", "web", "src", "components", "DailyLogValidation.tsx")
+BACKUP_SUFFIX = ".pre_b1"
+
+API_BLOCK = r'''    # B1: the branch the caller closes, its control totals for the day, and the
+    # over-reporting reconciliation. The branch line is BOTH the manager's entry
+    # point for unattributed activity AND the control total the checker uses —
+    # one number, not two competing ones.
+    branch = ""
+    for _c, _d in mine:
+        b = str((_d or {}).get("branch") or "").strip()
+        if b:
+            branch = b
+            break
+    control, recon = {}, {}
+    if branch:
+        try:
+            from utils.branch_log_reconcile import control_totals_for, reconcile_branch_day
+            control = control_totals_for(branch, iso) or {}
+            recon = reconcile_branch_day(logs, branch, iso) or {}
+        except Exception:
+            control, recon = {}, {}
+
+    # Branch productivity index (ruling 2026-08-08): the sum of validated staff
+    # indices PLUS whatever the manager adds on the branch line, scored on the
+    # SAME activity weights — one scale, not a second scoring system. Because
+    # the gate guarantees reported <= actual, the branch line's addition is the
+    # unattributed remainder, so a column with a control total scores its actual
+    # and a column without one scores what staff reported.
+    try:
+        from utils.branch_log import activity_weights
+        w = activity_weights()
+    except Exception:
+        w = {}
+    staff_totals = {}
+    for r in rows:
+        if r.get("status") == "missing":
+            continue
+        for k in mkeys:
+            staff_totals[k] = staff_totals.get(k, 0) + float(r.get(k) or 0)
+    branch_index = 0.0
+    for k in mkeys:
+        reported = float(staff_totals.get(k, 0) or 0)
+        actual = control.get(k)
+        use = float(actual) if actual not in (None, "") else reported
+        branch_index += use * float(w.get(k, 0) or 0)
+
+    return {"rows": rows, "columns": columns, "date": iso, "working_day": True,
+            "label": "", "mode": mode, "pending": pending,
+            "branch": branch,
+            "staff_totals": {k: round(v, 2) for k, v in staff_totals.items()},
+            "control_totals": control,
+            "reconciliation": recon,
+            "branch_index": round(branch_index, 2),
+            "validated_count": sum(1 for r in rows if r.get("validated")),
+            "filed_count": sum(1 for r in rows if r.get("status") != "missing")}'''
+
+TS_BLOCK = r'''export interface ValidationQueue {
+  rows: ValidationQueueRow[]; columns: HistoryGridColumn[];
+  date: string; working_day: boolean; label: string;
+  mode: string; pending: number;
+  branch?: string;
+  staff_totals?: Record<string, number>;
+  control_totals?: Record<string, number>;
+  // ReconBranchDay/ReconMetric are declared further down this file with the
+  // other reconciliation types — reuse them rather than restating the shape.
+  reconciliation?: Partial<ReconBranchDay>;
+  branch_index?: number;
+  validated_count?: number;
+  filed_count?: number;
+}
+export async function saveBranchControlTotals(
+  branch: string, date: string, totals: Record<string, number>,
+): Promise<{ status: string; totals: Record<string, number> }> {
+  return postJson<{ status: string; totals: Record<string, number> },
+                  { branch: string; date: string; totals: Record<string, number> }>(
+    '/branch-log/control-totals', { branch, date, totals });
+}
+'''
+
+COMPONENT = r'''// Daily log validation — the Manager Queues tab.
 //
 // One day at a time, one row per staff member this manager is a permitted
 // validator for. Permission is decided server-side by
@@ -409,3 +549,87 @@ export default function DailyLogValidation({ onCount }: { onCount?: (n: number) 
     </Card>
   );
 }
+'''
+
+
+API_OLD = '''    return {"rows": rows, "columns": columns, "date": iso, "working_day": True,
+            "label": "", "mode": mode, "pending": pending}'''
+
+TS_START = "export interface ValidationQueue {"
+TS_END = "export async function fetchBranchLogValidationQueue("
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, COMP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    comp = open(COMP, encoding="utf-8").read()
+
+    if "branch_index" in api:
+        print("ABORT: /validation-queue already returns branch_index - B1 looks applied.")
+        return 1
+    if "staff_validated_by" not in api:
+        print("ABORT: apply patch_v2a_queue_perf.py first.")
+        return 1
+    if api.count(API_OLD) != 1:
+        print("ABORT: queue return anchor matched %d times." % api.count(API_OLD))
+        return 1
+    if ts.count(TS_START) != 1 or ts.count(TS_END) != 1:
+        print("ABORT: api.ts anchors not found exactly once.")
+        return 1
+    if "ReconBranchDay" not in ts:
+        print("ABORT: ReconBranchDay is missing from api.ts - reconciliation types expected.")
+        return 1
+
+    api = api.replace(API_OLD, API_BLOCK, 1)
+    print("  ok  /validation-queue - branch totals, reconciliation, branch index")
+
+    a = ts.index(TS_START)
+    b = ts.index(TS_END, a)
+    ts = ts[:a] + TS_BLOCK + ts[b:]
+    print("  ok  api.ts - queue type + saveBranchControlTotals")
+
+    for token in ("Save branch line", "Submit branch day", "Staff total", "blocked"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing %r." % token)
+            return 1
+    for o, c in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+    print("  ok  embedded component validated (%d lines)" % (COMPONENT.count("\n") + 1))
+
+    if "return {\"rows\": rows" not in api or api.count("\"branch_index\"") != 1:
+        print("ABORT: post-check - queue return block is not as expected.")
+        return 1
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api_branch_log.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext:")
+    print("  1. pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    print("  2. restart uvicorn")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

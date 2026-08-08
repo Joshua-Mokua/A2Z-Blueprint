@@ -458,8 +458,58 @@ def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current
                 "type": f.get("type", "int"), "tier": tier_of(f["key"])}
                for f in fields_schema() if f.get("type") != "text"]
 
+    # B1: the branch the caller closes, its control totals for the day, and the
+    # over-reporting reconciliation. The branch line is BOTH the manager's entry
+    # point for unattributed activity AND the control total the checker uses —
+    # one number, not two competing ones.
+    branch = ""
+    for _c, _d in mine:
+        b = str((_d or {}).get("branch") or "").strip()
+        if b:
+            branch = b
+            break
+    control, recon = {}, {}
+    if branch:
+        try:
+            from utils.branch_log_reconcile import control_totals_for, reconcile_branch_day
+            control = control_totals_for(branch, iso) or {}
+            recon = reconcile_branch_day(logs, branch, iso) or {}
+        except Exception:
+            control, recon = {}, {}
+
+    # Branch productivity index (ruling 2026-08-08): the sum of validated staff
+    # indices PLUS whatever the manager adds on the branch line, scored on the
+    # SAME activity weights — one scale, not a second scoring system. Because
+    # the gate guarantees reported <= actual, the branch line's addition is the
+    # unattributed remainder, so a column with a control total scores its actual
+    # and a column without one scores what staff reported.
+    try:
+        from utils.branch_log import activity_weights
+        w = activity_weights()
+    except Exception:
+        w = {}
+    staff_totals = {}
+    for r in rows:
+        if r.get("status") == "missing":
+            continue
+        for k in mkeys:
+            staff_totals[k] = staff_totals.get(k, 0) + float(r.get(k) or 0)
+    branch_index = 0.0
+    for k in mkeys:
+        reported = float(staff_totals.get(k, 0) or 0)
+        actual = control.get(k)
+        use = float(actual) if actual not in (None, "") else reported
+        branch_index += use * float(w.get(k, 0) or 0)
+
     return {"rows": rows, "columns": columns, "date": iso, "working_day": True,
-            "label": "", "mode": mode, "pending": pending}
+            "label": "", "mode": mode, "pending": pending,
+            "branch": branch,
+            "staff_totals": {k: round(v, 2) for k, v in staff_totals.items()},
+            "control_totals": control,
+            "reconciliation": recon,
+            "branch_index": round(branch_index, 2),
+            "validated_count": sum(1 for r in rows if r.get("validated")),
+            "filed_count": sum(1 for r in rows if r.get("status") != "missing")}
 
 
 @router.get("/history-grid")

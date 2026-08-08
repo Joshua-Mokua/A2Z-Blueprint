@@ -855,6 +855,22 @@ export interface ValidationQueue {
   rows: ValidationQueueRow[]; columns: HistoryGridColumn[];
   date: string; working_day: boolean; label: string;
   mode: string; pending: number;
+  branch?: string;
+  staff_totals?: Record<string, number>;
+  control_totals?: Record<string, number>;
+  // ReconBranchDay/ReconMetric are declared further down this file with the
+  // other reconciliation types — reuse them rather than restating the shape.
+  reconciliation?: Partial<ReconBranchDay>;
+  branch_index?: number;
+  validated_count?: number;
+  filed_count?: number;
+}
+export async function saveBranchControlTotals(
+  branch: string, date: string, totals: Record<string, number>,
+): Promise<{ status: string; totals: Record<string, number> }> {
+  return postJson<{ status: string; totals: Record<string, number> },
+                  { branch: string; date: string; totals: Record<string, number> }>(
+    '/branch-log/control-totals', { branch, date, totals });
 }
 export async function fetchBranchLogValidationQueue(date = ''): Promise<ValidationQueue> {
   return getJson<ValidationQueue>(
