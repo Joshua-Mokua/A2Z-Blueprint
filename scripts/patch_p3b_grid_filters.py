@@ -1,4 +1,76 @@
-// Phase 3 — wide spreadsheet history grid for the Daily Log.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Phase 3b - history grid: filters, unit column, day notes.
+
+1. utils/api_branch_log.py - the /history-grid rows now carry `working_day`,
+   `remarks` and `manager_note`.
+
+   working_day is a REAL BUG FIX. WC-2b sets it on every annotated row (false
+   on Sundays and gazetted holidays) but the grid endpoint never copied it into
+   the response, so the Phase 3 rest-day rendering was dead code and every
+   Sunday displayed as 0 / 0 / 0 - exactly the "missed a day" misreading the
+   whole calendar batch existed to prevent.
+
+   remarks existed on the stored log (67 of 164 records carry one) but was also
+   being dropped, so a manager reading the spreadsheet had no context for a low
+   day.
+
+2. frontend .../lib/api.ts - HistoryGridRow gains working_day / remarks /
+   manager_note as declared fields rather than riding the index signature.
+
+3. frontend .../components/HistoryGrid.tsx
+     * UNIT / PERSON FILTERS. A Head of Branches or the MD gets the whole bank
+       back; they now narrow to one unit, then one person. Both derived from
+       the loaded rows, so switching costs no round trip.
+     * UNIT COLUMN, frozen alongside the identity block.
+     * NAME CLEANING. The roster bakes a department suffix into the name -
+       "RIBUTHI Loise [EKE-Operations]". The unit has its own column now, so
+       the suffix is stripped rather than printing the same fact twice. The
+       raw value stays on hover.
+     * NOTES COLUMN at the end of each row: the day's remark, plus the manager
+       note in brand colour when one exists. Truncated with the full text on
+       hover.
+     * CSV export gains Unit, Notes and Manager note.
+
+Verified before delivery: tsc --noEmit clean, vite build clean, py_compile
+clean, and cleanName checked against the real roster strings.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_p3b_grid_filters.py            # dry run
+    python scripts\\patch_p3b_grid_filters.py --apply    # write + .pre_p3b backups
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api_branch_log.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+COMP = os.path.join("frontend", "web", "src", "components", "HistoryGrid.tsx")
+BACKUP_SUFFIX = ".pre_p3b"
+
+API_OLD = '''                "cf_variance": r.get("cf_variance"),
+            }'''
+API_NEW = '''                "cf_variance": r.get("cf_variance"),
+                # WC-2b sets working_day on the annotated row (false on Sundays
+                # and gazetted holidays). The endpoint was dropping it, so the
+                # grid could never distinguish a rest day from a missed one and
+                # rendered every Sunday as 0/0/0.
+                "working_day":  bool(r.get("working_day", True)),
+                # P3b: the day's note travels with the row so a manager reading
+                # the spreadsheet sees the context without opening each entry.
+                "remarks":      str(r.get("remarks") or ""),
+                "manager_note": str(r.get("manager_note") or ""),
+            }'''
+
+TS_OLD = """  index: number; target: number; variance: number; cf_variance: number;
+  [metric: string]: unknown;"""
+TS_NEW = """  index: number; target: number; variance: number; cf_variance: number;
+  working_day?: boolean;   // false on Sundays / gazetted holidays (no target, no deficit)
+  remarks?: string; manager_note?: string;
+  [metric: string]: unknown;"""
+
+COMPONENT = r"""// Phase 3 — wide spreadsheet history grid for the Daily Log.
 //
 // One row per staff per day. Identity columns (Date / Staff / Name / Role) are
 // frozen to the left so they survive horizontal scrolling across an arbitrary
@@ -368,3 +440,69 @@ export default function HistoryGrid({ grid, loading, days, onDaysChange }: Histo
     </div>
   );
 }
+"""
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, COMP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            if p == COMP:
+                print("       Apply patch_p3_history_grid.py first.")
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    cur = open(COMP, encoding="utf-8").read()
+
+    if "cleanName" in cur:
+        print("ABORT: HistoryGrid already has cleanName - Phase 3b looks applied.")
+        return 1
+    if "FAM_HEAD" not in cur:
+        print("ABORT: HistoryGrid is not at Phase 3a - apply patch_p3a_grid_polish.py first.")
+        return 1
+
+    if api.count(API_OLD) != 1:
+        print("ABORT: api_branch_log anchor matched %d times (expected 1)." % api.count(API_OLD))
+        return 1
+    api = api.replace(API_OLD, API_NEW, 1)
+    print("  ok  api_branch_log - working_day + remarks + manager_note on grid rows")
+
+    if ts.count(TS_OLD) != 1:
+        print("ABORT: api.ts anchor matched %d times (expected 1)." % ts.count(TS_OLD))
+        return 1
+    ts = ts.replace(TS_OLD, TS_NEW, 1)
+    print("  ok  api.ts - HistoryGridRow fields")
+
+    for token in ("cleanName", "unitFilter", "staffFilter", "L_UNIT", "Notes for the day"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing '%s'." % token)
+            return 1
+    # Braces and parens only. Square brackets are deliberately NOT counted: the
+    # cleanName regex /\s*\[[^\]]*\]\s*$/ contains a character class, which
+    # legitimately carries more ] than [ - naive counting cannot parse a regex
+    # literal and would abort on correct code. tsc is the real structural gate.
+    for o, c in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+    print("  ok  embedded component validated (%d lines)" % (COMPONENT.count("\n") + 1))
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext:")
+    print("  1. pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    print("  2. restart uvicorn - the endpoint now returns remarks")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

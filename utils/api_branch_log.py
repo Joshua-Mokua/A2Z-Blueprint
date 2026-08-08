@@ -319,6 +319,15 @@ def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends
                 "target":     r.get("target"),
                 "variance":   r.get("variance"),
                 "cf_variance": r.get("cf_variance"),
+                # WC-2b sets working_day on the annotated row (false on Sundays
+                # and gazetted holidays). The endpoint was dropping it, so the
+                # grid could never distinguish a rest day from a missed one and
+                # rendered every Sunday as 0/0/0.
+                "working_day":  bool(r.get("working_day", True)),
+                # P3b: the day's note travels with the row so a manager reading
+                # the spreadsheet sees the context without opening each entry.
+                "remarks":      str(r.get("remarks") or ""),
+                "manager_note": str(r.get("manager_note") or ""),
             }
             for k in mkeys:
                 row[k] = r.get(k, 0)

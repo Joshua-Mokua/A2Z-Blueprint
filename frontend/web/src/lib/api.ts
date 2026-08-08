@@ -831,6 +831,8 @@ export interface HistoryGridRow {
   log_date: string; staff_code: string; staff_name: string; role: string; unit: string;
   status: string; validated: boolean; auto_submitted: boolean;
   index: number; target: number; variance: number; cf_variance: number;
+  working_day?: boolean;   // false on Sundays / gazetted holidays (no target, no deficit)
+  remarks?: string; manager_note?: string;
   [metric: string]: unknown;
 }
 export interface HistoryGrid {
