@@ -49,12 +49,38 @@ def _parse_dt(s: str) -> Optional[datetime]:
 
 
 def _deadline_for(log_date_str: str) -> datetime:
-    """The auto-submit cutoff for a given log date = (log_date + 1 day) at deadline_time."""
+    """The auto-submit cutoff for a log date: deadline_time on the NEXT WORKING DAY.
+
+    Section 57 of the Interpretation and General Provisions Act rolls a deadline
+    falling on a Sunday or public holiday to the next working day, and the same
+    logic is what staff expect: a Saturday log is due Monday 09:00, not Sunday
+    09:00. Falls back to the old D+1 rule if the calendar is unavailable.
+    """
     d = date.fromisoformat(str(log_date_str))
     hh, mm = deadline_time().split(":")
-    return datetime.combine(d + timedelta(days=1), datetime.min.time()).replace(
+    try:
+        from utils import workcal
+        due_day = workcal.next_working_day(d)
+    except Exception:
+        due_day = d + timedelta(days=1)
+    return datetime.combine(due_day, datetime.min.time()).replace(
         hour=int(hh), minute=int(mm)
     )
+
+
+def _window_elapsed(stamped: datetime, now: datetime,
+                    days: int = RETURN_WINDOW_DAYS) -> bool:
+    """True when more than `days` WORKING days have passed since `stamped`.
+
+    Business days, not calendar days: a log submitted on a Friday must not burn
+    its return window over a weekend nobody was rostered for. Falls back to the
+    old wall-clock comparison when the calendar cannot be consulted.
+    """
+    try:
+        from utils import workcal
+        return workcal.business_days_between(stamped.date(), now.date()) > days
+    except Exception:
+        return (now - stamped) > timedelta(days=days)
 
 
 # ── deadline sweep: auto-submit overdue drafts/unsubmitted days ───────────
@@ -112,8 +138,8 @@ def return_log(blm, log_id: str, manager: str, note: str,
     if log.get("locked"):
         raise ValueError("Log is locked — only an admin can unlock it")
     stamped = _parse_dt(log.get("auto_submitted_at") or log.get("submitted_at"))
-    if stamped and (now - stamped) > timedelta(days=RETURN_WINDOW_DAYS):
-        raise ValueError(f"Return window ({RETURN_WINDOW_DAYS} days) has elapsed — admin unlock required")
+    if stamped and _window_elapsed(stamped, now):
+        raise ValueError(f"Return window ({RETURN_WINDOW_DAYS} working days) has elapsed — admin unlock required")
     log["status"] = "returned"
     log["returned_at"] = now.isoformat()
     log["returned_by"] = str(manager)
@@ -139,7 +165,7 @@ def sweep_locks(blm, now: Optional[datetime] = None) -> list:
         if l.get("status") not in ("submitted", "auto_submitted"):
             continue
         stamped = _parse_dt(l.get("auto_submitted_at") or l.get("submitted_at"))
-        if stamped and (now - stamped) > timedelta(days=RETURN_WINDOW_DAYS):
+        if stamped and _window_elapsed(stamped, now):
             l["locked"] = True
             l["locked_at"] = now.isoformat()
             changed.append(l)

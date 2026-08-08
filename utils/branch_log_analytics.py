@@ -123,10 +123,34 @@ def _effective_index(log: dict) -> float:
     return compute_index({k: log.get(k, 0) for k in metric_keys()})
 
 
+def _working_weight(log: dict) -> float:
+    """Work-calendar weight for a log's date: 1.0 weekday, 0.5 Saturday,
+    0.0 Sunday / public holiday.
+
+    Falls back to 1.0 (a full working day) whenever the calendar cannot be
+    consulted. Over-counting a working day is recoverable; silently zeroing
+    everyone's target because a config file went missing is not.
+    """
+    try:
+        from utils import workcal
+        return float(workcal.target_weight(str(log.get("log_date", ""))[:10]))
+    except Exception:
+        return 1.0
+
+
+def _is_working_day(log: dict) -> bool:
+    """True when the log's date is one on which work was expected at all."""
+    return _working_weight(log) > 0.0
+
+
 def _target_for(log: dict) -> float:
-    """Daily index target for a log's date. Currently a single global target;
-    a per-role/per-date target can slot in here later without changing callers."""
-    return daily_index_target()
+    """Daily index target for a log's date, weighted by the work calendar.
+
+    A Saturday carries half the weekday target (branches run half days); a
+    Sunday or gazetted public holiday carries none. A per-role target can still
+    slot in here later without changing callers.
+    """
+    return round(daily_index_target() * _working_weight(log), 2)
 
 
 # ── Read-time carried-forward variance engine ─────────────────────────────
@@ -157,13 +181,24 @@ def carried_forward(logs: list) -> list:
             if mk <= d and mk != applied_marker and (applied_marker is None or mk > applied_marker):
                 running = 0.0
                 applied_marker = mk
-        tgt = _target_for(r)
         idx = _effective_index(r)
+        if not _is_working_day(r):
+            # RULING: Sundays and public holidays are excluded from the walk
+            # entirely — no target, so no deficit can accrue. Work genuinely
+            # done on a rest day stays visible as `index` but is not banked
+            # into the running balance either way.
+            r["target"] = 0.0
+            r["variance"] = 0.0
+            r["cf_variance"] = running
+            r["working_day"] = False
+            continue
+        tgt = _target_for(r)
         var = round(idx - tgt, 2)
         running = round(running + var, 2)
         r["target"] = tgt
         r["variance"] = var
         r["cf_variance"] = running
+        r["working_day"] = True
     return rows
 
 
