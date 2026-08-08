@@ -524,6 +524,100 @@ def branch_log_branch_day_validate(payload: dict = Body(default_factory=dict),
     return {"branch_day": rec}
 
 
+@router.get("/exception-reasons")
+def branch_log_exception_reasons(user: dict = Depends(get_current_user)):
+    """The exception taxonomy for the UI, straight from config.
+
+    Each entry carries excuses_target so the client can warn a manager that a
+    reason will (or will not) remove the day's target before they commit to it.
+    """
+    from utils.branch_log_exceptions import reasons
+    return {"reasons": reasons()}
+
+
+@router.post("/exceptions")
+def branch_log_set_exception(payload: dict = Body(default_factory=dict),
+                             user: dict = Depends(get_current_user)):
+    """Record WHY a staff member has no log for a day.
+
+    Permission is the same as validating that person's log — the branch triad
+    inside a branch, the line manager at Head Office — because excusing a day
+    changes their variance, which is a validation-weight decision.
+
+    payload: { staff_code, date, reason, note }
+    """
+    from datetime import date as _date
+    me = _identity(user)
+    staff_code = str(payload.get("staff_code", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    reason = str(payload.get("reason", "") or "").strip()
+    note = str(payload.get("note", "") or "")
+    if not staff_code:
+        raise HTTPException(status_code=400, detail="staff_code is required")
+
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""), staff_code)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not a permitted validator for this staff member.")
+
+    # A working day only: excusing a rest day is meaningless, and allowing it
+    # would let a manager paper over days that never carried a target anyway.
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            raise HTTPException(
+                status_code=400,
+                detail="That date is not a working day — it already carries no target.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    from utils.branch_log_exceptions import set_exception
+    try:
+        rec = set_exception(staff_code, day, reason, note,
+                            me.get("staff_code", ""), me.get("staff_name", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    audit_log("BRANCH_LOG_EXCEPTION", str(user.get("username", "") or ""),
+              detail=f"staff={staff_code} date={day} reason={reason} "
+                     f"excuses={rec.get('excuses_target')}")
+    return {"exception": rec}
+
+
+@router.post("/exceptions/clear")
+def branch_log_clear_exception(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(get_current_user)):
+    """Remove an exception — the day reverts to carrying its normal target."""
+    from datetime import date as _date
+    me = _identity(user)
+    staff_code = str(payload.get("staff_code", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    if not staff_code:
+        raise HTTPException(status_code=400, detail="staff_code is required")
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""), staff_code)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(status_code=403,
+                                detail="You are not a permitted validator for this staff member.")
+    from utils.branch_log_exceptions import clear_exception
+    removed = clear_exception(staff_code, day)
+    audit_log("BRANCH_LOG_EXCEPTION_CLEAR", str(user.get("username", "") or ""),
+              detail=f"staff={staff_code} date={day} removed={removed}")
+    return {"removed": removed}
+
+
 @router.get("/validation-queue")
 def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current_user)):
     """Daily-log validation queue for ONE day, in the same row shape as the
@@ -603,10 +697,21 @@ def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current
             "branch": d.get("branch", ""),
         }
         if not l:
+            # E2: a missing day may carry an exception. An EXCUSED one has no
+            # target, so it must not read as a deficit the manager should chase.
+            try:
+                from utils.branch_log_exceptions import exception_for
+                exc = exception_for(code, iso) or {}
+            except Exception:
+                exc = {}
             base.update({"log_id": "", "status": "missing", "validated": False,
                          "auto_submitted": False, "index": 0.0,
-                         "target": _target_for({"log_date": iso}),
-                         "remarks": "", "manager_note": "", "can_act": False})
+                         "target": _target_for({"log_date": iso,
+                                                "staff_code": code}),
+                         "remarks": "", "manager_note": "", "can_act": False,
+                         "exception": exc.get("reason", ""),
+                         "exception_note": exc.get("note", ""),
+                         "excused": bool(exc.get("excuses_target"))})
             for k in mkeys:
                 base[k] = 0
         else:
