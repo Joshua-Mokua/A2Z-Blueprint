@@ -16,6 +16,16 @@ import {
 
 type Tab = 'entry' | 'history' | 'review' | 'ranking' | 'setup';
 
+// Per-tab accent. `text` colours the label when the tab is active (white pill on
+// the blue ribbon); `dot` keeps the colour legible while the tab is inactive.
+const TAB_TONE: Record<Tab, { text: string; dot: string }> = {
+  entry:   { text: 'text-[#0082BB]', dot: 'bg-[#0082BB]' },
+  history: { text: 'text-[#005B82]', dot: 'bg-[#005B82]' },
+  review:  { text: 'text-[#854F0B]', dot: 'bg-[#E0A02B]' },
+  ranking: { text: 'text-[#3B6D11]', dot: 'bg-[#BED600]' },
+  setup:   { text: 'text-[#464646]', dot: 'bg-[#979797]' },
+};
+
 // True when the planner holds anything worth persisting. Module scope on purpose:
 // the submit/draft callbacks must stay dependency-free to keep a stable identity.
 function hasEntryContent(h: HourlyMap, r: string): boolean {
@@ -202,18 +212,27 @@ export default function BranchLog() {
   const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 2xl:max-w-[1680px]">
-      <PageHeader ribbon title="Daily Log" subtitle="Log your daily activity; supervisors validate." />
+    <div>
+      <PageHeader
+        ribbon
+        sticky
+        title="Daily Log"
+        subtitle={dateLabel}
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            {tabs.map(([id, lbl]) => (
+              <button key={id} onClick={() => setTab(id)}
+                className={'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors '
+                  + (tab === id ? `bg-white shadow-sm ${TAB_TONE[id].text}` : 'text-white/80 hover:bg-white/15')}>
+                <span className={'h-1.5 w-1.5 rounded-full ' + (tab === id ? TAB_TONE[id].dot : 'bg-white/50')} />
+                {lbl}{id === 'review' && pending.length ? ` (${pending.length})` : ''}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
-      <div className="mb-4 flex gap-1 text-sm">
-        {tabs.map(([id, lbl]) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`rounded px-3 py-1.5 font-medium transition-colors ${
-              tab === id ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10'}`}>
-            {lbl}{id === 'review' && pending.length ? ` (${pending.length})` : ''}
-          </button>
-        ))}
-      </div>
+      <div className="mx-auto max-w-7xl px-4 py-6 2xl:max-w-[1680px]">
 
       {tab === 'entry' && (
         <Card>
@@ -232,7 +251,6 @@ export default function BranchLog() {
                 hourly={hourly}
                 onChange={(next) => { setDirty(true); setHourly(next); }}
                 target={indexTarget}
-                dateLabel={dateLabel}
               />
 
               {/* Context in, actions out. Keeps Save/Submit beside the timeline
@@ -438,6 +456,7 @@ export default function BranchLog() {
           </Card.Body>
         </Card>
       )}
+      </div>
     </div>
   );
 }
