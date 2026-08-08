@@ -840,6 +840,27 @@ export interface HistoryGrid {
   rows: HistoryGridRow[]; columns: HistoryGridColumn[]; days: number;
   scope_tier: string; deadline_time: string;
 }
+// Daily-log validation queue: one day, the staff this manager may validate.
+export interface ValidationQueueRow {
+  log_id: string; log_date: string;
+  staff_code: string; staff_name: string; role: string;
+  department: string; branch: string;
+  status: string; validated: boolean; auto_submitted: boolean;
+  index: number; target: number;
+  remarks: string; manager_note: string; validated_by?: string;
+  can_act: boolean;
+  [metric: string]: unknown;
+}
+export interface ValidationQueue {
+  rows: ValidationQueueRow[]; columns: HistoryGridColumn[];
+  date: string; working_day: boolean; label: string;
+  mode: string; pending: number;
+}
+export async function fetchBranchLogValidationQueue(date = ''): Promise<ValidationQueue> {
+  return getJson<ValidationQueue>(
+    `/branch-log/validation-queue${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+
 export async function fetchBranchLogHistoryGrid(days = 30, unit = ''): Promise<HistoryGrid> {
   const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
   return getJson<HistoryGrid>(`/branch-log/history-grid${q}`);

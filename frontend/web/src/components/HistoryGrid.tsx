@@ -44,7 +44,7 @@ function cleanName(n: unknown): string {
 // Activity families, mirroring DayPlanner's chip colours so the Entry tab and
 // this grid read as one system. Header tint names the family; the column body
 // carries a 3% wash of the same hue so a wide scroll stays orientated.
-const FAMILY: Record<string, 'teal' | 'amber' | 'blue' | 'pink' | 'gray'> = {
+export const FAMILY: Record<string, 'teal' | 'amber' | 'blue' | 'pink' | 'gray'> = {
   accounts_opened: 'teal', accounts_activated: 'teal', dfs_registrations: 'teal',
   cards_issued: 'teal', complaints_resolved: 'teal',
   deposits_mobilised: 'amber', loans_disbursed: 'amber', loans_referred: 'amber',
@@ -53,18 +53,18 @@ const FAMILY: Record<string, 'teal' | 'amber' | 'blue' | 'pink' | 'gray'> = {
   nps_collected: 'blue', new_leads: 'blue', cross_sell_success: 'blue',
   complaints_received: 'pink', teller_errors: 'pink',
 };
-const FAM_HEAD: Record<string, string> = {
+export const FAM_HEAD: Record<string, string> = {
   teal:  'bg-[#E1F5EE] text-[#0F6E56]',
   amber: 'bg-[#FAEEDA] text-[#854F0B]',
   blue:  'bg-[#E6F1FB] text-[#0C447C]',
   pink:  'bg-[#FBEAF0] text-[#993556]',
   gray:  'bg-gray-100 text-gray-600',
 };
-const FAM_CELL: Record<string, string> = {
+export const FAM_CELL: Record<string, string> = {
   teal:  'bg-[#E1F5EE]/30', amber: 'bg-[#FAEEDA]/30',
   blue:  'bg-[#E6F1FB]/30', pink:  'bg-[#FBEAF0]/30', gray: '',
 };
-function famOf(key: string): string { return FAMILY[key] ?? 'gray'; }
+export function famOf(key: string): string { return FAMILY[key] ?? 'gray'; }
 
 const SCOPE_LABEL: Record<string, string> = {
   bank: 'Bank-wide', subtree: 'My team', self: 'My logs',

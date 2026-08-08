@@ -39,12 +39,13 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
+import DailyLogValidation from '@/components/DailyLogValidation';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'cancellation';
+type TabKey = 'validation' | 'cancellation' | 'dailylog';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -66,6 +67,9 @@ export function PipelineManagerQueues() {
   const [loadingC, setLoadingC] = useState(false);
   const [errorV,   setErrorV]   = useState<string | null>(null);
   const [errorC,   setErrorC]   = useState<string | null>(null);
+  // Daily-log queue owns its own fetching; the page only tracks the count
+  // for the tab badge.
+  const [dailyLogPending, setDailyLogPending] = useState(0);
 
   // ── Fetchers ─────────────────────────────────────────────────────────
 
@@ -182,6 +186,13 @@ export function PipelineManagerQueues() {
           loading={loadingV}
         />
         <TabBtn
+          active={activeTab === 'dailylog'}
+          onClick={() => setActiveTab('dailylog')}
+          label="Daily log"
+          count={dailyLogPending}
+          loading={false}
+        />
+        <TabBtn
           active={activeTab === 'cancellation'}
           onClick={() => setActiveTab('cancellation')}
           label="Cancellation"
@@ -199,8 +210,13 @@ export function PipelineManagerQueues() {
         </Button>
       </div>
 
+      {/* Daily-log validation owns its own loading, empty and error states. */}
+      {activeTab === 'dailylog' && (
+        <DailyLogValidation onCount={setDailyLogPending} />
+      )}
+
       {/* Error panel */}
-      {activeError && (
+      {activeTab !== 'dailylog' && activeError && (
         <Card className="mt-4">
           <Card.Body>
             <div className="flex items-center gap-3">
@@ -215,7 +231,7 @@ export function PipelineManagerQueues() {
       )}
 
       {/* Empty / loading / content */}
-      {activeLoading && activeDeals.length === 0 ? (
+      {activeTab === 'dailylog' ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
           <Card.Body>
             <Skeleton shape="line" className="w-1/3" />
