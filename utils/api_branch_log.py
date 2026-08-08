@@ -619,7 +619,8 @@ def branch_log_clear_exception(payload: dict = Body(default_factory=dict),
 
 
 @router.get("/validation-queue")
-def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current_user)):
+def branch_log_validation_queue(date: str = "", branch: str = "",
+                                user: dict = Depends(get_current_user)):
     """Daily-log validation queue for ONE day, in the same row shape as the
     history grid so Manager Queues can reuse its column and colour vocabulary.
 
@@ -662,15 +663,34 @@ def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current
     # lookup. Asking daily_log_validators_for() per staff member was O(n^2)
     # across 363 people (~132k pandas row reads) and hung the tab.
     from utils.org_validator import staff_validated_by
-    try:
-        res = staff_validated_by(my_code)
-    except Exception:
-        res = {"mode": "", "codes": []}
-    mode = res.get("mode", "")
-    mine = []
-    for code in res.get("codes", []):
-        d = dims.get(_canon_q(code)) or {}
-        mine.append((d.get("code") or code, d))
+    inspect_only = False
+    if branch:
+        # B3: TIER-2 INSPECTION. A Head of Branches opening a branch sees that
+        # branch's staff READ-ONLY — they countersign the branch, they do not
+        # validate individuals (ruling 2026-08-08). can_act is forced false
+        # below, so the buttons never render for them.
+        try:
+            from utils.org_validator import branches_validated_by
+            scope2 = branches_validated_by(my_code)
+        except Exception:
+            scope2 = {"branches": []}
+        if branch not in (scope2.get("branches") or []) and not _is_admin(user):
+            raise HTTPException(status_code=403,
+                                detail=f"{branch} is not a branch you oversee.")
+        inspect_only = True
+        mode = "inspect"
+        mine = [(d.get("code") or ck, d) for ck, d in dims.items()
+                if str((d or {}).get("branch") or "").strip() == branch]
+    else:
+        try:
+            res = staff_validated_by(my_code)
+        except Exception:
+            res = {"mode": "", "codes": []}
+        mode = res.get("mode", "")
+        mine = []
+        for code in res.get("codes", []):
+            d = dims.get(_canon_q(code)) or {}
+            mine.append((d.get("code") or code, d))
 
     if not mine:
         return {"rows": [], "columns": [], "date": day.isoformat(),
@@ -727,7 +747,8 @@ def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current
                 "remarks": str(l.get("remarks") or ""),
                 "manager_note": str(l.get("manager_note") or ""),
                 "validated_by": str(l.get("validated_by") or ""),
-                "can_act": (not validated) and status in ("submitted", "auto_submitted"),
+                "can_act": (not inspect_only) and (not validated)
+                           and status in ("submitted", "auto_submitted"),
             })
             for k in mkeys:
                 base[k] = l.get(k, 0)

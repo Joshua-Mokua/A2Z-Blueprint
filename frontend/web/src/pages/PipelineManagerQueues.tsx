@@ -40,6 +40,8 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
 import DailyLogValidation from '@/components/DailyLogValidation';
+import BranchCountersign from '@/components/BranchCountersign';
+import { fetchBranchDays } from '@/lib/api';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
@@ -70,6 +72,10 @@ export function PipelineManagerQueues() {
   // Daily-log queue owns its own fetching; the page only tracks the count
   // for the tab badge.
   const [dailyLogPending, setDailyLogPending] = useState(0);
+  // Tier 2 (Head of Branches, MD) countersigns BRANCHES; everyone else
+  // validates individuals. Decided by asking the server what this caller
+  // oversees rather than by inspecting their role string here.
+  const [tier2, setTier2] = useState<boolean | null>(null);
 
   // ── Fetchers ─────────────────────────────────────────────────────────
 
@@ -106,6 +112,19 @@ export function PipelineManagerQueues() {
       setLoadingC(false);
     }
   }, [userIsManager]);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const r = await fetchBranchDays();
+        if (alive) setTier2((r.rows?.length ?? 0) > 0);
+      } catch {
+        if (alive) setTier2(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Initial load + reload on tab focus to keep queues fresh
   useEffect(() => {
@@ -211,7 +230,15 @@ export function PipelineManagerQueues() {
       </div>
 
       {/* Daily-log validation owns its own loading, empty and error states. */}
-      {activeTab === 'dailylog' && (
+      {activeTab === 'dailylog' && tier2 === null && (
+        <Card className="mt-4"><Card.Body>
+          <div className="text-sm text-gray-400">Loading…</div>
+        </Card.Body></Card>
+      )}
+      {activeTab === 'dailylog' && tier2 === true && (
+        <BranchCountersign onCount={setDailyLogPending} />
+      )}
+      {activeTab === 'dailylog' && tier2 === false && (
         <DailyLogValidation onCount={setDailyLogPending} />
       )}
 

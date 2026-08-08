@@ -872,9 +872,50 @@ export async function saveBranchControlTotals(
                   { branch: string; date: string; totals: Record<string, number> }>(
     '/branch-log/control-totals', { branch, date, totals });
 }
-export async function fetchBranchLogValidationQueue(date = ''): Promise<ValidationQueue> {
-  return getJson<ValidationQueue>(
-    `/branch-log/validation-queue${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+export async function fetchBranchLogValidationQueue(
+  date = '', branch = '',
+): Promise<ValidationQueue> {
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (branch) q.set('branch', branch);      // tier-2 read-only inspection
+  const s = q.toString();
+  return getJson<ValidationQueue>(`/branch-log/validation-queue${s ? `?${s}` : ''}`);
+}
+
+// ── Tier 2: branch-day countersign ────────────────────────────────────────
+export interface BranchDayRow {
+  branch: string;
+  expected: number; filed: number; validated: number; pending: number; not_filed: number;
+  status: string;               // draft | submitted | validated | returned
+  branch_index: number;
+  submitted_by_name: string; submitted_at: string;
+  return_note: string; validated_by_name: string;
+  over_reported: number;
+}
+export interface BranchDays {
+  rows: BranchDayRow[]; date: string; mode: string;
+  all_view: boolean; working_day: boolean; label?: string;
+}
+export async function fetchBranchDays(date = ''): Promise<BranchDays> {
+  return getJson<BranchDays>(
+    `/branch-log/branch-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function submitBranchDay(
+  branch: string, date: string, branchIndex: number,
+  staffTotals: Record<string, number>, controlTotals: Record<string, number>,
+  counts: Record<string, number>,
+): Promise<{ branch_day: Record<string, unknown> }> {
+  return postJson<{ branch_day: Record<string, unknown> }, Record<string, unknown>>(
+    '/branch-log/branch-days/submit',
+    { branch, date, branch_index: branchIndex, staff_totals: staffTotals,
+      control_totals: controlTotals, counts });
+}
+export async function decideBranchDay(
+  branch: string, date: string, approved: boolean, note = '',
+): Promise<{ branch_day: Record<string, unknown> }> {
+  return postJson<{ branch_day: Record<string, unknown> },
+                  { branch: string; date: string; approved: boolean; note: string }>(
+    '/branch-log/branch-days/validate', { branch, date, approved, note });
 }
 
 export async function fetchBranchLogHistoryGrid(days = 30, unit = ''): Promise<HistoryGrid> {
