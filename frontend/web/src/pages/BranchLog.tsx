@@ -5,21 +5,36 @@ import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
+import DayPlanner from '@/components/DayPlanner';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
-  submitBranchLog, saveBranchLogDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
+  submitBranchLogHourly, saveBranchLogHourlyDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
   fetchBranchLogActivities, saveBranchLogActivities,
   type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
+  type HourlyMap,
 } from '@/lib/api';
 
 type Tab = 'entry' | 'history' | 'review' | 'ranking' | 'setup';
+
+// True when the planner holds anything worth persisting. Module scope on purpose:
+// the submit/draft callbacks must stay dependency-free to keep a stable identity.
+function hasEntryContent(h: HourlyMap, r: string): boolean {
+  if (r.trim().length > 0) return true;
+  return Object.values(h).some(
+    (b) => Object.keys(b.counts || {}).length > 0 || (b.meetings?.length ?? 0) > 0 || !!b.note,
+  );
+}
 
 export default function BranchLog() {
   const { toast } = useToast();
   const { user, isAdmin } = useRole();
   const [tab, setTab] = useState<Tab>('entry');
   const [fields, setFields] = useState<BranchLogField[]>([]);
-  const [values, setValues] = useState<Record<string, string>>({});
+  // Phase 2c: the day planner is the entry surface. `hourly` is the source of
+  // truth; day totals are derived server-side (utils/branch_log.derive_from_hourly).
+  const [hourly, setHourly] = useState<HourlyMap>({});
+  const [remarks, setRemarks] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [mine, setMine] = useState<BranchLogEntry[]>([]);
   const [pending, setPending] = useState<BranchLogEntry[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -75,43 +90,60 @@ export default function BranchLog() {
 
   const todaysLog = mine.find((l) => l.log_date === today);
 
+  // Phase 2c: submit/draft read the entry from a ref so the callbacks keep a
+  // stable identity. The 30s timer and the unmount handler must not be re-armed
+  // on every keystroke (that previously fired a draft POST per edit).
+  const entryRef = useRef<{ hourly: HourlyMap; remarks: string }>({ hourly: {}, remarks: '' });
+  useEffect(() => { entryRef.current = { hourly, remarks }; }, [hourly, remarks]);
+
   const submit = async () => {
+    const { hourly: h, remarks: r } = entryRef.current;
+    // Guard: an empty planner would derive all-zero day totals and wipe a
+    // pre-existing entry for today. Make the user log something first.
+    if (!hasEntryContent(h, r)) {
+      toast({ tone: 'danger', message: 'Log at least one activity or a remark before submitting.' });
+      return;
+    }
     setBusy(true);
     try {
-      await submitBranchLog(values);
+      await submitBranchLogHourly(h, r);
       toast({ tone: 'success', message: 'Daily log submitted for validation.' });
-      setValues({}); setDirty(false); void loadMine();
+      setDirty(false); setLastSaved(new Date()); void loadMine();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Submit failed.' });
     } finally { setBusy(false); }
   };
 
-  // Item 3: save the current entry as a private draft (not submitted).
+  // Item 3 (Phase 2c): save the planner as a private draft (not submitted).
   const saveDraft = useCallback(async (silent = false) => {
-    if (Object.keys(values).length === 0) return;
+    const { hourly: h, remarks: r } = entryRef.current;
+    if (!hasEntryContent(h, r)) return;
     setSavingDraft(true);
     try {
-      await saveBranchLogDraft(values);
+      await saveBranchLogHourlyDraft(h, r);
       setDirty(false);
+      setLastSaved(new Date());
       if (!silent) toast({ tone: 'success', message: 'Draft saved. You can submit later today.' });
     } catch (e) {
       if (!silent) toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save draft.' });
     } finally { setSavingDraft(false); }
-  }, [values, toast]);
+  }, [toast]);
 
-  // Item 3: re-hydrate today's saved entry (draft or submitted) on first load.
+  // Item 3 (Phase 2c): re-hydrate today's hourly map (draft or submitted) on load.
+  // Legacy flat entries carry no `hourly` — those open as an empty planner.
   const loadDraft = useCallback(async () => {
     try {
       const r = await fetchBranchLogDraft();
-      if (r.log) {
-        const v: Record<string, string> = {};
-        for (const [k, val] of Object.entries(r.log)) {
-          if (typeof val === 'number') v[k] = String(val);
-        }
-        if (typeof r.log.remarks === 'string') v.remarks = r.log.remarks;
-        setValues((prev) => (Object.keys(prev).length ? prev : v));
+      const log = r.log;
+      if (!log) return;
+      const raw = (log as { hourly?: unknown }).hourly;
+      if (raw && typeof raw === 'object' && Object.keys(raw as object).length > 0) {
+        setHourly((prev) => (Object.keys(prev).length ? prev : (raw as HourlyMap)));
       }
-    } catch { /* no draft — start blank */ }
+      if (typeof log.remarks === 'string' && log.remarks) {
+        setRemarks((prev) => (prev ? prev : (log.remarks as string)));
+      }
+    } catch { /* no entry today — start blank */ }
   }, []);
 
   // Item 3: load today's saved entry once, on mount (after loadDraft exists).
@@ -131,7 +163,16 @@ export default function BranchLog() {
       window.removeEventListener('beforeunload', warn);
       if (dirtyRef.current) void saveDraft(true);
     };
-  }, [saveDraft, dirty]);
+  }, [saveDraft]);
+
+  // Phase 2c: autosave the planner every 30 seconds while edits are pending.
+  // saveDraft is ref-backed and stable, so the timer is armed once per mount.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (dirtyRef.current) void saveDraft(true);
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [saveDraft]);
 
   const review = async (id: string, approved: boolean) => {
     setBusy(true);
@@ -157,7 +198,8 @@ export default function BranchLog() {
     ['ranking', 'Ranking'],
     ...(isAdmin ? ([['setup', 'Index Setup']] as [Tab, string][]) : []),
   ];
-  const liveIndex = metricFields.reduce((s, f) => s + (Number(values[f.key]) || 0) * (Number(f.weight) || 0), 0);
+  // DayPlanner renders the live day index itself (sum of count x weight over hours).
+  const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -199,41 +241,30 @@ export default function BranchLog() {
                 </ol>
               </div>
             )}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Quantitative — counts & amounts */}
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-gray-800">Quantitative</h3>
-                <p className="mb-3 text-xs text-gray-400">Counts and amounts for the day.</p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {metricFields.map((f) => (
-                    <label key={f.key} className="text-sm">
-                      <span className="mb-1 block text-gray-700">{f.label}{f.unit ? ` (${f.unit})` : ''}</span>
-                      <input type="number" min={0} className="w-full rounded border px-2 py-1.5 text-sm"
-                        value={values[f.key] ?? ''} onChange={(e) => { setDirty(true); setValues((p) => ({ ...p, [f.key]: e.target.value })); }} />
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {/* Qualitative — notes & remarks */}
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-gray-800">Qualitative</h3>
-                <p className="mb-3 text-xs text-gray-400">Notes, challenges, and context.</p>
-                <label className="block text-sm">
-                  <span className="mb-1 block text-gray-700">Remarks / challenges</span>
-                  <textarea rows={12} className="w-full rounded border px-2 py-1.5 text-sm"
-                    value={values.remarks ?? ''} onChange={(e) => { setDirty(true); setValues((p) => ({ ...p, remarks: e.target.value })); }} />
-                </label>
-              </div>
-            </div>
+            <DayPlanner
+              fields={metricFields}
+              hourly={hourly}
+              onChange={(next) => { setDirty(true); setHourly(next); }}
+              target={indexTarget}
+              dateLabel={dateLabel}
+            />
+
+            <label className="mt-4 block text-sm">
+              <span className="mb-1 block text-gray-700">Remarks / challenges (whole day)</span>
+              <textarea rows={3} className="w-full rounded border px-2 py-1.5 text-sm"
+                placeholder="Context your manager should know — blockers, escalations, anything the hours don't say."
+                value={remarks} onChange={(e) => { setDirty(true); setRemarks(e.target.value); }} />
+            </label>
+
             <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-              <div className="text-sm">
-                <span className="text-gray-500">Today&apos;s productivity index: </span>
-                <span className="font-semibold text-gray-900">{Math.round(liveIndex)}</span>
-                {indexTarget > 0 && (
-                  <span className={liveIndex >= indexTarget ? 'ml-1 text-emerald-600' : 'ml-1 text-gray-400'}>
-                    {' '}/ target {indexTarget} ({Math.round((liveIndex / indexTarget) * 100)}%)
-                  </span>
-                )}
+              <div className="text-xs text-gray-400">
+                {savingDraft
+                  ? 'Saving…'
+                  : dirty
+                    ? 'Unsaved changes — autosaves every 30 seconds.'
+                    : lastSaved
+                      ? `All changes saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Autosaves every 30 seconds.'}
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={() => void saveDraft()} disabled={busy || savingDraft}>
