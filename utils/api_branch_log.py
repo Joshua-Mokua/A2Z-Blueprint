@@ -57,6 +57,25 @@ def _is_manager(user: dict) -> bool:
     return user.get("is_admin") or "admin" in role or "manager" in role or "head" in role
 
 
+@router.get("/day-context")
+def branch_log_day_context(user: dict = Depends(get_current_user)):
+    """Calendar context for today: position in the year, what remains of it, and
+    how much of that is actually working time under the Kenya work calendar.
+
+    Read-only and cheap; the Daily Log header calls it once on mount.
+    """
+    me = _identity(user)
+    try:
+        from utils import workcal
+        ctx = dict(workcal.day_context())
+    except Exception as exc:
+        raise HTTPException(status_code=500,
+                            detail=f"Work calendar unavailable: {exc}")
+    ctx["staff_name"] = me.get("staff_name", "")
+    ctx["staff_code"] = me.get("staff_code", "")
+    return ctx
+
+
 @router.get("/fields")
 def branch_log_fields(user: dict = Depends(get_current_user)):
     """Role-aware daily-log schema: common base fields + this role's extras."""

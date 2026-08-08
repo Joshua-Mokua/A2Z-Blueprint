@@ -89,5 +89,6 @@
       "note": "Approximate. Confirm against the gazette before relying on it."
     }
   ],
-  "closures": []
+  "closures": [],
+  "hours_per_day": 8.0
 }

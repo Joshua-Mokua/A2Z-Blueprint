@@ -743,6 +743,20 @@ export interface BranchLogEntry {
   validated_by?: string; validated_at?: string; manager_note?: string; remarks?: string;
   [metric: string]: unknown;
 }
+// Calendar context for today (Kenya work calendar: weekends, half-day Saturdays,
+// gazetted holidays). Counts include today.
+export interface DayContext {
+  date: string; weekday: string;
+  day_of_year: number; days_in_year: number; days_remaining: number;
+  working_days_remaining: number; working_hours_remaining: number;
+  working: boolean; half_day: boolean; weight: number; hours_today: number;
+  holiday: boolean; holiday_label: string; next_working_day: string;
+  staff_name?: string; staff_code?: string;
+}
+export async function fetchDayContext(): Promise<DayContext> {
+  return getJson<DayContext>('/branch-log/day-context');
+}
+
 export async function fetchBranchLogFields(): Promise<{ fields: BranchLogField[] }> {
   return getJson<{ fields: BranchLogField[] }>('/branch-log/fields');
 }

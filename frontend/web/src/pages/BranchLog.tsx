@@ -10,9 +10,11 @@ import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
   submitBranchLogHourly, saveBranchLogHourlyDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
   fetchBranchLogActivities, saveBranchLogActivities,
+  fetchDayContext,
   type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
-  type HourlyMap,
+  type HourlyMap, type DayContext,
 } from '@/lib/api';
+import { displayName } from '@/lib/names';
 
 type Tab = 'entry' | 'history' | 'review' | 'ranking' | 'setup';
 
@@ -45,6 +47,7 @@ export default function BranchLog() {
   const [hourly, setHourly] = useState<HourlyMap>({});
   const [remarks, setRemarks] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [dayCtx, setDayCtx] = useState<DayContext | null>(null);
   const [mine, setMine] = useState<BranchLogEntry[]>([]);
   const [pending, setPending] = useState<BranchLogEntry[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -92,8 +95,13 @@ export default function BranchLog() {
   const loadActs = useCallback(async () => {
     try { const r = await fetchBranchLogActivities(); setExtraActs(r.extra); } catch { /* ignore */ }
   }, []);
+  // Calendar context for the header. Failure is silent: a missing work calendar
+  // must not stop anyone logging their day.
+  const loadDayCtx = useCallback(async () => {
+    try { setDayCtx(await fetchDayContext()); } catch { /* header falls back */ }
+  }, []);
 
-  useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); void loadCfg(); }, [loadFields, loadMine, loadAuto, loadCfg]);
+  useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); void loadCfg(); void loadDayCtx(); }, [loadFields, loadMine, loadAuto, loadCfg, loadDayCtx]);
   useEffect(() => { if (tab === 'ranking') void loadRanking(); }, [tab, loadRanking]);
   useEffect(() => { if (tab === 'setup') void loadActs(); }, [tab, loadActs]);
   useEffect(() => { if (tab === 'review' && canReview) void loadPending(); }, [tab, canReview, loadPending]);
@@ -210,6 +218,9 @@ export default function BranchLog() {
   ];
   // DayPlanner renders the live day index itself (sum of count x weight over hours).
   const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  // Greeting name: prefer the server-resolved staff name, fall back to the JWT
+  // identity, and render an impersonal greeting rather than "Dear ," if neither.
+  const firstName = displayName(dayCtx?.staff_name || user?.full_name || '');
 
   return (
     <div>
@@ -236,7 +247,49 @@ export default function BranchLog() {
 
       {tab === 'entry' && (
         <Card>
-          <Card.Header><h2 className="text-base font-semibold text-gray-900">Today&apos;s activity</h2></Card.Header>
+          <Card.Header>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-gray-900">
+                  {firstName ? `Dear ${firstName}, the day is all yours — make every activity count.`
+                             : 'The day is all yours — make every activity count.'}
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {dayCtx
+                    ? `${dayCtx.weekday} · day ${dayCtx.day_of_year} of ${dayCtx.days_in_year}`
+                    : 'Today\u2019s activity'}
+                </p>
+              </div>
+              {dayCtx && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  {dayCtx.holiday && (
+                    <span className="rounded-full bg-[#FAEEDA] px-2.5 py-1 font-medium text-[#854F0B]">
+                      {dayCtx.holiday_label || 'Public holiday'}
+                    </span>
+                  )}
+                  {!dayCtx.holiday && dayCtx.half_day && (
+                    <span className="rounded-full bg-[#EAF3DE] px-2.5 py-1 font-medium text-[#3B6D11]">
+                      Half day · {dayCtx.hours_today}h
+                    </span>
+                  )}
+                  {!dayCtx.working && !dayCtx.holiday && (
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-500">
+                      Rest day
+                    </span>
+                  )}
+                  <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
+                    {dayCtx.days_remaining.toLocaleString()} days left in {dayCtx.date.slice(0, 4)}
+                  </span>
+                  <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
+                    {dayCtx.working_days_remaining.toLocaleString()} working days
+                  </span>
+                  <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
+                    {dayCtx.working_hours_remaining.toLocaleString()} working hours
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card.Header>
           <Card.Body>
             {todaysLog && (
               <div className="mb-3 rounded border border-blue-100 bg-blue-50 p-2 text-sm text-blue-800">

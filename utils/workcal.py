@@ -297,3 +297,53 @@ def describe(d) -> dict:
         "label": holiday_label(d),
         "half_day": target_weight(d) == 0.5,
     }
+
+
+# ── working time ─────────────────────────────────────────────────────────────
+def hours_per_day() -> float:
+    """Hours in a FULL working day. Saturday inherits this at its 0.5 weight.
+
+    The Employment Act 2007 s.27 caps the general working week at 52 hours over
+    six days; the standard banking week runs 8-9 hours Monday to Friday. 8.0 is
+    the default here and is configurable per deployment.
+    """
+    try:
+        return float(_load().get("hours_per_day", 8.0))
+    except (TypeError, ValueError):
+        return 8.0
+
+
+def working_hours(d) -> float:
+    """Expected working hours on this date (0 on Sundays and holidays)."""
+    return round(target_weight(d) * hours_per_day(), 2)
+
+
+def day_context(d=None) -> dict:
+    """Where this date sits in the year, and how much working time is left.
+
+    All "remaining" figures INCLUDE the date itself — that is what people mean
+    by "days left in the year". working_hours_remaining weights Saturdays at
+    0.5, so it is real capacity rather than a calendar-day count.
+    """
+    d = _as_date(d) if d is not None else date.today()
+    jan1 = date(d.year, 1, 1)
+    dec31 = date(d.year, 12, 31)
+    remaining = working_days_in(d, dec31)
+    weight = target_weight(d)
+    return {
+        "date": d.isoformat(),
+        "weekday": d.strftime("%A"),
+        "day_of_year": (d - jan1).days + 1,
+        "days_in_year": (dec31 - jan1).days + 1,
+        "days_remaining": (dec31 - d).days + 1,
+        "working_days_remaining": len(remaining),
+        "working_hours_remaining": round(
+            sum(target_weight(x) for x in remaining) * hours_per_day(), 1),
+        "working": weight > 0.0,
+        "half_day": weight == 0.5,
+        "weight": weight,
+        "hours_today": working_hours(d),
+        "holiday": is_holiday(d),
+        "holiday_label": holiday_label(d),
+        "next_working_day": next_working_day(d).isoformat(),
+    }
