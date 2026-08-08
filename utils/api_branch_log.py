@@ -271,6 +271,74 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     return {"ranking": rows, "days": days, "daily_index_target": target}
 
 
+_ROSTER_DIMS_CACHE = None
+_ROSTER_DIMS_MTIME = None
+
+
+def _roster_dims() -> dict:
+    """Canonical {staff_code -> (department, branch, full_name)} from the roster.
+
+    The Daily Log record carries a free-text `unit` typed at submit time, which
+    in live data is inconsistent ("Fortis" / "Fortis Branch" / "Consumer" /
+    "EKE-CONSUMER BANKING DEPARTMENT"). The roster is the source of truth and
+    holds BOTH dimensions properly: `department` is the function (Commercial
+    Banking, Treasury, Internal Audit...) and `unit` is the branch (Fortis,
+    Westlands, Head Office...). Grid filters must use these, not the free text.
+
+    Keyed on utils.staff_code.canon so KE0439/KE439/439 all resolve, plus a
+    whitespace-stripped fallback for codes stored as "CN 272".
+    Cached on file mtime; a roster edit is picked up without a restart.
+    """
+    global _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME
+    import json as _json
+    import os as _os
+    from pathlib import Path as _Path
+    from utils.core import DATA_DIR as _DATA_DIR
+    from utils.staff_code import canon as _canon
+
+    p = str(_Path(_DATA_DIR) / "staff_roster.json")
+    try:
+        mtime = _os.path.getmtime(p)
+    except OSError:
+        # Roster missing is a real condition, not a silent one: the grid still
+        # renders, it just falls back to the log's own free-text unit.
+        return _ROSTER_DIMS_CACHE or {}
+
+    if _ROSTER_DIMS_CACHE is not None and _ROSTER_DIMS_MTIME == mtime:
+        return _ROSTER_DIMS_CACHE
+
+    out = {}
+    try:
+        raw = _json.loads(open(p, encoding="utf-8").read())
+        rows = raw if isinstance(raw, list) else next(
+            (v for v in raw.values() if isinstance(v, list)), [])
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            rec = {
+                "department": str(r.get("department") or "").strip(),
+                "branch":     str(r.get("unit") or "").strip(),
+                "full_name":  str(r.get("full_name") or "").strip(),
+            }
+            code = str(r.get("staff_code") or "")
+            for key in {_canon(code), "".join(code.split()).upper()}:
+                if key:
+                    out.setdefault(key, rec)
+    except Exception:
+        return _ROSTER_DIMS_CACHE or {}
+
+    _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME = out, mtime
+    return out
+
+
+def _dims_for(staff_code) -> dict:
+    """Roster dimensions for a staff code, empty dict when unmatched."""
+    from utils.staff_code import canon as _canon
+    dims = _roster_dims()
+    code = str(staff_code or "")
+    return dims.get(_canon(code)) or dims.get("".join(code.split()).upper()) or {}
+
+
 @router.get("/history-grid")
 def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
     """Wide history grid: one row per staff per day with all metric columns, the daily index,
@@ -329,6 +397,15 @@ def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends
                 "remarks":      str(r.get("remarks") or ""),
                 "manager_note": str(r.get("manager_note") or ""),
             }
+            # P3c: canonical dimensions from the roster. The log's own free-text
+            # `unit` stays on the row for backward compatibility, but the grid
+            # filters on department/branch because those are the structure the
+            # bank actually reports against.
+            _d = _dims_for(r.get("staff_code"))
+            row["department"] = _d.get("department", "")
+            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
+            if _d.get("full_name"):
+                row["staff_name"] = _d["full_name"]
             for k in mkeys:
                 row[k] = r.get(k, 0)
             rows.append(row)

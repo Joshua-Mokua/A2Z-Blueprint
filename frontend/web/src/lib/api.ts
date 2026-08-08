@@ -833,6 +833,7 @@ export interface HistoryGridRow {
   index: number; target: number; variance: number; cf_variance: number;
   working_day?: boolean;   // false on Sundays / gazetted holidays (no target, no deficit)
   remarks?: string; manager_note?: string;
+  department?: string; branch?: string;   // canonical, joined from the roster
   [metric: string]: unknown;
 }
 export interface HistoryGrid {

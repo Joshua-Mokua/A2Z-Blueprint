@@ -1,4 +1,144 @@
-// Phase 3 — wide spreadsheet history grid for the Daily Log.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Phase 3c - filter by the bank's real structure, not free text.
+
+THE PROBLEM
+The Daily Log record stores a free-text `unit` typed at submit time. In live
+data that field is inconsistent - "Fortis" and "Fortis Branch", "Consumer" /
+"Consumer Bank" / "Consumer Banking", plus shouty imports like
+"EKE-CONSUMER BANKING DEPARTMENT". Filtering an MD's bank-wide view on that is
+useless.
+
+THE FIX
+data/staff_roster.json is the source of truth and already holds BOTH dimensions
+cleanly for 362 staff:
+    department  - the function: Commercial Banking, Consumer Banking, Corporate
+                  Banking, Treasury, Finance, Internal Audit, Internal Control,
+                  Credit Risk Management, Legal, Operations, CAD, Compliance,
+                  Risk, Technology, HR, MD's Office  (23 in total)
+    unit        - the branch: Fortis, Westlands, Eldoret, Karen, Kisumu,
+                  Mombasa Moi, Head Office ...        (17 in total)
+
+utils/api_branch_log.py now joins the roster onto every grid row and emits
+`department` and `branch`. Keyed on utils.staff_code.canon so KE0439/KE439/439
+all resolve, with a whitespace-stripped fallback for codes stored as "CN 272".
+Cached on roster mtime, so an edit is picked up without restarting uvicorn.
+The roster's full_name also replaces the log's copy, which fixes the
+"RIBUTHI Loise [EKE-Operations]" suffix at source rather than by regex.
+Unmatched codes fall back to the log's own unit - the grid never blanks.
+
+The grid then filters on DEPARTMENT, then BRANCH, then PERSON. Branch narrows
+to the chosen department but the two are independent dimensions, because staff
+in one branch report across several departments.
+
+Verified before delivery: py_compile clean, tsc --noEmit clean, vite build
+clean, and the roster join checked against real codes
+(KE814 -> Loise Wanjiru Ributhi | Commercial Banking | Karen).
+
+Usage (from project root, .venv active):
+    python scripts\\patch_p3c_org_filters.py            # dry run
+    python scripts\\patch_p3c_org_filters.py --apply    # write + .pre_p3c backups
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api_branch_log.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+COMP = os.path.join("frontend", "web", "src", "components", "HistoryGrid.tsx")
+BACKUP_SUFFIX = ".pre_p3c"
+
+API_HELPER_ANCHOR = '''@router.get("/history-grid")'''
+API_HELPER = '''_ROSTER_DIMS_CACHE = None
+_ROSTER_DIMS_MTIME = None
+
+
+def _roster_dims() -> dict:
+    """Canonical {staff_code -> (department, branch, full_name)} from the roster.
+
+    The Daily Log record carries a free-text `unit` typed at submit time, which
+    in live data is inconsistent ("Fortis" / "Fortis Branch" / "Consumer" /
+    "EKE-CONSUMER BANKING DEPARTMENT"). The roster is the source of truth and
+    holds BOTH dimensions properly: `department` is the function (Commercial
+    Banking, Treasury, Internal Audit...) and `unit` is the branch (Fortis,
+    Westlands, Head Office...). Grid filters must use these, not the free text.
+
+    Keyed on utils.staff_code.canon so KE0439/KE439/439 all resolve, plus a
+    whitespace-stripped fallback for codes stored as "CN 272".
+    Cached on file mtime; a roster edit is picked up without a restart.
+    """
+    global _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME
+    import json as _json
+    import os as _os
+    from pathlib import Path as _Path
+    from utils.core import DATA_DIR as _DATA_DIR
+    from utils.staff_code import canon as _canon
+
+    p = str(_Path(_DATA_DIR) / "staff_roster.json")
+    try:
+        mtime = _os.path.getmtime(p)
+    except OSError:
+        # Roster missing is a real condition, not a silent one: the grid still
+        # renders, it just falls back to the log's own free-text unit.
+        return _ROSTER_DIMS_CACHE or {}
+
+    if _ROSTER_DIMS_CACHE is not None and _ROSTER_DIMS_MTIME == mtime:
+        return _ROSTER_DIMS_CACHE
+
+    out = {}
+    try:
+        raw = _json.loads(open(p, encoding="utf-8").read())
+        rows = raw if isinstance(raw, list) else next(
+            (v for v in raw.values() if isinstance(v, list)), [])
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            rec = {
+                "department": str(r.get("department") or "").strip(),
+                "branch":     str(r.get("unit") or "").strip(),
+                "full_name":  str(r.get("full_name") or "").strip(),
+            }
+            code = str(r.get("staff_code") or "")
+            for key in {_canon(code), "".join(code.split()).upper()}:
+                if key:
+                    out.setdefault(key, rec)
+    except Exception:
+        return _ROSTER_DIMS_CACHE or {}
+
+    _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME = out, mtime
+    return out
+
+
+def _dims_for(staff_code) -> dict:
+    """Roster dimensions for a staff code, empty dict when unmatched."""
+    from utils.staff_code import canon as _canon
+    dims = _roster_dims()
+    code = str(staff_code or "")
+    return dims.get(_canon(code)) or dims.get("".join(code.split()).upper()) or {}
+
+
+@router.get("/history-grid")'''
+
+API_ROW_OLD = '''                "manager_note": str(r.get("manager_note") or ""),
+            }'''
+API_ROW_NEW = '''                "manager_note": str(r.get("manager_note") or ""),
+            }
+            # P3c: canonical dimensions from the roster. The log's own free-text
+            # `unit` stays on the row for backward compatibility, but the grid
+            # filters on department/branch because those are the structure the
+            # bank actually reports against.
+            _d = _dims_for(r.get("staff_code"))
+            row["department"] = _d.get("department", "")
+            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
+            if _d.get("full_name"):
+                row["staff_name"] = _d["full_name"]'''
+
+TS_OLD = "  remarks?: string; manager_note?: string;"
+TS_NEW = ("  remarks?: string; manager_note?: string;\n"
+          "  department?: string; branch?: string;   // canonical, joined from the roster")
+
+COMPONENT = r"""// Phase 3 — wide spreadsheet history grid for the Daily Log.
 //
 // One row per staff per day. Identity columns (Date / Staff / Name / Role) are
 // frozen to the left so they survive horizontal scrolling across an arbitrary
@@ -395,3 +535,67 @@ export default function HistoryGrid({ grid, loading, days, onDaysChange }: Histo
     </div>
   );
 }
+"""
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, COMP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    cur = open(COMP, encoding="utf-8").read()
+
+    if "_roster_dims" in api:
+        print("ABORT: api_branch_log already has _roster_dims - Phase 3c looks applied.")
+        return 1
+    if "cleanName" not in cur:
+        print("ABORT: HistoryGrid is not at Phase 3b - apply patch_p3b_grid_filters.py first.")
+        return 1
+
+    for label, hay, old in (("helper", api, API_HELPER_ANCHOR),
+                            ("row fields", api, API_ROW_OLD),
+                            ("api.ts", ts, TS_OLD)):
+        if hay.count(old) != 1:
+            print("ABORT: %s anchor matched %d times (expected 1)." % (label, hay.count(old)))
+            return 1
+
+    api = api.replace(API_HELPER_ANCHOR, API_HELPER, 1)
+    api = api.replace(API_ROW_OLD, API_ROW_NEW, 1)
+    ts = ts.replace(TS_OLD, TS_NEW, 1)
+    print("  ok  api_branch_log - roster join (_roster_dims / _dims_for)")
+    print("  ok  api_branch_log - department + branch on grid rows")
+    print("  ok  api.ts - HistoryGridRow department/branch")
+
+    for token in ("deptFilter", "branchFilter", "Dept / Branch", "All departments"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing '%s'." % token)
+            return 1
+    # Braces and parens only - the cleanName regex carries an unbalanced ]
+    # by design (character class). tsc is the real structural gate.
+    for o, c in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+    print("  ok  embedded component validated (%d lines)" % (COMPONENT.count("\n") + 1))
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext:")
+    print("  1. pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    print("  2. restart uvicorn - the endpoint now joins the roster")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
