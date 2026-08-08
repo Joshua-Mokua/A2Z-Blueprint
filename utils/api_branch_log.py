@@ -345,6 +345,185 @@ def _dims_for(staff_code) -> dict:
     return _roster_dims().get(_canon(staff_code)) or {}
 
 
+@router.get("/branch-days")
+def branch_log_branch_days(date: str = "", user: dict = Depends(get_current_user)):
+    """TIER 2: the branches this caller countersigns, for one day.
+
+    One row per branch: how many staff are expected, filed, validated, whether
+    the Branch Manager has submitted, the branch index, and whether the
+    over-reporting gate is currently breached.
+
+    Scope comes from org_validator.branches_validated_by — an all-view role
+    (MD, Head of Branches) owns every branch; otherwise a branch belongs to the
+    person its Branch Manager reports to. This endpoint decides nothing.
+    """
+    from datetime import date as _date
+    from utils.staff_code import canon as _canon_b
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+    iso = day.isoformat()
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(my_code)
+    except Exception:
+        scope = {"mode": "", "branches": [], "all_view": False}
+    branches = scope.get("branches") or []
+    if not branches:
+        return {"rows": [], "date": iso, "mode": scope.get("mode", ""),
+                "all_view": bool(scope.get("all_view")), "working_day": True}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "date": iso, "mode": scope.get("mode", ""),
+                    "all_view": bool(scope.get("all_view")), "working_day": False,
+                    "label": _wc.holiday_label(day)}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+    # Expected headcount per branch, from the roster — so a branch with nobody
+    # filing still appears rather than vanishing.
+    expected = {}
+    for _ck, d in dims.items():
+        b = str((d or {}).get("branch") or "").strip()
+        if b:
+            expected[b] = expected.get(b, 0) + 1
+
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == iso]
+    by_branch_logs = {}
+    for l in logs:
+        d = dims.get(_canon_b(l.get("staff_code"))) or {}
+        b = str(d.get("branch") or l.get("unit") or "").strip()
+        by_branch_logs.setdefault(b, []).append(l)
+
+    from utils.branch_day import list_branch_days
+    subs = list_branch_days(iso, branches)
+
+    rows = []
+    for b in branches:
+        blogs = by_branch_logs.get(b, [])
+        filed = len(blogs)
+        validated = sum(1 for l in blogs if l.get("validated"))
+        rec = subs.get(b) or {}
+        breaches = 0
+        try:
+            from utils.branch_log_reconcile import reconcile_branch_day
+            breaches = int((reconcile_branch_day(logs, b, iso) or {}).get("anomaly_count", 0))
+        except Exception:
+            breaches = 0
+        rows.append({
+            "branch": b,
+            "expected": expected.get(b, 0),
+            "filed": filed,
+            "validated": validated,
+            "pending": max(filed - validated, 0),
+            "not_filed": max(expected.get(b, 0) - filed, 0),
+            "status": rec.get("status", "draft"),
+            "branch_index": rec.get("branch_index", 0),
+            "submitted_by_name": rec.get("submitted_by_name", ""),
+            "submitted_at": rec.get("submitted_at", ""),
+            "return_note": rec.get("return_note", ""),
+            "validated_by_name": rec.get("validated_by_name", ""),
+            "over_reported": breaches,
+        })
+    rows.sort(key=lambda r: r["branch"])
+    return {"rows": rows, "date": iso, "mode": scope.get("mode", ""),
+            "all_view": bool(scope.get("all_view")), "working_day": True}
+
+
+@router.post("/branch-days/submit")
+def branch_log_branch_day_submit(payload: dict = Body(default_factory=dict),
+                                 user: dict = Depends(get_current_user)):
+    """TIER 1: the Branch Manager closes the day.
+
+    Refuses while the over-reporting gate is breached — "nothing should flow if
+    what is being submitted is more than the actual branch performance".
+    """
+    from datetime import date as _date
+    me = _identity(user)
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+
+    try:
+        from utils.org_validator import staff_validated_by
+        scope = staff_validated_by(me.get("staff_code", ""))
+    except Exception:
+        scope = {"mode": "", "codes": []}
+    if scope.get("mode") != "triad" and not _is_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Only the branch management triad can close a branch day.")
+
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == day]
+    try:
+        from utils.branch_log_reconcile import reconcile_branch_day
+        recon = reconcile_branch_day(logs, branch, day) or {}
+    except Exception:
+        recon = {}
+    if int(recon.get("anomaly_count", 0)) > 0:
+        over = [k for k, m in (recon.get("metrics") or {}).items() if m.get("anomaly")]
+        raise HTTPException(
+            status_code=409,
+            detail="Over-reported against the branch actual: " + ", ".join(over[:6]))
+
+    from utils.branch_day import submit_branch_day
+    rec = submit_branch_day(
+        branch, day, me.get("staff_code", ""), me.get("staff_name", ""),
+        float(payload.get("branch_index") or 0),
+        payload.get("staff_totals") or {}, payload.get("control_totals") or {},
+        payload.get("counts") or {})
+    audit_log("BRANCH_DAY_SUBMIT", str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day} index={rec.get('branch_index')}")
+    return {"branch_day": rec}
+
+
+@router.post("/branch-days/validate")
+def branch_log_branch_day_validate(payload: dict = Body(default_factory=dict),
+                                   user: dict = Depends(get_current_user)):
+    """TIER 2: countersign, or return to the Branch Manager with a reason."""
+    from datetime import date as _date
+    me = _identity(user)
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    approve = bool(payload.get("approved", True))
+    note = str(payload.get("note", "") or "")
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(me.get("staff_code", ""))
+    except Exception:
+        scope = {"branches": []}
+    if branch not in (scope.get("branches") or []) and not _is_admin(user):
+        raise HTTPException(status_code=403,
+                            detail=f"{branch} is not a branch you countersign.")
+
+    from utils.branch_day import validate_branch_day, return_branch_day
+    try:
+        rec = (validate_branch_day(branch, day, me.get("staff_code", ""),
+                                   me.get("staff_name", ""), note)
+               if approve else
+               return_branch_day(branch, day, me.get("staff_code", ""),
+                                 me.get("staff_name", ""), note))
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    audit_log("BRANCH_DAY_VALIDATE" if approve else "BRANCH_DAY_RETURN",
+              str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day}")
+    return {"branch_day": rec}
+
+
 @router.get("/validation-queue")
 def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current_user)):
     """Daily-log validation queue for ONE day, in the same row shape as the

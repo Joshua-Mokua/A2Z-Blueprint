@@ -350,6 +350,62 @@ def staff_validated_by(validator_code: str) -> dict:
     return {"mode": "line_manager", "codes": []}
 
 
+def branches_validated_by(validator_code: str) -> dict:
+    """TIER 2: which BRANCHES may this person validate (not individuals)?
+
+    Ruling 2026-08-08: a Branch Manager validates the individuals and closes the
+    branch day; the Head of Branches validates the BRANCH SUBMISSION and may
+    return it to the BM. Two tiers, two different objects.
+
+    A branch belongs to this caller when the caller is the line manager of that
+    branch's triad head (its Branch Manager), or when the caller holds an
+    all-view role, in which case every branch is theirs.
+
+    Returns {"mode": "branch"|"", "branches": [name, ...], "all_view": bool}.
+    Vectorised — one register pass, no per-branch resolution.
+    """
+    df = _register()
+    vc = _s(validator_code)
+    if df.empty or not vc or "Staff Code" not in df.columns:
+        return {"mode": "", "branches": [], "all_view": False}
+
+    me = df[df["Staff Code"] == vc]
+    if me.empty:
+        return {"mode": "", "branches": [], "all_view": False}
+    my_role = _s(me.iloc[0].get("Role", "")).lower()
+
+    if "Branch" in df.columns:
+        bcol = df["Branch"].astype(str).str.strip()
+        if "Unit" in df.columns:
+            bcol = bcol.where(bcol.str.len() > 0, df["Unit"].astype(str).str.strip())
+    else:
+        bcol = df["Unit"].astype(str).str.strip()
+    branch_names = sorted({b for b in bcol.tolist()
+                           if b and b.lower() != _HEAD_OFFICE})
+
+    # All-view roles (MD, Head of Branches, register roots, admins) own every
+    # branch. Reuse the same sets the visibility engine uses — do not restate.
+    all_view = False
+    try:
+        from utils.core import _ALL_VIEW_ROLES
+        all_view = my_role in {r.lower() for r in _ALL_VIEW_ROLES} or "admin" in my_role
+    except Exception:
+        all_view = "admin" in my_role
+    if all_view:
+        return {"mode": "branch", "branches": branch_names, "all_view": True}
+
+    # Otherwise: branches whose Branch Manager reports to this caller.
+    if "Reports To" not in df.columns:
+        return {"mode": "", "branches": [], "all_view": False}
+    wanted = [w.lower() for w in _triad_roles()]
+    head_role = wanted[0] if wanted else "branch manager"
+    roles = df["Role"].astype(str).str.strip().str.lower()
+    reports = df["Reports To"].astype(str).str.strip()
+    mask = (roles == head_role) & (reports == vc)
+    mine = sorted({b for b in bcol[mask].tolist() if b})
+    return {"mode": "branch" if mine else "", "branches": mine, "all_view": False}
+
+
 def can_validate_daily_log(validator_code: str, staff_code: str) -> bool:
     """True when validator_code is permitted to validate staff_code's daily log."""
     vc = _s(validator_code)
