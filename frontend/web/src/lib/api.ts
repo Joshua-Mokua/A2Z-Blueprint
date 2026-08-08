@@ -780,6 +780,98 @@ export async function fetchPendingBranchLogs(): Promise<{ logs: BranchLogEntry[]
 export async function submitBranchLog(values: Record<string, number | string>): Promise<{ log: BranchLogEntry }> {
   return postJson<{ log: BranchLogEntry }, { values: Record<string, number | string> }>('/branch-log', { values });
 }
+
+// ── Day-planner hourly model ──────────────────────────────────────────────
+export interface HourMeeting { label: string; tier: string; span: number; source?: string; }
+export interface HourBlock { counts: Record<string, number>; meetings: HourMeeting[]; note?: string; }
+export type HourlyMap = Record<string, HourBlock>;
+
+// submit/draft carrying an hourly map (the planner path). Day totals are derived server-side.
+export async function submitBranchLogHourly(hourly: HourlyMap, remarks?: string): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { values: Record<string, unknown> }>(
+    '/branch-log', { values: { hourly, remarks: remarks ?? '' } });
+}
+export async function saveBranchLogHourlyDraft(hourly: HourlyMap, remarks?: string): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { values: Record<string, unknown> }>(
+    '/branch-log/draft', { values: { hourly, remarks: remarks ?? '' } });
+}
+
+// ── Analytics (impact pie + validation split + totals) ────────────────────
+export interface ImpactBreakdown {
+  high: number; medium: number; low: number; total: number; high_pct: number;
+  by_activity: Record<string, { tier: string; index: number }>;
+}
+export interface BranchLogAnalytics {
+  days: number; scope_tier: string; impact: ImpactBreakdown; high_impact_keys: string[];
+  totals: { logs: number; submitters: number; validated: number; auto_submitted: number;
+            returned: number; pending: number; validation_rate: number };
+}
+export async function fetchBranchLogAnalytics(days = 30, unit = ''): Promise<BranchLogAnalytics> {
+  const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
+  return getJson<BranchLogAnalytics>(`/branch-log/analytics${q}`);
+}
+
+// ── History grid (one row per staff per day, with carried-forward variance) ─
+export interface HistoryGridColumn { key: string; label: string; unit: string; type: string; tier: string; }
+export interface HistoryGridRow {
+  log_date: string; staff_code: string; staff_name: string; role: string; unit: string;
+  status: string; validated: boolean; auto_submitted: boolean;
+  index: number; target: number; variance: number; cf_variance: number;
+  [metric: string]: unknown;
+}
+export interface HistoryGrid {
+  rows: HistoryGridRow[]; columns: HistoryGridColumn[]; days: number;
+  scope_tier: string; deadline_time: string;
+}
+export async function fetchBranchLogHistoryGrid(days = 30, unit = ''): Promise<HistoryGrid> {
+  const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
+  return getJson<HistoryGrid>(`/branch-log/history-grid${q}`);
+}
+
+// ── Impact matrix (80/20) — admin ─────────────────────────────────────────
+export interface ImpactTiersResponse {
+  impact_tiers: Record<string, string>;
+  activities: { key: string; label: string; unit: string }[];
+}
+export async function fetchBranchLogImpactTiers(): Promise<ImpactTiersResponse> {
+  return getJson<ImpactTiersResponse>('/branch-log/impact-tiers');
+}
+export async function saveBranchLogImpactTiers(tiers: Record<string, string>): Promise<{ status: string; impact_tiers: Record<string, string> }> {
+  return postJson<{ status: string; impact_tiers: Record<string, string> }, { tiers: Record<string, string> }>(
+    '/branch-log/impact-tiers', { tiers });
+}
+
+// ── Lifecycle actions (manager return, admin unlock, admin cf-reset) ──────
+export async function returnBranchLog(logId: string, note: string): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, { note: string }>(`/branch-log/${encodeURIComponent(logId)}/return`, { note });
+}
+export async function unlockBranchLog(logId: string): Promise<{ log: BranchLogEntry }> {
+  return postJson<{ log: BranchLogEntry }, Record<string, never>>(`/branch-log/${encodeURIComponent(logId)}/unlock`, {});
+}
+export async function resetBranchLogCarryForward(date?: string): Promise<{ status: string }> {
+  return postJson<{ status: string }, { date?: string }>('/branch-log/cf-reset', date ? { date } : {});
+}
+
+// ── Reconciliation (branch over-reporting) ────────────────────────────────
+export interface ReconContributor { staff_code: string; staff_name: string; reported: number; }
+export interface ReconMetric {
+  reported_sum: number; control_total: number; over_by: number; anomaly: boolean;
+  contributors: ReconContributor[];
+}
+export interface ReconBranchDay {
+  branch: string; date: string; metrics: Record<string, ReconMetric>;
+  anomaly_count: number; log_count: number;
+}
+export interface ReconciliationResponse {
+  reconciliations: ReconBranchDay[]; anomaly_total?: number; days?: number; scope_tier: string;
+}
+export async function fetchBranchLogReconciliation(days = 7): Promise<ReconciliationResponse> {
+  return getJson<ReconciliationResponse>(`/branch-log/reconciliation?days=${days}`);
+}
+export async function setBranchControlTotals(branch: string, date: string, totals: Record<string, number>): Promise<{ status: string; totals: Record<string, number> }> {
+  return postJson<{ status: string; totals: Record<string, number> }, { branch: string; date: string; totals: Record<string, number> }>(
+    '/branch-log/control-totals', { branch, date, totals });
+}
 // Item 3: save the daily log as a private DRAFT (not submitted for validation).
 export async function saveBranchLogDraft(values: Record<string, number | string>): Promise<{ log: BranchLogEntry }> {
   return postJson<{ log: BranchLogEntry }, { values: Record<string, number | string> }>('/branch-log/draft', { values });
