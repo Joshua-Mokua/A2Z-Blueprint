@@ -2,17 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { Badge } from '@/components/Badge';
 import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import DayPlanner from '@/components/DayPlanner';
+import HistoryGrid from '@/components/HistoryGrid';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
   submitBranchLogHourly, saveBranchLogHourlyDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
   fetchBranchLogActivities, saveBranchLogActivities,
-  fetchDayContext,
+  fetchDayContext, fetchBranchLogHistoryGrid,
   type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
-  type HourlyMap, type DayContext,
+  type HourlyMap, type DayContext, type HistoryGrid as HistoryGridData,
 } from '@/lib/api';
 import { displayName } from '@/lib/names';
 
@@ -48,6 +48,9 @@ export default function BranchLog() {
   const [remarks, setRemarks] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [dayCtx, setDayCtx] = useState<DayContext | null>(null);
+  const [grid, setGrid] = useState<HistoryGridData | null>(null);
+  const [gridDays, setGridDays] = useState(30);
+  const [gridLoading, setGridLoading] = useState(false);
   const [mine, setMine] = useState<BranchLogEntry[]>([]);
   const [pending, setPending] = useState<BranchLogEntry[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -100,6 +103,14 @@ export default function BranchLog() {
   const loadDayCtx = useCallback(async () => {
     try { setDayCtx(await fetchDayContext()); } catch { /* header falls back */ }
   }, []);
+  // Phase 3: the wide history grid. Loads on demand (History tab) and on
+  // range change, not on mount - it is the heaviest call on the page.
+  const loadGrid = useCallback(async (days: number) => {
+    setGridLoading(true);
+    try { setGrid(await fetchBranchLogHistoryGrid(days)); }
+    catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load history.' }); }
+    finally { setGridLoading(false); }
+  }, [toast]);
 
   useEffect(() => { void loadFields(); void loadMine(); void loadAuto(); void loadCfg(); void loadDayCtx(); }, [loadFields, loadMine, loadAuto, loadCfg, loadDayCtx]);
   useEffect(() => { if (tab === 'ranking') void loadRanking(); }, [tab, loadRanking]);
@@ -166,6 +177,7 @@ export default function BranchLog() {
 
   // Item 3: load today's saved entry once, on mount (after loadDraft exists).
   useEffect(() => { void loadDraft(); }, [loadDraft]);
+  useEffect(() => { if (tab === 'history') void loadGrid(gridDays); }, [tab, gridDays, loadGrid]);
 
   // Item 4: auto-save a draft when leaving with unsaved edits. The unmount
   // handler runs on logout and in-app navigation (React unmounts the page) and
@@ -459,25 +471,16 @@ export default function BranchLog() {
 
       {tab === 'history' && (
         <Card>
-          <Card.Header><h2 className="text-base font-semibold text-gray-900">My recent logs</h2></Card.Header>
+          <Card.Header>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-gray-900">Log history</h2>
+              <span className="text-xs text-gray-400">
+                Index vs target per day, with the running carried-forward balance.
+              </span>
+            </div>
+          </Card.Header>
           <Card.Body>
-            {mine.length === 0 ? <p className="text-sm text-gray-400">No logs in the last 14 days.</p> : (
-              <div className="space-y-2">
-                {mine.map((l) => (
-                  <div key={l.id} className="rounded border border-gray-100 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900">{l.log_date}</span>
-                      <Badge tone={l.validated ? 'success' : l.rejected ? 'danger' : 'warning'} size="sm">
-                        {l.validated ? 'Validated' : l.rejected ? 'Returned' : 'Pending'}
-                      </Badge>
-                    </div>
-                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">{metricSummary(l)}</div>
-                    {l.remarks ? <p className="mt-1 text-xs text-gray-500">{l.remarks}</p> : null}
-                    {l.manager_note ? <p className="mt-1 text-xs text-brand-primary">Manager: {l.manager_note}</p> : null}
-                  </div>
-                ))}
-              </div>
-            )}
+            <HistoryGrid grid={grid} loading={gridLoading} days={gridDays} onDaysChange={setGridDays} />
           </Card.Body>
         </Card>
       )}
