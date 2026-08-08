@@ -345,6 +345,126 @@ def _dims_for(staff_code) -> dict:
     return _roster_dims().get(_canon(staff_code)) or {}
 
 
+@router.get("/validation-queue")
+def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current_user)):
+    """Daily-log validation queue for ONE day, in the same row shape as the
+    history grid so Manager Queues can reuse its column and colour vocabulary.
+
+    WHO APPEARS: every staff member this caller is a permitted validator for,
+    per utils.org_validator.daily_log_validators_for — the branch management
+    triad inside a branch, the pure line manager at Head Office. This endpoint
+    does not decide that rule; it asks for it.
+
+    Staff who filed NOTHING are included (ruling 2026-08-08) so a manager can
+    see who owes a log, carrying status='missing' and no actions.
+
+    Rest days are excluded outright: nobody should be asked to validate a Sunday.
+    """
+    from datetime import date as _date
+    from utils.branch_log import metric_keys, fields_schema
+    from utils.branch_log_analytics import _target_for
+    from utils.staff_code import canon as _canon_q
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    # Rest days carry no target and nothing to validate.
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "columns": [], "date": day.isoformat(),
+                    "working_day": False, "label": _wc.holiday_label(day),
+                    "mode": "", "pending": 0}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+    from utils.org_validator import daily_log_validators_for
+
+    # Everyone this caller may validate. Resolved from the roster, so it covers
+    # staff who have never filed.
+    mine, mode = [], ""
+    for ck, d in dims.items():
+        code = d.get("code") or ck
+        if _canon_q(code) == _canon_q(my_code):
+            continue
+        try:
+            res = daily_log_validators_for(code)
+        except Exception:
+            continue
+        if any(str(v.get("validator_code") or "") == my_code
+               for v in res.get("validators", [])):
+            mine.append((code, d))
+            mode = mode or res.get("mode", "")
+
+    if not mine:
+        return {"rows": [], "columns": [], "date": day.isoformat(),
+                "working_day": True, "label": "", "mode": mode, "pending": 0}
+
+    blm = BranchLogManager()
+    logs = blm.get_history(days=45)
+    iso = day.isoformat()
+    by_code = {}
+    for l in logs:
+        if str(l.get("log_date"))[:10] == iso:
+            by_code[_canon_q(l.get("staff_code"))] = l
+
+    mkeys = metric_keys()
+    rows, pending = [], 0
+    for code, d in mine:
+        l = by_code.get(_canon_q(code))
+        base = {
+            "log_date": iso,
+            "staff_code": code,
+            "staff_name": d.get("full_name", ""),
+            "role": d.get("role", ""),
+            "department": d.get("department", ""),
+            "branch": d.get("branch", ""),
+        }
+        if not l:
+            base.update({"log_id": "", "status": "missing", "validated": False,
+                         "auto_submitted": False, "index": 0.0,
+                         "target": _target_for({"log_date": iso}),
+                         "remarks": "", "manager_note": "", "can_act": False})
+            for k in mkeys:
+                base[k] = 0
+        else:
+            status = str(l.get("status", "submitted"))
+            validated = bool(l.get("validated"))
+            base.update({
+                "log_id": str(l.get("id", "")),
+                "status": status,
+                "validated": validated,
+                "auto_submitted": bool(l.get("auto_submitted")),
+                "index": round(float(l.get("index") or 0), 2),
+                "target": _target_for(l),
+                "remarks": str(l.get("remarks") or ""),
+                "manager_note": str(l.get("manager_note") or ""),
+                "validated_by": str(l.get("validated_by") or ""),
+                "can_act": (not validated) and status in ("submitted", "auto_submitted"),
+            })
+            for k in mkeys:
+                base[k] = l.get(k, 0)
+            if base["can_act"]:
+                pending += 1
+        rows.append(base)
+
+    rows.sort(key=lambda r: (r["status"] != "missing", str(r.get("staff_name") or "")))
+
+    from utils.branch_log_analytics import tier_of
+    columns = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", ""),
+                "type": f.get("type", "int"), "tier": tier_of(f["key"])}
+               for f in fields_schema() if f.get("type") != "text"]
+
+    return {"rows": rows, "columns": columns, "date": iso, "working_day": True,
+            "label": "", "mode": mode, "pending": pending}
+
+
 @router.get("/history-grid")
 def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: bool = True,
                             user: dict = Depends(get_current_user)):
@@ -824,9 +944,30 @@ def branch_log_submit(payload: dict = Body(default_factory=dict),
 @router.post("/{log_id}/validate")
 def branch_log_validate(log_id: str, payload: dict = Body(default_factory=dict),
                         user: dict = Depends(get_current_user)):
-    """Supervisor validates (approves/rejects) a submitted log."""
-    if not _is_manager(user):
-        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    """Validate (approve/reject) a submitted log.
+
+    Permission comes from utils.org_validator.can_validate_daily_log - the
+    branch triad inside a branch, the line manager at Head Office - not from a
+    role-substring guess. Admins retain an override.
+    """
+    me = _identity(user)
+    blm_probe = BranchLogManager()
+    _target = next((l for l in blm_probe.get_history(days=120)
+                    if str(l.get("id")) == str(log_id)), None)
+    if not _target:
+        raise HTTPException(status_code=404, detail=f"Log {log_id} not found")
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""),
+                                             str(_target.get("staff_code") or ""))
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not a permitted validator for this staff member.")
+
     approved = bool(payload.get("approved", True))
     note = str(payload.get("note", "") or "")
     blm = BranchLogManager()

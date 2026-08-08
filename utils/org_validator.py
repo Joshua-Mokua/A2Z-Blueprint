@@ -148,6 +148,117 @@ def line_manager_of(staff_code: str) -> dict:
     return res
 
 
+# ── Daily-log validators ─────────────────────────────────────────────────────
+# RULING (2026-08-08): a BRANCH log is validated by the branch management triad;
+# a HEAD OFFICE log is validated by the pure line manager.
+#
+# The triad role names live in org_config.json, not here — branch titles change
+# and a rename must not require a code deploy. The fallback below is only used
+# when the key is absent.
+_DEFAULT_TRIAD_ROLES = [
+    "Branch Manager",
+    "Assistant Branch Service & Operations Manager",
+    "Customer Service Manager",
+]
+
+
+def _triad_roles() -> list:
+    """Branch roles permitted to validate daily logs, from org_config.json."""
+    try:
+        from utils.config import load_org_config
+        roles = load_org_config().get("daily_log_branch_validator_roles")
+        if isinstance(roles, list) and roles:
+            return [str(r) for r in roles if str(r).strip()]
+    except Exception:
+        pass
+    return list(_DEFAULT_TRIAD_ROLES)
+
+
+def _acting_bm_for(unit: str) -> str:
+    """org_config.acting_bm covers branches with no substantive Branch Manager
+    (11 BMs across 17 branches). Returns a staff code or ''."""
+    try:
+        from utils.config import load_org_config
+        acting = load_org_config().get("acting_bm") or {}
+        for k, v in acting.items():
+            if _s(k).lower() == _s(unit).lower():
+                return _s(v)
+    except Exception:
+        pass
+    return ""
+
+
+def daily_log_validators_for(staff_code: str) -> dict:
+    """Who may validate this person's DAILY LOG.
+
+    Branch staff  -> every holder of a triad role in their own unit, plus the
+                     acting Branch Manager where org_config names one.
+    Head Office    -> the pure reporting-tree line manager (line_manager_of).
+
+    Returns {"mode": "triad"|"line_manager", "unit": str,
+             "validators": [{validator_code, validator_name, validator_role,
+                             validator_unit, ...}]}
+    Read-only; never raises. An empty validators list means "unresolved" and the
+    caller should fall back to admin, exactly as resolve_validator does.
+    """
+    df = _register()
+    if df.empty or "Staff Code" not in df.columns:
+        return {"mode": "line_manager", "unit": "",
+                "validators": [_admin_fallback("staff register unavailable")]}
+
+    person = df[df["Staff Code"] == _s(staff_code)]
+    if person.empty:
+        return {"mode": "line_manager", "unit": "",
+                "validators": [_admin_fallback(f"staff {staff_code} not in register")]}
+
+    p = person.iloc[0]
+    unit = _s(p.get("Unit", ""))
+
+    # Head Office (and anyone with no unit) keeps the line-manager model.
+    if not unit or unit.lower() == _HEAD_OFFICE:
+        return {"mode": "line_manager", "unit": unit,
+                "validators": [line_manager_of(staff_code)]}
+
+    wanted = _triad_roles()
+    out, seen = [], set()
+    for _, row in df.iterrows():
+        if _s(row.get("Unit", "")).lower() != unit.lower():
+            continue
+        have = _s(row.get("Role", ""))
+        if not any(_role_matches(have, w) for w in wanted):
+            continue
+        code = _s(row.get("Staff Code", ""))
+        if code and code not in seen and code != _s(staff_code):
+            seen.add(code)
+            out.append(_found(row))
+
+    acting = _acting_bm_for(unit)
+    if acting and acting not in seen:
+        hit = df[df["Staff Code"] == acting]
+        if not hit.empty:
+            rec = _found(hit.iloc[0])
+            rec["via"] = "acting BM for %s" % unit
+            out.append(rec)
+            seen.add(acting)
+
+    if not out:
+        # No triad member in this branch — fall back to the line manager rather
+        # than leaving the log unvalidatable.
+        return {"mode": "line_manager", "unit": unit,
+                "validators": [line_manager_of(staff_code)]}
+
+    return {"mode": "triad", "unit": unit, "validators": out}
+
+
+def can_validate_daily_log(validator_code: str, staff_code: str) -> bool:
+    """True when validator_code is permitted to validate staff_code's daily log."""
+    vc = _s(validator_code)
+    if not vc:
+        return False
+    res = daily_log_validators_for(staff_code)
+    return any(_s(v.get("validator_code")) == vc for v in res.get("validators", []))
+
+
 def resolve_validator(owner_code: str) -> dict:
     """Return the validator for a deal owner.
 

@@ -815,5 +815,10 @@
     "Karatina": "KE546",
     "Nyeri": "KE461"
   },
-  "app_name": "A2Z MIS 360"
+  "app_name": "A2Z MIS 360",
+  "daily_log_branch_validator_roles": [
+    "Branch Manager",
+    "Assistant Branch Service & Operations Manager",
+    "Customer Service Manager"
+  ]
 }
