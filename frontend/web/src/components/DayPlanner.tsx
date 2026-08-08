@@ -26,6 +26,25 @@ function chipClass(key: string): string {
   return CHIP[FAMILY[key] ?? 'gray'];
 }
 
+// Time-of-day colouring. Deliberately wall-clock and independent of
+// dayStart/dayEnd — those control what the scroll box parks on, whereas
+// morning/afternoon/evening are what the hour actually IS. Brand palette only.
+type Period = 'night' | 'morning' | 'afternoon' | 'evening';
+
+function periodOf(h: number): Period {
+  if (h >= 8 && h <= 11) return 'morning';
+  if (h >= 12 && h <= 16) return 'afternoon';
+  if (h >= 17 && h <= 19) return 'evening';
+  return 'night';
+}
+
+const PERIOD: Record<Period, { rail: string; pill: string; tint: string }> = {
+  morning:   { rail: '#0082BB', pill: 'bg-[#E6F1FB] text-[#0C447C]', tint: 'bg-[#0082BB]/[0.04]' },
+  afternoon: { rail: '#669438', pill: 'bg-[#EAF3DE] text-[#3B6D11]', tint: 'bg-[#669438]/[0.05]' },
+  evening:   { rail: '#005B82', pill: 'bg-[#DDEAF1] text-[#004965]', tint: 'bg-[#005B82]/[0.04]' },
+  night:     { rail: '#EDEDED', pill: 'bg-gray-100 text-gray-400',   tint: 'bg-gray-100/80' },
+};
+
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 const key2 = (h: number) => String(h).padStart(2, '0');
@@ -63,12 +82,10 @@ export default function DayPlanner({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-  function scrollToHour(h: number, smooth = false) {
+  function scrollToHour(h: number) {
     const el = rowRefs.current[h];
     const box = scrollRef.current;
-    if (!el || !box) return;
-    if (smooth) box.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
-    else box.scrollTop = el.offsetTop;
+    if (el && box) box.scrollTop = el.offsetTop;
   }
 
   // Mount only. Re-anchoring mid-edit would yank the view out from under the user.
@@ -77,11 +94,6 @@ export default function DayPlanner({
     scrollToHour(outside ? nowHour : dayStart);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function jumpToNow() {
-    setOpenHour(nowHour);
-    scrollToHour(nowHour, true);
-  }
 
   const weightOf = useMemo(() => {
     const m: Record<string, number> = {};
@@ -173,7 +185,7 @@ export default function DayPlanner({
       {/* 24-hour vertical timeline, scrolled to the working day */}
       <div
         ref={scrollRef}
-        className="relative max-h-[31rem] overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200"
+        className="relative max-h-[calc(100vh_-_21rem)] min-h-[17rem] overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200"
       >
         {HOURS.map((h) => {
           const block = blockFor(h);
@@ -181,12 +193,15 @@ export default function DayPlanner({
           const isNow = h === nowHour;
           const isOpen = openHour === h;
           const offHours = h < dayStart || h > dayEnd;
+          const period = PERIOD[periodOf(h)];
+          const hasContent = entries.length > 0 || (block.meetings?.length ?? 0) > 0 || !!block.note;
           return (
             <div
               key={h}
               ref={(el) => { rowRefs.current[h] = el; }}
+              style={{ borderLeft: `3px solid ${period.rail}` }}
               className={'border-b border-gray-100 last:border-b-0 '
-                + (isNow ? 'bg-[#F7FBFD]' : offHours ? 'bg-gray-50/70' : '')}
+                + (isNow ? 'bg-[#F7FBFD]' : hasContent ? period.tint : offHours ? 'bg-gray-50/70' : '')}
             >
               {/* hour row */}
               <button
@@ -194,9 +209,11 @@ export default function DayPlanner({
                 onClick={() => setOpenHour(isOpen ? null : h)}
                 className="grid w-full grid-cols-[64px_1fr_auto] items-center gap-2 px-0 text-left"
               >
-                <span className={'py-2.5 pr-2 text-right text-xs tabular-nums '
-                  + (isNow ? 'font-medium text-brand-primary' : offHours ? 'text-gray-300' : 'text-gray-400')}>
-                  {hh(h)}
+                <span className="flex justify-end py-2 pr-2">
+                  <span className={'rounded px-1.5 py-0.5 text-[11px] tabular-nums '
+                    + (isNow ? 'bg-brand-primary font-medium text-white' : period.pill)}>
+                    {hh(h)}
+                  </span>
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5 py-2">
                   {entries.length === 0 && (block.meetings?.length ?? 0) === 0 && !block.note ? (
@@ -267,29 +284,6 @@ export default function DayPlanner({
           );
         })}
       </div>
-      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-gray-400">
-        <span>
-          Showing {hh(dayStart)}–{hh(dayEnd)} · scroll the timeline for earlier or later hours.
-        </span>
-        <button
-          type="button"
-          onClick={jumpToNow}
-          className="shrink-0 rounded px-2 py-0.5 text-brand-primary transition-colors hover:bg-[#0082BB]/10"
-        >
-          Jump to now
-        </button>
-      </div>
-      {!hasAnyContent(hourly) && (
-        <p className="mt-1 text-center text-[11px] text-gray-400">
-          Tap an hour to log what you accomplished. Your day index updates as you go.
-        </p>
-      )}
     </div>
-  );
-}
-
-function hasAnyContent(hourly: HourlyMap): boolean {
-  return Object.values(hourly).some(
-    (b) => Object.keys(b.counts || {}).length > 0 || (b.meetings?.length ?? 0) > 0 || !!b.note,
   );
 }

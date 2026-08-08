@@ -226,52 +226,59 @@ export default function BranchLog() {
                 {' '}Re-submitting updates it.
               </div>
             )}
-            {autoActs.length > 0 && (
-              <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3">
-                <div className="text-sm font-semibold text-gray-800">Tracked automatically today</div>
-                <p className="mb-2 text-xs text-gray-400">Pulled from your pipeline actions — no need to key these.</p>
-                <ol className="space-y-1">
-                  {autoActs.map((a, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <span className="tabular-nums text-gray-400">{a.time}</span>
-                      <span className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
-                      <span className="text-gray-700">{a.detail}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-            <DayPlanner
-              fields={metricFields}
-              hourly={hourly}
-              onChange={(next) => { setDirty(true); setHourly(next); }}
-              target={indexTarget}
-              dateLabel={dateLabel}
-            />
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+              <DayPlanner
+                fields={metricFields}
+                hourly={hourly}
+                onChange={(next) => { setDirty(true); setHourly(next); }}
+                target={indexTarget}
+                dateLabel={dateLabel}
+              />
 
-            <label className="mt-4 block text-sm">
-              <span className="mb-1 block text-gray-700">Remarks / challenges (whole day)</span>
-              <textarea rows={3} className="w-full rounded border px-2 py-1.5 text-sm"
-                placeholder="Context your manager should know — blockers, escalations, anything the hours don't say."
-                value={remarks} onChange={(e) => { setDirty(true); setRemarks(e.target.value); }} />
-            </label>
+              {/* Context in, actions out. Keeps Save/Submit beside the timeline
+                  rather than below it, so they stay above the fold. */}
+              <aside className="flex flex-col gap-4">
+                {autoActs.length > 0 && (
+                  <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                    <div className="text-sm font-semibold text-gray-800">Tracked automatically today</div>
+                    <p className="mb-2 text-xs text-gray-400">Pulled from your pipeline actions — no need to key these.</p>
+                    <ol className="max-h-40 space-y-1 overflow-y-auto">
+                      {autoActs.map((a, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="tabular-nums text-gray-400">{a.time}</span>
+                          <span className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">{a.kind}</span>
+                          <span className="text-gray-700">{a.detail}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
 
-            <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-              <div className="text-xs text-gray-400">
-                {savingDraft
-                  ? 'Saving…'
-                  : dirty
-                    ? 'Unsaved changes — autosaves every 30 seconds.'
-                    : lastSaved
-                      ? `All changes saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                      : 'Autosaves every 30 seconds.'}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={() => void saveDraft()} disabled={busy || savingDraft}>
-                  {savingDraft ? 'Saving…' : 'Save draft'}
-                </Button>
-                <Button onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
-              </div>
+                <label className="block text-sm">
+                  <span className="mb-1 block text-gray-700">Remarks / challenges</span>
+                  <textarea rows={4} className="w-full rounded border px-2 py-1.5 text-sm"
+                    placeholder="Blockers, escalations, anything the hours don't say."
+                    value={remarks} onChange={(e) => { setDirty(true); setRemarks(e.target.value); }} />
+                </label>
+
+                <div className="mt-auto border-t border-gray-100 pt-3">
+                  <div className="mb-2 text-xs text-gray-400">
+                    {savingDraft
+                      ? 'Saving…'
+                      : dirty
+                        ? 'Unsaved changes — autosaves every 30 seconds.'
+                        : lastSaved
+                          ? `All changes saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                          : 'Autosaves every 30 seconds.'}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button fullWidth onClick={() => void submit()} disabled={busy}>Submit daily log</Button>
+                    <Button fullWidth variant="ghost" onClick={() => void saveDraft()} disabled={busy || savingDraft}>
+                      {savingDraft ? 'Saving…' : 'Save draft'}
+                    </Button>
+                  </div>
+                </div>
+              </aside>
             </div>
           </Card.Body>
         </Card>
