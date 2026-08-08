@@ -451,19 +451,31 @@ def branch_log_unit_days(date: str = "", user: dict = Depends(get_current_user))
     } if brows else None
 
     # ── one row per Head Office unit ─────────────────────────────────────────
+    # RULING 2026-08-08: a person's index belongs to the unit that EMPLOYS them.
+    # Higher levels do not re-sum what is already counted below — they ADD their
+    # own increment. So a unit's members are its DIRECT REPORTS, never its whole
+    # subtree; taking the subtree would re-absorb the branches under CCB and
+    # double every branch staff member.
+    #
+    # The dotted line therefore grants VISIBILITY (Head of Consumer sees the
+    # Consumer book across every branch, exactly as the pipeline does) without
+    # moving anybody's index out of their branch.
+    try:
+        from utils.org_validator import direct_reports_of_role
+    except Exception:
+        direct_reports_of_role = None
+
     urows = []
     for unit in uscope.get("units", []):
-        try:
-            from utils.api_pipeline_scope import get_visible_staff_codes
-            codes = {_canon_u(c) for c in get_visible_staff_codes(
-                {"staff_code": "", "role": unit, "is_admin": False})}
-        except Exception:
-            codes = set()
-        # Non-branch members only: branch days terminate at the Head of Branches,
-        # so counting them inside a unit would double them.
+        codes = set()
+        if direct_reports_of_role:
+            try:
+                codes = {_canon_u(c) for c in direct_reports_of_role(unit)}
+            except Exception:
+                codes = set()
         members = [(d.get("code") or ck, d) for ck, d in dims.items()
-                   if _canon_u(d.get("code") or ck) in codes
-                   and str((d or {}).get("branch") or "").strip().lower() == "head office"]
+                   if _canon_u(d.get("code") or ck) in codes]
+
         if not members:
             continue
         filed = sum(1 for c, _d in members if _canon_u(c) in filed_by)

@@ -439,6 +439,37 @@ def _is_top_of_house(role: str) -> bool:
             or r == "business manager" or "admin" in r)
 
 
+def direct_reports_of_role(role: str) -> list:
+    """Staff codes of the people who report DIRECTLY to the holder(s) of a role.
+
+    Ruling 2026-08-08: a person's index belongs to the unit that employs them,
+    and a higher level ADDS its own increment rather than re-summing what is
+    already counted below. A unit is therefore its direct reports — not its
+    subtree. Taking the subtree would pull every branch staff member back into
+    CCB and count them twice.
+
+    Resolved from the register's Reports To (the live "Reports To Code"), so it
+    follows the same column the rest of the hierarchy uses.
+    """
+    df = _register()
+    r = _s(role)
+    if df.empty or not r or "Staff Code" not in df.columns:
+        return []
+    if "Role" not in df.columns or "Reports To" not in df.columns:
+        return []
+
+    roles = df["Role"].astype(str).str.strip()
+    holders = [c for c in df["Staff Code"][roles.str.lower() == r.lower()].tolist()
+               if _s(c)]
+    if not holders:
+        return []
+    hold = {_s(h) for h in holders}
+    reports = df["Reports To"].astype(str).str.strip()
+    codes = df["Staff Code"].astype(str).str.strip()
+    mask = reports.isin(hold) & (~codes.isin(hold))
+    return [c for c in codes[mask].tolist() if c]
+
+
 def units_validated_by(validator_code: str) -> dict:
     """Which HEAD OFFICE UNITS does this person own?
 
