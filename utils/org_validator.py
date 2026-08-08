@@ -60,12 +60,35 @@ def _register() -> pd.DataFrame:
     sr = Path(DATA_DIR) / "staff_register.xlsx"
     if not sr.exists():
         return pd.DataFrame()
-    try:
-        df = pd.read_excel(sr, sheet_name="Staff Register", header=0)
-    except Exception:
+
+    # The sheet was named "Staff Register" historically; the live file exports
+    # as "Sheet1". Reading only the named sheet raised, was swallowed, and
+    # returned an EMPTY frame — which made every validator lookup in this module
+    # (daily logs AND deals) fall through to the admin fallback, silently.
+    # Try the named sheet, then the first sheet.
+    df = pd.DataFrame()
+    for sheet in ("Staff Register", 0):
+        try:
+            df = pd.read_excel(sr, sheet_name=sheet, header=0)
+            if df is not None and len(df):
+                break
+        except Exception:
+            continue
+    if df is None or df.empty:
         return pd.DataFrame()
+
     df.columns = [str(c).strip() for c in df.columns]
-    for col in ("Staff Code", "Staff Name", "Role", "Unit", "Region", "Reports To"):
+
+    # Column aliases: the live register carries "Reports To Code" (a staff code)
+    # and a separate "Branch" alongside "Unit". Normalise without renaming the
+    # source file.
+    if "Reports To" not in df.columns and "Reports To Code" in df.columns:
+        df["Reports To"] = df["Reports To Code"]
+    if "Unit" not in df.columns and "Branch" in df.columns:
+        df["Unit"] = df["Branch"]
+
+    for col in ("Staff Code", "Staff Name", "Role", "Unit", "Branch",
+                "Department", "Region", "Reports To", "Reports To Code"):
         if col in df.columns:
             df[col] = df[col].map(_s)
     return df
@@ -140,6 +163,16 @@ def line_manager_of(staff_code: str) -> dict:
     want = _s(p.get("Reports To", ""))
     if not want or want.lower() == "nan":
         return _admin_fallback("person is top-of-tree (no Reports To)")
+
+    # The live register stores "Reports To Code" — an actual staff code — where
+    # older exports stored a ROLE NAME. A direct code lookup is both cheaper and
+    # exact, so prefer it and keep the role-resolution path as the fallback.
+    direct = df[df["Staff Code"] == want]
+    if not direct.empty:
+        res = _found(direct.iloc[0])
+        res["via"] = "reports-to code"
+        return res
+
     row, how = _resolve_role_in_unit(df, want, unit or _HEAD_OFFICE, region)
     if row is None:
         return _admin_fallback(how + " -> admin fallback")
@@ -212,7 +245,9 @@ def daily_log_validators_for(staff_code: str) -> dict:
                 "validators": [_admin_fallback(f"staff {staff_code} not in register")]}
 
     p = person.iloc[0]
-    unit = _s(p.get("Unit", ""))
+    # The register carries BOTH Branch and Unit. Branch is the physical site
+    # the triad belongs to; Unit can hold a department on some rows.
+    unit = _s(p.get("Branch", "")) or _s(p.get("Unit", ""))
 
     # Head Office (and anyone with no unit) keeps the line-manager model.
     if not unit or unit.lower() == _HEAD_OFFICE:
@@ -222,7 +257,8 @@ def daily_log_validators_for(staff_code: str) -> dict:
     wanted = _triad_roles()
     out, seen = [], set()
     for _, row in df.iterrows():
-        if _s(row.get("Unit", "")).lower() != unit.lower():
+        row_branch = _s(row.get("Branch", "")) or _s(row.get("Unit", ""))
+        if row_branch.lower() != unit.lower():
             continue
         have = _s(row.get("Role", ""))
         if not any(_role_matches(have, w) for w in wanted):
