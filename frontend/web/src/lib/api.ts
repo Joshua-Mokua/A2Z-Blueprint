@@ -896,6 +896,19 @@ export interface BranchDays {
   rows: BranchDayRow[]; date: string; mode: string;
   all_view: boolean; working_day: boolean; label?: string;
 }
+export interface NonSubmitterRow {
+  staff_code: string; staff_name: string; role: string;
+  branch: string; department: string;
+  days_outstanding: number;
+  exception: string; exception_note: string;
+}
+export interface NonSubmitters {
+  rows: NonSubmitterRow[]; date: string; total: number; working_day?: boolean;
+}
+export async function fetchNonSubmitters(date = ''): Promise<NonSubmitters> {
+  return getJson<NonSubmitters>(
+    `/branch-log/non-submitters${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
 export async function fetchBranchDays(date = ''): Promise<BranchDays> {
   return getJson<BranchDays>(
     `/branch-log/branch-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);

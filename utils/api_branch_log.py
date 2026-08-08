@@ -618,6 +618,109 @@ def branch_log_clear_exception(payload: dict = Body(default_factory=dict),
     return {"removed": removed}
 
 
+@router.get("/non-submitters")
+def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_user)):
+    """TIER 2 accountability: everyone across the caller's branches who has not
+    filed for this day, aged in BUSINESS days.
+
+    "Days outstanding" is the run of consecutive WORKING days ending on this
+    date that the person has missed — so a Sunday or a gazetted holiday never
+    inflates it, and neither does a day they were excused for. The oldest
+    neglect sorts to the top, because that is what needs chasing first.
+
+    Excused days are excluded outright: a person on approved leave is not a
+    follow-up item, and listing them would train managers to ignore the list.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_n
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(my_code)
+    except Exception:
+        scope = {"branches": []}
+    branches = set(scope.get("branches") or [])
+    if not branches:
+        return {"rows": [], "date": day.isoformat(), "total": 0}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "date": day.isoformat(), "total": 0,
+                    "working_day": False}
+    except Exception:
+        pass
+
+    # The last 15 working days, newest first — enough to age a streak without
+    # walking the whole store.
+    window, d = [], day
+    while len(window) < 15:
+        try:
+            from utils import workcal as _wc2
+            if _wc2.is_working_day(d):
+                window.append(d)
+        except Exception:
+            if d.weekday() != 6:
+                window.append(d)
+        d -= _td(days=1)
+
+    blm = BranchLogManager()
+    logs = blm.get_history(days=40)
+    filed = set()
+    for l in logs:
+        filed.add((_canon_n(l.get("staff_code")), str(l.get("log_date"))[:10]))
+
+    try:
+        from utils.branch_log_exceptions import exception_for
+    except Exception:
+        exception_for = lambda *_a, **_k: None   # noqa: E731
+
+    dims = _roster_dims()
+    rows = []
+    iso = day.isoformat()
+    for ck, dd in dims.items():
+        branch = str((dd or {}).get("branch") or "").strip()
+        if branch not in branches:
+            continue
+        code = dd.get("code") or ck
+        if (_canon_n(code), iso) in filed:
+            continue
+        exc = exception_for(code, iso) or {}
+        if exc.get("excuses_target"):
+            continue          # excused is not a follow-up item
+
+        streak = 0
+        for wd in window:
+            wiso = wd.isoformat()
+            if (_canon_n(code), wiso) in filed:
+                break
+            e = exception_for(code, wiso) or {}
+            if e.get("excuses_target"):
+                break
+            streak += 1
+
+        rows.append({
+            "staff_code": code,
+            "staff_name": dd.get("full_name", ""),
+            "role": dd.get("role", ""),
+            "branch": branch,
+            "department": dd.get("department", ""),
+            "days_outstanding": streak,
+            "exception": exc.get("reason", ""),
+            "exception_note": exc.get("note", ""),
+        })
+
+    rows.sort(key=lambda r: (-r["days_outstanding"], r["branch"], r["staff_name"]))
+    return {"rows": rows, "date": iso, "total": len(rows), "working_day": True}
+
+
 @router.get("/validation-queue")
 def branch_log_validation_queue(date: str = "", branch: str = "",
                                 user: dict = Depends(get_current_user)):

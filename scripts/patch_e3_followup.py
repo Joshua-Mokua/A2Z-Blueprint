@@ -1,4 +1,172 @@
-// TIER 2 — branch countersign.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+E3 - cross-branch follow-up: who has not filed, and for how long.
+
+Your requirement: "just below the head of branches list of branches after
+everything there should be the list of all staff across the branches that did
+not submit for follow up".
+
+ADDS
+  GET /api/branch-log/non-submitters?date=
+      Everyone across the caller's branches with no log for that day.
+
+      "Days outstanding" is the run of consecutive WORKING days ending on this
+      date that the person has missed. A weekend or a gazetted holiday never
+      inflates it, and neither does a day they were excused for - the streak
+      stops at the first day they either filed OR were excused.
+
+      EXCUSED STAFF ARE EXCLUDED OUTRIGHT. A person on approved leave is not a
+      follow-up item, and listing them would train managers to ignore the list.
+      That is the whole value of E1's excuse/refusal split showing up here.
+
+      Sorted by days outstanding descending: the oldest neglect first.
+
+  The list renders under the branch table in BranchCountersign, amber-framed,
+  with 3+ days in red - past the return window, where logs lock and need an
+  admin unlock. The "Recorded reason" column shows a non-excusing exception
+  (refused / no explanation) where one exists, so a manager can tell "nobody has
+  asked them" from "they were asked and declined".
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_e3_followup.py            # dry run
+    python scripts\\patch_e3_followup.py --apply    # write + .pre_e3 backups
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api_branch_log.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+COMP = os.path.join("frontend", "web", "src", "components", "BranchCountersign.tsx")
+BACKUP_SUFFIX = ".pre_e3"
+
+API_ANCHOR = '@router.get("/validation-queue")'
+TS_ANCHOR = "export async function fetchBranchDays(date = \'\'): Promise<BranchDays> {"
+
+ENDPOINT_NEW = r'''@router.get("/non-submitters")
+def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_user)):
+    """TIER 2 accountability: everyone across the caller's branches who has not
+    filed for this day, aged in BUSINESS days.
+
+    "Days outstanding" is the run of consecutive WORKING days ending on this
+    date that the person has missed — so a Sunday or a gazetted holiday never
+    inflates it, and neither does a day they were excused for. The oldest
+    neglect sorts to the top, because that is what needs chasing first.
+
+    Excused days are excluded outright: a person on approved leave is not a
+    follow-up item, and listing them would train managers to ignore the list.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_n
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(my_code)
+    except Exception:
+        scope = {"branches": []}
+    branches = set(scope.get("branches") or [])
+    if not branches:
+        return {"rows": [], "date": day.isoformat(), "total": 0}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "date": day.isoformat(), "total": 0,
+                    "working_day": False}
+    except Exception:
+        pass
+
+    # The last 15 working days, newest first — enough to age a streak without
+    # walking the whole store.
+    window, d = [], day
+    while len(window) < 15:
+        try:
+            from utils import workcal as _wc2
+            if _wc2.is_working_day(d):
+                window.append(d)
+        except Exception:
+            if d.weekday() != 6:
+                window.append(d)
+        d -= _td(days=1)
+
+    blm = BranchLogManager()
+    logs = blm.get_history(days=40)
+    filed = set()
+    for l in logs:
+        filed.add((_canon_n(l.get("staff_code")), str(l.get("log_date"))[:10]))
+
+    try:
+        from utils.branch_log_exceptions import exception_for
+    except Exception:
+        exception_for = lambda *_a, **_k: None   # noqa: E731
+
+    dims = _roster_dims()
+    rows = []
+    iso = day.isoformat()
+    for ck, dd in dims.items():
+        branch = str((dd or {}).get("branch") or "").strip()
+        if branch not in branches:
+            continue
+        code = dd.get("code") or ck
+        if (_canon_n(code), iso) in filed:
+            continue
+        exc = exception_for(code, iso) or {}
+        if exc.get("excuses_target"):
+            continue          # excused is not a follow-up item
+
+        streak = 0
+        for wd in window:
+            wiso = wd.isoformat()
+            if (_canon_n(code), wiso) in filed:
+                break
+            e = exception_for(code, wiso) or {}
+            if e.get("excuses_target"):
+                break
+            streak += 1
+
+        rows.append({
+            "staff_code": code,
+            "staff_name": dd.get("full_name", ""),
+            "role": dd.get("role", ""),
+            "branch": branch,
+            "department": dd.get("department", ""),
+            "days_outstanding": streak,
+            "exception": exc.get("reason", ""),
+            "exception_note": exc.get("note", ""),
+        })
+
+    rows.sort(key=lambda r: (-r["days_outstanding"], r["branch"], r["staff_name"]))
+    return {"rows": rows, "date": iso, "total": len(rows), "working_day": True}
+
+
+'''
+
+TS_NEW = r'''export interface NonSubmitterRow {
+  staff_code: string; staff_name: string; role: string;
+  branch: string; department: string;
+  days_outstanding: number;
+  exception: string; exception_note: string;
+}
+export interface NonSubmitters {
+  rows: NonSubmitterRow[]; date: string; total: number; working_day?: boolean;
+}
+export async function fetchNonSubmitters(date = ''): Promise<NonSubmitters> {
+  return getJson<NonSubmitters>(
+    `/branch-log/non-submitters${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+'''
+
+COMPONENT = r'''// TIER 2 — branch countersign.
 //
 // Ruling 2026-08-08: the Branch Manager validates individuals and closes the
 // branch day; the Head of Branches validates the BRANCH, may return it to the
@@ -332,3 +500,77 @@ export default function BranchCountersign({ onCount }: { onCount?: (n: number) =
     </Card>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, COMP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            if p == COMP:
+                print("       Apply patch_b3_tier2_view.py first.")
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "/non-submitters" in api:
+        print("ABORT: non-submitters endpoint already present - E3 looks applied.")
+        return 1
+    if "inspect_only" not in api:
+        print("ABORT: apply patch_b3_tier2_view.py first.")
+        return 1
+    if api.count(API_ANCHOR) != 1:
+        print("ABORT: api anchor matched %d times." % api.count(API_ANCHOR))
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+
+    api = api.replace(API_ANCHOR, ENDPOINT_NEW + API_ANCHOR, 1)
+    print("  ok  GET /non-submitters")
+
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  api.ts - fetchNonSubmitters")
+
+    for token in ("Outstanding daily logs", "days_outstanding", "fetchNonSubmitters"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing %r." % token)
+            return 1
+    for o, c in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+
+    if api.count('@router.get("/non-submitters")') != 1:
+        print("ABORT: post-check - endpoint count is not 1.")
+        return 1
+    if "fetchBranchLogHistoryGrid" not in ts:
+        print("ABORT: post-check - api.ts lost fetchBranchLogHistoryGrid.")
+        return 1
+    print("  ok  post-checks: one endpoint, api.ts intact")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api_branch_log.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, then restart uvicorn.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
