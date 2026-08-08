@@ -123,6 +123,21 @@ def _effective_index(log: dict) -> float:
     return compute_index({k: log.get(k, 0) for k in metric_keys()})
 
 
+def _excused(log: dict) -> bool:
+    """True when this staff-day carries an exception that removes its target.
+
+    An EXCUSED day behaves exactly like a rest day for that person: no target,
+    no variance, skipped by the carried-forward walk. Refusal and "no
+    explanation" do NOT excuse — see utils.branch_log_exceptions.
+    """
+    try:
+        from utils.branch_log_exceptions import is_excused
+        return is_excused(str(log.get("staff_code", "") or ""),
+                          str(log.get("log_date", ""))[:10])
+    except Exception:
+        return False
+
+
 def _working_weight(log: dict) -> float:
     """Work-calendar weight for a log's date: 1.0 weekday, 0.5 Saturday,
     0.0 Sunday / public holiday.
@@ -131,6 +146,8 @@ def _working_weight(log: dict) -> float:
     consulted. Over-counting a working day is recoverable; silently zeroing
     everyone's target because a config file went missing is not.
     """
+    if _excused(log):
+        return 0.0
     try:
         from utils import workcal
         return float(workcal.target_weight(str(log.get("log_date", ""))[:10]))
@@ -191,6 +208,18 @@ def carried_forward(logs: list) -> list:
             r["variance"] = 0.0
             r["cf_variance"] = running
             r["working_day"] = False
+            # Distinguish "the bank was closed" from "this person was excused",
+            # so the grid can say which and a manager is not left guessing.
+            if _excused(r):
+                try:
+                    from utils.branch_log_exceptions import exception_for
+                    exc = exception_for(str(r.get("staff_code", "") or ""),
+                                        str(r.get("log_date", ""))[:10]) or {}
+                except Exception:
+                    exc = {}
+                r["excused"] = True
+                r["exception_reason"] = exc.get("reason", "")
+                r["exception_note"] = exc.get("note", "")
             continue
         tgt = _target_for(r)
         var = round(idx - tgt, 2)
