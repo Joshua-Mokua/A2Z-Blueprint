@@ -518,6 +518,15 @@ def branch_log_branch_day_validate(payload: dict = Body(default_factory=dict),
                                  me.get("staff_name", ""), note))
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+    if not approve:
+        # E4: tell the branch manager who submitted it, not the branch at large.
+        try:
+            from utils.branch_log_notify import notify_branch_day_returned
+            notify_branch_day_returned(str(rec.get("submitted_by") or ""),
+                                       branch, day,
+                                       str(me.get("staff_name") or ""), note)
+        except Exception:
+            pass
     audit_log("BRANCH_DAY_VALIDATE" if approve else "BRANCH_DAY_RETURN",
               str(user.get("username", "") or ""),
               detail=f"branch={branch} date={day}")
@@ -1115,6 +1124,15 @@ def branch_log_return(log_id: str, payload: dict = Body(default_factory=dict),
         rec = return_log(blm, log_id, str(user.get("username", "") or ""), note)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # E4: the person must know their log came back, and why. Best-effort - a
+    # mail failure must never fail the return itself.
+    try:
+        from utils.branch_log_notify import notify_log_returned
+        notify_log_returned(str(rec.get("staff_code") or ""),
+                            str(rec.get("log_date") or ""),
+                            str(_identity(user).get("staff_name") or ""), note)
+    except Exception:
+        pass
     audit_log("BRANCH_LOG_RETURN", str(user.get("username", "") or ""), detail=f"log={log_id}")
     return {"log": rec}
 
