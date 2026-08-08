@@ -271,6 +271,11 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     return {"ranking": rows, "days": days, "daily_index_target": target}
 
 
+_DIMS_CACHE = None
+_DIMS_AT = 0.0
+_DIMS_TTL = 300.0   # seconds; matches the roster loader's own cache horizon
+
+
 def _roster_dims() -> dict:
     """Canonical {canon(staff_code) -> {department, branch, full_name, role}}.
 
@@ -290,7 +295,16 @@ def _roster_dims() -> dict:
 
     Keyed on utils.staff_code.canon so KE0439 / KE439 / 439 all resolve.
     """
+    global _DIMS_CACHE, _DIMS_AT
+    import time as _time
     from utils.staff_code import canon as _canon
+
+    # P3e: memoised. Without this the map was rebuilt from df.iterrows() on
+    # EVERY call. get_staff_roster() has its own TTL cache; this memoises the
+    # derived lookup so a request does one build, not one per row.
+    if _DIMS_CACHE is not None and (_time.monotonic() - _DIMS_AT) < _DIMS_TTL:
+        return _DIMS_CACHE
+
     out: dict = {}
     try:
         from utils.api_pipeline_scope import get_staff_roster
@@ -319,7 +333,9 @@ def _roster_dims() -> dict:
                 "code":       code,
             }
     except Exception:
-        return out
+        return _DIMS_CACHE or out
+
+    _DIMS_CACHE, _DIMS_AT = out, _time.monotonic()
     return out
 
 
@@ -362,6 +378,11 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
 
     mkeys = metric_keys()
 
+    # Resolve the roster ONCE per request; the row loop then does plain dict
+    # lookups instead of re-deriving the map for every row.
+    from utils.staff_code import canon as _canon_code
+    _dims = _roster_dims()
+
     if include_missing:
         from datetime import date as _date, timedelta as _td
         from utils.staff_code import canon as _canon
@@ -370,7 +391,7 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
         except Exception:
             _wc = None
 
-        dims = _roster_dims()
+        dims = _dims
         if _is_admin(user):
             scope_codes = set(dims.keys())
         elif _is_manager(user):
@@ -454,7 +475,7 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
             # `unit` stays on the row for backward compatibility, but the grid
             # filters on department/branch because those are the structure the
             # bank actually reports against.
-            _d = _dims_for(r.get("staff_code"))
+            _d = _dims.get(_canon_code(r.get("staff_code"))) or {}
             row["department"] = _d.get("department", "")
             row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
             if _d.get("full_name"):
@@ -463,44 +484,6 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
                 row[k] = r.get(k, 0)
             rows.append(row)
     rows = []
-    for sc, staff_logs in by_staff.items():
-        annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance
-        for r in annotated:
-            row = {
-                "log_date":   r.get("log_date"),
-                "staff_code": r.get("staff_code"),
-                "staff_name": r.get("staff_name"),
-                "role":       r.get("role"),
-                "unit":       r.get("unit"),
-                "status":     r.get("status", "submitted"),
-                "validated":  bool(r.get("validated")),
-                "auto_submitted": bool(r.get("auto_submitted")),
-                "index":      round(float(r.get("index") or 0), 2),
-                "target":     r.get("target"),
-                "variance":   r.get("variance"),
-                "cf_variance": r.get("cf_variance"),
-                # WC-2b sets working_day on the annotated row (false on Sundays
-                # and gazetted holidays). The endpoint was dropping it, so the
-                # grid could never distinguish a rest day from a missed one and
-                # rendered every Sunday as 0/0/0.
-                "working_day":  bool(r.get("working_day", True)),
-                # P3b: the day's note travels with the row so a manager reading
-                # the spreadsheet sees the context without opening each entry.
-                "remarks":      str(r.get("remarks") or ""),
-                "manager_note": str(r.get("manager_note") or ""),
-            }
-            # P3c: canonical dimensions from the roster. The log's own free-text
-            # `unit` stays on the row for backward compatibility, but the grid
-            # filters on department/branch because those are the structure the
-            # bank actually reports against.
-            _d = _dims_for(r.get("staff_code"))
-            row["department"] = _d.get("department", "")
-            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
-            if _d.get("full_name"):
-                row["staff_name"] = _d["full_name"]
-            for k in mkeys:
-                row[k] = r.get(k, 0)
-            rows.append(row)
 
     # newest first for display; the client can re-sort
     rows.sort(key=lambda x: (str(x.get("log_date", "")), str(x.get("staff_code", ""))), reverse=True)
