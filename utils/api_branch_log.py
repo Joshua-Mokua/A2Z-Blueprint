@@ -364,12 +364,41 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
     if unit and unit != "All":
         logs = [l for l in logs if str(l.get("unit", "")) == unit]
 
-    if _is_admin(user):
-        scoped = logs
-    elif _is_manager(user):
-        scoped = _subtree_logs(logs, user, me)
-    else:
-        scoped = [l for l in logs if str(l.get("staff_code")) == me["staff_code"]]
+    # SCOPE IS NOT DECIDED HERE. get_visible_staff_codes -> core_audit.
+    # get_visible_staff is the same engine the Pipeline, Referrals and BSC use.
+    # It already knows admins, the MD, _ALL_VIEW_ROLES (which includes Head of
+    # Branches), register root roles, data custodians, Head-Office segment scope
+    # for CIB/CCB/Consumer/Commercial, and the REPORTING_TREE walk.
+    #
+    # It reads full_name, unit, department and can_view_all from user_data - a
+    # stripped-down dict silently degrades it toward self-only - so enrich the
+    # caller context from the stored record before calling.
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    user_ctx = {
+        "staff_code":   me.get("staff_code", "") or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    from utils.staff_code import canon as _canon_scope
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        visible = {_canon_scope(c) for c in get_visible_staff_codes(user_ctx)}
+    except Exception:
+        visible = set()
+    visible.discard("")
+    if not visible and user_ctx["staff_code"]:
+        visible = {_canon_scope(user_ctx["staff_code"])}
+
+    scoped = [l for l in logs if _canon_scope(l.get("staff_code")) in visible]
 
     # Group by staff so carried-forward runs per person, then flatten to grid rows.
     by_staff: dict = {}
@@ -392,20 +421,10 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
             _wc = None
 
         dims = _dims
-        if _is_admin(user):
-            scope_codes = set(dims.keys())
-        elif _is_manager(user):
-            try:
-                from utils.api_pipeline_scope import get_visible_staff_codes
-                scope_codes = {_canon(c) for c in get_visible_staff_codes({
-                    "staff_code": me.get("staff_code", ""),
-                    "role": me.get("role", ""),
-                    "is_admin": bool(user.get("is_admin")),
-                })}
-            except Exception:
-                scope_codes = {_canon(c) for c in by_staff}
-        else:
-            scope_codes = {_canon(me.get("staff_code", ""))}
+        # One scope decision per request, made above by the canonical engine.
+        # Intersected with the roster so rows are only synthesised for people
+        # who actually exist in staff_register.xlsx.
+        scope_codes = {c for c in visible if c in dims} or set(visible)
         scope_codes.discard("")
 
         # Working days in the window, newest-inclusive.
@@ -483,7 +502,6 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
             for k in mkeys:
                 row[k] = r.get(k, 0)
             rows.append(row)
-    rows = []
 
     # newest first for display; the client can re-sort
     rows.sort(key=lambda x: (str(x.get("log_date", "")), str(x.get("staff_code", ""))), reverse=True)
@@ -499,7 +517,12 @@ def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: boo
         "rows": rows,
         "columns": columns,
         "days": days,
-        "scope_tier": "bank" if _is_admin(user) else ("subtree" if _is_manager(user) else "self"),
+        # Derived from what the engine RETURNED, so the chip reflects real
+        # visibility rather than a role-string guess.
+        "scope_tier": ("bank" if len(visible) >= max(len(_dims), 1)
+                       else ("subtree" if len(visible) > 1 else "self")),
+        "visible_staff": len(visible),
+
         "deadline_time": deadline_time(),
     }
 
