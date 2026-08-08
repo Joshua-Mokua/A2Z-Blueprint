@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BranchLogField, HourlyMap, HourBlock } from '@/lib/api';
 
 // Metric-family color coding (matches the approved mockup):
@@ -47,13 +47,41 @@ export interface DayPlannerProps {
   dateLabel?: string;                  // e.g. "Thursday 8 August"
   currentHour?: number;                // highlight (defaults to local hour)
   readOnly?: boolean;
+  dayStart?: number;                   // first prominent hour (default 08)
+  dayEnd?: number;                     // last prominent hour, inclusive (default 19)
 }
 
 export default function DayPlanner({
   fields, hourly, onChange, target = 0, dateLabel, currentHour, readOnly = false,
+  dayStart = 8, dayEnd = 19,
 }: DayPlannerProps) {
   const nowHour = currentHour ?? new Date().getHours();
   const [openHour, setOpenHour] = useState<number | null>(nowHour);
+
+  // All 24 hours stay mounted and editable; the box just starts parked on the
+  // working day so the graveyard hours don't eat the page.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  function scrollToHour(h: number, smooth = false) {
+    const el = rowRefs.current[h];
+    const box = scrollRef.current;
+    if (!el || !box) return;
+    if (smooth) box.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+    else box.scrollTop = el.offsetTop;
+  }
+
+  // Mount only. Re-anchoring mid-edit would yank the view out from under the user.
+  useEffect(() => {
+    const outside = nowHour < dayStart || nowHour > dayEnd;
+    scrollToHour(outside ? nowHour : dayStart);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function jumpToNow() {
+    setOpenHour(nowHour);
+    scrollToHour(nowHour, true);
+  }
 
   const weightOf = useMemo(() => {
     const m: Record<string, number> = {};
@@ -142,22 +170,32 @@ export default function DayPlanner({
         </div>
       )}
 
-      {/* 24-hour vertical timeline */}
-      <div className="overflow-hidden rounded-xl border border-gray-200">
+      {/* 24-hour vertical timeline, scrolled to the working day */}
+      <div
+        ref={scrollRef}
+        className="relative max-h-[31rem] overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200"
+      >
         {HOURS.map((h) => {
           const block = blockFor(h);
           const entries = Object.entries(block.counts || {});
           const isNow = h === nowHour;
           const isOpen = openHour === h;
+          const offHours = h < dayStart || h > dayEnd;
           return (
-            <div key={h} className={'border-b border-gray-100 last:border-b-0 ' + (isNow ? 'bg-[#F7FBFD]' : '')}>
+            <div
+              key={h}
+              ref={(el) => { rowRefs.current[h] = el; }}
+              className={'border-b border-gray-100 last:border-b-0 '
+                + (isNow ? 'bg-[#F7FBFD]' : offHours ? 'bg-gray-50/70' : '')}
+            >
               {/* hour row */}
               <button
                 type="button"
                 onClick={() => setOpenHour(isOpen ? null : h)}
                 className="grid w-full grid-cols-[64px_1fr_auto] items-center gap-2 px-0 text-left"
               >
-                <span className={'py-2.5 pr-2 text-right text-xs tabular-nums ' + (isNow ? 'font-medium text-brand-primary' : 'text-gray-400')}>
+                <span className={'py-2.5 pr-2 text-right text-xs tabular-nums '
+                  + (isNow ? 'font-medium text-brand-primary' : offHours ? 'text-gray-300' : 'text-gray-400')}>
                   {hh(h)}
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5 py-2">
@@ -193,7 +231,7 @@ export default function DayPlanner({
               {/* expanded editor for this hour */}
               {isOpen && !readOnly && (
                 <div className="border-t border-gray-100 bg-white px-4 py-3">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {fields.map((f) => (
                       <label key={f.key} className="text-xs">
                         <span className="mb-0.5 block text-gray-600">
@@ -229,8 +267,20 @@ export default function DayPlanner({
           );
         })}
       </div>
+      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-gray-400">
+        <span>
+          Showing {hh(dayStart)}–{hh(dayEnd)} · scroll the timeline for earlier or later hours.
+        </span>
+        <button
+          type="button"
+          onClick={jumpToNow}
+          className="shrink-0 rounded px-2 py-0.5 text-brand-primary transition-colors hover:bg-[#0082BB]/10"
+        >
+          Jump to now
+        </button>
+      </div>
       {!hasAnyContent(hourly) && (
-        <p className="mt-2 text-center text-[11px] text-gray-400">
+        <p className="mt-1 text-center text-[11px] text-gray-400">
           Tap an hour to log what you accomplished. Your day index updates as you go.
         </p>
       )}

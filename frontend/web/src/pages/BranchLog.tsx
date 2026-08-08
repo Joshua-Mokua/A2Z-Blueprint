@@ -202,7 +202,7 @@ export default function BranchLog() {
   const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 py-6 2xl:max-w-[1680px]">
       <PageHeader ribbon title="Daily Log" subtitle="Log your daily activity; supervisors validate." />
 
       <div className="mb-4 flex gap-1 text-sm">
