@@ -252,6 +252,252 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     return {"ranking": rows, "days": days, "daily_index_target": target}
 
 
+@router.get("/history-grid")
+def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
+    """Wide history grid: one row per staff per day with all metric columns, the daily index,
+    target, variance, and the running CARRIED-FORWARD variance (per staff). Scope-aware:
+    admin sees all; a manager sees their reporting subtree; everyone else sees themselves.
+
+    Carried-forward variance is computed at read time per staff member (honouring admin reset
+    markers and healing on validation) via utils.branch_log_analytics.carried_forward.
+    """
+    from utils.branch_log import metric_keys, fields_schema
+    from utils.branch_log_analytics import carried_forward, deadline_time
+
+    me = _identity(user)
+    blm = BranchLogManager()
+    logs = blm.get_history(days=days)
+    if unit and unit != "All":
+        logs = [l for l in logs if str(l.get("unit", "")) == unit]
+
+    if _is_admin(user):
+        scoped = logs
+    elif _is_manager(user):
+        scoped = _subtree_logs(logs, user, me)
+    else:
+        scoped = [l for l in logs if str(l.get("staff_code")) == me["staff_code"]]
+
+    # Group by staff so carried-forward runs per person, then flatten to grid rows.
+    by_staff: dict = {}
+    for l in scoped:
+        by_staff.setdefault(str(l.get("staff_code") or ""), []).append(l)
+
+    mkeys = metric_keys()
+    rows = []
+    for sc, staff_logs in by_staff.items():
+        annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance
+        for r in annotated:
+            row = {
+                "log_date":   r.get("log_date"),
+                "staff_code": r.get("staff_code"),
+                "staff_name": r.get("staff_name"),
+                "role":       r.get("role"),
+                "unit":       r.get("unit"),
+                "status":     r.get("status", "submitted"),
+                "validated":  bool(r.get("validated")),
+                "auto_submitted": bool(r.get("auto_submitted")),
+                "index":      round(float(r.get("index") or 0), 2),
+                "target":     r.get("target"),
+                "variance":   r.get("variance"),
+                "cf_variance": r.get("cf_variance"),
+            }
+            for k in mkeys:
+                row[k] = r.get(k, 0)
+            rows.append(row)
+
+    # newest first for display; the client can re-sort
+    rows.sort(key=lambda x: (str(x.get("log_date", "")), str(x.get("staff_code", ""))), reverse=True)
+
+    # column metadata for the grid header (label + unit + tier), derived from the schema
+    from utils.branch_log_analytics import tier_of
+    schema = fields_schema()
+    columns = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", ""),
+                "type": f.get("type", "int"), "tier": tier_of(f["key"])}
+               for f in schema if f.get("type") != "text"]
+
+    return {
+        "rows": rows,
+        "columns": columns,
+        "days": days,
+        "scope_tier": "bank" if _is_admin(user) else ("subtree" if _is_manager(user) else "self"),
+        "deadline_time": deadline_time(),
+    }
+
+
+@router.post("/{log_id}/return")
+def branch_log_return(log_id: str, payload: dict = Body(default_factory=dict),
+                      user: dict = Depends(get_current_user)):
+    """Manager returns a submitted/auto-submitted log for fill/resubmission (within 3 days)."""
+    if not _is_manager(user):
+        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    from utils.branch_log_state import return_log
+    note = str(payload.get("note", "") or "")
+    blm = BranchLogManager()
+    try:
+        rec = return_log(blm, log_id, str(user.get("username", "") or ""), note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    audit_log("BRANCH_LOG_RETURN", str(user.get("username", "") or ""), detail=f"log={log_id}")
+    return {"log": rec}
+
+
+@router.post("/{log_id}/unlock")
+def branch_log_unlock(log_id: str, user: dict = Depends(get_current_user)):
+    """Admin reopens a locked log to 'returned' (editable by the author)."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_state import admin_unlock
+    blm = BranchLogManager()
+    try:
+        rec = admin_unlock(blm, log_id, str(user.get("username", "") or ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    audit_log("BRANCH_LOG_UNLOCK", str(user.get("username", "") or ""), detail=f"log={log_id}")
+    return {"log": rec}
+
+
+@router.get("/impact-tiers")
+def branch_log_impact_tiers_get(user: dict = Depends(get_current_user)):
+    """The 80/20 impact matrix: {activity_key: 'high'|'medium'|'low'} + the activity schema."""
+    from utils.branch_log_analytics import impact_tiers
+    from utils.branch_log import fields_schema
+    schema = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", "")}
+              for f in fields_schema() if f.get("type") != "text"]
+    return {"impact_tiers": impact_tiers(), "activities": schema}
+
+
+@router.post("/impact-tiers")
+def branch_log_impact_tiers_set(payload: dict = Body(default_factory=dict),
+                                user: dict = Depends(get_current_user)):
+    """Admin assigns activities to impact tiers. payload: {tiers: {activity_key: tier}}."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_analytics import set_impact_tier, impact_tiers
+    tiers_in = payload.get("tiers", {})
+    if not isinstance(tiers_in, dict):
+        raise HTTPException(status_code=400, detail="tiers must be an object")
+    for k, v in tiers_in.items():
+        try:
+            set_impact_tier(str(k), str(v))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    audit_log("BRANCH_LOG_IMPACT_TIERS", str(user.get("username", "") or ""), "tiers updated")
+    return {"status": "saved", "impact_tiers": impact_tiers()}
+
+
+@router.post("/cf-reset")
+def branch_log_cf_reset(payload: dict = Body(default_factory=dict),
+                        user: dict = Depends(get_current_user)):
+    """Admin records a carried-forward variance reset effective on a date (default today)."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_analytics import add_cf_reset_marker
+    from datetime import date as _date
+    reset_date = str(payload.get("date") or _date.today())
+    markers = add_cf_reset_marker(reset_date, str(user.get("username", "") or ""))
+    audit_log("BRANCH_LOG_CF_RESET", str(user.get("username", "") or ""), detail=f"date={reset_date}")
+    return {"status": "saved", "cf_reset_markers": markers}
+
+
+@router.get("/analytics")
+def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
+    """Daily-log analytics, scope-aware. Includes the 80/20 impact-tier breakdown (for the pie),
+    validation split, and totals. Admin sees all; manager sees subtree; else self."""
+    from utils.branch_log_analytics import impact_breakdown, high_impact_keys
+    me = _identity(user)
+    blm = BranchLogManager()
+    try:
+        from utils.branch_log_state import run_maintenance
+        run_maintenance(blm)
+    except Exception:
+        pass
+    logs = blm.get_history(days=days)
+    if unit and unit != "All":
+        logs = [l for l in logs if str(l.get("unit", "")) == unit]
+    if _is_admin(user):
+        scoped = logs
+    elif _is_manager(user):
+        scoped = _subtree_logs(logs, user, me)
+    else:
+        scoped = [l for l in logs if str(l.get("staff_code")) == me["staff_code"]]
+
+    breakdown = impact_breakdown(scoped)
+    submitters = len({str(l.get("staff_code")) for l in scoped if l.get("staff_code")})
+    validated = sum(1 for l in scoped if l.get("validated"))
+    auto = sum(1 for l in scoped if l.get("auto_submitted"))
+    returned = sum(1 for l in scoped if l.get("status") == "returned")
+    pending = sum(1 for l in scoped
+                  if l.get("status") in ("submitted", "auto_submitted") and not l.get("validated"))
+    return {
+        "days": days,
+        "scope_tier": "bank" if _is_admin(user) else ("subtree" if _is_manager(user) else "self"),
+        "impact": breakdown,
+        "high_impact_keys": sorted(high_impact_keys()),
+        "totals": {
+            "logs": len(scoped),
+            "submitters": submitters,
+            "validated": validated,
+            "auto_submitted": auto,
+            "returned": returned,
+            "pending": pending,
+            "validation_rate": round((validated / len(scoped)) * 100, 1) if scoped else 0.0,
+        },
+    }
+
+
+@router.post("/control-totals")
+def branch_log_control_totals_set(payload: dict = Body(default_factory=dict),
+                                  user: dict = Depends(get_current_user)):
+    """Manager/admin sets branch control totals for a date (the reconciliation source).
+    payload: { branch, date, totals: {metric: actual} }. Designed to be replaced later by an
+    automatic CBS end-of-day feed without changing the reconciliation checker."""
+    if not _is_manager(user):
+        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    from utils.branch_log_reconcile import set_control_totals
+    from datetime import date as _date
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())
+    totals = payload.get("totals", {})
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+    if not isinstance(totals, dict):
+        raise HTTPException(status_code=400, detail="totals must be an object")
+    stored = set_control_totals(branch, day, totals)
+    audit_log("BRANCH_LOG_CONTROL_TOTALS", str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day}")
+    return {"status": "saved", "branch": branch, "date": day, "totals": stored}
+
+
+@router.get("/reconciliation")
+def branch_log_reconciliation(days: int = 7, user: dict = Depends(get_current_user)):
+    """Over-reporting anomaly report: per branch+day, where the summed individual reports exceed the
+    branch control total for a metric. Scope-aware: admin sees all branches; a manager sees the
+    branches present in their reporting subtree; individuals get an empty report (not their view)."""
+    if not _is_manager(user):
+        return {"reconciliations": [], "scope_tier": "self"}
+    from utils.branch_log_reconcile import reconcile_branch_day
+    me = _identity(user)
+    blm = BranchLogManager()
+    logs = blm.get_history(days=days)
+    if not _is_admin(user):
+        logs = _subtree_logs(logs, user, me)
+    # distinct branch+day pairs present in scope
+    pairs = sorted({(str(l.get("unit", "")), str(l.get("log_date", "")))
+                    for l in logs if l.get("unit") and l.get("log_date")}, reverse=True)
+    out = []
+    for branch, day in pairs:
+        rec = reconcile_branch_day(logs, branch, day)
+        if rec["metrics"]:  # only include branch+days that HAVE control totals to check
+            out.append(rec)
+    anomaly_total = sum(r["anomaly_count"] for r in out)
+    return {
+        "reconciliations": out,
+        "anomaly_total": anomaly_total,
+        "days": days,
+        "scope_tier": "bank" if _is_admin(user) else "subtree",
+    }
+
+
 @router.get("/mine")
 def branch_log_mine(days: int = 14, user: dict = Depends(get_current_user)):
     """The caller's own recent log entries."""
@@ -306,6 +552,11 @@ def branch_log_pending(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
     me = _identity(user)
     blm = BranchLogManager()
+    try:
+        from utils.branch_log_state import run_maintenance
+        run_maintenance(blm)
+    except Exception:
+        pass
     all_pending = blm.get_pending_validation(unit=None)
     if _is_admin(user):
         return {"logs": all_pending}

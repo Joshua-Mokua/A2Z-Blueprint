@@ -96,6 +96,73 @@ def metric_keys() -> list:
     return keys
 
 
+def derive_from_hourly(hourly: dict) -> dict:
+    """Sum per-hour activity counts into flat day-total metrics.
+
+    hourly = { "HH": {"counts": {metric_key: n, ...}, "meetings": [...]}, ... }
+    Only numeric activity counts are summed; meetings are time-spans handled separately
+    (they carry their own impact tier and do not contribute to metric counts). Returns a
+    {metric_key: total} dict spanning all metric_keys() (missing keys default to 0).
+    """
+    totals = {k: 0.0 for k in metric_keys()}
+    if not isinstance(hourly, dict):
+        return totals
+    for _hh, block in hourly.items():
+        if not isinstance(block, dict):
+            continue
+        counts = block.get("counts", {}) if isinstance(block.get("counts"), dict) else {}
+        for k, v in counts.items():
+            if k in totals:
+                try:
+                    totals[k] += float(v or 0)
+                except (TypeError, ValueError):
+                    continue
+    return totals
+
+
+def sanitize_hourly(hourly: dict) -> dict:
+    """Normalise an incoming hourly map: keep only known metric counts + well-formed meetings,
+    keyed by 2-digit hour strings "00".."23". Defensive against malformed client input."""
+    out: dict = {}
+    if not isinstance(hourly, dict):
+        return out
+    valid_keys = set(metric_keys())
+    for hh, block in hourly.items():
+        try:
+            h = int(str(hh))
+        except (TypeError, ValueError):
+            continue
+        if h < 0 or h > 23 or not isinstance(block, dict):
+            continue
+        counts_in = block.get("counts", {}) if isinstance(block.get("counts"), dict) else {}
+        counts = {}
+        for k, v in counts_in.items():
+            if k in valid_keys:
+                try:
+                    n = float(v or 0)
+                except (TypeError, ValueError):
+                    n = 0
+                if n:
+                    counts[k] = n
+        meetings_in = block.get("meetings", []) if isinstance(block.get("meetings"), list) else []
+        meetings = []
+        for m in meetings_in:
+            if isinstance(m, dict) and m.get("label"):
+                meetings.append({
+                    "label": str(m.get("label", "")),
+                    "tier": str(m.get("tier", "medium")).lower(),
+                    "span": int(m.get("span", 1) or 1),
+                    "source": str(m.get("source", "manual")),
+                })
+        note = str(block.get("note", "") or "").strip()[:500]
+        if counts or meetings or note:
+            blk = {"counts": counts, "meetings": meetings}
+            if note:
+                blk["note"] = note
+            out[f"{h:02d}"] = blk
+    return out
+
+
 def fields_schema() -> list:
     w = activity_weights()
     return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
@@ -167,7 +234,12 @@ class BranchLogManager:
             except (TypeError, ValueError):
                 return 0
 
-        metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
+        hourly = sanitize_hourly(values.get("hourly", {}))
+        if hourly:
+            derived = derive_from_hourly(hourly)
+            metrics = {k: _num(derived.get(k, 0)) for k in metric_keys()}
+        else:
+            metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
         remarks = str(values.get("remarks", "") or "")
 
         existing = next((l for l in self.logs
@@ -175,6 +247,8 @@ class BranchLogManager:
         if existing:
             existing.update(metrics)
             existing["remarks"] = remarks
+            if hourly:
+                existing["hourly"] = hourly
             existing["index"] = compute_index(metrics)
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
@@ -197,6 +271,7 @@ class BranchLogManager:
             "manager_note": "",
             "rejected": False,
             "status": "submitted",
+            "hourly": hourly,
             **metrics,
             "index": compute_index(metrics),
             "remarks": remarks,
@@ -251,7 +326,12 @@ class BranchLogManager:
             except (TypeError, ValueError):
                 return 0
 
-        metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
+        hourly = sanitize_hourly(values.get("hourly", {}))
+        if hourly:
+            derived = derive_from_hourly(hourly)
+            metrics = {k: _num(derived.get(k, 0)) for k in metric_keys()}
+        else:
+            metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
         remarks = str(values.get("remarks", "") or "")
 
         existing = next((l for l in self.logs
@@ -259,6 +339,8 @@ class BranchLogManager:
         if existing:
             existing.update(metrics)
             existing["remarks"] = remarks
+            if hourly:
+                existing["hourly"] = hourly
             existing["index"] = compute_index(metrics)
             existing["updated_at"] = datetime.now().isoformat()
             existing["status"] = "draft"
@@ -282,6 +364,7 @@ class BranchLogManager:
             "manager_note": "",
             "rejected": False,
             "status": "draft",
+            "hourly": hourly,
             **metrics,
             "index": compute_index(metrics),
             "remarks": remarks,
