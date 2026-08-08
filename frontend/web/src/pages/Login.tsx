@@ -15,11 +15,6 @@ export function Login() {
   const [password,   setPassword]   = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  // AD auth can legitimately take up to ~20s (the server's ad_timeout_seconds)
-  // before it even falls back to local auth. Without this, a slow AD server
-  // makes the button just sit on "Signing in…" with nothing to suggest it's
-  // still working rather than stuck.
-  const [showSlowHint, setShowSlowHint] = useState(false);
 
   const redirectTarget = (location.state as RedirectState | null)?.from?.pathname || '/';
   const isExpired = status === 'expired';
@@ -34,15 +29,9 @@ export function Login() {
     if (!username.trim() || !password) { setLocalError('Please enter both username and password.'); return; }
     setLocalError(null);
     setSubmitting(true);
-    setShowSlowHint(false);
-    const slowTimer = setTimeout(() => setShowSlowHint(true), 4_000);
     try { await login(username.trim(), password); }
     catch { /* error surfaced via context */ }
-    finally {
-      clearTimeout(slowTimer);
-      setSubmitting(false);
-      setShowSlowHint(false);
-    }
+    finally { setSubmitting(false); }
   }
 
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
@@ -59,7 +48,7 @@ export function Login() {
           <div className="login-brand-row">
             <img src="/img/ecobank-light.svg" alt="Ecobank" className="login-logo" />
             <div className="login-brand-text">
-              <div className="login-brand-name">{branding?.app_name ?? 'EKE Blueprint'}</div>
+              <div className="login-brand-name">{branding?.app_name ?? 'A2Z Blueprint'}</div>
               <div className="login-brand-tag">MIS 360</div>
             </div>
           </div>
@@ -127,17 +116,8 @@ export function Login() {
             disabled={submitting}
             onClick={handleSubmit}
           >
-            {submitting && (
-              <span className="login-spinner" aria-hidden="true" />
-            )}
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
-
-          {submitting && showSlowHint && (
-            <p className="login-slow-hint">
-              Still contacting the authentication server — this can take up to 60 seconds.
-            </p>
-          )}
 
           {branding?.ip_notice && (
             <p className="login-notice">{branding.ip_notice}</p>
