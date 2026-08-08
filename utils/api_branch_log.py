@@ -345,6 +345,149 @@ def _dims_for(staff_code) -> dict:
     return _roster_dims().get(_canon(staff_code)) or {}
 
 
+@router.get("/unit-days")
+def branch_log_unit_days(date: str = "", user: dict = Depends(get_current_user)):
+    """The consolidated roll-up for the Business Manager and the MD.
+
+    Ruling 2026-08-08: VALIDATION TERMINATES. A branch day is countersigned by
+    the Head of Branches; a Head Office unit day by its Director. Nobody
+    re-validates above that. This tier OBSERVES, and may return a day for
+    amendment — it never countersigns.
+
+    Shape:
+        one collapsed BRANCHES node (a roll-up, not an owner) aggregating every
+        branch, plus one row per MD-reporting unit from org_config.hierarchy.
+
+    Because branch days stop at the Head of Branches, the CCB unit here covers
+    only its NON-BRANCH staff — Head of Branches sits inside CCB's subtree, so
+    counting branches again would double them.
+    """
+    from datetime import date as _date
+    from utils.staff_code import canon as _canon_u
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+    iso = day.isoformat()
+
+    try:
+        from utils.org_validator import units_validated_by, branches_validated_by
+        uscope = units_validated_by(my_code)
+        bscope = branches_validated_by(my_code)
+    except Exception:
+        uscope = {"units": [], "owns": [], "top_of_house": False}
+        bscope = {"branches": []}
+
+    if not uscope.get("units") and not bscope.get("branches"):
+        return {"branches": None, "units": [], "date": iso, "top_of_house": False}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"branches": None, "units": [], "date": iso,
+                    "working_day": False, "label": _wc.holiday_label(day),
+                    "top_of_house": bool(uscope.get("top_of_house"))}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == iso]
+    filed_by = {}
+    for l in logs:
+        filed_by[_canon_u(l.get("staff_code"))] = l
+
+    from utils.branch_day import list_branch_days
+
+    # ── the collapsed BRANCHES node ──────────────────────────────────────────
+    branch_names = sorted({str((d or {}).get("branch") or "").strip()
+                           for d in dims.values()
+                           if str((d or {}).get("branch") or "").strip()
+                           and str((d or {}).get("branch") or "").strip().lower()
+                           != "head office"})
+    subs = list_branch_days(iso, branch_names)
+    brows, tot = [], {"expected": 0, "filed": 0, "validated": 0, "index": 0.0,
+                      "countersigned": 0, "over": 0}
+    for b in branch_names:
+        members = [(d.get("code") or ck, d) for ck, d in dims.items()
+                   if str((d or {}).get("branch") or "").strip() == b]
+        filed = sum(1 for c, _d in members if _canon_u(c) in filed_by)
+        validated = sum(1 for c, _d in members
+                        if (filed_by.get(_canon_u(c)) or {}).get("validated"))
+        rec = subs.get(b) or {}
+        over = 0
+        try:
+            from utils.branch_log_reconcile import reconcile_branch_day
+            over = int((reconcile_branch_day(logs, b, iso) or {}).get("anomaly_count", 0))
+        except Exception:
+            over = 0
+        row = {"key": b, "name": b, "kind": "branch",
+               "expected": len(members), "filed": filed, "validated": validated,
+               "not_filed": max(len(members) - filed, 0),
+               "status": rec.get("status", "draft"),
+               "index": rec.get("branch_index", 0),
+               "owner": rec.get("validated_by_name", "") or rec.get("submitted_by_name", ""),
+               "over_reported": over}
+        brows.append(row)
+        tot["expected"] += row["expected"]; tot["filed"] += row["filed"]
+        tot["validated"] += row["validated"]; tot["index"] += float(row["index"] or 0)
+        tot["over"] += over
+        if row["status"] == "validated":
+            tot["countersigned"] += 1
+
+    branches_node = {
+        "key": "__branches__", "name": "Branches", "kind": "rollup",
+        "expected": tot["expected"], "filed": tot["filed"],
+        "validated": tot["validated"],
+        "not_filed": max(tot["expected"] - tot["filed"], 0),
+        "index": round(tot["index"], 1),
+        "count": len(brows), "countersigned": tot["countersigned"],
+        "over_reported": tot["over"],
+        "owner": "Head of Branches",
+        "children": brows,
+    } if brows else None
+
+    # ── one row per Head Office unit ─────────────────────────────────────────
+    urows = []
+    for unit in uscope.get("units", []):
+        try:
+            from utils.api_pipeline_scope import get_visible_staff_codes
+            codes = {_canon_u(c) for c in get_visible_staff_codes(
+                {"staff_code": "", "role": unit, "is_admin": False})}
+        except Exception:
+            codes = set()
+        # Non-branch members only: branch days terminate at the Head of Branches,
+        # so counting them inside a unit would double them.
+        members = [(d.get("code") or ck, d) for ck, d in dims.items()
+                   if _canon_u(d.get("code") or ck) in codes
+                   and str((d or {}).get("branch") or "").strip().lower() == "head office"]
+        if not members:
+            continue
+        filed = sum(1 for c, _d in members if _canon_u(c) in filed_by)
+        validated = sum(1 for c, _d in members
+                        if (filed_by.get(_canon_u(c)) or {}).get("validated"))
+        rec = list_branch_days(iso, [unit]).get(unit) or {}
+        urows.append({
+            "key": unit, "name": unit, "kind": "unit",
+            "expected": len(members), "filed": filed, "validated": validated,
+            "not_filed": max(len(members) - filed, 0),
+            "status": rec.get("status", "draft"),
+            "index": rec.get("branch_index", 0),
+            "owner": rec.get("validated_by_name", "") or rec.get("submitted_by_name", ""),
+            "over_reported": 0,
+            "can_countersign": unit in (uscope.get("owns") or []),
+        })
+    urows.sort(key=lambda r: r["name"])
+
+    return {"branches": branches_node, "units": urows, "date": iso,
+            "working_day": True,
+            "top_of_house": bool(uscope.get("top_of_house")),
+            "can_return": bool(uscope.get("top_of_house")) or _is_admin(user)}
+
+
 @router.get("/branch-days")
 def branch_log_branch_days(date: str = "", user: dict = Depends(get_current_user)):
     """TIER 2: the branches this caller countersigns, for one day.

@@ -406,6 +406,70 @@ def branches_validated_by(validator_code: str) -> dict:
     return {"mode": "branch" if mine else "", "branches": mine, "all_view": False}
 
 
+def md_reporting_roles() -> list:
+    """The roles that report to the Managing Director in org_config.hierarchy.
+
+    These ARE the Head Office units — Internal Control, Finance, HR, Treasury,
+    CCB, Corporate Banking and the rest. They are not derived from the roster's
+    Department string and not listed in code: change a reporting line in
+    org_config and this follows on the next read.
+    """
+    try:
+        from utils.config import load_org_config
+        hier = (load_org_config() or {}).get("hierarchy") or {}
+    except Exception:
+        return []
+    out = []
+    for role, info in hier.items():
+        parents = (list(info.get("reports_to", []) or [])
+                   if isinstance(info, dict) else list(info or []))
+        if any("managing director" in str(p).lower() for p in parents):
+            out.append(role)
+    return sorted(out)
+
+
+def _is_top_of_house(role: str) -> bool:
+    """MD, Business Manager or an admin — the observation tier.
+
+    Ruling 2026-08-08: the Business Manager is the last gate to the MD and
+    carries the MD's profile plus admin.
+    """
+    r = str(role or "").strip().lower()
+    return ("managing director" in r or "chief executive" in r
+            or r == "business manager" or "admin" in r)
+
+
+def units_validated_by(validator_code: str) -> dict:
+    """Which HEAD OFFICE UNITS does this person own?
+
+    A unit is an MD-reporting role. Its owner is the holder of that role, and
+    that owner's countersignature IS the unit's validation — validation
+    TERMINATES there (ruling 2026-08-08). The MD and Business Manager observe
+    every unit and may return one for amendment, but never re-validate.
+
+    Returns {"units": [role, ...], "owns": [role, ...], "top_of_house": bool}
+        units - what this person can SEE
+        owns  - what this person may COUNTERSIGN (empty at the observation tier)
+    """
+    df = _register()
+    vc = _s(validator_code)
+    all_units = md_reporting_roles()
+    if df.empty or not vc or "Staff Code" not in df.columns:
+        return {"units": [], "owns": [], "top_of_house": False}
+
+    me = df[df["Staff Code"] == vc]
+    if me.empty:
+        return {"units": [], "owns": [], "top_of_house": False}
+    my_role = _s(me.iloc[0].get("Role", ""))
+
+    if _is_top_of_house(my_role):
+        return {"units": all_units, "owns": [], "top_of_house": True}
+
+    owns = [u for u in all_units if _role_matches(my_role, u) or
+            _s(my_role).lower() == _s(u).lower()]
+    return {"units": owns, "owns": owns, "top_of_house": False}
+
+
 def can_validate_daily_log(validator_code: str, staff_code: str) -> bool:
     """True when validator_code is permitted to validate staff_code's daily log."""
     vc = _s(validator_code)
