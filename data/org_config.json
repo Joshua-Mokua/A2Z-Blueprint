@@ -1,5 +1,5 @@
 {
-  "bank_name": "EKE Blueprint",
+  "bank_name": "A2Z Blueprint",
   "bank_code": "ECO",
   "country": "Kenya",
   "currency": "KES",
@@ -814,5 +814,6 @@
     "Thika": "KE637",
     "Karatina": "KE546",
     "Nyeri": "KE461"
-  }
+  },
+  "app_name": "A2Z MIS 360"
 }

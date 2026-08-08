@@ -744,25 +744,12 @@ class TokenResponse(BaseModel):
     # don't set it still get a valid response that React reads as full
     # access.
     must_change_password: bool = False
-    # True when the authenticating user has no staff_code on file. AD
-    # doesn't carry a staff_code, so AD-authenticated users need a one-time
-    # prompt to supply theirs — staff_code drives rm_code ("KE" + code)
-    # portfolio lookups against cbs_accounts downstream. Informational only:
-    # unlike must_change_password this does NOT restrict the token scope,
-    # since the user's role/access is already known. The frontend shows a
-    # blocking modal (not a route redirect) until POST /api/auth/set-staff-id
-    # clears it.
-    must_set_staff_id: bool = False
 
 
 # ── /api/auth/change-password request shape (Batch 3b) ───────────────
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
-
-
-class SetStaffIdRequest(BaseModel):
-    staff_code: str
 
 
 @app.post("/api/auth/login", response_model=TokenResponse)
@@ -783,49 +770,21 @@ def login(request: Request, req: LoginRequest):
     from utils.core import UserManager
 
     # ── 1. External / AD authentication ───────────────────────────────
-    ad_timed_out = False
     try:
         from utils.external_auth import ExternalAuthService, get_auth_settings
         auth_cfg = get_auth_settings()
         if auth_cfg.get("ad_enabled"):
             svc = ExternalAuthService(auth_cfg)
             ext_user = svc.authenticate(req.username, req.password)
-            ad_timed_out = svc.timed_out
             if ext_user:
                 # Upsert into local user store. Preserve existing role if
                 # the account already exists; default to "Staff" for new ones.
-                #
-                # UserManager.reload() FIRST is load-bearing: its cache is
-                # process-wide and loaded once, but admin grants / staff-id
-                # backfills / other scripts write straight to Postgres from
-                # other processes. Without a reload here, save_users() below
-                # flushes this process's STALE full in-memory dict back over
-                # Postgres on every single AD login — silently reverting any
-                # such change made since this process last touched the cache
-                # (confirmed: reverted a staff_code backfill this way).
-                UserManager.reload()
                 um = UserManager()
-                # Identity key: the AD-verified email, not the literal string the
-                # person typed as username. The same person can present different
-                # username strings across logins (hobiero@ecobank.com vs
-                # hobiero@ecobank.co.ke — same AD account, different domain
-                # suffix typed/returned) — matching on req.username alone created
-                # a fresh duplicate row every time, twice confirmed on this
-                # server. If an existing user already carries this email
-                # (case-insensitive), update THAT record instead of creating a
-                # new one under req.username.
-                target_username = req.username
-                ad_email = str(ext_user.get("email") or "").strip().lower()
-                if ad_email and req.username not in um.users:
-                    for _uname, _rec in um.users.items():
-                        if str(_rec.get("email") or "").strip().lower() == ad_email:
-                            target_username = _uname
-                            break
-                existing = um.users.get(target_username, {})
-                um.users[target_username] = {
+                existing = um.users.get(req.username, {})
+                um.users[req.username] = {
                     **existing,
-                    "username":           target_username,
-                    "full_name":          ext_user.get("name", target_username),
+                    "username":           req.username,
+                    "full_name":          ext_user.get("name", req.username),
                     "email":              ext_user.get("email", ""),
                     "department":         ext_user.get("department", ""),
                     "title":              ext_user.get("title", ""),
@@ -838,23 +797,18 @@ def login(request: Request, req: LoginRequest):
                 }
                 um.save_users()
 
-                user_data = um.users[target_username]
-                user = {"username": target_username, "role": user_data.get("role", "Staff")}
+                user_data = um.users[req.username]
+                user = {"username": req.username, "role": user_data.get("role", "Staff")}
                 token = create_access_token(user, scope=TOKEN_SCOPE_FULL)
-                needs_staff_id = not str(user_data.get("staff_code") or "").strip()
                 _audit(
                     "API_LOGIN_SUCCESS_AD", user,
-                    f"Issued full-scope token via external AD for {req.username} "
-                    f"(matched to existing record {target_username})"
-                    if target_username != req.username else
                     f"Issued full-scope token via external AD for {req.username}",
                 )
                 return TokenResponse(
                     access_token=token,
-                    username=target_username,
+                    username=req.username,
                     role=user["role"],
                     must_change_password=False,
-                    must_set_staff_id=needs_staff_id,
                 )
 
             # AD returned nothing — fall through to local auth only if
@@ -883,18 +837,6 @@ def login(request: Request, req: LoginRequest):
         raise HTTPException(status_code=500, detail="Authentication system unavailable")
 
     if not ok or not user_data:
-        if ad_timed_out:
-            # The AD server didn't respond within the configured timeout, and
-            # the local fallback check (correctly) also failed — most AD-only
-            # accounts have no local password. Reporting this as "Invalid
-            # credentials" is misleading: the fix is "try again" or "check the
-            # AD server", not "check your password".
-            _audit("API_LOGIN_FAILED", {"username": req.username},
-                   "AD server timed out; local fallback also failed")
-            raise HTTPException(
-                status_code=504,
-                detail="The authentication server did not respond in time. Please try again.",
-            )
         # Audit failed login attempts (V-007 brute-force visibility)
         _audit("API_LOGIN_FAILED", {"username": req.username},
                f"Failed login from API for {req.username}")
@@ -917,7 +859,6 @@ def login(request: Request, req: LoginRequest):
     scope = TOKEN_SCOPE_MUST_ROTATE if must_rotate else TOKEN_SCOPE_FULL
 
     token = create_access_token(user, scope=scope)
-    needs_staff_id = not str(user_data.get("staff_code") or "").strip()
     if must_rotate:
         _audit(
             "API_LOGIN_FORCE_PW", user,
@@ -933,65 +874,6 @@ def login(request: Request, req: LoginRequest):
         username=req.username,
         role=user["role"],
         must_change_password=must_rotate,
-        must_set_staff_id=needs_staff_id,
-    )
-
-
-@app.post("/api/auth/set-staff-id", response_model=TokenResponse)
-@limiter.limit("10/minute")
-def set_staff_id(
-    request: Request,
-    req: SetStaffIdRequest,
-    user: dict = Depends(get_current_user),
-):
-    """Persist the caller's staff_code — the one-time prompt AD-authenticated
-    users (and any local user missing it) see as a blocking modal after
-    login. staff_code drives rm_code ("KE" + staff_code) portfolio lookups
-    against cbs_accounts, so it must be captured before those features work.
-
-    Unlike /api/auth/change-password, this takes a normal full-scope token
-    (Depends(get_current_user)) — missing staff_code doesn't restrict what
-    the user can already do, it's the portfolio feature that's blocked
-    until this is set.
-    """
-    username = user["username"]
-    code = req.staff_code.strip().strip("'").strip()
-    if not code:
-        raise HTTPException(status_code=400, detail="Staff ID cannot be empty")
-    if len(code) > 20:
-        raise HTTPException(status_code=400, detail="Staff ID is too long")
-    # Default prefix: staff codes are letter-prefixed bank-wide (KE covers the
-    # large majority of real cbs_accounts.rm_code values; a handful of staff
-    # carry other prefixes like CN). A user typing bare digits ("1293") means
-    # the default KE prefix — anyone who already has a different prefix types
-    # it themselves and it passes through untouched.
-    if code[:1].isalpha():
-        code = code.upper()
-    else:
-        code = f"KE{code}"
-
-    from utils.core import UserManager
-    um = UserManager()
-    full_user = um.users.get(username)
-    if not full_user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    full_user["staff_code"] = code
-    um.save_users()
-
-    fresh_user = {"username": username, "role": full_user.get("role", "Staff")}
-    must_rotate = bool(full_user.get("must_change_password"))
-    scope = TOKEN_SCOPE_MUST_ROTATE if must_rotate else TOKEN_SCOPE_FULL
-    token = create_access_token(fresh_user, scope=scope)
-
-    _audit("API_STAFF_ID_SET", user, f"'{username}' set staff_code={code}")
-
-    return TokenResponse(
-        access_token=token,
-        username=username,
-        role=fresh_user["role"],
-        must_change_password=must_rotate,
-        must_set_staff_id=False,
     )
 
 
@@ -1040,7 +922,6 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
         "staff_code":   full_user.get("staff_code"),
         "full_name":    full_user.get("full_name"),
         "department":   full_user.get("department"),
-        "unit":         full_user.get("unit"),
         "email":        full_user.get("email"),
         "active":       full_user.get("active", True),
 
@@ -1195,7 +1076,6 @@ def change_password(
         username=username,
         role=full_user.get("role", "Staff"),
         must_change_password=False,
-        must_set_staff_id=not str(full_user.get("staff_code") or "").strip(),
     )
 
 
@@ -1843,89 +1723,6 @@ def set_auth_config(
 # ─────────────────────────────────────────────────────────────────────
 
 
-@app.get("/api/admin/data-source-status", tags=["admin"])
-def get_admin_data_source_status(user: dict = Depends(require_config_admin)):
-    """Live indicator: what store is actually serving/authoritative for
-    users vs hierarchy right now, and how in-sync the derived projections are.
-
-    Two genuinely separate systems live under "hierarchy" and this endpoint
-    is explicit about which is which, since conflating them is exactly what
-    caused this session's sync bugs:
-      - ROLE hierarchy (org_config.json, role -> parent roles) is what the
-        Hierarchy admin page edits and what get_visible_staff / cascade scope
-        actually resolves against. JSON-file-backed, admin-editable, live.
-      - PERSON hierarchy (users.metadata.reports_to, per staff_code) lives in
-        Postgres from the staff-roster import. NOT currently read by the
-        scope engine — informational/future, not yet wired in.
-    """
-    from utils.db import db as _db
-    from utils.core import UserManager, get_org_config
-
-    pg_ready = _db.is_postgres_ready()
-    total_users = 0
-    registrable_users = 0  # active + staff_code set — export_register_from_db's own filter
-    reports_to_count = 0
-    if pg_ready:
-        total_users = (_db.fetch_one("SELECT COUNT(*) c FROM users") or {}).get("c", 0)
-        registrable_users = (_db.fetch_one(
-            "SELECT COUNT(*) c FROM users WHERE active = true "
-            "AND staff_code IS NOT NULL AND staff_code <> ''") or {}).get("c", 0)
-        reports_to_count = (_db.fetch_one(
-            "SELECT COUNT(*) c FROM users WHERE metadata->>'reports_to' IS NOT NULL "
-            "AND metadata->>'reports_to' <> ''") or {}).get("c", 0)
-
-    register_path = Path(__file__).resolve().parent.parent / "data" / "staff_register.xlsx"
-    register_count = None
-    if register_path.exists():
-        try:
-            import pandas as _pd
-            register_count = int(len(_pd.read_excel(register_path)))
-        except Exception:
-            register_count = None
-
-    cfg = get_org_config() or {}
-    role_hierarchy_count = len(cfg.get("hierarchy", {}) or {})
-
-    return {
-        "users": {
-            "authoritative_source": "postgres" if pg_ready else "users.json (fallback — Postgres unreachable)",
-            "postgres_ready": pg_ready,
-            "total_in_postgres": total_users,
-            "total_in_staff_register_xlsx": register_count,
-            "total_registrable_in_postgres": registrable_users,
-            "in_sync": (register_count == registrable_users) if register_count is not None else None,
-        },
-        "hierarchy": {
-            "role_hierarchy": {
-                "source": "org_config.json",
-                "editable_at": "/hierarchy (Admin > Hierarchy)",
-                "roles_with_parents_set": role_hierarchy_count,
-                "used_by_scope_engine": True,
-            },
-            "person_hierarchy": {
-                "source": "postgres (users.metadata.reports_to)",
-                "editable_at": None,
-                "staff_with_reports_to": reports_to_count,
-                "total_staff": total_users,
-                "used_by_scope_engine": False,
-            },
-        },
-    }
-
-
-@app.post("/api/admin/data-source-status/sync", tags=["admin"])
-def post_admin_data_source_sync(user: dict = Depends(require_config_admin)):
-    """Rebuild data/staff_register.xlsx from Postgres — the one sync action
-    that's actually safe to expose as a button: read-only against Postgres,
-    only ever overwrites the generated projection file, never touches a
-    login or a role. Returns the fresh counts so the badge can update
-    without a page reload."""
-    from utils.staff_projection import export_register_from_db
-    n = export_register_from_db()
-    _audit("API_ADMIN_DATA_SOURCE_SYNC", user, f"staff_register.xlsx rebuilt: {n} rows")
-    return {"status": "synced", "staff_register_rows": n}
-
-
 @app.get("/api/admin/staff", tags=["admin"])
 def get_admin_staff(user: dict = Depends(require_config_admin)):
     """Staff roster — PostgreSQL when available, users.json fallback otherwise."""
@@ -2049,33 +1846,20 @@ def create_admin_staff(payload: _StaffCreate, user: dict = Depends(require_confi
     if _db.fetch_one("SELECT 1 FROM users WHERE username = %s", (final_user,)):
         raise HTTPException(status_code=409, detail=f"username '{final_user}' already exists")
     pw_hash = _hash_password(payload.password)
-    # band/gender aren't real columns on users (see utils/db.py schema) —
-    # they live in the metadata jsonb catch-all, same as migrate_users.py.
-    metadata = {}
-    if payload.band:   metadata["band"] = payload.band
-    if payload.gender: metadata["gender"] = payload.gender
     try:
         _db.execute(
             "INSERT INTO users (username, password_hash, full_name, email, role, "
-            "department, unit, staff_code, active, is_admin, "
-            "can_view_all, must_change_password, metadata) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "department, unit, staff_code, band, gender, active, is_admin, "
+            "can_view_all, must_change_password) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (final_user, pw_hash, payload.full_name.strip(), payload.email or "",
              payload.role or "Staff", payload.department or payload.unit or "",
-             payload.unit or "", final_sc,
-             True, bool(payload.is_admin), bool(payload.can_view_all), False,
-             json.dumps(metadata)),
+             payload.unit or "", final_sc, payload.band or "", payload.gender or "",
+             True, bool(payload.is_admin), bool(payload.can_view_all), False),
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"create failed: {exc}")
     _audit("API_ADMIN_STAFF_CREATE_V2", user, f"{final_user}|sc:{final_sc}")
-    # UserManager caches every user in memory for the life of the process
-    # (see utils/core.py _USER_STORE) — this endpoint just wrote Postgres
-    # directly, bypassing that cache. Without a reload, the NEXT call to
-    # save_users() from anywhere (including project_quietly() below) would
-    # blindly re-upsert the stale cached copy over this write.
-    from utils.core import UserManager
-    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -2090,49 +1874,30 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     if not _db.table_uses_db("users"):
         raise HTTPException(status_code=503, detail="users table not active")
     _staff_row_or_404(_db, username)
-    # Real columns on users (see utils/db.py schema) only — band/gender/
-    # accessible_modules aren't columns, they live in the metadata jsonb
-    # catch-all (same as migrate_users.py / create_admin_staff above).
     col_map = {"full_name": payload.full_name, "email": payload.email,
                "role": payload.role, "department": payload.department,
                "unit": payload.unit, "staff_code": payload.staff_code,
+               "band": payload.band, "gender": payload.gender,
                "can_view_all": payload.can_view_all, "is_admin": payload.is_admin,
                "active": payload.active}
     cols, vals = [], []
     for col, val in col_map.items():
         if val is not None:
             cols.append(f"{col} = %s"); vals.append(val)
-    # metadata (jsonb) — band/gender/accessible_modules patched in via ||
-    # so unrelated keys already stored in metadata aren't clobbered.
-    # accessible_modules: module-level access grant, a JSON array of module
-    # keys. Empty list = explicit "no extra modules" (role default still
-    # applies at read time via MODULE_ACCESS).
-    metadata_patch = {}
-    if payload.band is not None:   metadata_patch["band"] = payload.band
-    if payload.gender is not None: metadata_patch["gender"] = payload.gender
+    # accessible_modules (jsonb) — module-level access grant. Stored as a JSON
+    # array of module keys. Empty list = explicit "no extra modules" (role
+    # default still applies at read time via MODULE_ACCESS).
     if getattr(payload, "accessible_modules", None) is not None:
-        metadata_patch["accessible_modules"] = list(payload.accessible_modules)
-    # preferred_name lives inside the metadata JSONB too — merged in via
-    # jsonb_set so we never clobber other metadata keys. Combined with
-    # metadata_patch into a SINGLE `metadata = ...` SET clause below:
-    # Postgres rejects two assignments to the same column in one UPDATE.
-    preferred_name = getattr(payload, "preferred_name", None)
-    if metadata_patch and preferred_name is not None:
-        cols.append(
-            "metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb) || %s::jsonb, "
-            "'{preferred_name}', %s::jsonb, true)"
-        )
-        vals.append(json.dumps(metadata_patch))
-        vals.append(json.dumps(str(preferred_name)))
-    elif metadata_patch:
-        cols.append("metadata = COALESCE(metadata, '{}'::jsonb) || %s::jsonb")
-        vals.append(json.dumps(metadata_patch))
-    elif preferred_name is not None:
-        cols.append(
-            "metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), "
-            "'{preferred_name}', %s::jsonb, true)"
-        )
-        vals.append(json.dumps(str(preferred_name)))
+        import json as _json_mod
+        cols.append("accessible_modules = %s")
+        vals.append(_json_mod.dumps(list(payload.accessible_modules)))
+    # preferred_name lives inside the metadata JSONB — merge it in so we never clobber
+    # other metadata keys. jsonb_set builds the object if metadata is null.
+    if getattr(payload, "preferred_name", None) is not None:
+        import json as _json_mod
+        cols.append("metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), "
+                    "'{preferred_name}', %s::jsonb, true)")
+        vals.append(_json_mod.dumps(str(payload.preferred_name)))
     if not cols:
         raise HTTPException(status_code=400, detail="no editable fields supplied")
     vals.append(username)
@@ -2141,10 +1906,6 @@ def update_admin_staff(username: str, payload: _StaffPatch,
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"update failed: {exc}")
     _audit("API_ADMIN_STAFF_UPDATE", user, f"{username}|{','.join(c.split(' = ')[0] for c in cols)}")
-    # See create_admin_staff above — refresh UserManager's cache before
-    # anything downstream can re-persist a stale copy over this write.
-    from utils.core import UserManager
-    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -2165,10 +1926,6 @@ def deactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"deactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_DEACTIVATE", user, username)
-    # See create_admin_staff above — refresh UserManager's cache before
-    # anything downstream can re-persist a stale copy over this write.
-    from utils.core import UserManager
-    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -2187,10 +1944,6 @@ def reactivate_admin_staff(username: str, user: dict = Depends(require_config_ad
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"reactivate failed: {exc}")
     _audit("API_ADMIN_STAFF_REACTIVATE", user, username)
-    # See create_admin_staff above — refresh UserManager's cache before
-    # anything downstream can re-persist a stale copy over this write.
-    from utils.core import UserManager
-    UserManager.reload()
     # PostgreSQL is the system of record — rebuild the generated register.
     from utils.staff_projection import project_quietly
     project_quietly()
@@ -3306,7 +3059,6 @@ def create_validation_request(deal_id: str, payload: dict = Body(default_factory
     }
     reqs = _vr_list(deal) + [req]
     pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log("VALIDATION_REQUEST_CREATED", str(user.get("username", "") or ""),
@@ -3396,7 +3148,6 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
                 pass
 
     pm.update_deal(deal_id, _deal_updates, str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log(f"VALIDATION_REQUEST_{decision.upper()}", str(user.get("username", "") or ""),
@@ -3444,7 +3195,6 @@ def lift_deal_hold(deal_id: str, payload: dict = Body(default_factory=dict),
         except Exception:
             pass
     pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     try:
         from utils.core_audit import audit_log
         audit_log("DEAL_HOLD_LIFTED", str(user.get("username", "") or ""), f"deal={deal_id}")
@@ -6507,19 +6257,6 @@ def pipeline_deal_create(
         if not str(deal_dict.get("staff_name") or "").strip():
             deal_dict["staff_name"] = str(
                 _full.get("full_name", "") or user.get("username", "") or "")
-    # Item 1: a deal's originating branch defaults to the creator's own branch
-    # (their staff record's `unit`). Branch staff never need to pick it. Head
-    # Office RMs — whose own unit is "Head Office", not a real branch — send an
-    # explicit `unit` (the frontend shows them a branch picker), which we keep.
-    if not str(deal_dict.get("unit") or "").strip():
-        from utils.core import UserManager as _UM_unit
-        _cr = _UM_unit().users.get(str(user.get("username", "") or "")) or {}
-        _cru = str(_cr.get("unit", "") or "").strip()
-        # Don't stamp "Head Office" as a deal's branch — leave blank so an HO
-        # deal without an explicit pick stays clearly unassigned rather than
-        # masquerading as a branch.
-        if _cru and _cru.lower() != "head office":
-            deal_dict["unit"] = _cru
     ok, reason = validate_create_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
@@ -7717,35 +7454,24 @@ def md_dashboard(user: dict = Depends(get_current_user)):
     aml   = aml_summary(user=user)
     users = users_summary(user=user)
 
-    # NOTE: .get(key, 0) only covers a MISSING key — a SQL SUM/AVG over
-    # zero matching rows returns NULL, so the key is present with value
-    # None and the "0" default never kicks in. That null then reaches
-    # the frontend, which calls .toLocaleString() on it unguarded and
-    # blanks the whole dashboard. _safe_int/_safe_float coerce None (and
-    # missing keys) to 0/0.0 the same way every other summary endpoint
-    # in this file already does.
-    pipe_t, credit_t, aml_t, users_t = (
-        pipe.get("totals") or {}, credit.get("totals") or {},
-        aml.get("totals") or {}, users.get("totals") or {},
-    )
     result = {
-        "bsc":     {"overall_avg":_safe_float(bsc.get("overall_avg")),
-                    "total_staff":_safe_int(bsc.get("total_staff"))},
-        "pipeline":{"total_deals":_safe_int(pipe_t.get("total_deals")),
-                    "pipeline_value":_safe_float(pipe_t.get("pipeline_value")),
-                    "validated_value":_safe_float(pipe_t.get("validated_value")),
-                    "pending_value":_safe_float(pipe_t.get("pending_value")),
-                    "pending_validation":_safe_int(pipe_t.get("pending_validation")),
-                    "won_value":_safe_float(pipe_t.get("won_value")),
-                    "lcy_value":_safe_float(pipe_t.get("lcy_value")),
-                    "fcy_value":_safe_float(pipe_t.get("fcy_value"))},
-        "credit":  {"total_accounts":_safe_int(credit_t.get("total_accounts")),
-                    "outstanding_bn":_safe_float(credit_t.get("outstanding_bn")),
-                    "npl_ratio_pct":_safe_float(credit_t.get("npl_ratio_pct"))},
-        "aml":     {"open_alerts":_safe_int(aml_t.get("open_alerts")),
-                    "high_risk":_safe_int(aml_t.get("high_risk"))},
-        "org":     {"total_staff":_safe_int(users_t.get("total_users")),
-                    "departments":_safe_int(users_t.get("departments"))},
+        "bsc":     {"overall_avg":bsc.get("overall_avg",0),
+                    "total_staff":bsc.get("total_staff",0)},
+        "pipeline":{"total_deals":pipe.get("totals",{}).get("total_deals",0),
+                    "pipeline_value":pipe.get("totals",{}).get("pipeline_value",0),
+                    "validated_value":pipe.get("totals",{}).get("validated_value",0),
+                    "pending_value":pipe.get("totals",{}).get("pending_value",0),
+                    "pending_validation":pipe.get("totals",{}).get("pending_validation",0),
+                    "won_value":pipe.get("totals",{}).get("won_value",0),
+                    "lcy_value":pipe.get("totals",{}).get("lcy_value",0),
+                    "fcy_value":pipe.get("totals",{}).get("fcy_value",0)},
+        "credit":  {"total_accounts":credit.get("totals",{}).get("total_accounts",0),
+                    "outstanding_bn":credit.get("totals",{}).get("outstanding_bn",0),
+                    "npl_ratio_pct":credit.get("totals",{}).get("npl_ratio_pct",0)},
+        "aml":     {"open_alerts":aml.get("totals",{}).get("open_alerts",0),
+                    "high_risk":aml.get("totals",{}).get("high_risk",0)},
+        "org":     {"total_staff":users.get("totals",{}).get("total_users",0),
+                    "departments":users.get("totals",{}).get("departments",0)},
         "generated_at": datetime.now().isoformat(),
     }
     _set_cache("md_dashboard",result)
@@ -10612,20 +10338,18 @@ def staff_upload_apply(body: _StaffUploadBody, user: dict = Depends(require_conf
             "dotted": [d for d in (r.get("dotted1"), r.get("dotted2")) if d],
             "region": r.get("region") or "",
             "date_of_employment": r.get("doe") or "",
-            "band": r.get("band") or "",
-            "gender": r.get("gender") or "",
         })
         try:
             _db.execute(
                 "INSERT INTO users (username, password_hash, full_name, role, department, unit, "
-                "staff_code, email, metadata, active, is_admin, must_change_password) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
+                "staff_code, band, gender, email, metadata, active, is_admin, must_change_password) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,true,false,true) "
                 "ON CONFLICT (username) DO UPDATE SET full_name=EXCLUDED.full_name, "
                 "role=EXCLUDED.role, department=EXCLUDED.department, unit=EXCLUDED.unit, "
                 "staff_code=EXCLUDED.staff_code, email=EXCLUDED.email, "
                 "metadata=EXCLUDED.metadata, active=true",
                 (r["code"], pw, r["name"], r["role"], r.get("dept") or "", r["branch"], r["code"],
-                 r.get("email") or "", _meta))
+                 r["band"], r["gender"], r.get("email") or "", _meta))
             inserted += 1
         except Exception as _e:
             _staffup_failed.append(f"{r['code']} {r.get('name','')}: {type(_e).__name__}: {_e}")
@@ -11693,7 +11417,6 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
     records = dict(deal.get("committee_records", {}) or {})
     records[code] = record
     pm.update_deal(deal_id, {"committee_records": records}, str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_COMMITTEE_RECORD", user, f"deal={deal_id}|code={code}|outcome={record['outcome']}")
     return {"status": "recorded", "code": code, "record": record}
 # === END COMMITTEE DECISION CAPTURE ===
@@ -11749,7 +11472,6 @@ def appeal_committee_decision(deal_id: str, payload: dict = Body(default_factory
     records.pop(code, None)
     pm.update_deal(deal_id, {"committee_records": records, "appeals": appeals},
                    str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_COMMITTEE_APPEAL", user, f"deal={deal_id}|code={code}")
     return {"status": "appealed", "code": code,
             "message": f"{code} re-opened for a fresh decision.", "appeals": appeals}
@@ -11778,7 +11500,6 @@ def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
     reason = str(payload.get("reason", "") or "").strip()
     pm.update_deal(deal_id, {"stage": "Closed Lost", "close_reason": reason},
                    str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("API_DEAL_CLOSE_LOST", user, f"deal={deal_id}|reason={reason[:60]}")
     return {"status": "closed_lost", "deal_id": deal_id}
 # === END REJECT -> OWNER FALLBACK ===
@@ -12159,7 +11880,6 @@ def save_deal_appraisal(deal_id: str, payload: dict = Body(default_factory=dict)
     _enforce_deal_lock(deal, user, "appraisal")  # Phase L
     appr = _appraisal_stamp(payload, user)
     pm.update_deal(deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
-    _db_sync_pipeline_deal(pm.get_deal(deal_id))
     return appr
 
 

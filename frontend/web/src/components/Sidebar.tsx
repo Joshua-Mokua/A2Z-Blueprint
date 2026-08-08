@@ -30,7 +30,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Pipeline Intelligence (PIS)',
     items: [
-      { path: '/pipeline',        label: 'EKE Sales Pro',        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')) },
+      { path: '/pipeline',        label: 'A2Z Sales Pro',        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')) },
       { path: '/analytics',       label: 'Sales Pro Analytics',  matchActive: (p) => p.startsWith('/analytics') },
       { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
       { path: '/referrals',       label: 'A2Z Sales Referral Analytics', matchActive: (p) => p.startsWith('/referrals') },
@@ -85,7 +85,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="sb-brand">
         <img src="/img/ecobank-light.svg" alt="Ecobank" className="sb-logo" />
         <div className="sb-brand-text">
-          <div className="sb-brand-name">{branding?.app_name ?? 'EKE Blueprint'}</div>
+          <div className="sb-brand-name">{branding?.app_name ?? 'A2Z Blueprint'}</div>
           <div className="sb-brand-tag">MIS 360</div>
         </div>
       </div>

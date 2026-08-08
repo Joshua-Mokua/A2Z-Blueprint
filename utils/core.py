@@ -81,25 +81,6 @@ def load_email_config():
 def save_email_config(cfg):
     (DATA_DIR/"email_config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
-def _smtp_deliver(cfg, msg, to):
-    """Shared send path for both email functions below.
-
-    Handles an unauthenticated internal relay (MAIL_USERNAME/PASSWORD blank
-    — common for a bank's internal Postfix/Exchange relay bound to trusted
-    IPs) as well as an authenticated one: STARTTLS is attempted only when
-    encryption is configured as tls/starttls, and login() is skipped
-    entirely when no credentials are configured, since calling it with
-    blank credentials would fail against a real server."""
-    import smtplib
-    with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
-        if str(cfg.get("smtp_encryption", "tls")).lower() in ("tls", "starttls"):
-            s.starttls()
-        user, pwd = cfg.get("sender_username") or "", cfg.get("sender_password") or ""
-        if user and pwd:
-            s.login(user, pwd)
-        s.sendmail(cfg["sender_email"], to, msg.as_string())
-
-
 def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
                                due_date, days_info, esc_level, workstream, io_name):
     """Send milestone escalation/due-soon email."""
@@ -144,7 +125,10 @@ def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        _smtp_deliver(cfg, msg, to_email)
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
+            s.starttls()
+            s.login(cfg["sender_email"], cfg["sender_password"])
+            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -185,7 +169,10 @@ def send_structural_delay_email(to_emails, ms_name, init_name, workstream,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = ", ".join(to_emails)
         msg.attach(MIMEText(body, "html"))
-        _smtp_deliver(cfg, msg, to_emails)
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
+            s.starttls()
+            s.login(cfg["sender_email"], cfg["sender_password"])
+            s.sendmail(cfg["sender_email"], to_emails, msg.as_string())
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -223,7 +210,10 @@ def send_start_alert_email(to_email, recipient_name, ms_name, init_name, start_d
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        _smtp_deliver(cfg, msg, to_email)
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
+            s.starttls()
+            s.login(cfg["sender_email"], cfg["sender_password"])
+            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -338,7 +328,10 @@ def send_welcome_email(to_email, full_name, username, temp_password):
 </div>
 </body></html>"""
         msg.attach(MIMEText(body, "html"))
-        _smtp_deliver(cfg, msg, to_email)
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
+            s.starttls()
+            s.login(cfg["sender_email"], cfg["sender_password"])
+            s.sendmail(cfg["sender_email"], to_email, msg.as_string())
         return True, "Email sent"
     except Exception as e:
         return False, str(e)
@@ -633,7 +626,7 @@ BRAND = {
     'dark':         '#004A2B',   # deep dark green
     'text_on_primary': '#FFFFFF',
     'text_on_secondary': '#3D2600',
-    'app_name':     'EKE Blueprint',
+    'app_name':     'A2Z Blueprint',
     'tagline':      'Perform · Execute · Integrate',
 }
 
@@ -1570,7 +1563,7 @@ def get_pillar_weights() -> dict:
 ORG_CONFIG_FILE = DATA_DIR / "org_config.json"
 
 DEFAULT_ORG_CONFIG = {
-    "bank_name":    "EKE Blueprint",
+    "bank_name":    "A2Z Blueprint",
     "bank_code":    "ECO",
     "country":      "Kenya",
     "currency":     "KES",
@@ -7475,82 +7468,6 @@ class UserManager:
         return restored
 
     def _load(self):
-        """Load all users into the in-memory dict shape every other method
-        on this class expects (JSON-era shape: 'password' not
-        'password_hash'; band/gender/managed_*/accessible_modules/etc.
-        flattened in from Postgres's metadata JSONB catch-all).
-
-        Postgres is the source of truth when A2Z_USE_DB is configured and
-        reachable — falls back to users.json only when it isn't (a dev box
-        without DB access). This mirrors the JSON path's own philosophy:
-        prefer the real thing, degrade to a local file rather than lock
-        everyone out.
-        """
-        from utils.db import db as _db
-        if _db.is_postgres_ready():
-            return self._load_from_db()
-        return self._load_from_json()
-
-    def _load_from_db(self):
-        from utils.db import db as _db
-        rows = _db.fetch_all("SELECT * FROM users")
-        users = {}
-        for row in rows:
-            uname = row["username"]
-            rec = dict(row.get("metadata") or {})  # extras first (title, managed_*, ...)
-            rec.update({
-                "username":              uname,
-                "password":              row.get("password_hash") or "",
-                "full_name":             row.get("full_name") or "",
-                "email":                 row.get("email") or "",
-                "role":                  row.get("role") or "",
-                "department":            row.get("department") or "",
-                "unit":                  row.get("unit") or "",
-                "staff_code":            row.get("staff_code") or "",
-                "active":                bool(row.get("active", True)),
-                "is_admin":              bool(row.get("is_admin", False)),
-                "can_view_all":          bool(row.get("can_view_all", False)),
-                "must_change_password":  bool(row.get("must_change_password", False)),
-            })
-            users[uname] = rec
-
-        if not users:
-            return self._defaults()
-
-        # Always ensure admin account exists and cannot be permanently removed
-        # (same normalization as the JSON path — see _load_from_json).
-        _admin_was_missing = 'admin' not in users
-        if _admin_was_missing:
-            users['admin'] = {
-                "password":   self.hash_pw("admin123"),
-                "full_name":  "System Admin",
-                "role":       "Admin",
-                "department": "All",
-                "can_view_all": True,
-                "managed_roles": [], "managed_units": [],
-                "managed_staff_codes": [],
-                "staff_code": "ADMIN001",
-                "email":      "admin@bank.com",
-                "active":     True,
-                "_protected": True,
-            }
-        else:
-            users['admin'].update({
-                'can_view_all': True,
-                'role': 'Admin',
-                'active': True,
-                '_protected': True,
-            })
-        # AUTH-RACE FIX (same rationale as _load_from_json): persist the
-        # seed only when genuinely absent, never on every load.
-        if _admin_was_missing:
-            try:
-                self._save(users)
-            except Exception:
-                pass
-        return users
-
-    def _load_from_json(self):
         # Hardened (P-AUTH-b): a transient read error or a corrupt file must
         # NEVER cause a silent fall-back to defaults, because _defaults()
         # immediately re-saves and would overwrite a recoverable real file
@@ -7673,64 +7590,7 @@ class UserManager:
         self._save(u)
         return u
 
-    # Real columns on the Postgres users table — everything else in a user
-    # dict (managed_roles, managed_staff_codes, title, accessible_modules,
-    # band, gender, _protected, ...) is a metadata-jsonb-only field.
-    _DB_REAL_COLS = {"full_name", "email", "role", "department", "unit",
-                      "staff_code", "active", "is_admin", "can_view_all",
-                      "must_change_password"}
-
     def _save(self, u=None):
-        """Persist all users. Postgres (upsert per user) when configured
-        and reachable; falls back to the JSON file otherwise."""
-        from utils.db import db as _db
-        if _db.is_postgres_ready():
-            return self._save_to_db(u)
-        return self._save_to_json(u)
-
-    def _save_to_db(self, u=None):
-        from utils.db import db as _db
-        users_dict = u or self.users
-        for uname, rec in users_dict.items():
-            metadata_extra = {k: v for k, v in rec.items()
-                               if k not in self._DB_REAL_COLS
-                               and k not in ("username", "password")}
-            _db.execute("""
-                INSERT INTO users (username, password_hash, full_name, email, role,
-                    department, unit, staff_code, active, is_admin, can_view_all,
-                    must_change_password, metadata)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (username) DO UPDATE SET
-                    password_hash         = EXCLUDED.password_hash,
-                    full_name             = EXCLUDED.full_name,
-                    email                 = EXCLUDED.email,
-                    role                  = EXCLUDED.role,
-                    department            = EXCLUDED.department,
-                    unit                  = EXCLUDED.unit,
-                    staff_code            = EXCLUDED.staff_code,
-                    active                = EXCLUDED.active,
-                    is_admin              = EXCLUDED.is_admin,
-                    can_view_all          = EXCLUDED.can_view_all,
-                    must_change_password  = EXCLUDED.must_change_password,
-                    metadata              = EXCLUDED.metadata
-            """, (
-                uname, rec.get("password", ""), rec.get("full_name", ""),
-                rec.get("email", ""), rec.get("role", "Staff"),
-                rec.get("department", rec.get("unit", "")), rec.get("unit", ""),
-                str(rec.get("staff_code", "")), bool(rec.get("active", True)),
-                bool(rec.get("is_admin", False)), bool(rec.get("can_view_all", False)),
-                bool(rec.get("must_change_password", False)),
-                json.dumps(metadata_extra),
-            ))
-
-        # No users.json mirror: Postgres is the ONLY store UserManager writes
-        # to now. ~40 other modules (BSC, cascade, coaching, gamification,
-        # growth-path, wellness, etc.) still read data/users.json directly —
-        # they're working off a frozen snapshot until each is migrated to
-        # query Postgres. Known, accepted drift risk (deliberate call, not
-        # an oversight) — see the commit that removed the mirror.
-
-    def _save_to_json(self, u=None):
         # Atomic write: serialize to a temp file in the same directory, then
         # os.replace() it over the target. os.replace is atomic on both Windows
         # and POSIX, so an interrupted or concurrent write can never leave a
@@ -7785,17 +7645,6 @@ class UserManager:
         if not can:
             return False, reason
         self.users.pop(username, None)
-        # save_users()/_save() only upserts — a username absent from the
-        # in-memory dict doesn't get removed from Postgres by itself, so
-        # delete the row explicitly (best-effort: the in-memory removal
-        # above is what every other request-scoped UserManager() sees
-        # immediately regardless of DB reachability).
-        try:
-            from utils.db import db as _db
-            if _db.is_postgres_ready():
-                _db.execute("DELETE FROM users WHERE username = %s", (username,))
-        except Exception:
-            pass
         self.save_users()
         return True, f"User '{username}' deleted by {verified_by}."
 
