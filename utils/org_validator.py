@@ -286,6 +286,70 @@ def daily_log_validators_for(staff_code: str) -> dict:
     return {"mode": "triad", "unit": unit, "validators": out}
 
 
+def staff_validated_by(validator_code: str) -> dict:
+    """INVERSE of daily_log_validators_for: whose daily logs may this person
+    validate? One register scan.
+
+    Asking the forward question per staff member is O(n^2) — the queue endpoint
+    did exactly that across 363 staff and hung. This answers it once:
+
+      * a triad-role holder in a BRANCH validates everyone in that branch
+        (plus any branch they are the acting BM for)
+      * anyone else validates their direct reports (Reports To == their code)
+
+    Returns {"mode": "triad"|"line_manager"|"", "codes": [staff_code, ...]}.
+    """
+    df = _register()
+    vc = _s(validator_code)
+    if df.empty or not vc or "Staff Code" not in df.columns:
+        return {"mode": "", "codes": []}
+
+    me = df[df["Staff Code"] == vc]
+    if me.empty:
+        return {"mode": "", "codes": []}
+    m = me.iloc[0]
+    my_branch = _s(m.get("Branch", "")) or _s(m.get("Unit", ""))
+    my_role = _s(m.get("Role", ""))
+
+    wanted = _triad_roles()
+    is_triad_role = any(_role_matches(my_role, w) for w in wanted)
+
+    # Branches this person covers as a triad member or as acting BM.
+    branches = set()
+    if is_triad_role and my_branch and my_branch.lower() != _HEAD_OFFICE:
+        branches.add(my_branch.lower())
+    try:
+        from utils.config import load_org_config
+        for bname, acting in (load_org_config().get("acting_bm") or {}).items():
+            if _s(acting) == vc:
+                branches.add(_s(bname).lower())
+    except Exception:
+        pass
+
+    # Vectorised on purpose: iterrows() over the register per request is what
+    # made the queue hang. These are boolean masks, not Python loops.
+    codes_col = df["Staff Code"].astype(str).str.strip()
+    not_me = codes_col != vc
+
+    if branches:
+        if "Branch" in df.columns:
+            bcol = df["Branch"].astype(str).str.strip()
+            if "Unit" in df.columns:
+                bcol = bcol.where(bcol.str.len() > 0, df["Unit"].astype(str).str.strip())
+        else:
+            bcol = df["Unit"].astype(str).str.strip()
+        mask = bcol.str.lower().isin(branches) & not_me
+        return {"mode": "triad",
+                "codes": [c for c in codes_col[mask].tolist() if c]}
+
+    if "Reports To" in df.columns:
+        mask = (df["Reports To"].astype(str).str.strip() == vc) & not_me
+        return {"mode": "line_manager",
+                "codes": [c for c in codes_col[mask].tolist() if c]}
+
+    return {"mode": "line_manager", "codes": []}
+
+
 def can_validate_daily_log(validator_code: str, staff_code: str) -> bool:
     """True when validator_code is permitted to validate staff_code's daily log."""
     vc = _s(validator_code)

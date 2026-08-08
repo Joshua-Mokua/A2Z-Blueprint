@@ -384,23 +384,20 @@ def branch_log_validation_queue(date: str = "", user: dict = Depends(get_current
         pass
 
     dims = _roster_dims()
-    from utils.org_validator import daily_log_validators_for
 
-    # Everyone this caller may validate. Resolved from the roster, so it covers
-    # staff who have never filed.
-    mine, mode = [], ""
-    for ck, d in dims.items():
-        code = d.get("code") or ck
-        if _canon_q(code) == _canon_q(my_code):
-            continue
-        try:
-            res = daily_log_validators_for(code)
-        except Exception:
-            continue
-        if any(str(v.get("validator_code") or "") == my_code
-               for v in res.get("validators", [])):
-            mine.append((code, d))
-            mode = mode or res.get("mode", "")
+    # Everyone this caller may validate — ONE register scan via the inverse
+    # lookup. Asking daily_log_validators_for() per staff member was O(n^2)
+    # across 363 people (~132k pandas row reads) and hung the tab.
+    from utils.org_validator import staff_validated_by
+    try:
+        res = staff_validated_by(my_code)
+    except Exception:
+        res = {"mode": "", "codes": []}
+    mode = res.get("mode", "")
+    mine = []
+    for code in res.get("codes", []):
+        d = dims.get(_canon_q(code)) or {}
+        mine.append((d.get("code") or code, d))
 
     if not mine:
         return {"rows": [], "columns": [], "date": day.isoformat(),
